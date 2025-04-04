@@ -40,18 +40,20 @@ function IntegrationItem({
   onToolToggle,
   setIntegrationTools,
   agent,
+  localAgent,
 }: {
   integrationId: string;
   onToolToggle: (
     integrationId: string,
     toolId: string,
     checked: boolean,
-  ) => Promise<void>;
+  ) => void;
   setIntegrationTools: (
     integrationId: string,
     tools: string[],
-  ) => Promise<void>;
+  ) => void;
   agent: Agent;
+  localAgent: Agent;
 }) {
   const { data: integration } = useIntegration(integrationId);
 
@@ -66,6 +68,7 @@ function IntegrationItem({
       onToolToggle={onToolToggle}
       setIntegrationTools={setIntegrationTools}
       agent={agent}
+      localAgent={localAgent}
     />
   );
 }
@@ -101,9 +104,42 @@ function App({ agentId }: { agentId: string }) {
     }
   }, [agent, localAgent]);
 
-  // Function to check if a field has changed
   const hasFieldChanged = (field: keyof NonNullable<typeof agent>) => {
     return agent && localAgent && localAgent[field] !== agent[field];
+  };
+
+  const countChanges = () => {
+    if (!agent || !localAgent) return 0;
+    let count = 0;
+
+    const fields: (keyof NonNullable<typeof agent>)[] = [
+      "name",
+      "description",
+      "instructions",
+      "max_tokens",
+      "avatar",
+    ];
+    count += fields.filter((field) => hasFieldChanged(field)).length;
+
+    const originalTools = agent.tools_set;
+    const localTools = localAgent.tools_set;
+
+    Object.entries(originalTools).forEach(([key, tools]) => {
+      const localToolsForIntegration = localTools[key] || [];
+      count += tools.filter((tool) =>
+        !localToolsForIntegration.includes(tool)
+      ).length;
+      count +=
+        localToolsForIntegration.filter((tool) => !tools.includes(tool)).length;
+    });
+
+    Object.keys(localTools).forEach((key) => {
+      if (!originalTools[key]) {
+        count += localTools[key].length;
+      }
+    });
+
+    return count;
   };
 
   // Function to handle save
@@ -120,49 +156,52 @@ function App({ agentId }: { agentId: string }) {
     setIsDirty(true);
   };
 
-  const handleToolToggle = async (
+  const handleToolToggle = (
     integrationId: string,
     toolId: string,
     checked: boolean,
   ) => {
-    if (!agent) return;
+    if (!localAgent) return;
 
-    const currentTools = agent.tools_set[integrationId] || [];
+    const currentTools = localAgent.tools_set[integrationId] || [];
     const updatedTools = checked
       ? [...currentTools, toolId]
       : currentTools.filter((tool) => tool !== toolId);
 
-    await update({
-      ...agent,
+    setLocalAgent({
+      ...localAgent,
       tools_set: {
-        ...agent.tools_set,
+        ...localAgent.tools_set,
         [integrationId]: updatedTools,
       },
     });
+    setIsDirty(true);
   };
 
-  const setIntegrationTools = async (
+  const setIntegrationTools = (
     integrationId: string,
     tools: string[],
   ) => {
-    if (!agent) return;
+    if (!localAgent) return;
 
-    await update({
-      ...agent,
+    setLocalAgent({
+      ...localAgent,
       tools_set: {
-        ...agent.tools_set,
+        ...localAgent.tools_set,
         [integrationId]: tools,
       },
     });
+    setIsDirty(true);
   };
 
-  const handleResetIntegrations = async () => {
-    if (!agent) return;
+  const handleResetIntegrations = () => {
+    if (!localAgent) return;
 
-    await update({
-      ...agent,
+    setLocalAgent({
+      ...localAgent,
       tools_set: WELL_KNOWN_INITIAL_TOOLS_SET,
     });
+    setIsDirty(true);
   };
 
   const integrations = Object.keys(WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS)
@@ -189,7 +228,12 @@ function App({ agentId }: { agentId: string }) {
   }
 
   return (
-    <div className="bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700 pb-20">
+    <div
+      className={cn(
+        "bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700 relative rounded-xl",
+        isDirty ? "pb-32" : "pb-20",
+      )}
+    >
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="space-y-6">
           {/* Avatar Section */}
@@ -207,11 +251,7 @@ function App({ agentId }: { agentId: string }) {
                 value={localAgent?.name || ""}
                 onChange={(e) => handleUpdate({ name: e.target.value })}
                 placeholder="Enter agent name"
-                className={cn(
-                  inputStyles,
-                  hasFieldChanged("name") &&
-                    "border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.4)]",
-                )}
+                className={inputStyles}
               />
             </div>
 
@@ -221,12 +261,7 @@ function App({ agentId }: { agentId: string }) {
                 id="description"
                 value={localAgent?.description || ""}
                 onChange={(e) => handleUpdate({ description: e.target.value })}
-                className={cn(
-                  inputStyles,
-                  "min-h-36",
-                  hasFieldChanged("description") &&
-                    "border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.4)]",
-                )}
+                className={cn(inputStyles, "min-h-36")}
                 placeholder="Describe your agent's purpose"
               />
               <p className="text-sm text-slate-500">
@@ -241,11 +276,7 @@ function App({ agentId }: { agentId: string }) {
                 id="instructions"
                 value={localAgent?.instructions || ""}
                 onChange={(e) => handleUpdate({ instructions: e.target.value })}
-                className={`min-h-36 ${inputStyles} ${
-                  hasFieldChanged("instructions")
-                    ? "border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.4)]"
-                    : ""
-                }`}
+                className={cn(inputStyles, "min-h-36")}
                 placeholder="Enter the agent's system prompt"
               />
             </div>
@@ -297,11 +328,7 @@ function App({ agentId }: { agentId: string }) {
                 value={localAgent?.avatar || ""}
                 onChange={(e) => handleUpdate({ avatar: e.target.value })}
                 placeholder="Enter avatar URL"
-                className={`${inputStyles} ${
-                  hasFieldChanged("avatar")
-                    ? "border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.4)]"
-                    : ""
-                }`}
+                className={inputStyles}
               />
             </div>
 
@@ -321,6 +348,7 @@ function App({ agentId }: { agentId: string }) {
                       onToolToggle={handleToolToggle}
                       setIntegrationTools={setIntegrationTools}
                       agent={agent}
+                      localAgent={localAgent || agent}
                     />
                   ))}
                 </div>
@@ -353,18 +381,25 @@ function App({ agentId }: { agentId: string }) {
                 </AlertDialog>
               </div>
             </div>
-
-            {/* Save Button */}
-            {isDirty && (
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleSave}>
-                  Save Changes
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {isDirty && countChanges() > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t p-4 z-50 rounded-b-2xl">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
+            <div className="text-sm text-slate-600">
+              {countChanges()} change{countChanges() !== 1 ? "s" : ""} pending
+            </div>
+            <Button
+              onClick={handleSave}
+              className="shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-shadow"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ interface IntegrationProps {
     tools: string[],
   ) => void;
   agent: Agent;
+  localAgent?: Agent;
 }
 
 export function Integration(
@@ -26,21 +27,21 @@ export function Integration(
     onToolToggle,
     setIntegrationTools: _setIntegrationTools,
     agent,
+    localAgent,
   }: IntegrationProps,
 ) {
   const { data: toolsData, loading, error } = useTools(
     integration.connection,
   );
-  const enabledTools: string[] | undefined = integration
-    ? agent.tools_set[integration.id]
-    : [];
+  const enabledTools: string[] | undefined =
+    (localAgent || agent).tools_set[integration.id] || [];
 
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isAllSelected = useMemo(() => {
-    return toolsData.tools.length > 0 && (enabledTools &&
-          enabledTools.length === 0) ||
-      toolsData.tools.every((tool) => enabledTools?.includes(tool.name));
+    if (!toolsData.tools.length) return false;
+    if (!enabledTools || enabledTools.length === 0) return false;
+    return toolsData.tools.every((tool) => enabledTools.includes(tool.name));
   }, [toolsData, enabledTools]);
 
   const setIntegrationTools = useCallback((tools: string[]) => {

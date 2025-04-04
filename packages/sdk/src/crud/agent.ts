@@ -43,7 +43,11 @@ export const createAgent = async (
     instructions: "This agent has not been configured yet.",
     avatar: "", // You could add a default avatar path here if needed
     description: "A customizable AI assistant", // Default description
-    tools_set: WELL_KNOWN_INITIAL_TOOLS_SET,
+    tools_set: {
+      CORE: template.id === "teamAgent"
+        ? [...WELL_KNOWN_INITIAL_TOOLS_SET.CORE, "AGENT_CREATE"]
+        : WELL_KNOWN_INITIAL_TOOLS_SET.CORE,
+    },
     model: "anthropic:claude-3-7-sonnet-20250219", // Default model
     views: [{ url: "", name: "Chat" }],
     ...template,

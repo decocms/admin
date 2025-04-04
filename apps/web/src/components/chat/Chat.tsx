@@ -6,6 +6,7 @@ import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
 import { API_SERVER_URL } from "../../constants.ts";
+import { ScrollArea } from "../../../../../packages/ui/src/components/scroll-area.tsx";
 
 interface ChatProps {
   initialMessages?: Message[];
@@ -151,36 +152,14 @@ export function Chat({
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen">
+    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full">
       {/* Fixed Header */}
-      <div className="fixed top-0 inset-x-0 z-50">
-        <div className="w-full mx-auto bg-background">
-          <ChatHeader
-            agent={agent}
-          />
-        </div>
-      </div>
-
-      {/* Fixed Input */}
-      <div className="fixed bottom-0 inset-x-0 z-50">
-        <div className="w-full max-w-[800px] mx-auto bg-background">
-          {error && (
-            <div className="px-8 py-4 bg-destructive/10 text-destructive text-sm">
-              An error occurred. Please try again.
-            </div>
-          )}
-          <ChatInput
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSubmit={handleSubmit}
-            isLoading={status === "submitted" || status === "streaming"}
-            stop={stop}
-          />
-        </div>
+      <div className="w-full mx-auto">
+        <ChatHeader agent={agent} />
       </div>
 
       {/* Scrollable Messages */}
-      <div className="w-full max-w-[800px] mx-auto">
+      <div className="w-full max-w-[800px] mx-auto overflow-y-auto">
         <div className="pt-16">
           <div
             ref={containerRef}
@@ -195,6 +174,22 @@ export function Chat({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Fixed Input */}
+      <div className="w-full max-w-[800px] mx-auto bg-background">
+        {error && (
+          <div className="px-8 py-4 bg-destructive/10 text-destructive text-sm">
+            An error occurred. Please try again.
+          </div>
+        )}
+        <ChatInput
+          input={input}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          isLoading={status === "submitted" || status === "streaming"}
+          stop={stop}
+        />
       </div>
     </div>
   );

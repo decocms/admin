@@ -44,7 +44,7 @@ export function ChatHeader({
     <header className="bg-background relative flex justify-between items-center pl-4 py-3">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-          <AgentAvatar agent={agent} />
+          <AgentAvatar name={agent.name} avatar={agent.avatar} size="md" />
         </div>
         <h1 className="text-sm font-medium tracking-tight">{agent.name}</h1>
       </div>

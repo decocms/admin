@@ -195,7 +195,7 @@ function App({ agentId }: { agentId: string }) {
           {/* Avatar Section */}
           <div className="flex justify-center">
             <div className="h-20 w-20">
-              <AgentAvatar agent={agent} variant="xl" />
+              <AgentAvatar name={agent.name} avatar={agent.avatar} size="lg" />
             </div>
           </div>
 

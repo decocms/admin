@@ -151,23 +151,21 @@ function App({ agentId, threadId }: { agentId: string; threadId?: string }) {
   }
 
   return (
-    <div className="h-full bg-background">
-      <Chat
-        initialMessages={messages}
-        agent={agent}
-        updateAgent={update}
-        agentRoot={agentRoot}
-        threadId={threadId}
-      />
-    </div>
+    <Chat
+      initialMessages={messages}
+      agent={agent}
+      updateAgent={update}
+      agentRoot={agentRoot}
+      threadId={threadId}
+    />
   );
 }
 
-function Wrapper() {
+function Wrapper(props: { agentId?: string; threadId?: string }) {
   const params = useParams();
 
-  const agentId = params.id || crypto.randomUUID();
-  const threadId = params.threadId || agentId === "teamAgent"
+  const agentId = props.agentId || params.id || crypto.randomUUID();
+  const threadId = props.threadId || params.threadId || agentId === "teamAgent"
     ? `${Math.floor(Math.random() * 1e6)}`
     : undefined;
 

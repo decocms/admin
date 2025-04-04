@@ -1,4 +1,3 @@
-import type { Agent } from "@deco/sdk";
 import {
   Avatar as AvatarUI,
   AvatarFallback,
@@ -7,6 +6,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { type ReactNode, useMemo } from "react";
+import { User } from "../../stores/global.tsx";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -73,7 +73,7 @@ export function Avatar({
   const sizeClass = useMemo(() => {
     switch (size) {
       case "sm":
-        return "h-8 w-8";
+        return "h-4 w-4";
       case "lg":
         return "h-12 w-12";
       case "md":
@@ -110,42 +110,65 @@ export function Avatar({
 }
 
 export const AgentAvatar = (
-  { agent, variant = "lg" }: { agent?: Agent; variant?: "xl" | "lg" },
+  { name, avatar, size: variant = "lg" }: {
+    name?: string;
+    avatar?: string;
+    size?: "lg" | "md" | "sm";
+  },
 ) => {
-  if (!agent || agent.name === "Anonymous") {
+  if (!name || name === "Anonymous") {
     return (
       <div
         className={cn(
           "w-full h-full bg-gradient-to-b from-white to-slate-200 flex items-center justify-center border border-slate-200 overflow-hidden",
-          variant === "xl" && "rounded-xl",
-          variant === "lg" && "rounded-lg",
+          variant === "lg" && "rounded-xl",
+          variant === "md" && "rounded-lg",
+          variant === "sm" && "rounded-sm",
         )}
       >
         <Icon
           filled
           name="domino_mask"
           className="text-slate-600"
-          size={variant === "xl" ? 32 : 16}
+          size={variant === "lg" ? 32 : 16}
         />
       </div>
     );
   }
 
+  const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
+
   return (
     <Avatar
-      url={agent.avatar && /^(data:)|(https?:)/.test(agent.avatar)
-        ? agent.avatar
-        : undefined}
-      fallback={agent.avatar &&
-          !/^(data:)|(https?:)/.test(agent.avatar)
-        ? agent.avatar
-        : agent.name.substring(0, 2)}
-      size="sm"
+      url={isUrlLike ? avatar : undefined}
+      fallback={isUrlLike ? avatar : name.substring(0, 2)}
+      size={variant}
       className={cn(
         "w-full h-full",
-        variant === "xl" && "rounded-xl",
-        variant === "lg" && "rounded-lg",
+        variant === "lg" && "rounded-xl",
+        variant === "md" && "rounded-lg",
+        variant === "sm" && "rounded-sm",
       )}
     />
   );
 };
+
+export function UserAvatar(
+  { user, className, size = "md" }: {
+    user: User;
+    className?: string;
+    size?: "lg" | "md" | "sm";
+  },
+) {
+  return (
+    <Avatar
+      url={user.metadata.avatar_url}
+      fallback={user.metadata.full_name || "AN"}
+      size={size}
+      className={cn(
+        "w-full h-full rounded-full",
+        className,
+      )}
+    />
+  );
+}

@@ -17,6 +17,8 @@ import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { NotLoggedInError } from "../../hooks/data/useUser.ts";
 
 const STATIC_ITEMS = [
   {
@@ -58,7 +60,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader />
+      <ErrorBoundary shouldCatch={(error) => error instanceof NotLoggedInError}>
+        <SidebarHeader />
+      </ErrorBoundary>
 
       <SidebarContent>
         <SidebarGroup>

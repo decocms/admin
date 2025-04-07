@@ -4,7 +4,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect, useState } from "react";
 import { stub } from "../../utils/stub.ts";
 import { useAgentRoot, useFocusAgent } from "../agents/hooks.ts";
-import { useGlobalState } from "../../stores/global.tsx";
+import { useUser } from "../../hooks/data/useUser.ts";
 
 interface Thread {
   id: string;
@@ -55,6 +55,7 @@ const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
 function ThreadItem(
   { agentId, agent, thread }: { agentId: string; agent: Agent; thread: Thread },
 ) {
+  const user = useUser();
   const navigate = useFocusAgent();
   return (
     <button

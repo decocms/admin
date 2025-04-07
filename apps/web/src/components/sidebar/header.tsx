@@ -15,11 +15,11 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useGlobalState } from "../../stores/global.tsx";
 import { Avatar } from "../common/Avatar.tsx";
+import { useUser } from "../../hooks/data/useUser.ts";
 
 export function Header() {
-  const { state: { user } } = useGlobalState();
+  const user = useUser();
   const { state: { context } } = useRuntime();
   const { toggleSidebar, open } = useSidebar();
 

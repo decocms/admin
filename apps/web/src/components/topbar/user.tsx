@@ -10,7 +10,6 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { User } from "../../stores/global.tsx";
 import { UserAvatar } from "../common/Avatar.tsx";

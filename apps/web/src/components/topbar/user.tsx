@@ -10,11 +10,12 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { useGlobalState, User } from "../../stores/global.tsx";
+import { User } from "../../stores/global.tsx";
 import { UserAvatar } from "../common/Avatar.tsx";
 import { Image } from "../common/Image.tsx";
+import { AUTH_URL } from "../../constants.ts";
 
 const UserMenuHeader = (
   { user, title: titleProp }: { user: User; title?: React.ComponentType },
@@ -59,11 +60,16 @@ const UserMenuHeader = (
   );
 };
 
-export function UserMenu() {
-  const { state: { user } } = useGlobalState();
-  const isMobile = useIsMobile();
+function getLogoutUrl() {
+  const url = new URL(AUTH_URL);
+  url.pathname = "/auth/logout";
+  url.searchParams.set("next", globalThis.location.href);
+  return url.toString();
+}
 
-  if (!user) return null;
+export function UserMenu({ user }: { user: User }) {
+  const isMobile = useIsMobile();
+  const logoutUrl = getLogoutUrl();
 
   if (isMobile) {
     return (
@@ -102,7 +108,7 @@ export function UserMenu() {
           <DropdownMenuGroup className="mx-1">
             <DropdownMenuItem className="cursor-pointer">
               <a
-                href="/auth/logout"
+                href={logoutUrl}
                 className="flex items-center gap-2 leading-7 text-xs"
               >
                 <Icon name="logout" size={16} />

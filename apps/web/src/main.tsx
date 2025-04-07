@@ -13,6 +13,7 @@ import {
 import { Layout } from "./components/layout.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { GlobalStateProvider } from "./stores/global.tsx";
+import Login from "./components/login/index.tsx";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -105,6 +106,10 @@ function Router() {
           />
         </Route>
         <Route index element={<Navigate to={basename} replace />} />
+        <Route
+          path="login"
+          element={<Wrapper slot={<Login />} />}
+        />
         <Route
           path="*"
           element={<Wrapper slot={<NotFound />} />}

@@ -80,6 +80,8 @@
 @theme inline {
   --font-sans: "Inter", sans-serif;
 
+  --font-crimson-pro: "Crimson Pro", serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

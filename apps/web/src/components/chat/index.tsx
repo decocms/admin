@@ -28,9 +28,7 @@ const useMessages = (
           .new(agentRoot)
           .withMetadata({ threadId });
 
-        const messages = await agentStub.query({
-          threadId,
-        });
+        const messages = await agentStub.query();
 
         if (cancel) return;
 

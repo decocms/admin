@@ -106,9 +106,7 @@ function Agent(props: Props) {
   const params = useParams();
 
   const agentId = props.agentId || params.id || crypto.randomUUID();
-  const threadId = props.threadId || params.threadId || agentId === "teamAgent"
-    ? `${Math.floor(Math.random() * 1e6)}`
-    : undefined;
+  const threadId = props.threadId || params.threadId || crypto.randomUUID();
 
   const handleReady = useCallback((event: DockviewReadyEvent) => {
     setApi(event.api);

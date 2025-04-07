@@ -14,8 +14,9 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Avatar } from "../common/Avatar.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
+import { useGlobalState } from "../../stores/global.tsx";
+import { Avatar } from "../common/Avatar.tsx";
 
 export function Header() {
   const user = useUser();

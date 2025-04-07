@@ -2,9 +2,10 @@ import { type Agent, SDK, type SidebarStorage, toAgentRoot } from "@deco/sdk";
 import { useRuntime } from "@deco/sdk/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useBasePath } from "../../hooks/useBasePath.ts";
 
 // Helper to get agent URL
-const getAgentUrl = (agentId: string, threadId?: string): string =>
+const getAgentPath = (agentId: string, threadId?: string): string =>
   `/agent/${agentId}/${threadId ?? ""}`;
 
 // Helper to check if agent is pinned
@@ -33,21 +34,21 @@ export const useFocusAgent = () => {
   const { state: { context } } = useRuntime();
   const { pinAgent, isPinned } = useSidebarPinOperations();
   const navigate = useNavigate();
+  const withBasePath = useBasePath();
 
   const navigateToAgent = useCallback(
     (agentId: string, agent: Agent, threadId?: string) => {
-      const url = getAgentUrl(agentId, threadId);
+      const pathname = withBasePath(getAgentPath(agentId, threadId));
 
       // Navigate to the agent page
-      // SDK.os.navigate(url);
-      navigate(url);
+      navigate(pathname);
 
       // Pin the agent to the sidebar if provided
       if (!isPinned(agentId)) {
         pinAgent(agent);
       }
     },
-    [context, pinAgent],
+    [context, pinAgent, withBasePath],
   );
 
   return navigateToAgent;
@@ -62,7 +63,7 @@ export const useSidebarPinOperations = () => {
     (agent: Agent) => {
       if (!context?.root) return;
 
-      const agentUrl = getAgentUrl(agent.id);
+      const agentUrl = getAgentPath(agent.id);
       const isPinned = isAgentPinned(sidebarState, context, agentUrl);
 
       // Only pin if not already pinned
@@ -94,7 +95,7 @@ export const useSidebarPinOperations = () => {
     (agentId: string) => {
       if (!context?.root) return;
 
-      const agentUrl = getAgentUrl(agentId);
+      const agentUrl = getAgentPath(agentId);
       const index = getSidebarItemIndex(sidebarState, context, agentUrl);
 
       if (index !== -1) {
@@ -118,7 +119,7 @@ export const useSidebarPinOperations = () => {
     (agent: Agent) => {
       if (!context?.root) return;
 
-      const agentUrl = getAgentUrl(agent.id);
+      const agentUrl = getAgentPath(agent.id);
       const isPinned = isAgentPinned(sidebarState, context, agentUrl);
 
       if (isPinned) {
@@ -133,7 +134,7 @@ export const useSidebarPinOperations = () => {
   // Helper to check if an agent is pinned
   const isPinned = useCallback(
     (agentId: string): boolean => {
-      const agentUrl = getAgentUrl(agentId);
+      const agentUrl = getAgentPath(agentId);
       return isAgentPinned(sidebarState, context, agentUrl);
     },
     [context, sidebarState],

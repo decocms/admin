@@ -3,7 +3,13 @@ import { SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { lazy, ReactNode, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router";
 import { Layout } from "./components/layout.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { GlobalStateProvider } from "./stores/global.tsx";
@@ -46,7 +52,7 @@ function NotFound() {
   const location = useLocation();
 
   return (
-    <div className="h-full w-full flex items-center justify-center">
+    <div className="h-full w-full flex flex-col items-center justify-center">
       <h1>Not Found</h1>
       <p>The path {location.pathname} was not found.</p>
     </div>
@@ -66,11 +72,13 @@ function ErrorFallback() {
 
 function Router() {
   const { state: { context } } = useRuntime();
+  const root = context?.root ?? "";
+  const basename = root.startsWith("/") ? root.slice(1) : root;
 
   return (
-    <BrowserRouter basename={context?.root}>
+    <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
+        <Route path={basename} element={<Layout />}>
           <Route
             index
             element={<Wrapper slot={<AgentDetail agentId="teamAgent" />} />}
@@ -95,19 +103,16 @@ function Router() {
             path="integration/:id"
             element={<Wrapper slot={<IntegrationEdit />} />}
           />
-          <Route
-            path="*"
-            element={<Wrapper slot={<NotFound />} />}
-          />
         </Route>
+        <Route index element={<Navigate to={basename} replace />} />
+        <Route
+          path="*"
+          element={<Wrapper slot={<NotFound />} />}
+        />
       </Routes>
     </BrowserRouter>
   );
 }
-
-const ThreadsList = lazy(
-  () => import("./components/threads/index.tsx"),
-);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -14,6 +14,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { ReactNode } from "react";
 import { Link, useMatch } from "react-router";
+import { useBasePath } from "../../hooks/useBasePath.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 
@@ -53,6 +54,7 @@ const WithActive = (
 export function AppSidebar() {
   const { state: { sidebarState, context } } = useRuntime();
   const items = sidebarState?.[context?.root ?? ""] ?? [];
+  const withBasePath = useBasePath();
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -63,16 +65,18 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {STATIC_ITEMS.map((item) => {
+                const href = withBasePath(item.url);
+
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <WithActive to={item.url}>
+                    <WithActive to={href}>
                       {({ isActive }) => (
                         <SidebarMenuButton
                           asChild
                           isActive={isActive}
                           tooltip={item.title}
                         >
-                          <Link to={item.url}>
+                          <Link to={href}>
                             <Icon name={item.icon} filled={isActive} />
                             <span>{item.title}</span>
                           </Link>
@@ -93,16 +97,18 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {items.map((item) => {
+                    const href = withBasePath(item.href);
+
                     return (
                       <SidebarMenuItem key={item.href}>
-                        <WithActive to={item.href}>
+                        <WithActive to={href}>
                           {({ isActive }) => (
                             <SidebarMenuButton
                               asChild
                               isActive={isActive}
                               tooltip={item.label}
                             >
-                              <Link to={item.href}>
+                              <Link to={href}>
                                 <div className="aspect-square w-4 h-4">
                                   <AgentAvatar
                                     name={item.label}

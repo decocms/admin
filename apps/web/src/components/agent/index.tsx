@@ -146,14 +146,14 @@ function Agent(props: Props) {
   return (
     <DockviewReact
       key={agentId}
-      gap={6}
       components={COMPONENTS}
       tabComponents={TAB_COMPONENTS}
       defaultTabComponent={TAB_COMPONENTS.default}
       onReady={handleReady}
-      className="h-full w-full dockview-theme-abyss"
+      className="h-full w-full dockview-theme-abyss deco-dockview-container"
       singleTabMode="fullwidth"
       disableDnd
+      hideBorders
     />
   );
 }

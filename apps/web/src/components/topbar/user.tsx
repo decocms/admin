@@ -54,13 +54,6 @@ const UserMenuHeader = (
             {user.email}
           </span>
         </div>
-
-        <a
-          className="hover:underline text-[#157BF4] text-xs"
-          href={`/user/${user.metadata?.username}`}
-        >
-          Show profile
-        </a>
       </div>
     </DropdownMenuLabel>
   );

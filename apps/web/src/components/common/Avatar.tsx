@@ -1,12 +1,11 @@
 import {
-  Avatar as AvatarUI,
   AvatarFallback,
   AvatarImage,
+  Avatar as AvatarUI,
 } from "@deco/ui/components/avatar.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type ReactNode, useMemo } from "react";
-import { User } from "../../stores/global.tsx";
+import { HTMLAttributes, type ReactNode, useMemo } from "react";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -40,7 +39,7 @@ function getColorFromString(input: string): string {
   return AVATAR_COLORS[index];
 }
 
-export interface AvatarProps {
+export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * The URL of the avatar image
    */
@@ -62,6 +61,7 @@ export function Avatar({
   url,
   fallback,
   className,
+  ...props
 }: AvatarProps) {
   // Extract initials from string fallback (first two characters)
   const fallbackContent = useMemo(() => {
@@ -81,7 +81,7 @@ export function Avatar({
   }, [fallback]);
 
   return (
-    <AvatarUI className={cn(className)}>
+    <AvatarUI className={cn(className)} {...props}>
       {url && <AvatarImage src={url} alt="Avatar" />}
       <AvatarFallback className={cn(fallbackColor, "rounded-2xl")}>
         {fallbackContent}

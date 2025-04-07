@@ -90,28 +90,28 @@ export function Header() {
 
           <SidebarMenuButton asChild>
             <Button
+              data-open={open}
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
               className="w-auto aspect-square hover:bg-accent rounded-full group"
             >
+              {/* TODO (@gimenes): we should use better CSS selectors instead of JS in here */}
               <Icon
-                data-open={open}
                 name="dock_to_right"
                 className={cn(
                   "text-xs",
-                  `data-[open="false"]:!hidden group-hover:inline-block`,
+                  open ? "!inline-block" : "!hidden group-hover:!inline-block",
                 )}
                 size={18}
               />
 
               <Avatar
-                data-open={open}
                 url={currentAvatarURL}
                 fallback={currentName}
                 className={cn(
                   "w-6 h-6",
-                  `data-[open="true"]:!hidden group-hover:hidden`,
+                  open ? "hidden" : "inline-block group-hover:hidden",
                 )}
               />
             </Button>

@@ -1,8 +1,8 @@
 import { type Agent, SDK, type SidebarStorage, toAgentRoot } from "@deco/sdk";
-import { useRuntime } from "@deco/sdk/hooks";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useGlobalState } from "../../stores/global.tsx";
 
 // Helper to get agent URL
 const getAgentPath = (agentId: string, threadId?: string): string =>
@@ -31,7 +31,7 @@ const getSidebarItemIndex = (
 };
 
 export const useFocusAgent = () => {
-  const { state: { context } } = useRuntime();
+  const { state: { context } } = useGlobalState();
   const { pinAgent, isPinned } = useSidebarPinOperations();
   const navigate = useNavigate();
   const withBasePath = useBasePath();
@@ -56,7 +56,7 @@ export const useFocusAgent = () => {
 
 // Custom hook for sidebar pin operations
 export const useSidebarPinOperations = () => {
-  const { state: { context, sidebarState }, dispatch } = useRuntime();
+  const { state: { context, sidebarState }, dispatch } = useGlobalState();
 
   // Function to pin an agent to the sidebar
   const pinAgent = useCallback(

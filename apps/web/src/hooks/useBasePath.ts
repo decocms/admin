@@ -1,5 +1,5 @@
-import { useRuntime } from "@deco/sdk/hooks";
 import { useCallback } from "react";
+import { useGlobalState } from "../stores/global.tsx";
 
 /**
  * Adds the right context to the pathname, i.e.
@@ -8,7 +8,7 @@ import { useCallback } from "react";
  * If you are on the context of /shared/<teadId>, it will add the /shared/teamId to it
  */
 export const useBasePath = () => {
-  const { state: { context } } = useRuntime();
+  const { state: { context } } = useGlobalState();
 
   const withBasePath = useCallback(
     (path: string) => {
@@ -16,7 +16,8 @@ export const useBasePath = () => {
       const rootWithStartingSlash = root.startsWith("/") ? root : `/${root}`;
       const pathWithStartingSlash = path.startsWith("/") ? path : `/${path}`;
 
-      return `${rootWithStartingSlash}${pathWithStartingSlash}`;
+      return `${rootWithStartingSlash}${pathWithStartingSlash}`
+        .replace(/\/$/g, ""); // removes ending slash
     },
     [context],
   );

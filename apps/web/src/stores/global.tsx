@@ -1,6 +1,6 @@
-import { useRuntime } from "@deco/sdk/hooks";
 import { createStore } from "@deco/store";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode } from "react";
+import { useLocation } from "react-router";
 
 export interface User {
   id: string;
@@ -35,20 +35,60 @@ export interface SidebarStorage {
   [context: string]: NavItem[];
 }
 
+type Context = {
+  type: "team";
+  slug: string;
+  root: string;
+} | {
+  type: "user";
+  root: string;
+  slug?: undefined;
+};
+
 export interface State {
-  context?: {
-    root: string;
-    type: string;
-  };
+  context?: Context;
   sidebarState?: SidebarStorage;
+  storage?: any;
 }
 
-const { Provider, useStore } = createStore<State>({
-  // middlewares: {
-  //   sidebarState: (nextState) => {
+const sidebar = {
+  write: async (state: SidebarStorage, fs: any, user: User) => {
+    await fs.mkdir(`/users/${user.id}/.config`, { recursive: true })
+      .catch((e: any) => console.error(e));
 
-  //   },
-  // },
+    await fs.writeFile(
+      `/users/${user.id}/.config/sidebar.json`,
+      JSON.stringify(state),
+    );
+  },
+  read: async (fs: any, user: User) => {
+    const path = `/users/${user.id}/.config/sidebar.json`;
+
+    try {
+      const data = await fs.readFile(path, "utf8");
+      return JSON.parse(data);
+    } catch (e) {
+      console.error(e);
+
+      return {};
+    }
+  },
+};
+
+const { Provider, useStore } = createStore<State>({
+  middlewares: {
+    // sidebarState: async (nextState) => {
+    //   // const { storage, sidebarState } = nextState;
+
+    //   // if (!storage) {
+    //   //   return nextState;
+    //   // }
+
+    //   // await sidebar.write(sidebarState, storage);
+
+    //   // return nextState;
+    // },
+  },
   initializer: (props) => props,
 });
 
@@ -56,11 +96,33 @@ function StoreEffects() {
   return null;
 }
 
+const useContext = () => {
+  const { pathname } = useLocation();
+
+  const match = pathname.match(/^\/shared\/(.+)/);
+  const teamSlug = match ? match[1].split("/")[0] : undefined;
+
+  if (teamSlug) {
+    return {
+      type: "team" as const,
+      slug: teamSlug,
+      root: `/shared/${teamSlug}`,
+    };
+  }
+
+  return {
+    type: "user" as const,
+    root: "/~",
+  };
+};
+
 export function GlobalStateProvider(
   { children }: { children: ReactNode },
 ) {
+  const context = useContext();
+
   return (
-    <Provider>
+    <Provider context={context}>
       <StoreEffects />
       {children}
     </Provider>

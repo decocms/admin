@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@zenfs/core": "^2.0.0",
     "dockview-react": "^4.2.1",
     "react": "^19.1.0",
     "zod": "^3.24.2"

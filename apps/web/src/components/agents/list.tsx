@@ -1,11 +1,6 @@
 import type { Agent } from "@deco/sdk";
 import { createAgent } from "@deco/sdk/crud";
-import {
-  useAgent,
-  useAgents,
-  useIntegration,
-  useRuntime,
-} from "@deco/sdk/hooks";
+import { useAgent, useAgents, useIntegration } from "@deco/sdk/hooks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +30,10 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useReducer, useState } from "react";
 import { useNavigate } from "react-router";
-import { useFocusAgent, useSidebarPinOperations } from "./hooks.ts";
+import { useGlobalState } from "../../stores/global.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
+import { useFocusAgent, useSidebarPinOperations } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -121,8 +117,7 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
   const focusAgent = useFocusAgent();
   const { togglePin, unpinAgent, isPinned } = useSidebarPinOperations();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
-  const { state } = useRuntime();
-  const { context } = state;
+  const { state: { context } } = useGlobalState();
 
   // Return loading state while fetching agent data
   if (loading || !agent) {

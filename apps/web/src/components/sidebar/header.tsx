@@ -1,4 +1,3 @@
-import { useRuntime } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -20,7 +19,7 @@ import { useUser } from "../../hooks/data/useUser.ts";
 
 export function Header() {
   const user = useUser();
-  const { state: { context } } = useRuntime();
+  const { state: { context } } = useGlobalState();
   const { toggleSidebar, open } = useSidebar();
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;

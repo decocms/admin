@@ -1,4 +1,3 @@
-import { useRuntime } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -15,6 +14,7 @@ import {
 import { ReactNode } from "react";
 import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useGlobalState } from "../../stores/global.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
@@ -54,7 +54,7 @@ const WithActive = (
 };
 
 export function AppSidebar() {
-  const { state: { sidebarState, context } } = useRuntime();
+  const { state: { sidebarState, context } } = useGlobalState();
   const items = sidebarState?.[context?.root ?? ""] ?? [];
   const withBasePath = useBasePath();
 

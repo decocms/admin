@@ -63,7 +63,7 @@ export function RichTextArea({
     editorProps: {
       attributes: {
         class: cn(
-          "w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4 text-sm leading-[1.2] rounded-t-2xl",
+          "w-full outline-none min-h-[48px] max-h-[164px] overflow-y-auto p-4  leading-[1.2] rounded-t-2xl",
           disabled && "opacity-100 text-muted-foreground",
           className,
         ),

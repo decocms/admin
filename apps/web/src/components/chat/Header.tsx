@@ -65,29 +65,34 @@ export function ChatHeader({
         <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
           <AgentAvatar agent={agent} />
         </div>
-        <h1 className="text-sm font-medium tracking-tight">{agent.name}</h1>
+        <h1 className="font-medium tracking-tight">{agent.name}</h1>
       </div>
       <div className="ml-auto flex items-center gap-1.5 pr-3">
         <Button
           onClick={handleThreads}
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full hover:bg-muted"
+          className="h-10 w-10 rounded-full hover:bg-muted"
           aria-label="Threads"
         >
           <Icon
             name="manage_search"
-            className="text-md text-muted-foreground"
+            size={20}
+            className="text-muted-foreground"
           />
         </Button>
         <Button
           onClick={handleSettings}
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full hover:bg-muted"
+          className="h-10 w-10 rounded-full hover:bg-muted"
           aria-label="Start new chat"
         >
-          <Icon name="settings" className="text-md text-muted-foreground" />
+          <Icon
+            name="settings"
+            size={20}
+            className="text-muted-foreground"
+          />
         </Button>
       </div>
     </header>

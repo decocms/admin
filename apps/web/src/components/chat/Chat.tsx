@@ -1,11 +1,13 @@
 import { type Message, useChat } from "@ai-sdk/react";
 import type { Agent } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { API_SERVER_URL } from "../../constants.ts";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
-import { API_SERVER_URL } from "../../constants.ts";
 
 interface ChatProps {
   initialMessages?: Message[];
@@ -22,10 +24,12 @@ interface ChatMessagesProps {
     toolCallId: string,
     selectedValue: string,
   ) => Promise<void>;
+  error?: Error;
+  onRetry?: (context?: string[]) => void;
 }
 
 function ChatMessages(
-  { messages, status, handlePickerSelect }: ChatMessagesProps,
+  { messages, status, handlePickerSelect, error, onRetry }: ChatMessagesProps,
 ) {
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -40,6 +44,35 @@ function ChatMessages(
           />
         </div>
       ))}
+      {error && (
+        <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
+          <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
+            <Icon name="info" className="h-4 w-4" />
+            <p>An error occurred while generating the response.</p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
+                onClick={() => {
+                  onRetry?.([
+                    JSON.stringify({
+                      type: "error",
+                      message: error.message,
+                      name: error.name,
+                      stack: error.stack,
+                    }),
+                    "The previous attempt resulted in an error. I'll try to address the error and provide a better response."
+                  ]);
+                }}
+              >
+                <Icon name="refresh" />
+                Retry
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       {(status === "streaming" || status === "submitted") && (
         <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 text-muted-foreground ml-4">
           <span className="inline-flex items-center gap-1">
@@ -150,6 +183,17 @@ export function Chat({
     }
   };
 
+  const handleRetry = async (context?: string[]) => {
+    const lastUserMessage = messages.findLast(msg => msg.role === 'user');
+    if (!lastUserMessage) return;
+
+    await append({
+      content: lastUserMessage.content,
+      role: "user",
+      annotations: context || [],
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen max-h-screen">
       {/* Fixed Header */}
@@ -164,11 +208,6 @@ export function Chat({
       {/* Fixed Input */}
       <div className="fixed bottom-0 inset-x-0 z-50">
         <div className="w-full max-w-[800px] mx-auto bg-background">
-          {error && (
-            <div className="px-8 py-4 bg-destructive/10 text-destructive text-sm">
-              An error occurred. Please try again.
-            </div>
-          )}
           <ChatInput
             input={input}
             handleInputChange={handleInputChange}
@@ -191,6 +230,8 @@ export function Chat({
                 messages={messages}
                 status={status as "streaming" | "submitted" | "ready" | "idle"}
                 handlePickerSelect={handlePickerSelect}
+                error={error}
+                onRetry={handleRetry}
               />
             )}
           </div>

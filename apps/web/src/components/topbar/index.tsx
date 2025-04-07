@@ -40,7 +40,10 @@ export function Topbar() {
 
       <div className="justify-self-end flex items-center">
         <Suspense fallback={<LoginButton.Skeleton />}>
-          <ErrorBoundary shouldCatch={(error) => error instanceof NotLoggedInError} fallback={<LoginButton />}>
+          <ErrorBoundary
+            shouldCatch={(error) => error instanceof NotLoggedInError}
+            fallback={<LoginButton />}
+          >
             <UserMenu />
           </ErrorBoundary>
         </Suspense>

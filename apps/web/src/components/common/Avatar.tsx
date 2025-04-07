@@ -1,7 +1,7 @@
 import {
+  Avatar as AvatarUI,
   AvatarFallback,
   AvatarImage,
-  Avatar as AvatarUI,
 } from "@deco/ui/components/avatar.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";

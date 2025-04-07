@@ -36,7 +36,6 @@ export interface SidebarStorage {
 }
 
 export interface State {
-  user?: User;
   context?: {
     root: string;
     type: string;
@@ -54,17 +53,6 @@ const { Provider, useStore } = createStore<State>({
 });
 
 function StoreEffects() {
-  const { dispatch } = useGlobalState();
-  const { state: { user } } = useRuntime() as any;
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    dispatch({ type: "update-user", payload: user });
-  }, [user]);
-
   return null;
 }
 

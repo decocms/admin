@@ -2,10 +2,10 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Link } from "react-router";
-import { User } from "../../stores/global.tsx";
-import { UserMenu } from "./user.tsx";
-import { AUTH_URL } from "../../constants.ts";
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
+import { UserMenu as UserMenuInner } from "./user.tsx";
+import { NotLoggedInError, useUser } from "../../hooks/data/useUser.ts";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 
 function LoginButton() {
   const to = `/login?next=${globalThis?.location?.href}`;
@@ -20,36 +20,18 @@ function LoginButton() {
   );
 }
 
-function useUser() {
-  const [user, setUser] = useState<User | null>(null);
+LoginButton.Skeleton = () => (
+  <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-4 py-2 gap-2">
+    <span className="w-24 h-8"></span>
+  </div>
+);
 
-  useEffect(() => {
-    let cancel = false;
-    const fetchUser = async () => {
-      const response = await fetch(`${AUTH_URL}/api/user`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (!cancel) {
-          setUser(data);
-        }
-      }
-    };
-
-    fetchUser().catch(console.error);
-
-    return () => {
-      cancel = true;
-    };
-  }, []);
-
-  return user;
+function UserMenu() {
+  const user = useUser();
+  return <UserMenuInner user={user} />;
 }
 
 export function Topbar() {
-  const user = useUser();
-
   return (
     <header
       className={cn("w-full h-10 min-h-10", "grid grid-cols-2 items-center")}
@@ -57,7 +39,11 @@ export function Topbar() {
       <div />
 
       <div className="justify-self-end flex items-center">
-        {user ? <UserMenu user={user} /> : <LoginButton />}
+        <Suspense fallback={<LoginButton.Skeleton />}>
+          <ErrorBoundary shouldCatch={(error) => error instanceof NotLoggedInError} fallback={<LoginButton />}>
+            <UserMenu />
+          </ErrorBoundary>
+        </Suspense>
       </div>
     </header>
   );

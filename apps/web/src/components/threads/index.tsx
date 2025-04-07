@@ -55,7 +55,6 @@ const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
 function ThreadItem(
   { agentId, agent, thread }: { agentId: string; agent: Agent; thread: Thread },
 ) {
-  const { state: { user } } = useGlobalState();
   const navigate = useFocusAgent();
   return (
     <button

@@ -106,7 +106,7 @@ export function UserMenu({ user }: { user: User }) {
 
           <DropdownMenuSeparator />
           <DropdownMenuGroup className="mx-1">
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem className="cursor-pointer" asChild>
               <a
                 href={logoutUrl}
                 className="flex items-center gap-2 leading-7 text-xs"

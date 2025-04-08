@@ -152,7 +152,11 @@ function Inspector({ connection }: InspectorProps) {
             <div>
               <div className="text-sm text-muted-foreground">Status</div>
               <div className="text-2xl font-bold">
-                {tools.isLoading ? "Loading..." : tools.error ? "Error" : "Ready"}
+                {tools.isLoading
+                  ? "Loading..."
+                  : tools.error
+                  ? "Error"
+                  : "Ready"}
               </div>
             </div>
             {tools.data.version && (

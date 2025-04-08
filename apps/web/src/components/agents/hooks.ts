@@ -1,7 +1,4 @@
-import {
-  type Agent,
-  type SidebarStorage
-} from "@deco/sdk";
+import { type Agent, type SidebarStorage } from "@deco/sdk";
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";

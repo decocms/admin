@@ -169,22 +169,24 @@ type IntegrationFormProps = {
 };
 
 function IntegrationForm({ integration, onSuccess }: IntegrationFormProps) {
-  const { mutate: createIntegration, isPending: isCreating } = useCreateIntegration();
-  const { mutate: updateIntegration, isPending: isUpdating } = useUpdateIntegration();
+  const { mutate: createIntegration, isPending: isCreating } =
+    useCreateIntegration();
+  const { mutate: updateIntegration, isPending: isUpdating } =
+    useUpdateIntegration();
   const isSubmitting = isCreating || isUpdating;
 
   const form = useForm<IntegrationFormData>({
     defaultValues: integration
       ? {
-          name: integration.name,
-          description: integration.description,
-          connection: integration.connection,
-        }
+        name: integration.name,
+        description: integration.description,
+        connection: integration.connection,
+      }
       : {
-          name: "",
-          description: "",
-          connection: { type: "HTTP", url: "" },
-        },
+        name: "",
+        description: "",
+        connection: { type: "HTTP", url: "" },
+      },
   });
 
   const onSubmit = async (data: IntegrationFormData) => {
@@ -261,6 +263,7 @@ export {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage, IntegrationForm, useFormField
+  FormMessage,
+  IntegrationForm,
+  useFormField,
 };
-

@@ -27,10 +27,13 @@ export const useCreateIntegration = () => {
       client.setQueryData(key, result);
 
       // update list
-      client.setQueryData(getKeyFor(context), (old: Integration[] | undefined) => {
-        if (!old) return [result];
-        return [...old, result];
-      });
+      client.setQueryData(
+        getKeyFor(context),
+        (old: Integration[] | undefined) => {
+          if (!old) return [result];
+          return [...old, result];
+        },
+      );
 
       // invalidate list
       client.invalidateQueries({ queryKey: getKeyFor(context) });
@@ -57,9 +60,7 @@ export const useUpdateIntegration = () => {
       // Optimistically update the cache
       client.setQueryData(getKeyFor(root), (old: Integration[] | undefined) => {
         if (!old) return [updatedMCP];
-        return old.map((mcp) =>
-          mcp.id === updatedMCP.id ? updatedMCP : mcp
-        );
+        return old.map((mcp) => mcp.id === updatedMCP.id ? updatedMCP : mcp);
       });
 
       // Update the individual MCP in cache

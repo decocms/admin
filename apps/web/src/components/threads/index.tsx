@@ -67,10 +67,13 @@ function ThreadItem(
 }
 
 function App({ agentId }: { agentId: string }) {
-  const { data: agent, error } = useAgent(agentId);
-  const { data: threads } = useThreads(agentId);
+  const { data: agent, error: agentError, isLoading: agentLoading } = useAgent(
+    agentId,
+  );
+  const { data: threads, error: threadsError, isLoading: threadsLoading } =
+    useThreads(agentId);
 
-  if (!agent || !threads) {
+  if (agentLoading || threadsLoading) {
     return (
       <div className="h-full bg-background flex flex-col items-center justify-center">
         <div className="relative">
@@ -80,7 +83,8 @@ function App({ agentId }: { agentId: string }) {
     );
   }
 
-  if (error) {
+  if (agentError || threadsError) {
+    const error = agentError || threadsError;
     return (
       <div>
         Error loading agent: {typeof error === "object" && error !== null

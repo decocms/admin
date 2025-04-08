@@ -93,7 +93,8 @@ function AvailableIntegrationCard(
     integration: RegistryIntegration;
   },
 ) {
-  const { mutate: createIntegrationMutation, isPending: isCreating } = useCreateIntegration();
+  const { mutate: createIntegrationMutation, isPending: isCreating } =
+    useCreateIntegration();
   const { mutate: installIntegration, isPending: isInstalling } = useInstall();
 
   const isPending = isInstalling || isCreating;

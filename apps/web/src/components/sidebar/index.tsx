@@ -85,6 +85,8 @@ function extractAgentId(obj: { resourceId: string }): string | null {
   return formatted;
 }
 
+// TODO(@camudo): please change this later to get agent and thread id from metadata
+// so i dont have to do this weird stuff
 function buildThreadUrl(thread: Thread): string {
   const agentId = extractAgentId(thread);
   const threadId = extractThreadId(thread);

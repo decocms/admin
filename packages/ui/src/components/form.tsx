@@ -1,20 +1,26 @@
 "use client";
 
-import * as React from "react";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
+import * as React from "react";
 import {
   Controller,
   type ControllerProps,
   type FieldPath,
   type FieldValues,
   FormProvider,
+  useForm,
   useFormContext,
   useFormState,
 } from "react-hook-form";
 
-import { cn } from "@deco/ui/lib/utils.ts";
+import type { Integration } from "@deco/sdk";
+import { useCreateIntegration, useUpdateIntegration } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 
 const Form = FormProvider;
 
@@ -154,6 +160,100 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   );
 }
 
+type IntegrationFormData = Omit<Integration, "id" | "icon">;
+
+// Integration Form Component
+type IntegrationFormProps = {
+  integration?: Integration;
+  onSuccess?: () => void;
+};
+
+function IntegrationForm({ integration, onSuccess }: IntegrationFormProps) {
+  const { mutate: createIntegration, isPending: isCreating } = useCreateIntegration();
+  const { mutate: updateIntegration, isPending: isUpdating } = useUpdateIntegration();
+  const isSubmitting = isCreating || isUpdating;
+
+  const form = useForm<IntegrationFormData>({
+    defaultValues: integration
+      ? {
+          name: integration.name,
+          description: integration.description,
+          connection: integration.connection,
+        }
+      : {
+          name: "",
+          description: "",
+          connection: { type: "HTTP", url: "" },
+        },
+  });
+
+  const onSubmit = async (data: IntegrationFormData) => {
+    try {
+      if (integration) {
+        await updateIntegration({ ...integration, ...data });
+      } else {
+        await createIntegration({ ...data, id: crypto.randomUUID() });
+      }
+      onSuccess?.();
+    } catch (error) {
+      // Error handling is managed by React Query
+      console.error("Form submission error:", error);
+    }
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="connection.url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Connection URL</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : integration ? "Update" : "Create"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
 export {
   Form,
   FormControl,
@@ -161,6 +261,6 @@ export {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-  useFormField,
+  FormMessage, IntegrationForm, useFormField
 };
+

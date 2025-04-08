@@ -1,10 +1,9 @@
+import { type Integration, useInstall } from "@deco/sdk";
 import {
-  createIntegration,
-  deleteIntegration,
-  type Integration,
-  SDK,
+  useCreateIntegration,
+  useIntegrations,
+  useRemoveIntegration,
 } from "@deco/sdk";
-import { useIntegration, useIntegrations } from "@deco/sdk/hooks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,8 +19,9 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type ChangeEvent, useMemo, useReducer, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { type ChangeEvent, useMemo, useReducer, useRef } from "react";
+import { Link, useNavigate } from "react-router";
+import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import registryIntegrations from "../registry.json" with { type: "json" };
 
@@ -33,52 +33,14 @@ type RegistryIntegration = Omit<Integration, "connection"> & {
 
 // Integration Card Component
 function IntegrationCard({
-  integrationId,
+  integration,
   onConfigure,
   onDelete,
-  filter = "",
 }: {
-  integrationId: string;
+  integration: Integration;
   onConfigure: (integration: Integration) => void;
   onDelete: (integrationId: string) => void;
-  filter?: string;
 }) {
-  const { data: integration, loading, error } = useIntegration(integrationId);
-
-  // If the integration is loaded and doesn't match the filter, return null
-  if (!loading && integration && filter) {
-    const matchesFilter = integration.name.toLowerCase().includes(
-      filter.toLowerCase(),
-    );
-    if (!matchesFilter) {
-      return null;
-    }
-  }
-
-  // Return loading state
-  if (loading) {
-    return (
-      <Card className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
-        <CardContent className="p-4 flex items-center justify-center h-[166px]">
-          <Spinner />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Return error state
-  if (error || !integration) {
-    return (
-      <Card className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
-        <CardContent className="p-4">
-          <p className="text-destructive">
-            Invalid integration: {integrationId}
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card
       className="shadow-sm group cursor-pointer hover:shadow-md transition-shadow rounded-2xl"
@@ -108,7 +70,7 @@ function IntegrationCard({
             className="hidden group-hover:inline-flex hover:text-destructive focus:bg-destructive/10 focus:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(integrationId);
+              onDelete(integration.id);
             }}
           >
             <Icon name="delete" />
@@ -131,32 +93,28 @@ function AvailableIntegrationCard(
     integration: RegistryIntegration;
   },
 ) {
-  const [installing, setInstalling] = useState(false);
+  const { mutate: createIntegrationMutation, isPending: isCreating } = useCreateIntegration();
+  const { mutate: installIntegration, isPending: isInstalling } = useInstall();
 
-  const handleInstall = async () => {
-    if (installing) return;
+  const isPending = isInstalling || isCreating;
 
-    try {
-      setInstalling(true);
+  const handleInstall = () => {
+    installIntegration(integration.id, {
+      onSuccess: async (data) => {
+        if (typeof data.installation !== "string") {
+          throw new Error("Failed to install integration");
+        }
 
-      const response = await SDK.mcps.install(integration.id);
-
-      if (typeof response.installation !== "string") {
-        throw new Error("Failed to install integration");
-      }
-
-      const installation = response.installation;
-
-      // Create the integration using the SDK
-      await createIntegration({
-        ...integration,
-        connection: { type: "SSE", url: installation },
-      });
-    } catch (error) {
-      console.error("Error installing integration:", error);
-    } finally {
-      setInstalling(false);
-    }
+        // Create the integration using the SDK
+        await createIntegrationMutation({
+          ...integration,
+          connection: { type: "SSE", url: data.installation },
+        });
+      },
+      onError: (error) => {
+        console.error("Error installing integration:", error);
+      },
+    });
   };
 
   return (
@@ -173,11 +131,11 @@ function AvailableIntegrationCard(
           <div>
             <Button
               variant="secondary"
-              disabled={installing}
+              disabled={isPending}
               onClick={handleInstall}
               className="text-xs"
             >
-              {installing ? "Connecting..." : "Connect"}
+              {isPending ? "Connecting..." : "Connect"}
             </Button>
           </div>
         </div>
@@ -279,7 +237,9 @@ function listReducer(state: ListState, action: ListAction): ListState {
 export default function List() {
   const availableIntegrationsSection = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(listReducer, initialState);
+  const withBasePath = useBasePath();
   const navigate = useNavigate();
+  const { mutate: removeIntegration } = useRemoveIntegration();
   const {
     filter,
     registryFilter,
@@ -290,7 +250,7 @@ export default function List() {
   } = state;
 
   // Use SDK's useIntegrations hook to get all integrations
-  const { items: installedIntegrations, loading } = useIntegrations();
+  const { data: installedIntegrations } = useIntegrations();
 
   // Get unique categories from registry
   const categories = useMemo(() => {
@@ -329,14 +289,19 @@ export default function List() {
     return filtered;
   }, [registryFilter, selectedCategories]);
 
-  // Function to handle creating a new integration
-  const handleCreate = () => {
-    navigate("/integration/new");
-  };
+  // Filter installed integrations based on the filter text
+  const filteredIntegrations = useMemo(() => {
+    if (!installedIntegrations) return [];
+    if (!filter) return installedIntegrations;
+
+    return installedIntegrations.filter((integration) =>
+      integration.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [installedIntegrations, filter]);
 
   // Function to handle configuring/editing an existing integration
   const handleConfigure = (integration: Integration) => {
-    navigate(`/integration/${integration.id}`);
+    navigate(withBasePath(`/integration/${integration.id}`));
   };
 
   // Function to handle delete confirmation
@@ -345,14 +310,14 @@ export default function List() {
   };
 
   // Function to handle actual deletion
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!integrationToDelete) return;
 
     try {
       dispatch({ type: "DELETE_START" });
 
-      // Use the integration id for deletion
-      await deleteIntegration(integrationToDelete);
+      // Use the removeIntegration mutation from the hook
+      removeIntegration(integrationToDelete);
     } catch (error) {
       console.error("Error deleting integration:", error);
     } finally {
@@ -380,19 +345,21 @@ export default function List() {
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               dispatch({ type: "SET_FILTER", payload: e.target.value })}
           />
-          <Button onClick={handleCreate}>
-            <Icon name="add" />
-            Create Integration
-          </Button>
+          <Link to={withBasePath("/integration/new")}>
+            <Button>
+              <Icon name="add" />
+              Create Integration
+            </Button>
+          </Link>
         </div>
 
-        {loading
+        {!installedIntegrations
           ? (
             <div className="flex h-48 items-center justify-center">
               <Spinner size="lg" />
             </div>
           )
-          : !installedIntegrations || installedIntegrations.length === 0
+          : installedIntegrations.length === 0
           ? (
             <EmptyState
               icon="conversion_path"
@@ -411,11 +378,10 @@ export default function List() {
           : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 peer">
-                {installedIntegrations.map((integrationId: string) => (
+                {filteredIntegrations.map((integration) => (
                   <IntegrationCard
-                    key={integrationId}
-                    filter={filter}
-                    integrationId={integrationId}
+                    key={integration.id}
+                    integration={integration}
                     onConfigure={handleConfigure}
                     onDelete={handleDeleteConfirm}
                   />

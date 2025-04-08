@@ -1,5 +1,5 @@
 import type { Agent, Integration } from "@deco/sdk";
-import { useTools } from "@deco/sdk/hooks";
+import { useTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useCallback, useMemo, useState } from "react";
@@ -30,7 +30,7 @@ export function Integration(
     localAgent,
   }: IntegrationProps,
 ) {
-  const { data: toolsData, loading, error } = useTools(
+  const { data: toolsData, isLoading, error } = useTools(
     integration.connection,
   );
   const enabledTools: string[] | undefined =
@@ -48,7 +48,7 @@ export function Integration(
     _setIntegrationTools(integration.id, tools);
   }, [integration.id, _setIntegrationTools]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="rounded-lg border bg-gradient-to-b from-white to-slate-50">
         <IntegrationHeader.Skeleton

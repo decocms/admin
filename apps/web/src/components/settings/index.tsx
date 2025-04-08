@@ -1,9 +1,15 @@
-import { type Agent, SDK, toAgentRoot } from "@deco/sdk";
+import { type Agent } from "@deco/sdk";
 import {
   WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
   WELL_KNOWN_INITIAL_TOOLS_SET,
-} from "@deco/sdk/constants";
-import { useAgent, useIntegration, useIntegrations } from "@deco/sdk/hooks";
+} from "@deco/sdk";
+import {
+  useAgent,
+  useAgentRoot,
+  useIntegration,
+  useIntegrations,
+  useUpdateAgent,
+} from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,29 +79,12 @@ function IntegrationItem({
 }
 
 function App({ agentId }: { agentId: string }) {
-  const { data: agent, update, error, loading } = useAgent(agentId);
-  const { items: installedIntegrations } = useIntegrations();
-  const [agentRoot, setAgentRoot] = useState<string | null>(null);
+  const { data: agent, error } = useAgent(agentId);
+  const { data: installedIntegrations } = useIntegrations();
+  const agentRoot = useAgentRoot(agentId);
   const [localAgent, setLocalAgent] = useState<typeof agent | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-
-  useEffect(() => {
-    let cancel = false;
-
-    const init = async () => {
-      const resolved = await SDK.fs.resolvePath(toAgentRoot(agentId));
-
-      if (cancel) return;
-
-      setAgentRoot(resolved);
-    };
-
-    init().catch(console.error);
-
-    return () => {
-      cancel = true;
-    };
-  }, [agentId]);
+  const updateAgent = useUpdateAgent();
 
   useEffect(() => {
     if (agent && !localAgent) {
@@ -144,7 +133,7 @@ function App({ agentId }: { agentId: string }) {
   // Function to handle save
   const handleSave = async () => {
     if (!localAgent) return;
-    await update(localAgent);
+    await updateAgent.mutateAsync(localAgent);
     setIsDirty(false);
   };
 
@@ -204,9 +193,9 @@ function App({ agentId }: { agentId: string }) {
   };
 
   const integrations = Object.keys(WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS)
-    .concat(installedIntegrations || []);
+    .concat(installedIntegrations.map((i) => i.id) || []);
 
-  if (loading || !agent || !agentRoot) {
+  if (!agent || !agentRoot) {
     return (
       <div className="h-full bg-background flex flex-col items-center justify-center">
         <div className="relative">

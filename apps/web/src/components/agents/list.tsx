@@ -1,6 +1,10 @@
 import type { Agent } from "@deco/sdk";
-import { createAgent } from "@deco/sdk/crud";
-import { useAgent, useAgents, useIntegration } from "@deco/sdk/hooks";
+import {
+  useAgents,
+  useCreateAgent,
+  useIntegration,
+  useRemoveAgent,
+} from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,16 +32,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { useReducer, useState } from "react";
+import { Suspense, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { useGlobalState } from "../../stores/global.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
+import { TopbarAction, TopbarBreadcrumb } from "../topbar/portal.tsx";
 import { useFocusAgent, useSidebarPinOperations } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
   const focusAgent = useFocusAgent();
+  const createAgent = useCreateAgent();
 
   // Function to handle duplicating the agent
   const duplicate = async () => {
@@ -45,11 +51,15 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
     try {
       setDuplicating(true);
-      const duplicatedAgent = await createAgent({
+      const duplicatedAgent = await createAgent.mutateAsync({
         name: `${agent.name} (Copy)`,
+        id: crypto.randomUUID(),
         description: agent.description,
         instructions: agent.instructions,
         avatar: agent.avatar,
+        tools_set: agent.tools_set,
+        model: agent.model,
+        views: agent.views,
       });
       focusAgent(duplicatedAgent.id, duplicatedAgent);
     } catch (error) {
@@ -79,7 +89,6 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
         <TooltipTrigger
           onClick={(e) => {
             e.stopPropagation();
-
             navigate(`/integration/${integration.id}`);
           }}
           asChild
@@ -110,17 +119,16 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
 }
 
 // Agent Card Component
-function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
-  const { data: agent, loading, remove } = useAgent(agentId);
+function AgentCard({ agent }: { agent: Agent }) {
+  const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const focusAgent = useFocusAgent();
   const { togglePin, unpinAgent, isPinned } = useSidebarPinOperations();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const { state: { context } } = useGlobalState();
 
   // Return loading state while fetching agent data
-  if (loading || !agent) {
+  if (!agent) {
     return (
       <Card className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
         <CardContent className="p-4 flex items-center justify-center h-[166px]">
@@ -140,27 +148,19 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
   // Function to handle actual deletion
   const handleDelete = async () => {
     try {
-      setDeleting(true);
-
       // Unpin the agent from the sidebar if it was pinned
-      if (isPinned(agentId)) {
-        unpinAgent(agentId);
+      if (isPinned(agent.id)) {
+        unpinAgent(agent.id);
       }
 
-      await remove();
+      await removeAgent.mutateAsync(agent.id);
       setDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting Agent:", error);
-    } finally {
-      setDeleting(false);
     }
   };
 
-  if (!agent.name.toLowerCase().includes(filter.toLowerCase())) {
-    return null;
-  }
-
-  const agentPinned = isPinned(agentId);
+  const agentPinned = isPinned(agent.id);
 
   // Handle pin/unpin agent to sidebar
   const handlePinToggle = (e: React.MouseEvent) => {
@@ -173,7 +173,7 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
       <Card
         className="shadow-sm group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl"
         onClick={() => {
-          focusAgent(agentId, agent);
+          focusAgent(agent.id, agent);
         }}
       >
         <CardContent className="p-4 gap-4 flex flex-col justify-start flex-grow">
@@ -217,7 +217,6 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-
                     duplicate();
                   }}
                 >
@@ -246,12 +245,14 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
 
           {/* Integrations list slot */}
           <div className="flex gap-2 flex-wrap">
-            {Object
-              .entries(agent.tools_set ?? {})
-              .filter(([_, tools]) => tools.length > 0)
-              .map(([toolSetId]) => (
-                <IntegrationMiniature key={toolSetId} toolSetId={toolSetId} />
-              ))}
+            <Suspense fallback={<div className="w-8 h-8" />}>
+              {Object
+                .entries(agent.tools_set ?? {})
+                .filter(([_, tools]) => tools.length > 0)
+                .map(([toolSetId]) => (
+                  <IntegrationMiniature key={toolSetId} toolSetId={toolSetId} />
+                ))}
+            </Suspense>
           </div>
         </CardContent>
       </Card>
@@ -271,11 +272,24 @@ function AgentCard({ agentId, filter }: { agentId: string; filter: string }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDelete();
+              }}
+              disabled={removeAgent.isPending}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {removeAgent.isPending
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    <span className="ml-2">Deleting...</span>
+                  </>
+                )
+                : (
+                  "Delete"
+                )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -312,15 +326,27 @@ export default function List() {
   const { filter } = state;
   const focusAgent = useFocusAgent();
   const [creating, setCreating] = useState(false);
+  const createAgent = useCreateAgent();
+  const { data: agents } = useAgents();
 
-  // Use the useAgents hook to get all agent IDs
-  const { items: agentIds, loading: agentsLoading } = useAgents();
+  // Filter agents based on the filter string
+  const filteredAgents = agents?.filter((agent) =>
+    agent.name.toLowerCase().includes(filter.toLowerCase())
+  );
 
   // Function to handle creating a new Agent
   const handleCreate = async () => {
     try {
       setCreating(true);
-      const agent = await createAgent();
+      const agent = await createAgent.mutateAsync({
+        name: "New Agent",
+        id: crypto.randomUUID(),
+        avatar: "",
+        instructions: "This agent has not been configured yet.",
+        tools_set: {},
+        model: "anthropic:claude-3-7-sonnet-20250219",
+        views: [{ url: "", name: "Chat" }],
+      });
       focusAgent(agent.id, agent);
     } catch (error) {
       console.error("Error creating new agent:", error);
@@ -332,45 +358,48 @@ export default function List() {
   return (
     <div className="flex flex-col gap-4 flex-grow">
       <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder="Filter agents..."
-          value={filter}
-          onChange={(e) =>
-            dispatch({ type: "SET_FILTER", payload: e.target.value })}
-          className="w-full md:w-64"
-        />
-        <Button onClick={handleCreate} disabled={creating} className="gap-2">
-          {creating
-            ? (
-              <>
-                <Spinner size="xs" />
-                Creating...
-              </>
-            )
-            : (
-              <>
-                <Icon name="add" />
-                Create Agent
-              </>
-            )}
-        </Button>
+        <TopbarBreadcrumb>
+          <Input
+            placeholder="Filter agents..."
+            value={filter}
+            onChange={(e) =>
+              dispatch({ type: "SET_FILTER", payload: e.target.value })}
+            className="w-full md:w-64"
+          />
+        </TopbarBreadcrumb>
+        <TopbarAction>
+          <Button onClick={handleCreate} disabled={creating} className="gap-2">
+            {creating
+              ? (
+                <>
+                  <Spinner size="xs" />
+                  Creating...
+                </>
+              )
+              : (
+                <>
+                  <Icon name="add" />
+                  Create Agent
+                </>
+              )}
+          </Button>
+        </TopbarAction>
       </div>
 
-      {agentsLoading
+      {!agents
         ? (
           <div className="flex h-48 items-center justify-center">
             <Spinner size="lg" />
           </div>
         )
-        : agentIds.length > 0
+        : agents.length > 0
         ? (
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 peer">
-              {agentIds.map((agentId) => (
+              {filteredAgents?.map((agent) => (
                 <AgentCard
-                  key={agentId}
-                  agentId={agentId}
-                  filter={filter}
+                  key={agent.id}
+                  agent={agent}
                 />
               ))}
             </div>

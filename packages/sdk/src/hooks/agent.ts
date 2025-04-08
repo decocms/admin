@@ -1,130 +1,197 @@
-import { useCallback, useMemo } from "react";
-import type { Agent } from "../models/agent.ts";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   createAgent,
   deleteAgent,
-  HOME_PATH,
-  MANIFEST_PATH,
+  listAgents,
+  loadAgent,
   saveAgent,
-  toLocator,
-  validateAgent,
 } from "../crud/agent.ts";
-import { useFile, useFileList } from "./fs.ts";
+import type { Agent } from "../models/agent.ts";
+import { stub } from "../stub.ts";
+import { useSDK } from "./store.tsx";
+
+const getKeyFor = (
+  context: string,
+  agentId?: string,
+  threadId?: string,
+) => ["agent", context, agentId, threadId];
 
 export const useCreateAgent = () => {
-  const create = useCallback(createAgent, []);
+  const { state: { context, client } } = useSDK();
+
+  const create = useMutation({
+    mutationFn: (agent: Partial<Agent>) => createAgent(context, agent),
+    onSuccess: (result) => {
+      const key = getKeyFor(context, result.id);
+
+      // update item
+      client.setQueryData(key, result);
+
+      // update list
+      client.setQueryData(getKeyFor(context), (old: Agent[] | undefined) => {
+        if (!old) return [result];
+        return [...old, result];
+      });
+
+      // invalidate list
+      client.invalidateQueries({ queryKey: getKeyFor(context) });
+    },
+  });
 
   return create;
 };
 
+export const useUpdateAgent = () => {
+  const { state: { context: root, client } } = useSDK();
+
+  const update = useMutation({
+    mutationFn: (agent: Agent) => saveAgent(root, agent),
+    onMutate: async (updatedAgent) => {
+      // Cancel any outgoing refetches
+      await client.cancelQueries({ queryKey: getKeyFor(root) });
+
+      // Snapshot the previous value
+      const previousAgents = client.getQueryData(getKeyFor(root)) as
+        | Agent[]
+        | undefined;
+
+      // Optimistically update the cache
+      client.setQueryData(getKeyFor(root), (old: Agent[] | undefined) => {
+        if (!old) return [updatedAgent];
+        return old.map((agent) =>
+          agent.id === updatedAgent.id ? updatedAgent : agent
+        );
+      });
+
+      // Update the individual agent in cache
+      client.setQueryData(getKeyFor(root, updatedAgent.id), updatedAgent);
+
+      return { previousAgents } as const;
+    },
+    onError: (_err, _updatedAgent, context) => {
+      // Rollback to the previous value
+      if (context?.previousAgents) {
+        client.setQueryData(getKeyFor(root), context.previousAgents);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: getKeyFor(root) });
+    },
+  });
+
+  return update;
+};
+
+export const useRemoveAgent = () => {
+  const { state: { context: root, client } } = useSDK();
+
+  const remove = useMutation({
+    mutationFn: (agentId: string) => deleteAgent(root, agentId),
+    onMutate: async (agentId) => {
+      // Cancel any outgoing refetches
+      await client.cancelQueries({ queryKey: getKeyFor(root) });
+
+      // Snapshot the previous value
+      const previousAgents = client.getQueryData<Agent[]>(getKeyFor(root));
+
+      // Optimistically update the cache
+      client.setQueryData(getKeyFor(root), (old: Agent[]) => {
+        if (!old) return old;
+        return old.filter((agent: Agent) => agent.id !== agentId);
+      });
+
+      // Remove the individual agent from cache
+      client.setQueryData(getKeyFor(root, agentId), null);
+
+      return { previousAgents };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Rollback to the previous value
+      if (ctx?.previousAgents) {
+        client.setQueryData(getKeyFor(root), ctx.previousAgents);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: getKeyFor(root) });
+    },
+  });
+
+  return remove;
+};
+
 /** Hook for crud-like operations on agents */
 export const useAgent = (agentId: string) => {
-  const path = useMemo(() => toLocator(agentId), [agentId]);
-  const file = useFile(path, { encoding: "utf-8" });
+  const { state: { context } } = useSDK();
 
-  // Parse file content directly in useMemo without using state
-  const result = useMemo(() => {
-    if (file.error) {
-      return { data: null, error: file.error, loading: false };
-    }
+  const data = useSuspenseQuery({
+    queryKey: getKeyFor(context, agentId),
+    queryFn: () => loadAgent(context, agentId),
+  });
 
-    if (file.loading || file.data === null) {
-      return { data: null, error: null, loading: true };
-    }
-
-    try {
-      const parsedData = JSON.parse(file.data);
-      const [validatedAgent, validationError] = validateAgent(parsedData);
-
-      if (validationError) {
-        return { data: null, error: validationError, loading: false };
-      } else {
-        return {
-          data: { ...validatedAgent, id: agentId },
-          error: null,
-          loading: false,
-        };
-      }
-    } catch (err) {
-      return {
-        data: null,
-        error: err instanceof Error
-          ? err
-          : new Error("Failed to parse agent data"),
-        loading: false,
-      };
-    }
-  }, [file.data, file.loading, file.error]);
-
-  // CRUD operations - simplified to use SDK.fs.write directly
-  const update = useCallback(async (updates: Partial<Agent>) => {
-    if (!result.data) {
-      throw new Error("Cannot update: Agent not loaded");
-    }
-
-    const updatedAgent = {
-      ...result.data,
-      ...updates,
-      id: agentId,
-    };
-
-    // Validate the updated agent
-    const [validatedAgent, validationError] = validateAgent(updatedAgent);
-
-    if (validationError) {
-      throw validationError;
-    }
-
-    // Save directly using SDK.fs.write
-    await saveAgent(validatedAgent);
-
-    return validatedAgent;
-  }, [result.data, path]);
-
-  const remove = useCallback(() => deleteAgent(agentId), [agentId]);
-
-  return { ...result, update, remove };
+  return data;
 };
 
 /** Hook for listing all agents */
 export const useAgents = () => {
-  // Get all files in the agents directory
-  const files = useFileList(HOME_PATH, { recursive: true });
+  const { state: { context } } = useSDK();
 
-  // Extract agent IDs from manifest files
-  const result = useMemo(() => {
-    if (files === null) {
-      return { items: [], loading: true, error: null };
-    }
+  const data = useSuspenseQuery({
+    queryKey: getKeyFor(context),
+    queryFn: () => listAgents(context).then((r) => r.items),
+  });
 
-    try {
-      // Filter for manifest.json files in the Agents directory
-      const manifestPaths = files.filter((file) =>
-        file.endsWith(MANIFEST_PATH)
-      );
+  return data;
+};
 
-      // Extract agent IDs from paths
-      const agentIds = manifestPaths.map((file) => {
-        // Must match paths like: /Agents/123/.webdraw/manifest.json$
-        const matches = file.match(/\/Agents\/(.*)\/.webdraw\/manifest\.json$/);
-        return matches ? matches[1] : null;
-      }).filter((id): id is string => id !== null);
+export const useAgentRoot = (agentId: string) => {
+  const { state: { context } } = useSDK();
 
-      return {
-        items: agentIds,
-        loading: false,
-        error: null,
-      };
-    } catch (err) {
-      return {
-        items: [],
-        loading: false,
-        error: err instanceof Error
-          ? err
-          : new Error("Failed to process agent files"),
-      };
-    }
-  }, [files]);
+  const root = useMemo(
+    () => `${context}/Agents/${agentId}`,
+    [context, agentId],
+  );
 
-  return result;
+  return root;
+};
+
+/** Hook for fetching messages from an agent */
+export const useMessages = (agentId: string, threadId: string) => {
+  const { state: { context } } = useSDK();
+  const agentRoot = useAgentRoot(agentId);
+
+  const data = useSuspenseQuery({
+    queryKey: getKeyFor(context, agentId, threadId),
+    queryFn: () => {
+      // TODO: I guess we can improve this and have proper typings
+      // deno-lint-ignore no-explicit-any
+      const agentStub = stub<any>("AIAgent")
+        .new(agentRoot)
+        .withMetadata({ threadId });
+
+      return agentStub.query();
+    },
+  });
+
+  return data;
+};
+
+/** Hook for fetching threads from an agent */
+export const useThreads = (agentId: string) => {
+  const { state: { context } } = useSDK();
+  const agentRoot = useAgentRoot(agentId);
+
+  return useSuspenseQuery({
+    queryKey: [...getKeyFor(context, agentId), "threads"],
+    queryFn: () => {
+      // TODO: I guess we can improve this and have proper typings
+      // deno-lint-ignore no-explicit-any
+      const agentStub = stub<any>("AIAgent")
+        .new(agentRoot);
+
+      return agentStub.listThreads();
+    },
+  });
 };

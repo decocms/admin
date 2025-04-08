@@ -12,8 +12,8 @@ export const useBasePath = () => {
 
   const withBasePath = useCallback(
     (path: string) => {
-      const root = context?.root ?? "";
-      const rootWithStartingSlash = root.startsWith("/") ? root : `/${root}`;
+      const slug = context?.slug ?? "";
+      const rootWithStartingSlash = slug.startsWith("/") ? slug : `/${slug}`;
       const pathWithStartingSlash = path.startsWith("/") ? path : `/${path}`;
 
       return `${rootWithStartingSlash}${pathWithStartingSlash}`

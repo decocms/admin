@@ -1,123 +1,92 @@
-import { useEffect, useState } from "react";
-import { type FileSystemOptions, SDK } from "../index.ts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFile, deleteFile, readFile } from "../crud/fs.tsx";
+import { type FileSystemOptions } from "../index.ts";
 
-const isErrorLike = (value: unknown): value is Error =>
-  typeof value === "object" && value !== null && "message" in value &&
-  "stack" in value;
+const getKeyFor = (path: string, options?: FileSystemOptions) =>
+  ["file", path, options];
 
 /**
  * Reads the contents of a file.
  *
  * @example
  * ```typescript
- * const file = useFile("/path/to/file");
+ * const { data, isLoading, error } = useFile("/path/to/file");
  * ```
  *
  * @param path - Path to the file to read
- * @returns Promise resolving to the file contents. Returns null when loading.
+ * @returns Object containing the file contents, loading state, and error state
  */
 export const useFile = (path: string, options?: FileSystemOptions) => {
-  const [data, setData] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let cancel = false;
-
-    const readFile = async () => {
-      setLoading(true);
-      setError(null);
-
-      const content = await SDK.fs.read(path, {
-        encoding: options?.encoding,
-        mode: options?.mode,
-        flag: options?.flag,
-      });
-
-      if (cancel) {
-        return;
-      }
-
-      if (isErrorLike(content)) {
-        setError(content);
-      } else {
-        setData(content);
-      }
-
-      setLoading(false);
-    };
-
-    readFile();
-
-    const unsubscribe = SDK.fs.onChange(async (event) => {
-      const resolved = await SDK.fs.resolvePath(path);
-
-      if (event.path !== resolved) {
-        return;
-      }
-
-      readFile();
-    });
-
-    return () => {
-      cancel = true;
-      unsubscribe?.();
-    };
-  }, [path, options?.encoding, options?.mode, options?.flag]);
-
-  return { data, loading, error };
+  return useQuery({
+    queryKey: getKeyFor(path, options),
+    queryFn: () => readFile(path, options),
+  });
 };
 
-/**
- * Lists files and directories in a directory.
- *
- * @example
- * ```typescript
- * const entries = useFileList("/path/to/directory");
- * ```
- *
- * @param path - Path to the directory to list
- * @returns Promise resolving to an array of file paths. Returns null when loading.
- */
-export const useFileList = (
-  path: string,
-  options?: { recursive?: boolean },
-) => {
-  const [entries, setEntries] = useState<string[] | null>(null);
+export const useCreateFile = (path: string, options?: FileSystemOptions) => {
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let cancel = false;
-
-    const readDir = async () => {
-      const entries = await SDK.fs.list(path, {
-        recursive: options?.recursive,
-      });
-
-      if (cancel) {
-        return;
+  return useMutation({
+    mutationFn: () => createFile(path, options),
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: getKeyFor(path, options) });
+      
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(getKeyFor(path, options));
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(getKeyFor(path, options), () => ({
+        path,
+        content: "",
+        exists: true,
+      }));
+      
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousData) {
+        queryClient.setQueryData(getKeyFor(path, options), context.previousData);
       }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      queryClient.invalidateQueries({ queryKey: getKeyFor(path, options) });
+    },
+  });
+};
 
-      setEntries(entries);
-    };
+export const useDeleteFile = (path: string, options?: FileSystemOptions) => {
+  const queryClient = useQueryClient();
 
-    setEntries(null);
-    readDir().catch(console.error);
-
-    const unsubscribe = SDK.fs.onChange(async (event) => {
-      const resolved = await SDK.fs.resolvePath(path);
-
-      if (!event.path.includes(resolved)) {
-        return;
+  return useMutation({
+    mutationFn: () => deleteFile(path, options),
+    onMutate: async () => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: getKeyFor(path, options) });
+      
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(getKeyFor(path, options));
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(getKeyFor(path, options), () => ({
+        path,
+        content: "",
+        exists: false,
+      }));
+      
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousData) {
+        queryClient.setQueryData(getKeyFor(path, options), context.previousData);
       }
-
-      readDir();
-    });
-
-    return () => {
-      cancel = true;
-      unsubscribe?.();
-    };
-  }, [path, options?.recursive]);
-
-  return entries;
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      queryClient.invalidateQueries({ queryKey: getKeyFor(path, options) });
+    },
+  });
 };

@@ -1,6 +1,6 @@
-import { AUTH_URL } from "../../constants.ts";
-import { User } from "../../stores/global.tsx";
+import { AUTH_URL } from "@deco/sdk";
 import { use } from "react";
+import { User } from "../../stores/global.tsx";
 
 export class NotLoggedInError extends Error {
   constructor(message: string) {

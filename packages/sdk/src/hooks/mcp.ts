@@ -1,161 +1,157 @@
-import { useCallback, useMemo } from "react";
-import {
-  MCP_HOME_PATH,
-  toIntegrationLocator,
-  validateIntegration,
-} from "../crud/mcp.ts";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   createIntegration,
   deleteIntegration,
+  listIntegrations,
+  loadIntegration,
   saveIntegration,
 } from "../crud/mcp.ts";
 import type { Integration } from "../models/mcp.ts";
-import { useFile, useFileList } from "./fs.ts";
-import { WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS } from "../constants.ts";
+import { useSDK } from "./store.tsx";
 
-/**
- * Hook to create a new MCP
- * @returns Function to create a new MCP
- */
+const getKeyFor = (
+  context: string,
+  mcpId?: string,
+) => ["mcp", context, mcpId];
+
 export const useCreateIntegration = () => {
-  const create = useCallback(createIntegration, []);
+  const { state: { context, client } } = useSDK();
+
+  const create = useMutation({
+    mutationFn: (mcp: Integration) => createIntegration(context, mcp),
+    onSuccess: (result) => {
+      const key = getKeyFor(context, result.id);
+
+      // update item
+      client.setQueryData(key, result);
+
+      // update list
+      client.setQueryData(getKeyFor(context), (old: Integration[] | undefined) => {
+        if (!old) return [result];
+        return [...old, result];
+      });
+
+      // invalidate list
+      client.invalidateQueries({ queryKey: getKeyFor(context) });
+    },
+  });
 
   return create;
 };
 
-const DEFAULT_INTEGRATION_ICONS = {
-  CORE: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-};
+export const useUpdateIntegration = () => {
+  const { state: { context: root, client } } = useSDK();
 
-const isWellKnownIntegration = (
-  mcpId: string,
-): mcpId is keyof typeof WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS =>
-  mcpId in WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS;
+  const update = useMutation({
+    mutationFn: (mcp: Integration) => saveIntegration(root, mcp),
+    onMutate: async (updatedMCP) => {
+      // Cancel any outgoing refetches
+      await client.cancelQueries({ queryKey: getKeyFor(root) });
 
-/**
- * Hook for CRUD operations on a specific MCP
- * @param mcpId - The ID of the MCP to operate on
- * @returns Object with MCP data and CRUD operations
- */
-export const useIntegration = (mcpId: string) => {
-  if (isWellKnownIntegration(mcpId)) {
-    return {
-      data: {
-        id: mcpId,
-        name: mcpId.toLowerCase(),
-        description: `Default ${mcpId} integration`,
-        icon: DEFAULT_INTEGRATION_ICONS[mcpId],
-        connection: {
-          type: "INNATE",
-          name: mcpId,
-        },
-      } as Integration,
-      error: null,
-      loading: false,
-      update: () => Promise.resolve(null),
-      remove: () => Promise.resolve(null),
-    };
-  }
+      // Snapshot the previous value
+      const previousMCPs = client.getQueryData(getKeyFor(root)) as
+        | Integration[]
+        | undefined;
 
-  const path = useMemo(() => toIntegrationLocator(mcpId), [mcpId]);
-  const file = useFile(path, { encoding: "utf-8" });
+      // Optimistically update the cache
+      client.setQueryData(getKeyFor(root), (old: Integration[] | undefined) => {
+        if (!old) return [updatedMCP];
+        return old.map((mcp) =>
+          mcp.id === updatedMCP.id ? updatedMCP : mcp
+        );
+      });
 
-  // Parse file content directly in useMemo without using state
-  const result = useMemo(() => {
-    if (file.error) {
-      return { data: null, error: file.error, loading: false };
-    }
+      // Update the individual MCP in cache
+      client.setQueryData(getKeyFor(root, updatedMCP.id), updatedMCP);
 
-    if (file.loading || file.data === null) {
-      return { data: null, error: null, loading: true };
-    }
-
-    try {
-      const parsedData = JSON.parse(file.data);
-      const [validatedMCP, validationError] = validateIntegration(parsedData);
-
-      if (validationError) {
-        return { data: null, error: validationError, loading: false };
-      } else {
-        return {
-          data: { ...validatedMCP, id: mcpId },
-          error: null,
-          loading: false,
-        };
+      return { previousMCPs } as const;
+    },
+    onError: (_err, _updatedMCP, context) => {
+      // Rollback to the previous value
+      if (context?.previousMCPs) {
+        client.setQueryData(getKeyFor(root), context.previousMCPs);
       }
-    } catch (err) {
-      return {
-        data: null,
-        error: err instanceof Error
-          ? err
-          : new Error("Failed to parse MCP data"),
-        loading: false,
-      };
-    }
-  }, [file.data, file.loading, file.error]);
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: getKeyFor(root) });
+    },
+  });
 
-  // CRUD operations
-  const update = useCallback(async (updates: Partial<Integration>) => {
-    if (!result.data) {
-      throw new Error("Cannot update: MCP not loaded");
-    }
-
-    const updated = { ...result.data, ...updates, id: mcpId };
-
-    // Validate the updated MCP
-    const [validatedMCP, validationError] = validateIntegration(updated);
-
-    if (validationError) {
-      throw validationError;
-    }
-
-    await saveIntegration(updated);
-
-    return validatedMCP;
-  }, [result.data, path]);
-
-  const remove = useCallback(() => deleteIntegration(mcpId), [mcpId]);
-
-  return { ...result, update, remove };
+  return update;
 };
 
-/**
- * Hook for listing all MCPs
- * @returns Object with list of MCP IDs and loading state
- */
+export const useRemoveIntegration = () => {
+  const { state: { context: root, client } } = useSDK();
+
+  const remove = useMutation({
+    mutationFn: (mcpId: string) => deleteIntegration(root, mcpId),
+    onMutate: async (mcpId) => {
+      // Cancel any outgoing refetches
+      await client.cancelQueries({ queryKey: getKeyFor(root) });
+
+      // Snapshot the previous value
+      const previousMCPs = client.getQueryData<Integration[]>(getKeyFor(root));
+
+      // Optimistically update the cache
+      client.setQueryData(getKeyFor(root), (old: Integration[]) => {
+        if (!old) return old;
+        return old.filter((mcp: Integration) => mcp.id !== mcpId);
+      });
+
+      // Remove the individual MCP from cache
+      client.setQueryData(getKeyFor(root, mcpId), null);
+
+      return { previousMCPs };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Rollback to the previous value
+      if (ctx?.previousMCPs) {
+        client.setQueryData(getKeyFor(root), ctx.previousMCPs);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: getKeyFor(root) });
+    },
+  });
+
+  return remove;
+};
+
+/** Hook for crud-like operations on MCPs */
+export const useIntegration = (mcpId: string) => {
+  const { state: { context } } = useSDK();
+
+  const data = useSuspenseQuery({
+    queryKey: getKeyFor(context, mcpId),
+    queryFn: () => loadIntegration(context, mcpId),
+  });
+
+  return data;
+};
+
+/** Hook for listing all MCPs */
 export const useIntegrations = () => {
-  // Get all files in the MCPs directory
-  const files = useFileList(MCP_HOME_PATH, { recursive: true });
+  const { state: { context } } = useSDK();
 
-  // Extract MCP IDs from manifest files
-  const result = useMemo(() => {
-    if (files === null) {
-      return { items: [], loading: true, error: null };
+  const data = useSuspenseQuery({
+    queryKey: getKeyFor(context),
+    queryFn: () => listIntegrations(context).then((r) => r.items),
+  });
+
+  return data;
+};
+
+export const useIntegrationRoot = (mcpId: string) => {
+  const { state: { context } } = useSDK();
+
+  return useMemo(() => {
+    if (!context) {
+      return null;
     }
 
-    try {
-      // Extract MCP IDs from paths
-      const items = files.map((file) => {
-        // Must match paths like: /MCPs/123/.webdraw/manifest.json$
-        const matches = file.match(/\/Integrations\/(.*)\.json$/);
-        return matches ? matches[1] : null;
-      }).filter((id): id is string => id !== null);
-
-      return {
-        items,
-        loading: false,
-        error: null,
-      };
-    } catch (err) {
-      return {
-        items: [],
-        loading: false,
-        error: err instanceof Error
-          ? err
-          : new Error("Failed to process MCP files"),
-      };
-    }
-  }, [files]);
-
-  return result;
+    return `${context}/Integrations/${mcpId}`;
+  }, [context]);
 };

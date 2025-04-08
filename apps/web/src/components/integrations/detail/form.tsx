@@ -1,9 +1,9 @@
 import {
-  createIntegration,
   type Integration,
   IntegrationSchema,
   type MCPConnection,
-  saveIntegration,
+  useCreateIntegration,
+  useUpdateIntegration,
 } from "@deco/sdk";
 import {
   Breadcrumb,
@@ -37,6 +37,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+import { useBasePath } from "../../../hooks/useBasePath.ts";
 import Inspector from "./inspector.tsx";
 
 interface DetailProps {
@@ -46,7 +47,12 @@ interface DetailProps {
 export function DetailForm({ integration: editIntegration }: DetailProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const withBasePath = useBasePath();
+
   const integrationId = editIntegration?.id;
+
+  const createIntegration = useCreateIntegration();
+  const updateIntegration = useUpdateIntegration();
 
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
@@ -119,21 +125,14 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
 
   const onSubmit = async (data: Integration) => {
     try {
-      // Build the integration data
-      const integrationData: Integration = {
-        ...data,
-      };
-
       if (editIntegration) {
         // Update the existing integration
-        await saveIntegration(integrationData);
+        await updateIntegration.mutateAsync(data);
       } else {
         // Create a new integration
-        await createIntegration(integrationData);
-        navigate(`/integrations`);
+        await createIntegration.mutateAsync(data);
+        navigate(withBasePath("/integrations"));
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
     } catch (error) {
       console.error(
         `Error ${editIntegration ? "updating" : "creating"} integration:`,
@@ -141,6 +140,8 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
       );
     }
   };
+
+  const isMutating = createIntegration.isPending || updateIntegration.isPending;
 
   return (
     <div className="flex flex-col gap-4 pb-4">
@@ -151,7 +152,7 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
               <Button
                 variant="link"
                 className="p-0 h-auto font-normal"
-                onClick={() => navigate("/integrations")}
+                onClick={() => navigate(withBasePath("/integrations"))}
               >
                 Integrations
               </Button>
@@ -402,12 +403,12 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/integrations")}
+              onClick={() => navigate(withBasePath("/integrations"))}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="gap-2">
-              {isSubmitting
+            <Button type="submit" disabled={isMutating} className="gap-2">
+              {isMutating
                 ? (
                   <>
                     <Spinner size="xs" />

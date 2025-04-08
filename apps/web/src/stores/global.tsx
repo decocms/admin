@@ -1,6 +1,8 @@
 import { createStore } from "@deco/store";
 import { type ReactNode } from "react";
 import { useLocation } from "react-router";
+import { SDKProvider } from "@deco/sdk";
+import { useUser } from "../hooks/data/useUser.ts";
 
 export interface User {
   id: string;
@@ -48,7 +50,6 @@ type Context = {
 export interface State {
   context?: Context;
   sidebarState?: SidebarStorage;
-  storage?: any;
 }
 
 const sidebar = {
@@ -92,11 +93,8 @@ const { Provider, useStore } = createStore<State>({
   initializer: (props) => props,
 });
 
-function StoreEffects() {
-  return null;
-}
-
 const useContext = () => {
+  const user = useUser();
   const { pathname } = useLocation();
 
   const match = pathname.match(/^\/shared\/(.+)/);
@@ -112,7 +110,8 @@ const useContext = () => {
 
   return {
     type: "user" as const,
-    root: "/~",
+    slug: "/~",
+    root: `/users/${user?.id}`,
   };
 };
 
@@ -122,10 +121,11 @@ export function GlobalStateProvider(
   const context = useContext();
 
   return (
-    <Provider context={context}>
-      <StoreEffects />
-      {children}
-    </Provider>
+    <SDKProvider context={context.root}>
+      <Provider context={context}>
+        {children}
+      </Provider>
+    </SDKProvider>
   );
 }
 

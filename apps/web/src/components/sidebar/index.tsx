@@ -2,7 +2,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -16,9 +15,8 @@ import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 import { useGlobalState } from "../../stores/global.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { NotLoggedInError } from "../../hooks/data/useUser.ts";
 
 const STATIC_ITEMS = [
   {
@@ -55,14 +53,12 @@ const WithActive = (
 
 export function AppSidebar() {
   const { state: { sidebarState, context } } = useGlobalState();
-  const items = sidebarState?.[context?.root ?? ""] ?? [];
+  const items = sidebarState?.[context?.slug ?? ""] ?? [];
   const withBasePath = useBasePath();
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-      <ErrorBoundary shouldCatch={(error) => error instanceof NotLoggedInError}>
-        <SidebarHeader />
-      </ErrorBoundary>
+      <SidebarHeader />
 
       <SidebarContent>
         <SidebarGroup>
@@ -134,6 +130,7 @@ export function AppSidebar() {
           </>
         )}
       </SidebarContent>
+
       <SidebarFooter />
     </Sidebar>
   );

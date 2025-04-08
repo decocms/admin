@@ -1,4 +1,4 @@
-import { AUTH_URL } from "../../constants.ts";
+import { AUTH_URL } from "@deco/sdk";
 
 export interface Provider {
   name: string;

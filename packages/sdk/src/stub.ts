@@ -1,6 +1,6 @@
 import type { Actor } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
-import { API_SERVER_URL } from "../constants.ts";
+import { API_SERVER_URL } from "./constants.ts";
 
 /**
  * A utility to create a stub for an actor.

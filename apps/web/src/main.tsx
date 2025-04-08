@@ -1,7 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { SidebarProvider } from "@deco/ui/components/sidebar.tsx";
+
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { lazy, ReactNode, StrictMode, Suspense } from "react";
+import { lazy, ReactNode, StrictMode, Suspense, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -13,8 +13,6 @@ import {
 import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
-import { useBasePath } from "./hooks/useBasePath.ts";
-import { GlobalStateProvider, useGlobalState } from "./stores/global.tsx";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -53,13 +51,12 @@ function Wrapper({ slot: children }: { slot: ReactNode }) {
 function NotFound() {
   const location = useLocation();
   const navigate = useNavigate();
-  const withBasePath = useBasePath();
 
   return (
     <div className="h-full w-full flex flex-col items-center justify-center gap-4">
       <h1>Not Found</h1>
       <p>The path {location.pathname} was not found.</p>
-      <Button onClick={() => navigate(withBasePath("/"))}>Go to Home</Button>
+      <Button onClick={() => navigate("/")}>Go to Home</Button>
     </div>
   );
 }
@@ -76,9 +73,14 @@ function ErrorFallback() {
 }
 
 function Router() {
-  const { state: { context } } = useGlobalState();
-  const root = context?.root ?? "";
-  const basename = root.startsWith("/") ? root.slice(1) : root;
+  const { pathname } = useLocation();
+  const basename = useMemo(() => {
+    const match = pathname.match(/^\/shared\/(.+)/);
+    const teamSlug = match ? match[1].split("/")[0] : undefined;
+    const slug = teamSlug ?? "/~";
+
+    return slug.startsWith("/") ? slug.slice(1) : slug;
+  }, [pathname]);
 
   return (
     <Routes>
@@ -86,6 +88,7 @@ function Router() {
         path="login"
         element={<Wrapper slot={<Login />} />}
       />
+
       <Route path={basename} element={<Layout />}>
         <Route
           index
@@ -125,17 +128,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary fallback={<ErrorFallback />}>
       <BrowserRouter>
-        <GlobalStateProvider>
-          <SidebarProvider
-            className="h-full"
-            style={{
-              "--sidebar-width": "14rem",
-              "--sidebar-width-mobile": "14rem",
-            } as Record<string, string>}
-          >
-            <Router />
-          </SidebarProvider>
-        </GlobalStateProvider>
+        <Router />
       </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>,

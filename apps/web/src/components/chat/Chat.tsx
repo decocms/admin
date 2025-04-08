@@ -1,7 +1,7 @@
 import { type Message, useChat } from "@ai-sdk/react";
 import type { Agent } from "@deco/sdk";
+import { API_SERVER_URL } from "@deco/sdk";
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { API_SERVER_URL } from "../../constants.ts";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";

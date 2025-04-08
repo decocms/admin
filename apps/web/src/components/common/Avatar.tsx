@@ -127,19 +127,3 @@ export const AgentAvatar = (
     />
   );
 };
-
-export function UserAvatar(
-  { name, avatar, className }: {
-    name?: string;
-    avatar?: string;
-    className?: string;
-  },
-) {
-  return (
-    <Avatar
-      url={avatar}
-      fallback={name || "AN"}
-      className={cn("w-full h-full rounded-full", className)}
-    />
-  );
-}

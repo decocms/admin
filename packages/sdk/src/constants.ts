@@ -68,3 +68,16 @@ export const WELL_KNOWN_INITIAL_TOOLS_SET = {
       .map(([key]) => key),
   ],
 };
+
+export const API_SERVER_URL = globalThis.location.hostname.includes("localhost")
+  ? "http://localhost:8000"
+  : "https://fs.deco.chat";
+
+export const AUTH_URL = globalThis.location.hostname.includes("localhost")
+  ? "http://localhost:5173"
+  : "https://auth.deco.chat";
+
+export const API_HEADERS = {
+  "content-type": "application/json",
+  "use-api-host": "true",
+} as const;

@@ -1,5 +1,5 @@
 import type { MCPConnection } from "@deco/sdk";
-import { useToolCall, useTools } from "@deco/sdk/hooks";
+import { useToolCall, useTools } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -62,7 +62,7 @@ function Inspector({ connection }: InspectorProps) {
     const startTime = performance.now();
 
     try {
-      const response = await toolCall({
+      const response = await toolCall.mutateAsync({
         name: selectedTool,
         arguments: payload,
       });
@@ -126,7 +126,7 @@ function Inspector({ connection }: InspectorProps) {
   };
 
   const handleRefreshTools = () => {
-    tools.refresh();
+    tools.refetch();
   };
 
   return (
@@ -152,7 +152,7 @@ function Inspector({ connection }: InspectorProps) {
             <div>
               <div className="text-sm text-muted-foreground">Status</div>
               <div className="text-2xl font-bold">
-                {tools.loading ? "Loading..." : tools.error ? "Error" : "Ready"}
+                {tools.isLoading ? "Loading..." : tools.error ? "Error" : "Ready"}
               </div>
             </div>
             {tools.data.version && (
@@ -255,10 +255,10 @@ function Inspector({ connection }: InspectorProps) {
             <div className="flex justify-center">
               <Button
                 onClick={handleRefreshTools}
-                disabled={tools.loading}
+                disabled={tools.isLoading}
                 className="gap-2"
               >
-                {tools.loading
+                {tools.isLoading
                   ? (
                     <>
                       <Spinner size="xs" /> Refreshing...
@@ -278,7 +278,7 @@ function Inspector({ connection }: InspectorProps) {
           <div
             className={cn(
               "grid grid-cols-1 md:grid-cols-2 gap-4",
-              tools.loading && "invisible",
+              tools.isLoading && "invisible",
             )}
           >
             {/* Tool Search Section */}

@@ -1,5 +1,8 @@
-import { type Agent, SDK, type SidebarStorage, toAgentRoot } from "@deco/sdk";
-import { useCallback, useEffect, useState } from "react";
+import {
+  type Agent,
+  type SidebarStorage
+} from "@deco/sdk";
+import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 import { useGlobalState } from "../../stores/global.tsx";
@@ -143,26 +146,4 @@ export const useSidebarPinOperations = () => {
   return { pinAgent, unpinAgent, togglePin, isPinned };
 };
 
-export const useAgentRoot = (agentId: string) => {
-  const [agentRoot, setAgentRoot] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancel = false;
-
-    const init = async () => {
-      const resolved = await SDK.fs.resolvePath(toAgentRoot(agentId));
-
-      if (cancel) return;
-
-      setAgentRoot(resolved);
-    };
-
-    init().catch(console.error);
-
-    return () => {
-      cancel = true;
-    };
-  }, [agentId]);
-
-  return agentRoot;
-};
+export { useAgentRoot } from "@deco/sdk";

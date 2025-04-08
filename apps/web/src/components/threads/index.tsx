@@ -1,10 +1,7 @@
-import { Agent } from "@deco/sdk";
-import { useAgent } from "@deco/sdk/hooks";
+import { Agent, useAgent, useThreads } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useEffect, useState } from "react";
-import { stub } from "../../utils/stub.ts";
-import { useAgentRoot, useFocusAgent } from "../agents/hooks.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
+import { useFocusAgent } from "../agents/hooks.ts";
 
 interface Thread {
   id: string;
@@ -69,61 +66,11 @@ function ThreadItem(
   );
 }
 
-const useThreads = (
-  agentId: string,
-  agentRoot: string | null,
-) => {
-  const [data, setThreads] = useState<Thread[] | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let cancel = false;
-
-    if (!agentId || !agentRoot) return;
-
-    const init = async () => {
-      try {
-        setLoading(true);
-
-        // TODO: I guess we can improve this and have proper typings
-        // deno-lint-ignore no-explicit-any
-        const agentStub = stub<any>("AIAgent")
-          .new(agentRoot);
-
-        const threads = await agentStub.listThreads();
-
-        if (cancel) return;
-
-        setThreads(threads);
-      } catch (err) {
-        if (cancel) return;
-
-        console.error(err);
-        setThreads([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    init().catch(console.error);
-
-    return () => {
-      cancel = true;
-    };
-  }, [agentId, agentRoot]);
-
-  return { data, loading };
-};
-
 function App({ agentId }: { agentId: string }) {
-  const { data: agent, error, loading } = useAgent(agentId);
-  const agentRoot = useAgentRoot(agentId);
-  const {
-    data: threads,
-    loading: threadsLoading,
-  } = useThreads(agentId, agentRoot);
+  const { data: agent, error } = useAgent(agentId);
+  const { data: threads } = useThreads(agentId);
 
-  if (loading || !agent || threadsLoading) {
+  if (!agent || !threads) {
     return (
       <div className="h-full bg-background flex flex-col items-center justify-center">
         <div className="relative">
@@ -143,9 +90,7 @@ function App({ agentId }: { agentId: string }) {
     );
   }
 
-  const groupedThreads = threads
-    ? groupThreadsByDate(threads)
-    : { today: [], yesterday: [], older: {} };
+  const groupedThreads = groupThreadsByDate(threads);
   const olderDates = Object.keys(groupedThreads.older).sort((a, b) => {
     return new Date(b).getTime() - new Date(a).getTime();
   });

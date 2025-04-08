@@ -1,6 +1,7 @@
 import {
   API_HEADERS,
   API_SERVER_URL,
+  WELL_KNOWN_AGENT_IDS,
   WELL_KNOWN_INITIAL_TOOLS_SET,
 } from "../constants.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
@@ -45,7 +46,7 @@ export const createAgent = async (
     avatar: "", // You could add a default avatar path here if needed
     description: "A customizable AI assistant", // Default description
     tools_set: {
-      CORE: template.id === "teamAgent"
+      CORE: template.id === WELL_KNOWN_AGENT_IDS.teamAgent
         ? [...WELL_KNOWN_INITIAL_TOOLS_SET.CORE, "AGENT_CREATE"]
         : WELL_KNOWN_INITIAL_TOOLS_SET.CORE,
     },

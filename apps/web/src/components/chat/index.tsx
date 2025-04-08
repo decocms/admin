@@ -2,9 +2,10 @@ import { useAgent, useAgentRoot, useCreateAgent, useMessages } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect } from "react";
 import { Chat } from "./Chat.tsx";
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 
 const TEAM_AGENT = {
-  id: "teamAgent",
+  id: WELL_KNOWN_AGENT_IDS.teamAgent,
   name: "Deco Chat",
   avatar: "https://deco.chat/logos/team-agent.png",
   description: "I can help you with anything you need.",
@@ -49,7 +50,7 @@ function App({ agentId, threadId }: { agentId: string; threadId: string }) {
   const notFound = error?.message === "No such file or directory";
 
   // useEffect(() => {
-  //   if (agentId === "teamAgent") {
+  //   if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
   //     createAgent.mutate(TEAM_AGENT);
   //   }
 

@@ -81,3 +81,7 @@ export const API_HEADERS = {
   "content-type": "application/json",
   "use-api-host": "true",
 } as const;
+
+export const WELL_KNOWN_AGENT_IDS = {
+  teamAgent: "teamAgent",
+};

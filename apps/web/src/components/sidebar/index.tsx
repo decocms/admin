@@ -17,6 +17,8 @@ import { useGlobalState } from "../../stores/global.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { useAgents, useAllThreads, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { groupThreadsByDate, Thread } from "../threads/index.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -51,9 +53,74 @@ const WithActive = (
   );
 };
 
+function extractThreadId(obj: { id: string }): string | null {
+  const parts = obj.id.split("-");
+  if (parts.length < 5) return null;
+  // Take the last 5 parts to reconstruct the UUID
+  const threadId = parts.slice(-5).join("-");
+  return threadId;
+}
+
+function extractAgentId(obj: { resourceId: string }): string | null {
+  const match = obj.resourceId.match(/agents([0-9a-f]{32})/i);
+  if (!match) {
+    // check for well known agent ids
+    const wellKnownIdMatch = obj.resourceId.match(/agents([^-]+)/);
+    const wellKnownId = wellKnownIdMatch ? wellKnownIdMatch[1] : null;
+    if (wellKnownId === WELL_KNOWN_AGENT_IDS.teamAgent.toLowerCase()) {
+      return WELL_KNOWN_AGENT_IDS.teamAgent;
+    }
+
+    return null;
+  }
+  const raw = match[1];
+  // Insert hyphens to format as UUID
+  const formatted = [
+    raw.slice(0, 8),
+    raw.slice(8, 12),
+    raw.slice(12, 16),
+    raw.slice(16, 20),
+    raw.slice(20),
+  ].join("-");
+  return formatted;
+}
+
+function buildThreadUrl(thread: Thread): string {
+  const agentId = extractAgentId(thread);
+  const threadId = extractThreadId(thread);
+  return `/agent/${agentId}/${threadId}`;
+}
+
+function SidebarThreadList({ threads }: { threads: Thread[] }) {
+  return threads.map((thread) => {
+    return (
+      <SidebarMenuItem key={thread.id} onClick={() => console.log(thread)}>
+        <WithActive to={buildThreadUrl(thread)}>
+          {({ isActive }) => (
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={thread.title}
+            >
+              <Link to={buildThreadUrl(thread)}>
+                <span>{thread.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          )}
+        </WithActive>
+      </SidebarMenuItem>
+    );
+  });
+}
+
 export function AppSidebar() {
-  const { state: { sidebarState, context } } = useGlobalState();
-  const items = sidebarState?.[context?.slug ?? ""] ?? [];
+  const { data: threads } = useAllThreads();
+  const { data: agents } = useAgents();
+  const threadsExcludingDeletedAgents = threads.filter((thread: any) => {
+    const agentId = extractAgentId(thread);
+    return agentId && agents.some((agent) => agent.id === agentId);
+  });
+  const groupedThreads = groupThreadsByDate(threadsExcludingDeletedAgents);
   const withBasePath = useBasePath();
 
   return (
@@ -89,46 +156,44 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {items.length > 0 && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel>Agents</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {items.map((item) => {
-                    const href = withBasePath(item.href);
+        <SidebarSeparator />
 
-                    return (
-                      <SidebarMenuItem key={item.href}>
-                        <WithActive to={href}>
-                          {({ isActive }) => (
-                            <SidebarMenuButton
-                              asChild
-                              isActive={isActive}
-                              tooltip={item.label}
-                            >
-                              <Link to={href}>
-                                <div className="aspect-square w-4 h-4">
-                                  <AgentAvatar
-                                    name={item.label}
-                                    avatar={item.icon}
-                                    className="rounded"
-                                  />
-                                </div>
-                                <span>{item.label}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          )}
-                        </WithActive>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
+        {groupedThreads.today.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarGroupLabel>Today</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarThreadList threads={groupedThreads.today} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         )}
+
+        {groupedThreads.yesterday.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarGroupLabel>Yesterday</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarThreadList threads={groupedThreads.yesterday} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {Object.entries(groupedThreads.older).length > 0
+          ? Object.entries(groupedThreads.older).map(([date, threads]) => {
+            return (
+              <SidebarGroup key={date}>
+                <SidebarGroupContent>
+                  <SidebarGroupLabel>{date}</SidebarGroupLabel>
+                  <SidebarMenu>
+                    <SidebarThreadList threads={threads} />
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          })
+          : null}
       </SidebarContent>
 
       <SidebarFooter />

@@ -10,6 +10,7 @@ import {
 import type { Agent } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 import { useSDK } from "./store.tsx";
+import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 
 const getKeyFor = (
   context: string,
@@ -192,6 +193,24 @@ export const useThreads = (agentId: string) => {
         .new(agentRoot);
 
       return agentStub.listThreads();
+    },
+  });
+};
+
+/** Hook for fetching all threads for the user */
+export const useAllThreads = () => {
+  const { state: { context } } = useSDK();
+  const agentRoot = useAgentRoot(WELL_KNOWN_AGENT_IDS.teamAgent);
+
+  return useSuspenseQuery({
+    queryKey: [...getKeyFor(context), "user-threads"],
+    queryFn: () => {
+      // TODO: I guess we can improve this and have proper typings
+      // deno-lint-ignore no-explicit-any
+      const agentStub = stub<any>("AIAgent")
+        .new(agentRoot);
+
+      return agentStub.listThreads({ all: true });
     },
   });
 };

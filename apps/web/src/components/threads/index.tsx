@@ -3,8 +3,9 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusAgent } from "../agents/hooks.ts";
 
-interface Thread {
+export interface Thread {
   id: string;
+  resourceId: string;
   title: string;
   createdAt: string;
   updatedAt: string;
@@ -24,7 +25,7 @@ const formatDate = (date: Date): string => {
   });
 };
 
-const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
+export const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);

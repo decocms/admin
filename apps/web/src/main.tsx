@@ -19,6 +19,7 @@ import {
 import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -112,7 +113,11 @@ function Router() {
       <Route path="/:teamSlug?" element={<Layout />}>
         <Route
           index
-          element={<Wrapper slot={<AgentDetail agentId="teamAgent" />} />}
+          element={
+            <Wrapper
+              slot={<AgentDetail agentId={WELL_KNOWN_AGENT_IDS.teamAgent} />}
+            />
+          }
         />
         <Route
           path="agents"

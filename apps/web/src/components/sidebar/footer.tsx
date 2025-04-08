@@ -13,20 +13,24 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Suspense, useMemo } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { NotLoggedInError, useUser } from "../../hooks/data/useUser.ts";
 import { Avatar } from "../common/Avatar.tsx";
 
 function LoggedUser() {
   const user = useUser();
+  const location = useLocation();
 
   const logoutUrl = useMemo(() => {
     const url = new URL(AUTH_URL);
     url.pathname = "/auth/logout";
-    url.searchParams.set("next", globalThis.location.href);
+
+    const next = new URL(location.pathname, globalThis.location.origin);
+    url.searchParams.set("next", next.href);
+
     return url.href;
-  }, []);
+  }, [location.pathname]);
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;

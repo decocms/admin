@@ -53,15 +53,6 @@ export function ChatHeader({ agent }: ChatHeaderProps) {
       <TopbarAction>
         <div className="ml-auto flex items-center gap-1.5 pr-1">
           <Button
-            onClick={handleSettings}
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-muted"
-            aria-label="Start new chat"
-          >
-            <Icon name="settings" className="text-md text-muted-foreground" />
-          </Button>
-          <Button
             onClick={handleThreads}
             variant="ghost"
             size="icon"
@@ -72,6 +63,15 @@ export function ChatHeader({ agent }: ChatHeaderProps) {
               name="manage_search"
               className="text-md text-muted-foreground"
             />
+          </Button>
+          <Button
+            onClick={handleSettings}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted"
+            aria-label="Start new chat"
+          >
+            <Icon name="settings" className="text-md text-muted-foreground" />
           </Button>
         </div>
       </TopbarAction>

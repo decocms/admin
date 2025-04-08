@@ -13,11 +13,12 @@ export const useBasePath = () => {
   const withBasePath = useCallback(
     (path: string) => {
       const slug = context?.slug ?? "";
-      const rootWithStartingSlash = slug.startsWith("/") ? slug : `/${slug}`;
-      const pathWithStartingSlash = path.startsWith("/") ? path : `/${path}`;
+      const rootWithStartingSlash = slug.replace(/(^\/)|(\/$)/g, "");
+      const pathWithStartingSlash = path.replace(/(^\/)|(\/$)/g, "");
 
-      return `${rootWithStartingSlash}${pathWithStartingSlash}`
-        .replace(/\/$/g, ""); // removes ending slash
+      return [rootWithStartingSlash, pathWithStartingSlash]
+        .join("/")
+        .replace(/\/\//g, "/");
     },
     [context],
   );

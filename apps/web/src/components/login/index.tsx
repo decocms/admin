@@ -32,7 +32,7 @@ function Login() {
                 asChild
               >
                 <a
-                  href={provider.authURL(next)}
+                  href={provider.authURL(next || globalThis.location.origin)}
                   className="flex items-center gap-2.5 h-6"
                 >
                   <img

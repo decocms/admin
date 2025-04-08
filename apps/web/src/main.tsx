@@ -1,7 +1,13 @@
 import { Button } from "@deco/ui/components/button.tsx";
-
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { lazy, ReactNode, StrictMode, Suspense, useMemo } from "react";
+import {
+  lazy,
+  ReactNode,
+  StrictMode,
+  Suspense,
+  useEffect,
+  useMemo,
+} from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -62,26 +68,40 @@ function NotFound() {
 }
 
 function ErrorFallback() {
-  const result = useError();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { state: { error }, reset } = useError();
+  const notLoggedIn = error?.name === "NotLoggedInError";
+
+  useEffect(() => {
+    if (!notLoggedIn) {
+      return;
+    }
+
+    reset();
+
+    const next = new URL(location.pathname, globalThis.location.origin);
+
+    navigate(`/login?next=${next}`, { replace: true });
+  }, [notLoggedIn, location.pathname, reset, navigate]);
+
+  if (notLoggedIn) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full w-full flex flex-col items-center justify-center">
       <h1>Error</h1>
-      <p>{result.error?.message}</p>
+      <p>{error?.message}</p>
     </div>
   );
 }
 
 function Router() {
-  const { pathname } = useLocation();
-  const basename = useMemo(() => {
-    const match = pathname.match(/^\/shared\/(.+)/);
-    const teamSlug = match ? match[1].split("/")[0] : undefined;
-    const slug = teamSlug ?? "/~";
-
-    return slug.startsWith("/") ? slug.slice(1) : slug;
-  }, [pathname]);
-
   return (
     <Routes>
       <Route
@@ -89,7 +109,7 @@ function Router() {
         element={<Wrapper slot={<Login />} />}
       />
 
-      <Route path={basename} element={<Layout />}>
+      <Route path="/:teamSlug?" element={<Layout />}>
         <Route
           index
           element={<Wrapper slot={<AgentDetail agentId="teamAgent" />} />}
@@ -126,10 +146,10 @@ function Router() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ErrorBoundary fallback={<ErrorFallback />}>
-      <BrowserRouter>
+    <BrowserRouter>
+      <ErrorBoundary fallback={<ErrorFallback />}>
         <Router />
-      </BrowserRouter>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </BrowserRouter>
   </StrictMode>,
 );

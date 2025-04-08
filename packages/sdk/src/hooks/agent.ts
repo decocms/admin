@@ -150,7 +150,7 @@ export const useAgentRoot = (agentId: string) => {
   const { state: { context } } = useSDK();
 
   const root = useMemo(
-    () => `${context}/Agents/${agentId}`,
+    () => `/${context}/Agents/${agentId}`,
     [context, agentId],
   );
 

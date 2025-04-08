@@ -10,7 +10,10 @@ type State = {
   error: Error | null;
 };
 
-const Context = createContext<State>({ error: null });
+const Context = createContext<{ state: State; reset: () => void }>({
+  state: { error: null },
+  reset: () => {},
+});
 
 export const useError = () => use(Context);
 
@@ -26,6 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
     return { error };
   }
 
+  public reset() {
+    this.setState({ error: null });
+  }
+
   // TODO: Add posthog error tracking in here
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(error, errorInfo);
@@ -36,7 +43,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (this.state.error && shouldCatch(this.state.error)) {
       return (
-        <Context.Provider value={this.state}>
+        <Context.Provider
+          value={{
+            state: this.state,
+            reset: () => this.reset(),
+          }}
+        >
           {this.props.fallback ?? null}
         </Context.Provider>
       );

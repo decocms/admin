@@ -48,15 +48,15 @@ function App({ agentId, threadId }: { agentId: string; threadId: string }) {
 
   const notFound = error?.message === "No such file or directory";
 
-  useEffect(() => {
-    if (agentId === "teamAgent") {
-      createAgent.mutate(TEAM_AGENT);
-    }
+  // useEffect(() => {
+  //   if (agentId === "teamAgent") {
+  //     createAgent.mutate(TEAM_AGENT);
+  //   }
 
-    if (!notFound) return;
+  //   if (!notFound) return;
 
-    createAgent.mutate({ id: agentId });
-  }, [notFound, agentId, createAgent]);
+  //   createAgent.mutate({ id: agentId });
+  // }, [notFound, agentId, createAgent]);
 
   if (error && !notFound) {
     return (

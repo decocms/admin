@@ -73,7 +73,7 @@ export function Header() {
                 className="gap-3"
                 // TODO (@gimenes): use navigate instead of globalThis.location.href
                 // Some bugs are happening when using navigate
-                onClick={() => globalThis.location.href = "/~"}
+                onClick={() => globalThis.location.href = "/"}
               >
                 <Avatar
                   className="rounded-full"

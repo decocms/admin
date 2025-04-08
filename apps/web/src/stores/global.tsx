@@ -1,7 +1,7 @@
+import { SDKProvider } from "@deco/sdk";
 import { createStore } from "@deco/store";
 import { type ReactNode } from "react";
-import { useLocation } from "react-router";
-import { SDKProvider } from "@deco/sdk";
+import { useParams } from "react-router";
 import { useUser } from "../hooks/data/useUser.ts";
 
 export interface User {
@@ -44,7 +44,7 @@ type Context = {
 } | {
   type: "user";
   root: string;
-  slug?: undefined;
+  slug?: string;
 };
 
 export interface State {
@@ -93,36 +93,29 @@ const { Provider, useStore } = createStore<State>({
   initializer: (props) => props,
 });
 
-const useContext = () => {
-  const user = useUser();
-  const { pathname } = useLocation();
-
-  const match = pathname.match(/^\/shared\/(.+)/);
-  const teamSlug = match ? match[1].split("/")[0] : undefined;
-
-  if (teamSlug) {
-    return {
-      type: "team" as const,
-      slug: teamSlug,
-      root: `/shared/${teamSlug}`,
-    };
-  }
-
-  return {
-    type: "user" as const,
-    slug: "/~",
-    root: `/users/${user?.id}`,
-  };
-};
-
 export function GlobalStateProvider(
   { children }: { children: ReactNode },
 ) {
-  const context = useContext();
+  const { teamSlug } = useParams();
+  const user = useUser();
+
+  const rootContext = teamSlug ? `shared/${teamSlug}` : `users/${user?.id}`;
 
   return (
-    <SDKProvider context={context.root}>
-      <Provider context={context}>
+    <SDKProvider context={rootContext}>
+      <Provider
+        context={teamSlug
+          ? {
+            type: "team" as const,
+            slug: teamSlug,
+            root: `/shared/${teamSlug}`,
+          }
+          : {
+            type: "user" as const,
+            slug: "",
+            root: `/users/${user?.id}`,
+          }}
+      >
         {children}
       </Provider>
     </SDKProvider>

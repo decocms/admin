@@ -81,21 +81,21 @@ interface ImportMeta {
 
 /**
  * Determines if the application should use local backend services.
- * 
+ *
  * By default, LOCAL_DEBUGGER will be false.
- * If the environment variable VITE_USE_LOCAL_BACKEND is set to 'true', 
+ * If the environment variable VITE_USE_LOCAL_BACKEND is set to 'true',
  * it will use the localhost version.
  */
 // @ts-ignore - Vite injects env variables at build time
-const LOCAL_DEBUGGER = import.meta.env.VITE_USE_LOCAL_BACKEND === 'true';
+const LOCAL_DEBUGGER = import.meta.env.VITE_USE_LOCAL_BACKEND === "true";
 
 // Log a warning if the environment variable is not set
 // @ts-ignore - Vite injects env variables at build time
 if (import.meta.env.VITE_USE_LOCAL_BACKEND === undefined) {
   console.warn(
-    'VITE_USE_LOCAL_BACKEND environment variable is not set. ' +
-    'To use local backend services, create a .env file in apps/web/ ' +
-    'and add VITE_USE_LOCAL_BACKEND=true'
+    "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
+      "To use local backend services, create a .env file in apps/web/ " +
+      "and add VITE_USE_LOCAL_BACKEND=true",
   );
 }
 

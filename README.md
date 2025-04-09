@@ -7,7 +7,7 @@ Agents that integrate seamlessly with your internal tools and data._
 
 ## Requirements
 
-- Deno 
+- Deno
 - Node/NPM
 
 ## How to run
@@ -15,11 +15,13 @@ Agents that integrate seamlessly with your internal tools and data._
 By default, this project is set to use the production backend.
 
 To use the local backend, create a `.env` file in the `apps/web` folder and add:
+
 ```
 VITE_USE_LOCAL_BACKEND=true
 ```
 
 You can copy the `.env.example` file as a starting point:
+
 ```
 cp apps/web/.env.example apps/web/.env
 ```

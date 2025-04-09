@@ -8,6 +8,7 @@ import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
+import { openPreviewPanel } from "./utils/preview.ts";
 
 interface ChatProps {
   initialMessages?: Message[];
@@ -130,11 +131,21 @@ export function Chat({
         return { success: true, ...updatedAgent };
       }
 
-      if (toolCall.toolName === "renderHTML") {
-        const { html } = toolCall.args as { html: string };
+      if (toolCall.toolName === "RENDER") {
+        const { type, content, title } = toolCall.args as {
+          type: string;
+          content: string;
+          title: string;
+        };
+
+        openPreviewPanel(
+          `preview-${toolCall.toolCallId}`,
+          type,
+          content,
+          title,
+        );
         return {
           success: true,
-          html: html,
         };
       }
     },

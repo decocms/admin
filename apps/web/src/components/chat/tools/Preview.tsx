@@ -1,7 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { togglePanel } from "../../agent/index.tsx";
+import { openPreviewPanel, toIframeProps } from "../utils/preview.ts";
 
 interface PreviewProps {
   type: "url" | "html";
@@ -10,23 +10,6 @@ interface PreviewProps {
   className?: string;
 }
 
-const toIframeProps = (content: string) => {
-  try {
-    const url = new URL(content);
-
-    return {
-      src: url.href,
-    };
-  } catch {
-    const html = new DOMParser().parseFromString(content, "text/html")
-      .documentElement.outerHTML;
-
-    return {
-      srcDoc: html,
-    };
-  }
-};
-
 const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 
 export function Preview({ content, title, className }: PreviewProps) {
@@ -34,14 +17,11 @@ export function Preview({ content, title, className }: PreviewProps) {
   const isImageLike = iframeProps.src && IMAGE_REGEXP.test(iframeProps.src);
 
   const handleExpand = () => {
-    togglePanel({
-      id: `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
-      component: "preview",
-      title: title || "Preview",
-      params: iframeProps,
-      position: { direction: "right" },
-      initialWidth: 400,
-    });
+    openPreviewPanel(
+      `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
+      content,
+      title || "Preview",
+    );
   };
 
   return (

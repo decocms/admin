@@ -12,12 +12,16 @@ Agents that integrate seamlessly with your internal tools and data._
 
 ## How to run
 
-By default, this project is set to use the local running backend on 5173 port.
+By default, this project is set to use the production backend.
 
-To run pointing to production backend, in `packages/sdk/src/constants.ts` change:
-```ts
-// const LOCAL_DEBUGGER = globalThis.location.hostname.includes("localhost");
-const LOCAL_DEBUGGER = false;
+To use the local backend, create a `.env` file in the root of the project and add:
+```
+VITE_USE_LOCAL_BACKEND=true
+```
+
+You can copy the `.env.example` file as a starting point:
+```
+cp .env.example .env
 ```
 
 1. Run `deno install` to install dependencies

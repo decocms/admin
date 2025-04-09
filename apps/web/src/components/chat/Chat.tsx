@@ -223,11 +223,6 @@ export function Chat({
 
       {/* Fixed Input */}
       <div className="w-full max-w-[800px] mx-auto bg-background">
-        {error && (
-          <div className="px-8 py-4 bg-destructive/10 text-destructive text-sm">
-            An error occurred. Please try again.
-          </div>
-        )}
         <ChatInput
           input={input}
           handleInputChange={handleInputChange}

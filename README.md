@@ -14,14 +14,14 @@ Agents that integrate seamlessly with your internal tools and data._
 
 By default, this project is set to use the production backend.
 
-To use the local backend, create a `.env` file in the root of the project and add:
+To use the local backend, create a `.env` file in the `apps/web` folder and add:
 ```
 VITE_USE_LOCAL_BACKEND=true
 ```
 
 You can copy the `.env.example` file as a starting point:
 ```
-cp .env.example .env
+cp apps/web/.env.example apps/web/.env
 ```
 
 1. Run `deno install` to install dependencies
@@ -42,63 +42,6 @@ automatically to thousands of high-quality, strongly-typed MCPs (**Model Context
 Protocols**) available for popular databases, services, and APIs. This means
 your agents seamlessly understand how to interact with your existing tools and
 immediately provide value, saving you hours of setup and configuration.
-
----
-
-## 🌟 Benefits
-
-- **Rich, Extensible UI:** Go beyond text—embed interactive elements like
-  charts, forms, maps, dashboards, and code editors directly in chat
-  interactions.
-- **Instant Connectivity:** Thousands of ready-to-use MCP integrations available
-  immediately, connecting your agents with popular tools and internal systems.
-- **Chat-first Agent Creation:** Use natural language to instruct agents,
-  allowing teams without coding experience to build powerful AI automations.
-- **Collaboration & Reuse:** Easily share, remix, and customize agents across
-  teams, creating a unified library of reusable workflows.
-- **Enterprise-grade Governance:** Built-in compliance, permissions, and
-  detailed audit trails, providing complete control over AI adoption.
-
----
-
-## 🚀 Quick Start: Your First Agent in 30 Seconds (Google Sheets MCP)
-
-### Step 1: Installation
-
-Install deco.chat locally:
-
-```
-npm install -g decochat
-# or
-deno install decochat
-```
-
-### Step 2: Run Your Local Workspace
-
-```
-decochat start
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Step 3: Connect Google Sheets MCP
-
-- Select "Google Sheets MCP" from the MCP Catalog.
-- Securely authorize your Google account via OAuth.
-
-### Step 4: Create Your First AI Agent!
-
-Simply chat your request:
-
-```
-Create an agent that reads my spreadsheet "SalesData2025" and shows monthly revenue trends visually.
-```
-
-Your agent will:
-
-✅ Instantly connect to your spreadsheet\
-✅ Fetch and analyze data\
-✅ Display interactive charts within the chat interface
 
 ---
 

@@ -91,7 +91,7 @@ const LOCAL_DEBUGGER = import.meta.env.VITE_USE_LOCAL_BACKEND === "true";
 
 // Log a warning if the environment variable is not set
 // @ts-ignore - Vite injects env variables at build time
-if (import.meta.env.VITE_USE_LOCAL_BACKEND === undefined) {
+if (import.meta.env.VITE_USE_LOCAL_BACKEND === undefined && import.meta.env.MODE === "development") {
   console.warn(
     "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
       "To use local backend services, create a .env file in apps/web/ " +

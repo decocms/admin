@@ -1,7 +1,26 @@
 # deco.chat — Extensible Chat-based Agent Builder
 
+> WIP
 _An extensible, self-hosted AI workspace for building intelligent, UI-rich AI
 Agents that integrate seamlessly with your internal tools and data._
+
+## Requirements
+
+- Deno 
+- Node/NPM
+
+## How to run
+
+By default, this project is set to use the local running backend on 5173 port.
+
+To run pointing to production backend, in `packages/sdk/src/constants.ts` change:
+```ts
+// const LOCAL_DEBUGGER = globalThis.location.hostname.includes("localhost");
+const LOCAL_DEBUGGER = false;
+```
+
+1. Run `deno install` to install dependencies
+2. Run `npm start`
 
 ---
 

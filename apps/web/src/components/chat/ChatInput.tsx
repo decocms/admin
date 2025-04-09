@@ -174,7 +174,7 @@ export function ChatInput({
         </div>
 
         {files && files.length > 0 && (
-          <div className="w-fit absolute z-20 bottom-[calc(100%-0.75rem)] left-6 flex flex-wrap gap-2">
+          <div className="w-fit absolute z-20 bottom-full mb-2 left-6 flex flex-wrap gap-2">
             {Array.from(files).map((file, index) => (
               <div
                 key={index}

@@ -1,5 +1,6 @@
 import type { Agent } from "@deco/sdk";
 import {
+DEFAULT_REASONING_MODEL,
   useAgents,
   useCreateAgent,
   useIntegration,
@@ -325,7 +326,7 @@ export default function List() {
         avatar: "",
         instructions: "This agent has not been configured yet.",
         tools_set: {},
-        model: "anthropic:claude-3-7-sonnet-20250219",
+        model: DEFAULT_REASONING_MODEL,
         views: [{ url: "", name: "Chat" }],
       });
       focusAgent(agent.id);

@@ -1,4 +1,4 @@
-import { type Agent } from "@deco/sdk";
+import { REASONING_MODELS, type Agent } from "@deco/sdk";
 import {
   WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
   WELL_KNOWN_INITIAL_TOOLS_SET,
@@ -21,6 +21,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@deco/ui/components/alert-dialog.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@deco/ui/components/select.tsx';
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
@@ -39,6 +46,12 @@ const inputStyles =
 const ANTHROPIC_DEFAULT_MAX_TOKENS = 8192;
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
+
+// Helper function to map legacy model IDs to new ones
+const mapLegacyModelId = (modelId: string): string => {
+  const model = REASONING_MODELS.find(m => m.legacyId === modelId);
+  return model ? model.id : modelId;
+};
 
 function IntegrationItem({
   integrationId,
@@ -275,12 +288,30 @@ function App({ agentId }: { agentId: string }) {
 
             <div className="space-y-2">
               <Label htmlFor="model">Model</Label>
-              <Input
-                id="model"
-                value={agent.model || "anthropic:claude-3-7-sonnet-20250219"}
-                readOnly
-                className={inputStyles}
-              />
+              <Select
+                value={mapLegacyModelId(localAgent?.model || 'anthropic:claude-3-7-sonnet-20250219')}
+                onValueChange={(value) => handleUpdate({ model: value as Agent['model'] })}
+              >
+                <SelectTrigger
+                  id="model"
+                  className={cn(
+                    inputStyles,
+                    "w-full",
+                    hasFieldChanged('model') &&
+                      'border-yellow-400 shadow-[0_0_0_1px_rgba(250,204,21,0.4)]',
+                  )}
+                >
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REASONING_MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <img src={model.logo} className="w-4 h-4 inline mr-2" />
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

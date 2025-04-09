@@ -1,6 +1,7 @@
 import {
   API_HEADERS,
   API_SERVER_URL,
+  DEFAULT_REASONING_MODEL,
   WELL_KNOWN_AGENT_IDS,
   WELL_KNOWN_INITIAL_TOOLS_SET,
 } from "../constants.ts";
@@ -79,7 +80,7 @@ export const createAgent = async (
         ? [...WELL_KNOWN_INITIAL_TOOLS_SET.CORE, "AGENT_CREATE"]
         : WELL_KNOWN_INITIAL_TOOLS_SET.CORE,
     },
-    model: "anthropic:claude-3-7-sonnet-20250219", // Default model
+    model: DEFAULT_REASONING_MODEL, // Default model
     views: [{ url: "", name: "Chat" }],
     ...template,
   };

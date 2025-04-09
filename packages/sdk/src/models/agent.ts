@@ -1,35 +1,5 @@
 import { z } from "zod";
-
-/**
- * Agent model enum
- */
-export const AgentModelEnum = z.enum([
-  "openai:gpt-4-turbo",
-  "openai:gpt-4",
-  "openai:gpt-4o",
-  "openai:gpt-4o-mini",
-  "openai:o1-preview",
-  "openai:o1-mini",
-  "openai:o1",
-  "openai:o3-mini",
-  "openai:gpt-4o-audio-preview",
-  "openai:gpt-4.5-preview",
-  "anthropic:claude-3-5-sonnet-latest",
-  "anthropic:claude-3-7-sonnet-latest",
-  "anthropic:claude-3-5-haiku-20241022",
-  "anthropic:claude-3-7-sonnet-20250219",
-  "google:gemini-2.0-flash",
-  "google:gemini-2.0-flash-lite-preview-02-05",
-  "google:gemini-1.5-pro-latest",
-  "google:gemini-1.5-flash",
-  "deepseek:deepseek-chat",
-  "deepseek:deepseek-reasoner",
-]);
-
-/**
- * Type representing the Agent model
- */
-export type AgentModel = z.infer<typeof AgentModelEnum>;
+import { DEFAULT_REASONING_MODEL } from "../constants.ts";
 
 /**
  * Zod schema for an AI Agent
@@ -63,7 +33,7 @@ export const AgentSchema = z.object({
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */
-  model: AgentModelEnum.default("anthropic:claude-3-7-sonnet-20250219")
+  model: z.string().default(DEFAULT_REASONING_MODEL)
     .describe("Model to use for the agent"),
   /** Memory to use for the agent */
   memory: z.object({

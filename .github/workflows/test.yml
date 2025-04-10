@@ -28,7 +28,7 @@ jobs:
         run: deno run lint
 
       - name: Run format
-        run: deno run fmt
+        run: deno run fmt --check
 
       - name: Run check
         run: deno run check

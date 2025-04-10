@@ -18,6 +18,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
+import { WELL_KNOWN_EMAIL_DOMAINS } from "../../constants.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { Avatar } from "../common/Avatar.tsx";
 
@@ -43,6 +44,7 @@ export function Header() {
   const logoutUrl = useLogoutUrl();
   const teamDomain = user.email.split("@")[1];
   const teamLabel = `${teamDomain} team`;
+  const isTeamBlacklisted = WELL_KNOWN_EMAIL_DOMAINS.has(teamDomain);
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;
@@ -101,24 +103,26 @@ export function Header() {
                   )}
                 />
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-4 cursor-pointer"
-                onClick={() => {
-                  navigate(`/${teamDomain}`);
-                }}
-              >
-                <Avatar fallback={teamDomain} />
-                <span className="text-xs flex-grow justify-self-start">
-                  {teamLabel}
-                </span>
-                <Icon
-                  name="check"
-                  className={cn(
-                    "text-xs",
-                    teamSlug === teamDomain ? "opacity-100" : "opacity-0",
-                  )}
-                />
-              </DropdownMenuItem>
+              {!isTeamBlacklisted && (
+                <DropdownMenuItem
+                  className="gap-4 cursor-pointer"
+                  onClick={() => {
+                    navigate(`/${teamDomain}`);
+                  }}
+                >
+                  <Avatar fallback={teamDomain} />
+                  <span className="text-xs flex-grow justify-self-start">
+                    {teamLabel}
+                  </span>
+                  <Icon
+                    name="check"
+                    className={cn(
+                      "text-xs",
+                      teamSlug === teamDomain ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <a href={logoutUrl} className="leading-7 text-xs">

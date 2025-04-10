@@ -1,5 +1,11 @@
 import { type Message, useChat } from "@ai-sdk/react";
-import { Agent, API_SERVER_URL, useAgentRoot } from "@deco/sdk";
+import {
+  Agent,
+  API_SERVER_URL,
+  DEFAULT_REASONING_MODEL,
+  useAgentRoot,
+  useUpdateAgent,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useLayoutEffect, useRef } from "react";
@@ -93,6 +99,7 @@ export function Chat({
 }: ChatProps) {
   const agentRoot = useAgentRoot(agent?.id ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
+  const updateAgent = useUpdateAgent();
   const {
     messages,
     input,
@@ -173,6 +180,17 @@ export function Chat({
     });
   };
 
+  const handleModelChange = async (model: string) => {
+    if (!agent || !agent.id) return;
+
+    const updatedAgent = {
+      ...agent,
+      model,
+    } as Agent;
+
+    await updateAgent.mutateAsync(updatedAgent);
+  };
+
   return (
     <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full">
       {/* Fixed Header */}
@@ -204,6 +222,8 @@ export function Chat({
           handleInputChange={handleInputChange}
           handleSubmit={handleSubmit}
           stop={stop}
+          model={agent?.model ?? DEFAULT_REASONING_MODEL}
+          onModelChange={handleModelChange}
         />
       </div>
     </div>

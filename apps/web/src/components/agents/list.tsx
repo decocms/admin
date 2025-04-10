@@ -1,6 +1,6 @@
 import type { Agent } from "@deco/sdk";
 import {
-DEFAULT_REASONING_MODEL,
+  DEFAULT_REASONING_MODEL,
   useAgents,
   useCreateAgent,
   useIntegration,

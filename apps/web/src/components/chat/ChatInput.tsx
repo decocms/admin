@@ -1,8 +1,23 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { REASONING_MODELS } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { RichTextArea } from "./RichText.tsx";
+
+// Helper function to map legacy model IDs to new ones
+const mapLegacyModelId = (modelId: string): string => {
+  const model = REASONING_MODELS.find((m) => m.legacyId === modelId);
+  return model ? model.id : modelId;
+};
 
 interface ChatInputProps {
   input: string;
@@ -17,6 +32,8 @@ interface ChatInputProps {
   isLoading?: boolean;
   stop?: () => void;
   disabled?: boolean;
+  model?: string;
+  onModelChange?: (model: string) => Promise<void>;
 }
 
 export function ChatInput({
@@ -26,9 +43,12 @@ export function ChatInput({
   handleInputChange,
   handleSubmit,
   stop,
+  model = "anthropic:claude-3-7-sonnet-20250219",
+  onModelChange,
 }: ChatInputProps) {
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [modelLoading, setModelLoading] = useState(false);
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
@@ -141,11 +161,43 @@ export function ChatInput({
                   variant="ghost"
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
-                  className="h-8 w-8 transition-all hover:opacity-70"
+                  className="h-8 w-8 border hover:bg-slate-100"
                   title="Attach files"
                 >
                   <Icon className="text-sm" name="attach_file" />
                 </Button>
+                {onModelChange && (
+                  <Select
+                    value={mapLegacyModelId(model)}
+                    onValueChange={(value) => {
+                      setModelLoading(true);
+                      onModelChange(value).finally(() => {
+                        setModelLoading(false);
+                      });
+                    }}
+                    disabled={modelLoading}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
+                        modelLoading && "opacity-50 cursor-not-allowed",
+                      )}
+                    >
+                      <SelectValue placeholder="Select model" />
+                      {modelLoading && <Spinner size="xs" />}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REASONING_MODELS.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex items-center gap-1.5">
+                            <img src={model.logo} className="w-3 h-3" />
+                            <span className="text-xs">{model.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="flex items-center gap-4">
                 {input && (

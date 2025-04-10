@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 if (!globalThis.crypto) {
   globalThis.crypto = {} as Crypto;
 }
@@ -19,5 +20,24 @@ if (!globalThis.crypto.randomUUID) {
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${
       hex.slice(16, 20)
     }-${hex.slice(20)}`;
+  };
+}
+
+if (!Promise.withResolvers) {
+  // @ts-expect-error - Promise.withResolvers is hard to type
+  Promise.withResolvers = function withResolvers<T>() {
+    let resolve: (value: T) => void;
+    let reject: (reason?: any) => void;
+
+    const promise = new Promise<T>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    return {
+      promise,
+      resolve: resolve!,
+      reject: reject!,
+    };
   };
 }

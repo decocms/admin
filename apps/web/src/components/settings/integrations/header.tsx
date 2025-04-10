@@ -25,7 +25,7 @@ export function IntegrationHeader({
       onClick={() => setIsExpanded(!isExpanded)}
       className="w-full p-4 hover:bg-accent/50 transition-colors"
     >
-      <div className="flex w-full items-center justify-between gap-2">
+      <div className="flex w-full items-center gap-2 min-w-0">
         <Icon
           name="chevron_right"
           className={cn(
@@ -33,11 +33,11 @@ export function IntegrationHeader({
             isExpanded ? "rotate-90" : "",
           )}
         />
-        <div className="flex items-center gap-2 flex-grow">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <IntegrationIcon icon={integration.icon} name={integration.name} />
-          <h3 className="font-medium text-base">{integration?.name}</h3>
+          <h3 className="font-medium text-base truncate">{integration?.name}</h3>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto whitespace-nowrap">
           {tools.length > 0 && (
             <div className="flex items-center gap-2">
               <input

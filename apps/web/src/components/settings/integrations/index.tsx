@@ -120,7 +120,7 @@ export function Integration(
                     onClick={() => setSelectedTool(null)}
                     className="gap-2"
                   >
-                    <Icon name="arrow_back" className="h-4 w-4" />
+                    <Icon name="arrow_back" size={16} />
                     Back to tools
                   </Button>
                 </div>
@@ -137,36 +137,63 @@ export function Integration(
                 {toolsData.tools.map((tool: MCPTool) => (
                   <div
                     key={`${integration.id}-${tool.name}`}
-                    className="flex items-start space-x-3"
+                    className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('button')) {
+                        return;
+                      }
+                      onToolToggle(
+                        integration.id,
+                        tool.name,
+                        !(isAllSelected || enabledTools?.includes(tool.name))
+                      );
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onToolToggle(
+                          integration.id,
+                          tool.name,
+                          !(isAllSelected || enabledTools?.includes(tool.name))
+                        );
+                      }
+                    }}
                   >
-                    <div className="relative flex items-start pt-2">
+                    <div className="relative flex items-start">
                       <input
                         type="checkbox"
                         id={`${integration.id}-${tool.name}`}
                         checked={isAllSelected ||
                           enabledTools?.includes(tool.name)}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          e.stopPropagation();
                           onToolToggle(
                             integration.id,
                             tool.name,
                             e.target.checked,
-                          )}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                          );
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer mt-1"
+                        onClick={(e) => e.stopPropagation()}
                       />
                     </div>
-                    <div className="space-y-1 block max-w-[calc(100%-2rem)] break-all">
-                      <div className="flex items-center justify-between">
-                        <label
-                          htmlFor={`${integration.id}-${tool.name}`}
-                          className="text-xs font-medium leading-none cursor-pointer"
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center w-full gap-2">
+                        <span
+                          className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1"
                         >
                           {tool.name}
-                        </label>
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedTool(tool)}
-                          className="h-6 px-2 text-xs"
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation();
+                            setSelectedTool(tool);
+                          }}
+                          className="h-6 px-2 text-xs w-auto flex-none whitespace-nowrap"
                         >
                           View Schema
                         </Button>

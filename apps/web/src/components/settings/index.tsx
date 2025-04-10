@@ -24,7 +24,6 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -324,7 +323,7 @@ function App({ agentId }: { agentId: string }) {
                 Enable or disable integrations to customize your agent's
                 capabilities
               </p>
-              <ScrollArea className="flex-1">
+              <div className="flex-1">
                 <div className="flex flex-col gap-4">
                   {integrations.map((integrationId) => (
                     <IntegrationItem
@@ -337,7 +336,7 @@ function App({ agentId }: { agentId: string }) {
                     />
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
               <div className="flex justify-end mt-4">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

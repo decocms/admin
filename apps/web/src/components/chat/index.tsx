@@ -1,13 +1,10 @@
 import {
   AgentNotFoundError,
   useAgent,
-  useCreateAgent,
   useMessages,
-  WELL_KNOWN_AGENT_IDS,
+  WELL_KNOWN_AGENT_IDS
 } from "@deco/sdk";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useEffect } from "react";
-import { ErrorBoundary, useError } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { Chat as ChatUI } from "./Chat.tsx";
 
 function Chat(
@@ -81,27 +78,6 @@ Never perform actions such as installing tools, enabling services, or creating a
 `,
 };
 
-function CreateTeamAgent() {
-  const { reset } = useError();
-  const createAgent = useCreateAgent();
-
-  useEffect(() => {
-    createAgent.mutate(TEAM_AGENT, {
-      onSuccess: () => {
-        reset();
-      },
-    });
-  }, []);
-
-  return (
-    <div className="h-full bg-background flex flex-col items-center justify-center">
-      <div className="relative">
-        <Spinner />
-      </div>
-    </div>
-  );
-}
-
 export default function AgentChat(
   { agentId, threadId, panels }: {
     agentId: string;
@@ -109,24 +85,12 @@ export default function AgentChat(
     panels: string[];
   },
 ) {
-  // Ensure team agent is created even for new workspaces
-  if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
-    return (
-      <ErrorBoundary
-        fallback={<CreateTeamAgent />}
-        shouldCatch={(error) => error instanceof AgentNotFoundError}
-      >
-        <Chat agentId={agentId} threadId={threadId} panels={panels} />
-      </ErrorBoundary>
-    );
-  }
-
   return (
     <ErrorBoundary
+      shouldCatch={(error) => error instanceof AgentNotFoundError}
       fallback={
         <AgentNotFound agentId={agentId} threadId={threadId} panels={panels} />
       }
-      shouldCatch={(error) => error instanceof AgentNotFoundError}
     >
       <Chat agentId={agentId} threadId={threadId} panels={panels} />
     </ErrorBoundary>

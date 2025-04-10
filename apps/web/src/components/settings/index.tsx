@@ -143,9 +143,6 @@ function App({ agentId }: { agentId: string }) {
     setIsDirty(true);
   };
 
-  console.log("localAgent", localAgent);
-  console.log("dirty", isDirty);
-
   const handleToolToggle = (
     integrationId: string,
     toolId: string,

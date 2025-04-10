@@ -3,7 +3,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { TopbarAction, TopbarBreadcrumb } from "../../topbar/portal.tsx";
+import { Topbar } from "../../topbar/index.tsx";
 import registryIntegrations from "../registry.json" with { type: "json" };
 
 function BreadcrumbItem({
@@ -36,8 +36,8 @@ export function IntegrationTopbar() {
   const { data: installedIntegrations } = useIntegrations();
 
   return (
-    <>
-      <TopbarBreadcrumb>
+    <Topbar>
+      <div className="justify-self-start">
         <div className="flex gap-2">
           <BreadcrumbItem
             active={!!connected}
@@ -53,15 +53,15 @@ export function IntegrationTopbar() {
             to={withBasePath("/integrations/marketplace")}
           />
         </div>
-      </TopbarBreadcrumb>
-      <TopbarAction>
+      </div>
+      <div>
         <Button asChild>
           <Link to={withBasePath("/integration/new")}>
             <Icon name="add" />
             Create Integration
           </Link>
         </Button>
-      </TopbarAction>
-    </>
+      </div>
+    </Topbar>
   );
 }

@@ -27,7 +27,5 @@ export const openPreviewPanel = (
     component: "preview",
     title,
     params: toIframeProps(content),
-    position: { direction: "right" },
-    initialWidth: 400,
   });
 };

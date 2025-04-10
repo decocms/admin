@@ -37,7 +37,7 @@ import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
-import { TopbarAction, TopbarBreadcrumb } from "../topbar/portal.tsx";
+import { Topbar } from "../topbar/index.tsx";
 import { useFocusAgent } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
@@ -338,8 +338,8 @@ export default function List() {
 
   return (
     <div className="flex flex-col gap-4 flex-grow">
-      <div className="flex items-center justify-between gap-4">
-        <TopbarBreadcrumb>
+      <Topbar>
+        <div className="justify-self-start">
           <Input
             placeholder="Filter agents..."
             value={filter}
@@ -347,8 +347,8 @@ export default function List() {
               dispatch({ type: "SET_FILTER", payload: e.target.value })}
             className="w-full md:w-64"
           />
-        </TopbarBreadcrumb>
-        <TopbarAction>
+        </div>
+        <div>
           <Button onClick={handleCreate} disabled={creating} className="gap-2">
             {creating
               ? (
@@ -364,8 +364,8 @@ export default function List() {
                 </>
               )}
           </Button>
-        </TopbarAction>
-      </div>
+        </div>
+      </Topbar>
 
       {!agents
         ? (

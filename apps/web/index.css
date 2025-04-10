@@ -41,11 +41,24 @@
     --dv-background-color: var(--color-background);
 
     :not(:first-child).dv-view {
-      @apply border border-input rounded-2xl;
+      @apply border border-slate-200;
     }
 
     :not(:first-child).dv-view .dv-tabs-and-actions-container {
-      @apply border-b border-input;
+      @apply border-b border-slate-200 bg-slate-50;
+    }
+
+    .dv-tab {
+      @apply last:border-r border-slate-200 p-0!;
+    }
+
+    .dv-tab.dv-active-tab {
+      @apply bg-white;
+    }
+
+    .dv-tab:focus-within::after,
+    .dv-tab:focus::after {
+      outline: none !important;
     }
   }
 }

@@ -1,7 +1,10 @@
 import { cn } from "@deco/ui/lib/utils.ts";
-import { TOPBAR_ACTION_ID, TOPBAR_BREADCRUMB_ID } from "../../constants.ts";
 
-export function Topbar() {
+interface TopbarProps {
+  children: React.ReactNode;
+}
+
+export function Topbar({ children }: TopbarProps) {
   return (
     <header
       className={cn(
@@ -9,9 +12,7 @@ export function Topbar() {
         "grid grid-cols-2 justify-between justify-items-end gap-4 items-center",
       )}
     >
-      <div className="justify-self-start" id={TOPBAR_BREADCRUMB_ID} />
-
-      <div id={TOPBAR_ACTION_ID} />
+      {children}
     </header>
   );
 }

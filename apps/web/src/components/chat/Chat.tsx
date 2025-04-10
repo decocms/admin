@@ -172,7 +172,7 @@ export function Chat({
   };
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full">
+    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full px-4 py-2">
       {/* Fixed Header */}
       <div className="w-full mx-auto">
         <ChatHeader agent={agent} />

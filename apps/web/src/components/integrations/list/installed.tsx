@@ -193,7 +193,7 @@ export default function InstalledIntegrations() {
   };
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <IntegrationTopbar />
 
       <div className="flex flex-col gap-4">
@@ -285,6 +285,6 @@ export default function InstalledIntegrations() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </>
+    </div>
   );
 }

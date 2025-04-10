@@ -274,7 +274,7 @@ export default function Marketplace() {
   }, [registryFilter, selectedCategories]);
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <IntegrationTopbar />
 
       <div className="flex flex-col gap-4">
@@ -325,6 +325,6 @@ export default function Marketplace() {
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

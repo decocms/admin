@@ -15,10 +15,6 @@ interface ToolMessageProps {
   ) => Promise<void>;
 }
 
-interface DecoChatMetadata {
-  label?: string;
-}
-
 // Tools that have custom UI rendering and shouldn't show in the timeline
 const CUSTOM_UI_TOOLS = [
   "RENDER",
@@ -32,10 +28,8 @@ type CustomUITool = typeof CUSTOM_UI_TOOLS[number];
 interface ToolInvocation {
   toolCallId: string;
   toolName: string;
-  state: "call" | "result" | "error";
-  args?: Record<string, unknown> & {
-    deco_chat_meta?: DecoChatMetadata;
-  };
+  state: "call" | "result" | "error" | "partial-call";
+  args?: Record<string, unknown>;
   result?: {
     data?: Record<string, unknown>;
   };
@@ -86,7 +80,7 @@ function ToolStatus(
             className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="font-medium">
-              {tool.args?.deco_chat_meta?.label || tool.toolName}
+              {tool.toolName}
             </span>
             <Icon
               className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
@@ -129,15 +123,16 @@ function CustomToolUI({
   if (tool.state !== "result" || !tool.result?.data) return null;
 
   switch (tool.toolName) {
-    case "RENDER":
+    case "RENDER": {
       return (
         <Preview
           content={tool.result.data.content as "url" | "html"}
           title={tool.result.data.title as string}
         />
       );
+    }
     case "CONFIGURE":
-    case "AGENT_CREATE":
+    case "AGENT_CREATE": {
       return (
         <div className="animate-in slide-in-from-bottom duration-300">
           <AgentCard
@@ -149,17 +144,25 @@ function CustomToolUI({
           />
         </div>
       );
+    }
     case "SHOW_PICKER":
-    case "CONFIRM":
+    case "CONFIRM": {
+      const options = (tool.result.data.options as string[]).map((option) => ({
+        id: option,
+        label: option,
+        value: option,
+      }));
       return (
         <Picker
           question={tool.result.data.question as string}
-          options={tool.result.data.options as string[]}
+          options={options}
           onSelect={(value) => handlePickerSelect(tool.toolCallId, value)}
         />
       );
-    default:
+    }
+    default: {
       return null;
+    }
   }
 }
 
@@ -170,7 +173,7 @@ export function ToolMessage(
   const timelineTools: ToolInvocation[] = [];
   const customUITools: ToolInvocation[] = [];
 
-  toolInvocations.forEach((tool) => {
+  toolInvocations.forEach((tool: ToolInvocation) => {
     if (isCustomUITool(tool.toolName)) {
       customUITools.push(tool);
     } else {

@@ -146,6 +146,7 @@ function Agent(props: Props) {
             direction: group?.id ? "within" : "right",
             referenceGroup: group?.id,
           },
+          minimumWidth: 300,
           initialWidth: group?.width || 400,
           floating: false,
         });
@@ -170,6 +171,7 @@ function Agent(props: Props) {
       onReady={handleReady}
       className="h-full w-full dockview-theme-abyss deco-dockview-container"
       singleTabMode="fullwidth"
+      disableTabsOverflowList
       disableFloatingGroups
       hideBorders
     />

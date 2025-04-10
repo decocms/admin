@@ -116,20 +116,36 @@ export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
 };
 
+export interface Model {
+  id: string;
+  name: string;
+  logo: string;
+  capabilities: Capability[];
+  legacyId?: string;
+}
+
 export const DEFAULT_REASONING_MODEL = "google:gemini-2.5-pro-preview-03-25";
 
-export const REASONING_MODELS = [
+type Capability =
+  | "reasoning"
+  | "image-upload"
+  | "file-upload"
+  | "web-search";
+
+export const MODELS: Model[] = [
   {
     id: "google:gemini-2.5-pro-preview-03-25",
     name: "Google Gemini 2.5 Pro",
     logo:
       "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
+    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude 3.7 Sonnet",
     logo:
       "https://assets.decocache.com/webdraw/6780dee0-80d6-4c83-bf4f-8e5773d867ea/claude.png",
+    capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
   },
   {
@@ -137,5 +153,13 @@ export const REASONING_MODELS = [
     name: "OpenAI o3-mini",
     logo:
       "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+    capabilities: ["reasoning"],
+  },
+  {
+    id: "deepseek:deepseek-r1-distill-llama-8b",
+    name: "DeepSeek R1 Distill Llama 8B",
+    logo:
+      "https://assets.decocache.com/webdraw/798dda7c-f79e-4622-bca7-05552560fd40/deepseek.svg",
+    capabilities: ["reasoning"],
   },
 ];

@@ -8,14 +8,19 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { REASONING_MODELS } from "@deco/sdk";
+import { MODELS } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { RichTextArea } from "./RichText.tsx";
 
 // Helper function to map legacy model IDs to new ones
 const mapLegacyModelId = (modelId: string): string => {
-  const model = REASONING_MODELS.find((m) => m.legacyId === modelId);
+  const model = MODELS.find((m) => m.legacyId === modelId);
   return model ? model.id : modelId;
 };
 
@@ -49,6 +54,19 @@ export function ChatInput({
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [modelLoading, setModelLoading] = useState(false);
+
+  const selectedModel = MODELS.find((m) => m.id === model);
+
+  const getAcceptedFileTypes = () => {
+    const acceptTypes = [];
+    if (selectedModel?.capabilities.includes("image-upload")) {
+      acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
+    }
+    if (selectedModel?.capabilities.includes("file-upload")) {
+      acceptTypes.push("text/*", "application/pdf");
+    }
+    return acceptTypes.join(",");
+  };
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
@@ -154,18 +172,23 @@ export function ChatInput({
                   onChange={handleFileChange}
                   multiple
                   className="hidden"
-                  accept="image/jpeg,image/png,image/gif,image/webp,text/*,application/pdf"
+                  accept={getAcceptedFileTypes()}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-8 w-8 border hover:bg-slate-100"
-                  title="Attach files"
-                >
-                  <Icon className="text-sm" name="attach_file" />
-                </Button>
+                {selectedModel &&
+                  (selectedModel.capabilities.includes("file-upload") ||
+                    selectedModel.capabilities.includes("image-upload")) &&
+                  (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 w-8 border hover:bg-slate-100"
+                      title="Attach files"
+                    >
+                      <Icon className="text-sm" name="attach_file" />
+                    </Button>
+                  )}
                 {onModelChange && (
                   <Select
                     value={mapLegacyModelId(model)}
@@ -183,15 +206,97 @@ export function ChatInput({
                         modelLoading && "opacity-50 cursor-not-allowed",
                       )}
                     >
-                      <SelectValue placeholder="Select model" />
+                      <SelectValue placeholder="Select model">
+                        {selectedModel && (
+                          <div className="flex items-center gap-1.5">
+                            <img src={selectedModel.logo} className="w-3 h-3" />
+                            <span className="text-xs">
+                              {selectedModel.name}
+                            </span>
+                          </div>
+                        )}
+                      </SelectValue>
                       {modelLoading && <Spinner size="xs" />}
                     </SelectTrigger>
-                    <SelectContent>
-                      {REASONING_MODELS.map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          <div className="flex items-center gap-1.5">
-                            <img src={model.logo} className="w-3 h-3" />
-                            <span className="text-xs">{model.name}</span>
+                    <SelectContent className="min-w-[400px]">
+                      {MODELS.map((model) => (
+                        <SelectItem
+                          hideCheck
+                          key={model.id}
+                          value={model.id}
+                          className={cn(
+                            "p-0 focus:bg-slate-100 focus:text-foreground",
+                            model.id === selectedModel?.id && "bg-slate-50",
+                          )}
+                        >
+                          <div className="p-2 w-[400px] flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                              <img src={model.logo} className="w-5 h-5" />
+                              <span className="text-normal">{model.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 ml-auto">
+                              {model.capabilities.map((capability) => {
+                                const iconMap = {
+                                  "reasoning": "neurology",
+                                  "image-upload": "image",
+                                  "file-upload": "description",
+                                  "web-search": "search",
+                                };
+
+                                const colorMap = {
+                                  "reasoning": {
+                                    bg: "bg-purple-100",
+                                    text: "text-purple-700",
+                                  },
+                                  "image-upload": {
+                                    bg: "bg-teal-100",
+                                    text: "text-teal-700",
+                                  },
+                                  "file-upload": {
+                                    bg: "bg-blue-100",
+                                    text: "text-blue-700",
+                                  },
+                                  "web-search": {
+                                    bg: "bg-amber-100",
+                                    text: "text-amber-700",
+                                  },
+                                };
+
+                                const labelMap = {
+                                  "reasoning": "Reasoning",
+                                  "image-upload": "Can analyze images",
+                                  "file-upload": "Can analyze files",
+                                  "web-search":
+                                    "Can search the web to answer questions",
+                                };
+
+                                const colors = colorMap[capability] ||
+                                  {
+                                    bg: "bg-slate-200",
+                                    text: "text-slate-700",
+                                  };
+
+                                return (
+                                  <Tooltip key={capability}>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        className={`flex items-center justify-center h-6 w-6 rounded-sm ${colors.bg}`}
+                                      >
+                                        <Icon
+                                          name={iconMap[capability] || "check"}
+                                          className={colors.text}
+                                        />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>
+                                        {labelMap[capability] || capability}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })}
+                            </div>
                           </div>
                         </SelectItem>
                       ))}

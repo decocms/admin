@@ -102,17 +102,19 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
 
   const handleCopy = async () => {
     const content = message.parts
-      ? message.parts.filter((part: Part) => part.type === "text").map((
-        part: TextPart,
+      ? (message.parts as Part[]).filter((part) => part.type === "text").map((
+        part,
       ) => part.text).join("\n")
       : message.content;
     await navigator.clipboard.writeText(content);
   };
 
-  const mergedParts = useMemo(() => mergeParts(message.parts), [message.parts]);
+  const mergedParts = useMemo(() => mergeParts(message.parts as Part[]), [
+    message.parts,
+  ]);
 
   const hasTextContent = useMemo(() => {
-    return message.parts?.some((part: Part) => part.type === "text") ||
+    return (message.parts as Part[])?.some((part) => part.type === "text") ||
       message.content;
   }, [message.parts, message.content]);
 

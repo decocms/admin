@@ -40,7 +40,7 @@ function PropertyType(
   }
   return (
     <Badge variant="outline" className="text-xs">
-      {type ?? 'object'}
+      {type ?? "object"}
     </Badge>
   );
 }

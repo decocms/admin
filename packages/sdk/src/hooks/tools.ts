@@ -70,16 +70,6 @@ export const callTool = async (
   return response.json() as Promise<MCPToolCallResult>;
 };
 
-export const install = async (
-  appId: string,
-): Promise<{ installation: string }> => {
-  const response = await fetchAPI(`/integration/install?app=${appId}`, {
-    method: "POST",
-  });
-
-  return response.json();
-};
-
 export function useTools(connection: MCPConnection) {
   return useQuery({
     retry: false,
@@ -107,11 +97,5 @@ export function useTools(connection: MCPConnection) {
 export function useToolCall(connection: MCPConnection) {
   return useMutation({
     mutationFn: (toolCall: MCPToolCall) => callTool(connection, toolCall),
-  });
-}
-
-export function useInstall() {
-  return useMutation({
-    mutationFn: (appId: string) => install(appId),
   });
 }

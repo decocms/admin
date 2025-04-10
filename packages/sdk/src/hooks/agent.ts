@@ -171,19 +171,11 @@ export const useAgentRoot = (agentId: string) => {
 /** Hook for fetching messages from an agent */
 export const useMessages = (agentId: string, threadId: string) => {
   const { context } = useSDK();
-  const agentRoot = useAgentRoot(agentId);
+  const agentStub = useAgentStub(agentId, threadId);
 
   const data = useSuspenseQuery({
     queryKey: getKeyFor(context, agentId, threadId),
-    queryFn: () => {
-      // TODO: I guess we can improve this and have proper typings
-      // deno-lint-ignore no-explicit-any
-      const agentStub = stub<any>("AIAgent")
-        .new(agentRoot)
-        .withMetadata({ threadId });
-
-      return agentStub.query();
-    },
+    queryFn: () => agentStub.query(),
   });
 
   return data;
@@ -192,35 +184,35 @@ export const useMessages = (agentId: string, threadId: string) => {
 /** Hook for fetching threads from an agent */
 export const useThreads = (agentId: string) => {
   const { context } = useSDK();
-  const agentRoot = useAgentRoot(agentId);
+  const agentStub = useAgentStub(agentId);
 
   return useSuspenseQuery({
     queryKey: [...getKeyFor(context, agentId), "threads"],
-    queryFn: () => {
-      // TODO: I guess we can improve this and have proper typings
-      // deno-lint-ignore no-explicit-any
-      const agentStub = stub<any>("AIAgent")
-        .new(agentRoot);
-
-      return agentStub.listThreads();
-    },
+    queryFn: () => agentStub.listThreads(),
   });
 };
 
 /** Hook for fetching all threads for the user */
 export const useAllThreads = () => {
   const { context } = useSDK();
-  const agentRoot = useAgentRoot(WELL_KNOWN_AGENT_IDS.teamAgent);
+  const agentStub = useAgentStub(WELL_KNOWN_AGENT_IDS.teamAgent);
 
   return useSuspenseQuery({
     queryKey: [...getKeyFor(context), "user-threads"],
-    queryFn: () => {
-      // TODO: I guess we can improve this and have proper typings
-      // deno-lint-ignore no-explicit-any
-      const agentStub = stub<any>("AIAgent")
-        .new(agentRoot);
-
-      return agentStub.listThreads({ all: true });
-    },
+    queryFn: () => agentStub.listThreads({ all: true }),
   });
+};
+
+// TODO: I guess we can improve this and have proper typings
+export const useAgentStub = (
+  agentId = WELL_KNOWN_AGENT_IDS.teamAgent,
+  threadId?: string,
+) => {
+  const agentRoot = useAgentRoot(agentId);
+
+  return useMemo(
+    // deno-lint-ignore no-explicit-any
+    () => stub<any>("AIAgent").new(agentRoot).withMetadata({ threadId }),
+    [agentRoot, threadId],
+  );
 };

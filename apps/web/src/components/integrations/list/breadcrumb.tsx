@@ -1,10 +1,9 @@
-import { useIntegrations } from "@deco/sdk";
+import { useIntegrations, useMarketplaceIntegrations } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { Topbar } from "../../topbar/index.tsx";
-import registryIntegrations from "../registry.json" with { type: "json" };
 
 function BreadcrumbItem({
   active,
@@ -34,6 +33,7 @@ export function IntegrationTopbar() {
   const connected = useMatch({ path: "/integrations" });
 
   const { data: installedIntegrations } = useIntegrations();
+  const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   return (
     <Topbar>
@@ -49,7 +49,7 @@ export function IntegrationTopbar() {
           <BreadcrumbItem
             active={!connected}
             label="All"
-            count={registryIntegrations.length}
+            count={marketplaceIntegrations?.integrations.length ?? 0}
             to={withBasePath("/integrations/marketplace")}
           />
         </div>

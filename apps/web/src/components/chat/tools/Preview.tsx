@@ -5,7 +5,6 @@ import { ALLOWANCES } from "../../../constants.ts";
 import { openPreviewPanel, toIframeProps } from "../utils/preview.ts";
 
 interface PreviewProps {
-  type: "url" | "html";
   title?: string;
   content: string;
   className?: string;

@@ -3,7 +3,8 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { MemoizedMarkdown } from "./Markdown.tsx";
-import { ToolInvocations } from "./ToolInvocations.tsx";
+import { ToolMessage } from "./ToolMessage.tsx";
+import { useMemo } from "react";
 
 interface ChatMessageProps {
   message: Message;
@@ -11,6 +12,78 @@ interface ChatMessageProps {
     toolCallId: string,
     selectedValue: string,
   ) => Promise<void>;
+}
+
+interface MessagePart {
+  type: "text" | "tool-invocation-group";
+  content?: string;
+  toolInvocations?: NonNullable<Message["toolInvocations"]>;
+}
+
+interface MessageAttachment {
+  contentType?: string;
+  url: string;
+  name?: string;
+}
+
+interface TextPart {
+  type: "text";
+  text: string;
+}
+
+interface ToolPart {
+  type: "tool-invocation";
+  toolInvocation: NonNullable<Message["toolInvocations"]>[0];
+}
+
+type Part = TextPart | ToolPart;
+
+function mergeParts(parts: Part[] | undefined): MessagePart[] {
+  if (!parts) return [];
+
+  const mergedParts: MessagePart[] = [];
+  let currentToolGroup: NonNullable<Message["toolInvocations"]> = [];
+  let currentTextContent: string[] = [];
+
+  const flushToolGroup = () => {
+    if (currentToolGroup.length > 0) {
+      mergedParts.push({
+        type: "tool-invocation-group",
+        toolInvocations: [...currentToolGroup],
+      });
+      currentToolGroup = [];
+    }
+  };
+
+  const flushTextContent = () => {
+    if (currentTextContent.length > 0) {
+      mergedParts.push({
+        type: "text",
+        content: currentTextContent.join("\n").trim(),
+      });
+      currentTextContent = [];
+    }
+  };
+
+  parts.forEach((part) => {
+    if (part.type === "tool-invocation") {
+      // If we have pending text content, flush it first
+      flushTextContent();
+      currentToolGroup.push(part.toolInvocation);
+    } else if (part.type === "text") {
+      // If we have pending tool invocations, flush them first
+      flushToolGroup();
+      // Only add non-empty text parts
+      if (part.text.trim()) {
+        currentTextContent.push(part.text);
+      }
+    }
+  });
+
+  flushToolGroup();
+  flushTextContent();
+
+  return mergedParts;
 }
 
 export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
@@ -22,31 +95,38 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
     });
 
   const attachments = message.experimental_attachments?.filter(
-    (attachment) =>
+    (attachment: MessageAttachment) =>
       attachment?.contentType?.startsWith("image/") ||
       attachment?.contentType?.startsWith("application/pdf"),
   );
 
   const handleCopy = async () => {
     const content = message.parts
-      ? message.parts.filter((part) => part.type === "text").map((part) =>
-        part.text
-      ).join("\n")
+      ? message.parts.filter((part: Part) => part.type === "text").map((
+        part: TextPart,
+      ) => part.text).join("\n")
       : message.content;
     await navigator.clipboard.writeText(content);
   };
 
+  const mergedParts = useMemo(() => mergeParts(message.parts), [message.parts]);
+
+  const hasTextContent = useMemo(() => {
+    return message.parts?.some((part: Part) => part.type === "text") ||
+      message.content;
+  }, [message.parts, message.content]);
+
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-4 px-4 z-20 text-slate-700 group",
+        "w-full group relative flex items-start gap-4 px-4 z-20 text-slate-700 group",
         isUser ? "flex-row-reverse py-4" : "flex-row",
       )}
     >
       <div
         className={cn(
           "flex flex-col gap-1",
-          isUser ? "items-end max-w-[70%]" : "items-start",
+          isUser ? "items-end max-w-[70%]" : "w-full items-start",
         )}
       >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -55,27 +135,30 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
 
         <div
           className={cn(
-            "rounded-2xl text-base",
+            "w-full not-only:rounded-2xl text-base",
             isUser ? "bg-slate-50 p-3" : "bg-transparent",
           )}
         >
           {message.parts
             ? (
-              <div className="space-y-2">
-                {message.parts.map((part, index) => {
+              <div className="space-y-2 w-full">
+                {mergedParts.map((part, index) => {
                   if (part.type === "text") {
                     return (
                       <MemoizedMarkdown
                         key={index}
                         id={`${message.id}-${index}`}
-                        content={part.text}
+                        content={part.content || ""}
                       />
                     );
-                  } else if (part.type === "tool-invocation") {
+                  } else if (
+                    part.type === "tool-invocation-group" &&
+                    part.toolInvocations
+                  ) {
                     return (
-                      <ToolInvocations
+                      <ToolMessage
                         key={index}
-                        toolInvocations={[part.toolInvocation]}
+                        toolInvocations={part.toolInvocations}
                         handlePickerSelect={handlePickerSelect}
                       />
                     );
@@ -93,7 +176,10 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
 
           {attachments && attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {attachments.map((attachment, index) => (
+              {attachments.map((
+                attachment: MessageAttachment,
+                index: number,
+              ) => (
                 <a
                   key={`${message.id}-${index}`}
                   href={attachment.url}
@@ -144,7 +230,7 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
             </div>
           )}
 
-          {!isUser && (
+          {!isUser && hasTextContent && (
             <div className="mt-2 flex gap-2 items-center text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <div className="flex gap-1">
                 <Button

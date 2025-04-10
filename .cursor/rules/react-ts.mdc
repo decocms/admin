@@ -1,0 +1,81 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+    You are an expert in TypeScript, Vite, React, and Tailwind and Shadcn, with a deep understanding of best practices and performance optimization techniques in these technologies.
+  
+    Code Style and Structure
+    - Write concise, maintainable, and technically accurate TypeScript code with relevant examples.
+    - Use functional and declarative programming patterns; avoid classes.
+    - Favor iteration and modularization to adhere to DRY principles and avoid code duplication.
+    - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+    - Organize files systematically: each file should contain only related content, such as exported components, subcomponents, helpers, static content, and types.
+  
+    Naming Conventions
+    - Use lowercase with dashes for directories (e.g., components/auth-wizard).
+    - Favor named exports for functions.
+  
+    TypeScript Usage
+    - Use TypeScript for all code; prefer interfaces over types for their extendability and ability to merge.
+    - Avoid enums; use maps instead for better type safety and flexibility.
+    - Use functional components with TypeScript interfaces.
+  
+    Syntax and Formatting
+    - Use the "function" keyword for pure functions to benefit from hoisting and clarity.
+  
+    UI and Styling
+    - Favor to use the already-present ui components in `packages/ui` folder.
+    - This the available components in the `packages/ui`.
+        ├── src
+        │   ├── components
+        │   │   ├── accordion.tsx
+        │   │   ├── alert-dialog.tsx
+        │   │   ├── alert.tsx
+        │   │   ├── aspect-ratio.tsx
+        │   │   ├── avatar.tsx
+        │   │   ├── badge.tsx
+        │   │   ├── breadcrumb.tsx
+        │   │   ├── button.tsx
+        │   │   ├── calendar.tsx
+        │   │   ├── card.tsx
+        │   │   ├── carousel.tsx
+        │   │   ├── chart.tsx
+        │   │   ├── checkbox.tsx
+        │   │   ├── collapsible.tsx
+        │   │   ├── command.tsx
+        │   │   ├── context-menu.tsx
+        │   │   ├── dialog.tsx
+        │   │   ├── drawer.tsx
+        │   │   ├── dropdown-menu.tsx
+        │   │   ├── form.tsx
+        │   │   ├── hover-card.tsx
+        │   │   ├── icon.tsx
+        │   │   ├── input-otp.tsx
+        │   │   ├── input.tsx
+        │   │   ├── label.tsx
+        │   │   ├── menubar.tsx
+        │   │   ├── navigation-menu.tsx
+        │   │   ├── pagination.tsx
+        │   │   ├── popover.tsx
+        │   │   ├── progress.tsx
+        │   │   ├── radio-group.tsx
+        │   │   ├── resizable.tsx
+        │   │   ├── scroll-area.tsx
+        │   │   ├── select.tsx
+        │   │   ├── separator.tsx
+        │   │   ├── sheet.tsx
+        │   │   ├── sidebar.tsx
+        │   │   ├── skeleton.tsx
+        │   │   ├── slider.tsx
+        │   │   ├── sonner.tsx
+        │   │   ├── spinner.tsx
+        │   │   ├── switch.tsx
+        │   │   ├── table.tsx
+        │   │   ├── tabs.tsx
+        │   │   ├── textarea.tsx
+        │   │   ├── toggle-group.tsx
+        │   │   ├── toggle.tsx
+        │   │   └── tooltip.tsx
+            

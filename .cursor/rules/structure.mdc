@@ -1,0 +1,66 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# deco.chat 
+
+deco.chat is an Agent Builder application for users to connnect Integrations (e.g: Google Drive, Sheets, Notion or custom ones) and create AI Agents that have system instructions and available tools, that come from integrations.
+
+## Repository Structure 
+
+This project is a modern web application built with cutting-edge technologies
+and follows a monorepo architecture powered by Deno workspaces.
+
+## Technology Stack
+
+- **React 19**: The latest version of React for building user interfaces
+- **Tailwind CSS v4**: For utility-first styling
+- **Deno**: Used for dependency management, linting, formatting, and type
+  checking
+- **Vite**: Powering the development server and build process
+- **shadcn/ui**: Component library for the UI package
+ 
+## File Tree
+
+```
+.
+├── README.md
+├── apps
+│   └── web
+│       ├── index.css
+│       ├── index.html
+│       ├── package.json
+│       ├── public
+│       ├── src
+│       └── vite.config.ts
+├── deno.lock
+├── package.json
+└── packages
+    ├── sdk
+    │   ├── package.json
+    │   └── src
+    └── ui
+        ├── components.json
+        ├── package.json
+        ├── src
+        └── tsconfig.json
+
+11 directories, 12 files
+```
+
+## Folders
+
+- `/apps/web` -> Vite SPA with the main app UI
+- `/packages/sdk` -> Hooks and data access code
+- `/packages/ui` -> A shared UI component library built with shadcn/ui
+
+## Development Workflow
+
+The project leverages Deno for various development tasks:
+
+- Dependency management
+- Code linting
+- Code formatting
+- Type checking
+

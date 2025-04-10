@@ -31,7 +31,11 @@ export const groupThreadsByDate = (threads: Thread[]): GroupedThreads => {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  return threads.reduce((groups, thread) => {
+  const sortedThreads = threads.sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  return sortedThreads.reduce((groups, thread) => {
     const threadDate = new Date(thread.createdAt);
     threadDate.setHours(0, 0, 0, 0);
 

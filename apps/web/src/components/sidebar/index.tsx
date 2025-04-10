@@ -197,40 +197,46 @@ export function AppSidebar() {
         <Prefetch />
       </Suspense>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {STATIC_ITEMS.map((item) => {
-                const href = withBasePath(item.url);
+      <SidebarContent className="flex flex-col h-full">
+        {/* Fixed section with static items */}
+        <div className="flex-none">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {STATIC_ITEMS.map((item) => {
+                  const href = withBasePath(item.url);
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <WithActive to={href}>
-                      {({ isActive }) => (
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          tooltip={item.title}
-                        >
-                          <Link to={href}>
-                            <Icon name={item.icon} filled={isActive} />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      )}
-                    </WithActive>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarSeparator />
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <WithActive to={href}>
+                        {({ isActive }) => (
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={item.title}
+                          >
+                            <Link to={href}>
+                              <Icon name={item.icon} filled={isActive} />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        )}
+                      </WithActive>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarSeparator />
+        </div>
 
-        <Suspense fallback={<SidebarThreadsSkeleton />}>
-          <SidebarThreads />
-        </Suspense>
+        {/* Scrollable section with threads */}
+        <div className="flex-1 overflow-y-auto">
+          <Suspense fallback={<SidebarThreadsSkeleton />}>
+            <SidebarThreads />
+          </Suspense>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

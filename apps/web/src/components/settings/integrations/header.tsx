@@ -35,7 +35,9 @@ export function IntegrationHeader({
         />
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <IntegrationIcon icon={integration.icon} name={integration.name} />
-          <h3 className="font-medium text-base truncate">{integration?.name}</h3>
+          <h3 className="font-medium text-base truncate">
+            {integration?.name}
+          </h3>
         </div>
         <div className="flex items-center gap-4 ml-auto whitespace-nowrap">
           {tools.length > 0 && (

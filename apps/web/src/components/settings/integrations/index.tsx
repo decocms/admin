@@ -139,24 +139,24 @@ export function Integration(
                     key={`${integration.id}-${tool.name}`}
                     className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
                     onClick={(e) => {
-                      if ((e.target as HTMLElement).closest('button')) {
+                      if ((e.target as HTMLElement).closest("button")) {
                         return;
                       }
                       onToolToggle(
                         integration.id,
                         tool.name,
-                        !(isAllSelected || enabledTools?.includes(tool.name))
+                        !(isAllSelected || enabledTools?.includes(tool.name)),
                       );
                     }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         onToolToggle(
                           integration.id,
                           tool.name,
-                          !(isAllSelected || enabledTools?.includes(tool.name))
+                          !(isAllSelected || enabledTools?.includes(tool.name)),
                         );
                       }
                     }}
@@ -181,9 +181,7 @@ export function Integration(
                     </div>
                     <div className="space-y-1 flex-1 min-w-0">
                       <div className="flex items-center w-full gap-2">
-                        <span
-                          className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1"
-                        >
+                        <span className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1">
                           {tool.name}
                         </span>
                         <Button

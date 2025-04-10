@@ -24,9 +24,9 @@
     --dv-group-view-background-color: var(--color-background);
     --dv-tabs-and-actions-container-background-color: var(--color-background);
     --dv-activegroup-visiblepanel-tab-background-color: var(--color-background);
-    --dv-activegroup-hiddenpanel-tab-background-color: var(--color-muted);
-    --dv-inactivegroup-visiblepanel-tab-background-color: var(--color-muted);
-    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--color-muted);
+    --dv-activegroup-hiddenpanel-tab-background-color: var(--color-slate-50);
+    --dv-inactivegroup-visiblepanel-tab-background-color: var(--color-slate-50);
+    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--color-slate-50);
     --dv-tab-divider-color: var(--color-border);
     --dv-activegroup-visiblepanel-tab-color: var(--color-accent-foreground);
     --dv-activegroup-hiddenpanel-tab-color: var(--color-muted-foreground);

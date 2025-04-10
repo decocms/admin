@@ -1,11 +1,14 @@
 import { type Agent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { togglePanel } from "../agent/index.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Topbar } from "../topbar/index.tsx";
 
-export function ChatHeader({ agent }: { agent?: Agent }) {
+export function ChatHeader(
+  { agent, panels = [] }: { agent?: Agent; panels?: string[] },
+) {
   const handleSettings = () => {
     togglePanel({
       id: "settings",
@@ -66,26 +69,36 @@ export function ChatHeader({ agent }: { agent?: Agent }) {
             onClick={handleThreads}
             variant="outline"
             size="icon"
-            className="rounded-full hover:bg-muted"
+            className={cn(
+              "rounded-full h-8 w-8",
+              panels.includes("threads")
+                ? "border-none bg-slate-100"
+                : "bg-background border-input",
+            )}
             aria-label="Threads"
           >
             <Icon
               size={16}
               name="manage_search"
-              className="text-muted-foreground"
+              className="text-slate-700"
             />
           </Button>
           <Button
             onClick={handleSettings}
             variant="outline"
             size="icon"
-            className="rounded-full hover:bg-muted"
+            className={cn(
+              "rounded-full h-8 w-8",
+              panels.includes("settings")
+                ? "border-none bg-slate-100"
+                : "bg-background border-input",
+            )}
             aria-label="Start new chat"
           >
             <Icon
               size={16}
               name="tune"
-              className="text-muted-foreground"
+              className="text-slate-700"
             />
           </Button>
         </div>

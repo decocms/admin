@@ -13,6 +13,7 @@ interface ChatProps {
   agent?: Agent;
   threadId?: string;
   initialMessages?: Message[];
+  panels?: string[];
 }
 
 interface ChatMessagesProps {
@@ -88,6 +89,7 @@ export function Chat({
   agent,
   threadId,
   initialMessages = [],
+  panels,
 }: ChatProps) {
   const agentRoot = useAgentRoot(agent?.id ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -172,14 +174,14 @@ export function Chat({
   };
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full px-4 py-2">
+    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full">
       {/* Fixed Header */}
-      <div className="w-full mx-auto">
-        <ChatHeader agent={agent} />
+      <div className="w-full mx-auto px-4 py-2">
+        <ChatHeader agent={agent} panels={panels} />
       </div>
 
       {/* Scrollable Messages */}
-      <div className="w-full max-w-[800px] mx-auto overflow-y-auto">
+      <div className="w-full max-w-[800px] mx-auto overflow-y-auto px-4 py-2">
         <div ref={containerRef}>
           {messages.length === 0 ? <Welcome agent={agent} /> : (
             <ChatMessages

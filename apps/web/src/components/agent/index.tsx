@@ -116,14 +116,25 @@ function Agent(props: Props) {
   const handleReady = useCallback((event: DockviewReadyEvent) => {
     setApi(event.api);
 
+    const params = { agentId, threadId, panels: [] };
+
     const chatPanel = event.api.addPanel({
       id: "chat",
       component: "chat",
       title: "Chat View",
-      params: { agentId, threadId },
+      params,
     });
 
     chatPanel.group.locked = "no-drop-target";
+
+    let prev: string[] = [];
+    event.api.onDidLayoutChange(() => {
+      const currentPanels = event.api.panels.map((panel) => panel.id);
+      if (JSON.stringify(prev) !== JSON.stringify(currentPanels)) {
+        prev = currentPanels;
+        chatPanel.api.updateParameters({ ...params, panels: currentPanels });
+      }
+    });
   }, [agentId, threadId]);
 
   useEffect(() => {

@@ -10,7 +10,13 @@ import { useEffect } from "react";
 import { ErrorBoundary, useError } from "../../ErrorBoundary.tsx";
 import { Chat as ChatUI } from "./Chat.tsx";
 
-function Chat({ agentId, threadId }: { agentId: string; threadId: string }) {
+function Chat(
+  { agentId, threadId, panels }: {
+    agentId: string;
+    threadId: string;
+    panels: string[];
+  },
+) {
   const { data: messages } = useMessages(agentId, threadId);
   const { data: agent } = useAgent(agentId);
 
@@ -19,16 +25,23 @@ function Chat({ agentId, threadId }: { agentId: string; threadId: string }) {
       initialMessages={messages}
       threadId={threadId}
       agent={agent}
+      panels={panels}
     />
   );
 }
 
 function AgentNotFound(
-  { agentId, threadId }: { agentId: string; threadId: string },
+  { agentId, threadId, panels }: {
+    agentId: string;
+    threadId: string;
+    panels: string[];
+  },
 ) {
   const { data: messages } = useMessages(agentId, threadId);
 
-  return <ChatUI initialMessages={messages} threadId={threadId} />;
+  return (
+    <ChatUI initialMessages={messages} threadId={threadId} panels={panels} />
+  );
 }
 
 const TEAM_AGENT = {
@@ -90,7 +103,11 @@ function CreateTeamAgent() {
 }
 
 export default function AgentChat(
-  { agentId, threadId }: { agentId: string; threadId: string },
+  { agentId, threadId, panels }: {
+    agentId: string;
+    threadId: string;
+    panels: string[];
+  },
 ) {
   // Ensure team agent is created even for new workspaces
   if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
@@ -99,17 +116,19 @@ export default function AgentChat(
         fallback={<CreateTeamAgent />}
         shouldCatch={(error) => error instanceof AgentNotFoundError}
       >
-        <Chat agentId={agentId} threadId={threadId} />
+        <Chat agentId={agentId} threadId={threadId} panels={panels} />
       </ErrorBoundary>
     );
   }
 
   return (
     <ErrorBoundary
-      fallback={<AgentNotFound agentId={agentId} threadId={threadId} />}
+      fallback={
+        <AgentNotFound agentId={agentId} threadId={threadId} panels={panels} />
+      }
       shouldCatch={(error) => error instanceof AgentNotFoundError}
     >
-      <Chat agentId={agentId} threadId={threadId} />
+      <Chat agentId={agentId} threadId={threadId} panels={panels} />
     </ErrorBoundary>
   );
 }

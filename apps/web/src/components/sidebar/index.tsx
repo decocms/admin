@@ -107,7 +107,7 @@ function SidebarThreadList({ threads }: { threads: Thread[] }) {
             tooltip={thread.title}
           >
             <Link to={buildThreadUrl(thread)}>
-              <span>{thread.title}</span>
+              <span className="truncate">{thread.title}</span>
             </Link>
           </SidebarMenuButton>
         )}
@@ -197,9 +197,9 @@ export function AppSidebar() {
         <Prefetch />
       </Suspense>
 
-      <SidebarContent className="flex flex-col h-full">
+      <SidebarContent className="flex flex-col h-full overflow-x-hidden">
         {/* Fixed section with static items */}
-        <div className="flex-none">
+        <div className="flex-none overflow-x-hidden">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -217,7 +217,7 @@ export function AppSidebar() {
                           >
                             <Link to={href}>
                               <Icon name={item.icon} filled={isActive} />
-                              <span>{item.title}</span>
+                              <span className="truncate">{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
                         )}
@@ -232,7 +232,7 @@ export function AppSidebar() {
         </div>
 
         {/* Scrollable section with threads */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <Suspense fallback={<SidebarThreadsSkeleton />}>
             <SidebarThreads />
           </Suspense>

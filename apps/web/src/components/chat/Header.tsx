@@ -4,7 +4,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { togglePanel } from "../agent/index.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Topbar } from "../topbar/index.tsx";
 
 export function ChatHeader(
   { agent, panels = [] }: { agent?: Agent; panels?: string[] },
@@ -28,7 +27,7 @@ export function ChatHeader(
   };
 
   return (
-    <Topbar>
+    <>
       <div className="justify-self-start flex items-center gap-3 text-slate-700">
         {!agent
           ? (
@@ -103,6 +102,6 @@ export function ChatHeader(
           </Button>
         </div>
       )}
-    </Topbar>
+    </>
   );
 }

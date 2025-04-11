@@ -30,7 +30,7 @@ import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { TopbarBreadcrumb } from "../../topbar/portal.tsx";
+import { PageLayout } from "../../pageLayout.tsx";
 import Inspector from "./inspector.tsx";
 
 interface DetailProps {
@@ -136,16 +136,16 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
   const isMutating = createIntegration.isPending || updateIntegration.isPending;
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      <TopbarBreadcrumb>
+    <PageLayout
+      topbar={
         <Button asChild className="gap-2" variant="ghost">
           <Link to={withBasePath("/integrations")}>
             <Icon name="arrow_back" size={16} />
             <span>Back</span>
           </Link>
         </Button>
-      </TopbarBreadcrumb>
-
+      }
+    >
       <div className="text-2xl font-bold">
         {editIntegration ? editIntegration.name : "Create New Integration"}
       </div>
@@ -406,6 +406,6 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
       <hr className="my-4" />
 
       <Inspector connection={connection} />
-    </div>
+    </PageLayout>
   );
 }

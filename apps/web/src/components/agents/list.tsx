@@ -38,7 +38,7 @@ import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
-import { Topbar } from "../topbar/index.tsx";
+import { PageLayout } from "../pageLayout.tsx";
 import { useFocusAgent } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
@@ -338,36 +338,42 @@ export default function List() {
   };
 
   return (
-    <div className="flex flex-col gap-4 flex-grow">
-      <Topbar>
-        <div className="justify-self-start">
-          <Input
-            placeholder="Filter agents..."
-            value={filter}
-            onChange={(e) =>
-              dispatch({ type: "SET_FILTER", payload: e.target.value })}
-            className="w-full md:w-64"
-          />
-        </div>
-        <div>
-          <Button onClick={handleCreate} disabled={creating} className="gap-2">
-            {creating
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  Creating...
-                </>
-              )
-              : (
-                <>
-                  <Icon name="add" />
-                  Create Agent
-                </>
-              )}
-          </Button>
-        </div>
-      </Topbar>
-
+    <PageLayout
+      topbar={
+        <>
+          <div className="justify-self-start">
+            <Input
+              placeholder="Filter agents..."
+              value={filter}
+              onChange={(e) =>
+                dispatch({ type: "SET_FILTER", payload: e.target.value })}
+              className="w-full md:w-64"
+            />
+          </div>
+          <div>
+            <Button
+              onClick={handleCreate}
+              disabled={creating}
+              className="gap-2"
+            >
+              {creating
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    Creating...
+                  </>
+                )
+                : (
+                  <>
+                    <Icon name="add" />
+                    Create Agent
+                  </>
+                )}
+            </Button>
+          </div>
+        </>
+      }
+    >
       {!agents
         ? (
           <div className="flex h-48 items-center justify-center">
@@ -405,6 +411,6 @@ export default function List() {
             }}
           />
         )}
-    </div>
+    </PageLayout>
   );
 }

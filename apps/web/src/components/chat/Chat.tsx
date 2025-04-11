@@ -14,6 +14,7 @@ import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
 import { openPreviewPanel } from "./utils/preview.ts";
+import { PageLayout } from "../pageLayout.tsx";
 
 interface ChatProps {
   agent?: Agent;
@@ -192,12 +193,23 @@ export function Chat({
   };
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 h-full max-h-full">
-      {/* Fixed Header */}
-      <div className="w-full mx-auto px-4 py-2">
-        <ChatHeader agent={agent} panels={panels} />
-      </div>
-
+    <PageLayout
+      topbar={<ChatHeader agent={agent} panels={panels} />}
+      footer={
+        <div className="w-full max-w-[800px] mx-auto">
+          <ChatInput
+            input={input}
+            disabled={!agent}
+            isLoading={status === "submitted" || status === "streaming"}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleSubmit}
+            stop={stop}
+            model={agent?.model ?? DEFAULT_REASONING_MODEL}
+            onModelChange={handleModelChange}
+          />
+        </div>
+      }
+    >
       {/* Scrollable Messages */}
       <div className="w-full max-w-[800px] mx-auto overflow-y-auto px-4 py-2">
         <div ref={containerRef}>
@@ -212,20 +224,6 @@ export function Chat({
           )}
         </div>
       </div>
-
-      {/* Fixed Input */}
-      <div className="w-full max-w-[800px] mx-auto bg-background">
-        <ChatInput
-          input={input}
-          disabled={!agent}
-          isLoading={status === "submitted" || status === "streaming"}
-          handleInputChange={handleInputChange}
-          handleSubmit={handleSubmit}
-          stop={stop}
-          model={agent?.model ?? DEFAULT_REASONING_MODEL}
-          onModelChange={handleModelChange}
-        />
-      </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -17,7 +17,7 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { IntegrationTopbar } from "./breadcrumb.tsx";
+import { IntegrationPage } from "./breadcrumb.tsx";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
@@ -184,9 +184,7 @@ export default function Marketplace() {
   }, [marketplace, registryFilter]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <IntegrationTopbar />
-
+    <IntegrationPage>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4">
           <Input
@@ -207,6 +205,6 @@ export default function Marketplace() {
           ))}
         </div>
       </div>
-    </div>
+    </IntegrationPage>
   );
 }

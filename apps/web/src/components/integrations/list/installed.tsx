@@ -22,7 +22,7 @@ import { type ChangeEvent, useReducer } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
-import { IntegrationTopbar } from "./breadcrumb.tsx";
+import { IntegrationPage } from "./breadcrumb.tsx";
 
 // Integration Card Component
 function IntegrationCard({
@@ -193,9 +193,7 @@ export default function InstalledIntegrations() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <IntegrationTopbar />
-
+    <IntegrationPage>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <Input
@@ -285,6 +283,6 @@ export default function InstalledIntegrations() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </div>
+    </IntegrationPage>
   );
 }

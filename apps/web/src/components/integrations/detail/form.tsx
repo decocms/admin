@@ -137,7 +137,7 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
 
   return (
     <PageLayout
-      topbar={
+      header={
         <Button asChild className="gap-2" variant="ghost">
           <Link to={withBasePath("/integrations")}>
             <Icon name="arrow_back" size={16} />

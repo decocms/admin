@@ -194,7 +194,7 @@ export function Chat({
 
   return (
     <PageLayout
-      topbar={<ChatHeader agent={agent} panels={panels} />}
+      header={<ChatHeader agent={agent} panels={panels} />}
       footer={
         <div className="w-full max-w-[800px] mx-auto">
           <ChatInput

@@ -339,7 +339,7 @@ export default function List() {
 
   return (
     <PageLayout
-      topbar={
+      header={
         <>
           <div className="justify-self-start">
             <Input

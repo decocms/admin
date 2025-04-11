@@ -2,7 +2,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { ReactNode } from "react";
 
 export interface PageProps {
-  topbar: ReactNode;
+  header: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }
@@ -12,11 +12,11 @@ export interface PageProps {
  * and an optional footer. The header and footer take only the space they need, while the content
  * area takes up the remaining space and becomes scrollable when content overflows.
  */
-export function PageLayout({ topbar, children, footer }: PageProps) {
+export function PageLayout({ header, children, footer }: PageProps) {
   return (
     <div className="h-full flex flex-col">
       <header className="w-full flex items-center justify-between gap-4 px-4 py-2">
-        {topbar}
+        {header}
       </header>
 
       <div className="flex-1 min-h-0">

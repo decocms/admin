@@ -38,7 +38,7 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
 
   return (
     <PageLayout
-      topbar={
+      header={
         <>
           <div className="justify-self-start">
             <div className="flex gap-2">

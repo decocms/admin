@@ -180,9 +180,10 @@ export const useInstallFromMarketplace = () => {
 
   const mutation = useMutation({
     mutationFn: async (mcpId: string) => {
-      await agentStub.callTool("CORE.INTEGRATION_INSTALL", {
-        integrationId: mcpId,
-      }).then((r: { data: { installationId: string } }) => r.data);
+      const result: { data: { installationId: string } } = await agentStub
+        .callTool("CORE.INTEGRATION_INSTALL", { id: mcpId });
+
+      return result.data;
     },
   });
 

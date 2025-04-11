@@ -1,16 +1,10 @@
 import {
   type Integration,
-  useCreateIntegration,
-  useInstall,
+  useInstallFromMarketplace,
   useMarketplaceIntegrations,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { type ChangeEvent, useMemo, useReducer, useState } from "react";
-import { useNavigate } from "react-router";
-import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { IntegrationTopbar } from "./breadcrumb.tsx";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { type ChangeEvent, useMemo, useReducer, useState } from "react";
+import { useNavigate } from "react-router";
+import { useBasePath } from "../../../hooks/useBasePath.ts";
+import { IntegrationTopbar } from "./breadcrumb.tsx";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
@@ -34,13 +33,9 @@ function AvailableIntegrationCard(
   },
 ) {
   const {
-    mutate: createIntegrationMutation,
-    isPending: isCreating,
-  } = useCreateIntegration();
-  const {
     mutate: installIntegration,
     isPending: isInstalling,
-  } = useInstall();
+  } = useInstallFromMarketplace();
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdIntegrationId, setCreatedIntegrationId] = useState<
@@ -49,37 +44,17 @@ function AvailableIntegrationCard(
   const navigate = useNavigate();
   const withBasePath = useBasePath();
 
-  const isPending = isInstalling || isCreating;
+  const isPending = isInstalling;
 
   const handleInstall = () => {
     installIntegration(integration.id, {
       onSuccess: (data) => {
-        if (typeof data.installation !== "string") {
+        if (typeof data.installationId !== "string") {
           setError("Failed to install integration: Invalid installation data");
-          setShowModal(true);
           return;
         }
-
-        // Create the integration using the SDK
-        const newIntegrationId = crypto.randomUUID();
-        setCreatedIntegrationId(newIntegrationId);
-        createIntegrationMutation({
-          ...integration,
-          id: newIntegrationId,
-          connection: { type: "SSE", url: data.installation },
-        }, {
-          onSuccess: () => {
-            setShowModal(true);
-          },
-          onError: (error) => {
-            setError(
-              error instanceof Error
-                ? error.message
-                : "Failed to create integration",
-            );
-            setShowModal(true);
-          },
-        });
+        setShowModal(true);
+        setCreatedIntegrationId(data.installationId);
       },
       onError: (error) => {
         setError(
@@ -99,6 +74,7 @@ function AvailableIntegrationCard(
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setError(null);
     setCreatedIntegrationId(null);
   };
 
@@ -198,8 +174,7 @@ interface MarketplaceState {
 }
 
 // Define action types
-type MarketplaceAction =
-  | { type: "SET_REGISTRY_FILTER"; payload: string };
+type MarketplaceAction = { type: "SET_REGISTRY_FILTER"; payload: string };
 
 // Initial state
 const initialState: MarketplaceState = {
@@ -231,7 +206,8 @@ export default function Marketplace() {
   // Filter marketplace integrations by name
   const filteredRegistryIntegrations = useMemo(() => {
     if (!marketplaceIntegrations?.integrations) return [];
-    const integrations = marketplaceIntegrations.integrations as unknown as MarketplaceIntegration[];
+    const integrations = marketplaceIntegrations
+      .integrations as unknown as MarketplaceIntegration[];
     let filtered = integrations;
 
     // Apply text filter

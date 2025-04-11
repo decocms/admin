@@ -12,10 +12,12 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
+import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
 import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
+import { trackException } from "./hooks/analytics.ts";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -162,7 +164,14 @@ function Router() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <ErrorBoundary fallback={<ErrorFallback />}>
+      <ErrorBoundary
+        fallback={<ErrorFallback />}
+        shouldCatch={(error) => {
+          trackException(error);
+          return true;
+        }}
+      >
+        <PageviewTracker />
         <Router />
       </ErrorBoundary>
     </BrowserRouter>

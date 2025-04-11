@@ -1,7 +1,3 @@
-export const TOPBAR_ACTION_ID = "topbar-action";
-
-export const TOPBAR_BREADCRUMB_ID = "topbar-breadcrumb";
-
 export const ALLOWANCES = [
   "camera",
   "microphone",
@@ -126,3 +122,11 @@ export const WELL_KNOWN_EMAIL_DOMAINS = new Set([
   "outlook.de", // Outlook Germany
   "mailbox.org", // Privacy-focused
 ]);
+
+export const POSTHOG_PROJECT_API_KEY =
+  "phc_SBZ2fxlXX671FVuSSwPdqzIgrS10hCL1mKFBbAfrmnB";
+
+export const POSTHOG_ORIGIN = "https://posthog.decocluster.com";
+
+export const POSTHOG_SHOULD_TRACK =
+  globalThis.location.hostname !== "localhost";

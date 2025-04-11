@@ -32,6 +32,7 @@ import { Link, useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { PageLayout } from "../../pageLayout.tsx";
 import Inspector from "./inspector.tsx";
+import { trackEvent } from "../../../hooks/analytics.ts";
 
 interface DetailProps {
   integration?: Integration;
@@ -120,16 +121,32 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
       if (editIntegration) {
         // Update the existing integration
         await updateIntegration.mutateAsync(data);
+
+        trackEvent("integration_update", {
+          success: true,
+          data,
+        });
       } else {
         // Create a new integration
         await createIntegration.mutateAsync(data);
         navigate(withBasePath("/integrations"));
+
+        trackEvent("integration_create", {
+          success: true,
+          data,
+        });
       }
     } catch (error) {
       console.error(
         `Error ${editIntegration ? "updating" : "creating"} integration:`,
         error,
       );
+
+      trackEvent("integration_create", {
+        success: false,
+        error,
+        data,
+      });
     }
   };
 

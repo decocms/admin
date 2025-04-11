@@ -45,4 +45,7 @@ const fetchUser = async () => {
 
 const promise = fetchUser();
 
+export const onUserChange = (callback: (user: User) => void) =>
+  promise.then((user) => callback(user));
+
 export const useUser = () => use(promise);

@@ -18,6 +18,7 @@ import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { IntegrationPage } from "./breadcrumb.tsx";
+import { trackEvent } from "../../../hooks/analytics.ts";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
@@ -51,6 +52,11 @@ function AvailableIntegrationCard({
         }
         setShowModal(true);
         setCreatedIntegrationId(data.installationId);
+
+        trackEvent("integration_install", {
+          success: true,
+          data: integration,
+        });
       },
       onError: (error) => {
         setError(
@@ -59,6 +65,12 @@ function AvailableIntegrationCard({
             : "Failed to install integration",
         );
         setShowModal(true);
+
+        trackEvent("integration_install", {
+          success: false,
+          data: integration,
+          error,
+        });
       },
     });
   };

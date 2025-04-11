@@ -23,6 +23,7 @@ import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { IntegrationPage } from "./breadcrumb.tsx";
+import { trackEvent } from "../../../hooks/analytics.ts";
 
 // Integration Card Component
 function IntegrationCard({
@@ -178,8 +179,19 @@ export default function InstalledIntegrations() {
 
       // Use the removeIntegration mutation from the hook
       removeIntegration(integrationToDelete);
+
+      trackEvent("integration_delete", {
+        success: true,
+        data: integrationToDelete,
+      });
     } catch (error) {
       console.error("Error deleting integration:", error);
+
+      trackEvent("integration_delete", {
+        success: false,
+        data: integrationToDelete,
+        error,
+      });
     } finally {
       dispatch({ type: "DELETE_END" });
     }

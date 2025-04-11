@@ -40,6 +40,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useFocusAgent } from "./hooks.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -63,8 +64,18 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         views: agent.views,
       });
       focusAgent(duplicatedAgent.id);
+
+      trackEvent("agent_duplicate", {
+        success: true,
+        data: duplicatedAgent,
+      });
     } catch (error) {
       console.error("Error duplicating agent:", error);
+
+      trackEvent("agent_duplicate", {
+        success: false,
+        error,
+      });
     } finally {
       setDuplicating(false);
     }
@@ -149,8 +160,18 @@ function AgentCard({ agent }: { agent: Agent }) {
     try {
       await removeAgent.mutateAsync(agent.id);
       setDeleteDialogOpen(false);
+
+      trackEvent("agent_delete", {
+        success: true,
+        data: agent,
+      });
     } catch (error) {
       console.error("Error deleting Agent:", error);
+
+      trackEvent("agent_delete", {
+        success: false,
+        error,
+      });
     }
   };
 
@@ -330,8 +351,18 @@ export default function List() {
         views: [{ url: "", name: "Chat" }],
       });
       focusAgent(agent.id);
+
+      trackEvent("agent_create", {
+        success: true,
+        data: agent,
+      });
     } catch (error) {
       console.error("Error creating new agent:", error);
+
+      trackEvent("agent_create", {
+        success: false,
+        error,
+      });
     } finally {
       setCreating(false);
     }

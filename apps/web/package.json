@@ -22,6 +22,7 @@
     "@tiptap/starter-kit": "^2.11.7",
     "dockview-react": "^4.2.1",
     "marked": "^15.0.7",
+    "posthog-js": "^1.235.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.55.0",

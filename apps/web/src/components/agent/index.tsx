@@ -1,5 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   AddPanelOptions,
@@ -43,21 +44,19 @@ const AgentThreads = lazy(
 
 const adapter =
   <T extends object>(Component: ComponentType<T>) =>
-  (props: IDockviewPanelProps<T>) => {
-    return (
-      <div className="h-full w-full overflow-y-auto">
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center h-full">
-              <Spinner />
-            </div>
-          }
-        >
-          <Component {...props.params} />
-        </Suspense>
-      </div>
-    );
-  };
+  (props: IDockviewPanelProps<T>) => (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">
+          <Spinner />
+        </div>
+      }
+    >
+      <ScrollArea className="h-full w-full">
+        <Component {...props.params} />
+      </ScrollArea>
+    </Suspense>
+  );
 
 const COMPONENTS = {
   chat: adapter(AgentChat),

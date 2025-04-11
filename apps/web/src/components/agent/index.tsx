@@ -52,9 +52,13 @@ const adapter =
         </div>
       }
     >
-      <ScrollArea className="h-full w-full">
-        <Component {...props.params} />
-      </ScrollArea>
+      {props.api.component === "chat"
+        ? <Component {...props.params} />
+        : (
+          <ScrollArea className="h-full w-full">
+            <Component {...props.params} />
+          </ScrollArea>
+        )}
     </Suspense>
   );
 

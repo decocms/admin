@@ -28,7 +28,7 @@ export function ChatHeader(
 
   return (
     <>
-      <div className="justify-self-start flex items-center gap-3 text-slate-700">
+      <div className="justify-self-start flex items-center gap-3 text-slate-700 py-1">
         {!agent
           ? (
             <>
@@ -63,7 +63,7 @@ export function ChatHeader(
           )}
       </div>
       {agent && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 py-1">
           <Button
             onClick={handleThreads}
             variant="outline"

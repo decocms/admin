@@ -73,7 +73,7 @@ const TAB_COMPONENTS = {
     }
 
     return (
-      <div className="flex items-center justify-between gap-2 h-12 px-4 py-2 ">
+      <div className="flex items-center justify-between gap-2 px-4 py-4">
         <p className="text-sm">{props.api.title}</p>
         <Button
           className="p-1 h-6 w-6"

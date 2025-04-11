@@ -14,7 +14,7 @@ export function Layout() {
     <SidebarProvider
       className="h-full"
       style={{
-        "--sidebar-width": "14rem",
+        "--sidebar-width": "16rem",
         "--sidebar-width-mobile": "14rem",
       } as Record<string, string>}
     >

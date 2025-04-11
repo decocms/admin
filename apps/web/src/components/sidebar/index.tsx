@@ -105,6 +105,7 @@ function SidebarThreadList({ threads }: { threads: Thread[] }) {
             asChild
             isActive={isActive}
             tooltip={thread.title}
+            className="h-9"
           >
             <Link to={buildThreadUrl(thread)}>
               <span className="truncate">{thread.title}</span>
@@ -138,7 +139,7 @@ function SidebarThreads() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarGroupLabel>Today</SidebarGroupLabel>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               <SidebarThreadList threads={groupedThreads.today} />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -149,7 +150,7 @@ function SidebarThreads() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarGroupLabel>Yesterday</SidebarGroupLabel>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               <SidebarThreadList threads={groupedThreads.yesterday} />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -162,7 +163,7 @@ function SidebarThreads() {
             <SidebarGroup key={date}>
               <SidebarGroupContent>
                 <SidebarGroupLabel>{date}</SidebarGroupLabel>
-                <SidebarMenu>
+                <SidebarMenu className="gap-0.5">
                   <SidebarThreadList threads={threads} />
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -202,18 +203,19 @@ export function AppSidebar() {
         <div className="flex-none overflow-x-hidden">
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 {STATIC_ITEMS.map((item) => {
                   const href = withBasePath(item.url);
 
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.title} >
                       <WithActive to={href}>
                         {({ isActive }) => (
                           <SidebarMenuButton
                             asChild
                             isActive={isActive}
                             tooltip={item.title}
+                            className="h-9"
                           >
                             <Link to={href}>
                               <Icon name={item.icon} filled={isActive} />

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { Picker } from "./Picker.tsx";
+import { parseHandoffTool } from "./utils/parse.ts";
 
 interface ToolMessageProps {
   toolInvocations: NonNullable<Message["toolInvocations"]>;
@@ -58,6 +59,13 @@ function ToolStatus(
     }
   };
 
+  const getToolName = () => {
+    if (tool.toolName.startsWith("HANDOFF_")) {
+      return parseHandoffTool(tool.toolName);
+    }
+    return tool.toolName;
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex items-start gap-2">
@@ -80,7 +88,7 @@ function ToolStatus(
             className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="font-medium">
-              {tool.toolName}
+              {getToolName()}
             </span>
             <Icon
               className={cn("text-sm ml-auto", isExpanded && "rotate-90")}

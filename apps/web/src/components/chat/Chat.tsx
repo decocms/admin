@@ -128,11 +128,6 @@ export function Chat({
     onError: (error) => {
       console.error("Chat error:", error);
       setMessages((prevMessages) => prevMessages.slice(0, -1));
-
-      trackEvent("chat_error", {
-        data: { agent: { id: agent?.id, name: agent?.name }, threadId },
-        error,
-      });
     },
     onToolCall: ({ toolCall }) => {
       if (toolCall.toolName === "RENDER") {

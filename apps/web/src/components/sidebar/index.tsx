@@ -208,7 +208,7 @@ export function AppSidebar() {
                   const href = withBasePath(item.url);
 
                   return (
-                    <SidebarMenuItem key={item.title} >
+                    <SidebarMenuItem key={item.title}>
                       <WithActive to={href}>
                         {({ isActive }) => (
                           <SidebarMenuButton

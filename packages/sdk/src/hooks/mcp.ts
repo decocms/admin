@@ -156,11 +156,10 @@ export const useIntegrations = () => {
 };
 
 interface IntegrationsResult {
-  integrations: Integration[];
+  integrations: Array<Integration & { provider: string }>;
 }
 
 export const useMarketplaceIntegrations = () => {
-  // agent stub
   const agentStub = useAgentStub();
 
   return useSuspenseQuery<IntegrationsResult>({
@@ -175,8 +174,9 @@ export const useMarketplaceIntegrations = () => {
 };
 
 export const useInstallFromMarketplace = () => {
-  // agent stub
   const agentStub = useAgentStub();
+  const client = useQueryClient();
+  const { context } = useSDK();
 
   const mutation = useMutation({
     mutationFn: async (mcpId: string) => {
@@ -184,6 +184,10 @@ export const useInstallFromMarketplace = () => {
         .callTool("CORE.INTEGRATION_INSTALL", { id: mcpId });
 
       return result.data;
+    },
+    onSuccess: () => {
+      // Invalidate the integrations list to refresh it
+      client.invalidateQueries({ queryKey: getKeyFor(context) });
     },
   });
 

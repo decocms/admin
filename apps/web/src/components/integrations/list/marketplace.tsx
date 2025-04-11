@@ -14,24 +14,20 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { type ChangeEvent, useMemo, useReducer, useState } from "react";
+import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { IntegrationTopbar } from "./breadcrumb.tsx";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
-  category: string;
-  url: string;
   provider: string;
 }
 
 // Available Integration Card Component
-function AvailableIntegrationCard(
-  { integration }: {
-    integration: MarketplaceIntegration;
-  },
-) {
+function AvailableIntegrationCard({
+  integration,
+}: { integration: MarketplaceIntegration }) {
   const {
     mutate: installIntegration,
     isPending: isInstalling,
@@ -168,60 +164,24 @@ function AvailableIntegrationCard(
   );
 }
 
-// Define the state interface
-interface MarketplaceState {
-  registryFilter: string;
-}
-
-// Define action types
-type MarketplaceAction = { type: "SET_REGISTRY_FILTER"; payload: string };
-
-// Initial state
-const initialState: MarketplaceState = {
-  registryFilter: "",
-};
-
-// Reducer function
-function marketplaceReducer(
-  state: MarketplaceState,
-  action: MarketplaceAction,
-): MarketplaceState {
-  switch (action.type) {
-    case "SET_REGISTRY_FILTER": {
-      return { ...state, registryFilter: action.payload };
-    }
-    default: {
-      return state;
-    }
-  }
-}
-
 export default function Marketplace() {
-  const [state, dispatch] = useReducer(marketplaceReducer, initialState);
-  const { registryFilter } = state;
+  const [registryFilter, setRegistryFilter] = useState("");
 
   // Use the marketplace integrations hook instead of static registry
-  const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
+  const { data: marketplace } = useMarketplaceIntegrations();
 
-  // Filter marketplace integrations by name
+  // Filter marketplace integrations by name, description, and provider
   const filteredRegistryIntegrations = useMemo(() => {
-    if (!marketplaceIntegrations?.integrations) return [];
-    const integrations = marketplaceIntegrations
-      .integrations as unknown as MarketplaceIntegration[];
-    let filtered = integrations;
+    const searchTerm = registryFilter.toLowerCase();
 
-    // Apply text filter
-    if (registryFilter) {
-      filtered = filtered.filter(
-        (integration) =>
-          integration.name.toLowerCase().includes(
-            registryFilter.toLowerCase(),
-          ),
-      );
-    }
-
-    return filtered;
-  }, [marketplaceIntegrations, registryFilter]);
+    return registryFilter
+      ? marketplace.integrations.filter((integration) =>
+        integration.name.toLowerCase().includes(searchTerm) ||
+        (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
+        integration.provider.toLowerCase().includes(searchTerm)
+      )
+      : marketplace.integrations;
+  }, [marketplace, registryFilter]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -234,10 +194,7 @@ export default function Marketplace() {
             className="max-w-[373px] rounded-[46px]"
             value={registryFilter}
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              dispatch({
-                type: "SET_REGISTRY_FILTER",
-                payload: e.target.value,
-              })}
+              setRegistryFilter(e.target.value)}
           />
         </div>
 

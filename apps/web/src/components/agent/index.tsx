@@ -64,6 +64,7 @@ const adapter =
 
 const COMPONENTS = {
   chat: adapter(AgentChat),
+  chatView: adapter(AgentChat),
   settings: adapter(AgentSettings),
   preview: adapter(AgentPreview),
   threads: adapter(AgentThreads),
@@ -93,7 +94,9 @@ const TAB_COMPONENTS = {
 
 const channel = new EventTarget();
 
-export const togglePanel = <T extends object>(detail: AddPanelOptions<T>) => {
+export const togglePanel = <T extends object>(
+  detail: AddPanelOptions<T> & { forceOpen?: boolean },
+) => {
   channel.dispatchEvent(
     new CustomEvent("message", { detail }),
   );
@@ -142,14 +145,22 @@ function Agent(props: Props) {
 
   useEffect(() => {
     const handleMessage = (
-      event: CustomEvent<AddPanelOptions<object>>,
+      event: CustomEvent<AddPanelOptions<object> & { forceOpen?: boolean }>,
     ) => {
       const { detail } = event;
 
       const panel = api?.getPanel(detail.id);
 
       if (panel) {
-        panel.api.close();
+        if (!detail.forceOpen) {
+          panel.api.close();
+        } else {
+          const timestamp = Date.now();
+          panel.api.updateParameters({
+            ...detail.params,
+            key: timestamp,
+          });
+        }
       } else {
         const group = api?.groups.find((group) =>
           group.locked !== "no-drop-target"
@@ -174,7 +185,7 @@ function Agent(props: Props) {
       // @ts-expect-error - I don't really know how to properly type this
       channel.removeEventListener("message", handleMessage);
     };
-  }, [api, channel]);
+  }, [api]);
 
   return (
     <DockviewReact

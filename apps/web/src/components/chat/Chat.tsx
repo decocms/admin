@@ -1,4 +1,4 @@
-import { type Message, useChat } from "@ai-sdk/react";
+import { type Message } from "@ai-sdk/react";
 import {
   Agent,
   API_SERVER_URL,
@@ -11,18 +11,20 @@ import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
-import { openPreviewPanel } from "./utils/preview.ts";
 import { PageLayout } from "../pageLayout.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { ChatError } from "./ChatError.tsx";
 import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
 import { IMAGE_REGEXP } from "./utils/preview.ts";
+import { openPreviewPanel } from "./utils/preview.ts";
+import { useChat } from "@ai-sdk/react";
 
 interface ChatProps {
   agent?: Agent;
   threadId?: string;
   initialMessages?: Message[];
   panels?: string[];
+  view?: "readonly" | "interactive";
 }
 
 interface ChatMessagesProps {
@@ -83,6 +85,7 @@ export function Chat({
   threadId,
   initialMessages = [],
   panels,
+  view = "interactive",
 }: ChatProps) {
   const agentRoot = useAgentRoot(agent?.id ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -381,7 +384,7 @@ export function Chat({
               status={status as "streaming" | "submitted" | "ready" | "idle"}
               handlePickerSelect={handlePickerSelect}
               error={error}
-              onRetry={handleRetry}
+              onRetry={view === "interactive" ? handleRetry : undefined}
             />
           )}
         </div>

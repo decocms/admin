@@ -63,7 +63,9 @@ function ThreadItem(
     <button
       type="button"
       onClick={() =>
-        focusAgent(agentId, { threadId: thread.id.replace(`${user?.id ?? ""}-`, "")})}
+        focusAgent(agentId, {
+          threadId: thread.id.replace(`${user?.id ?? ""}-`, ""),
+        })}
       className="w-full text-left p-3 hover:bg-slate-100 rounded-lg transition-colors"
     >
       <h2 className="text-sm">{thread.title}</h2>

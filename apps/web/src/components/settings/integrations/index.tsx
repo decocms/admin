@@ -109,7 +109,7 @@ export function Integration(
         setIsExpanded={setIsExpanded}
       />
       {isExpanded && (
-        <div className="border-t p-4 space-y-4">
+        <div className="border-t p-4 space-y-4 overflow-hidden">
           {selectedTool
             ? (
               <div className="space-y-4">
@@ -133,11 +133,11 @@ export function Integration(
               </div>
             )
             : (
-              <div className="space-y-4">
+              <div className="space-y-4 max-w-full">
                 {toolsData.tools.map((tool: MCPTool) => (
                   <div
                     key={`${integration.id}-${tool.name}`}
-                    className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer max-w-full"
                     onClick={(e) => {
                       if ((e.target as HTMLElement).closest("button")) {
                         return;
@@ -161,7 +161,7 @@ export function Integration(
                       }
                     }}
                   >
-                    <div className="relative flex items-start">
+                    <div className="relative flex items-start flex-none">
                       <input
                         type="checkbox"
                         id={`${integration.id}-${tool.name}`}
@@ -179,8 +179,8 @@ export function Integration(
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <div className="flex items-center w-full gap-2">
+                    <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
+                      <div className="flex items-center w-full gap-2 flex-wrap">
                         <span className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1">
                           {tool.name}
                         </span>
@@ -191,7 +191,7 @@ export function Integration(
                             e.stopPropagation();
                             setSelectedTool(tool);
                           }}
-                          className="h-6 px-2 text-xs w-auto flex-none whitespace-nowrap"
+                          className="h-6 px-2 text-xs flex-none whitespace-nowrap"
                         >
                           View Schema
                         </Button>

@@ -91,7 +91,7 @@ function AvailableIntegrationCard({
   const handleExploreIntegration = () => {
     if (!createdAgentId) return;
     focusAgent(createdAgentId, {
-      initialMessage: `I want to configure and explore ${integration.name}`
+      message: `I want to configure and explore ${integration.name}`
     });
   };
 

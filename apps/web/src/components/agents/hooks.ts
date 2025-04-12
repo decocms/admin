@@ -8,7 +8,7 @@ const getAgentPath = (agentId: string, threadId?: string): string =>
 
 interface AgentNavigationOptions {
   threadId?: string;
-  initialMessage?: string;
+  message?: string;
 }
 
 export const useFocusAgent = () => {
@@ -19,11 +19,11 @@ export const useFocusAgent = () => {
     (agentId: string, options?: AgentNavigationOptions) => {
       const pathname = withBasePath(getAgentPath(agentId, options?.threadId));
       
-      // Add initialMessage as a query parameter if provided
+      // Add message as a query parameter if provided
       let url = pathname;
-      if (options?.initialMessage) {
+      if (options?.message) {
         const searchParams = new URLSearchParams();
-        searchParams.append('message', options.initialMessage);
+        searchParams.append('message', options.message);
         url = `${pathname}?${searchParams.toString()}`;
       }
 

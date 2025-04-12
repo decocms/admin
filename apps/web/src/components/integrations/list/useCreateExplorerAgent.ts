@@ -81,16 +81,16 @@ export function useExplorerAgents() {
       const existingAgent = agents.find(agent => agent.name === expectedAgentName);
       
       if (existingAgent) {
-        // If we found an existing agent, redirect to it with initialMessage
+        // If we found an existing agent, redirect to it with message
         focusAgent(existingAgent.id, {
-          initialMessage: `I want to explore the integration ${integration.name}`
+          message: `I want to explore the integration ${integration.name}`
         });
       } else {
-        // If no existing agent, create one and then redirect with initialMessage
+        // If no existing agent, create one and then redirect with message
         const newAgentId = await createExplorerAgent(integration.id);
         if (newAgentId) {
           focusAgent(newAgentId, {
-            initialMessage: `I want to explore the integration ${integration.name}`
+            message: `I want to explore the integration ${integration.name}`
           });
         }
       }

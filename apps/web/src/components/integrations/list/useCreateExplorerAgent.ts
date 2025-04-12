@@ -4,8 +4,10 @@ import {
   listTools,
   useCreateAgent,
   useFetchIntegration,
+  useAgents,
 } from "@deco/sdk";
 import { useState } from "react";
+import { useFocusAgent } from "../../agents/hooks.ts";
 
 export function useCreateExplorerAgent() {
   const { mutateAsync: createAgent } = useCreateAgent();
@@ -62,5 +64,41 @@ export function useCreateExplorerAgent() {
     createExplorerAgent,
     isCreatingAgent,
     error
+  };
+}
+
+export function useExplorerAgents() {
+  const { data: agents = [] } = useAgents();
+  const { createExplorerAgent } = useCreateExplorerAgent();
+  const focusAgent = useFocusAgent();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  
+  const goToAgentFor = async (integration: Integration) => {
+    setIsRedirecting(true);
+    try {
+      // TODO: Use a better heuristic when we start naming different integrations
+      const expectedAgentName = `${integration.name} Explorer`;
+      const existingAgent = agents.find(agent => agent.name === expectedAgentName);
+      
+      if (existingAgent) {
+        // If we found an existing agent, redirect to it
+        focusAgent(existingAgent.id);
+      } else {
+        // If no existing agent, create one and then redirect
+        const newAgentId = await createExplorerAgent(integration.id);
+        if (newAgentId) {
+          focusAgent(newAgentId);
+        }
+      }
+    } catch (error) {
+      console.error("Error while redirecting to explorer agent:", error);
+    } finally {
+      setIsRedirecting(false);
+    }
+  };
+  
+  return {
+    goToAgentFor,
+    isRedirecting
   };
 } 

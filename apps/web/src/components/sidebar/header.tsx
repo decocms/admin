@@ -17,7 +17,7 @@ import {
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { WELL_KNOWN_EMAIL_DOMAINS } from "../../constants.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { Avatar } from "../common/Avatar.tsx";
@@ -125,7 +125,14 @@ export function Header() {
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
+                <Link to="/wallet" className="leading-7 text-xs">
+                  <Icon name="wallet" />
+                  Wallet
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <a href={logoutUrl} className="leading-7 text-xs">
+                  <Icon name="logout" />
                   Log out
                 </a>
               </DropdownMenuItem>

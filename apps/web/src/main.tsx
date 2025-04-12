@@ -43,6 +43,10 @@ const AgentDetail = lazy(
   () => import("./components/agent/index.tsx"),
 );
 
+const Wallet = lazy(
+  () => import("./components/wallet/index.tsx"),
+);
+
 function Wrapper({ slot: children }: { slot: ReactNode }) {
   return (
     <Suspense
@@ -126,6 +130,10 @@ function Router() {
               slot={<AgentDetail agentId={WELL_KNOWN_AGENT_IDS.teamAgent} />}
             />
           }
+        />
+        <Route
+          path="wallet"
+          element={<Wrapper slot={<Wallet />} />}
         />
         <Route
           path="agents"

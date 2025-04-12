@@ -155,17 +155,17 @@ export function Chat({
   // Auto-send message from query string on first load
   useEffect(() => {
     if (!agent) return;
-    
+
     const searchParams = new URLSearchParams(globalThis.location.search);
-    const messageParam = searchParams.get('message');
-    
+    const messageParam = searchParams.get("message");
+
     if (messageParam && messages.length === initialMessages.length) {
-      append({ role: 'user', content: messageParam });
-      
+      append({ role: "user", content: messageParam });
+
       // Clear the query string after appending the message
       const url = new URL(globalThis.location.href);
-      url.search = '';
-      globalThis.history.replaceState({}, '', url);
+      url.search = "";
+      globalThis.history.replaceState({}, "", url);
     }
   }, [agent, append, initialMessages.length, messages.length]);
 

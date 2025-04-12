@@ -151,10 +151,10 @@ export const useFetchIntegration = () => {
   const fetchIntegration = async (mcpId: string) => {
     try {
       const integration = await loadIntegration(context, mcpId);
-      
+
       // Update cache
       queryClient.setQueryData(getKeyFor(context, mcpId), integration);
-      
+
       return integration;
     } catch (error) {
       if (error instanceof IntegrationNotFoundError) {

@@ -18,12 +18,12 @@ export const useFocusAgent = () => {
   const navigateToAgent = useCallback(
     (agentId: string, options?: AgentNavigationOptions) => {
       const pathname = withBasePath(getAgentPath(agentId, options?.threadId));
-      
+
       // Add message as a query parameter if provided
       let url = pathname;
       if (options?.message) {
         const searchParams = new URLSearchParams();
-        searchParams.append('message', options.message);
+        searchParams.append("message", options.message);
         url = `${pathname}?${searchParams.toString()}`;
       }
 

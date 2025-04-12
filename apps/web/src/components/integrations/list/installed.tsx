@@ -18,7 +18,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type ChangeEvent, useReducer, type MouseEvent } from "react";
+import { type ChangeEvent, type MouseEvent, useReducer } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
@@ -57,7 +57,7 @@ function IntegrationCard({
       >
         {isRedirecting ? <Spinner size="sm" /> : <Icon name="chat" />}
       </Button>
-      
+
       {/* Delete button - visible only on hover */}
       <Button
         size="icon"
@@ -70,7 +70,7 @@ function IntegrationCard({
       >
         <Icon name="delete" />
       </Button>
-      
+
       <CardContent className="p-4">
         <div className="grid grid-cols-[min-content_1fr_min-content] gap-4">
           <div className="h-16 w-16 rounded-md flex items-center justify-center overflow-hidden">
@@ -82,11 +82,7 @@ function IntegrationCard({
                   className="h-full w-full object-contain"
                 />
               )
-              : (
-                <Icon
-                  name="conversion_path"
-                />
-              )}
+              : <Icon name="conversion_path" />}
           </div>
 
           <div className="grid grid-cols-1 gap-1">
@@ -269,9 +265,7 @@ export default function InstalledIntegrations() {
                 ))}
               </div>
               <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-                <Icon
-                  name="search_off"
-                />
+                <Icon name="search_off" />
                 <p className="text-muted-foreground">
                   No integrations match your filter. Try adjusting your search.
                 </p>

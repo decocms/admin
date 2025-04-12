@@ -43,10 +43,11 @@ function AvailableIntegrationCard({
   const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const navigate = useNavigate();
   const withBasePath = useBasePath();
-  
+
   // Use the custom hook for agent creation
-  const { createExplorerAgent, isCreatingAgent, error } = useCreateExplorerAgent();
-  
+  const { createExplorerAgent, isCreatingAgent, error } =
+    useCreateExplorerAgent();
+
   const isPending = isInstalling || isCreatingAgent;
 
   const handleInstall = () => {
@@ -56,7 +57,7 @@ function AvailableIntegrationCard({
           // Handle error
           return;
         }
-        
+
         const installationId = data.installationId;
         setShowModal(true);
         setCreatedIntegrationId(installationId);
@@ -91,7 +92,7 @@ function AvailableIntegrationCard({
   const handleExploreIntegration = () => {
     if (!createdAgentId) return;
     focusAgent(createdAgentId, {
-      message: `I want to configure and explore ${integration.name}`
+      message: `I want to configure and explore ${integration.name}`,
     });
   };
 
@@ -176,14 +177,14 @@ function AvailableIntegrationCard({
               : createdIntegrationId
               ? (
                 <div className="flex gap-3">
-                  <Button 
+                  <Button
                     onClick={handleEditIntegration}
                     disabled={!createdAgentId}
                   >
                     Inspect
                   </Button>
-                  <Button 
-                    className="bg-green-600 hover:bg-green-700" 
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
                     onClick={handleExploreIntegration}
                     disabled={!createdAgentId}
                   >
@@ -236,7 +237,9 @@ export default function Marketplace() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
-          {filteredRegistryIntegrations.map((integration: MarketplaceIntegration) => (
+          {filteredRegistryIntegrations.map((
+            integration: MarketplaceIntegration,
+          ) => (
             <AvailableIntegrationCard
               key={integration.id}
               integration={integration}

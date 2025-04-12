@@ -56,7 +56,7 @@ export function DetailForm({ integration: editIntegration }: DetailProps) {
       description: editIntegration?.description ?? "",
       icon: editIntegration?.icon ?? "",
       connection: editIntegration?.connection ?? {
-        type: "SSE" as const,
+        type: "HTTP" as const,
         url: "https://example.com/sse",
         token: "",
       },

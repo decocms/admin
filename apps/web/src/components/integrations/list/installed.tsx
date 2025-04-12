@@ -23,11 +23,8 @@ import { useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { IntegrationPage } from "./breadcrumb.tsx";
-<<<<<<< HEAD
 import { trackEvent } from "../../../hooks/analytics.ts";
-=======
 import { useExplorerAgents } from "./useCreateExplorerAgent.ts";
->>>>>>> 1a0f8e0 (Go to Explorer Agent)
 
 // Integration Card Component
 function IntegrationCard({

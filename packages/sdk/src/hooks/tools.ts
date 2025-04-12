@@ -41,7 +41,7 @@ const fetchAPI = (path: string, init?: RequestInit) =>
     headers: { ...API_HEADERS, ...init?.headers },
   });
 
-const listTools = async (connection: MCPConnection): Promise<ToolsData> => {
+export const listTools = async (connection: MCPConnection): Promise<ToolsData> => {
   const response = await fetchAPI("/inspect/list-tools", {
     method: "POST",
     body: JSON.stringify(connection),

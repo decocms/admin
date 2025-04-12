@@ -143,6 +143,30 @@ export const useIntegration = (mcpId: string) => {
   return data;
 };
 
+/** Hook that returns a function to fetch a specific integration on demand */
+export const useFetchIntegration = () => {
+  const { context } = useSDK();
+  const queryClient = useQueryClient();
+
+  const fetchIntegration = async (mcpId: string) => {
+    try {
+      const integration = await loadIntegration(context, mcpId);
+      
+      // Update cache
+      queryClient.setQueryData(getKeyFor(context, mcpId), integration);
+      
+      return integration;
+    } catch (error) {
+      if (error instanceof IntegrationNotFoundError) {
+        throw error;
+      }
+      throw error;
+    }
+  };
+
+  return fetchIntegration;
+};
+
 /** Hook for listing all MCPs */
 export const useIntegrations = () => {
   const { context } = useSDK();

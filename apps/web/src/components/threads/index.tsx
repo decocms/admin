@@ -58,12 +58,12 @@ function ThreadItem(
   { agentId, thread }: { agentId: string; thread: Thread },
 ) {
   const user = useUser();
-  const navigate = useFocusAgent();
+  const focusAgent = useFocusAgent();
   return (
     <button
       type="button"
       onClick={() =>
-        navigate(agentId, thread.id.replace(`${user?.id ?? ""}-`, ""))}
+        focusAgent(agentId, { threadId: thread.id.replace(`${user?.id ?? ""}-`, "")})}
       className="w-full text-left p-3 hover:bg-slate-100 rounded-lg transition-colors"
     >
       <h2 className="text-sm">{thread.title}</h2>

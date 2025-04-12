@@ -90,7 +90,9 @@ function AvailableIntegrationCard({
 
   const handleExploreIntegration = () => {
     if (!createdAgentId) return;
-    focusAgent(createdAgentId);
+    focusAgent(createdAgentId, {
+      initialMessage: `I want to configure and explore ${integration.name}`
+    });
   };
 
   const handleCloseModal = () => {

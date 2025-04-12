@@ -8,7 +8,7 @@ import {
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
@@ -54,7 +54,7 @@ function ChatMessages(
       {error && (
         <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
           <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
-            <Icon name="info" className="h-4 w-4" />
+            <Icon name="info" />
             <p>An error occurred while generating the response.</p>
             <div className="flex items-center gap-2">
               <Button
@@ -151,6 +151,23 @@ export function Chat({
   useLayoutEffect(() => {
     containerRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
   }, []);
+
+  // Auto-send message from query string on first load
+  useEffect(() => {
+    if (!agent) return;
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const messageParam = searchParams.get('message');
+    
+    if (messageParam && messages.length === initialMessages.length) {
+      append({ role: 'user', content: messageParam });
+      
+      // Clear the query string after appending the message
+      const url = new URL(window.location.href);
+      url.search = '';
+      window.history.replaceState({}, '', url);
+    }
+  }, [agent, append, initialMessages.length, messages.length]);
 
   const handlePickerSelect = async (
     toolCallId: string,

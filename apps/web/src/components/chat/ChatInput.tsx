@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { MODELS } from "@deco/sdk";
+import { DEFAULT_REASONING_MODEL, MODELS } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { RichTextArea } from "./RichText.tsx";
 
@@ -48,21 +48,21 @@ export function ChatInput({
   handleInputChange,
   handleSubmit,
   stop,
-  model = "anthropic:claude-3-7-sonnet-20250219",
+  model = DEFAULT_REASONING_MODEL,
   onModelChange,
 }: ChatInputProps) {
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [modelLoading, setModelLoading] = useState(false);
 
-  const selectedModel = MODELS.find((m) => m.id === model);
+  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   const getAcceptedFileTypes = () => {
     const acceptTypes = [];
-    if (selectedModel?.capabilities.includes("image-upload")) {
+    if (selectedModel.capabilities.includes("image-upload")) {
       acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
     }
-    if (selectedModel?.capabilities.includes("file-upload")) {
+    if (selectedModel.capabilities.includes("file-upload")) {
       acceptTypes.push("text/*", "application/pdf");
     }
     return acceptTypes.join(",");
@@ -174,21 +174,20 @@ export function ChatInput({
                   className="hidden"
                   accept={getAcceptedFileTypes()}
                 />
-                {selectedModel &&
-                  (selectedModel.capabilities.includes("file-upload") ||
-                    selectedModel.capabilities.includes("image-upload")) &&
-                  (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-8 w-8 border hover:bg-slate-100"
-                      title="Attach files"
-                    >
-                      <Icon className="text-sm" name="attach_file" />
-                    </Button>
-                  )}
+                {selectedModel.capabilities.includes("file-upload") ||
+                  selectedModel.capabilities.includes("image-upload") &&
+                    (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-8 w-8 border hover:bg-slate-100"
+                        title="Attach files"
+                      >
+                        <Icon className="text-sm" name="attach_file" />
+                      </Button>
+                    )}
                 {onModelChange && (
                   <Select
                     value={mapLegacyModelId(model)}
@@ -207,14 +206,12 @@ export function ChatInput({
                       )}
                     >
                       <SelectValue placeholder="Select model">
-                        {selectedModel && (
-                          <div className="flex items-center gap-1.5">
-                            <img src={selectedModel.logo} className="w-3 h-3" />
-                            <span className="text-xs">
-                              {selectedModel.name}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          <img src={selectedModel.logo} className="w-3 h-3" />
+                          <span className="text-xs">
+                            {selectedModel.name}
+                          </span>
+                        </div>
                       </SelectValue>
                       {modelLoading && <Spinner size="xs" />}
                     </SelectTrigger>

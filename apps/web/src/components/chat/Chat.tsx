@@ -8,7 +8,7 @@ import {
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
@@ -101,7 +101,7 @@ export function Chat({
 }: ChatProps) {
   const agentRoot = useAgentRoot(agent?.id ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [userScrolled, setUserScrolled] = useState(false);
   const autoScrollingRef = useRef(false);
@@ -153,44 +153,67 @@ export function Chat({
     },
   });
 
-  // Detect user scroll and update state
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
+    setTimeout(() => {
+      const viewport = document.querySelector('[data-slot="scroll-area-viewport"]');
+      if (viewport instanceof HTMLDivElement) {
+        scrollViewportRef.current = viewport;
+        
+        if (messages.length > 0) {
+          setTimeout(() => {
+            if (containerRef.current) {
+              containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+            } else if (viewport) {
+              viewport.scrollTop = viewport.scrollHeight;
+            }
+          }, 100);
+        }
+      }
+    }, 100);
+  }, [messages.length]);
+
+  useEffect(() => {
+    const scheduleScrollCheck = () => {
+      requestAnimationFrame(() => {
+        const scrollContainer = scrollViewportRef.current;
+        if (!scrollContainer || autoScrollingRef.current) return;
+        
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const isBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 10;
+        const scrollingUp = scrollTop < lastScrollTopRef.current;
+        
+        if (scrollingUp) {
+          setUserScrolled(true);
+        } else if (isBottom) {
+          setUserScrolled(false);
+        }
+        
+        setIsAtBottom(isBottom);
+        lastScrollTopRef.current = scrollTop;
+      });
+    };
+
+    const scrollContainer = scrollViewportRef.current;
     if (!scrollContainer) return;
     
     lastScrollTopRef.current = scrollContainer.scrollTop;
-    
-    const handleScroll = () => {
-      if (!scrollContainer || autoScrollingRef.current) return;
-      
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const isBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 10;
-      const scrollingUp = scrollTop < lastScrollTopRef.current;
-      
-      if (scrollingUp) {
-        setUserScrolled(true);
-      } else if (isBottom) {
-        setUserScrolled(false);
-      }
-      
-      setIsAtBottom(isBottom);
-      lastScrollTopRef.current = scrollTop;
-    };
-    
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    scrollContainer.addEventListener("scroll", scheduleScrollCheck, { passive: true });
     
     return () => {
-      scrollContainer.removeEventListener("scroll", handleScroll);
+      scrollContainer.removeEventListener("scroll", scheduleScrollCheck);
     };
-  }, []);
+  }, [scrollViewportRef.current]);
 
-  // Auto-scroll logic for new messages
   useEffect(() => {
+    const scrollContainer = scrollViewportRef.current;
+    if (!scrollContainer) return;
+    
     if (isAtBottom || (status === "streaming" && !userScrolled)) {
       autoScrollingRef.current = true;
       
-      const scrollContainer = scrollContainerRef.current;
-      if (scrollContainer) {
+      if (containerRef.current) {
+        containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+      } else {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
       
@@ -198,9 +221,29 @@ export function Chat({
         autoScrollingRef.current = false;
       }, 100);
     }
-  }, [messages, isAtBottom, status, userScrolled]);
+  }, [messages, isAtBottom, status, userScrolled, scrollViewportRef.current]);
 
-  // Auto-send message from query string on first load
+  useEffect(() => {
+    const initialScrollTimeout = setTimeout(() => {
+      const scrollContainer = scrollViewportRef.current;
+      if (scrollContainer && messages.length > 0) {
+        autoScrollingRef.current = true;
+        
+        if (containerRef.current) {
+          containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+        } else {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+        
+        setTimeout(() => {
+          autoScrollingRef.current = false;
+        }, 100);
+      }
+    }, 300);
+    
+    return () => clearTimeout(initialScrollTimeout);
+  }, []);
+
   useEffect(() => {
     if (!agent) return;
 
@@ -210,7 +253,6 @@ export function Chat({
     if (messageParam && messages.length === initialMessages.length) {
       append({ role: "user", content: messageParam });
 
-      // Clear the query string after appending the message
       const url = new URL(globalThis.location.href);
       url.search = "";
       globalThis.history.replaceState({}, "", url);
@@ -222,7 +264,6 @@ export function Chat({
     selectedValue: string,
   ) => {
     if (selectedValue) {
-      // Remove the picker
       setMessages((prevMessages) =>
         prevMessages.map((msg) => ({
           ...msg,
@@ -281,28 +322,18 @@ export function Chat({
       }
     >
       <div className="w-full max-w-[800px] mx-auto">
-        <div 
-          className="overflow-y-auto px-4 py-2 custom-scrollbar"
-          style={{
-            height: "calc(100vh - 200px)", 
-            maxHeight: "calc(100vh - 200px)",
-            scrollbarWidth: "thin",
-            scrollbarColor: "rgba(0,0,0,0.2) transparent",
-          }}
-          ref={scrollContainerRef}
-        >
-          <div ref={containerRef}>
-            {messages.length === 0 ? <Welcome agent={agent} /> : (
-              <ChatMessages
-                messages={messages}
-                status={status as "streaming" | "submitted" | "ready" | "idle"}
-                handlePickerSelect={handlePickerSelect}
-                error={error}
-                onRetry={handleRetry}
-              />
-            )}
-          </div>
+        <div ref={containerRef}>
+          {messages.length === 0 ? <Welcome agent={agent} /> : (
+            <ChatMessages
+              messages={messages}
+              status={status as "streaming" | "submitted" | "ready" | "idle"}
+              handlePickerSelect={handlePickerSelect}
+              error={error}
+              onRetry={handleRetry}
+            />
+          )}
         </div>
+        <div className="h-4" />
       </div>
     </PageLayout>
   );

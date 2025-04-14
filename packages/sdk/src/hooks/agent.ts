@@ -13,6 +13,7 @@ import {
   loadAgent,
   updateAgent,
 } from "../crud/agent.ts";
+import { listThreads } from "../crud/thread.ts";
 import type { Agent } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 import { useSDK } from "./store.tsx";
@@ -195,11 +196,10 @@ export const useThreads = (agentId: string) => {
 /** Hook for fetching all threads for the user */
 export const useAllThreads = () => {
   const { context } = useSDK();
-  const agentStub = useAgentStub(WELL_KNOWN_AGENT_IDS.teamAgent);
 
   return useSuspenseQuery({
     queryKey: [...getKeyFor(context), "user-threads"],
-    queryFn: () => agentStub.listThreads({ all: true }),
+    queryFn: () => listThreads(context),
   });
 };
 

@@ -1,8 +1,4 @@
-import {
-  useAgents,
-  useAllThreads,
-  useIntegrations,
-} from "@deco/sdk";
+import { useAgents, useAllThreads, useIntegrations } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,

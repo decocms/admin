@@ -52,7 +52,7 @@ const WithActive = (
 };
 
 function buildThreadUrl(thread: Thread): string {
-  return `/agent/${thread.metadata.agentId}/${thread.id}`;
+  return `agent/${thread.metadata.agentId}/${thread.id}`;
 }
 
 function SidebarThreadList({ threads }: { threads: Thread[] }) {

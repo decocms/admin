@@ -52,7 +52,7 @@ const adapter =
         </div>
       }
     >
-      {props.api.component === "chat"
+      {props.api.component === "chat" || props.api.component === "preview"
         ? <Component {...props.params} />
         : (
           <ScrollArea className="h-full w-full">

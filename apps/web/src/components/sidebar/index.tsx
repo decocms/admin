@@ -2,7 +2,6 @@ import {
   useAgents,
   useAllThreads,
   useIntegrations,
-  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {

@@ -25,6 +25,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
 
 const MINIMUM_AMOUNT = 500; // $5.00 in cents
 
@@ -82,7 +83,7 @@ function Activity() {
   if (!statements?.items.length) return <p className="text-gray-500">No activity yet</p>;
 
   return (
-    <div className="min-w-96 max-w-2xl">
+    <div className="min-w-[450px] max-w-2xl">
       <h3 className="text-gray-600 mb-4">Activity</h3>
       <div className="space-y-3">
         {statements.items.map((statement) => (
@@ -118,11 +119,11 @@ function Activity() {
                   </div>
                 </div>
                 <p className={`font-medium ${statement.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                  {statement.amount}
+                  {statement.amountExact}
                 </p>
               </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[525px]">
               <DialogHeader>
                 <DialogTitle>Transaction Details</DialogTitle>
               </DialogHeader>
@@ -141,7 +142,7 @@ function Activity() {
                     <div>
                       <p className="font-medium text-gray-900">{statement.title}</p>
                       <p className={`text-lg font-medium ${statement.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                        {statement.amount}
+                        {statement.amountExact}
                       </p>
                     </div>
                   </div>
@@ -164,14 +165,27 @@ function Activity() {
                   {statement.metadata && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-900">Details</p>
-                      <div className="space-y-1">
-                        {Object.entries(statement.metadata).map(([key, value]) => (
-                          <div key={key} className="flex justify-between text-sm">
-                            <span className="text-gray-500">{key}</span>
-                            <span className="text-gray-900">{value as string}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-100">
+                          {Object.entries(statement.metadata).map(([key, value]) => (
+                            <tr key={key}>
+                              <td className="py-2 text-gray-500">{key}</td>
+                              <td className="py-2 text-gray-900 text-right overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px]">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
+                                      {value as string}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {value as string}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>

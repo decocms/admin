@@ -22,6 +22,7 @@ interface WalletStatement {
   timestamp: string;
   title: string;
   amount: string;
+  amountExact: string;
   description?: string;
   type: "credit" | "debit";
   icon?: string;

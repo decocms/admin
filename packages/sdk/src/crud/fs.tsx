@@ -38,12 +38,17 @@ export const readFile = async (path: string, options?: FileSystemOptions) => {
 
 export const writeFile = async (
   path: string,
-  content: string,
+  content: string | Uint8Array,
   options?: FileSystemOptions,
 ) => {
   const response = await fetchAPI(path, options, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: typeof content === "string" ? JSON.stringify({ content }) : content,
+    headers: {
+      "content-type": typeof content === "string"
+        ? "application/json"
+        : "application/octet-stream",
+    },
   });
 
   if (!response.ok) {

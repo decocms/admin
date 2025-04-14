@@ -1,9 +1,4 @@
-import {
-  useAgents,
-  useAllThreads,
-  useIntegrations,
-  WELL_KNOWN_AGENT_IDS,
-} from "@deco/sdk";
+import { useAgents, useAllThreads, useIntegrations } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -56,44 +51,8 @@ const WithActive = (
   );
 };
 
-function extractThreadId(obj: { id: string }): string | null {
-  const parts = obj.id.split("-");
-  if (parts.length < 5) return null;
-  // Take the last 5 parts to reconstruct the UUID
-  const threadId = parts.slice(-5).join("-");
-  return threadId;
-}
-
-function extractAgentId(obj: { resourceId: string }): string | null {
-  const match = obj.resourceId.match(/agents([0-9a-f]{32})/i);
-  if (!match) {
-    // check for well known agent ids
-    const wellKnownIdMatch = obj.resourceId.match(/agents([^-]+)/);
-    const wellKnownId = wellKnownIdMatch ? wellKnownIdMatch[1] : null;
-    if (wellKnownId === WELL_KNOWN_AGENT_IDS.teamAgent.toLowerCase()) {
-      return WELL_KNOWN_AGENT_IDS.teamAgent;
-    }
-
-    return null;
-  }
-  const raw = match[1];
-  // Insert hyphens to format as UUID
-  const formatted = [
-    raw.slice(0, 8),
-    raw.slice(8, 12),
-    raw.slice(12, 16),
-    raw.slice(16, 20),
-    raw.slice(20),
-  ].join("-");
-  return formatted;
-}
-
-// TODO(@camudo): please change this later to get agent and thread id from metadata
-// so i dont have to do this weird stuff
 function buildThreadUrl(thread: Thread): string {
-  const agentId = extractAgentId(thread);
-  const threadId = extractThreadId(thread);
-  return `/agent/${agentId}/${threadId}`;
+  return `agent/${thread.metadata.agentId}/${thread.id}`;
 }
 
 function SidebarThreadList({ threads }: { threads: Thread[] }) {

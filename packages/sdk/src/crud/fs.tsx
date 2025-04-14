@@ -43,10 +43,12 @@ export const writeFile = async (
 ) => {
   const response = await fetchAPI(path, options, {
     method: "POST",
-    body: typeof content === 'string' ? JSON.stringify({ content }) : content,
+    body: typeof content === "string" ? JSON.stringify({ content }) : content,
     headers: {
-      'content-type': typeof content === 'string' ? 'application/json' : 'application/octet-stream'
-    }
+      "content-type": typeof content === "string"
+        ? "application/json"
+        : "application/octet-stream",
+    },
   });
 
   if (!response.ok) {

@@ -17,6 +17,7 @@ import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 import { groupThreadsByDate, Thread } from "../threads/index.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { SidebarFooter } from "./footer.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -198,6 +199,9 @@ export function AppSidebar() {
             <SidebarThreads />
           </Suspense>
         </div>
+
+        {/* Footer with user info */}
+        <SidebarFooter />
       </SidebarContent>
     </Sidebar>
   );

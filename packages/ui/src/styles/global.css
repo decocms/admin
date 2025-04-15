@@ -40,6 +40,28 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Custom colors */
+  --dc-50: #fcfbf6;
+  --dc-100: #f3f1e7;
+  --dc-200: #dedbc9;
+  --dc-300: #c4c1b1;
+  --dc-400: #a2a1a0;
+  --dc-500: #8a8a8a;
+  --dc-600: #707070;
+  --dc-700: #575757;
+  --dc-800: #3d3d3d;
+  --dc-900: #262626;
+  --dc-950: #1a1a1a;
+
+  --primary-light: #d0ec1a;
+  --primary-dark: #07401a;
+
+  --purple-light: #a595ff;
+  --purple-dark: #151042;
+
+  --yellow-light: #ffc116;
+  --yellow-dark: #392b02;
 }
 
 .dark {
@@ -75,6 +97,28 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Custom colors */
+  --dc-50: #fcfbf6;
+  --dc-100: #f3f1e7;
+  --dc-200: #dedbc9;
+  --dc-300: #c4c1b1;
+  --dc-400: #a2a1a0;
+  --dc-500: #8a8a8a;
+  --dc-600: #707070;
+  --dc-700: #575757;
+  --dc-800: #3d3d3d;
+  --dc-900: #262626;
+  --dc-950: #1a1a1a;
+
+  --primary-light: #d0ec1a;
+  --primary-dark: #07401a;
+
+  --purple-light: #a595ff;
+  --purple-dark: #151042;
+
+  --yellow-light: #ffc116;
+  --yellow-dark: #392b02;
 }
 
 @theme inline {
@@ -118,6 +162,25 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Custom colors */
+  --color-dc-50: var(--dc-50);
+  --color-dc-100: var(--dc-100);
+  --color-dc-200: var(--dc-200);
+  --color-dc-300: var(--dc-300);
+  --color-dc-400: var(--dc-400);
+  --color-dc-500: var(--dc-500);
+  --color-dc-600: var(--dc-600);
+  --color-dc-700: var(--dc-700);
+  --color-dc-800: var(--dc-800);
+  --color-dc-900: var(--dc-900);
+  --color-dc-950: var(--dc-950);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-purple-light: var(--purple-light);
+  --color-purple-dark: var(--purple-dark);
+  --color-yellow-light: var(--yellow-light);
+  --color-yellow-dark: var(--yellow-dark);
 }
 
 @layer base {

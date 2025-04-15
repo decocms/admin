@@ -79,6 +79,14 @@ export function Chat({
   const agentRoot = useAgentRoot(agent?.id ?? "");
   const containerRef = useRef<HTMLDivElement>(null);
   const updateAgent = useUpdateAgent();
+
+  // Keep track of the last file data for use in the next message
+  const fileDataRef = useRef<{
+    name: string;
+    contentType: string;
+    url: string;
+  }[]>([]);
+
   const {
     messages,
     input,
@@ -96,12 +104,32 @@ export function Chat({
       "x-deno-isolate-instance-id": agentRoot,
     },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
-    experimental_prepareRequestBody: ({ messages }) => ({
-      args: [[messages.at(-1)]],
-      metadata: {
-        threadId: threadId ?? agent?.id ?? "",
-      },
-    }),
+    experimental_prepareRequestBody: ({ messages }) => {
+      const message = messages.at(-1);
+
+      const files = fileDataRef.current;
+
+      return {
+        args: [[{
+          ...message,
+          annotations: files && files.length > 0
+            ? [
+              files.map((file) => ({
+                type: "file",
+                url: file.url,
+                name: file.name,
+                contentType: file.contentType,
+                content:
+                  "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
+              })),
+            ]
+            : message?.annotations || [],
+        }]],
+        metadata: {
+          threadId: threadId ?? agent?.id ?? "",
+        },
+      };
+    },
     onError: (error) => {
       console.error("Chat error:", error);
       setMessages((prevMessages) => prevMessages.slice(0, -1));
@@ -191,17 +219,41 @@ export function Chat({
     await updateAgent.mutateAsync(updatedAgent);
   };
 
+  const handleChatSubmit = (
+    e: React.FormEvent<HTMLFormElement>,
+    options?: {
+      experimental_attachments?: FileList;
+      fileData?: {
+        name: string;
+        contentType: string;
+        url: string;
+      }[];
+      abort?: boolean;
+    },
+  ) => {
+    if (options?.fileData && options.fileData.length > 0) {
+      fileDataRef.current = options.fileData;
+    } else {
+      fileDataRef.current = [];
+    }
+
+    handleSubmit(e, options);
+
+    fileDataRef.current = [];
+  };
+
   return (
     <PageLayout
       header={<ChatHeader agent={agent} panels={panels} />}
       footer={
         <div className="w-full max-w-[800px] mx-auto">
           <ChatInput
+            agentRoot={agentRoot}
             input={input}
             disabled={!agent}
             isLoading={status === "submitted" || status === "streaming"}
             handleInputChange={handleInputChange}
-            handleSubmit={handleSubmit}
+            handleSubmit={handleChatSubmit}
             stop={stop}
             model={agent?.model ?? DEFAULT_REASONING_MODEL}
             onModelChange={handleModelChange}

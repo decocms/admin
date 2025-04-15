@@ -123,6 +123,8 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/6780dee0-80d6-4c83-bf4f-8e5773d867ea/claude.png",
   google:
     "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
+  xai:
+    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
 export const DEFAULT_REASONING_MODEL = "google:gemini-2.5-pro-preview-03-25";
@@ -164,6 +166,12 @@ export const MODELS: Model[] = [
     name: "OpenAI GPT-4.1 nano",
     logo: LOGOS.openai,
     capabilities: ["reasoning", "image-upload"],
+  },
+  {
+    id: "x-ai:grok-3-beta",
+    name: "Grok 3 Beta",
+    logo: LOGOS.xai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
   },
   {
     id: "openai:o3-mini-high",

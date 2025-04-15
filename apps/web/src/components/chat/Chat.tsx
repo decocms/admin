@@ -239,7 +239,10 @@ export function Chat({
 
     handleSubmit(e, options);
 
-    fileDataRef.current = [];
+    // the timeout is absolutely necessary trust me do not question do not remove just accept it
+    setTimeout(() => {
+      fileDataRef.current = [];
+    }, 1000);
   };
 
   return (

@@ -67,18 +67,6 @@ function LoggedUser() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <a
-            href="https://getdeco.ai/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 leading-relaxed text-xs"
-          >
-            <Icon name="link" size={16} />
-            Homepage
-          </a>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <a
             href="https://github.com/deco-cx/chat"
             target="_blank"
             rel="noopener noreferrer"

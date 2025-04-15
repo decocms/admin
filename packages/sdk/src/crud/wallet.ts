@@ -1,7 +1,4 @@
-import {
-  API_HEADERS,
-  API_SERVER_URL,
-} from "../constants.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 
 const toPath = (segments: string[]) => segments.join("/");
 
@@ -30,7 +27,10 @@ interface WalletStatement {
 }
 
 export const getWalletStatements = async (cursor?: string) => {
-  const response = await fetchAPI(["wallet", `statements${cursor ? `?cursor=${cursor}` : ""}`]);
+  const response = await fetchAPI([
+    "wallet",
+    `statements${cursor ? `?cursor=${cursor}` : ""}`,
+  ]);
   return response.json() as Promise<{
     items: WalletStatement[];
     nextCursor: string;

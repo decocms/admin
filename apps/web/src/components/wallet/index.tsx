@@ -25,7 +25,11 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 
 const MINIMUM_AMOUNT = 500; // $5.00 in cents
 
@@ -80,7 +84,9 @@ function Activity() {
   }
 
   if (error) return <p className="text-gray-500">Error loading statements</p>;
-  if (!statements?.items.length) return <p className="text-gray-500">No activity yet</p>;
+  if (!statements?.items.length) {
+    return <p className="text-gray-500">No activity yet</p>;
+  }
 
   return (
     <div className="min-w-[450px] max-w-2xl">
@@ -89,36 +95,56 @@ function Activity() {
         {statements.items.map((statement) => (
           <Dialog key={statement.id}>
             <DialogTrigger asChild>
-              <div
-                className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer"
-              >
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    statement.type === 'credit' ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-600'
-                  }`}>
-                    {statement.icon ? (
-                      <Icon name={statement.icon} size={16} />
-                    ) : (
-                      <Icon name={statement.type === 'credit' ? "paid" : "data_usage"} size={16} />
-                    )}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      statement.type === "credit"
+                        ? "bg-green-50 text-green-600"
+                        : "bg-gray-50 text-gray-600"
+                    }`}
+                  >
+                    {statement.icon
+                      ? <Icon name={statement.icon} size={16} />
+                      : (
+                        <Icon
+                          name={statement.type === "credit"
+                            ? "paid"
+                            : "data_usage"}
+                          size={16}
+                        />
+                      )}
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{statement.title}</p>
+                    <p className="font-medium text-gray-900">
+                      {statement.title}
+                    </p>
                     {statement.description && (
-                      <p className="text-sm text-gray-500">{statement.description}</p>
+                      <p className="text-sm text-gray-500">
+                        {statement.description}
+                      </p>
                     )}
                     <p className="text-xs text-gray-400">
-                      {new Date(statement.timestamp).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {new Date(statement.timestamp).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
                     </p>
                   </div>
                 </div>
-                <p className={`font-medium ${statement.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
+                <p
+                  className={`font-medium ${
+                    statement.type === "credit"
+                      ? "text-green-600"
+                      : "text-gray-900"
+                  }`}
+                >
                   {statement.amountExact}
                 </p>
               </div>
@@ -130,44 +156,70 @@ function Activity() {
               <div className="grid gap-4 py-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      statement.type === 'credit' ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-600'
-                    }`}>
-                      {statement.icon ? (
-                        <Icon name={statement.icon} size={20} />
-                      ) : (
-                        <Icon name={statement.type === 'credit' ? "paid" : "data_usage"} size={20} />
-                      )}
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        statement.type === "credit"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-gray-50 text-gray-600"
+                      }`}
+                    >
+                      {statement.icon
+                        ? <Icon name={statement.icon} size={20} />
+                        : (
+                          <Icon
+                            name={statement.type === "credit"
+                              ? "paid"
+                              : "data_usage"}
+                            size={20}
+                          />
+                        )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{statement.title}</p>
-                      <p className={`text-lg font-medium ${statement.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
+                      <p className="font-medium text-gray-900">
+                        {statement.title}
+                      </p>
+                      <p
+                        className={`text-lg font-medium ${
+                          statement.type === "credit"
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {statement.amountExact}
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <p className="text-sm text-gray-500">
-                      {new Date(statement.timestamp).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {new Date(statement.timestamp).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
                     </p>
                     {statement.description && (
-                      <p className="text-sm text-gray-600">{statement.description}</p>
+                      <p className="text-sm text-gray-600">
+                        {statement.description}
+                      </p>
                     )}
                   </div>
 
                   {statement.metadata && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-900">Details</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        Details
+                      </p>
                       <table className="w-full text-sm">
                         <tbody className="divide-y divide-gray-100">
-                          {Object.entries(statement.metadata).map(([key, value]) => (
+                          {Object.entries(statement.metadata).map((
+                            [key, value],
+                          ) => (
                             <tr key={key}>
                               <td className="py-2 text-gray-500">{key}</td>
                               <td className="py-2 text-gray-900 text-right overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px]">
@@ -195,7 +247,11 @@ function Activity() {
         ))}
         {isFetching ? <div>Loading more...</div> : null}
         {statements?.nextCursor && (
-          <Button className="w-full" variant="outline" onClick={() => setCursor(statements.nextCursor)}>
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={() => setCursor(statements.nextCursor)}
+          >
             Load more
           </Button>
         )}

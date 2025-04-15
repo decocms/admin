@@ -25,11 +25,91 @@ import { DEFAULT_REASONING_MODEL, MODELS } from "@deco/sdk";
 import { useState } from "react";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 
-// Helper function to map legacy model IDs to new ones
 const mapLegacyModelId = (modelId: string): string => {
   const model = MODELS.find((m) => m.legacyId === modelId);
   return model ? model.id : modelId;
 };
+
+const CAPABILITY_CONFIGS = {
+  "reasoning": {
+    icon: "neurology",
+    bg: "bg-purple-100",
+    text: "text-purple-700",
+    label: "Reasoning",
+  },
+  "image-upload": {
+    icon: "image",
+    bg: "bg-teal-100",
+    text: "text-teal-700",
+    label: "Can analyze images",
+  },
+  "file-upload": {
+    icon: "description",
+    bg: "bg-blue-100",
+    text: "text-blue-700",
+    label: "Can analyze files",
+  },
+  "web-search": {
+    icon: "search",
+    bg: "bg-amber-100",
+    text: "text-amber-700",
+    label: "Can search the web to answer questions",
+  },
+} as const;
+
+function CapabilityBadge(
+  { capability }: { capability: keyof typeof CAPABILITY_CONFIGS },
+) {
+  const config = CAPABILITY_CONFIGS[capability] || {
+    icon: "check",
+    bg: "bg-slate-200",
+    text: "text-slate-700",
+    label: capability,
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={`flex items-center justify-center h-6 w-6 rounded-sm ${config.bg}`}
+        >
+          <Icon name={config.icon} className={config.text} />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{config.label}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
+  return (
+    <div className="p-2 w-[400px] flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2">
+        <img src={model.logo} className="w-5 h-5" />
+        <span className="text-normal">{model.name}</span>
+      </div>
+      <div className="flex items-center gap-2 ml-auto">
+        {model.capabilities.map((capability) => (
+          <CapabilityBadge key={capability} capability={capability} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SelectedModelDisplay(
+  { model, loading }: { model: typeof MODELS[0]; loading?: boolean },
+) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <img src={model.logo} className="w-3 h-3" />
+      <span className="text-xs">{model.name}</span>
+      {loading && <Spinner size="xs" />}
+    </div>
+  );
+}
 
 interface ModelSelectorProps {
   model?: string;
@@ -55,24 +135,20 @@ export function ModelSelector({
     }
   };
 
+  const triggerClassName = cn(
+    "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
+    modelLoading && "opacity-50 cursor-not-allowed",
+  );
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
-              modelLoading && "opacity-50 cursor-not-allowed",
-            )}
-          >
-            <div className="flex items-center gap-1.5">
-              <img src={selectedModel.logo} className="w-3 h-3" />
-              <span className="text-xs">
-                {selectedModel.name}
-              </span>
-            </div>
-            {modelLoading && <Spinner size="xs" />}
+          <Button variant="outline" className={triggerClassName}>
+            <SelectedModelDisplay
+              model={selectedModel}
+              loading={modelLoading}
+            />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
@@ -92,74 +168,7 @@ export function ModelSelector({
                 )}
                 onClick={() => handleModelChange(model.id)}
               >
-                <div className="p-2 w-[400px] flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <img src={model.logo} className="w-5 h-5" />
-                    <span className="text-normal">{model.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 ml-auto">
-                    {model.capabilities.map((capability) => {
-                      const iconMap = {
-                        "reasoning": "neurology",
-                        "image-upload": "image",
-                        "file-upload": "description",
-                        "web-search": "search",
-                      };
-
-                      const colorMap = {
-                        "reasoning": {
-                          bg: "bg-purple-100",
-                          text: "text-purple-700",
-                        },
-                        "image-upload": {
-                          bg: "bg-teal-100",
-                          text: "text-teal-700",
-                        },
-                        "file-upload": {
-                          bg: "bg-blue-100",
-                          text: "text-blue-700",
-                        },
-                        "web-search": {
-                          bg: "bg-amber-100",
-                          text: "text-amber-700",
-                        },
-                      };
-
-                      const labelMap = {
-                        "reasoning": "Reasoning",
-                        "image-upload": "Can analyze images",
-                        "file-upload": "Can analyze files",
-                        "web-search": "Can search the web to answer questions",
-                      };
-
-                      const colors = colorMap[capability] ||
-                        {
-                          bg: "bg-slate-200",
-                          text: "text-slate-700",
-                        };
-
-                      return (
-                        <Tooltip key={capability}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`flex items-center justify-center h-6 w-6 rounded-sm ${colors.bg}`}
-                            >
-                              <Icon
-                                name={iconMap[capability] || "check"}
-                                className={colors.text}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>
-                              {labelMap[capability] || capability}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ModelItemContent model={model} />
               </Button>
             ))}
           </div>
@@ -173,31 +182,13 @@ export function ModelSelector({
       open={open}
       onOpenChange={setOpen}
       value={mapLegacyModelId(model)}
-      onValueChange={(value) => {
-        if (onModelChange) {
-          setModelLoading(true);
-          onModelChange(value).finally(() => {
-            setModelLoading(false);
-          });
-        }
-      }}
+      onValueChange={(value) => handleModelChange(value)}
       disabled={modelLoading}
     >
-      <SelectTrigger
-        className={cn(
-          "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
-          modelLoading && "opacity-50 cursor-not-allowed",
-        )}
-      >
+      <SelectTrigger className={triggerClassName}>
         <SelectValue placeholder="Select model">
-          <div className="flex items-center gap-1.5">
-            <img src={selectedModel.logo} className="w-3 h-3" />
-            <span className="text-xs">
-              {selectedModel.name}
-            </span>
-          </div>
+          <SelectedModelDisplay model={selectedModel} loading={modelLoading} />
         </SelectValue>
-        {modelLoading && <Spinner size="xs" />}
       </SelectTrigger>
       <SelectContent className="min-w-[400px]">
         {MODELS.map((model) => (
@@ -210,74 +201,7 @@ export function ModelSelector({
               model.id === selectedModel?.id && "bg-slate-50",
             )}
           >
-            <div className="p-2 w-[400px] flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <img src={model.logo} className="w-5 h-5" />
-                <span className="text-normal">{model.name}</span>
-              </div>
-              <div className="flex items-center gap-2 ml-auto">
-                {model.capabilities.map((capability) => {
-                  const iconMap = {
-                    "reasoning": "neurology",
-                    "image-upload": "image",
-                    "file-upload": "description",
-                    "web-search": "search",
-                  };
-
-                  const colorMap = {
-                    "reasoning": {
-                      bg: "bg-purple-100",
-                      text: "text-purple-700",
-                    },
-                    "image-upload": {
-                      bg: "bg-teal-100",
-                      text: "text-teal-700",
-                    },
-                    "file-upload": {
-                      bg: "bg-blue-100",
-                      text: "text-blue-700",
-                    },
-                    "web-search": {
-                      bg: "bg-amber-100",
-                      text: "text-amber-700",
-                    },
-                  };
-
-                  const labelMap = {
-                    "reasoning": "Reasoning",
-                    "image-upload": "Can analyze images",
-                    "file-upload": "Can analyze files",
-                    "web-search": "Can search the web to answer questions",
-                  };
-
-                  const colors = colorMap[capability] ||
-                    {
-                      bg: "bg-slate-200",
-                      text: "text-slate-700",
-                    };
-
-                  return (
-                    <Tooltip key={capability}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`flex items-center justify-center h-6 w-6 rounded-sm ${colors.bg}`}
-                        >
-                          <Icon
-                            name={iconMap[capability] || "check"}
-                            className={colors.text}
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>
-                          {labelMap[capability] || capability}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            </div>
+            <ModelItemContent model={model} />
           </SelectItem>
         ))}
       </SelectContent>

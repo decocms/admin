@@ -49,6 +49,7 @@ export function ChatInput({
     return acceptTypes.join(",");
   };
 
+  console.log(selectedModel, getAcceptedFileTypes());
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
       { target: { value: markdown } } as React.ChangeEvent<HTMLTextAreaElement>,
@@ -156,19 +157,20 @@ export function ChatInput({
                   accept={getAcceptedFileTypes()}
                 />
                 {selectedModel.capabilities.includes("file-upload") ||
-                  selectedModel.capabilities.includes("image-upload") &&
-                    (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-8 w-8 border hover:bg-slate-100"
-                        title="Attach files"
-                      >
-                        <Icon className="text-sm" name="attach_file" />
-                      </Button>
-                    )}
+                    selectedModel.capabilities.includes("image-upload")
+                  ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 w-8 border hover:bg-slate-100"
+                      title="Attach files"
+                    >
+                      <Icon className="text-sm" name="attach_file" />
+                    </Button>
+                  )
+                  : null}
                 {onModelChange && (
                   <ModelSelector model={model} onModelChange={onModelChange} />
                 )}

@@ -12,10 +12,11 @@ export interface FileSystemOptions {
 
 const fetchAPI = <T extends object>(
   path: string,
+  target: "file" | "directory",
   opts?: T,
   init?: RequestInit,
 ) => {
-  const url = new URL(`/fs/file`, API_SERVER_URL);
+  const url = new URL(`/fs/${target}`, API_SERVER_URL);
   url.searchParams.set("path", path);
   url.searchParams.set("opts", JSON.stringify(opts));
 
@@ -27,7 +28,7 @@ const fetchAPI = <T extends object>(
 };
 
 export const readFile = async (path: string, options?: FileSystemOptions) => {
-  const response = await fetchAPI(path, options, { method: "GET" });
+  const response = await fetchAPI(path, "file", options, { method: "GET" });
 
   if (!response.ok) {
     throw new Error(`Failed to read file: ${response.statusText}`);
@@ -36,12 +37,27 @@ export const readFile = async (path: string, options?: FileSystemOptions) => {
   return response.text();
 };
 
+export const readDirectory = async (
+  path: string,
+  options?: FileSystemOptions,
+) => {
+  const response = await fetchAPI(path, "directory", options, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to read directory: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
 export const writeFile = async (
   path: string,
   content: string | Uint8Array,
   options?: FileSystemOptions,
 ) => {
-  const response = await fetchAPI(path, options, {
+  const response = await fetchAPI(path, "file", options, {
     method: "POST",
     body: typeof content === "string" ? JSON.stringify({ content }) : content,
     headers: {
@@ -59,7 +75,7 @@ export const writeFile = async (
 };
 
 export const deleteFile = async (path: string, options?: FileSystemOptions) => {
-  const response = await fetchAPI(path, options, { method: "DELETE" });
+  const response = await fetchAPI(path, "file", options, { method: "DELETE" });
 
   if (!response.ok) {
     throw new Error(`Failed to delete file: ${response.statusText}`);

@@ -11,14 +11,14 @@ export function SplitScreenLayout(
         )}
       >
         <div className="p-6 h-full">
-          <div className="flex flex-col gap-10 bg-[#49DE80] items-center justify-center h-full rounded-[64px]">
-            <p className="text-[#033B18] text-6xl text-center">
+          <div className="flex flex-col gap-10 bg-primary-light items-center justify-center h-full rounded-[64px]">
+            <p className="text-primary-dark text-6xl text-center">
               Your <span className="text-7xl font-crimson-pro italic">new</span>
               <br />
               AI Workspace
             </p>
             <img
-              src="/img/deco-chat-logo.svg"
+              src="https://assets.decocache.com/decochat/e0d43f1b-8193-4e1f-9992-c94a28342cce/deochatlogo.svg"
               className="h-6 rounded-lg mb-6"
             />
           </div>

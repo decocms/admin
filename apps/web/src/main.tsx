@@ -18,6 +18,7 @@ import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
+import { About } from "./components/about/index.tsx";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -41,6 +42,10 @@ const AgentsList = lazy(
 
 const AgentDetail = lazy(
   () => import("./components/agent/index.tsx"),
+);
+
+const Wallet = lazy(
+  () => import("./components/wallet/index.tsx"),
 );
 
 function Wrapper({ slot: children }: { slot: ReactNode }) {
@@ -83,8 +88,12 @@ function ErrorFallback() {
 
     reset();
 
-    const next = new URL(location.pathname, globalThis.location.origin);
+    if (location.pathname === "/") {
+      navigate("/about", { replace: true });
+      return;
+    }
 
+    const next = new URL(location.pathname, globalThis.location.origin);
     navigate(`/login?next=${next}`, { replace: true });
   }, [notLoggedIn, location.pathname, reset, navigate]);
 
@@ -118,6 +127,11 @@ function Router() {
         element={<Wrapper slot={<Login />} />}
       />
 
+      <Route
+        path="about"
+        element={<Wrapper slot={<About />} />}
+      />
+
       <Route path="/:teamSlug?" element={<Layout />}>
         <Route
           index
@@ -126,6 +140,10 @@ function Router() {
               slot={<AgentDetail agentId={WELL_KNOWN_AGENT_IDS.teamAgent} />}
             />
           }
+        />
+        <Route
+          path="wallet"
+          element={<Wrapper slot={<Wallet />} />}
         />
         <Route
           path="agents"

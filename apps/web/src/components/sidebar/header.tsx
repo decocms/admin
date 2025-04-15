@@ -94,7 +94,9 @@ export function Header() {
                 <img src="/img/github.svg" alt="GitHub" className="w-5 h-5" />
                 <div className="flex items-center gap-1">
                   {formattedStars && (
-                    <span className="text-sm font-medium">{formattedStars}</span>
+                    <span className="text-sm font-medium">
+                      {formattedStars}
+                    </span>
                   )}
                   <Icon name="star" size={14} filled />
                 </div>

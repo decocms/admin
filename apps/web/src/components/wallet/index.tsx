@@ -40,7 +40,7 @@ import {
   WalletUrlAlert,
 } from "../../hooks/useIncomingUrlAlert.ts";
 
-const MINIMUM_AMOUNT = 500; // $5.00 in cents
+const MINIMUM_AMOUNT = 200; // $2.00 in cents
 
 function formatCurrency(value: string) {
   // Remove all non-digit characters

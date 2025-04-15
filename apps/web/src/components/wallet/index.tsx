@@ -23,6 +23,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
@@ -30,6 +35,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import {
+  useIncomingUrlAlert,
+  WalletUrlAlert,
+} from "../../hooks/useIncomingUrlAlert.ts";
 
 const MINIMUM_AMOUNT = 500; // $5.00 in cents
 
@@ -260,7 +269,38 @@ function Activity() {
   );
 }
 
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function WalletAlert({
+  alert,
+  remove,
+}: {
+  alert: WalletUrlAlert;
+  remove: () => void;
+}) {
+  return (
+    <Alert
+      variant={alert.type === "success" ? "default" : "destructive"}
+      className="relative"
+    >
+      <AlertTitle>{capitalize(alert.type)}</AlertTitle>
+      <AlertDescription>{alert.message}</AlertDescription>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute top-2 right-2"
+        onClick={remove}
+      >
+        <Icon name="close" size={16} />
+      </Button>
+    </Alert>
+  );
+}
+
 function Wallet() {
+  const queryStringAlert = useIncomingUrlAlert();
   const createCheckoutSession = useMutation({
     mutationFn: (amountInCents: number) =>
       createWalletCheckoutSession(amountInCents),
@@ -293,6 +333,14 @@ function Wallet() {
 
   return (
     <div className="flex flex-col gap-4 items-center p-24">
+      {queryStringAlert.alert
+        ? (
+          <WalletAlert
+            alert={queryStringAlert.alert}
+            remove={queryStringAlert.remove}
+          />
+        )
+        : null}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon name="wallet" size={32} className="text-gray-700" />

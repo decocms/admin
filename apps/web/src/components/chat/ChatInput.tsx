@@ -84,10 +84,16 @@ export function ChatInput({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Limit to 5 files
-      const fileList = Array.from(e.target.files).slice(0, 5);
+      const existingFiles = files ? Array.from(files) : [];
+      const newFiles = Array.from(e.target.files);
+      //limit to 5 files
+      const combinedFiles = [...existingFiles, ...newFiles].slice(
+        0,
+        5,
+      ) as File[];
       const dataTransfer = new DataTransfer();
-      fileList.forEach((file) => dataTransfer.items.add(file));
+      combinedFiles.forEach((file) => dataTransfer.items.add(file));
+
       setFiles(dataTransfer.files);
     }
   };

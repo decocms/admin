@@ -141,6 +141,13 @@ export const MODELS: Model[] = [
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
   },
   {
+    id: "openai:gpt-4.1",
+    name: "OpenAI GPT-4.1",
+    logo:
+      "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+  },
+  {
     id: "openai:o3-mini-high",
     name: "OpenAI o3-mini",
     logo:

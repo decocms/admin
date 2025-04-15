@@ -283,7 +283,7 @@ export function ChatInput({
                     }}
                     title="Remove file"
                   >
-                    <Icon name="close"/>
+                    <Icon name="close" />
                   </Button>
                   {currentFile.type.startsWith("image/")
                     ? (

@@ -155,14 +155,19 @@ export function Chat({
 
   useEffect(() => {
     setTimeout(() => {
-      const viewport = document.querySelector('[data-slot="scroll-area-viewport"]');
+      const viewport = document.querySelector(
+        '[data-slot="scroll-area-viewport"]',
+      );
       if (viewport instanceof HTMLDivElement) {
         scrollViewportRef.current = viewport;
-        
+
         if (messages.length > 0) {
           setTimeout(() => {
             if (containerRef.current) {
-              containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+              containerRef.current.scrollIntoView({
+                behavior: "auto",
+                block: "end",
+              });
             } else if (viewport) {
               viewport.scrollTop = viewport.scrollHeight;
             }
@@ -177,17 +182,17 @@ export function Chat({
       requestAnimationFrame(() => {
         const scrollContainer = scrollViewportRef.current;
         if (!scrollContainer || autoScrollingRef.current) return;
-        
+
         const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
         const isBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 10;
         const scrollingUp = scrollTop < lastScrollTopRef.current;
-        
+
         if (scrollingUp) {
           setUserScrolled(true);
         } else if (isBottom) {
           setUserScrolled(false);
         }
-        
+
         setIsAtBottom(isBottom);
         lastScrollTopRef.current = scrollTop;
       });
@@ -195,10 +200,12 @@ export function Chat({
 
     const scrollContainer = scrollViewportRef.current;
     if (!scrollContainer) return;
-    
+
     lastScrollTopRef.current = scrollContainer.scrollTop;
-    scrollContainer.addEventListener("scroll", scheduleScrollCheck, { passive: true });
-    
+    scrollContainer.addEventListener("scroll", scheduleScrollCheck, {
+      passive: true,
+    });
+
     return () => {
       scrollContainer.removeEventListener("scroll", scheduleScrollCheck);
     };
@@ -207,16 +214,16 @@ export function Chat({
   useEffect(() => {
     const scrollContainer = scrollViewportRef.current;
     if (!scrollContainer) return;
-    
+
     if (isAtBottom || (status === "streaming" && !userScrolled)) {
       autoScrollingRef.current = true;
-      
+
       if (containerRef.current) {
         containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
       } else {
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
-      
+
       setTimeout(() => {
         autoScrollingRef.current = false;
       }, 100);
@@ -228,19 +235,22 @@ export function Chat({
       const scrollContainer = scrollViewportRef.current;
       if (scrollContainer && messages.length > 0) {
         autoScrollingRef.current = true;
-        
+
         if (containerRef.current) {
-          containerRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+          containerRef.current.scrollIntoView({
+            behavior: "auto",
+            block: "end",
+          });
         } else {
           scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
-        
+
         setTimeout(() => {
           autoScrollingRef.current = false;
         }, 100);
       }
     }, 300);
-    
+
     return () => clearTimeout(initialScrollTimeout);
   }, []);
 

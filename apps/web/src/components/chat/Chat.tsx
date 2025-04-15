@@ -6,8 +6,6 @@ import {
   useAgentRoot,
   useUpdateAgent,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
@@ -16,6 +14,7 @@ import { ChatMessage } from "./Message.tsx";
 import { openPreviewPanel } from "./utils/preview.ts";
 import { PageLayout } from "../pageLayout.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { ChatError } from "./ChatError.tsx";
 
 interface ChatProps {
   agent?: Agent;
@@ -40,6 +39,12 @@ function ChatMessages(
 ) {
   return (
     <div className="flex flex-col gap-4 p-4">
+      <div className="w-full animate-in slide-in-from-bottom duration-300">
+        <p className="w-fit rounded-2xl text-xs bg-slate-50 p-3 text-slate-700 text-center mx-auto">
+          For now, only your last 3 messages are used to generate{" "}
+          <br />a response. Expanded memory is coming soon.
+        </p>
+      </div>
       {messages.map((message) => (
         <div
           key={message.id}
@@ -51,35 +56,7 @@ function ChatMessages(
           />
         </div>
       ))}
-      {error && (
-        <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
-          <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
-            <Icon name="info" />
-            <p>An error occurred while generating the response.</p>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
-                onClick={() => {
-                  onRetry?.([
-                    JSON.stringify({
-                      type: "error",
-                      message: error.message,
-                      name: error.name,
-                      stack: error.stack,
-                    }),
-                    "The previous attempt resulted in an error. I'll try to address the error and provide a better response.",
-                  ]);
-                }}
-              >
-                <Icon name="refresh" />
-                Retry
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {error && <ChatError error={error} onRetry={onRetry} />}
       {(status === "streaming" || status === "submitted") && (
         <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 text-muted-foreground ml-4">
           <span className="inline-flex items-center gap-1">
@@ -107,6 +84,14 @@ export function Chat({
   const autoScrollingRef = useRef(false);
   const lastScrollTopRef = useRef(0);
   const updateAgent = useUpdateAgent();
+
+  // Keep track of the last file data for use in the next message
+  const fileDataRef = useRef<{
+    name: string;
+    contentType: string;
+    url: string;
+  }[]>([]);
+
   const {
     messages,
     input,
@@ -124,12 +109,32 @@ export function Chat({
       "x-deno-isolate-instance-id": agentRoot,
     },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
-    experimental_prepareRequestBody: ({ messages }) => ({
-      args: [[messages.at(-1)]],
-      metadata: {
-        threadId: threadId ?? agent?.id ?? "",
-      },
-    }),
+    experimental_prepareRequestBody: ({ messages }) => {
+      const message = messages.at(-1);
+
+      const files = fileDataRef.current;
+
+      return {
+        args: [[{
+          ...message,
+          annotations: files && files.length > 0
+            ? [
+              files.map((file) => ({
+                type: "file",
+                url: file.url,
+                name: file.name,
+                contentType: file.contentType,
+                content:
+                  "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
+              })),
+            ]
+            : message?.annotations || [],
+        }]],
+        metadata: {
+          threadId: threadId ?? agent?.id ?? "",
+        },
+      };
+    },
     onError: (error) => {
       console.error("Chat error:", error);
       setMessages((prevMessages) => prevMessages.slice(0, -1));
@@ -313,17 +318,44 @@ export function Chat({
     await updateAgent.mutateAsync(updatedAgent);
   };
 
+  const handleChatSubmit = (
+    e: React.FormEvent<HTMLFormElement>,
+    options?: {
+      experimental_attachments?: FileList;
+      fileData?: {
+        name: string;
+        contentType: string;
+        url: string;
+      }[];
+      abort?: boolean;
+    },
+  ) => {
+    if (options?.fileData && options.fileData.length > 0) {
+      fileDataRef.current = options.fileData;
+    } else {
+      fileDataRef.current = [];
+    }
+
+    handleSubmit(e, options);
+
+    // the timeout is absolutely necessary trust me do not question do not remove just accept it
+    setTimeout(() => {
+      fileDataRef.current = [];
+    }, 1000);
+  };
+
   return (
     <PageLayout
       header={<ChatHeader agent={agent} panels={panels} />}
       footer={
         <div className="w-full max-w-[800px] mx-auto">
           <ChatInput
+            agentRoot={agentRoot}
             input={input}
             disabled={!agent}
             isLoading={status === "submitted" || status === "streaming"}
             handleInputChange={handleInputChange}
-            handleSubmit={handleSubmit}
+            handleSubmit={handleChatSubmit}
             stop={stop}
             model={agent?.model ?? DEFAULT_REASONING_MODEL}
             onModelChange={handleModelChange}

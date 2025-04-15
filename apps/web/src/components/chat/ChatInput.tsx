@@ -1,28 +1,11 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { DEFAULT_REASONING_MODEL, MODELS } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { RichTextArea } from "./RichText.tsx";
-
-// Helper function to map legacy model IDs to new ones
-const mapLegacyModelId = (modelId: string): string => {
-  const model = MODELS.find((m) => m.legacyId === modelId);
-  return model ? model.id : modelId;
-};
+import { API_SERVER_URL, useWriteFile } from "@deco/sdk";
+import { ModelSelector } from "./ModelSelector.tsx";
 
 interface ChatInputProps {
   input: string;
@@ -31,6 +14,11 @@ interface ChatInputProps {
     e: React.FormEvent<HTMLFormElement>,
     options?: {
       experimental_attachments?: FileList;
+      fileData?: {
+        name: string;
+        contentType: string;
+        url: string;
+      }[];
       abort?: boolean;
     },
   ) => void;
@@ -39,6 +27,7 @@ interface ChatInputProps {
   disabled?: boolean;
   model?: string;
   onModelChange?: (model: string) => Promise<void>;
+  agentRoot?: string;
 }
 
 export function ChatInput({
@@ -50,12 +39,15 @@ export function ChatInput({
   stop,
   model = DEFAULT_REASONING_MODEL,
   onModelChange,
+  agentRoot,
 }: ChatInputProps) {
+  const [isUploading, setIsUploading] = useState(false);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [modelLoading, setModelLoading] = useState(false);
 
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
+
+  const isLoadingOrUploading = isLoading || isUploading;
 
   const getAcceptedFileTypes = () => {
     const acceptTypes = [];
@@ -67,6 +59,8 @@ export function ChatInput({
     }
     return acceptTypes.join(",");
   };
+
+  const writeFileMutation = useWriteFile();
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
@@ -105,6 +99,7 @@ export function ChatInput({
     if (e.target.files) {
       // Limit to 5 files
       const fileList = Array.from(e.target.files).slice(0, 5);
+
       const dataTransfer = new DataTransfer();
       fileList.forEach((file) => dataTransfer.items.add(file));
       setFiles(dataTransfer.files);
@@ -127,9 +122,51 @@ export function ChatInput({
     }
   };
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fileList = Array.from(files || []);
+
+    if (fileList.length === 0) {
+      handleSubmit(e);
+      return;
+    }
+
+    setIsUploading(true);
+    const withUrlFiles = fileList.map(async (file) => {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
+      await writeFileMutation.mutateAsync({
+        path: `${agentRoot}/${file.name}`,
+        content: uint8Array,
+      });
+
+      const url = `${API_SERVER_URL}${agentRoot}/${file.name}`;
+      return {
+        name: file.name,
+        contentType: file.type,
+        url: url,
+      };
+    });
+    const uploadedFiles = await Promise.all(withUrlFiles);
+    setIsUploading(false);
+
+    const experimentalAttachments = files
+      ? Array.from(files).map((file, index) => {
+        const uploadedFile = uploadedFiles[index];
+        return {
+          name: file.name,
+          type: file.type,
+          contentType: file.type,
+          size: file.size,
+          url: uploadedFile?.url || URL.createObjectURL(file),
+        };
+      })
+      : [];
+
     handleSubmit(e, {
-      experimental_attachments: files,
+      experimental_attachments: experimentalAttachments as unknown as FileList,
+      fileData: uploadedFiles,
     });
 
     setFiles(undefined);
@@ -160,7 +197,7 @@ export function ChatInput({
                 onPaste={handlePaste}
                 placeholder="Type a message..."
                 className="border border-b-0 placeholder:text-muted-foreground resize-none focus-visible:ring-0"
-                disabled={isLoading || disabled}
+                disabled={isLoadingOrUploading || disabled}
               />
             </div>
 
@@ -175,130 +212,22 @@ export function ChatInput({
                   accept={getAcceptedFileTypes()}
                 />
                 {selectedModel.capabilities.includes("file-upload") ||
-                  selectedModel.capabilities.includes("image-upload") &&
-                    (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-8 w-8 border hover:bg-slate-100"
-                        title="Attach files"
-                      >
-                        <Icon className="text-sm" name="attach_file" />
-                      </Button>
-                    )}
-                {onModelChange && (
-                  <Select
-                    value={mapLegacyModelId(model)}
-                    onValueChange={(value) => {
-                      setModelLoading(true);
-                      onModelChange(value).finally(() => {
-                        setModelLoading(false);
-                      });
-                    }}
-                    disabled={modelLoading}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
-                        modelLoading && "opacity-50 cursor-not-allowed",
-                      )}
+                    selectedModel.capabilities.includes("image-upload")
+                  ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 w-8 border hover:bg-slate-100"
+                      title="Attach files"
                     >
-                      <SelectValue placeholder="Select model">
-                        <div className="flex items-center gap-1.5">
-                          <img src={selectedModel.logo} className="w-3 h-3" />
-                          <span className="text-xs">
-                            {selectedModel.name}
-                          </span>
-                        </div>
-                      </SelectValue>
-                      {modelLoading && <Spinner size="xs" />}
-                    </SelectTrigger>
-                    <SelectContent className="min-w-[400px]">
-                      {MODELS.map((model) => (
-                        <SelectItem
-                          hideCheck
-                          key={model.id}
-                          value={model.id}
-                          className={cn(
-                            "p-0 focus:bg-slate-100 focus:text-foreground",
-                            model.id === selectedModel?.id && "bg-slate-50",
-                          )}
-                        >
-                          <div className="p-2 w-[400px] flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                              <img src={model.logo} className="w-5 h-5" />
-                              <span className="text-normal">{model.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 ml-auto">
-                              {model.capabilities.map((capability) => {
-                                const iconMap = {
-                                  "reasoning": "neurology",
-                                  "image-upload": "image",
-                                  "file-upload": "description",
-                                  "web-search": "search",
-                                };
-
-                                const colorMap = {
-                                  "reasoning": {
-                                    bg: "bg-purple-100",
-                                    text: "text-purple-700",
-                                  },
-                                  "image-upload": {
-                                    bg: "bg-teal-100",
-                                    text: "text-teal-700",
-                                  },
-                                  "file-upload": {
-                                    bg: "bg-blue-100",
-                                    text: "text-blue-700",
-                                  },
-                                  "web-search": {
-                                    bg: "bg-amber-100",
-                                    text: "text-amber-700",
-                                  },
-                                };
-
-                                const labelMap = {
-                                  "reasoning": "Reasoning",
-                                  "image-upload": "Can analyze images",
-                                  "file-upload": "Can analyze files",
-                                  "web-search":
-                                    "Can search the web to answer questions",
-                                };
-
-                                const colors = colorMap[capability] ||
-                                  {
-                                    bg: "bg-slate-200",
-                                    text: "text-slate-700",
-                                  };
-
-                                return (
-                                  <Tooltip key={capability}>
-                                    <TooltipTrigger asChild>
-                                      <div
-                                        className={`flex items-center justify-center h-6 w-6 rounded-sm ${colors.bg}`}
-                                      >
-                                        <Icon
-                                          name={iconMap[capability] || "check"}
-                                          className={colors.text}
-                                        />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>
-                                        {labelMap[capability] || capability}
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <Icon className="text-sm" name="attach_file" />
+                    </Button>
+                  )
+                  : null}
+                {onModelChange && (
+                  <ModelSelector model={model} onModelChange={onModelChange} />
                 )}
               </div>
               <div className="flex items-center gap-4">
@@ -315,16 +244,17 @@ export function ChatInput({
                   </span>
                 )}
                 <Button
-                  type={isLoading ? "button" : "submit"}
+                  type={isLoadingOrUploading ? "button" : "submit"}
                   size="icon"
-                  disabled={!isLoading && (!input.trim() && !files)}
-                  onClick={isLoading ? stop : undefined}
+                  disabled={!isLoadingOrUploading && (!input.trim() && !files)}
+                  onClick={isLoadingOrUploading ? stop : undefined}
                   className="h-8 w-8 transition-all hover:opacity-70"
-                  title={isLoading ? "Stop generating" : "Send message (Enter)"}
+                  title={isLoadingOrUploading
+                    ? "Stop generating"
+                    : "Send message (Enter)"}
                 >
                   <Icon
-                    className="text-sm"
-                    name={isLoading ? "stop" : "send"}
+                    name={isLoadingOrUploading ? "stop" : "send"}
                     filled
                   />
                 </Button>
@@ -335,54 +265,54 @@ export function ChatInput({
 
         {files && files.length > 0 && (
           <div className="w-fit absolute z-20 bottom-full mb-2 left-6 flex flex-wrap gap-2">
-            {Array.from(files).map((file, index) => (
-              <div
-                key={index}
-                className="relative group flex items-center gap-2 p-2 bg-slate-50 rounded-xl transition-colors border border-slate-200"
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-slate-700 text-slate-50 hover:bg-slate-600 hover:text-slate-50"
-                  onClick={() => {
-                    const newFiles = Array.from(files).filter((_, i) =>
-                      i !== index
-                    );
-                    const dataTransfer = new DataTransfer();
-                    newFiles.forEach((file) => dataTransfer.items.add(file));
-                    setFiles(dataTransfer.files);
-                  }}
-                  title="Remove file"
+            {Array.from(files).map((file, index) => {
+              const currentFile = file;
+              return (
+                <div
+                  key={index}
+                  className="relative group flex items-center gap-2 p-2 bg-slate-50 rounded-xl transition-colors border border-slate-200"
                 >
-                  <Icon name="close" className="text-sm" />
-                </Button>
-                {file.type.startsWith("image/")
-                  ? (
-                    <div className="h-8 w-8 rounded overflow-hidden">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        onLoad={(e) => URL.revokeObjectURL(e.currentTarget.src)}
-                      />
-                    </div>
-                  )
-                  : (
-                    <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-500">
-                      <Icon name="draft" className="text-slate-50" />
-                    </div>
-                  )}
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs text-slate-700 font-medium truncate max-w-[200px]">
-                    {file.name}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    {(file.size / 1024).toFixed(1)}KB
-                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-slate-700 text-slate-50 hover:bg-slate-600 hover:text-slate-50"
+                    onClick={() => {
+                      const dataTransfer = new DataTransfer();
+                      setFiles(dataTransfer.files);
+                    }}
+                    title="Remove file"
+                  >
+                    <Icon name="close" />
+                  </Button>
+                  {currentFile.type.startsWith("image/")
+                    ? (
+                      <div className="h-8 w-8 rounded overflow-hidden">
+                        <img
+                          src={URL.createObjectURL(currentFile)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onLoad={(e) =>
+                            URL.revokeObjectURL(e.currentTarget.src)}
+                        />
+                      </div>
+                    )
+                    : (
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-500">
+                        <Icon name="draft" />
+                      </div>
+                    )}
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs text-slate-700 font-medium truncate max-w-[200px]">
+                      {currentFile.name}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {(currentFile.size / 1024).toFixed(1)}KB
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

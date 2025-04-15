@@ -3,6 +3,7 @@ export * from "./constants.ts";
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";
 export * from "./crud/mcp.ts";
+export * from "./crud/wallet.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/fs.ts";

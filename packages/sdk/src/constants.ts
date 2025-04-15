@@ -116,6 +116,15 @@ export interface Model {
   legacyId?: string;
 }
 
+const LOGOS = {
+  openai:
+    "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+  anthropic:
+    "https://assets.decocache.com/webdraw/6780dee0-80d6-4c83-bf4f-8e5773d867ea/claude.png",
+  google:
+    "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
+};
+
 export const DEFAULT_REASONING_MODEL = "google:gemini-2.5-pro-preview-03-25";
 
 type Capability =
@@ -128,23 +137,38 @@ export const MODELS: Model[] = [
   {
     id: "google:gemini-2.5-pro-preview-03-25",
     name: "Google Gemini 2.5 Pro",
-    logo:
-      "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
+    logo: LOGOS.google,
     capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude 3.7 Sonnet",
-    logo:
-      "https://assets.decocache.com/webdraw/6780dee0-80d6-4c83-bf4f-8e5773d867ea/claude.png",
+    logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
   },
   {
+    id: "openai:gpt-4.1",
+    name: "OpenAI GPT-4.1",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+  },
+  {
+    id: "openai:gpt-4.1-mini",
+    name: "OpenAI GPT-4.1 mini",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+  },
+  {
+    id: "openai:gpt-4.1-nano",
+    name: "OpenAI GPT-4.1 nano",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload"],
+  },
+  {
     id: "openai:o3-mini-high",
     name: "OpenAI o3-mini",
-    logo:
-      "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
+    logo: LOGOS.openai,
     capabilities: ["reasoning"],
   },
   // {

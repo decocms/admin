@@ -6,8 +6,6 @@ import {
   useAgentRoot,
   useUpdateAgent,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
@@ -16,6 +14,7 @@ import { ChatMessage } from "./Message.tsx";
 import { openPreviewPanel } from "./utils/preview.ts";
 import { PageLayout } from "../pageLayout.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { ChatError } from "./ChatError.tsx";
 
 interface ChatProps {
   agent?: Agent;
@@ -57,35 +56,7 @@ function ChatMessages(
           />
         </div>
       ))}
-      {error && (
-        <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
-          <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
-            <Icon name="info" />
-            <p>An error occurred while generating the response.</p>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
-                onClick={() => {
-                  onRetry?.([
-                    JSON.stringify({
-                      type: "error",
-                      message: error.message,
-                      name: error.name,
-                      stack: error.stack,
-                    }),
-                    "The previous attempt resulted in an error. I'll try to address the error and provide a better response.",
-                  ]);
-                }}
-              >
-                <Icon name="refresh" />
-                Retry
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {error && <ChatError error={error} onRetry={onRetry} />}
       {(status === "streaming" || status === "submitted") && (
         <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 text-muted-foreground ml-4">
           <span className="inline-flex items-center gap-1">

@@ -120,7 +120,7 @@ function Activity() {
                       {statement.title}
                     </p>
                     {statement.description && (
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap max-w-[280px]">
                         {statement.description}
                       </p>
                     )}
@@ -226,7 +226,7 @@ function Activity() {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
-                                      {value as string}
+                                      <span>{value as string}</span>
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent>

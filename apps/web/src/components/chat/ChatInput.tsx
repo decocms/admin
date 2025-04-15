@@ -49,7 +49,6 @@ export function ChatInput({
     return acceptTypes.join(",");
   };
 
-  console.log(selectedModel, getAcceptedFileTypes());
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
       { target: { value: markdown } } as React.ChangeEvent<HTMLTextAreaElement>,

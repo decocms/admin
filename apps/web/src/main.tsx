@@ -18,6 +18,7 @@ import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
+import { About } from "./components/about/index.tsx";
 
 const IntegrationNew = lazy(() =>
   import("./components/integrations/detail/new.tsx")
@@ -87,8 +88,12 @@ function ErrorFallback() {
 
     reset();
 
-    const next = new URL(location.pathname, globalThis.location.origin);
+    if (location.pathname === "/") {
+      navigate("/about", { replace: true });
+      return;
+    }
 
+    const next = new URL(location.pathname, globalThis.location.origin);
     navigate(`/login?next=${next}`, { replace: true });
   }, [notLoggedIn, location.pathname, reset, navigate]);
 
@@ -120,6 +125,11 @@ function Router() {
       <Route
         path="login"
         element={<Wrapper slot={<Login />} />}
+      />
+
+      <Route
+        path="about"
+        element={<Wrapper slot={<About />} />}
       />
 
       <Route path="/:teamSlug?" element={<Layout />}>

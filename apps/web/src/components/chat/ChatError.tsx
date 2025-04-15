@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 
 const WELL_KNOWN_ERROR_MESSAGES = {
-    InsufficientFunds: "Insufficient funds"
+  InsufficientFunds: "Insufficient funds",
 };
 
 interface ChatErrorProps {
@@ -13,7 +13,6 @@ interface ChatErrorProps {
 }
 
 export function ChatError({ error, onRetry }: ChatErrorProps) {
-
   if (error.message.includes(WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds)) {
     trackEvent("chat_error_insufficient_funds", {
       error,
@@ -72,4 +71,4 @@ export function ChatError({ error, onRetry }: ChatErrorProps) {
       </div>
     </div>
   );
-} 
+}

@@ -40,9 +40,8 @@ const fetchAPI = (path: string, init?: RequestInit) =>
 
 export const listTools = async (
   connection: MCPConnection,
-  root: string,
 ): Promise<ToolsData> => {
-  const response = await fetchAPI(`${root}/inspect/list-tools`, {
+  const response = await fetchAPI(`/inspect/list-tools`, {
     method: "POST",
     body: JSON.stringify(connection),
   });
@@ -71,12 +70,11 @@ export const callTool = async (
 };
 
 export function useTools(connection: MCPConnection) {
-  const { context: root } = useSDK();
   return useQuery({
     retry: false,
     queryKey: ["tools", connection],
     queryFn: () => {
-      return listTools(connection, root);
+      return listTools(connection);
     },
     initialData: INITIAL_DATA,
   });

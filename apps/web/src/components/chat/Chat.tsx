@@ -16,6 +16,7 @@ import { PageLayout } from "../pageLayout.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { ChatError } from "./ChatError.tsx";
 import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
+import { IMAGE_REGEXP } from "./utils/preview.ts";
 
 interface ChatProps {
   agent?: Agent;
@@ -148,11 +149,16 @@ export function Chat({
           title: string;
         };
 
-        openPreviewPanel(
-          `preview-${toolCall.toolCallId}`,
-          content,
-          title,
-        );
+        const isImageLike = content && IMAGE_REGEXP.test(content);
+
+        if (!isImageLike) {
+          openPreviewPanel(
+            `preview-${toolCall.toolCallId}`,
+            content,
+            title,
+          );
+        }
+
         return {
           success: true,
         };

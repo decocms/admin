@@ -1,5 +1,7 @@
 import { togglePanel } from "../../agent/index.tsx";
 
+export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
+
 export const toIframeProps = (content: string) => {
   try {
     const url = new URL(content);

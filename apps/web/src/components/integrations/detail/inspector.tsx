@@ -6,9 +6,16 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useRef, useState } from "react";
-import { ConnStatus } from "./connStatus.tsx";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { ErrorBoundary, useError } from "../../../ErrorBoundary.tsx";
+import { EmptyState } from "../../common/EmptyState.tsx";
+import { useContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
 import { ToolCallResult } from "./toolCallResult.tsx";
 import type { MCPToolCallResult } from "./types.ts";
@@ -17,7 +24,67 @@ interface InspectorProps {
   connection: MCPConnection;
 }
 
-function Inspector({ connection }: InspectorProps) {
+function InspectorSkeleton() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Spinner />
+    </div>
+  );
+}
+
+function InspectorError() {
+  const error = useError();
+
+  return (
+    <EmptyState
+      icon="error"
+      title="Error loading tools"
+      description={error.state.error?.message ?? "An unknown error occurred"}
+      buttonProps={{
+        onClick: () => error.reset(),
+        children: "Try Again",
+      }}
+    />
+  );
+}
+
+function ConnStatus({ tools }: { tools: ReturnType<typeof useTools> }) {
+  const colors = tools.isRefetching
+    ? "text-gray-500 border-gray-500 hover:text-gray-500"
+    : tools.error
+    ? "text-red-500 border-red-500 hover:text-red-500"
+    : "text-green-500 border-green-500 hover:text-green-500";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        asChild
+      >
+        <Button
+          onClick={() => tools.refetch()}
+          disabled={tools.isRefetching}
+          variant="outline"
+          className={cn("gap-2", colors)}
+        >
+          Refresh
+          <Icon
+            className={cn(colors, tools.isRefetching && "animate-pulse")}
+            name="adjust"
+          />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        {tools.isRefetching
+          ? "Connecting..."
+          : tools.data
+          ? "Connected"
+          : "Disconnected"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function InspectorUI({ connection }: InspectorProps) {
   const tools = useTools(connection);
   const toolCall = useToolCall(connection);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -259,10 +326,10 @@ function Inspector({ connection }: InspectorProps) {
             <div className="flex justify-center">
               <Button
                 onClick={handleRefreshTools}
-                disabled={tools.isLoading}
+                disabled={tools.isRefetching}
                 className="gap-2"
               >
-                {tools.isLoading
+                {tools.isRefetching
                   ? (
                     <>
                       <Spinner size="xs" /> Refreshing...
@@ -281,7 +348,7 @@ function Inspector({ connection }: InspectorProps) {
           /* Main content with search and tool call */
           <div
             className={cn(
-              "grid grid-cols-1 md:grid-cols-2 gap-4",
+              "grid grid-cols-1  gap-4",
               tools.isLoading && "invisible",
             )}
           >
@@ -405,5 +472,21 @@ function Inspector({ connection }: InspectorProps) {
     </div>
   );
 }
+
+function Inspector() {
+  const { form } = useContext();
+
+  const connection = form.watch("connection");
+
+  return (
+    <ErrorBoundary fallback={<InspectorError />}>
+      <Suspense fallback={<InspectorSkeleton />}>
+        <InspectorUI connection={connection} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+Inspector.displayName = "Inspect";
 
 export default Inspector;

@@ -82,7 +82,7 @@ export function Avatar({
 
   return (
     <AvatarUI className={cn(className)} {...props}>
-      <AvatarImage src={url} alt="Avatar" />
+      <AvatarImage src={url} alt="Avatar" className="object-cover" />
       <AvatarFallback className={cn(fallbackColor, "rounded-2xl")}>
         {fallbackContent}
       </AvatarFallback>
@@ -97,33 +97,13 @@ export const AgentAvatar = (
     className?: string;
   },
 ) => {
-  if (!name || name === "Anonymous") {
-    return (
-      <div
-        className={cn(
-          "w-full h-full bg-gradient-to-b from-white to-slate-200 flex items-center justify-center border border-slate-200 overflow-hidden",
-          className,
-        )}
-      >
-        <Icon
-          filled
-          name="domino_mask"
-          className="text-slate-600"
-        />
-      </div>
-    );
-  }
-
   const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
 
   return (
     <Avatar
       url={isUrlLike ? avatar : undefined}
-      fallback={isUrlLike ? avatar : name.substring(0, 2)}
-      className={cn(
-        "w-full h-full",
-        className,
-      )}
+      fallback={isUrlLike ? avatar : name?.substring(0, 2) ?? "Agent"}
+      className={cn("w-full h-full", className)}
     />
   );
 };

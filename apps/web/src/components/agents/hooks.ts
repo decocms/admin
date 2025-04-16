@@ -1,34 +1,64 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
+import { getThreadId } from "../../hooks/thread.ts";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 
 // Helper to get agent URL
-const getAgentPath = (agentId: string, threadId?: string): string =>
-  `/agent/${agentId}/${threadId ?? ""}`;
+export const getChatPath = (
+  agentId: string,
+  threadId = getThreadId(),
+): string => `/chat/${agentId}/${threadId}`;
 
-interface AgentNavigationOptions {
-  threadId?: string;
+export const getAgentEditPath = (agentId: string): string =>
+  `/agent/${agentId}`;
+
+interface Options {
   message?: string;
 }
+
+export const useFocusChat = () => {
+  const navigate = useNavigate();
+  const withBasePath = useBasePath();
+
+  const navigateToAgent = useCallback(
+    (
+      agentId: string,
+      threadId?: string,
+      options?: Options,
+    ) => {
+      const url = new URL(
+        withBasePath(getChatPath(agentId, threadId)),
+        globalThis.location.origin,
+      );
+
+      if (options?.message) {
+        url.searchParams.append("message", options.message);
+      }
+
+      navigate(`${url.pathname}${url.search}`);
+    },
+    [withBasePath, navigate],
+  );
+
+  return navigateToAgent;
+};
 
 export const useFocusAgent = () => {
   const navigate = useNavigate();
   const withBasePath = useBasePath();
 
   const navigateToAgent = useCallback(
-    (agentId: string, options?: AgentNavigationOptions) => {
-      const pathname = withBasePath(getAgentPath(agentId, options?.threadId));
+    (agentId: string, options?: Options) => {
+      const url = new URL(
+        withBasePath(getAgentEditPath(agentId)),
+        globalThis.location.origin,
+      );
 
-      // Add message as a query parameter if provided
-      let url = pathname;
       if (options?.message) {
-        const searchParams = new URLSearchParams();
-        searchParams.append("message", options.message);
-        url = `${pathname}?${searchParams.toString()}`;
+        url.searchParams.append("message", options.message);
       }
 
-      // Navigate to the agent page
-      navigate(url);
+      navigate(`${url.pathname}${url.search}`);
     },
     [withBasePath, navigate],
   );

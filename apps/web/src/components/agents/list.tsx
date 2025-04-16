@@ -35,16 +35,17 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
+import { DEFAULT_INTEGRATION_ICON } from "../../constants.ts";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
-import { useFocusAgent } from "./hooks.ts";
-import { trackEvent } from "../../hooks/analytics.ts";
+import { useFocusAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
-  const focusAgent = useFocusAgent();
+  const focusAgent = useFocusChat();
   const createAgent = useCreateAgent();
 
   // Function to handle duplicating the agent
@@ -93,7 +94,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
     return null;
   }
 
-  const icon = integration.icon || "icon://conversion_path";
+  const icon = integration.icon || DEFAULT_INTEGRATION_ICON;
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -134,6 +135,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
 function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const focusChat = useFocusChat();
   const focusAgent = useFocusAgent();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
 
@@ -179,9 +181,7 @@ function AgentCard({ agent }: { agent: Agent }) {
     <>
       <Card
         className="shadow-sm group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl"
-        onClick={() => {
-          focusAgent(agent.id);
-        }}
+        onClick={() => focusChat(agent.id)}
       >
         <CardContent className="p-4 gap-4 flex flex-col justify-start flex-grow">
           <div className="grid grid-cols-[min-content_auto_min-content] gap-4">
@@ -220,6 +220,17 @@ function AgentCard({ agent }: { agent: Agent }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem
+                  className="gap-4"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    focusAgent(agent.id);
+                  }}
+                >
+                  <Icon name="edit" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="gap-4"
                   disabled={duplicating}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -227,17 +238,17 @@ function AgentCard({ agent }: { agent: Agent }) {
                     duplicate();
                   }}
                 >
-                  <Icon name="content_copy" className="mr-2" />
+                  <Icon name="content_copy" />
                   {duplicating ? "Duplicating..." : "Duplicate"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="text-destructive"
+                  className="text-destructive gap-4"
                   onClick={(e) => {
                     e.stopPropagation();
                     setDeleteDialogOpen(true);
                   }}
                 >
-                  <Icon name="delete" className="mr-2" />
+                  <Icon name="delete" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -245,7 +256,7 @@ function AgentCard({ agent }: { agent: Agent }) {
           </div>
 
           {/* Integrations list slot */}
-          <div className="flex gap-2 flex-wrap h-8 justify-end">
+          <div className="flex gap-1 flex-wrap h-8 justify-end">
             {Object
               .entries(agent.tools_set ?? {})
               .filter(([_, tools]) => tools.length > 0)
@@ -341,15 +352,7 @@ export default function List() {
   const handleCreate = async () => {
     try {
       setCreating(true);
-      const agent = await createAgent.mutateAsync({
-        name: "New Agent",
-        id: crypto.randomUUID(),
-        avatar: "",
-        instructions: "This agent has not been configured yet.",
-        tools_set: {},
-        model: DEFAULT_REASONING_MODEL,
-        views: [{ url: "", name: "Chat" }],
-      });
+      const agent = await createAgent.mutateAsync({});
       focusAgent(agent.id);
 
       trackEvent("agent_create", {
@@ -404,8 +407,7 @@ export default function List() {
           </div>
         </>
       }
-    >
-      {!agents
+      main={!agents
         ? (
           <div className="flex h-48 items-center justify-center">
             <Spinner size="lg" />
@@ -442,6 +444,6 @@ export default function List() {
             }}
           />
         )}
-    </PageLayout>
+    />
   );
 }

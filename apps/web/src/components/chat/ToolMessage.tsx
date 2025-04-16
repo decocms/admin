@@ -7,13 +7,10 @@ import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { Picker } from "./Picker.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
+import { useChatContext } from "./context.tsx";
 
 interface ToolMessageProps {
   toolInvocations: NonNullable<Message["toolInvocations"]>;
-  handlePickerSelect: (
-    toolCallId: string,
-    selectedValue: string,
-  ) => Promise<void>;
 }
 
 // Tools that have custom UI rendering and shouldn't show in the timeline
@@ -121,14 +118,35 @@ function ToolStatus(
   );
 }
 
-function CustomToolUI({
-  tool,
-  handlePickerSelect,
-}: {
+function CustomToolUI({ tool }: {
   tool: ToolInvocation;
-  handlePickerSelect: ToolMessageProps["handlePickerSelect"];
 }) {
-  if (tool.state !== "result" || !tool.result?.data) return null;
+  const { setMessages, append } = useChatContext();
+
+  const handlePickerSelect = async (
+    toolCallId: string,
+    selectedValue: string,
+  ) => {
+    if (!selectedValue) {
+      return;
+    }
+
+    // Remove the picker
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => ({
+        ...msg,
+        toolInvocations: msg.toolInvocations?.filter(
+          (tool) => tool.toolCallId !== toolCallId,
+        ),
+      }))
+    );
+
+    await append({ role: "user", content: selectedValue });
+  };
+
+  if (tool.state !== "result" || !tool.result?.data) {
+    return null;
+  }
 
   switch (tool.toolName) {
     case "RENDER": {
@@ -174,9 +192,9 @@ function CustomToolUI({
   }
 }
 
-export function ToolMessage(
-  { toolInvocations, handlePickerSelect }: ToolMessageProps,
-) {
+export function ToolMessage({
+  toolInvocations,
+}: ToolMessageProps) {
   // Separate tools into timeline tools and custom UI tools
   const timelineTools: ToolInvocation[] = [];
   const customUITools: ToolInvocation[] = [];
@@ -206,11 +224,7 @@ export function ToolMessage(
 
       {/* Custom UI tools */}
       {customUITools.map((tool) => (
-        <CustomToolUI
-          key={tool.toolCallId}
-          tool={tool}
-          handlePickerSelect={handlePickerSelect}
-        />
+        <CustomToolUI key={tool.toolCallId} tool={tool} />
       ))}
     </div>
   );

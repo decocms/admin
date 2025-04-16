@@ -1,8 +1,13 @@
-import { useIntegrations, useMarketplaceIntegrations } from "@deco/sdk";
+import {
+  useCreateIntegration,
+  useIntegrations,
+  useMarketplaceIntegrations,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ReactNode } from "react";
-import { Link, useMatch } from "react-router";
+import { Link, useMatch, useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { PageLayout } from "../../pageLayout.tsx";
 
@@ -30,11 +35,18 @@ function BreadcrumbItem({
 }
 
 export function IntegrationPage({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const withBasePath = useBasePath();
   const connected = useMatch({ path: "/integrations" });
 
+  const { mutateAsync: createIntegration, isPending } = useCreateIntegration();
   const { data: installedIntegrations } = useIntegrations();
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
+
+  const handleCreateIntegration = async () => {
+    const { id } = await createIntegration({});
+    navigate(withBasePath(`/integration/${id}`));
+  };
 
   return (
     <PageLayout
@@ -52,23 +64,31 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
               <BreadcrumbItem
                 active={!connected}
                 label="All"
-                count={marketplaceIntegrations?.integrations.length ?? 0}
+                count={marketplaceIntegrations?.length ?? 0}
                 to={withBasePath("/integrations/marketplace")}
               />
             </div>
           </div>
           <div>
-            <Button asChild>
-              <Link to={withBasePath("/integration/new")}>
-                <Icon name="add" />
-                Create Integration
-              </Link>
+            <Button onClick={handleCreateIntegration}>
+              {isPending
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    Creating...
+                  </>
+                )
+                : (
+                  <>
+                    <Icon name="add" />
+                    Create Integration
+                  </>
+                )}
             </Button>
           </div>
         </>
       }
-    >
-      {children}
-    </PageLayout>
+      main={children}
+    />
   );
 }

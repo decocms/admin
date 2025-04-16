@@ -15,6 +15,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { ReactNode, Suspense } from "react";
 import { Link, useMatch } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
+import { getChatPath } from "../agents/hooks.ts";
 import { groupThreadsByDate, Thread } from "../threads/index.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 
@@ -25,7 +26,7 @@ const STATIC_ITEMS = [
     icon: "forum",
   },
   {
-    url: "/integrations",
+    url: "/integrations/marketplace",
     title: "Integrations",
     icon: "conversion_path",
   },
@@ -51,29 +52,28 @@ const WithActive = (
   );
 };
 
-function buildThreadUrl(thread: Thread): string {
-  return `agent/${thread.metadata.agentId}/${thread.id}`;
-}
-
 function SidebarThreadList({ threads }: { threads: Thread[] }) {
-  return threads.map((thread) => (
-    <SidebarMenuItem key={thread.id}>
-      <WithActive to={buildThreadUrl(thread)}>
-        {({ isActive }) => (
-          <SidebarMenuButton
-            asChild
-            isActive={isActive}
-            tooltip={thread.title}
-            className="h-9"
-          >
-            <Link to={buildThreadUrl(thread)}>
-              <span className="truncate">{thread.title}</span>
-            </Link>
-          </SidebarMenuButton>
-        )}
-      </WithActive>
-    </SidebarMenuItem>
-  ));
+  return threads.map((thread) => {
+    const to = getChatPath(thread.metadata.agentId, thread.id);
+    return (
+      <SidebarMenuItem key={thread.id}>
+        <WithActive to={to}>
+          {({ isActive }) => (
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={thread.title}
+              className="h-9"
+            >
+              <Link to={to}>
+                <span className="truncate">{thread.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          )}
+        </WithActive>
+      </SidebarMenuItem>
+    );
+  });
 }
 
 function SidebarThreadsSkeleton() {

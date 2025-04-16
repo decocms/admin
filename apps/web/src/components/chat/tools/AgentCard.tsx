@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useFocusAgent } from "../../agents/hooks.ts";
+import { useFocusChat } from "../../agents/hooks.ts";
 
 interface AgentCardProps {
   id: string;
@@ -25,7 +25,7 @@ interface AgentCardProps {
 export function AgentCard(
   { id, name, description, avatar, onEdit, displayLink = true }: AgentCardProps,
 ) {
-  const focusAgent = useFocusAgent();
+  const focusAgent = useFocusChat();
 
   const initials = name
     ?.split(" ")

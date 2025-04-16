@@ -13,28 +13,24 @@ import {
 } from "../crud/mcp.ts";
 import type { Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
+import { KEYS } from "./keys.ts";
 import { useSDK } from "./store.tsx";
-
-const getKeyFor = (
-  context: string,
-  mcpId?: string,
-) => ["mcp", context, mcpId];
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
   const { context: root } = useSDK();
 
   const create = useMutation({
-    mutationFn: (mcp: Integration) => createIntegration(root, mcp),
+    mutationFn: (mcp: Partial<Integration>) => createIntegration(root, mcp),
     onSuccess: (result) => {
-      const key = getKeyFor(root, result.id);
+      const key = KEYS.mcp(root, result.id);
 
       // update item
       client.setQueryData(key, result);
 
       // update list
       client.setQueryData(
-        getKeyFor(root),
+        KEYS.mcp(root),
         (old: Integration[] | undefined) => {
           if (!old) return [result];
           return [result, ...old];
@@ -42,7 +38,7 @@ export const useCreateIntegration = () => {
       );
 
       // invalidate list
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
+      client.invalidateQueries({ queryKey: KEYS.mcp(root) });
     },
   });
 
@@ -57,33 +53,33 @@ export const useUpdateIntegration = () => {
     mutationFn: (mcp: Integration) => saveIntegration(root, mcp),
     onMutate: async (updatedMCP) => {
       // Cancel any outgoing refetches
-      await client.cancelQueries({ queryKey: getKeyFor(root) });
+      await client.cancelQueries({ queryKey: KEYS.mcp(root) });
 
       // Snapshot the previous value
-      const previousMCPs = client.getQueryData(getKeyFor(root)) as
+      const previousMCPs = client.getQueryData(KEYS.mcp(root)) as
         | Integration[]
         | undefined;
 
       // Optimistically update the cache
-      client.setQueryData(getKeyFor(root), (old: Integration[] | undefined) => {
+      client.setQueryData(KEYS.mcp(root), (old: Integration[] | undefined) => {
         if (!old) return [updatedMCP];
         return old.map((mcp) => mcp.id === updatedMCP.id ? updatedMCP : mcp);
       });
 
       // Update the individual MCP in cache
-      client.setQueryData(getKeyFor(root, updatedMCP.id), updatedMCP);
+      client.setQueryData(KEYS.mcp(root, updatedMCP.id), updatedMCP);
 
       return { previousMCPs } as const;
     },
     onError: (_err, _updatedMCP, context) => {
       // Rollback to the previous value
       if (context?.previousMCPs) {
-        client.setQueryData(getKeyFor(root), context.previousMCPs);
+        client.setQueryData(KEYS.mcp(root), context.previousMCPs);
       }
     },
     onSettled: () => {
       // Always refetch after error or success to ensure data is in sync
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
+      client.invalidateQueries({ queryKey: KEYS.mcp(root) });
     },
   });
 
@@ -98,31 +94,31 @@ export const useRemoveIntegration = () => {
     mutationFn: (mcpId: string) => deleteIntegration(root, mcpId),
     onMutate: async (mcpId) => {
       // Cancel any outgoing refetches
-      await client.cancelQueries({ queryKey: getKeyFor(root) });
+      await client.cancelQueries({ queryKey: KEYS.mcp(root) });
 
       // Snapshot the previous value
-      const previousMCPs = client.getQueryData<Integration[]>(getKeyFor(root));
+      const previousMCPs = client.getQueryData<Integration[]>(KEYS.mcp(root));
 
       // Optimistically update the cache
-      client.setQueryData(getKeyFor(root), (old: Integration[]) => {
+      client.setQueryData(KEYS.mcp(root), (old: Integration[]) => {
         if (!old) return old;
         return old.filter((mcp: Integration) => mcp.id !== mcpId);
       });
 
       // Remove the individual MCP from cache
-      client.removeQueries({ queryKey: getKeyFor(root, mcpId) });
+      client.removeQueries({ queryKey: KEYS.mcp(root, mcpId) });
 
       return { previousMCPs };
     },
     onError: (_err, _vars, ctx) => {
       // Rollback to the previous value
       if (ctx?.previousMCPs) {
-        client.setQueryData(getKeyFor(root), ctx.previousMCPs);
+        client.setQueryData(KEYS.mcp(root), ctx.previousMCPs);
       }
     },
     onSettled: () => {
       // Always refetch after error or success to ensure data is in sync
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
+      client.invalidateQueries({ queryKey: KEYS.mcp(root) });
     },
   });
 
@@ -134,7 +130,7 @@ export const useIntegration = (mcpId: string) => {
   const { context } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: getKeyFor(context, mcpId),
+    queryKey: KEYS.mcp(context, mcpId),
     queryFn: () => loadIntegration(context, mcpId),
     retry: (failureCount, error) =>
       error instanceof IntegrationNotFoundError ? false : failureCount < 2,
@@ -153,7 +149,7 @@ export const useFetchIntegration = () => {
       const integration = await loadIntegration(context, mcpId);
 
       // Update cache
-      queryClient.setQueryData(getKeyFor(context, mcpId), integration);
+      queryClient.setQueryData(KEYS.mcp(context, mcpId), integration);
 
       return integration;
     } catch (error) {
@@ -172,7 +168,7 @@ export const useIntegrations = () => {
   const { context } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: getKeyFor(context),
+    queryKey: KEYS.mcp(context),
     queryFn: () => listIntegrations(context).then((r) => r.items),
   });
 
@@ -186,14 +182,14 @@ interface IntegrationsResult {
 export const useMarketplaceIntegrations = () => {
   const agentStub = useAgentStub();
 
-  return useSuspenseQuery<IntegrationsResult>({
+  return useSuspenseQuery<IntegrationsResult["integrations"]>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      agentStub.callTool("CORE.INTEGRATIONS_SEARCH", {
+      agentStub.callTool("DECO_INTEGRATIONS.DECO_INTEGRATIONS_SEARCH", {
         query: "",
         filters: { installed: false },
         verbose: true,
-      }).then((r: { data: IntegrationsResult }) => r.data),
+      }).then((r: { data: IntegrationsResult }) => r.data.integrations),
   });
 };
 
@@ -205,13 +201,13 @@ export const useInstallFromMarketplace = () => {
   const mutation = useMutation({
     mutationFn: async (mcpId: string) => {
       const result: { data: { installationId: string } } = await agentStub
-        .callTool("CORE.INTEGRATION_INSTALL", { id: mcpId });
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id: mcpId });
 
       return result.data;
     },
     onSuccess: () => {
       // Invalidate the integrations list to refresh it
-      client.invalidateQueries({ queryKey: getKeyFor(context) });
+      client.invalidateQueries({ queryKey: KEYS.mcp(context) });
     },
   });
 

@@ -1,20 +1,26 @@
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 
-export function ExpandableDescription(
-  { description }: { description: string },
-) {
+interface Props {
+  description: string;
+}
+
+const MAX_LENGTH = 60;
+
+export function Description({ description }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="relative max-w-full">
       <p
-        className={`text-xs text-muted-foreground break-words ${
-          !isExpanded ? "line-clamp-1" : ""
-        }`}
+        className={cn(
+          "text-xs text-muted-foreground break-words",
+          isExpanded ? "line-clamp-none" : "line-clamp-1",
+        )}
       >
         {description}
       </p>
-      {description.length > 60 && (
+      {description.length > MAX_LENGTH && (
         <button
           type="button"
           onClick={(e) => {

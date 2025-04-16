@@ -1,4 +1,4 @@
-import { togglePanel } from "../../agent/index.tsx";
+import { togglePanel } from "../../dock/index.tsx";
 
 export const toIframeProps = (content: string) => {
   try {

@@ -39,11 +39,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   // TODO: Add posthog error tracking in here
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error(error, errorInfo);
+
     if (this.shouldCatch(error)) {
       return;
     }
-
-    console.error(error, errorInfo);
   }
 
   override render() {

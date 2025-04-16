@@ -2,8 +2,6 @@ import {
   API_HEADERS,
   API_SERVER_URL,
   DEFAULT_REASONING_MODEL,
-  WELL_KNOWN_AGENT_IDS,
-  WELL_KNOWN_INITIAL_TOOLS_SET,
 } from "../constants.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
@@ -25,23 +23,6 @@ export class AgentNotFoundError extends Error {
     this.agentId = agentId;
   }
 }
-
-/**
- * Save an agent to the file system
- * @param agent - The agent to save
- */
-export const saveAgent = async (context: string, agent: Agent) => {
-  const response = await fetchAPI([context, "agent"], {
-    method: "POST",
-    body: JSON.stringify(agent),
-  });
-
-  if (response.ok) {
-    return response.json() as Promise<Agent>;
-  }
-
-  throw new Error("Failed to save agent");
-};
 
 /**
  * Update an agent
@@ -69,25 +50,21 @@ export const createAgent = async (
   context: string,
   template: Partial<Agent> = {},
 ) => {
-  const agent: Agent = {
+  const agent: Partial<Agent> = {
     id: crypto.randomUUID(),
-    name: "Anonymous",
-    instructions: "This agent has not been configured yet.",
-    avatar: "", // You could add a default avatar path here if needed
-    description: "A customizable AI assistant", // Default description
-    tools_set: {
-      CORE: template.id === WELL_KNOWN_AGENT_IDS.teamAgent
-        ? [...WELL_KNOWN_INITIAL_TOOLS_SET.CORE, "AGENT_CREATE"]
-        : WELL_KNOWN_INITIAL_TOOLS_SET.CORE,
-    },
-    model: DEFAULT_REASONING_MODEL, // Default model
-    views: [{ url: "", name: "Chat" }],
     ...template,
   };
 
-  await saveAgent(context, agent);
+  const response = await fetchAPI([context, "agent"], {
+    method: "POST",
+    body: JSON.stringify(agent),
+  });
 
-  return agent;
+  if (response.ok) {
+    return response.json() as Promise<Agent>;
+  }
+
+  throw new Error("Failed to save agent");
 };
 
 /**

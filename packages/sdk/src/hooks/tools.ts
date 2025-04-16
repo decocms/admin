@@ -1,10 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  API_HEADERS,
-  API_SERVER_URL,
-  WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
-} from "../constants.ts";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type MCPConnection } from "../models/mcp.ts";
+import { KEYS } from "./keys.ts";
 
 export interface MCPTool {
   name: string;
@@ -32,8 +29,6 @@ type ToolsData = {
   capabilities?: Record<string, unknown>;
 };
 
-const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
-
 const fetchAPI = (path: string, init?: RequestInit) =>
   fetch(new URL(path, API_SERVER_URL), {
     ...init,
@@ -56,7 +51,7 @@ export const listTools = async (
   return response.json() as Promise<ToolsData>;
 };
 
-export const callTool = async (
+const callTool = async (
   connection: MCPConnection,
   toolCall: MCPToolCall,
 ) => {
@@ -72,29 +67,11 @@ export const callTool = async (
   return response.json() as Promise<MCPToolCallResult>;
 };
 
-export function useTools(connection: MCPConnection) {
-  return useQuery({
-    retry: false,
-    queryKey: ["tools", connection],
-    queryFn: () => {
-      if (connection.type === "INNATE") {
-        return {
-          tools: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS[connection.name as "CORE"]
-            .map(
-              (tool) => ({
-                name: tool,
-                description: "",
-                inputSchema: {},
-              }),
-            ),
-          instructions: "",
-        };
-      }
-      return listTools(connection);
-    },
-    initialData: INITIAL_DATA,
+export const useTools = (connection: MCPConnection) =>
+  useSuspenseQuery({
+    queryKey: KEYS.tools(connection),
+    queryFn: () => listTools(connection),
   });
-}
 
 export function useToolCall(connection: MCPConnection) {
   return useMutation({

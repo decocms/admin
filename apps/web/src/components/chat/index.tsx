@@ -1,6 +1,6 @@
 import { AgentNotFoundError, useAgent, useMessages } from "@deco/sdk";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { Chat as ChatUI } from "./Chat.tsx";
+import { ChatMessages as ChatUI } from "./ChatMessages.tsx";
 
 function Chat(
   { agentId, threadId, panels }: {
@@ -14,10 +14,10 @@ function Chat(
 
   return (
     <ChatUI
-      initialMessages={messages}
-      threadId={threadId}
       agent={agent}
-      panels={panels}
+      agentId={agentId}
+      threadId={threadId}
+      initialMessages={messages}
     />
   );
 }
@@ -32,7 +32,12 @@ function AgentNotFound(
   const { data: messages } = useMessages(agentId, threadId);
 
   return (
-    <ChatUI initialMessages={messages} threadId={threadId} panels={panels} />
+    <ChatUI
+      initialMessages={messages}
+      threadId={threadId}
+      agentId={agentId}
+      panels={panels}
+    />
   );
 }
 

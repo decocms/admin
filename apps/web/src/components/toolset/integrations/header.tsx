@@ -1,71 +1,76 @@
 import type { Integration } from "@deco/sdk";
+import { Checkbox } from "@deco/ui/components/checkbox.tsx";
+import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
+import { Icon as IconUI } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { IntegrationIcon } from "./icon.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { Icon } from "./icon.tsx";
 
-export function IntegrationHeader({
-  integration,
-  tools,
-  isAllSelected,
-  setIntegrationTools,
-  isExpanded,
-  setIsExpanded,
-}: {
+interface Props {
   integration: Integration;
-  tools: string[];
-  isAllSelected: boolean;
-  setIntegrationTools: (tools: string[]) => void;
+  setTools: (integrationId: string, toolId?: string[]) => void;
   isExpanded: boolean;
   setIsExpanded: (isExpanded: boolean) => void;
-}) {
+  numberOfEnabledTools: number;
+  totalNumberOfTools: number;
+  tools: string[];
+}
+
+export function Header({
+  integration,
+  setTools,
+  isExpanded,
+  setIsExpanded,
+  numberOfEnabledTools,
+  totalNumberOfTools,
+  tools,
+}: Props) {
+  const checked = numberOfEnabledTools === totalNumberOfTools;
+
   return (
-    <button
-      type="button"
-      onClick={() => setIsExpanded(!isExpanded)}
-      className="w-full p-4 hover:bg-accent/50 transition-colors"
-    >
-      <div className="flex w-full items-center gap-2 min-w-0">
-        <Icon
+    <div className="w-full grid grid-cols-[1fr_auto] items-center justify-between gap-2 p-4">
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="grid grid-cols-[min-content_auto_auto_auto] justify-start items-center gap-2 cursor-pointer"
+      >
+        <IconUI
           name="chevron_right"
+          size={16}
           className={cn(
-            "text-muted-foreground transition-transform cursor-pointer",
+            "text-muted-foreground transition-transform",
             isExpanded ? "rotate-90" : "",
           )}
         />
-        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-          <IntegrationIcon icon={integration.icon} name={integration.name} />
-          <h3 className="font-medium text-base truncate">
-            {integration?.name}
-          </h3>
+        <Icon icon={integration.icon} name={integration.name} />
+
+        <div className="font-medium text-base truncate">
+          {integration?.name}
         </div>
-        <div className="flex items-center gap-4 ml-auto whitespace-nowrap">
-          {tools.length > 0 && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`${integration?.id}-select-all`}
-                checked={isAllSelected}
-                onChange={(e) => {
-                  setIntegrationTools(e.target.checked ? tools : []);
-                }}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
-              />
-              <label
-                htmlFor={`${integration?.id}-select-all`}
-                className="text-xs text-muted-foreground cursor-pointer"
-              >
-                Select all
-              </label>
-            </div>
-          )}
+        <div className="text-xs text-muted-foreground">
+          {numberOfEnabledTools} of {totalNumberOfTools}
         </div>
+      </button>
+      <div>
+        <FormItem className="flex items-center gap-2">
+          <FormControl>
+            <Checkbox
+              checked={checked}
+              onCheckedChange={() => {
+                setTools(integration.id, checked ? undefined : tools);
+              }}
+            />
+          </FormControl>
+          <FormLabel className="text-xs text-muted-foreground cursor-pointer">
+            Select all
+          </FormLabel>
+        </FormItem>
       </div>
-    </button>
+    </div>
   );
 }
 
-IntegrationHeader.Skeleton = ({
+Header.Skeleton = ({
   isExpanded,
   setIsExpanded,
 }: {
@@ -78,7 +83,7 @@ IntegrationHeader.Skeleton = ({
     className="w-full p-4 hover:bg-accent/50 transition-colors"
   >
     <div className="flex w-full items-center justify-between gap-2">
-      <Icon
+      <IconUI
         name="chevron_right"
         className={cn(
           "text-muted-foreground transition-transform",
@@ -86,7 +91,7 @@ IntegrationHeader.Skeleton = ({
         )}
       />
       <div className="flex items-center gap-2 flex-grow">
-        <Skeleton className="h-6 w-6 rounded-md" />
+        <Skeleton className="h-8 w-8 rounded-md" />
         <Skeleton className="h-5 w-32" />
       </div>
       <div className="flex items-center gap-4">
@@ -99,7 +104,7 @@ IntegrationHeader.Skeleton = ({
   </button>
 );
 
-IntegrationHeader.Error = ({
+Header.Error = ({
   integration,
   setIsExpanded,
   isExpanded,
@@ -114,7 +119,7 @@ IntegrationHeader.Error = ({
     className="w-full p-4 hover:bg-red-100/50 transition-colors"
   >
     <div className="flex w-full items-center justify-between gap-2">
-      <Icon
+      <IconUI
         name="chevron_right"
         className={cn(
           "text-muted-foreground transition-transform",
@@ -122,12 +127,12 @@ IntegrationHeader.Error = ({
         )}
       />
       <div className="flex items-center gap-2 flex-grow">
-        <IntegrationIcon icon={integration.icon} name={integration.name} />
+        <Icon icon={integration.icon} name={integration.name} />
         <h3 className="font-medium text-base">{integration.name}</h3>
       </div>
 
       <div className="flex items-center gap-2">
-        <Icon name="cancel" className="text-xs text-red-500" size={16} />
+        <IconUI name="cancel" className="text-xs text-red-500" size={16} />
         <span className="text-sm text-red-500">Error</span>
       </div>
     </div>

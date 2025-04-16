@@ -16,11 +16,10 @@ import {
 import { Input } from "@deco/ui/components/input.tsx";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { IntegrationPage } from "./breadcrumb.tsx";
-import { trackEvent } from "../../../hooks/analytics.ts";
-import { useFocusAgent } from "../../agents/hooks.ts";
-import { useCreateExplorerAgent } from "./useCreateExplorerAgent.ts";
+import { IntegrationIcon } from "./icon.tsx";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
@@ -34,25 +33,20 @@ function AvailableIntegrationCard({
   const {
     mutate: installIntegration,
     isPending: isInstalling,
+    error,
   } = useInstallFromMarketplace();
-  const focusAgent = useFocusAgent();
   const [showModal, setShowModal] = useState(false);
   const [createdIntegrationId, setCreatedIntegrationId] = useState<
     string | null
   >(null);
-  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
   const navigate = useNavigate();
   const withBasePath = useBasePath();
 
-  // Use the custom hook for agent creation
-  const { createExplorerAgent, isCreatingAgent, error } =
-    useCreateExplorerAgent();
-
-  const isPending = isInstalling || isCreatingAgent;
+  const isPending = isInstalling;
 
   const handleInstall = () => {
     installIntegration(integration.id, {
-      onSuccess: async (data) => {
+      onSuccess: (data) => {
         if (typeof data.installationId !== "string") {
           // Handle error
           return;
@@ -65,12 +59,6 @@ function AvailableIntegrationCard({
           success: true,
           data: integration,
         });
-
-        // Use the hook's createExplorerAgent function
-        const agentId = await createExplorerAgent(installationId);
-        if (agentId) {
-          setCreatedAgentId(agentId);
-        }
       },
       onError: (error) => {
         setShowModal(true);
@@ -89,17 +77,9 @@ function AvailableIntegrationCard({
     navigate(withBasePath(`/integration/${createdIntegrationId}`));
   };
 
-  const handleExploreIntegration = () => {
-    if (!createdAgentId) return;
-    focusAgent(createdAgentId, {
-      message: `I want to configure and explore ${integration.name}`,
-    });
-  };
-
   const handleCloseModal = () => {
     setShowModal(false);
     setCreatedIntegrationId(null);
-    setCreatedAgentId(null);
   };
 
   return (
@@ -110,13 +90,7 @@ function AvailableIntegrationCard({
       >
         <CardContent className="p-4">
           <div className="grid grid-cols-[min-content_1fr] gap-4">
-            <div className="h-16 w-16 rounded-md flex items-center justify-center overflow-hidden">
-              <img
-                src={integration.icon}
-                alt={`${integration.name} icon`}
-                className="h-full w-full object-contain"
-              />
-            </div>
+            <IntegrationIcon integration={integration} className="h-16 w-16" />
 
             <div className="grid grid-cols-1 gap-1">
               <div className="text-base font-semibold truncate">
@@ -144,23 +118,24 @@ function AvailableIntegrationCard({
             </DialogTitle>
             <DialogDescription>
               {error
-                ? <div className="text-destructive">{error}</div>
+                ? <div className="text-destructive">{error?.message}</div>
                 : (
                   <div className="mt-4">
                     <div className="grid grid-cols-[80px_1fr] items-center gap-4">
-                      <div className="rounded-md flex items-center justify-center overflow-hidden">
-                        <img
-                          src={integration.icon}
-                          alt={`${integration.name} icon`}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
+                      <IntegrationIcon integration={integration} />
                       <div>
                         <div className="text-sm text-muted-foreground">
                           {integration.description}
                         </div>
                       </div>
                     </div>
+
+                    {createdIntegrationId && (
+                      <div className="mt-4">
+                        The integration has been installed successfully. Click on
+                        the button below for setup.
+                      </div>
+                    )}
                   </div>
                 )}
             </DialogDescription>
@@ -171,26 +146,14 @@ function AvailableIntegrationCard({
               : isPending
               ? (
                 <Button disabled={isPending}>
-                  {isCreatingAgent ? "Creating Agent..." : "Connecting..."}
+                  Connecting...
                 </Button>
               )
               : createdIntegrationId
               ? (
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleEditIntegration}
-                    disabled={!createdAgentId}
-                  >
-                    Inspect
-                  </Button>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={handleExploreIntegration}
-                    disabled={!createdAgentId}
-                  >
-                    Explore
-                  </Button>
-                </div>
+                <Button onClick={handleEditIntegration}>
+                  Setup
+                </Button>
               )
               : (
                 <Button onClick={handleInstall}>
@@ -215,12 +178,12 @@ export default function Marketplace() {
     const searchTerm = registryFilter.toLowerCase();
 
     return registryFilter
-      ? marketplace.integrations.filter((integration: MarketplaceIntegration) =>
+      ? marketplace.filter((integration) =>
         integration.name.toLowerCase().includes(searchTerm) ||
         (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
         integration.provider.toLowerCase().includes(searchTerm)
       )
-      : marketplace.integrations;
+      : marketplace;
   }, [marketplace, registryFilter]);
 
   return (

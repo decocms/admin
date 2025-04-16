@@ -1,14 +1,6 @@
 import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
 
-const CORE_INTEGRATION: Integration = {
-  id: "CORE",
-  name: "Core",
-  description: "The core integration",
-  icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-  connection: { type: "INNATE", name: "CORE" },
-};
-
 const toPath = (segments: string[]) => segments.join("/");
 
 const fetchAPI = (segments: string[], init?: RequestInit) =>
@@ -31,7 +23,10 @@ export class IntegrationNotFoundError extends Error {
  * Save an MCP to the file system
  * @param mcp - The MCP to save
  */
-export const saveIntegration = async (context: string, mcp: Integration) => {
+export const saveIntegration = async (
+  context: string,
+  mcp: Partial<Integration>,
+) => {
   const response = await fetchAPI([context, "integration"], {
     method: "POST",
     body: JSON.stringify(mcp),
@@ -48,23 +43,14 @@ export const saveIntegration = async (context: string, mcp: Integration) => {
  * Create a new MCP
  * @returns The new MCP
  */
-export const createIntegration = async (
+export const createIntegration = (
   context: string,
   template: Partial<Integration> = {},
-) => {
-  const mcp: Integration = {
+) =>
+  saveIntegration(context, {
     id: crypto.randomUUID(),
-    name: "New Integration",
-    description: "A new multi-channel platform integration",
-    icon: "",
-    connection: { type: "SSE", url: "https://example.com/sse" },
     ...template,
-  };
-
-  await saveIntegration(context, mcp);
-
-  return mcp;
-};
+  });
 
 /**
  * Load an MCP from the file system
@@ -75,10 +61,6 @@ export const loadIntegration = async (
   context: string,
   mcpId: string,
 ): Promise<Integration> => {
-  if (mcpId === "CORE") {
-    return CORE_INTEGRATION;
-  }
-
   const response = await fetchAPI([context, "integration", mcpId]);
 
   if (response.ok) {

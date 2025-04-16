@@ -19,10 +19,6 @@ import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
 
-const IntegrationNew = lazy(() =>
-  import("./components/integrations/detail/new.tsx")
-);
-
 const IntegrationEdit = lazy(() =>
   import("./components/integrations/detail/edit.tsx")
 );
@@ -39,8 +35,12 @@ const AgentsList = lazy(
   () => import("./components/agents/list.tsx"),
 );
 
-const AgentDetail = lazy(
-  () => import("./components/agent/index.tsx"),
+const AgentDetails = lazy(
+  () => import("./components/agent/edit.tsx"),
+);
+
+const Chat = lazy(
+  () => import("./components/agent/use.tsx"),
 );
 
 function Wrapper({ slot: children }: { slot: ReactNode }) {
@@ -123,7 +123,12 @@ function Router() {
           index
           element={
             <Wrapper
-              slot={<AgentDetail agentId={WELL_KNOWN_AGENT_IDS.teamAgent} />}
+              slot={
+                <Chat
+                  agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
+                  threadId={crypto.randomUUID()}
+                />
+              }
             />
           }
         />
@@ -132,8 +137,12 @@ function Router() {
           element={<Wrapper slot={<AgentsList />} />}
         />
         <Route
-          path="agent/:id/:threadId?"
-          element={<Wrapper slot={<AgentDetail />} />}
+          path={`agent/:id`}
+          element={<Wrapper slot={<AgentDetails />} />}
+        />
+        <Route
+          path="chat/:id/:threadId"
+          element={<Wrapper slot={<Chat />} />}
         />
         <Route
           path="integrations/marketplace"
@@ -142,10 +151,6 @@ function Router() {
         <Route
           path="integrations"
           element={<Wrapper slot={<MyIntegrations />} />}
-        />
-        <Route
-          path="integration/new"
-          element={<Wrapper slot={<IntegrationNew />} />}
         />
         <Route
           path="integration/:id"

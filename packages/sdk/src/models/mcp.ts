@@ -33,11 +33,6 @@ export const HTTPConnectionSchema = z.object({
   token: z.string().optional(),
 });
 
-export const AgentConnectionSchema = z.object({
-  type: z.literal("AGENT"),
-  agentId: z.string(),
-});
-
 /**
  * Zod schema for a Multi-Channel Platform integration
  */
@@ -57,7 +52,6 @@ export const IntegrationSchema = z.object({
     WebsocketConnectionSchema,
     DecoConnectionSchema,
     InnateConnectionSchema,
-    AgentConnectionSchema,
   ]),
 });
 
@@ -70,11 +64,9 @@ export type WebsocketConnection = z.infer<typeof WebsocketConnectionSchema>;
 export type DecoConnection = z.infer<typeof DecoConnectionSchema>;
 export type InnateConnection = z.infer<typeof InnateConnectionSchema>;
 export type HTTPConnection = z.infer<typeof HTTPConnectionSchema>;
-export type AgentConnection = z.infer<typeof AgentConnectionSchema>;
 export type MCPConnection =
   | SSEConnection
   | WebsocketConnection
   | InnateConnection
   | DecoConnection
-  | HTTPConnection
-  | AgentConnection;
+  | HTTPConnection;

@@ -5,6 +5,7 @@ import {
   WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
 } from "../constants.ts";
 import { type MCPConnection } from "../models/mcp.ts";
+import { useSDK } from "./store.tsx";
 
 export interface MCPTool {
   name: string;
@@ -43,8 +44,9 @@ const fetchAPI = (path: string, init?: RequestInit) =>
 
 export const listTools = async (
   connection: MCPConnection,
+  root: string,
 ): Promise<ToolsData> => {
-  const response = await fetchAPI("/inspect/list-tools", {
+  const response = await fetchAPI(`${root}/inspect/list-tools`, {
     method: "POST",
     body: JSON.stringify(connection),
   });
@@ -73,11 +75,12 @@ export const callTool = async (
 };
 
 export function useTools(connection: MCPConnection) {
+  const { context: root } = useSDK();
   return useQuery({
     retry: false,
     queryKey: ["tools", connection],
     queryFn: () => {
-      if (connection.type === "INNATE") {
+      if (connection.type === "INNATE" && connection.name === "CORE") {
         return {
           tools: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS[connection.name as "CORE"]
             .map(
@@ -90,7 +93,7 @@ export function useTools(connection: MCPConnection) {
           instructions: "",
         };
       }
-      return listTools(connection);
+      return listTools(connection, root);
     },
     initialData: INITIAL_DATA,
   });

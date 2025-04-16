@@ -176,7 +176,7 @@ export const useMessages = (agentId: string, threadId: string) => {
 
   const data = useSuspenseQuery({
     queryKey: getKeyFor(context, agentId, threadId),
-    queryFn: () => agentStub.query({ threadId }),
+    queryFn: () => agentStub.query({}),
   });
 
   return data;

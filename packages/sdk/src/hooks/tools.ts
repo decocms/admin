@@ -1,9 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  API_HEADERS,
-  API_SERVER_URL,
-  WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
-} from "../constants.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type MCPConnection } from "../models/mcp.ts";
 import { useSDK } from "./store.tsx";
 
@@ -80,19 +76,6 @@ export function useTools(connection: MCPConnection) {
     retry: false,
     queryKey: ["tools", connection],
     queryFn: () => {
-      if (connection.type === "INNATE" && connection.name === "CORE") {
-        return {
-          tools: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS[connection.name as "CORE"]
-            .map(
-              (tool) => ({
-                name: tool,
-                description: "",
-                inputSchema: {},
-              }),
-            ),
-          instructions: "",
-        };
-      }
       return listTools(connection, root);
     },
     initialData: INITIAL_DATA,

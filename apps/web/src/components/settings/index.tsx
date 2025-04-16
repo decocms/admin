@@ -30,6 +30,8 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useState } from "react";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "./integrations/index.tsx";
+import { togglePanel } from "../agent/index.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
 const inputStyles =
   "rounded-lg border-input focus:none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-input focus-visible:outline-none";
@@ -194,6 +196,15 @@ function App({ agentId }: { agentId: string }) {
   const integrations = Object.keys(WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS)
     .concat(installedIntegrations.map((i) => i.id) || []);
 
+  const handleViewClick = (view: { url: string; name: string }) => {
+    togglePanel({
+      id: `view-${view.name.toLowerCase().replace(/\s+/g, "-")}`,
+      component: "preview",
+      title: view.name,
+      params: { agentId, url: view.url, title: view.name },
+    });
+  };
+
   if (!agent || !agentRoot) {
     return (
       <div className="h-full bg-background flex flex-col items-center justify-center">
@@ -311,6 +322,27 @@ function App({ agentId }: { agentId: string }) {
                 placeholder="Enter avatar URL"
                 className={inputStyles}
               />
+            </div>
+
+            {/* Views Section */}
+            <div className="space-y-2">
+              <Label className="text-lg font-medium">Views</Label>
+              <p className="text-sm text-slate-500">
+                Click on a view to open it in a new panel
+              </p>
+              <div className="flex flex-col gap-2">
+                {localAgent?.views?.map((view) => (
+                  <Button
+                    key={view.url}
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => handleViewClick(view)}
+                  >
+                    <Icon name="open_in_new" />
+                    {view.name}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Tools Section */}

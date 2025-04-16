@@ -23,11 +23,12 @@ export const openPreviewPanel = (
   id: string,
   content: string,
   title: string,
+  agentId?: string,
 ) => {
   togglePanel({
     id,
     component: "preview",
     title,
-    params: toIframeProps(content),
+    params: {title, ...toIframeProps(content), agentId},
   });
 };

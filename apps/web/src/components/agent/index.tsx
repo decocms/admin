@@ -9,6 +9,7 @@ import {
   type DockviewReadyEvent,
   IDockviewPanelHeaderProps,
   type IDockviewPanelProps,
+  type DockviewPanelApi,
 } from "dockview-react";
 import {
   ComponentType,
@@ -20,10 +21,64 @@ import {
   useState,
 } from "react";
 import { useParams } from "react-router";
+import { useAgentRoot, useUpdateAgent, useWriteFile, API_SERVER_URL, useAgent, useDirectory } from "@deco/sdk";
 
 interface Props {
   agentId?: string;
   threadId?: string;
+}
+
+interface PreviewPanelParams {
+  agentId: string;
+  srcDoc?: string;
+  src?: string;
+  title?: string;
+}
+
+interface PreviewPanelApi extends DockviewPanelApi {
+  component: string;
+}
+
+interface SaveViewButtonProps {
+  isSaving: boolean;
+  onSave: () => void;
+}
+
+function SaveViewButton({ isSaving, onSave }: SaveViewButtonProps) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onSave}
+      disabled={isSaving}
+      className="gap-2"
+    >
+      {isSaving ? (
+        <>
+          <Icon name="spinner" className="animate-spin" />
+          Saving...
+        </>
+      ) : (
+        <>
+          <Icon name="save" />
+          Save View
+        </>
+      )}
+    </Button>
+  );
+}
+
+function CloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      className="p-1 h-6 w-6"
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+    >
+      <Icon name="close" size={12} />
+    </Button>
+  );
 }
 
 const AgentChat = lazy(
@@ -71,21 +126,83 @@ const COMPONENTS = {
 
 const TAB_COMPONENTS = {
   default: (props: IDockviewPanelHeaderProps) => {
-    if (props.api.component === "chat") {
+    const api = props.api as unknown as PreviewPanelApi;
+    if (api.component === "chat") {
       return null;
     }
 
+    const [isSaving, setIsSaving] = useState(false);
+    
+    const agentId = props.params?.agentId;
+    const srcDoc = props.params?.srcDoc;
+    const src = props.params?.src;
+    const title = props.params?.title;
+
+    const agentRoot = useAgentRoot(agentId);
+    const { data: agent } = useAgent(agentId);
+    const writeFile = useWriteFile();
+    const updateAgent = useUpdateAgent();
+    const { data: viewsDir } = useDirectory(`${agentRoot}/views`);
+
+    const handleSave = async () => {
+      if (!agentId || !title) return;
+
+      setIsSaving(true);
+      try {
+        let viewUrl: string;
+
+        if (srcDoc) {
+          // if theres no views directory, create it
+          if (!viewsDir) {
+            await writeFile.mutateAsync({
+              path: `${agentRoot}/views`,
+              content: "",
+            });
+          }
+
+          // 1. Write the HTML file to the views directory
+          const viewPath = `${agentRoot}/views/${title.toLowerCase().replace(/\s+/g, "-")}.html`;
+          const content = srcDoc;
+
+          await writeFile.mutateAsync({
+            path: viewPath,
+            content,
+          });
+
+          viewUrl = `${API_SERVER_URL}${viewPath}`;
+        } else if (src) {
+          viewUrl = src;
+        } else {
+          return;
+        }
+
+        // 2. Update the agent's views array
+        const updatedViews = [...(agent?.views || []), { url: viewUrl, name: title }];
+        const updatedAgent = {
+          ...agent,
+          views: updatedViews,
+        };
+
+        await updateAgent.mutateAsync(updatedAgent);
+      } catch (error) {
+        console.error("Error saving view:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
     return (
       <div className="flex items-center justify-between gap-2 px-4 py-4">
-        <p className="text-sm">{props.api.title}</p>
-        <Button
-          className="p-1 h-6 w-6"
-          variant="ghost"
-          size="icon"
-          onClick={() => props.api.close()}
-        >
-          <Icon name="close" size={12} />
-        </Button>
+        <p className="text-sm">{title}</p>
+        <div className="flex items-center gap-2">
+          {api.component === "preview" && (srcDoc || src) && (
+            <SaveViewButton
+              isSaving={isSaving}
+              onSave={handleSave}
+            />
+          )}
+          <CloseButton onClick={() => api.close()} />
+        </div>
       </div>
     );
   },

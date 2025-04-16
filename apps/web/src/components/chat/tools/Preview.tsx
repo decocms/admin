@@ -1,14 +1,15 @@
 import { Button } from "@deco/ui/components/button.tsx";
+import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useMemo, useState } from "react";
+import { useParams } from "react-router";
 import { ALLOWANCES } from "../../../constants.ts";
 import {
   IMAGE_REGEXP,
   openPreviewPanel,
   toIframeProps,
 } from "../utils/preview.ts";
-import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
-import { useState } from "react";
 
 interface PreviewProps {
   title?: string;
@@ -216,11 +217,19 @@ export function Preview({ content, title, className }: PreviewProps) {
   const isImageLike = iframeProps.src && IMAGE_REGEXP.test(iframeProps.src);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const params = useParams();
+
+  const agentId = useMemo(
+    () => params.id || crypto.randomUUID(),
+    [params.id],
+  );
+
   const handleExpand = () => {
     openPreviewPanel(
       `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
       content,
       title || "Preview",
+      agentId,
     );
   };
 

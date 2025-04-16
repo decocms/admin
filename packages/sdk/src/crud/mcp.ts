@@ -1,7 +1,6 @@
 import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
 
-
 const toPath = (segments: string[]) => segments.join("/");
 
 const fetchAPI = (segments: string[], init?: RequestInit) =>

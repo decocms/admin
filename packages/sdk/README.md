@@ -1,10 +1,14 @@
 # @deco/sdk
 
-The official SDK for building applications with deco.chat's AI capabilities and integrations.
+The official SDK for building applications with deco.chat's AI capabilities and
+integrations.
 
 ## Overview
 
-The `@deco/sdk` package provides a comprehensive set of tools and utilities for building applications that leverage various AI models and file system operations. Built with TypeScript and React, it offers a modern and type-safe development experience.
+The `@deco/sdk` package provides a comprehensive set of tools and utilities for
+building applications that leverage various AI models and file system
+operations. Built with TypeScript and React, it offers a modern and type-safe
+development experience.
 
 ## Features
 
@@ -41,7 +45,7 @@ npm install @deco/sdk
 ### Basic Setup
 
 ```typescript
-import { SDKProvider } from '@deco/sdk';
+import { SDKProvider } from "@deco/sdk";
 
 function App() {
   return (
@@ -55,14 +59,14 @@ function App() {
 ### Using AI Models
 
 ```typescript
-import { useAgents } from '@deco/sdk';
+import { useAgents } from "@deco/sdk";
 
 function MyComponent() {
   const { data: agents } = useAgents();
-  
+
   return (
     <div>
-      {agents.map(agent => (
+      {agents.map((agent) => (
         <div key={agent.id}>
           <h3>{agent.name}</h3>
           {/* Render agent details */}
@@ -76,14 +80,14 @@ function MyComponent() {
 ### File System Operations
 
 ```typescript
-import { useDirectory } from '@deco/sdk';
+import { useDirectory } from "@deco/sdk";
 
 function FileExplorer() {
-  const { data: directory } = useDirectory('/path/to/directory');
-  
+  const { data: directory } = useDirectory("/path/to/directory");
+
   return (
     <div>
-      {directory.map(file => (
+      {directory.map((file) => (
         <div key={file.name}>
           {file.name}
         </div>

@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type MCPConnection } from "../models/mcp.ts";
-import { useSDK } from "./store.tsx";
 
 export interface MCPTool {
   name: string;

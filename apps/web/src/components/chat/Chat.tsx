@@ -346,6 +346,27 @@ export function Chat({
     }, 100);
   };
 
+  if (view === "readonly") {
+    return (
+      <PageLayout
+        header={null}
+      >
+        <div className="w-full max-w-[800px] mx-auto">
+          <div ref={containerRef}>
+            {messages.length === 0 ? <Welcome agent={agent} /> : (
+              <ChatMessages
+                messages={messages}
+                status={status as "streaming" | "submitted" | "ready" | "idle"}
+                handlePickerSelect={handlePickerSelect}
+                error={error}
+              />
+            )}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
     <PageLayout
       header={<ChatHeader agent={agent} panels={panels} />}
@@ -384,7 +405,7 @@ export function Chat({
               status={status as "streaming" | "submitted" | "ready" | "idle"}
               handlePickerSelect={handlePickerSelect}
               error={error}
-              onRetry={view === "interactive" ? handleRetry : undefined}
+              onRetry={handleRetry}
             />
           )}
         </div>

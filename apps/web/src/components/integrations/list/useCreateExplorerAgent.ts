@@ -5,6 +5,7 @@ import {
   useAgents,
   useCreateAgent,
   useFetchIntegration,
+  useSDK,
 } from "@deco/sdk";
 import { useState } from "react";
 import { useFocusAgent } from "../../agents/hooks.ts";
@@ -14,7 +15,8 @@ export function useCreateExplorerAgent() {
   const fetchIntegration = useFetchIntegration();
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const { context: root } = useSDK();
+  
   const createExplorerAgent = async (
     integrationId: string,
   ): Promise<string | null> => {
@@ -31,7 +33,7 @@ export function useCreateExplorerAgent() {
         "Fetching tools using connection:",
         integrationData.connection,
       );
-      const toolsData = await listTools(integrationData.connection);
+      const toolsData = await listTools(integrationData.connection, root);
       console.log("Integration tools fetched:", toolsData);
 
       // 3. Extract tool names from the response

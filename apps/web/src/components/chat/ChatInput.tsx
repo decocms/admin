@@ -1,7 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { DEFAULT_REASONING_MODEL, MODELS } from "@deco/sdk";
+import { getModel, MODELS, setModel as SDKSetModel } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { RichTextArea } from "./RichText.tsx";
 import { API_SERVER_URL, useWriteFile } from "@deco/sdk";
@@ -25,8 +25,6 @@ interface ChatInputProps {
   isLoading?: boolean;
   stop?: () => void;
   disabled?: boolean;
-  model?: string;
-  onModelChange?: (model: string) => Promise<void>;
   agentRoot?: string;
 }
 
@@ -37,13 +35,17 @@ export function ChatInput({
   handleInputChange,
   handleSubmit,
   stop,
-  model = DEFAULT_REASONING_MODEL,
-  onModelChange,
   agentRoot,
 }: ChatInputProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [model, setModel] = useState(getModel());
+
+  useEffect(() => {
+    SDKSetModel(model);
+  }, [model]);
 
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
@@ -231,9 +233,7 @@ export function ChatInput({
                     </Button>
                   )
                   : null}
-                {onModelChange && (
-                  <ModelSelector model={model} onModelChange={onModelChange} />
-                )}
+                <ModelSelector model={model} onModelChange={setModel} />
               </div>
               <div className="flex items-center gap-4">
                 {input && (

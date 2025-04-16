@@ -187,3 +187,11 @@ export const MODELS: Model[] = [
   //   capabilities: ["reasoning"],
   // },
 ];
+
+export const setModel = (model: string) => {
+  localStorage.setItem("model", model);
+};
+
+export const getModel = () => {
+  return localStorage.getItem("model") ?? DEFAULT_REASONING_MODEL;
+};

@@ -2,7 +2,7 @@ import { type Message } from "@ai-sdk/react";
 import {
   Agent,
   API_SERVER_URL,
-  DEFAULT_REASONING_MODEL,
+  getModel,
   useAgentRoot,
   useUpdateAgent,
 } from "@deco/sdk";
@@ -130,7 +130,9 @@ export function Chat({
               })),
             ]
             : message?.annotations || [],
-        }]],
+        }], {
+          model: getModel(),
+        }],
         metadata: {
           threadId: threadId ?? agent?.id ?? "",
         },
@@ -385,8 +387,6 @@ export function Chat({
             handleInputChange={handleInputChange}
             handleSubmit={handleChatSubmit}
             stop={stop}
-            model={agent?.model ?? DEFAULT_REASONING_MODEL}
-            onModelChange={handleModelChange}
           />
         </div>
       }

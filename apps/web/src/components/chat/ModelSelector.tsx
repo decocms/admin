@@ -14,7 +14,6 @@ import {
   DrawerTrigger,
 } from "@deco/ui/components/drawer.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -99,21 +98,18 @@ function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
   );
 }
 
-function SelectedModelDisplay(
-  { model, loading }: { model: typeof MODELS[0]; loading?: boolean },
-) {
+function SelectedModelDisplay({ model }: { model: typeof MODELS[0] }) {
   return (
     <div className="flex items-center gap-1.5">
       <img src={model.logo} className="w-3 h-3" />
       <span className="text-xs">{model.name}</span>
-      {loading && <Spinner size="xs" />}
     </div>
   );
 }
 
 interface ModelSelectorProps {
   model?: string;
-  onModelChange?: (model: string) => Promise<void>;
+  onModelChange?: (model: string) => void;
 }
 
 export function ModelSelector({
@@ -121,23 +117,18 @@ export function ModelSelector({
   onModelChange,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [modelLoading, setModelLoading] = useState(false);
   const isMobile = useIsMobile();
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {
-      setModelLoading(true);
-      onModelChange(model).finally(() => {
-        setModelLoading(false);
-      });
+      onModelChange(model);
       setOpen(false);
     }
   };
 
   const triggerClassName = cn(
     "!h-8 text-xs border hover:bg-slate-100 py-0 rounded-full px-2 shadow-none",
-    modelLoading && "opacity-50 cursor-not-allowed",
   );
 
   if (isMobile) {
@@ -147,7 +138,6 @@ export function ModelSelector({
           <Button variant="outline" className={triggerClassName}>
             <SelectedModelDisplay
               model={selectedModel}
-              loading={modelLoading}
             />
           </Button>
         </DrawerTrigger>
@@ -183,11 +173,10 @@ export function ModelSelector({
       onOpenChange={setOpen}
       value={mapLegacyModelId(model)}
       onValueChange={(value) => handleModelChange(value)}
-      disabled={modelLoading}
     >
       <SelectTrigger className={triggerClassName}>
         <SelectValue placeholder="Select model">
-          <SelectedModelDisplay model={selectedModel} loading={modelLoading} />
+          <SelectedModelDisplay model={selectedModel} />
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="min-w-[400px]">

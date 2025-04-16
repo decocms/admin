@@ -47,12 +47,6 @@ function ChatMessages(
 ) {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="w-full animate-in slide-in-from-bottom duration-300">
-        <p className="w-fit rounded-2xl text-xs bg-slate-50 p-3 text-slate-700 text-center mx-auto">
-          For now, only your last 3 messages are used to generate{" "}
-          <br />a response. Expanded memory is coming soon.
-        </p>
-      </div>
       {messages.map((message) => (
         <div
           key={message.id}

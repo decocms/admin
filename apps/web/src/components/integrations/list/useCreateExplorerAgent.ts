@@ -16,7 +16,7 @@ export function useCreateExplorerAgent() {
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { context: root } = useSDK();
-  
+
   const createExplorerAgent = async (
     integrationId: string,
   ): Promise<string | null> => {

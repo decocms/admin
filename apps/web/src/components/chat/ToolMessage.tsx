@@ -7,7 +7,7 @@ import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { Picker } from "./Picker.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
-import { togglePanel } from "../agent/index.tsx";
+import { openPanel, updateParameters } from "../agent/index.tsx";
 
 interface ToolMessageProps {
   toolInvocations: NonNullable<Message["toolInvocations"]>;
@@ -80,7 +80,7 @@ function ToolStatus(
 
       const panelId = `chat-${threadId}`;
 
-      togglePanel({
+      openPanel({
         id: panelId,
         component: "chatView",
         title: parseHandoffTool(tool.toolName),
@@ -88,8 +88,19 @@ function ToolStatus(
           threadId,
           agentId,
           view: "readonly",
+          key: `${panelId}-${Date.now()}`,
         },
-        forceOpen: true,
+      });
+
+      updateParameters({
+        id: panelId,
+        component: "chatView",
+        params: {
+          threadId,
+          agentId,
+          view: "readonly",
+          key: `${panelId}-${Date.now()}`,
+        },
       });
     }
   }, [tool.state]);

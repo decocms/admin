@@ -95,10 +95,26 @@ const TAB_COMPONENTS = {
 const channel = new EventTarget();
 
 export const togglePanel = <T extends object>(
-  detail: AddPanelOptions<T> & { forceOpen?: boolean },
+  detail: AddPanelOptions<T>,
 ) => {
   channel.dispatchEvent(
-    new CustomEvent("message", { detail }),
+    new CustomEvent("toggle", { detail }),
+  );
+};
+
+export const openPanel = <T extends object>(
+  detail: AddPanelOptions<T>,
+) => {
+  channel.dispatchEvent(
+    new CustomEvent("open", { detail }),
+  );
+};
+
+export const updateParameters = <T extends object>(
+  detail: AddPanelOptions<T>,
+) => {
+  channel.dispatchEvent(
+    new CustomEvent("update", { detail }),
   );
 };
 
@@ -144,23 +160,14 @@ function Agent(props: Props) {
   }, [agentId, threadId]);
 
   useEffect(() => {
-    const handleMessage = (
-      event: CustomEvent<AddPanelOptions<object> & { forceOpen?: boolean }>,
+    const handleToggle = (
+      event: CustomEvent<AddPanelOptions<object>>,
     ) => {
       const { detail } = event;
-
       const panel = api?.getPanel(detail.id);
 
       if (panel) {
-        if (!detail.forceOpen) {
-          panel.api.close();
-        } else {
-          const timestamp = Date.now();
-          panel.api.updateParameters({
-            ...detail.params,
-            key: timestamp,
-          });
-        }
+        panel.api.close();
       } else {
         const group = api?.groups.find((group) =>
           group.locked !== "no-drop-target"
@@ -178,12 +185,54 @@ function Agent(props: Props) {
       }
     };
 
+    const handleOpen = (
+      event: CustomEvent<AddPanelOptions<object>>,
+    ) => {
+      const { detail } = event;
+      const panel = api?.getPanel(detail.id);
+
+      if (!panel) {
+        const group = api?.groups.find((group) =>
+          group.locked !== "no-drop-target"
+        );
+        api?.addPanel({
+          ...detail,
+          position: {
+            direction: group?.id ? "within" : "right",
+            referenceGroup: group?.id,
+          },
+          minimumWidth: 300,
+          initialWidth: group?.width || 400,
+          floating: false,
+        });
+      }
+    };
+
+    const handleUpdate = (
+      event: CustomEvent<AddPanelOptions<object>>,
+    ) => {
+      const { detail } = event;
+      const panel = api?.getPanel(detail.id);
+
+      if (panel && detail.params) {
+        panel.api.updateParameters(detail.params);
+      }
+    };
+
     // @ts-expect-error - I don't really know how to properly type this
-    channel.addEventListener("message", handleMessage);
+    channel.addEventListener("toggle", handleToggle);
+    // @ts-expect-error - I don't really know how to properly type this
+    channel.addEventListener("open", handleOpen);
+    // @ts-expect-error - I don't really know how to properly type this
+    channel.addEventListener("update", handleUpdate);
 
     return () => {
       // @ts-expect-error - I don't really know how to properly type this
-      channel.removeEventListener("message", handleMessage);
+      channel.removeEventListener("toggle", handleToggle);
+      // @ts-expect-error - I don't really know how to properly type this
+      channel.removeEventListener("open", handleOpen);
+      // @ts-expect-error - I don't really know how to properly type this
+      channel.removeEventListener("update", handleUpdate);
     };
   }, [api]);
 

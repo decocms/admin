@@ -1,9 +1,5 @@
 import type { Agent } from "@deco/sdk";
 import {
-  WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS,
-  WELL_KNOWN_INITIAL_TOOLS_SET,
-} from "@deco/sdk";
-import {
   useAgent,
   useAgentRoot,
   useIntegration,
@@ -186,13 +182,11 @@ function App({ agentId }: { agentId: string }) {
 
     setLocalAgent({
       ...localAgent,
-      tools_set: WELL_KNOWN_INITIAL_TOOLS_SET,
     });
     setIsDirty(true);
   };
 
-  const integrations = Object.keys(WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS)
-    .concat(installedIntegrations.map((i) => i.id) || []);
+  const integrations = installedIntegrations.map((i) => i.id) || [];
 
   if (!agent || !agentRoot) {
     return (

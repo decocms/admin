@@ -1,22 +1,15 @@
-import { type Message } from "@ai-sdk/react";
-import {
-  Agent,
-  API_SERVER_URL,
-  getModel,
-  useAgentRoot,
-} from "@deco/sdk";
+import { type Message, useChat } from "@ai-sdk/react";
+import { Agent, API_SERVER_URL, getModel, useAgentRoot } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
+import { PageLayout } from "../pageLayout.tsx";
+import { ChatError } from "./ChatError.tsx";
 import { ChatInput } from "./ChatInput.tsx";
 import { Welcome } from "./EmptyState.tsx";
 import { ChatHeader } from "./Header.tsx";
 import { ChatMessage } from "./Message.tsx";
-import { PageLayout } from "../pageLayout.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { ChatError } from "./ChatError.tsx";
-import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
-import { IMAGE_REGEXP } from "./utils/preview.ts";
-import { openPreviewPanel } from "./utils/preview.ts";
-import { useChat } from "@ai-sdk/react";
+import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
 interface ChatProps {
   agent?: Agent;

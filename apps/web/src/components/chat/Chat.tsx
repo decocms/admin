@@ -4,7 +4,6 @@ import {
   API_SERVER_URL,
   getModel,
   useAgentRoot,
-  useUpdateAgent,
 } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "./ChatInput.tsx";
@@ -88,7 +87,6 @@ export function Chat({
   const [userScrolled, setUserScrolled] = useState(false);
   const autoScrollingRef = useRef(false);
   const lastScrollTopRef = useRef(0);
-  const updateAgent = useUpdateAgent();
 
   // Keep track of the last file data for use in the next message
   const fileDataRef = useRef<FileData[]>([]);
@@ -288,17 +286,6 @@ export function Chat({
     trackEvent("chat_retry", {
       data: { agent, threadId, lastUserMessage: lastUserMessage.content },
     });
-  };
-
-  const handleModelChange = async (model: string) => {
-    if (!agent || !agent.id) return;
-
-    const updatedAgent = {
-      ...agent,
-      model,
-    } as Agent;
-
-    await updateAgent.mutateAsync(updatedAgent);
   };
 
   const handleChatSubmit = (

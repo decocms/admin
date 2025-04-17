@@ -1,21 +1,14 @@
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
   createWalletCheckoutSession,
   getWalletAccount,
   getWalletStatements,
 } from "@deco/sdk";
-import { useUser } from "../../hooks/data/useUser.ts";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { Avatar } from "../common/Avatar.tsx";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,23 +16,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@deco/ui/components/alert.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { trackEvent } from "../../hooks/analytics.ts";
+import { useUser } from "../../hooks/data/useUser.ts";
 import {
   useIncomingUrlAlert,
   WalletUrlAlert,
 } from "../../hooks/useIncomingUrlAlert.ts";
-import { trackEvent } from "../../hooks/analytics.ts";
+import { Avatar } from "../common/Avatar.tsx";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
 

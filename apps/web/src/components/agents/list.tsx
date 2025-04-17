@@ -1,6 +1,5 @@
 import type { Agent } from "@deco/sdk";
 import {
-  DEFAULT_REASONING_MODEL,
   useAgents,
   useCreateAgent,
   useIntegration,
@@ -36,11 +35,11 @@ import {
 import { Suspense, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useFocusAgent } from "./hooks.ts";
-import { trackEvent } from "../../hooks/analytics.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -105,7 +104,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           }}
           asChild
         >
-          <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg p-1">
+          <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg overflow-hidden">
             {icon.startsWith("icon://")
               ? (
                 <Icon
@@ -341,15 +340,7 @@ export default function List() {
   const handleCreate = async () => {
     try {
       setCreating(true);
-      const agent = await createAgent.mutateAsync({
-        name: "New Agent",
-        id: crypto.randomUUID(),
-        avatar: "",
-        instructions: "This agent has not been configured yet.",
-        tools_set: {},
-        model: DEFAULT_REASONING_MODEL,
-        views: [{ url: "", name: "Chat" }],
-      });
+      const agent = await createAgent.mutateAsync({});
       focusAgent(agent.id);
 
       trackEvent("agent_create", {

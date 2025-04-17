@@ -189,7 +189,7 @@ export const useMarketplaceIntegrations = () => {
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      agentStub.callTool("CORE.INTEGRATIONS_SEARCH", {
+      agentStub.callTool("DECO_INTEGRATIONS.DECO_INTEGRATIONS_SEARCH", {
         query: "",
         filters: { installed: false },
         verbose: true,
@@ -205,7 +205,7 @@ export const useInstallFromMarketplace = () => {
   const mutation = useMutation({
     mutationFn: async (mcpId: string) => {
       const result: { data: { installationId: string } } = await agentStub
-        .callTool("CORE.INTEGRATION_INSTALL", { id: mcpId });
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id: mcpId });
 
       return result.data;
     },

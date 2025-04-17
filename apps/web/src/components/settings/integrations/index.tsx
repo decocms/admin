@@ -42,7 +42,7 @@ export function Integration(
   const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
 
   const isAllSelected = useMemo(() => {
-    if (!toolsData?.tools.length) return false;
+    if (!toolsData?.tools?.length) return false;
     if (!enabledTools || enabledTools.length === 0) return false;
     return toolsData.tools.every((tool: MCPTool) =>
       enabledTools.includes(tool.name)
@@ -102,7 +102,7 @@ export function Integration(
     <div className="rounded-lg border">
       <IntegrationHeader
         integration={integration}
-        tools={toolsData.tools.map((tool: MCPTool) => tool.name)}
+        tools={toolsData?.tools?.map((tool: MCPTool) => tool.name) ?? []}
         isAllSelected={isAllSelected}
         setIntegrationTools={setIntegrationTools}
         isExpanded={isExpanded}

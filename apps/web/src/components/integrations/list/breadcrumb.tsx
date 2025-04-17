@@ -75,7 +75,9 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
                 <BreadcrumbItem
                   active={!!connected}
                   label="Connected"
-                  count={installedIntegrations?.length ?? 0}
+                  count={installedIntegrations?.filter((integration) =>
+                    integration.connection.type !== "INNATE"
+                  ).length ?? 0}
                   to={withBasePath("/integrations")}
                 />
 

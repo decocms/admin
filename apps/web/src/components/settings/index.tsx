@@ -186,7 +186,9 @@ function App({ agentId }: { agentId: string }) {
     setIsDirty(true);
   };
 
-  const integrations = installedIntegrations.map((i) => i.id) || [];
+  const integrations = installedIntegrations
+    .filter((i) => i.id !== agent.id).map((i) => i.id) ||
+    [];
 
   if (!agent || !agentRoot) {
     return (

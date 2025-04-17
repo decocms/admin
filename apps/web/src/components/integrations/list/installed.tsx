@@ -173,7 +173,8 @@ export default function InstalledIntegrations() {
   // Filter installed integrations based on the filter text
   const filteredIntegrations =
     installedIntegrations?.filter((integration) =>
-      integration.name.toLowerCase().includes(filter.toLowerCase())
+      integration.name.toLowerCase().includes(filter.toLowerCase()) &&
+      integration.connection.type !== "INNATE"
     ) ?? [];
 
   // Function to handle configuring/editing an existing integration

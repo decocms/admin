@@ -1,10 +1,4 @@
-import {
-  API_HEADERS,
-  API_SERVER_URL,
-  DEFAULT_REASONING_MODEL,
-  WELL_KNOWN_AGENT_IDS,
-  WELL_KNOWN_INITIAL_TOOLS_SET,
-} from "../constants.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 
@@ -30,7 +24,7 @@ export class AgentNotFoundError extends Error {
  * Save an agent to the file system
  * @param agent - The agent to save
  */
-export const saveAgent = async (context: string, agent: Agent) => {
+export const saveAgent = async (context: string, agent: Partial<Agent>) => {
   const response = await fetchAPI([context, "agent"], {
     method: "POST",
     body: JSON.stringify(agent),
@@ -65,30 +59,10 @@ export const updateAgent = async (context: string, agent: Agent) => {
  * Create a new agent
  * @returns The new agent
  */
-export const createAgent = async (
+export const createAgent = (
   context: string,
   template: Partial<Agent> = {},
-) => {
-  const agent: Agent = {
-    id: crypto.randomUUID(),
-    name: "Anonymous",
-    instructions: "This agent has not been configured yet.",
-    avatar: "", // You could add a default avatar path here if needed
-    description: "A customizable AI assistant", // Default description
-    tools_set: {
-      CORE: template.id === WELL_KNOWN_AGENT_IDS.teamAgent
-        ? [...WELL_KNOWN_INITIAL_TOOLS_SET.CORE, "AGENT_CREATE"]
-        : WELL_KNOWN_INITIAL_TOOLS_SET.CORE,
-    },
-    model: DEFAULT_REASONING_MODEL, // Default model
-    views: [{ url: "", name: "Chat" }],
-    ...template,
-  };
-
-  await saveAgent(context, agent);
-
-  return agent;
-};
+) => saveAgent(context, { id: crypto.randomUUID(), ...template });
 
 /**
  * Load an agent from the file system

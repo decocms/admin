@@ -5,11 +5,11 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   AddPanelOptions,
   type DockviewApi,
+  type DockviewPanelApi,
   DockviewReact,
   type DockviewReadyEvent,
   IDockviewPanelHeaderProps,
   type IDockviewPanelProps,
-  type DockviewPanelApi,
 } from "dockview-react";
 import {
   ComponentType,
@@ -21,7 +21,14 @@ import {
   useState,
 } from "react";
 import { useParams } from "react-router";
-import { useAgentRoot, useUpdateAgent, useWriteFile, API_SERVER_URL, useAgent, useDirectory } from "@deco/sdk";
+import {
+  API_SERVER_URL,
+  useAgent,
+  useAgentRoot,
+  useDirectory,
+  useUpdateAgent,
+  useWriteFile,
+} from "@deco/sdk";
 
 interface Props {
   agentId?: string;
@@ -53,17 +60,19 @@ function SaveViewButton({ isSaving, onSave }: SaveViewButtonProps) {
       disabled={isSaving}
       className="gap-2"
     >
-      {isSaving ? (
-        <>
-          <Icon name="spinner" className="animate-spin" />
-          Saving...
-        </>
-      ) : (
-        <>
-          <Icon name="save" />
-          Save View
-        </>
-      )}
+      {isSaving
+        ? (
+          <>
+            <Icon name="spinner" className="animate-spin" />
+            Saving...
+          </>
+        )
+        : (
+          <>
+            <Icon name="save" />
+            Save View
+          </>
+        )}
     </Button>
   );
 }
@@ -132,7 +141,7 @@ const TAB_COMPONENTS = {
     }
 
     const [isSaving, setIsSaving] = useState(false);
-    
+
     const agentId = props.params?.agentId;
     const srcDoc = props.params?.srcDoc;
     const src = props.params?.src;
@@ -142,7 +151,6 @@ const TAB_COMPONENTS = {
     const { data: agent } = useAgent(agentId);
     const writeFile = useWriteFile();
     const updateAgent = useUpdateAgent();
-    const { data: viewsDir } = useDirectory(`${agentRoot}/views`);
 
     const handleSave = async () => {
       if (!agentId || !title) return;
@@ -152,16 +160,10 @@ const TAB_COMPONENTS = {
         let viewUrl: string;
 
         if (srcDoc) {
-          // if theres no views directory, create it
-          if (!viewsDir) {
-            await writeFile.mutateAsync({
-              path: `${agentRoot}/views`,
-              content: "",
-            });
-          }
-
           // 1. Write the HTML file to the views directory
-          const viewPath = `${agentRoot}/views/${title.toLowerCase().replace(/\s+/g, "-")}.html`;
+          const viewPath = `${agentRoot}/views/${
+            title.toLowerCase().replace(/\s+/g, "-")
+          }.html`;
           const content = srcDoc;
 
           await writeFile.mutateAsync({
@@ -177,7 +179,10 @@ const TAB_COMPONENTS = {
         }
 
         // 2. Update the agent's views array
-        const updatedViews = [...(agent?.views || []), { url: viewUrl, name: title }];
+        const updatedViews = [...(agent?.views || []), {
+          url: viewUrl,
+          name: title,
+        }];
         const updatedAgent = {
           ...agent,
           views: updatedViews,
@@ -193,7 +198,7 @@ const TAB_COMPONENTS = {
 
     return (
       <div className="flex items-center justify-between gap-2 px-4 py-4">
-        <p className="text-sm">{title}</p>
+        <p className="text-sm">{title || api.title}</p>
         <div className="flex items-center gap-2">
           {api.component === "preview" && (srcDoc || src) && (
             <SaveViewButton

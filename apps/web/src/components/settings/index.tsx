@@ -32,6 +32,7 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "./integrations/index.tsx";
 import { togglePanel } from "../agent/index.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { readFile } from "@deco/sdk";
 
 const inputStyles =
   "rounded-lg border-input focus:none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-input focus-visible:outline-none";
@@ -196,12 +197,16 @@ function App({ agentId }: { agentId: string }) {
   const integrations = Object.keys(WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS)
     .concat(installedIntegrations.map((i) => i.id) || []);
 
-  const handleViewClick = (view: { url: string; name: string }) => {
+  const handleViewClick = async (view: { url: string; name: string }) => {
+    // it should fetch and set as srcDoc
+    const data = await fetch(view.url);
+    const html = await data.text();
+
     togglePanel({
       id: `view-${view.name.toLowerCase().replace(/\s+/g, "-")}`,
       component: "preview",
       title: view.name,
-      params: { agentId, url: view.url, title: view.name },
+      params: { agentId, srcDoc: html, title: view.name },
     });
   };
 
@@ -332,15 +337,19 @@ function App({ agentId }: { agentId: string }) {
               </p>
               <div className="flex flex-col gap-2">
                 {localAgent?.views?.map((view) => (
-                  <Button
-                    key={view.url}
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={() => handleViewClick(view)}
-                  >
-                    <Icon name="open_in_new" />
-                    {view.name}
-                  </Button>
+                  view.name && view.url && (
+                    <div className="w-full">
+                      <Button
+                        key={view.url}
+                        variant="outline"
+                        className="w-full justify-start gap-2 truncate rounded-lg"
+                        onClick={() => handleViewClick(view)}
+                      >
+                        <Icon name="open_in_new" />
+                        <span className="truncate">{view.name}</span>
+                      </Button>
+                    </div>
+                  )
                 ))}
               </div>
             </div>

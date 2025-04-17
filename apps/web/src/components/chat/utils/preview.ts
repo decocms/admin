@@ -29,6 +29,6 @@ export const openPreviewPanel = (
     id,
     component: "preview",
     title,
-    params: {title, ...toIframeProps(content), agentId},
+    params: { title, ...toIframeProps(content), agentId },
   });
 };

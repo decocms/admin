@@ -404,44 +404,47 @@ export default function List() {
           </div>
         </>
       }
-    >
-      {!agents
-        ? (
-          <div className="flex h-48 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        )
-        : agents.length > 0
-        ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-6 peer">
-              {filteredAgents?.map((agent) => (
-                <AgentCard key={agent.id} agent={agent} />
-              ))}
-            </div>
-            <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-              <Icon
-                name="search_off"
-                className="mb-2 text-4xl text-muted-foreground"
+      main={
+        <>
+          {!agents
+            ? (
+              <div className="flex h-48 items-center justify-center">
+                <Spinner size="lg" />
+              </div>
+            )
+            : agents.length > 0
+            ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-6 peer">
+                  {filteredAgents?.map((agent) => (
+                    <AgentCard key={agent.id} agent={agent} />
+                  ))}
+                </div>
+                <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
+                  <Icon
+                    name="search_off"
+                    className="mb-2 text-4xl text-muted-foreground"
+                  />
+                  <p className="text-muted-foreground">
+                    No agents match your filter. Try adjusting your search.
+                  </p>
+                </div>
+              </>
+            )
+            : (
+              <EmptyState
+                icon="groups"
+                title="No agents yet"
+                description="Create an agent to automate tasks and improve your workflow."
+                buttonProps={{
+                  disabled: creating,
+                  children: creating ? "Creating..." : "Create Agent",
+                  onClick: handleCreate,
+                }}
               />
-              <p className="text-muted-foreground">
-                No agents match your filter. Try adjusting your search.
-              </p>
-            </div>
-          </>
-        )
-        : (
-          <EmptyState
-            icon="groups"
-            title="No agents yet"
-            description="Create an agent to automate tasks and improve your workflow."
-            buttonProps={{
-              disabled: creating,
-              children: creating ? "Creating..." : "Create Agent",
-              onClick: handleCreate,
-            }}
-          />
-        )}
-    </PageLayout>
+            )}
+        </>
+      }
+    />
   );
 }

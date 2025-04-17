@@ -7,8 +7,11 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { ErrorBoundary, useError } from "../../../ErrorBoundary.tsx";
+import { EmptyState } from "../../common/EmptyState.tsx";
 import { ConnStatus } from "./connStatus.tsx";
+import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
 import { ToolCallResult } from "./toolCallResult.tsx";
 import type { MCPToolCallResult } from "./types.ts";
@@ -17,7 +20,45 @@ interface InspectorProps {
   connection: MCPConnection;
 }
 
-function Inspector({ connection }: InspectorProps) {
+export function Inspector() {
+  const { form } = useFormContext();
+
+  const connection = form.watch("connection");
+
+  return (
+    <ErrorBoundary fallback={<Inspector.ErrorFallback />}>
+      <Suspense fallback={<Inspector.Skeleton />}>
+        <Inspector.UI connection={connection} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+Inspector.ErrorFallback = () => {
+  const error = useError();
+
+  return (
+    <EmptyState
+      icon="error"
+      title="Error loading tools"
+      description={error.state.error?.message ?? "An unknown error occurred"}
+      buttonProps={{
+        onClick: () => error.reset(),
+        children: "Try Again",
+      }}
+    />
+  );
+};
+
+Inspector.Skeleton = () => {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Spinner />
+    </div>
+  );
+};
+
+Inspector.UI = ({ connection }: InspectorProps) => {
   const tools = useTools(connection);
   const toolCall = useToolCall(connection);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -141,7 +182,7 @@ function Inspector({ connection }: InspectorProps) {
       <Card className="p-4">
         <div className="flex flex-col gap-4">
           {/* Tool and Server Stats */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center flex-wrap gap-4">
             <div>
               <div className="text-sm text-muted-foreground">Total Tools</div>
               <div className="text-2xl font-bold">
@@ -281,7 +322,7 @@ function Inspector({ connection }: InspectorProps) {
           /* Main content with search and tool call */
           <div
             className={cn(
-              "grid grid-cols-1 md:grid-cols-2 gap-4",
+              "grid grid-cols-1 gap-4",
               tools.isLoading && "invisible",
             )}
           >
@@ -404,6 +445,4 @@ function Inspector({ connection }: InspectorProps) {
         )}
     </div>
   );
-}
-
-export default Inspector;
+};

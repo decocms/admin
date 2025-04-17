@@ -25,7 +25,7 @@ export const useCreateIntegration = () => {
   const { context: root } = useSDK();
 
   const create = useMutation({
-    mutationFn: (mcp: Integration) => createIntegration(root, mcp),
+    mutationFn: (mcp: Partial<Integration>) => createIntegration(root, mcp),
     onSuccess: (result) => {
       const key = getKeyFor(root, result.id);
 

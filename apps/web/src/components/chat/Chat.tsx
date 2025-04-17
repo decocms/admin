@@ -326,20 +326,25 @@ export function Chat({
     return (
       <PageLayout
         header={null}
-      >
-        <div className="w-full max-w-[800px] mx-auto">
-          <div ref={containerRef}>
-            {messages.length === 0 ? <Welcome agent={agent} /> : (
-              <ChatMessages
-                messages={messages}
-                status={status as "streaming" | "submitted" | "ready" | "idle"}
-                handlePickerSelect={handlePickerSelect}
-                error={error}
-              />
-            )}
+        main={
+          <div className="w-full max-w-[800px] mx-auto">
+            <div ref={containerRef}>
+              {messages.length === 0 ? <Welcome agent={agent} /> : (
+                <ChatMessages
+                  messages={messages}
+                  status={status as
+                    | "streaming"
+                    | "submitted"
+                    | "ready"
+                    | "idle"}
+                  handlePickerSelect={handlePickerSelect}
+                  error={error}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </PageLayout>
+        }
+      />
     );
   }
 
@@ -370,21 +375,22 @@ export function Chat({
           />
         </div>
       }
-    >
-      <div className="w-full max-w-[800px] mx-auto">
-        <div ref={containerRef}>
-          {messages.length === 0 ? <Welcome agent={agent} /> : (
-            <ChatMessages
-              messages={messages}
-              status={status as "streaming" | "submitted" | "ready" | "idle"}
-              handlePickerSelect={handlePickerSelect}
-              error={error}
-              onRetry={handleRetry}
-            />
-          )}
+      main={
+        <div className="w-full max-w-[800px] mx-auto">
+          <div ref={containerRef}>
+            {messages.length === 0 ? <Welcome agent={agent} /> : (
+              <ChatMessages
+                messages={messages}
+                status={status as "streaming" | "submitted" | "ready" | "idle"}
+                handlePickerSelect={handlePickerSelect}
+                error={error}
+                onRetry={handleRetry}
+              />
+            )}
+          </div>
+          <div className="h-4" />
         </div>
-        <div className="h-4" />
-      </div>
-    </PageLayout>
+      }
+    />
   );
 }

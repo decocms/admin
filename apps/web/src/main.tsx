@@ -20,10 +20,6 @@ import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
 import { About } from "./components/about/index.tsx";
 
-const IntegrationNew = lazy(() =>
-  import("./components/integrations/detail/new.tsx")
-);
-
 const IntegrationEdit = lazy(() =>
   import("./components/integrations/detail/edit.tsx")
 );
@@ -160,10 +156,6 @@ function Router() {
         <Route
           path="integrations"
           element={<Wrapper slot={<MyIntegrations />} />}
-        />
-        <Route
-          path="integration/new"
-          element={<Wrapper slot={<IntegrationNew />} />}
         />
         <Route
           path="integration/:id"

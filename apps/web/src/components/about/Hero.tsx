@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 interface HeroProps {
   logo?: string;
@@ -43,6 +44,21 @@ export function Hero({
       }, "-=0.5");
   }, []);
 
+  const handlePrimaryButtonClick = () => {
+    trackEvent("deco_chat_landing_try_now_click", {
+      buttonText: primaryButtonText,
+      buttonLink: primaryButtonLink,
+    });
+  };
+
+  const handleSecondaryButtonClick = () => {
+    console.log("secondary button clicked");
+    trackEvent("deco_chat_landing_learn_more_click", {
+      buttonText: secondaryButtonText,
+      buttonLink: secondaryButtonLink,
+    });
+  };
+
   return (
     <div className="w-full bg-dc-50 px-4 sm:px-6 md:px-8 pt-4 pb-16 md:pb-32">
       <div className="mx-auto max-w-7xl">
@@ -82,12 +98,14 @@ export function Hero({
               <div className="flex gap-2 bg-white px-3 sm:px-4 py-2 sm:py-3 rounded-full w-fit [box-shadow:0px_71px_20px_0px_rgba(1,19,7,0.00),0px_45px_18px_0px_rgba(1,19,7,0.02),0px_26px_15px_0px_rgba(1,19,7,0.07),0px_11px_11px_0px_rgba(1,19,7,0.11),0px_3px_6px_0px_rgba(1,19,7,0.13)]">
                 <a
                   href={primaryButtonLink}
+                  onClick={handlePrimaryButtonClick}
                   className="px-4 sm:px-5 md:px-6 py-2 bg-primary-dark text-primary-light rounded-full hover:bg-opacity-90 transition-colors text-sm sm:text-base text-center"
                 >
                   {primaryButtonText}
                 </a>
                 <a
                   href={secondaryButtonLink}
+                  onClick={handleSecondaryButtonClick}
                   className="px-4 sm:px-5 md:px-6 py-2 bg-dc-200 text-dc-700 rounded-full hover:bg-opacity-90 transition-colors text-sm sm:text-base text-center"
                 >
                   {secondaryButtonText}

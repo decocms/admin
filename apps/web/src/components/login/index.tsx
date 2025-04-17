@@ -2,10 +2,17 @@ import { SplitScreenLayout } from "./layout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { providers } from "./providers.tsx";
 import { useSearchParams } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 function Login() {
   const [searchParams] = useSearchParams();
   const next = searchParams.get("next");
+
+  const handleProviderClick = (providerName: string) => {
+    trackEvent("deco_chat_login_provider_click", {
+      provider: providerName,
+    });
+  };
 
   return (
     <SplitScreenLayout>
@@ -34,6 +41,7 @@ function Login() {
                 <a
                   href={provider.authURL(next || globalThis.location.origin)}
                   className="flex items-center gap-2.5 h-6"
+                  onClick={() => handleProviderClick(provider.name)}
                 >
                   <img
                     className={provider.iconClassName}

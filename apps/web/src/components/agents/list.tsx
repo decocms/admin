@@ -332,7 +332,7 @@ export default function List() {
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();
   const { data: agents } = useAgents();
-  useCreateAdminDecoAgent({ agents });
+  const agentForSite = useCreateAdminDecoAgent({ agents });
 
   // Filter agents based on the filter string
   const filteredAgents = agents?.filter((agent) =>
@@ -417,6 +417,19 @@ export default function List() {
         ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 peer">
+              {(!!agentForSite.site && agentForSite.isPending) && (
+                <Card className="shadow-sm group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl bg-[#a2c43d]">
+                  <CardContent className="p-4 gap-4 flex flex-col justify-center items-center flex-grow">
+                    <Spinner />
+                    <span>
+                      Creating analytics agent for{" "}
+                      <span className="font-semibold">
+                        {agentForSite.site}.deco.site
+                      </span>
+                    </span>
+                  </CardContent>
+                </Card>
+              )}
               {filteredAgents?.map((agent) => (
                 <AgentCard key={agent.id} agent={agent} />
               ))}

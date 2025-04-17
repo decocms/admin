@@ -7,7 +7,11 @@ import {
   useCreateIntegration,
   useRemoveAgent,
 } from "@deco/sdk";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const DECO_CX_ADMIN_URL = "https://admin.deco.cx";
+// const DECO_CX_ADMIN_URL ="http://localhost:4200"
+const DECO_CX_ASSISTANT_NAME = "Analyser - deco.cx";
 
 // deno-lint-ignore no-explicit-any
 const fetchDecoAdmin = async <T = any>(
@@ -15,7 +19,7 @@ const fetchDecoAdmin = async <T = any>(
   init?: RequestInit,
 ): Promise<T> => {
   return await fetch(
-    `http://localhost:4200/live/invoke/deco-sites/admin/${resolveType}`,
+    `${DECO_CX_ADMIN_URL}/live/invoke/deco-sites/admin/${resolveType}`,
     {
       ...init,
       credentials: "include",
@@ -23,9 +27,9 @@ const fetchDecoAdmin = async <T = any>(
   ).then((r) => r.json());
 };
 
-const DECO_CX_ADMIN_URL = "https://admin.deco.cx";
-// const DECO_CX_ADMIN_URL ="http://localhost:4200"
-const DECO_CX_ASSISTANT_NAME = "Analyser - deco.cx";
+const createInstructionForSite = ({ sitename }: { sitename: string }) =>
+  `This is an agent to analyse traffic of deco.cx site "${sitename}" with this URL https://${sitename}.deco.site`;
+
 const isDecoCxAssistant = (assistantName: string) =>
   assistantName.endsWith(DECO_CX_ASSISTANT_NAME);
 const getAssistanteNameForDecoSite = (sitename: string) =>
@@ -36,6 +40,7 @@ export const useCreateAdminDecoAgent = (
     agents: ReturnType<typeof useAgents>["data"];
   },
 ) => {
+  const [agentForSite, setAgenteForSite] = useState("");
   const { teamSlug } = useParams();
   const createIntegration = useCreateIntegration();
   const createAgent = useCreateAgent();
@@ -50,6 +55,7 @@ export const useCreateAdminDecoAgent = (
       ).catch(console.error);
       const site = sites?.sites[0] as undefined | { name: string; id: number };
       if (!site) return;
+      setAgenteForSite(site.name);
       const token = await fetchDecoAdmin("actions/profile/createApiKey.ts", {
         method: "POST",
       }).catch(console.error);
@@ -72,12 +78,20 @@ export const useCreateAdminDecoAgent = (
       const analyticsTools = toolNames.filter((toolName) =>
         toolName.toLowerCase().includes("analytics")
       );
+      const favicon = await fetchDecoAdmin(
+        `loaders/sites/favicon.ts?props=${
+          btoa(
+            encodeURIComponent(
+              JSON.stringify({ url: `https://${site.name}.deco.site` }),
+            ),
+          )
+        }`,
+      );
 
       const agent = await createAgent.mutateAsync({
         name: getAssistanteNameForDecoSite(site.name),
-        avatar: integration.icon,
-        instructions:
-          `This is an agent to analyse traffic of deco.cx site "${site.name}" with this URL https://${site.name}.deco.site`,
+        avatar: favicon ?? integration.icon,
+        instructions: createInstructionForSite({ sitename: site.name }),
         tools_set: {
           [integration.id]: analyticsTools.length ? analyticsTools : toolNames,
         },
@@ -112,10 +126,14 @@ export const useCreateAdminDecoAgent = (
     //   return;
     // }
 
-    console.log({ myAgents: agents, alreadyExistsDecoAssistant });
     // check if agents with slugname already exists
     if (!agents || alreadyExistsDecoAssistant || !!teamSlug) return;
 
     create.mutateAsync();
   }, [agents]);
+
+  return {
+    site: agentForSite,
+    isPending: create.isPending,
+  };
 };

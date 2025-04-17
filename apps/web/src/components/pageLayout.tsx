@@ -6,7 +6,9 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import {
   ComponentProps,
   ComponentType,
-  createContext, ReactNode, use
+  createContext,
+  ReactNode,
+  use,
 } from "react";
 import Docked, { togglePanel, useDock } from "./dock/index.tsx";
 import { TeamSelector } from "./sidebar/TeamSelector.tsx";

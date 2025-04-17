@@ -6,7 +6,15 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@deco/ui/components/alert-dialog.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { ReactNode, useState } from "react";
 import { Link, useMatch, useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
@@ -50,7 +58,9 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
       const result = await create.mutateAsync({});
       navigate(withBasePath(`/integration/${result.id}`));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create integration");
+      setError(
+        err instanceof Error ? err.message : "Failed to create integration",
+      );
     }
   };
 

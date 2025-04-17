@@ -23,7 +23,7 @@ function Preview(props: Props) {
     <iframe
       allow={ALLOWANCES}
       allowFullScreen
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       className="w-full h-full"
       {...props}
     />

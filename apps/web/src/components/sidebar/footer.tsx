@@ -19,6 +19,7 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { NotLoggedInError, useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
 import { Avatar } from "../common/Avatar.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 function LoggedUser() {
   const user = useUser();
@@ -34,6 +35,12 @@ function LoggedUser() {
 
     return url.href;
   }, [location.pathname]);
+
+  const handleWalletClick = () => {
+    trackEvent("sidebar_wallet_click", {
+      userId: user?.id,
+    });
+  };
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;
@@ -59,7 +66,11 @@ function LoggedUser() {
         className="w-[200px] text-slate-700"
       >
         <DropdownMenuItem asChild>
-          <Link to="/wallet" className="leading-7 text-xs">
+          <Link
+            to="/wallet"
+            className="leading-7 text-xs"
+            onClick={handleWalletClick}
+          >
             <Icon name="wallet" />
             Wallet
           </Link>

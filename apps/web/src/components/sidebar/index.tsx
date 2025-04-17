@@ -18,6 +18,7 @@ import { useBasePath } from "../../hooks/useBasePath.ts";
 import { groupThreadsByDate, Thread } from "../threads/index.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 import { SidebarFooter } from "./footer.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 const STATIC_ITEMS = [
   {
@@ -57,6 +58,14 @@ function buildThreadUrl(thread: Thread): string {
 }
 
 function SidebarThreadList({ threads }: { threads: Thread[] }) {
+  const handleThreadClick = (thread: Thread) => {
+    trackEvent("sidebar_thread_click", {
+      threadId: thread.id,
+      threadTitle: thread.title,
+      agentId: thread.metadata.agentId,
+    });
+  };
+
   return threads.map((thread) => (
     <SidebarMenuItem key={thread.id}>
       <WithActive to={buildThreadUrl(thread)}>
@@ -67,7 +76,10 @@ function SidebarThreadList({ threads }: { threads: Thread[] }) {
             tooltip={thread.title}
             className="h-9"
           >
-            <Link to={buildThreadUrl(thread)}>
+            <Link
+              to={buildThreadUrl(thread)}
+              onClick={() => handleThreadClick(thread)}
+            >
               <span className="truncate">{thread.title}</span>
             </Link>
           </SidebarMenuButton>
@@ -148,6 +160,12 @@ function PrefetchAgents() {
 export function AppSidebar() {
   const withBasePath = useBasePath();
 
+  const handleStaticItemClick = (title: string) => {
+    trackEvent("sidebar_navigation_click", {
+      item: title,
+    });
+  };
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader />
@@ -177,7 +195,10 @@ export function AppSidebar() {
                             tooltip={item.title}
                             className="h-9"
                           >
-                            <Link to={href}>
+                            <Link
+                              to={href}
+                              onClick={() => handleStaticItemClick(item.title)}
+                            >
                               <Icon name={item.icon} filled={isActive} />
                               <span className="truncate">{item.title}</span>
                             </Link>

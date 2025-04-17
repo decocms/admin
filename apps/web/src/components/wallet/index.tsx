@@ -15,7 +15,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ import {
   useIncomingUrlAlert,
   WalletUrlAlert,
 } from "../../hooks/useIncomingUrlAlert.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
 
@@ -280,6 +281,12 @@ function WalletAlert({
   alert: WalletUrlAlert;
   remove: () => void;
 }) {
+  if (alert.type === "success") {
+    trackEvent("wallet_credit_success", {
+      message: alert.message,
+    });
+  }
+
   return (
     <Alert
       variant={alert.type === "success" ? "default" : "destructive"}
@@ -308,6 +315,14 @@ function Wallet() {
   const user = useUser();
   const [creditAmount, setCreditAmount] = useState("");
   const [amountError, setAmountError] = useState("");
+
+  useEffect(() => {
+    if (queryStringAlert.alert?.type === "success") {
+      trackEvent("wallet_credit_success", {
+        message: queryStringAlert.alert.message,
+      });
+    }
+  }, [queryStringAlert.alert]);
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
 
@@ -375,7 +390,13 @@ function Wallet() {
       <div className="flex flex-col items-center gap-2">
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline">
+            <Button
+              variant="outline"
+              onClick={() =>
+                trackEvent("wallet_add_credits_click", {
+                  userId: user?.id,
+                })}
+            >
               <Icon name="add" />
               Add credits
             </Button>
@@ -411,8 +432,14 @@ function Wallet() {
                     onClick={async () => {
                       if (!validateAmount()) return;
 
+                      const amount = parseInt(creditAmount);
+                      trackEvent("wallet_add_credits_submit", {
+                        userId: user?.id,
+                        amount: amount,
+                        amountInDollars: formatCurrency(amount.toString()),
+                      });
                       const result = await createCheckoutSession.mutateAsync(
-                        parseInt(creditAmount),
+                        amount,
                       );
 
                       if (result.checkoutUrl) {

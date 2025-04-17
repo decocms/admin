@@ -1,7 +1,7 @@
 import { type Message, useChat } from "@ai-sdk/react";
 import { Agent, API_SERVER_URL, getModel, useAgentRoot } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
-import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { PageLayout } from "../pageLayout.tsx";
 import { ChatError } from "./ChatError.tsx";

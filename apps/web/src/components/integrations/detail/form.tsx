@@ -1,7 +1,6 @@
 import {
   type Integration,
   type MCPConnection,
-  useCreateIntegration,
   useUpdateIntegration,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -30,25 +29,22 @@ import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { useFormContext } from "./context.ts";
 
-interface DetailProps {
-  integration?: Integration;
-}
-
 export function DetailForm() {
   const { integration: editIntegration, form } = useFormContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const withBasePath = useBasePath();
 
-  const createIntegration = useCreateIntegration();
   const updateIntegration = useUpdateIntegration();
+
+  const isMutating = updateIntegration.isPending;
 
   const iconValue = form.watch("icon");
   const connection = form.watch("connection");
 
   // Handle connection type change
   const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
-    const ec = editIntegration?.connection;
+    const ec = editIntegration.connection;
 
     form.setValue(
       "connection",
@@ -98,27 +94,16 @@ export function DetailForm() {
 
   const onSubmit = async (data: Integration) => {
     try {
-      if (editIntegration) {
-        // Update the existing integration
-        await updateIntegration.mutateAsync(data);
+      // Update the existing integration
+      await updateIntegration.mutateAsync(data);
 
-        trackEvent("integration_update", {
-          success: true,
-          data,
-        });
-      } else {
-        // Create a new integration
-        await createIntegration.mutateAsync(data);
-        navigate(withBasePath("/integrations"));
-
-        trackEvent("integration_create", {
-          success: true,
-          data,
-        });
-      }
+      trackEvent("integration_update", {
+        success: true,
+        data,
+      });
     } catch (error) {
       console.error(
-        `Error ${editIntegration ? "updating" : "creating"} integration:`,
+        `Error updating integration:`,
         error,
       );
 
@@ -129,8 +114,6 @@ export function DetailForm() {
       });
     }
   };
-
-  const isMutating = createIntegration.isPending || updateIntegration.isPending;
 
   return (
     <Form {...form}>
@@ -374,12 +357,10 @@ export function DetailForm() {
               ? (
                 <>
                   <Spinner size="xs" />
-                  {editIntegration ? "Updating..." : "Creating..."}
+                  Updating...
                 </>
               )
-              : (
-                editIntegration ? "Save" : "Create"
-              )}
+              : "Save"}
           </Button>
         </div>
       </form>

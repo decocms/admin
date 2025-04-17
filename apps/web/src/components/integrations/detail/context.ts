@@ -4,7 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 
 export interface IContext {
   form: UseFormReturn<Integration>;
-  integration?: Integration;
+  integration: Integration;
 }
 
 export const Context = createContext<IContext | null>(null);

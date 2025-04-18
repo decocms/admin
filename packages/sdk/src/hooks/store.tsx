@@ -1,5 +1,3 @@
-// deno-lint-ignore no-unused-vars
-import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, PropsWithChildren, use } from "react";
 

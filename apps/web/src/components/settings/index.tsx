@@ -1,383 +1,227 @@
-import type { Agent } from "@deco/sdk";
 import {
+  type Agent,
+  AgentSchema,
   useAgent,
-  useAgentRoot,
-  useIntegration,
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "./integrations/index.tsx";
-
-const inputStyles =
-  "rounded-lg border-input focus:none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-input focus-visible:outline-none";
+import { getDiffCount, Integration } from "./integrations/index.tsx";
 
 // Token limits for Anthropic models
-const ANTHROPIC_DEFAULT_MAX_TOKENS = 8192;
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
 
-function IntegrationItem({
-  integrationId,
-  onToolToggle,
-  setIntegrationTools,
-  agent,
-  localAgent,
-}: {
-  integrationId: string;
-  onToolToggle: (
-    integrationId: string,
-    toolId: string,
-    checked: boolean,
-  ) => void;
-  setIntegrationTools: (
-    integrationId: string,
-    tools: string[],
-  ) => void;
-  agent: Agent;
-  localAgent: Agent;
-}) {
-  const { data: integration } = useIntegration(integrationId);
-
-  if (!integration) {
-    return null;
-  }
-
-  return (
-    <Integration
-      key={integration.id}
-      integration={integration}
-      onToolToggle={onToolToggle}
-      setIntegrationTools={setIntegrationTools}
-      agent={agent}
-      localAgent={localAgent}
-    />
-  );
-}
-
 function App({ agentId }: { agentId: string }) {
-  const { data: agent, error } = useAgent(agentId);
+  const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
-  const agentRoot = useAgentRoot(agentId);
-  const [localAgent, setLocalAgent] = useState<typeof agent | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
   const updateAgent = useUpdateAgent();
 
+  const form = useForm<Agent>({
+    resolver: zodResolver(AgentSchema),
+    defaultValues: agent,
+  });
+
+  const toolsSet = form.watch("tools_set");
+
+  const numberOfChanges = (() => {
+    const { tools_set: _, ...rest } = form.formState.dirtyFields;
+
+    return Object.keys(rest).length +
+      getDiffCount(toolsSet, agent.tools_set);
+  })();
+
   useEffect(() => {
-    if (agent && !localAgent) {
-      setLocalAgent(JSON.parse(JSON.stringify(agent)));
+    if (agent) {
+      form.reset(agent);
     }
-  }, [agent, localAgent]);
-
-  const hasFieldChanged = (field: keyof NonNullable<typeof agent>) => {
-    return agent && localAgent && localAgent[field] !== agent[field];
-  };
-
-  const countChanges = () => {
-    if (!agent || !localAgent) return 0;
-    let count = 0;
-
-    const fields: (keyof NonNullable<typeof agent>)[] = [
-      "name",
-      "description",
-      "instructions",
-      "max_tokens",
-      "avatar",
-    ];
-    count += fields.filter((field) => hasFieldChanged(field)).length;
-
-    const originalTools = agent.tools_set;
-    const localTools = localAgent.tools_set;
-
-    Object.entries(originalTools).forEach(([key, tools]) => {
-      const localToolsForIntegration = localTools[key] || [];
-      count += tools.filter((tool) =>
-        !localToolsForIntegration.includes(tool)
-      ).length;
-      count +=
-        localToolsForIntegration.filter((tool) => !tools.includes(tool)).length;
-    });
-
-    Object.keys(localTools).forEach((key) => {
-      if (!originalTools[key]) {
-        count += localTools[key].length;
-      }
-    });
-
-    return count;
-  };
-
-  // Function to handle save
-  const handleSave = async () => {
-    if (!localAgent) return;
-    await updateAgent.mutateAsync(localAgent);
-    setIsDirty(false);
-  };
-
-  // Modified update wrapper to only update local state
-  const handleUpdate = (changes: Partial<typeof agent>) => {
-    if (!localAgent) return;
-    setLocalAgent({ ...localAgent, ...changes });
-    setIsDirty(true);
-  };
-
-  const handleToolToggle = (
-    integrationId: string,
-    toolId: string,
-    checked: boolean,
-  ) => {
-    if (!localAgent) return;
-
-    const currentTools = localAgent.tools_set[integrationId] || [];
-    const updatedTools = checked
-      ? [...currentTools, toolId]
-      : currentTools.filter((tool) => tool !== toolId);
-
-    setLocalAgent({
-      ...localAgent,
-      tools_set: {
-        ...localAgent.tools_set,
-        [integrationId]: updatedTools,
-      },
-    });
-    setIsDirty(true);
-  };
+  }, [agent, form]);
 
   const setIntegrationTools = (
     integrationId: string,
     tools: string[],
   ) => {
-    if (!localAgent) return;
+    const toolsSet = form.getValues("tools_set");
+    const newToolsSet = { ...toolsSet };
 
-    setLocalAgent({
-      ...localAgent,
-      tools_set: {
-        ...localAgent.tools_set,
-        [integrationId]: tools,
-      },
-    });
-    setIsDirty(true);
+    if (tools.length > 0) {
+      newToolsSet[integrationId] = tools;
+    } else {
+      delete newToolsSet[integrationId];
+    }
+
+    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
 
-  const handleResetIntegrations = () => {
-    if (!localAgent) return;
-
-    setLocalAgent({
-      ...localAgent,
-    });
-    setIsDirty(true);
+  const onSubmit = async (data: Agent) => {
+    await updateAgent.mutateAsync(data);
   };
-
-  const integrations = installedIntegrations
-    .filter((i) => i.id !== agent.id).map((i) => i.id) ||
-    [];
-
-  if (!agent || !agentRoot) {
-    return (
-      <div className="h-full bg-background flex flex-col items-center justify-center">
-        <div className="relative">
-          <Spinner />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div>
-        Error loading agent: {typeof error === "object" && error !== null
-          ? JSON.stringify(error)
-          : String(error)}
-      </div>
-    );
-  }
 
   return (
-    <div
-      className={cn(
-        "bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700 relative rounded-xl",
-        isDirty ? "pb-32" : "pb-20",
-      )}
-    >
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex justify-center">
-            <div className="h-20 w-20">
-              <AgentAvatar
-                name={agent.name}
-                avatar={agent.avatar}
-                className="rounded-lg"
-              />
-            </div>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4 px-4 py-2"
+      >
+        {/* Avatar Section */}
+        <div className="flex justify-center">
+          <div className="h-40 w-40">
+            <AgentAvatar
+              name={agent.name}
+              avatar={agent.avatar}
+              className="rounded-lg"
+            />
           </div>
+        </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={localAgent?.name || ""}
-                onChange={(e) => handleUpdate({ name: e.target.value })}
-                placeholder="Enter agent name"
-                className={inputStyles}
-              />
-            </div>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter agent name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={localAgent?.description || ""}
-                onChange={(e) => handleUpdate({ description: e.target.value })}
-                className={cn(inputStyles, "min-h-36")}
-                placeholder="Describe your agent's purpose"
-              />
-              <p className="text-sm text-slate-500">
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe your agent's purpose"
+                  className="min-h-36"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
                 Used only for organization and search, it does not affect the
                 agent's behaviour
-              </p>
-            </div>
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="space-y-2">
-              <Label htmlFor="instructions">System Prompt</Label>
-              <Textarea
-                id="instructions"
-                value={localAgent?.instructions || ""}
-                onChange={(e) => handleUpdate({ instructions: e.target.value })}
-                className={cn(inputStyles, "min-h-36")}
-                placeholder="Enter the agent's system prompt"
-              />
-            </div>
+        <FormField
+          control={form.control}
+          name="instructions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>System Prompt</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter the agent's system prompt"
+                  className="min-h-36"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="space-y-2">
-              <Label htmlFor="max_tokens">Max Tokens</Label>
-              <Input
-                id="max_tokens"
-                value={localAgent?.max_tokens || ANTHROPIC_DEFAULT_MAX_TOKENS}
-                type="number"
-                min={ANTHROPIC_MIN_MAX_TOKENS}
-                max={ANTHROPIC_MAX_MAX_TOKENS}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) {
-                    handleUpdate({ max_tokens: value });
-                  }
-                }}
-                onBlur={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (isNaN(value)) {
-                    handleUpdate({ max_tokens: ANTHROPIC_DEFAULT_MAX_TOKENS });
-                    return;
-                  }
-                  const validValue = Math.min(
-                    Math.max(value, ANTHROPIC_MIN_MAX_TOKENS),
-                    ANTHROPIC_MAX_MAX_TOKENS,
-                  );
-                  handleUpdate({ max_tokens: validValue });
-                }}
-                className={inputStyles}
-              />
-            </div>
+        <FormField
+          control={form.control}
+          name="max_tokens"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Max Tokens</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={ANTHROPIC_MIN_MAX_TOKENS}
+                  max={ANTHROPIC_MAX_MAX_TOKENS}
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div className="space-y-2">
-              <Label htmlFor="avatar">Avatar URL</Label>
-              <Input
-                id="avatar"
-                value={localAgent?.avatar || ""}
-                onChange={(e) => handleUpdate({ avatar: e.target.value })}
-                placeholder="Enter avatar URL"
-                className={inputStyles}
-              />
-            </div>
-
-            {/* Tools Section */}
-            <div className="space-y-2">
-              <Label className="text-lg font-medium">Integrations</Label>
-              <p className="text-sm text-slate-500">
-                Enable or disable integrations to customize your agent's
-                capabilities
-              </p>
-              <div className="flex-1">
-                <div className="flex flex-col gap-4">
-                  {integrations.map((integrationId) => (
-                    <IntegrationItem
-                      key={integrationId}
-                      integrationId={integrationId}
-                      onToolToggle={handleToolToggle}
-                      setIntegrationTools={setIntegrationTools}
-                      agent={agent}
-                      localAgent={localAgent || agent}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end mt-4">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="link" size="sm">
-                      Reset
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Reset Integration Settings
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure? This will reset all integration settings
-                        to their default values. You will need to re-enable
-                        integrations you want to use.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleResetIntegrations}>
-                        Reset
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+        {/* Tools Section */}
+        <div className="space-y-2">
+          <FormLabel className="text-lg font-medium">
+            Integrations
+          </FormLabel>
+          <FormDescription>
+            Enable or disable integrations to customize your agent's
+            capabilities
+          </FormDescription>
+          <div className="flex-1">
+            <div className="flex flex-col gap-4">
+              {installedIntegrations
+                .filter((i) => i.id !== agent.id)
+                .map((integration) => (
+                  <Integration
+                    key={integration.id}
+                    integration={integration}
+                    setIntegrationTools={setIntegrationTools}
+                    enabledTools={toolsSet[integration.id] || []}
+                  />
+                ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {isDirty && countChanges() > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-t p-4 z-50 rounded-b-2xl">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <div className="text-sm text-slate-600">
-              {countChanges()} change{countChanges() !== 1 ? "s" : ""} pending
-            </div>
+        <div className="h-12" />
+
+        {form.formState.isDirty && (
+          <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
             <Button
-              onClick={handleSave}
-              className="shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/20 transition-shadow"
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                form.reset(agent);
+              }}
             >
-              Save Changes
+              Discard
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1 gap-2"
+              disabled={form.formState.isSubmitting}
+            >
+              {form.formState.isSubmitting
+                ? (
+                  <>
+                    <Spinner size="sm" /> Saving...
+                  </>
+                )
+                : `Save ${numberOfChanges} Change${
+                  numberOfChanges === 1 ? "" : "s"
+                }`}
             </Button>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </form>
+    </Form>
   );
 }
 

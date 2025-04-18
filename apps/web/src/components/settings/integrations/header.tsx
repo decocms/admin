@@ -3,6 +3,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { IntegrationIcon } from "./icon.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 
 export function IntegrationHeader({
   integration,
@@ -15,7 +16,7 @@ export function IntegrationHeader({
   integration: Integration;
   tools: string[];
   isAllSelected: boolean;
-  setIntegrationTools: (tools: string[]) => void;
+  setIntegrationTools: (checked: boolean) => void;
   isExpanded: boolean;
   setIsExpanded: (isExpanded: boolean) => void;
 }) {
@@ -41,15 +42,16 @@ export function IntegrationHeader({
         </div>
         <div className="flex items-center gap-4 ml-auto whitespace-nowrap">
           {tools.length > 0 && (
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Checkbox
                 id={`${integration?.id}-select-all`}
                 checked={isAllSelected}
-                onChange={(e) => {
-                  setIntegrationTools(e.target.checked ? tools : []);
-                }}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                onCheckedChange={(checked) =>
+                  setIntegrationTools(checked as boolean)}
+                className="h-4 w-4"
               />
               <label
                 htmlFor={`${integration?.id}-select-all`}

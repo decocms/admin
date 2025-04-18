@@ -1,42 +1,46 @@
-import type { Agent, Integration, MCPTool } from "@deco/sdk";
+import type { Integration, MCPTool } from "@deco/sdk";
 import { useTools } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useCallback, useMemo, useState } from "react";
 import { ExpandableDescription } from "./description.tsx";
 import { IntegrationHeader } from "./header.tsx";
 import { SchemaDisplay, type SchemaProperty } from "./schema-display.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 
 interface IntegrationProps {
   integration: Integration;
-  onToolToggle: (
-    integrationId: string,
-    toolId: string,
-    checked: boolean,
-  ) => void;
-  setIntegrationTools: (
-    integrationId: string,
-    tools: string[],
-  ) => void;
-  agent: Agent;
-  localAgent?: Agent;
+  enabledTools: string[];
+  setIntegrationTools: (integrationId: string, tools: string[]) => void;
 }
 
-export function Integration(
-  {
-    integration,
-    onToolToggle,
-    setIntegrationTools: _setIntegrationTools,
-    agent,
-    localAgent,
-  }: IntegrationProps,
-) {
+export const getDiffCount = (
+  t0: Record<string, string[]>,
+  t1: Record<string, string[]>,
+) => {
+  let count = 0;
+  for (const [i0, t0Tools] of Object.entries(t0)) {
+    const t1Tools = t1[i0] ?? [];
+    count += t0Tools.filter((tool) => !t1Tools.includes(tool)).length;
+  }
+
+  for (const [i1, t1Tools] of Object.entries(t1)) {
+    const t0Tools = t0[i1] ?? [];
+    count += t1Tools.filter((tool) => !t0Tools.includes(tool)).length;
+  }
+
+  return count;
+};
+
+export function Integration({
+  integration,
+  enabledTools,
+  setIntegrationTools,
+}: IntegrationProps) {
   const { data: toolsData, error, isLoading } = useTools(
     integration.connection,
   );
-  const enabledTools: string[] | undefined =
-    (localAgent || agent).tools_set[integration.id] || [];
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTool, setSelectedTool] = useState<MCPTool | null>(null);
@@ -49,9 +53,22 @@ export function Integration(
     );
   }, [toolsData, enabledTools]);
 
-  const setIntegrationTools = useCallback((tools: string[]) => {
-    _setIntegrationTools(integration.id, tools);
-  }, [integration.id, _setIntegrationTools]);
+  const handleToolToggle = useCallback((toolId: string, checked: boolean) => {
+    const currentTools = enabledTools;
+    const updatedTools = checked
+      ? [...currentTools, toolId]
+      : currentTools.filter((tool) => tool !== toolId);
+
+    setIntegrationTools(integration.id, updatedTools);
+  }, [enabledTools, integration.id, setIntegrationTools]);
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    const tools = checked
+      ? toolsData?.tools?.map((tool: MCPTool) => tool.name) ?? []
+      : [];
+
+    setIntegrationTools(integration.id, tools);
+  }, [integration.id, setIntegrationTools, toolsData?.tools]);
 
   if (isLoading) {
     return (
@@ -104,7 +121,7 @@ export function Integration(
         integration={integration}
         tools={toolsData?.tools?.map((tool: MCPTool) => tool.name) ?? []}
         isAllSelected={isAllSelected}
-        setIntegrationTools={setIntegrationTools}
+        setIntegrationTools={handleSelectAll}
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
       />
@@ -134,74 +151,49 @@ export function Integration(
             )
             : (
               <div className="space-y-4 max-w-full">
-                {toolsData.tools.map((tool: MCPTool) => (
-                  <div
-                    key={`${integration.id}-${tool.name}`}
-                    className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer max-w-full"
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest("button")) {
-                        return;
-                      }
-                      onToolToggle(
-                        integration.id,
-                        tool.name,
-                        !(isAllSelected || enabledTools?.includes(tool.name)),
-                      );
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onToolToggle(
-                          integration.id,
-                          tool.name,
-                          !(isAllSelected || enabledTools?.includes(tool.name)),
-                        );
-                      }
-                    }}
-                  >
-                    <div className="relative flex items-start flex-none">
-                      <input
-                        type="checkbox"
-                        id={`${integration.id}-${tool.name}`}
-                        checked={isAllSelected ||
-                          enabledTools?.includes(tool.name)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          onToolToggle(
-                            integration.id,
-                            tool.name,
-                            e.target.checked,
-                          );
+                {toolsData.tools.map((tool: MCPTool) => {
+                  const id = `${integration.id}-${tool.name}`;
+
+                  return (
+                    <div
+                      key={id}
+                      className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent/50 transition-colors cursor-pointer max-w-full"
+                    >
+                      <Checkbox
+                        id={id}
+                        className="mt-1"
+                        checked={enabledTools.includes(tool.name)}
+                        onCheckedChange={(checked) => {
+                          handleToolToggle(tool.name, checked as boolean);
                         }}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer mt-1"
-                        onClick={(e) => e.stopPropagation()}
                       />
-                    </div>
-                    <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
-                      <div className="flex items-center w-full gap-2 flex-wrap">
-                        <span className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1">
-                          {tool.name}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            setSelectedTool(tool);
-                          }}
-                          className="h-6 px-2 text-xs flex-none whitespace-nowrap"
-                        >
-                          View Schema
-                        </Button>
+                      <div className="space-y-1 flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center w-full gap-2 flex-wrap">
+                          <label
+                            htmlFor={id}
+                            className="text-xs font-medium leading-none cursor-pointer truncate min-w-0 flex-1"
+                          >
+                            {tool.name}
+                          </label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              setSelectedTool(tool);
+                            }}
+                            className="h-6 px-2 text-xs flex-none whitespace-nowrap"
+                          >
+                            View Schema
+                          </Button>
+                        </div>
+                        <ExpandableDescription
+                          description={tool.description ?? ""}
+                        />
                       </div>
-                      <ExpandableDescription
-                        description={tool.description ?? ""}
-                      />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
         </div>

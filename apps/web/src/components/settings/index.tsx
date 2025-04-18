@@ -21,7 +21,6 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { getDiffCount, Integration } from "./integrations/index.tsx";
 
@@ -34,7 +33,7 @@ function App({ agentId }: { agentId: string }) {
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
 
-  const form = useForm<z.infer<typeof AgentSchema>>({
+  const form = useForm<Agent>({
     resolver: zodResolver(AgentSchema),
     defaultValues: agent,
   });

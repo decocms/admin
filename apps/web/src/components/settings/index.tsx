@@ -91,7 +91,6 @@ function App({ agentId }: { agentId: string }) {
         </div>
 
         <FormField
-          control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
@@ -105,7 +104,6 @@ function App({ agentId }: { agentId: string }) {
         />
 
         <FormField
-          control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem>
@@ -127,7 +125,6 @@ function App({ agentId }: { agentId: string }) {
         />
 
         <FormField
-          control={form.control}
           name="instructions"
           render={({ field }) => (
             <FormItem>
@@ -145,7 +142,6 @@ function App({ agentId }: { agentId: string }) {
         />
 
         <FormField
-          control={form.control}
           name="max_tokens"
           render={({ field }) => (
             <FormItem>

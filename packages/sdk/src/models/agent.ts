@@ -34,7 +34,7 @@ export const AgentSchema = z.object({
   ),
   /** Model to use for the agent */
   model: z.string().default(DEFAULT_REASONING_MODEL)
-    .describe("Model to use for the agent"),
+    .describe("Model to use for the agent").optional(),
   /** Memory to use for the agent */
   memory: z.object({
     discriminator: z.string().optional().describe(

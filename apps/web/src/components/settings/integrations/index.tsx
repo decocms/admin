@@ -120,6 +120,7 @@ export function Integration({
       <IntegrationHeader
         integration={integration}
         tools={toolsData?.tools?.map((tool: MCPTool) => tool.name) ?? []}
+        enabledTools={enabledTools}
         isAllSelected={isAllSelected}
         setIntegrationTools={handleSelectAll}
         isExpanded={isExpanded}

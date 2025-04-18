@@ -8,6 +8,7 @@ import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 export function IntegrationHeader({
   integration,
   tools,
+  enabledTools,
   isAllSelected,
   setIntegrationTools,
   isExpanded,
@@ -15,11 +16,14 @@ export function IntegrationHeader({
 }: {
   integration: Integration;
   tools: string[];
+  enabledTools: string[];
   isAllSelected: boolean;
   setIntegrationTools: (checked: boolean) => void;
   isExpanded: boolean;
   setIsExpanded: (isExpanded: boolean) => void;
 }) {
+  const numberOfEnabledTools = enabledTools.length;
+
   return (
     <button
       type="button"
@@ -36,9 +40,12 @@ export function IntegrationHeader({
         />
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <IntegrationIcon icon={integration.icon} name={integration.name} />
-          <h3 className="font-medium text-base truncate">
+          <div className="font-medium text-base truncate">
             {integration?.name}
-          </h3>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {numberOfEnabledTools} of {tools.length}
+          </span>
         </div>
         <div className="flex items-center gap-4 ml-auto whitespace-nowrap">
           {tools.length > 0 && (

@@ -187,7 +187,7 @@ function App({ agentId }: { agentId: string }) {
 
         <div className="h-12" />
 
-        {form.formState.isDirty && (
+        {numberOfChanges > 0 && (
           <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
             <Button
               type="button"

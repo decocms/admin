@@ -20,10 +20,11 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type ChangeEvent, type MouseEvent, useReducer } from "react";
 import { useNavigate } from "react-router";
+import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { IntegrationPage } from "./breadcrumb.tsx";
-import { trackEvent } from "../../../hooks/analytics.ts";
+import { IntegrationIcon } from "./common.tsx";
 import { useExplorerAgents } from "./useCreateExplorerAgent.ts";
 
 // Integration Card Component
@@ -73,17 +74,11 @@ function IntegrationCard({
 
       <CardContent className="p-4">
         <div className="flex flex-col gap-3">
-          <div className="h-12 w-12 rounded-md flex items-center justify-center overflow-hidden shadow-sm">
-            {integration.icon && /^(data:)|(https?:)/.test(integration.icon)
-              ? (
-                <img
-                  src={integration.icon}
-                  alt={`${integration.name} icon`}
-                  className="h-full w-full object-contain"
-                />
-              )
-              : <Icon name="conversion_path" />}
-          </div>
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            className="h-16 w-16"
+          />
 
           <div className="flex flex-col gap-1">
             <div className="text-base font-semibold truncate">

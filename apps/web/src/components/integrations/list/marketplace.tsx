@@ -16,10 +16,11 @@ import {
 import { Input } from "@deco/ui/components/input.tsx";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { IntegrationPage } from "./breadcrumb.tsx";
 import { trackEvent } from "../../../hooks/analytics.ts";
+import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { useFocusAgent } from "../../agents/hooks.ts";
+import { IntegrationPage } from "./breadcrumb.tsx";
+import { IntegrationIcon } from "./common.tsx";
 import { useCreateExplorerAgent } from "./useCreateExplorerAgent.ts";
 
 // Marketplace Integration type that matches the structure from the API
@@ -110,13 +111,11 @@ function AvailableIntegrationCard({
       >
         <CardContent className="p-4">
           <div className="grid grid-cols-[min-content_1fr] gap-4">
-            <div className="h-16 w-16 rounded-md flex items-center justify-center overflow-hidden">
-              <img
-                src={integration.icon}
-                alt={`${integration.name} icon`}
-                className="h-full w-full object-contain"
-              />
-            </div>
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              className="h-16 w-16"
+            />
 
             <div className="grid grid-cols-1 gap-1">
               <div className="text-base font-semibold truncate">
@@ -148,13 +147,10 @@ function AvailableIntegrationCard({
                 : (
                   <div className="mt-4">
                     <div className="grid grid-cols-[80px_1fr] items-center gap-4">
-                      <div className="rounded-md flex items-center justify-center overflow-hidden">
-                        <img
-                          src={integration.icon}
-                          alt={`${integration.name} icon`}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
+                      <IntegrationIcon
+                        icon={integration.icon}
+                        name={integration.name}
+                      />
                       <div>
                         <div className="text-sm text-muted-foreground">
                           {integration.description}

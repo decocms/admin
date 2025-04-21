@@ -1,7 +1,8 @@
 import { type Message, useChat } from "@ai-sdk/react";
 import { Agent, API_SERVER_URL, getModel, useAgentRoot } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { PageLayout } from "../pageLayout.tsx";
 import { ChatError } from "./ChatError.tsx";
@@ -21,7 +22,7 @@ interface ChatProps {
 
 interface ChatMessagesProps {
   messages: Message[];
-  status: "streaming" | "submitted" | "ready" | "idle";
+  status: "streaming" | "submitted" | "ready" | "idle" | "error";
   handlePickerSelect: (
     toolCallId: string,
     selectedValue: string,
@@ -66,6 +67,16 @@ function ChatMessages(
   );
 }
 
+const setAutoScroll = (e: HTMLDivElement | null, enabled: boolean) => {
+  if (!e) return;
+
+  e.dataset.disableAutoScroll = enabled ? "false" : "true";
+};
+
+const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
+  return e?.dataset.disableAutoScroll !== "true";
+};
+
 export function Chat({
   agent,
   threadId,
@@ -74,12 +85,7 @@ export function Chat({
   view = "interactive",
 }: ChatProps) {
   const agentRoot = useAgentRoot(agent?.id ?? "");
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scrollViewportRef = useRef<HTMLDivElement>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-  const [userScrolled, setUserScrolled] = useState(false);
-  const autoScrollingRef = useRef(false);
-  const lastScrollTopRef = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Keep track of the last file data for use in the next message
   const fileDataRef = useRef<FileData[]>([]);
@@ -156,82 +162,42 @@ export function Chat({
     },
   });
 
-  useEffect(() => {
-    const setupViewport = () => {
-      const viewport = document.querySelector(
-        '[data-slot="scroll-area-viewport"]',
-      );
-      if (viewport instanceof HTMLDivElement) {
-        scrollViewportRef.current = viewport;
-        return viewport;
-      }
-      return null;
-    };
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, []);
 
-    const viewport = setupViewport();
-    if (!viewport || messages.length === 0) return;
+  useLayoutEffect(() => {
+    scrollToBottom();
+  }, [initialMessages, scrollToBottom]);
 
-    const timer = setTimeout(() => {
-      scrollToBottom("auto");
-    }, 100);
+  useLayoutEffect(() => {
+    if (!isAutoScrollEnabled(scrollRef.current)) {
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, [messages.length]);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
-  useEffect(() => {
-    const scrollContainer = scrollViewportRef.current;
-    if (!scrollContainer) return;
+  useLayoutEffect(() => {
+    let cancel = false;
 
-    const handleScroll = () => {
-      if (autoScrollingRef.current) return;
+    if (!scrollRef.current) return;
 
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const isBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 10;
-      const scrollingUp = scrollTop < lastScrollTopRef.current;
+    const observer = new IntersectionObserver((entries) => {
+      if (cancel) return;
 
-      if (scrollingUp) {
-        setUserScrolled(true);
-      } else if (isBottom) {
-        setUserScrolled(false);
-      }
+      const scroll = entries.some((e) => e.isIntersecting);
 
-      setIsAtBottom(isBottom);
-      lastScrollTopRef.current = scrollTop;
-    };
+      setAutoScroll(scrollRef.current, scroll);
+    }, { root: null, threshold: 0 });
 
-    lastScrollTopRef.current = scrollContainer.scrollTop;
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    observer.observe(scrollRef.current);
 
     return () => {
-      scrollContainer.removeEventListener("scroll", handleScroll);
+      cancel = true;
+      observer.disconnect();
     };
-  }, [scrollViewportRef.current]);
-
-  useEffect(() => {
-    const scrollContainer = scrollViewportRef.current;
-    if (!scrollContainer) return;
-
-    const shouldAutoScroll = isAtBottom ||
-      (status === "streaming" && !userScrolled);
-    if (!shouldAutoScroll) return;
-
-    const timer = setTimeout(() => {
-      scrollToBottom("auto");
-    }, 50);
-
-    return () => clearTimeout(timer);
-  }, [messages, isAtBottom, status, userScrolled]);
-
-  useEffect(() => {
-    const scrollContainer = scrollViewportRef.current;
-    if (!scrollContainer || messages.length === 0) return;
-
-    const initialScrollTimeout = setTimeout(() => {
-      scrollToBottom("auto");
-    }, 300);
-
-    return () => clearTimeout(initialScrollTimeout);
-  }, []);
+  }, [messages]);
 
   useEffect(() => {
     if (!agent) return;
@@ -297,29 +263,12 @@ export function Chat({
 
     handleSubmit(e, options);
 
+    setAutoScroll(scrollRef.current, true);
+
     // the timeout is absolutely necessary trust me do not question do not remove just accept it
     setTimeout(() => {
       fileDataRef.current = [];
     }, 1000);
-  };
-
-  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-    const scrollContainer = scrollViewportRef.current;
-    if (!scrollContainer) return;
-
-    autoScrollingRef.current = true;
-
-    if (containerRef.current) {
-      containerRef.current.scrollIntoView({ behavior, block: "end" });
-    } else {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    }
-
-    setTimeout(() => {
-      autoScrollingRef.current = false;
-      setUserScrolled(false);
-      setIsAtBottom(true);
-    }, 100);
   };
 
   if (view === "readonly") {
@@ -328,20 +277,18 @@ export function Chat({
         header={null}
         main={
           <div className="w-full max-w-[800px] mx-auto">
-            <div ref={containerRef}>
-              {messages.length === 0 ? <Welcome agent={agent} /> : (
-                <ChatMessages
-                  messages={messages}
-                  status={status as
-                    | "streaming"
-                    | "submitted"
-                    | "ready"
-                    | "idle"}
-                  handlePickerSelect={handlePickerSelect}
-                  error={error}
-                />
-              )}
-            </div>
+            {messages.length === 0 ? <Welcome agent={agent} /> : (
+              <ChatMessages
+                messages={messages}
+                status={status as
+                  | "streaming"
+                  | "submitted"
+                  | "ready"
+                  | "idle"}
+                handlePickerSelect={handlePickerSelect}
+                error={error}
+              />
+            )}
           </div>
         }
       />
@@ -353,17 +300,6 @@ export function Chat({
       header={<ChatHeader agent={agent} panels={panels} />}
       footer={
         <div className="w-full max-w-[800px] mx-auto relative">
-          {!isAtBottom && (
-            <div
-              className="absolute bottom-[calc(100%+10px)] left-1/2 transform -translate-x-1/2 
-                        w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center
-                        cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200"
-              onClick={() => scrollToBottom()}
-              aria-label="Scroll to bottom"
-            >
-              <Icon name="arrow_downward" />
-            </div>
-          )}
           <ChatInput
             agentRoot={agentRoot}
             input={input}
@@ -377,18 +313,30 @@ export function Chat({
       }
       main={
         <div className="w-full max-w-[800px] mx-auto">
-          <div ref={containerRef}>
-            {messages.length === 0 ? <Welcome agent={agent} /> : (
-              <ChatMessages
-                messages={messages}
-                status={status as "streaming" | "submitted" | "ready" | "idle"}
-                handlePickerSelect={handlePickerSelect}
-                error={error}
-                onRetry={handleRetry}
-              />
-            )}
+          {messages.length === 0 ? <Welcome agent={agent} /> : (
+            <ChatMessages
+              messages={messages}
+              status={status}
+              handlePickerSelect={handlePickerSelect}
+              error={error}
+              onRetry={handleRetry}
+            />
+          )}
+
+          <div className="h-16" ref={scrollRef}>
+            <div
+              className={cn(
+                "absolute bottom-0 -translate-y-1/2 left-1/2 transform -translate-x-1/2",
+                "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
+                "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
+                `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity delay-300`,
+              )}
+              onClick={() => scrollToBottom()}
+              aria-label="Scroll to bottom"
+            >
+              <Icon name="arrow_downward" />
+            </div>
           </div>
-          <div className="h-4" />
         </div>
       }
     />

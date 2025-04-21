@@ -1,8 +1,10 @@
-import { type Agent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { Suspense } from "react";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
-export function Welcome({ agent }: { agent?: Agent }) {
-  if (agent?.id === WELL_KNOWN_AGENT_IDS.teamAgent) {
+export function EmptyState({ agentId }: { agentId: string }) {
+  if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
     return (
       <div className="py-10">
         <div className="flex flex-col items-center justify-center gap-2">
@@ -20,6 +22,29 @@ export function Welcome({ agent }: { agent?: Agent }) {
       </div>
     );
   }
+
+  return (
+    <ErrorBoundary
+      fallback={<EmptyState.Fallback />}
+      shouldCatch={(e) => e instanceof AgentNotFoundError}
+    >
+      <Suspense fallback={<EmptyState.Skeleton />}>
+        <EmptyState.UI agentId={agentId} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+EmptyState.Fallback = () => {
+  return null;
+};
+
+EmptyState.Skeleton = () => {
+  return <div>Loading...</div>;
+};
+
+EmptyState.UI = ({ agentId }: { agentId: string }) => {
+  const { data: agent } = useAgent(agentId);
 
   return (
     <div className="h-full flex flex-col justify-between py-12">
@@ -46,4 +71,4 @@ export function Welcome({ agent }: { agent?: Agent }) {
       </div>
     </div>
   );
-}
+};

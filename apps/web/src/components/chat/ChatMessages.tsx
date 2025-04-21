@@ -1,0 +1,116 @@
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useCallback, useLayoutEffect } from "react";
+import { ChatError } from "./ChatError.tsx";
+import { useChatContext } from "./context.tsx";
+import { EmptyState } from "./EmptyState.tsx";
+import { ChatMessage } from "./Message.tsx";
+
+function Dots() {
+  const { chat: { status } } = useChatContext();
+
+  if (status !== "streaming" && status !== "submitted") {
+    return null;
+  }
+
+  return (
+    <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 text-muted-foreground ml-4">
+      <span className="inline-flex items-center gap-1">
+        <span className="animate-bounce [animation-delay:-0.3s]">
+          .
+        </span>
+        <span className="animate-bounce [animation-delay:-0.2s]">
+          .
+        </span>
+        <span className="animate-bounce [animation-delay:-0.1s]">
+          .
+        </span>
+      </span>
+    </div>
+  );
+}
+
+export function ChatMessages() {
+  const {
+    agentId,
+    scrollRef,
+    chat: { messages },
+    isAutoScrollEnabled,
+    setAutoScroll,
+  } = useChatContext();
+
+  const scrollToBottom = useCallback(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, []);
+
+  useLayoutEffect(() => {
+    scrollToBottom();
+  }, [scrollToBottom]);
+
+  useLayoutEffect(() => {
+    if (isAutoScrollEnabled(scrollRef.current)) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom, isAutoScrollEnabled]);
+
+  useLayoutEffect(() => {
+    let cancel = false;
+
+    const root = scrollRef.current?.closest(
+      '[data-slot="scroll-area-viewport"]',
+    );
+
+    if (!scrollRef.current || !root) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (cancel) return;
+
+      const autoScroll = entries.some((e) => e.isIntersecting);
+      setAutoScroll(scrollRef.current, autoScroll);
+    }, { root: root, rootMargin: "100px", threshold: 0 });
+
+    observer.observe(scrollRef.current);
+
+    return () => {
+      cancel = true;
+      observer.disconnect();
+    };
+  }, [messages, setAutoScroll]);
+
+  return (
+    <div className="w-full max-w-[800px] mx-auto">
+      {messages.length === 0
+        ? <EmptyState agentId={agentId} />
+        : (
+          <div className="flex flex-col gap-4 p-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className="animate-in slide-in-from-bottom duration-300"
+              >
+                <ChatMessage message={message} />
+              </div>
+            ))}
+            <ChatError />
+            <Dots />
+          </div>
+        )}
+
+      <div ref={scrollRef}>
+        <div
+          className={cn(
+            "absolute bottom-0 -translate-y-1/2 left-1/2 transform -translate-x-1/2",
+            "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
+            "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
+            `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity`,
+            `[[data-disable-auto-scroll="false"]_&]:pointer-events-none`,
+          )}
+          onClick={() => scrollToBottom()}
+          aria-label="Scroll to bottom"
+        >
+          <Icon name="arrow_downward" />
+        </div>
+      </div>
+    </div>
+  );
+}

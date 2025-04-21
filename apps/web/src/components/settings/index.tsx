@@ -21,6 +21,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { getDiffCount, Integration } from "./integrations/index.tsx";
 
@@ -28,7 +29,8 @@ import { getDiffCount, Integration } from "./integrations/index.tsx";
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
 
-function App({ agentId }: { agentId: string }) {
+function SettingsTab() {
+  const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
@@ -221,4 +223,4 @@ function App({ agentId }: { agentId: string }) {
   );
 }
 
-export default App;
+export default SettingsTab;

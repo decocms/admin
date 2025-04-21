@@ -39,7 +39,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
-import { useFocusAgent } from "./hooks.ts";
+import { useFocusAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -135,6 +135,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const focusAgent = useFocusAgent();
+  const focusChat = useFocusChat();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
 
   // Return loading state while fetching agent data
@@ -180,7 +181,7 @@ function AgentCard({ agent }: { agent: Agent }) {
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
         onClick={() => {
-          focusAgent(agent.id);
+          focusChat(agent.id, crypto.randomUUID());
         }}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
@@ -211,6 +212,17 @@ function AgentCard({ agent }: { agent: Agent }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem
+                    disabled={duplicating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      focusAgent(agent.id);
+                    }}
+                  >
+                    <Icon name="settings" className="mr-2" />
+                    Configure
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}
                     onClick={(e) => {

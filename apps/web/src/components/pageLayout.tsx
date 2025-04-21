@@ -10,7 +10,7 @@ import {
   ReactNode,
   use,
 } from "react";
-import Docked, { togglePanel, useDock } from "./dock/index.tsx";
+import Docked, { Tab, togglePanel, useDock } from "./dock/index.tsx";
 import { TeamSelector } from "./sidebar/TeamSelector.tsx";
 
 export interface PageProps {
@@ -51,7 +51,7 @@ export function PageLayout({ header, main, footer }: PageProps) {
       {header && (
         <header className="w-full flex flex-col">
           <MobileTopbar />
-          <div className="w-full flex items-center justify-between gap-4 p-4">
+          <div className="w-full flex items-center justify-between gap-4 px-4 h-14">
             {header}
           </div>
         </header>
@@ -75,17 +75,14 @@ export function PageLayout({ header, main, footer }: PageProps) {
 }
 
 interface MainViewProps {
-  header?: ComponentType<unknown>;
-  main: ComponentType<unknown>;
-  footer?: ComponentType<unknown>;
+  header?: ComponentType;
+  main: ComponentType;
+  footer?: ComponentType;
 }
 
 export interface DockedPageProps {
   main: MainViewProps;
-  tabs: Record<string, {
-    Component: ComponentType<unknown>;
-    initialOpen?: boolean;
-  }>;
+  tabs: Record<string, Tab>;
 }
 
 const Context = createContext<MainViewProps | null>(null);

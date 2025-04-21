@@ -3,18 +3,15 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useState } from "react";
+import { openPanel } from "../dock/index.tsx";
+import { useChatContext } from "./context.tsx";
+import { Picker } from "./Picker.tsx";
 import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
-import { Picker } from "./Picker.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
-import { openPanel, updateParameters } from "../agent/index.tsx";
 
 interface ToolMessageProps {
   toolInvocations: NonNullable<Message["toolInvocations"]>;
-  handlePickerSelect: (
-    toolCallId: string,
-    selectedValue: string,
-  ) => Promise<void>;
 }
 
 // Tools that have custom UI rendering and shouldn't show in the timeline
@@ -42,9 +39,10 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
   return CUSTOM_UI_TOOLS.includes(toolName as CustomUITool);
 }
 
-function ToolStatus(
-  { tool, isLast }: { tool: ToolInvocation; isLast: boolean },
-) {
+function ToolStatus({
+  tool,
+  isLast,
+}: { tool: ToolInvocation; isLast: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getIcon = (state: string) => {
@@ -87,18 +85,6 @@ function ToolStatus(
         params: {
           threadId,
           agentId,
-          view: "readonly",
-          key: `${panelId}-${Date.now()}`,
-        },
-      });
-
-      updateParameters({
-        id: panelId,
-        component: "chatView",
-        params: {
-          threadId,
-          agentId,
-          view: "readonly",
           key: `${panelId}-${Date.now()}`,
         },
       });
@@ -160,13 +146,11 @@ function ToolStatus(
   );
 }
 
-function CustomToolUI({
-  tool,
-  handlePickerSelect,
-}: {
+function CustomToolUI({ tool }: {
   tool: ToolInvocation;
-  handlePickerSelect: ToolMessageProps["handlePickerSelect"];
 }) {
+  const { select } = useChatContext();
+
   if (tool.state !== "result" || !tool.result?.data) return null;
 
   switch (tool.toolName) {
@@ -203,7 +187,7 @@ function CustomToolUI({
         <Picker
           question={tool.result.data.question as string}
           options={options}
-          onSelect={(value) => handlePickerSelect(tool.toolCallId, value)}
+          onSelect={(value) => select(tool.toolCallId, value)}
         />
       );
     }
@@ -213,9 +197,9 @@ function CustomToolUI({
   }
 }
 
-export function ToolMessage(
-  { toolInvocations, handlePickerSelect }: ToolMessageProps,
-) {
+export function ToolMessage({
+  toolInvocations,
+}: ToolMessageProps) {
   // Separate tools into timeline tools and custom UI tools
   const timelineTools: ToolInvocation[] = [];
   const customUITools: ToolInvocation[] = [];
@@ -245,11 +229,7 @@ export function ToolMessage(
 
       {/* Custom UI tools */}
       {customUITools.map((tool) => (
-        <CustomToolUI
-          key={tool.toolCallId}
-          tool={tool}
-          handlePickerSelect={handlePickerSelect}
-        />
+        <CustomToolUI key={tool.toolCallId} tool={tool} />
       ))}
     </div>
   );

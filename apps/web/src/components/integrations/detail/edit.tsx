@@ -18,6 +18,7 @@ const TABS = {
   inspector: {
     Component: Inspector,
     initialOpen: true,
+    title: "Inspect",
   },
 };
 

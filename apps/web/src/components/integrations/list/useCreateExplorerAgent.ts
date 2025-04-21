@@ -7,7 +7,7 @@ import {
   useFetchIntegration,
 } from "@deco/sdk";
 import { useState } from "react";
-import { useFocusAgent } from "../../agents/hooks.ts";
+import { useFocusChat } from "../../agents/hooks.ts";
 
 export function useCreateExplorerAgent() {
   const { mutateAsync: createAgent } = useCreateAgent();
@@ -76,7 +76,7 @@ export function useCreateExplorerAgent() {
 export function useExplorerAgents() {
   const { data: agents = [] } = useAgents();
   const { createExplorerAgent } = useCreateExplorerAgent();
-  const focusAgent = useFocusAgent();
+  const focusChat = useFocusChat();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const goToAgentFor = async (integration: Integration) => {
@@ -90,14 +90,14 @@ export function useExplorerAgents() {
 
       if (existingAgent) {
         // If we found an existing agent, redirect to it with message
-        focusAgent(existingAgent.id, {
+        focusChat(existingAgent.id, existingAgent.id, {
           message: `I want to explore the integration ${integration.name}`,
         });
       } else {
         // If no existing agent, create one and then redirect with message
         const newAgentId = await createExplorerAgent(integration.id);
         if (newAgentId) {
-          focusAgent(newAgentId, {
+          focusChat(newAgentId, newAgentId, {
             message: `I want to explore the integration ${integration.name}`,
           });
         }

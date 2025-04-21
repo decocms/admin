@@ -1,22 +1,33 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useChatContext } from "./context.tsx";
 
 const WELL_KNOWN_ERROR_MESSAGES = {
   InsufficientFunds: "Insufficient funds",
 };
 
-interface ChatErrorProps {
-  error: Error;
-  onRetry?: (context?: string[]) => void;
-}
+export function ChatError() {
+  const { chat: { error }, retry } = useChatContext();
+  const insufficientFunds = error?.message.includes(
+    WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds,
+  );
 
-export function ChatError({ error, onRetry }: ChatErrorProps) {
-  if (error.message.includes(WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds)) {
-    trackEvent("chat_error_insufficient_funds", {
-      error,
-    });
+  useEffect(() => {
+    if (insufficientFunds) {
+      trackEvent("chat_error_insufficient_funds", {
+        error,
+      });
+    }
+  }, [insufficientFunds, error]);
+
+  if (!error) {
+    return null;
+  }
+
+  if (insufficientFunds) {
     return (
       <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
         <div className="flex w-full justify-between p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
@@ -53,7 +64,7 @@ export function ChatError({ error, onRetry }: ChatErrorProps) {
             variant="secondary"
             className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
             onClick={() => {
-              onRetry?.([
+              retry([
                 JSON.stringify({
                   type: "error",
                   message: error.message,

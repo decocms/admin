@@ -2,16 +2,12 @@ import type { Message } from "@ai-sdk/react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useMemo } from "react";
 import { MemoizedMarkdown } from "./Markdown.tsx";
 import { ToolMessage } from "./ToolMessage.tsx";
-import { useMemo } from "react";
 
 interface ChatMessageProps {
   message: Message;
-  handlePickerSelect: (
-    toolCallId: string,
-    selectedValue: string,
-  ) => Promise<void>;
 }
 
 interface MessagePart {
@@ -86,7 +82,7 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   return mergedParts;
 }
 
-export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
+export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
   const timestamp = new Date(message.createdAt || Date.now())
     .toLocaleTimeString([], {
@@ -161,7 +157,6 @@ export function ChatMessage({ message, handlePickerSelect }: ChatMessageProps) {
                       <ToolMessage
                         key={index}
                         toolInvocations={part.toolInvocations}
-                        handlePickerSelect={handlePickerSelect}
                       />
                     );
                   }

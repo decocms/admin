@@ -1,4 +1,4 @@
-import { togglePanel } from "../../agent/index.tsx";
+import { togglePanel } from "../../dock/index.tsx";
 
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 

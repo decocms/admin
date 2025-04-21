@@ -3,7 +3,7 @@ import "./polyfills.ts";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { lazy, ReactNode, StrictMode, Suspense, useEffect } from "react";
+import { lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -12,13 +12,13 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
+import { About } from "./components/about/index.tsx";
 import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
 import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
-import { About } from "./components/about/index.tsx";
 
 const IntegrationEdit = lazy(() =>
   import("./components/integrations/detail/edit.tsx")
@@ -37,26 +37,16 @@ const AgentsList = lazy(
 );
 
 const AgentDetail = lazy(
-  () => import("./components/agent/index.tsx"),
+  () => import("./components/agent/detail.tsx"),
+);
+
+const Chat = lazy(
+  () => import("./components/agent/chat.tsx"),
 );
 
 const Wallet = lazy(
   () => import("./components/wallet/index.tsx"),
 );
-
-function Wrapper({ slot: children }: { slot: ReactNode }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="h-full w-full flex items-center justify-center">
-          <Spinner />
-        </div>
-      }
-    >
-      {children}
-    </Suspense>
-  );
-}
 
 function NotFound() {
   const location = useLocation();
@@ -118,55 +108,51 @@ function ErrorFallback() {
 function Router() {
   return (
     <Routes>
-      <Route
-        path="login"
-        element={<Wrapper slot={<Login />} />}
-      />
+      <Route path="login" element={<Login />} />
 
-      <Route
-        path="about"
-        element={<Wrapper slot={<About />} />}
-      />
+      <Route path="about" element={<About />} />
 
       <Route path="/:teamSlug?" element={<Layout />}>
         <Route
           index
           element={
-            <Wrapper
-              slot={<AgentDetail agentId={WELL_KNOWN_AGENT_IDS.teamAgent} />}
+            <Chat
+              agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
+              threadId={crypto.randomUUID()}
             />
           }
         />
         <Route
           path="wallet"
-          element={<Wrapper slot={<Wallet />} />}
+          element={<Wallet />}
         />
         <Route
           path="agents"
-          element={<Wrapper slot={<AgentsList />} />}
+          element={<AgentsList />}
         />
         <Route
-          path="agent/:id/:threadId?"
-          element={<Wrapper slot={<AgentDetail />} />}
+          path="agent/:id"
+          element={<AgentDetail />}
+        />
+        <Route
+          path="chat/:id/:threadId"
+          element={<Chat />}
         />
         <Route
           path="integrations/marketplace"
-          element={<Wrapper slot={<IntegrationMarketplace />} />}
+          element={<IntegrationMarketplace />}
         />
         <Route
           path="integrations"
-          element={<Wrapper slot={<MyIntegrations />} />}
+          element={<MyIntegrations />}
         />
         <Route
           path="integration/:id"
-          element={<Wrapper slot={<IntegrationEdit />} />}
+          element={<IntegrationEdit />}
         />
       </Route>
 
-      <Route
-        path="*"
-        element={<Wrapper slot={<NotFound />} />}
-      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
@@ -182,7 +168,15 @@ createRoot(document.getElementById("root")!).render(
         }}
       >
         <PageviewTracker />
-        <Router />
+        <Suspense
+          fallback={
+            <div className="h-full w-full flex items-center justify-center">
+              <Spinner />
+            </div>
+          }
+        >
+          <Router />
+        </Suspense>
       </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>,

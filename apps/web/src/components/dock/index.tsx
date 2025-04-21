@@ -90,20 +90,38 @@ const TAB_COMPONENTS = {
 
 const channel = new EventTarget();
 
-export const togglePanel = <T extends object>(detail: AddPanelOptions<T>) => {
+type Message = {
+  type: "toggle" | "open" | "update";
+  payload: AddPanelOptions<object>;
+};
+
+export const togglePanel = <T extends object>(
+  detail: AddPanelOptions<T>,
+) => {
   channel.dispatchEvent(
-    new CustomEvent("message", { detail }),
+    new CustomEvent("message", { detail: { type: "toggle", payload: detail } }),
   );
 };
+
+export const openPanel = <T extends object>(
+  detail: AddPanelOptions<T>,
+) => {
+  channel.dispatchEvent(
+    new CustomEvent("message", { detail: { type: "open", payload: detail } }),
+  );
+};
+
+export interface Tab {
+  Component: ComponentType;
+  initialOpen?: boolean;
+  title: string;
+}
 
 type Props =
   & Partial<Omit<ComponentProps<typeof DockviewReact>, "components">>
   & {
     mainView: ComponentType;
-    components: Record<string, {
-      Component: ComponentType;
-      initialOpen?: boolean;
-    }>;
+    components: Record<string, Tab>;
   };
 
 const NO_DROP_TARGET = "no-drop-target";
@@ -176,11 +194,7 @@ function Docked(
       if (value.initialOpen) {
         initialPanels.add(key);
 
-        addPanel({
-          id: key,
-          component: key,
-          title: value.Component.displayName || key,
-        }, event.api);
+        addPanel({ id: key, component: key, title: value.title }, event.api);
       }
     });
 
@@ -198,21 +212,24 @@ function Docked(
   }, [onReady, mainViewName, components]);
 
   useEffect(() => {
+    if (!api) {
+      return;
+    }
+
     const handleMessage = (
-      event: CustomEvent<AddPanelOptions<object>>,
+      event: CustomEvent<Message>,
     ) => {
-      const { detail } = event;
-
-      if (!api) {
-        return;
-      }
-
-      const panel = api.getPanel(detail.id);
+      const { type, payload } = event.detail;
+      const panel = api.getPanel(payload.id);
 
       if (panel) {
-        panel.api.close();
+        if (type === "toggle") {
+          panel.api.close();
+        } else if (type === "open") {
+          panel.api.updateParameters(payload.params || {});
+        }
       } else {
-        addPanel(detail, api);
+        addPanel(payload, api);
       }
     };
 

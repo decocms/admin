@@ -171,25 +171,26 @@ export function Chat({
   }, [initialMessages, scrollToBottom]);
 
   useLayoutEffect(() => {
-    if (!isAutoScrollEnabled(scrollRef.current)) {
-      return;
+    if (isAutoScrollEnabled(scrollRef.current)) {
+      scrollToBottom();
     }
-
-    scrollToBottom();
   }, [messages, scrollToBottom]);
 
   useLayoutEffect(() => {
     let cancel = false;
 
-    if (!scrollRef.current) return;
+    const root = scrollRef.current?.closest(
+      '[data-slot="scroll-area-viewport"]',
+    );
+
+    if (!scrollRef.current || !root) return;
 
     const observer = new IntersectionObserver((entries) => {
       if (cancel) return;
 
-      const scroll = entries.some((e) => e.isIntersecting);
-
-      setAutoScroll(scrollRef.current, scroll);
-    }, { root: null, threshold: 0 });
+      const autoScroll = entries.some((e) => e.isIntersecting);
+      setAutoScroll(scrollRef.current, autoScroll);
+    }, { root: root, rootMargin: "100px", threshold: 0 });
 
     observer.observe(scrollRef.current);
 
@@ -323,13 +324,13 @@ export function Chat({
             />
           )}
 
-          <div className="h-16" ref={scrollRef}>
+          <div ref={scrollRef}>
             <div
               className={cn(
                 "absolute bottom-0 -translate-y-1/2 left-1/2 transform -translate-x-1/2",
                 "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
                 "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
-                `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity delay-300`,
+                `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity`,
               )}
               onClick={() => scrollToBottom()}
               aria-label="Scroll to bottom"

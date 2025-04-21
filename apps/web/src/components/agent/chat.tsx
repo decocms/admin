@@ -47,8 +47,6 @@ function Conversation(props: Props) {
 
   const message = searchParams.get("message");
 
-  console.log({ agentId, threadId });
-
   if (!agentId || !threadId) {
     return <div>Agent not found</div>;
   }

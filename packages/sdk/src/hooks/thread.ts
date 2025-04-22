@@ -55,7 +55,7 @@ export const useThreadTools = (agentId: string, threadId: string) => {
   const { workspace } = useSDK();
   const agentStub = useAgentStub(agentId, threadId);
 
-  return useSuspenseQuery({
+  return useSuspenseQuery<Record<string, string[]>>({
     queryKey: KEYS.TOOLS(workspace, agentId, threadId),
     queryFn: () => agentStub.getThreadTools(),
   });

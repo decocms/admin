@@ -60,8 +60,6 @@ function ThreadSettingsTab() {
   const onSubmit = async (data: Chat) => {
     await updateTools.mutateAsync(data.tools_set);
     form.reset(data);
-
-    console.log("reset");
   };
 
   return (

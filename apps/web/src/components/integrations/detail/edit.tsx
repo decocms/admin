@@ -13,6 +13,7 @@ import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
 import { DockedPageLayout, DockedToggleButton } from "../../pageLayout.tsx";
+import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import { Inspector } from "./inspector.tsx";
@@ -33,6 +34,10 @@ const TABS = {
     Component: DetailForm,
     title: "Configure",
     initialOpen: true,
+  },
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Tools",
   },
 };
 

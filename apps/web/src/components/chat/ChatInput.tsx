@@ -15,6 +15,7 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
 import { useChatContext } from "./context.tsx";
+import ToolsButton from "./ToolsButton.tsx";
 
 export function ChatInput() {
   return (
@@ -240,6 +241,7 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                     )
                     : null}
                   <ModelSelector model={model} onModelChange={setModel} />
+                  <ToolsButton />
                 </div>
                 <div className="flex items-center gap-4">
                   {input && (

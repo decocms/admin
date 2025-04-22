@@ -23,7 +23,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { getDiffCount, Integration } from "./integrations/index.tsx";
+import { getDiffCount, Integration } from "../toolsets/index.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -174,7 +174,7 @@ function SettingsTab() {
           <div className="flex-1">
             <div className="flex flex-col gap-4">
               {installedIntegrations
-                .filter((i) => i.id !== agent.id)
+                .filter((i) => i.id !== agentId)
                 .map((integration) => (
                   <Integration
                     key={integration.id}

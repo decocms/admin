@@ -5,6 +5,7 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
+import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -28,6 +29,10 @@ const COMPONENTS = {
   preview: {
     Component: AgentPreview,
     title: "Preview",
+  },
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Tools",
   },
 };
 

@@ -1,5 +1,11 @@
 import { CreateMessage, type Message, useChat } from "@ai-sdk/react";
-import { API_SERVER_URL, getModel, useAgentRoot, useMessages } from "@deco/sdk";
+import {
+  API_SERVER_URL,
+  getModel,
+  useAgentRoot,
+  useInvalidateAll,
+  useMessages,
+} from "@deco/sdk";
 import {
   createContext,
   PropsWithChildren,
@@ -49,6 +55,13 @@ interface Props {
   initialMessage?: CreateMessage;
 }
 
+const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
+  "DECO_INTEGRATION_INSTALL",
+  "DECO_INTEGRATION_ENABLE",
+  "DECO_INTEGRATION_DISABLE",
+  "DECO_AGENT_CONFIGURE",
+]);
+
 export function ChatProvider({
   agentId,
   threadId,
@@ -57,6 +70,7 @@ export function ChatProvider({
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const { data: initialMessages } = useMessages(agentId, threadId);
+  const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
 
@@ -113,6 +127,13 @@ export function ChatProvider({
           success: true,
         };
       }
+    },
+    onFinish: (message) => {
+      message.toolInvocations?.forEach((toolInvocation) => {
+        if (THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(toolInvocation.toolName)) {
+          invalidateAll.mutate();
+        }
+      });
     },
   });
 

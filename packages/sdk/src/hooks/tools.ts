@@ -72,9 +72,7 @@ export function useTools(connection: MCPConnection) {
   return useQuery({
     retry: false,
     queryKey: ["tools", connection],
-    queryFn: () => {
-      return listTools(connection);
-    },
+    queryFn: () => listTools(connection),
     initialData: INITIAL_DATA,
   });
 }

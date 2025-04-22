@@ -220,3 +220,52 @@ export const useAgentStub = (
     [agentRoot, threadId],
   );
 };
+
+export const useThreadTools = (agentId: string, threadId: string) => {
+  const { context } = useSDK();
+  const agentStub = useAgentStub(agentId, threadId);
+
+  return useSuspenseQuery({
+    queryKey: ["tools", context, agentId, threadId],
+    queryFn: () => agentStub.getThreadTools(),
+  });
+};
+
+export const useUpdateThreadTools = (agentId: string, threadId: string) => {
+  const { context } = useSDK();
+  const client = useQueryClient();
+  const agentStub = useAgentStub(agentId, threadId);
+
+  return useMutation({
+    mutationFn: async (toolset: Record<string, string[]>) => {
+      const response = await agentStub.updateThreadTools(toolset);
+
+      if (
+        response.success === false && response.message === "Thread not found"
+      ) {
+        return agentStub.createThread({
+          title: "New Thread",
+          id: threadId,
+          metadata: { tool_set: toolset },
+        });
+      }
+    },
+    onSuccess: (_, variables) => {
+      client.setQueryData(
+        ["tools", context, agentId, threadId],
+        () => variables,
+      );
+    },
+  });
+};
+
+export const useInvalidateAll = () => {
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      client.invalidateQueries({
+        predicate: (_query) => true,
+      }),
+  });
+};

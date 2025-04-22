@@ -77,9 +77,11 @@ export function ChatMessages() {
     };
   }, [messages, setAutoScroll]);
 
+  const isEmpty = messages.length === 0;
+
   return (
     <div className="w-full max-w-[800px] mx-auto">
-      {messages.length === 0
+      {isEmpty
         ? <EmptyState agentId={agentId} />
         : (
           <div className="flex flex-col gap-4 p-4">
@@ -97,19 +99,21 @@ export function ChatMessages() {
         )}
 
       <div ref={scrollRef}>
-        <div
-          className={cn(
-            "absolute bottom-0 -translate-y-1/2 left-1/2 transform -translate-x-1/2",
-            "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
-            "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
-            `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity`,
-            `[[data-disable-auto-scroll="false"]_&]:pointer-events-none`,
-          )}
-          onClick={() => scrollToBottom()}
-          aria-label="Scroll to bottom"
-        >
-          <Icon name="arrow_downward" />
-        </div>
+        {messages.length > 0 && (
+          <div
+            className={cn(
+              "absolute bottom-36 sm:bottom-6 md:bottom-0 md:-translate-y-1/2 left-1/2 transform -translate-x-1/2",
+              "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
+              "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
+              `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity`,
+              `[[data-disable-auto-scroll="false"]_&]:pointer-events-none`,
+            )}
+            onClick={() => scrollToBottom()}
+            aria-label="Scroll to bottom"
+          >
+            <Icon name="arrow_downward" />
+          </div>
+        )}
       </div>
     </div>
   );

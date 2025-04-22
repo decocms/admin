@@ -5,7 +5,6 @@ import {
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -16,10 +15,9 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
@@ -29,11 +27,16 @@ import { getDiffCount, Integration } from "./integrations/index.tsx";
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
 
-function SettingsTab() {
+interface SettingsTabProps {
+  formId?: string;
+}
+
+function SettingsTab({ formId }: SettingsTabProps) {
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
+  const previousChangesRef = useRef(0);
 
   const form = useForm<Agent>({
     resolver: zodResolver(AgentSchema),
@@ -49,10 +52,38 @@ function SettingsTab() {
       getDiffCount(toolsSet, agent.tools_set);
   })();
 
+  // Notify about changes when number of changes updates
+  useEffect(() => {
+    if (numberOfChanges !== previousChangesRef.current) {
+      previousChangesRef.current = numberOfChanges;
+      
+      // Dispatch event with the number of changes
+      const changeEvent = new CustomEvent('agent:changes-updated', {
+        detail: { numberOfChanges }
+      });
+      globalThis.dispatchEvent(changeEvent);
+    }
+  }, [numberOfChanges]);
+
   useEffect(() => {
     if (agent) {
       form.reset(agent);
     }
+  }, [agent, form]);
+
+  // Listen for the discard event from the header
+  useEffect(() => {
+    const handleDiscardEvent = () => {
+      if (agent) {
+        form.reset(agent);
+      }
+    };
+
+    globalThis.addEventListener('agent:discard-changes', handleDiscardEvent);
+    
+    return () => {
+      globalThis.removeEventListener('agent:discard-changes', handleDiscardEvent);
+    };
   }, [agent, form]);
 
   const setIntegrationTools = (
@@ -78,8 +109,9 @@ function SettingsTab() {
   return (
     <Form {...form}>
       <form
+        id={formId}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 px-4 py-2"
+        className="space-y-4 px-4 py-2 pb-16"
       >
         {/* Avatar Section */}
         <div className="flex justify-center">
@@ -163,7 +195,7 @@ function SettingsTab() {
         />
 
         {/* Tools Section */}
-        <div className="space-y-2">
+        <div className="space-y-2 mb-8">
           <FormLabel className="text-lg font-medium">
             Integrations
           </FormLabel>
@@ -186,38 +218,6 @@ function SettingsTab() {
             </div>
           </div>
         </div>
-
-        <div className="h-12" />
-
-        {numberOfChanges > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                form.reset(agent);
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 gap-2"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting
-                ? (
-                  <>
-                    <Spinner size="sm" /> Saving...
-                  </>
-                )
-                : `Save ${numberOfChanges} Change${
-                  numberOfChanges === 1 ? "" : "s"
-                }`}
-            </Button>
-          </div>
-        )}
       </form>
     </Form>
   );

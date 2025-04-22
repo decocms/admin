@@ -41,11 +41,11 @@
     --dv-background-color: var(--color-background);
 
     :not(:first-child).dv-view {
-      @apply border border-slate-200;
+      @apply border-x border-slate-200;
     }
 
     :not(:first-child).dv-view .dv-tabs-and-actions-container {
-      @apply border-b border-slate-200 bg-slate-50;
+      @apply bg-slate-50;
     }
 
     .dv-tab {

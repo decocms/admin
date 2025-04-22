@@ -1,9 +1,10 @@
-import { CreateMessage, type Message, useChat } from "@ai-sdk/react";
+import { CreateMessage, useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
   getModel,
   useAgentRoot,
   useInvalidateAll,
+  useThreadMessages,
 } from "@deco/sdk";
 import {
   createContext,
@@ -53,8 +54,8 @@ interface Props {
   threadId: string;
   /** Default initial thread message */
   initialMessage?: CreateMessage;
-  /** Messages that where already present in the thread */
-  threadMessages: Message[];
+  /** Disable thread messages */
+  disableThreadMessages?: boolean;
 }
 
 const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
@@ -68,16 +69,19 @@ export function ChatProvider({
   agentId,
   threadId,
   initialMessage,
-  threadMessages,
   children,
+  disableThreadMessages,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
+  const { data: initialMessages } = disableThreadMessages
+    ? { data: [] }
+    : useThreadMessages(agentId, threadId);
 
   const chat = useChat({
-    initialMessages: threadMessages,
+    initialMessages,
     credentials: "include",
     headers: { "x-deno-isolate-instance-id": agentRoot },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,

@@ -1,4 +1,3 @@
-import { useThreadMessages } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
@@ -55,10 +54,6 @@ function Conversation(props: Props) {
     throw new Error("Missing agentId or threadId");
   }
 
-  const messages = props.disableThreadMessages
-    ? { data: [] }
-    : useThreadMessages(agentId, threadId);
-
   return (
     <Suspense
       fallback={
@@ -70,7 +65,7 @@ function Conversation(props: Props) {
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
-        threadMessages={messages.data}
+        disableThreadMessages={props.disableThreadMessages}
       >
         <DockedPageLayout
           main={MAIN}

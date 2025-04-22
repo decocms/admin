@@ -2,7 +2,6 @@ import {
   type Integration,
   IntegrationSchema,
   useIntegration,
-  useThreadMessages,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -84,8 +83,6 @@ export default function Edit() {
   const agentId = WELL_KNOWN_AGENT_IDS.teamAgent;
   const threadId = integrationId;
 
-  const messages = useThreadMessages(agentId, threadId);
-
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
     defaultValues: {
@@ -105,7 +102,6 @@ export default function Edit() {
     <ChatProvider
       agentId={agentId}
       threadId={threadId}
-      threadMessages={messages.data}
       initialMessage={{
         role: "user",
         content:

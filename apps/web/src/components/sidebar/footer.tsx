@@ -51,7 +51,7 @@ function LoggedUser() {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
-          <SidebarMenuButton className="cursor-pointer gap-2 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
+        <SidebarMenuButton className="cursor-pointer gap-2 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
           <Avatar
             url={userAvatarURL}
             fallback={userName}

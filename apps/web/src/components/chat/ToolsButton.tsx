@@ -1,9 +1,30 @@
 import { useThreadTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Suspense } from "react";
 import { DockedToggleButton } from "../pageLayout.tsx";
 import { useChatContext } from "./context.tsx";
 
 function ToolsButton() {
+  return (
+    <Suspense fallback={<ToolsButton.Skeleton />}>
+      <ToolsButton.UI />
+    </Suspense>
+  );
+}
+
+ToolsButton.Skeleton = () => (
+  <DockedToggleButton
+    id="tools"
+    title="Chat settings"
+    variant="outline"
+    size="sm"
+    disabled
+  >
+    <Icon name="build" />
+  </DockedToggleButton>
+);
+
+ToolsButton.UI = () => {
   const { agentId, threadId } = useChatContext();
   const { data: tools } = useThreadTools(agentId, threadId);
 
@@ -20,6 +41,6 @@ function ToolsButton() {
       </span>
     </DockedToggleButton>
   );
-}
+};
 
 export default ToolsButton;

@@ -1,3 +1,4 @@
+import { useThreadMessages } from "@deco/sdk";
 import { useMemo } from "react";
 import { useParams } from "react-router";
 import { ChatInput } from "../chat/ChatInput.tsx";
@@ -39,16 +40,18 @@ function Agent(props: Props) {
   const params = useParams();
 
   const agentId = useMemo(
-    () => props.agentId || params.id,
+    () => props.agentId || params.id || "",
     [props.agentId, params.id],
   );
 
-  if (!agentId) {
-    return <div>Agent not found</div>;
-  }
+  const messages = useThreadMessages(agentId, agentId);
 
   return (
-    <ChatProvider agentId={agentId} threadId={agentId}>
+    <ChatProvider
+      agentId={agentId}
+      threadId={agentId}
+      threadMessages={messages.data}
+    >
       <DockedPageLayout
         main={MAIN}
         tabs={COMPONENTS}

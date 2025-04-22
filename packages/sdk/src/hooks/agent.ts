@@ -170,7 +170,7 @@ export const useAgentRoot = (agentId: string) => {
 };
 
 /** Hook for fetching messages from an agent */
-export const useMessages = (agentId: string, threadId: string) => {
+export const useThreadMessages = (agentId: string, threadId: string) => {
   const { context } = useSDK();
   const agentStub = useAgentStub(agentId, threadId);
 

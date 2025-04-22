@@ -114,7 +114,7 @@ export function DockedPageLayout({ main, tabs }: DockedPageProps) {
 }
 
 export function DockedToggleButton(
-  { id, title, children, className, ...btnProps }: {
+  { id, title, children, className, disabled, ...btnProps }: {
     id: string;
     title: string;
     children: ReactNode;
@@ -125,7 +125,7 @@ export function DockedToggleButton(
   return (
     <Button
       {...btnProps}
-      disabled={!availablePanels.has(id)}
+      disabled={disabled || !availablePanels.has(id)}
       onClick={() => togglePanel({ id, component: id, title })}
       className={cn(className, openPanels.has(id) ? "bg-accent" : "")}
     >

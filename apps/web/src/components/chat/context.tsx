@@ -4,7 +4,6 @@ import {
   getModel,
   useAgentRoot,
   useInvalidateAll,
-  useMessages,
 } from "@deco/sdk";
 import {
   createContext,
@@ -35,7 +34,7 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
 
 type IContext = {
   chat: ReturnType<typeof useChat>;
-  initialMessages: Message[];
+  /** Initial thread messages */
   agentId: string;
   agentRoot: string;
   threadId: string;
@@ -52,7 +51,10 @@ const Context = createContext<IContext | null>(null);
 interface Props {
   agentId: string;
   threadId: string;
+  /** Default initial thread message */
   initialMessage?: CreateMessage;
+  /** Messages that where already present in the thread */
+  threadMessages: Message[];
 }
 
 const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
@@ -66,16 +68,16 @@ export function ChatProvider({
   agentId,
   threadId,
   initialMessage,
+  threadMessages,
   children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const { data: initialMessages } = useMessages(agentId, threadId);
   const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
 
   const chat = useChat({
-    initialMessages,
+    initialMessages: threadMessages,
     credentials: "include",
     headers: { "x-deno-isolate-instance-id": agentRoot },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
@@ -204,7 +206,6 @@ export function ChatProvider({
         agentId,
         threadId,
         agentRoot,
-        initialMessages,
         chat: { ...chat, handleSubmit: handleSubmit },
         scrollRef,
         fileDataRef,

@@ -42,6 +42,8 @@ export function DetailForm() {
   const iconValue = form.watch("icon");
   const connection = form.watch("connection");
 
+  const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
+
   // Handle connection type change
   const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
     const ec = editIntegration.connection;
@@ -101,6 +103,8 @@ export function DetailForm() {
         success: true,
         data,
       });
+
+      form.reset(data);
     } catch (error) {
       console.error(
         `Error updating integration:`,
@@ -117,16 +121,16 @@ export function DetailForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-[20%_1fr] gap-2">
-          <div className="space-y-2">
-            <FormLabel>Icon</FormLabel>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1">
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-col gap-2">
             <FormField
               control={form.control}
               name="icon"
               render={({ field }) => (
                 <FormItem>
-                  <div>
+                  <FormLabel>Icon</FormLabel>
+                  <div className="flex justify-center items-center">
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -136,7 +140,7 @@ export function DetailForm() {
                     />
                     <FormControl>
                       <div
-                        className="group aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-1 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-colors relative overflow-hidden"
+                        className="max-w-60 group aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-1 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-colors relative overflow-hidden"
                         onClick={triggerFileInput}
                       >
                         {iconValue && /^(data:)|(http?s:)/.test(iconValue)
@@ -177,8 +181,6 @@ export function DetailForm() {
                 </FormItem>
               )}
             />
-          </div>
-          <div className="flex flex-col gap-2">
             <FormField
               control={form.control}
               name="name"
@@ -344,25 +346,35 @@ export function DetailForm() {
           </div>
         </div>
 
-        <div className="flex gap-2 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(withBasePath("/integrations/marketplace"))}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isMutating} className="gap-2">
-            {isMutating
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  Updating...
-                </>
-              )
-              : "Save"}
-          </Button>
-        </div>
+        {numberOfChanges > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() =>
+                navigate(withBasePath("/integrations/marketplace"))}
+            >
+              Discard
+            </Button>
+            <Button
+              type="submit"
+              disabled={isMutating}
+              className="gap-2 flex-1"
+            >
+              {isMutating
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    Saving...
+                  </>
+                )
+                : `Save ${numberOfChanges} change${
+                  numberOfChanges > 1 ? "s" : ""
+                }`}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );

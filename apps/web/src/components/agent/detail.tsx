@@ -27,7 +27,7 @@ const COMPONENTS = {
   settings: {
     Component: AgentSettings,
     initialOpen: true,
-    title: "Settings",
+    title: "Configure",
   },
   preview: {
     Component: AgentPreview,

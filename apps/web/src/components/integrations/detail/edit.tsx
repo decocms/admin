@@ -1,9 +1,17 @@
-import { type Integration, IntegrationSchema, useIntegration } from "@deco/sdk";
+import {
+  type Integration,
+  IntegrationSchema,
+  useIntegration,
+  WELL_KNOWN_AGENT_IDS,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router";
+import { ChatInput } from "../../chat/ChatInput.tsx";
+import { ChatMessages } from "../../chat/ChatMessages.tsx";
+import { ChatProvider } from "../../chat/context.tsx";
 import { DockedPageLayout, DockedToggleButton } from "../../pageLayout.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
@@ -11,14 +19,20 @@ import { Inspector } from "./inspector.tsx";
 
 const MAIN = {
   header: Header,
-  main: DetailForm,
+  main: ChatMessages,
+  footer: ChatInput,
 };
 
 const TABS = {
   inspector: {
     Component: Inspector,
-    initialOpen: true,
     title: "Inspect",
+    initialOpen: true,
+  },
+  form: {
+    Component: DetailForm,
+    title: "Configure",
+    initialOpen: true,
   },
 };
 
@@ -36,6 +50,14 @@ function Header() {
 
       <div className="flex items-center gap-2">
         <DockedToggleButton
+          id="form"
+          title="Settings"
+          variant="outline"
+          size="icon"
+        >
+          <Icon name="settings" />
+        </DockedToggleButton>
+        <DockedToggleButton
           id="inspector"
           title="Inspector"
           variant="outline"
@@ -50,7 +72,8 @@ function Header() {
 
 export default function Edit() {
   const { id } = useParams();
-  const { data: integration } = useIntegration(id!);
+  const integrationId = id!;
+  const { data: integration } = useIntegration(integrationId);
 
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
@@ -68,8 +91,18 @@ export default function Edit() {
   });
 
   return (
-    <Context.Provider value={{ form, integration }}>
-      <DockedPageLayout main={MAIN} tabs={TABS} />
-    </Context.Provider>
+    <ChatProvider
+      agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
+      threadId={integrationId}
+      initialMessage={{
+        role: "user",
+        content:
+          `Please help me setting up a new integration. Enable integration with installation id of ${integrationId} and help me exploring its tools`,
+      }}
+    >
+      <Context.Provider value={{ form, integration }}>
+        <DockedPageLayout main={MAIN} tabs={TABS} />
+      </Context.Provider>
+    </ChatProvider>
   );
 }

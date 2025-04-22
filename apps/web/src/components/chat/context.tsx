@@ -59,6 +59,7 @@ export function ChatProvider({
   const { data: initialMessages } = useMessages(agentId, threadId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
+
   const chat = useChat({
     initialMessages,
     credentials: "include",

@@ -25,7 +25,6 @@ import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { IntegrationPage } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
-import { useExplorerAgents } from "./useCreateExplorerAgent.ts";
 
 // Integration Card Component
 function IntegrationCard({
@@ -37,43 +36,13 @@ function IntegrationCard({
   onConfigure: (integration: Integration) => void;
   onDelete: (integrationId: string) => void;
 }) {
-  const { goToAgentFor, isRedirecting } = useExplorerAgents();
-
-  const handleChatClick = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    goToAgentFor(integration);
-  };
-
   return (
     <Card
       className="group cursor-pointer hover:shadow-md transition-shadow rounded-2xl relative border-slate-200"
       onClick={() => onConfigure(integration)}
     >
-      {/* Chat button - always visible */}
-      <Button
-        size="icon"
-        className="absolute top-2 right-2 bg-slate-200 hover:bg-slate-300 text-slate-500 h-8 w-8 rounded-lg flex items-center justify-center z-10"
-        onClick={handleChatClick}
-        disabled={isRedirecting}
-      >
-        {isRedirecting ? <Spinner size="sm" /> : <Icon name="chat" />}
-      </Button>
-
-      {/* Delete button - visible only on hover */}
-      <Button
-        size="icon"
-        variant="ghost"
-        className="absolute bottom-2 right-2 hover:text-destructive focus:bg-destructive/10 focus:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-20"
-        onClick={(e: MouseEvent<HTMLButtonElement>) => {
-          e.stopPropagation();
-          onDelete(integration.id);
-        }}
-      >
-        <Icon name="delete" />
-      </Button>
-
       <CardContent className="p-4">
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start">
           <IntegrationIcon
             icon={integration.icon}
             name={integration.name}
@@ -84,10 +53,22 @@ function IntegrationCard({
             <div className="text-base font-semibold truncate">
               {integration.name}
             </div>
-            <div className="text-sm text-muted-foreground line-clamp-2">
+            <div className="text-sm text-muted-foreground line-clamp-3">
               {integration.description}
             </div>
           </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            className="hover:text-destructive focus:bg-destructive/10 focus:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e: MouseEvent<HTMLButtonElement>) => {
+              e.stopPropagation();
+              onDelete(integration.id);
+            }}
+          >
+            <Icon name="delete" />
+          </Button>
         </div>
       </CardContent>
     </Card>

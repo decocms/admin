@@ -18,10 +18,8 @@ import { type ChangeEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
-import { useFocusAgent } from "../../agents/hooks.ts";
 import { IntegrationPage } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
-import { useCreateExplorerAgent } from "./useCreateExplorerAgent.ts";
 
 // Marketplace Integration type that matches the structure from the API
 interface MarketplaceIntegration extends Integration {
@@ -36,24 +34,19 @@ function AvailableIntegrationCard({
     mutate: installIntegration,
     isPending: isInstalling,
   } = useInstallFromMarketplace();
-  const focusAgent = useFocusAgent();
   const [showModal, setShowModal] = useState(false);
-  const [createdIntegrationId, setCreatedIntegrationId] = useState<
-    string | null
-  >(null);
-  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
+  const [
+    createdIntegrationId,
+    setCreatedIntegrationId,
+  ] = useState<string | null>(null);
   const navigate = useNavigate();
   const withBasePath = useBasePath();
 
-  // Use the custom hook for agent creation
-  const { createExplorerAgent, isCreatingAgent, error } =
-    useCreateExplorerAgent();
-
-  const isPending = isInstalling || isCreatingAgent;
+  const isPending = isInstalling;
 
   const handleInstall = () => {
     installIntegration(integration.id, {
-      onSuccess: async (data) => {
+      onSuccess: (data) => {
         if (typeof data.installationId !== "string") {
           // Handle error
           return;
@@ -66,12 +59,6 @@ function AvailableIntegrationCard({
           success: true,
           data: integration,
         });
-
-        // Use the hook's createExplorerAgent function
-        const agentId = await createExplorerAgent(installationId);
-        if (agentId) {
-          setCreatedAgentId(agentId);
-        }
       },
       onError: (error) => {
         setShowModal(true);
@@ -90,17 +77,9 @@ function AvailableIntegrationCard({
     navigate(withBasePath(`/integration/${createdIntegrationId}`));
   };
 
-  const handleExploreIntegration = () => {
-    if (!createdAgentId) return;
-    focusAgent(createdAgentId, {
-      message: `I want to configure and explore ${integration.name}`,
-    });
-  };
-
   const handleCloseModal = () => {
     setShowModal(false);
     setCreatedIntegrationId(null);
-    setCreatedAgentId(null);
   };
 
   return (
@@ -139,52 +118,42 @@ function AvailableIntegrationCard({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {error ? "Installation Failed" : `Connect to ${integration.name}`}
+              Connect to {integration.name}
             </DialogTitle>
             <DialogDescription>
-              {error
-                ? <div className="text-destructive">{error}</div>
-                : (
-                  <div className="mt-4">
-                    <div className="grid grid-cols-[80px_1fr] items-center gap-4">
-                      <IntegrationIcon
-                        icon={integration.icon}
-                        name={integration.name}
-                      />
-                      <div>
-                        <div className="text-sm text-muted-foreground">
-                          {integration.description}
-                        </div>
-                      </div>
+              <div className="mt-4">
+                <div className="grid grid-cols-[80px_1fr] items-start gap-4">
+                  <IntegrationIcon
+                    icon={integration.icon}
+                    name={integration.name}
+                  />
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      {integration.description}
                     </div>
+                    {createdIntegrationId && (
+                      <div className="font-bold mt-4">
+                        The integration has been installed successfully. Click
+                        the button below to configure it.
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            {error
-              ? <Button onClick={handleCloseModal}>Close</Button>
-              : isPending
+            {isPending
               ? (
                 <Button disabled={isPending}>
-                  {isCreatingAgent ? "Creating Agent..." : "Connecting..."}
+                  Connecting...
                 </Button>
               )
               : createdIntegrationId
               ? (
                 <div className="flex gap-3">
-                  <Button
-                    onClick={handleEditIntegration}
-                    disabled={!createdAgentId}
-                  >
-                    Inspect
-                  </Button>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={handleExploreIntegration}
-                    disabled={!createdAgentId}
-                  >
-                    Explore
+                  <Button onClick={handleEditIntegration}>
+                    Configure
                   </Button>
                 </div>
               )

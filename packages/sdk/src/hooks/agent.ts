@@ -180,7 +180,6 @@ export const useMessages = (agentId: string, threadId: string) => {
     staleTime: 0,
     gcTime: 0,
     networkMode: "always",
-    refetchOnMount: "always",
   });
 
   return data;

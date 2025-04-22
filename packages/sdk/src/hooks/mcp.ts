@@ -14,35 +14,29 @@ import {
 import type { Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
 import { useSDK } from "./store.tsx";
-
-const getKeyFor = (
-  context: string,
-  mcpId?: string,
-) => ["mcp", context, mcpId];
+import { KEYS } from "./api.ts";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
-  const { context: root } = useSDK();
+  const { workspace } = useSDK();
 
   const create = useMutation({
-    mutationFn: (mcp: Partial<Integration>) => createIntegration(root, mcp),
+    mutationFn: (mcp: Partial<Integration>) =>
+      createIntegration(workspace, mcp),
     onSuccess: (result) => {
-      const key = getKeyFor(root, result.id);
+      const key = KEYS.INTEGRATION(workspace, result.id);
 
       // update item
       client.setQueryData(key, result);
 
       // update list
       client.setQueryData(
-        getKeyFor(root),
+        KEYS.INTEGRATION(workspace),
         (old: Integration[] | undefined) => {
           if (!old) return [result];
           return [result, ...old];
         },
       );
-
-      // invalidate list
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
     },
   });
 
@@ -51,39 +45,25 @@ export const useCreateIntegration = () => {
 
 export const useUpdateIntegration = () => {
   const client = useQueryClient();
-  const { context: root } = useSDK();
+  const { workspace } = useSDK();
 
   const update = useMutation({
-    mutationFn: (mcp: Integration) => saveIntegration(root, mcp),
-    onMutate: async (updatedMCP) => {
-      // Cancel any outgoing refetches
-      await client.cancelQueries({ queryKey: getKeyFor(root) });
-
-      // Snapshot the previous value
-      const previousMCPs = client.getQueryData(getKeyFor(root)) as
-        | Integration[]
-        | undefined;
-
-      // Optimistically update the cache
-      client.setQueryData(getKeyFor(root), (old: Integration[] | undefined) => {
-        if (!old) return [updatedMCP];
-        return old.map((mcp) => mcp.id === updatedMCP.id ? updatedMCP : mcp);
-      });
-
+    mutationFn: (mcp: Integration) => saveIntegration(workspace, mcp),
+    onSuccess: (updatedMCP) => {
       // Update the individual MCP in cache
-      client.setQueryData(getKeyFor(root, updatedMCP.id), updatedMCP);
+      client.setQueryData(
+        KEYS.INTEGRATION(workspace, updatedMCP.id),
+        updatedMCP,
+      );
 
-      return { previousMCPs } as const;
-    },
-    onError: (_err, _updatedMCP, context) => {
-      // Rollback to the previous value
-      if (context?.previousMCPs) {
-        client.setQueryData(getKeyFor(root), context.previousMCPs);
-      }
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure data is in sync
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
+      // Update the list
+      client.setQueryData(
+        KEYS.INTEGRATION(workspace),
+        (old: Integration[] | undefined) => {
+          if (!old) return [updatedMCP];
+          return old.map((mcp) => mcp.id === updatedMCP.id ? updatedMCP : mcp);
+        },
+      );
     },
   });
 
@@ -92,37 +72,22 @@ export const useUpdateIntegration = () => {
 
 export const useRemoveIntegration = () => {
   const client = useQueryClient();
-  const { context: root } = useSDK();
+  const { workspace } = useSDK();
 
   const remove = useMutation({
-    mutationFn: (mcpId: string) => deleteIntegration(root, mcpId),
-    onMutate: async (mcpId) => {
-      // Cancel any outgoing refetches
-      await client.cancelQueries({ queryKey: getKeyFor(root) });
-
-      // Snapshot the previous value
-      const previousMCPs = client.getQueryData<Integration[]>(getKeyFor(root));
-
-      // Optimistically update the cache
-      client.setQueryData(getKeyFor(root), (old: Integration[]) => {
-        if (!old) return old;
-        return old.filter((mcp: Integration) => mcp.id !== mcpId);
-      });
-
+    mutationFn: (mcpId: string) => deleteIntegration(workspace, mcpId),
+    onSuccess: (_, mcpId) => {
       // Remove the individual MCP from cache
-      client.removeQueries({ queryKey: getKeyFor(root, mcpId) });
+      client.removeQueries({ queryKey: KEYS.INTEGRATION(workspace, mcpId) });
 
-      return { previousMCPs };
-    },
-    onError: (_err, _vars, ctx) => {
-      // Rollback to the previous value
-      if (ctx?.previousMCPs) {
-        client.setQueryData(getKeyFor(root), ctx.previousMCPs);
-      }
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure data is in sync
-      client.invalidateQueries({ queryKey: getKeyFor(root) });
+      // Update the list
+      client.setQueryData(
+        KEYS.INTEGRATION(workspace),
+        (old: Integration[]) => {
+          if (!old) return old;
+          return old.filter((mcp: Integration) => mcp.id !== mcpId);
+        },
+      );
     },
   });
 
@@ -131,11 +96,11 @@ export const useRemoveIntegration = () => {
 
 /** Hook for crud-like operations on MCPs */
 export const useIntegration = (mcpId: string) => {
-  const { context } = useSDK();
+  const { workspace } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: getKeyFor(context, mcpId),
-    queryFn: () => loadIntegration(context, mcpId),
+    queryKey: KEYS.INTEGRATION(workspace, mcpId),
+    queryFn: () => loadIntegration(workspace, mcpId),
     retry: (failureCount, error) =>
       error instanceof IntegrationNotFoundError ? false : failureCount < 2,
   });
@@ -143,37 +108,13 @@ export const useIntegration = (mcpId: string) => {
   return data;
 };
 
-/** Hook that returns a function to fetch a specific integration on demand */
-export const useFetchIntegration = () => {
-  const { context } = useSDK();
-  const queryClient = useQueryClient();
-
-  const fetchIntegration = async (mcpId: string) => {
-    try {
-      const integration = await loadIntegration(context, mcpId);
-
-      // Update cache
-      queryClient.setQueryData(getKeyFor(context, mcpId), integration);
-
-      return integration;
-    } catch (error) {
-      if (error instanceof IntegrationNotFoundError) {
-        throw error;
-      }
-      throw error;
-    }
-  };
-
-  return fetchIntegration;
-};
-
 /** Hook for listing all MCPs */
 export const useIntegrations = () => {
-  const { context } = useSDK();
+  const { workspace } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: getKeyFor(context),
-    queryFn: () => listIntegrations(context).then((r) => r.items),
+    queryKey: KEYS.INTEGRATION(workspace),
+    queryFn: () => listIntegrations(workspace).then((r) => r.items),
   });
 
   return data;
@@ -200,7 +141,7 @@ export const useMarketplaceIntegrations = () => {
 export const useInstallFromMarketplace = () => {
   const agentStub = useAgentStub();
   const client = useQueryClient();
-  const { context } = useSDK();
+  const { workspace } = useSDK();
 
   const mutation = useMutation({
     mutationFn: async (mcpId: string) => {
@@ -211,7 +152,7 @@ export const useInstallFromMarketplace = () => {
     },
     onSuccess: () => {
       // Invalidate the integrations list to refresh it
-      client.invalidateQueries({ queryKey: getKeyFor(context) });
+      client.invalidateQueries({ queryKey: KEYS.INTEGRATION(workspace) });
     },
   });
 

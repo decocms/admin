@@ -1,17 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, PropsWithChildren, use } from "react";
 
+export type Workspace = `users/${string}` | `shared/${string}`;
+
 interface State {
   /** The context of the account, i.e. users/123 or shared/teamId */
-  context: string;
+  workspace: Workspace;
 }
 
 const client = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-    },
-  },
+  defaultOptions: { queries: { retry: 1 } },
 });
 
 const Context = createContext<State | null>(null);

@@ -1,4 +1,4 @@
-import { useAgents, useAllThreads, useIntegrations } from "@deco/sdk";
+import { useAgents, useIntegrations, useThreads } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -15,11 +15,11 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { ReactNode, Suspense } from "react";
 import { Link, useMatch } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 import { groupThreadsByDate, Thread } from "../threads/index.tsx";
-import { Header as SidebarHeader } from "./header.tsx";
 import { SidebarFooter } from "./footer.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
+import { Header as SidebarHeader } from "./header.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -103,7 +103,7 @@ function SidebarThreadsSkeleton() {
 }
 
 function SidebarThreads() {
-  const { data: threads } = useAllThreads();
+  const { data: threads } = useThreads();
   const groupedThreads = groupThreadsByDate(threads);
 
   return (

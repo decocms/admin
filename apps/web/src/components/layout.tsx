@@ -1,4 +1,4 @@
-import { SDKProvider } from "@deco/sdk";
+import { SDKProvider, Workspace } from "@deco/sdk";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Outlet, useParams } from "react-router";
 import { useUser } from "../hooks/data/useUser.ts";
@@ -8,7 +8,9 @@ export function Layout() {
   const { teamSlug } = useParams();
   const user = useUser();
 
-  const rootContext = teamSlug ? `shared/${teamSlug}` : `users/${user?.id}`;
+  const rootContext: Workspace = teamSlug
+    ? `shared/${teamSlug}`
+    : `users/${user?.id}`;
 
   return (
     <SidebarProvider
@@ -18,7 +20,7 @@ export function Layout() {
         "--sidebar-width-mobile": "14rem",
       } as Record<string, string>}
     >
-      <SDKProvider context={rootContext}>
+      <SDKProvider workspace={rootContext}>
         <AppSidebar />
         <SidebarInset className="h-full">
           <Outlet />

@@ -51,7 +51,7 @@ function Conversation(props: Props) {
   );
 
   if (!agentId || !threadId) {
-    throw new Error("Missing agentId or threadId");
+    return <div>Agent not found</div>;
   }
 
   return (

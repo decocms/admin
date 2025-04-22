@@ -39,9 +39,13 @@ function Agent(props: Props) {
   const params = useParams();
 
   const agentId = useMemo(
-    () => props.agentId || params.id || "",
+    () => props.agentId || params.id,
     [props.agentId, params.id],
   );
+
+  if (!agentId) {
+    return <div>Agent not found</div>;
+  }
 
   return (
     <ChatProvider agentId={agentId} threadId={agentId}>

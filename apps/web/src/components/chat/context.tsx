@@ -35,7 +35,6 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
 
 type IContext = {
   chat: ReturnType<typeof useChat>;
-  /** Initial thread messages */
   agentId: string;
   agentRoot: string;
   threadId: string;

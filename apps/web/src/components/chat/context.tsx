@@ -67,8 +67,9 @@ export function ChatProvider({
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
       const message = messages.at(-1);
-
       const files = fileDataRef.current;
+      const searchParams = new URLSearchParams(globalThis.location.search);
+      const bypassOpenRouter = searchParams.get("openRouter") === "false";
 
       return {
         args: [[{
@@ -85,7 +86,7 @@ export function ChatProvider({
               })),
             ]
             : message?.annotations || [],
-        }], { model: getModel() }],
+        }], { model: getModel(), bypassOpenRouter }],
         metadata: { threadId: threadId ?? agentId },
       };
     },

@@ -54,6 +54,8 @@ function Conversation(props: Props) {
     return <div>Agent not found</div>;
   }
 
+  const chatKey = agentId + threadId;
+
   return (
     <Suspense
       fallback={
@@ -61,6 +63,8 @@ function Conversation(props: Props) {
           <Spinner />
         </div>
       }
+      // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
+      key={chatKey}
     >
       <ChatProvider
         agentId={agentId}
@@ -70,7 +74,7 @@ function Conversation(props: Props) {
         <DockedPageLayout
           main={MAIN}
           tabs={COMPONENTS}
-          key={agentId + threadId}
+          key={chatKey}
         />
       </ChatProvider>
     </Suspense>

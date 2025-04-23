@@ -100,7 +100,9 @@ export function ChatProvider({
           })),
         ]
         : last?.annotations || [];
-      last.annotations = annotations;
+      if (last) {
+        last.annotations = annotations;
+      }
       const searchParams = new URLSearchParams(globalThis.location.search);
       const bypassOpenRouter = searchParams.get("openRouter") === "false";
 

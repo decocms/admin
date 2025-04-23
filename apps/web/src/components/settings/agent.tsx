@@ -25,6 +25,7 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { useNavigate } from "react-router";
 
 import { getDiffCount, Integration } from "../toolsets/index.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -123,121 +124,123 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   return (
     <Form {...form}>
-      <form
-        id={formId}
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4  py-2 pb-16"
-      >
-        {/* Avatar Section */}
-        <div className="flex justify-center">
-          <div className="h-40 w-40">
-            <AgentAvatar
-              name={agent.name}
-              avatar={agent.avatar}
-              className="rounded-lg"
-            />
-          </div>
-        </div>
-
-        <FormField
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  className="rounded-md"
-                  placeholder="Enter agent name"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          name="instructions"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>System Prompt</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter the agent's system prompt"
-                  className="min-h-36"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>About this agent</FormLabel>
-              <FormDescription>
-                Used only for organization and search, it does not affect the
-                agent's behaviour
-              </FormDescription>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe your agent's purpose"
-                  className="min-h-18"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          name="max_tokens"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Max Tokens</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  className="rounded-md"
-                  min={ANTHROPIC_MIN_MAX_TOKENS}
-                  max={ANTHROPIC_MAX_MAX_TOKENS}
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Tools Section */}
-        <div className="space-y-2 mb-8">
-          <FormLabel className="text-lg font-medium">
-            Integrations
-          </FormLabel>
-          <FormDescription>
-            Enable or disable integrations to customize your agent's
-            capabilities
-          </FormDescription>
-          <div className="flex-1">
-            <div className="flex flex-col gap-4">
-              {installedIntegrations
-                .filter((i) => !i.id.includes(agentId))
-                .map((integration) => (
-                  <Integration
-                    key={integration.id}
-                    integration={integration}
-                    setIntegrationTools={setIntegrationTools}
-                    enabledTools={toolsSet[integration.id] || []}
-                  />
-                ))}
+      <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+        <form
+          id={formId}
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4  py-2 pb-16"
+        >
+          {/* Avatar Section */}
+          <div className="flex justify-center">
+            <div className="h-40 w-40">
+              <AgentAvatar
+                name={agent.name}
+                avatar={agent.avatar}
+                className="rounded-lg"
+              />
             </div>
           </div>
-        </div>
-      </form>
+
+          <FormField
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input
+                    className="rounded-md"
+                    placeholder="Enter agent name"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="instructions"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>System Prompt</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter the agent's system prompt"
+                    className="min-h-36"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>About this agent</FormLabel>
+                <FormDescription>
+                  Used only for organization and search, it does not affect the
+                  agent's behaviour
+                </FormDescription>
+                <FormControl>
+                  <Textarea
+                    placeholder="Describe your agent's purpose"
+                    className="min-h-18"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="max_tokens"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Tokens</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    className="rounded-md"
+                    min={ANTHROPIC_MIN_MAX_TOKENS}
+                    max={ANTHROPIC_MAX_MAX_TOKENS}
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Tools Section */}
+          <div className="space-y-2 mb-8">
+            <FormLabel className="text-lg font-medium">
+              Integrations
+            </FormLabel>
+            <FormDescription>
+              Enable or disable integrations to customize your agent's
+              capabilities
+            </FormDescription>
+            <div className="flex-1">
+              <div className="flex flex-col gap-4">
+                {installedIntegrations
+                  .filter((i) => !i.id.includes(agentId))
+                  .map((integration) => (
+                    <Integration
+                      key={integration.id}
+                      integration={integration}
+                      setIntegrationTools={setIntegrationTools}
+                      enabledTools={toolsSet[integration.id] || []}
+                    />
+                  ))}
+              </div>
+            </div>
+          </div>
+        </form>
+      </ScrollArea>
     </Form>
   );
 }

@@ -1,6 +1,7 @@
 import { DetailedHTMLProps, IframeHTMLAttributes } from "react";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
+
 type Props = DetailedHTMLProps<
   IframeHTMLAttributes<HTMLIFrameElement>,
   HTMLIFrameElement

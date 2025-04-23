@@ -1,6 +1,5 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   AddPanelOptions,
@@ -43,8 +42,6 @@ export const useDock = () => {
 const adapter =
   <T extends object>(Component: ComponentType<T>) =>
   (props: IDockviewPanelProps<T>) => {
-    const { mainViewName } = useDock();
-
     return (
       <Suspense
         fallback={
@@ -53,15 +50,7 @@ const adapter =
           </div>
         }
       >
-        {props.api.component === mainViewName || props.api.component === "preview"
-          ? <Component {...props.params} />
-          : (
-            <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
-              <div className="flex flex-col flex-wrap">
-                <Component {...props.params} />
-              </div>
-            </ScrollArea>
-          )}
+        <Component {...props.params} />
       </Suspense>
     );
   };

@@ -28,6 +28,7 @@ import { useNavigate } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
 import { useFormContext } from "./context.ts";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export function DetailForm() {
   const { integration: editIntegration, form } = useFormContext();
@@ -121,148 +122,188 @@ export function DetailForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-1">
-        <div className="grid grid-cols-1 gap-2">
-          <div className="flex flex-col gap-2">
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Icon</FormLabel>
-                  <div className="flex justify-center items-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                    <FormControl>
-                      <div
-                        className="max-w-60 group aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-1 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-colors relative overflow-hidden"
-                        onClick={triggerFileInput}
-                      >
-                        {iconValue && /^(data:)|(http?s:)/.test(iconValue)
-                          ? (
-                            <>
-                              <img
-                                src={iconValue}
-                                alt="Icon preview"
-                                className="w-full h-full object-contain"
-                              />
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+      <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4 px-1"
+        >
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex flex-col gap-2">
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Icon</FormLabel>
+                    <div className="flex justify-center items-center">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                      <FormControl>
+                        <div
+                          className="max-w-60 group aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center gap-1 bg-muted/10 cursor-pointer hover:bg-muted/20 transition-colors relative overflow-hidden"
+                          onClick={triggerFileInput}
+                        >
+                          {iconValue && /^(data:)|(http?s:)/.test(iconValue)
+                            ? (
+                              <>
+                                <img
+                                  src={iconValue}
+                                  alt="Icon preview"
+                                  className="w-full h-full object-contain"
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <Icon
+                                    name="upload"
+                                    className="text-white text-xl"
+                                  />
+                                </div>
+                              </>
+                            )
+                            : (
+                              <>
                                 <Icon
                                   name="upload"
-                                  className="text-white text-xl"
+                                  className="text-muted-foreground/70 text-xl"
                                 />
-                              </div>
-                            </>
-                          )
-                          : (
-                            <>
-                              <Icon
-                                name="upload"
-                                className="text-muted-foreground/70 text-xl"
-                              />
-                              <span className="text-xs text-muted-foreground/70 text-center px-1">
-                                Upload Icon
-                              </span>
-                            </>
-                          )}
-                        <Input
-                          type="hidden"
-                          {...field}
-                        />
-                      </div>
+                                <span className="text-xs text-muted-foreground/70 text-center px-1">
+                                  Upload Icon
+                                </span>
+                              </>
+                            )}
+                          <Input
+                            type="hidden"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Shopify"
+                        {...field}
+                      />
                     </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Shopify"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Brief description of the integration"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <FormLabel>Connection</FormLabel>
-              </div>
-              <div className="space-y-4 p-4 border rounded-md">
-                <FormField
-                  control={form.control}
-                  name="connection.type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Connection Type</FormLabel>
-                      <Select
-                        onValueChange={(value: MCPConnection["type"]) => {
-                          field.onChange(value);
-                          handleConnectionTypeChange(value);
-                        }}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a connection type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="SSE">
-                            Server-Sent Events (SSE)
-                          </SelectItem>
-                          <SelectItem value="Websocket">WebSocket</SelectItem>
-                          <SelectItem value="Deco">Deco</SelectItem>
-                          <SelectItem value="HTTP">HTTP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Brief description of the integration"
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <FormLabel>Connection</FormLabel>
+                </div>
+                <div className="space-y-4 p-4 border rounded-md">
+                  <FormField
+                    control={form.control}
+                    name="connection.type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Connection Type</FormLabel>
+                        <Select
+                          onValueChange={(value: MCPConnection["type"]) => {
+                            field.onChange(value);
+                            handleConnectionTypeChange(value);
+                          }}
+                          defaultValue={field.value}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a connection type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="SSE">
+                              Server-Sent Events (SSE)
+                            </SelectItem>
+                            <SelectItem value="Websocket">WebSocket</SelectItem>
+                            <SelectItem value="Deco">Deco</SelectItem>
+                            <SelectItem value="HTTP">HTTP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {["SSE", "HTTP"].includes(connection.type) && (
-                  <>
+                  {["SSE", "HTTP"].includes(connection.type) && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="connection.url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{connection.type} URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://example.com/sse"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="connection.token"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Token</FormLabel>
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              optional
+                            </span>
+                            <FormControl>
+                              <Input placeholder="token" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+
+                  {connection.type === "Websocket" && (
                     <FormField
                       control={form.control}
                       name="connection.url"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{connection.type} URL</FormLabel>
+                          <FormLabel>WebSocket URL</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="https://example.com/sse"
+                              placeholder="wss://example.com/ws"
                               {...field}
                             />
                           </FormControl>
@@ -270,112 +311,77 @@ export function DetailForm() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="connection.token"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Token</FormLabel>
-                          <span className="text-[10px] text-muted-foreground ml-1">
-                            optional
-                          </span>
-                          <FormControl>
-                            <Input placeholder="token" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
+                  )}
 
-                {connection.type === "Websocket" && (
-                  <FormField
-                    control={form.control}
-                    name="connection.url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>WebSocket URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="wss://example.com/ws"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {connection.type === "Deco" && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="connection.tenant"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tenant ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="tenant-id" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="connection.token"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Token</FormLabel>
-                          <span className="text-[10px] text-muted-foreground ml-1">
-                            optional
-                          </span>
-                          <FormControl>
-                            <Input placeholder="token" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
+                  {connection.type === "Deco" && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="connection.tenant"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tenant ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="tenant-id" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="connection.token"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Token</FormLabel>
+                            <span className="text-[10px] text-muted-foreground ml-1">
+                              optional
+                            </span>
+                            <FormControl>
+                              <Input placeholder="token" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {numberOfChanges > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() =>
-                navigate(withBasePath("/integrations/marketplace"))}
-            >
-              Discard
-            </Button>
-            <Button
-              type="submit"
-              disabled={isMutating}
-              className="gap-2 flex-1"
-            >
-              {isMutating
-                ? (
-                  <>
-                    <Spinner size="xs" />
-                    Saving...
-                  </>
-                )
-                : `Save ${numberOfChanges} change${
-                  numberOfChanges > 1 ? "s" : ""
-                }`}
-            </Button>
-          </div>
-        )}
-      </form>
+          {numberOfChanges > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() =>
+                  navigate(withBasePath("/integrations/marketplace"))}
+              >
+                Discard
+              </Button>
+              <Button
+                type="submit"
+                disabled={isMutating}
+                className="gap-2 flex-1"
+              >
+                {isMutating
+                  ? (
+                    <>
+                      <Spinner size="xs" />
+                      Saving...
+                    </>
+                  )
+                  : `Save ${numberOfChanges} change${
+                    numberOfChanges > 1 ? "s" : ""
+                  }`}
+              </Button>
+            </div>
+          )}
+        </form>
+      </ScrollArea>
     </Form>
   );
 }

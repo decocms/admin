@@ -1,6 +1,7 @@
 import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 
-interface Action {
+export interface Action {
+  id: string;
   title: string;
   type: string;
   cronExp?: string;
@@ -12,10 +13,22 @@ interface Action {
   passphrase?: string;
 }
 
-interface ListActionsResult {
+export interface ListActionsResult {
   success: boolean;
   message: string;
   actions?: Action[];
+}
+
+export interface Run {
+  id: string;
+  result: string;
+  timestamp: string;
+}
+
+export interface ListRunsResult {
+  success: boolean;
+  message: string;
+  runs?: Run[];
 }
 
 const toPath = (segments: string[]) => segments.join("/");
@@ -37,4 +50,16 @@ export const listActions = async (context: string, agentId: string) => {
   }
 
   throw new Error("Failed to list actions");
+};
+
+export const listRuns = async (context: string, agentId: string, actionId: string) => {
+  const response = await fetchAPI(
+    toPath([context, "agent", agentId, "action", actionId, "runs"]),
+  );
+
+  if (response.ok) {
+    return response.json() as Promise<ListRunsResult>;
+  }
+
+  throw new Error("Failed to list runs");
 };

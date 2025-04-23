@@ -54,6 +54,8 @@ function Conversation(props: Props) {
     return <div>Agent not found</div>;
   }
 
+  const chatKey = agentId + threadId;
+
   return (
     <Suspense
       fallback={
@@ -61,6 +63,7 @@ function Conversation(props: Props) {
           <Spinner />
         </div>
       }
+      key={chatKey}
     >
       <ChatProvider
         agentId={agentId}
@@ -70,7 +73,7 @@ function Conversation(props: Props) {
         <DockedPageLayout
           main={MAIN}
           tabs={COMPONENTS}
-          key={agentId + threadId}
+          key={chatKey}
         />
       </ChatProvider>
     </Suspense>

@@ -47,6 +47,7 @@ const tabStyles = `
   transform: translateX(-50%);
 }
 `;
+import { ListActions } from "../actions/list.tsx";
 
 interface Props {
   agentId?: string;
@@ -77,6 +78,10 @@ const COMPONENTS = {
   tools: {
     Component: ThreadSettingsTab,
     title: "Thread Tools",
+  },
+  actions: {
+    Component: ListActions,
+    title: "Actions",
   },
 };
 

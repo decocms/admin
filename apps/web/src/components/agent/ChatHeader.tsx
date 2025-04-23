@@ -6,6 +6,7 @@ import { useChatContext } from "../chat/context.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import ActionsButton from "../chat/ActionsButton.tsx";
 
 interface Props {
   agentId: string;
@@ -21,6 +22,9 @@ export function ChatHeader() {
         <h1 className="text-sm font-medium tracking-tight">
           New chat
         </h1>
+        <div className="ml-auto">
+          <ActionsButton />
+        </div>
       </Container>
     );
   }

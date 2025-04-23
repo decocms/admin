@@ -176,12 +176,25 @@ function AgentCard({ agent }: { agent: Agent }) {
     }
   };
 
+  const DraftBadge = () => {
+    return (
+      <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-16">
+        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+        Draft
+      </div>
+    );
+  };
+
   return (
     <>
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
         onClick={() => {
-          focusChat(agent.id, crypto.randomUUID());
+          if (!agent.draft) {
+            focusChat(agent.id, crypto.randomUUID());
+          } else {
+            focusAgent(agent.id);
+          }
         }}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
@@ -257,18 +270,22 @@ function AgentCard({ agent }: { agent: Agent }) {
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {Object
-                .entries(agent.tools_set ?? {})
-                .filter(([_, tools]) => tools.length > 0)
-                .map(([toolSetId]) => (
-                  <ErrorBoundary key={toolSetId} fallback={null}>
-                    <Suspense fallback={null}>
-                      <IntegrationMiniature toolSetId={toolSetId} />
-                    </Suspense>
-                  </ErrorBoundary>
-                ))}
-            </div>
+            {agent.draft
+              ? <DraftBadge />
+              : (
+                <div className="flex gap-2 flex-wrap">
+                  {Object
+                    .entries(agent.tools_set ?? {})
+                    .filter(([_, tools]) => tools.length > 0)
+                    .map(([toolSetId]) => (
+                      <ErrorBoundary key={toolSetId} fallback={null}>
+                        <Suspense fallback={null}>
+                          <IntegrationMiniature toolSetId={toolSetId} />
+                        </Suspense>
+                      </ErrorBoundary>
+                    ))}
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>

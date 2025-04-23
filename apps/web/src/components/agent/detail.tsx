@@ -14,6 +14,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts";
 import { EmptyInputPrompt } from "../chat/EmptyInputPrompt.tsx";
+import { useAgent } from "@deco/sdk";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -104,11 +105,16 @@ function Agent(props: Props) {
   const [numberOfChanges, setNumberOfChanges] = useState(0);
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-
+  const [isLoading, setIsLoading] = useState(false);
+  
   const agentId = useMemo(
     () => props.agentId || params.id,
     [props.agentId, params.id],
   );
+
+  const { data: agent } = useAgent(agentId || "");
+  const isDraft = agent?.draft;
+
 
   // Listen for changes from the form
   useEffect(() => {
@@ -131,10 +137,16 @@ function Agent(props: Props) {
   }
 
   const handleUpdate = () => {
-    // Find and submit the form with the specified ID
-    const form = document.getElementById("agent-settings-form") as HTMLFormElement;
-    if (form) {
-      form.requestSubmit();
+    setIsLoading(true);
+    try {
+      const form = document.getElementById("agent-settings-form") as HTMLFormElement;
+      if (form) {
+        form.requestSubmit();
+      }
+    } catch (error) {
+      console.error("Error updating agent:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -163,7 +175,7 @@ function Agent(props: Props) {
               <Icon name="menu" size={20} />
             </Button>
           ) : (
-            <h1 className="text-md font-medium text-slate-700">Edit Agent</h1>
+            <h1 className="text-md font-medium text-slate-700">{isDraft ? "Create Agent" : "Edit Agent"}</h1>
           )}
           <div className="flex gap-2">
             {hasChanges && (
@@ -180,8 +192,8 @@ function Agent(props: Props) {
               onClick={handleUpdate}
               disabled={!hasChanges}
             >
-              <span>Update</span>
-              {hasChanges && (
+              <span>{isDraft ? "Create" : "Update"}</span>
+              {hasChanges && !isDraft && (
                 <span className="bg-primary-dark text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
                   {numberOfChanges}
                 </span>

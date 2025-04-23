@@ -22,6 +22,8 @@ import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { getDiffCount, Integration } from "./integrations/index.tsx";
+import { useFocusChat } from "../agents/hooks.ts";
+import { useNavigate } from "react-router";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -37,6 +39,9 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
   const previousChangesRef = useRef(0);
+  const focusChat = useFocusChat();
+  const navigate = useNavigate();
+  const isDraft = agent?.draft;
 
   const form = useForm<Agent>({
     resolver: zodResolver(AgentSchema),
@@ -104,6 +109,12 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   const onSubmit = async (data: Agent) => {
     await updateAgent.mutateAsync(data);
+
+    if(isDraft) {
+      focusChat(agentId, crypto.randomUUID());
+    }else{
+      navigate(-1);
+    }
   };
 
   return (

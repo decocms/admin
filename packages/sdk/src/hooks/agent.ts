@@ -29,18 +29,17 @@ export const useCreateAgent = () => {
   const create = useMutation({
     mutationFn: (agent: Partial<Agent>) => createAgent(workspace, agent),
     onSuccess: (result) => {
-      const key = KEYS.AGENT(workspace, result.id);
-
       // update item
-      client.setQueryData(key, result);
+      const itemKey = KEYS.AGENT(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Agent>(itemKey, result);
 
       // update list
-      client.setQueryData(
-        KEYS.AGENT(workspace),
-        (old: Agent[] | undefined) => {
-          if (!old) return [result];
-          return [result, ...old];
-        },
+      const listKey = KEYS.AGENT(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) => !old ? [result] : [result, ...old],
       );
     },
   });
@@ -54,23 +53,27 @@ export const useUpdateAgent = () => {
 
   const update = useMutation({
     mutationFn: (agent: Agent) => updateAgent(workspace, agent),
-    onSuccess: (updatedAgent) => {
+    onSuccess: (result) => {
       // Update the individual agent in cache
-      client.setQueryData(
-        KEYS.AGENT(workspace, updatedAgent.id),
-        updatedAgent,
-      );
+      const itemKey = KEYS.AGENT(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Agent>(itemKey, result);
 
       // Update the list
-      client.setQueryData(
-        KEYS.AGENT(workspace),
-        (old: Agent[] | undefined) => {
-          if (!old) return [updatedAgent];
-          return old.map((agent) =>
-            agent.id === updatedAgent.id ? updatedAgent : agent
-          );
-        },
+      const listKey = KEYS.AGENT(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) =>
+          !old
+            ? [result]
+            : old.map((agent) => agent.id === result.id ? result : agent),
       );
+
+      // Update thread tools because it may have been changed
+      const toolsKey = ["tools"];
+      client.cancelQueries({ queryKey: toolsKey });
+      client.invalidateQueries({ queryKey: toolsKey, exact: false });
     },
   });
 
@@ -82,16 +85,20 @@ export const useRemoveAgent = () => {
   const { workspace } = useSDK();
 
   const remove = useMutation({
-    mutationFn: (agentId: string) => deleteAgent(workspace, agentId),
-    onSuccess: (_, agentId) => {
+    mutationFn: (id: string) => deleteAgent(workspace, id),
+    onSuccess: (_, id) => {
       // Remove the individual agent from cache
-      client.removeQueries({ queryKey: KEYS.AGENT(workspace, agentId) });
+      const itemKey = KEYS.AGENT(workspace, id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.removeQueries({ queryKey: itemKey });
 
       // Update the list
-      client.setQueryData(KEYS.AGENT(workspace), (old: Agent[]) => {
-        if (!old) return old;
-        return old.filter((agent: Agent) => agent.id !== agentId);
-      });
+      const listKey = KEYS.AGENT(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Agent[]>(
+        listKey,
+        (old) => !old ? [] : old.filter((agent) => agent.id !== id),
+      );
     },
   });
 
@@ -99,12 +106,12 @@ export const useRemoveAgent = () => {
 };
 
 /** Hook for crud-like operations on agents */
-export const useAgent = (agentId: string) => {
+export const useAgent = (id: string) => {
   const { workspace } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.AGENT(workspace, agentId),
-    queryFn: () => loadAgent(workspace, agentId),
+    queryKey: KEYS.AGENT(workspace, id),
+    queryFn: ({ signal }) => loadAgent(workspace, id, signal),
     retry: (failureCount, error) =>
       error instanceof AgentNotFoundError ? false : failureCount < 2,
   });
@@ -115,10 +122,21 @@ export const useAgent = (agentId: string) => {
 /** Hook for listing all agents */
 export const useAgents = () => {
   const { workspace } = useSDK();
+  const client = useQueryClient();
 
   const data = useSuspenseQuery({
     queryKey: KEYS.AGENT(workspace),
-    queryFn: () => listAgents(workspace).then((r) => r.items),
+    queryFn: async ({ signal }) => {
+      const { items } = await listAgents(workspace, signal);
+
+      for (const item of items) {
+        const itemKey = KEYS.AGENT(workspace, item.id);
+        client.cancelQueries({ queryKey: itemKey });
+        client.setQueryData<Agent>(itemKey, item);
+      }
+
+      return items;
+    },
   });
 
   return data;
@@ -147,15 +165,4 @@ export const useAgentStub = (
     () => stub<any>("AIAgent").new(agentRoot).withMetadata({ threadId }),
     [agentRoot, threadId],
   );
-};
-
-export const useInvalidateAll = () => {
-  const client = useQueryClient();
-
-  return useMutation({
-    mutationFn: () =>
-      client.invalidateQueries({
-        predicate: (_query) => true,
-      }),
-  });
 };

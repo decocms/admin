@@ -2,10 +2,9 @@ import {
   useCreateIntegration,
   useIntegrations,
   useMarketplaceIntegrations,
+  useUpdateThreadMessages,
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ReactNode, useState } from "react";
 import { Link, useMatch, useNavigate } from "react-router";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
@@ -54,12 +56,14 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const create = useCreateIntegration();
+  const updateThreadMessages = useUpdateThreadMessages();
   const { data: installedIntegrations } = useIntegrations();
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   const handleCreate = async () => {
     try {
       const result = await create.mutateAsync({});
+      updateThreadMessages(WELL_KNOWN_AGENT_IDS.setupAgent, result.id);
       navigate(withBasePath(`/integration/${result.id}`));
     } catch (err) {
       setError(

@@ -134,11 +134,13 @@ export function ChatProvider({
       }
     },
     onFinish: (message) => {
-      message.toolInvocations?.forEach((toolInvocation) => {
-        if (THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(toolInvocation.toolName)) {
-          invalidateAll.mutate();
-        }
-      });
+      const shouldInvalidate = message.toolInvocations?.some((tool) =>
+        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
+      );
+
+      if (shouldInvalidate) {
+        invalidateAll();
+      }
     },
   });
 

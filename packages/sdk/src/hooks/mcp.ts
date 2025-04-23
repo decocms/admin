@@ -13,8 +13,8 @@ import {
 } from "../crud/mcp.ts";
 import type { Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
-import { useSDK } from "./store.tsx";
 import { KEYS } from "./api.ts";
+import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -24,18 +24,17 @@ export const useCreateIntegration = () => {
     mutationFn: (mcp: Partial<Integration>) =>
       createIntegration(workspace, mcp),
     onSuccess: (result) => {
-      const key = KEYS.INTEGRATION(workspace, result.id);
-
       // update item
-      client.setQueryData(key, result);
+      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Integration>(itemKey, result);
 
       // update list
-      client.setQueryData(
-        KEYS.INTEGRATION(workspace),
-        (old: Integration[] | undefined) => {
-          if (!old) return [result];
-          return [result, ...old];
-        },
+      const listKey = KEYS.INTEGRATION(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [result] : [result, ...old],
       );
     },
   });
@@ -49,20 +48,21 @@ export const useUpdateIntegration = () => {
 
   const update = useMutation({
     mutationFn: (mcp: Integration) => saveIntegration(workspace, mcp),
-    onSuccess: (updatedMCP) => {
+    onSuccess: (result) => {
       // Update the individual MCP in cache
-      client.setQueryData(
-        KEYS.INTEGRATION(workspace, updatedMCP.id),
-        updatedMCP,
-      );
+      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Integration>(itemKey, result);
 
       // Update the list
-      client.setQueryData(
-        KEYS.INTEGRATION(workspace),
-        (old: Integration[] | undefined) => {
-          if (!old) return [updatedMCP];
-          return old.map((mcp) => mcp.id === updatedMCP.id ? updatedMCP : mcp);
-        },
+      const listKey = KEYS.INTEGRATION(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) =>
+          !old
+            ? [result]
+            : old.map((mcp) => mcp.id === result.id ? result : mcp),
       );
     },
   });
@@ -75,18 +75,19 @@ export const useRemoveIntegration = () => {
   const { workspace } = useSDK();
 
   const remove = useMutation({
-    mutationFn: (mcpId: string) => deleteIntegration(workspace, mcpId),
-    onSuccess: (_, mcpId) => {
+    mutationFn: (id: string) => deleteIntegration(workspace, id),
+    onSuccess: (_, id) => {
       // Remove the individual MCP from cache
-      client.removeQueries({ queryKey: KEYS.INTEGRATION(workspace, mcpId) });
+      const itemKey = KEYS.INTEGRATION(workspace, id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.removeQueries({ queryKey: itemKey });
 
       // Update the list
-      client.setQueryData(
-        KEYS.INTEGRATION(workspace),
-        (old: Integration[]) => {
-          if (!old) return old;
-          return old.filter((mcp: Integration) => mcp.id !== mcpId);
-        },
+      const listKey = KEYS.INTEGRATION(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [] : old.filter((mcp) => mcp.id !== id),
       );
     },
   });
@@ -95,12 +96,12 @@ export const useRemoveIntegration = () => {
 };
 
 /** Hook for crud-like operations on MCPs */
-export const useIntegration = (mcpId: string) => {
+export const useIntegration = (id: string) => {
   const { workspace } = useSDK();
 
   const data = useSuspenseQuery({
-    queryKey: KEYS.INTEGRATION(workspace, mcpId),
-    queryFn: () => loadIntegration(workspace, mcpId),
+    queryKey: KEYS.INTEGRATION(workspace, id),
+    queryFn: ({ signal }) => loadIntegration(workspace, id, signal),
     retry: (failureCount, error) =>
       error instanceof IntegrationNotFoundError ? false : failureCount < 2,
   });
@@ -111,10 +112,22 @@ export const useIntegration = (mcpId: string) => {
 /** Hook for listing all MCPs */
 export const useIntegrations = () => {
   const { workspace } = useSDK();
+  const client = useQueryClient();
 
   const data = useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace),
-    queryFn: () => listIntegrations(workspace).then((r) => r.items),
+    queryFn: async ({ signal }) => {
+      const { items } = await listIntegrations(workspace, signal);
+
+      for (const item of items) {
+        const itemKey = KEYS.INTEGRATION(workspace, item.id);
+
+        client.cancelQueries({ queryKey: itemKey });
+        client.setQueryData<Integration>(itemKey, item);
+      }
+
+      return items;
+    },
   });
 
   return data;
@@ -144,15 +157,25 @@ export const useInstallFromMarketplace = () => {
   const { workspace } = useSDK();
 
   const mutation = useMutation({
-    mutationFn: async (mcpId: string) => {
+    mutationFn: async (id: string) => {
       const result: { data: { installationId: string } } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id: mcpId });
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id });
 
-      return result.data;
+      return loadIntegration(workspace, result.data.installationId);
     },
-    onSuccess: () => {
-      // Invalidate the integrations list to refresh it
-      client.invalidateQueries({ queryKey: KEYS.INTEGRATION(workspace) });
+    onSuccess: (result) => {
+      // update item
+      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Integration>(itemKey, result);
+
+      // update list
+      const listKey = KEYS.INTEGRATION(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [result] : [result, ...old],
+      );
     },
   });
 

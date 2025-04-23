@@ -80,7 +80,7 @@ export default function Edit() {
   const integrationId = id!;
   const { data: integration } = useIntegration(integrationId);
 
-  const agentId = WELL_KNOWN_AGENT_IDS.teamAgent;
+  const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
   const threadId = integrationId;
 
   const form = useForm<Integration>({

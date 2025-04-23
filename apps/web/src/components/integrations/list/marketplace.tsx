@@ -2,6 +2,8 @@ import {
   type Integration,
   useInstallFromMarketplace,
   useMarketplaceIntegrations,
+  useUpdateThreadMessages,
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
@@ -41,18 +43,19 @@ function AvailableIntegrationCard({
   ] = useState<string | null>(null);
   const navigate = useNavigate();
   const withBasePath = useBasePath();
+  const updateThreadMessages = useUpdateThreadMessages();
 
   const isPending = isInstalling;
 
   const handleInstall = () => {
     installIntegration(integration.id, {
       onSuccess: (data) => {
-        if (typeof data.installationId !== "string") {
+        if (typeof data.id !== "string") {
           // Handle error
           return;
         }
 
-        const installationId = data.installationId;
+        const installationId = data.id;
         setShowModal(true);
         setCreatedIntegrationId(installationId);
         trackEvent("integration_install", {
@@ -74,6 +77,7 @@ function AvailableIntegrationCard({
 
   const handleEditIntegration = () => {
     if (!createdIntegrationId) return;
+    updateThreadMessages(WELL_KNOWN_AGENT_IDS.setupAgent, createdIntegrationId);
     navigate(withBasePath(`/integration/${createdIntegrationId}`));
   };
 

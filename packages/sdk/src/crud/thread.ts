@@ -9,8 +9,8 @@ const fetchAPI = (segments: string[], init?: RequestInit) =>
     headers: { ...API_HEADERS, ...init?.headers },
   });
 
-export const listThreads = async (context: string) => {
-  const response = await fetchAPI([context, "threads"]);
+export const listThreads = async (context: string, signal?: AbortSignal) => {
+  const response = await fetchAPI([context, "threads"], { signal });
 
   if (response.ok) {
     return response.json();

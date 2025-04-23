@@ -7,6 +7,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { listThreads } from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
@@ -29,6 +30,21 @@ export const useThreadMessages = (agentId: string, threadId: string) => {
   return data;
 };
 
+export const useUpdateThreadMessages = () => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+
+  return useCallback(
+    (agentId: string, threadId: string) => {
+      const messagesKey = KEYS.THREADS(workspace, agentId, threadId);
+
+      client.cancelQueries({ queryKey: messagesKey });
+      client.setQueryData(messagesKey, []);
+    },
+    [client, workspace],
+  );
+};
+
 /** Hook for fetching threads from an agent */
 /** TODO: Merge this with useThreads into a single hook */
 export const useAgentThreads = (agentId: string) => {
@@ -47,7 +63,7 @@ export const useThreads = () => {
 
   return useSuspenseQuery({
     queryKey: KEYS.THREADS(workspace),
-    queryFn: () => listThreads(workspace),
+    queryFn: ({ signal }) => listThreads(workspace, signal),
   });
 };
 
@@ -87,4 +103,14 @@ export const useUpdateThreadTools = (agentId: string, threadId: string) => {
       );
     },
   });
+};
+
+export const useInvalidateAll = () => {
+  const client = useQueryClient();
+
+  return useCallback(() => {
+    client.invalidateQueries({
+      predicate: (_query) => true,
+    });
+  }, [client]);
 };

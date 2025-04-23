@@ -136,7 +136,7 @@ export default function InstalledIntegrations() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const withBasePath = useBasePath();
   const navigate = useNavigate();
-  const { mutate: removeIntegration } = useRemoveIntegration();
+  const { mutateAsync: removeIntegration } = useRemoveIntegration();
   const { filter, deleteDialogOpen, integrationToDelete, deleting } = state;
 
   // Use SDK's useIntegrations hook to get all integrations
@@ -160,14 +160,16 @@ export default function InstalledIntegrations() {
   };
 
   // Function to handle actual deletion
-  const handleDelete = () => {
+  const handleDelete = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+
     if (!integrationToDelete) return;
 
     try {
       dispatch({ type: "DELETE_START" });
 
       // Use the removeIntegration mutation from the hook
-      removeIntegration(integrationToDelete);
+      await removeIntegration(integrationToDelete);
 
       trackEvent("integration_delete", {
         success: true,

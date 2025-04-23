@@ -66,8 +66,11 @@ export const createIntegration = async (
 export const loadIntegration = async (
   context: string,
   mcpId: string,
+  signal?: AbortSignal,
 ): Promise<Integration> => {
-  const response = await fetchAPI([context, "integration", mcpId]);
+  const response = await fetchAPI([context, "integration", mcpId], {
+    signal,
+  });
 
   if (response.ok) {
     return response.json() as Promise<Integration>;
@@ -80,8 +83,13 @@ export const loadIntegration = async (
   throw new Error("Failed to load integration");
 };
 
-export const listIntegrations = async (context: string) => {
-  const response = await fetchAPI([context, "integrations"]);
+export const listIntegrations = async (
+  context: string,
+  signal?: AbortSignal,
+) => {
+  const response = await fetchAPI([context, "integrations"], {
+    signal,
+  });
 
   if (response.ok) {
     return response.json() as Promise<{ items: Integration[] }>;

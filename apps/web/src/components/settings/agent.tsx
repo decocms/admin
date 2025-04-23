@@ -111,7 +111,8 @@ function SettingsTab({ formId }: SettingsTabProps) {
   };
 
   const onSubmit = async (data: Agent) => {
-    await updateAgent.mutateAsync(data);
+    const newData = { ...data, draft: false };
+    await updateAgent.mutateAsync(newData);
 
     if (isDraft) {
       focusChat(agentId, crypto.randomUUID());

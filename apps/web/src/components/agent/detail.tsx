@@ -153,9 +153,8 @@ function Agent(props: Props) {
         form.requestSubmit();
       }
     } catch (error) {
-      console.error("Error updating agent:", error);
-    } finally {
       setIsLoading(false);
+      console.error("Error updating agent:", error);
     }
   };
 
@@ -199,7 +198,7 @@ function Agent(props: Props) {
               </Button>
             )}
             <Button
-              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-between"
+              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
               onClick={handleUpdate}
               disabled={!hasChanges}
             >

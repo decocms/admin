@@ -25,8 +25,7 @@ export function IntegrationHeader({
   const numberOfEnabledTools = enabledTools.length;
 
   return (
-    <button
-      type="button"
+    <div
       onClick={() => setIsExpanded(!isExpanded)}
       className="w-full p-4 hover:bg-accent/50 transition-colors"
     >
@@ -70,7 +69,7 @@ export function IntegrationHeader({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

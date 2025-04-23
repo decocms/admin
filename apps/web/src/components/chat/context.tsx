@@ -17,6 +17,7 @@ import {
 import { trackEvent } from "../../hooks/analytics.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
+const LAST_MESSAGES_COUNT = 10;
 interface FileData {
   name: string;
   contentType: string;
@@ -86,7 +87,10 @@ export function ChatProvider({
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
       const files = fileDataRef.current;
-      const allMessages = messages as CreateMessage[];
+      const allMessages = (messages as CreateMessage[]).slice(
+        0,
+        LAST_MESSAGES_COUNT,
+      );
       const last = allMessages.at(-1);
       const annotations = files && files.length > 0
         ? [

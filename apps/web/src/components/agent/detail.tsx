@@ -166,7 +166,11 @@ function Agent(props: Props) {
   const hasChanges = numberOfChanges > 0;
 
   return (
-    <ChatProvider agentId={agentId} threadId={agentId}>
+    <ChatProvider
+      agentId={agentId}
+      threadId={agentId}
+      uiOptions={{ showThreadTools: false }}
+    >
       <div className="h-screen flex flex-col">
         <style>{tabStyles}</style>
 

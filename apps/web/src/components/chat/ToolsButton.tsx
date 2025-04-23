@@ -5,6 +5,11 @@ import { DockedToggleButton } from "../pageLayout.tsx";
 import { useChatContext } from "./context.tsx";
 
 function ToolsButton() {
+  const { uiOptions } = useChatContext();
+  const showThreadTools = uiOptions?.showThreadTools;
+  if (typeof showThreadTools === "boolean" && !showThreadTools) {
+    return null;
+  }
   return (
     <Suspense fallback={<ToolsButton.Skeleton />}>
       <ToolsButton.UI />

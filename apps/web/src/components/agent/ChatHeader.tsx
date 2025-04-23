@@ -122,54 +122,53 @@ ChatHeader.UI = ({ agentId }: Props) => {
           </h1>
         </div>
 
-      <div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => e.stopPropagation()}
-              className=" transition-opacity"
-            >
-              <Icon name="more_horiz" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              disabled={duplicating}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                focusAgent(agent.id);
-              }}
-            >
-              <Icon name="settings" className="mr-2" />
-              Configure
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={duplicating}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                duplicate();
-              }}
-            >
-              <Icon name="content_copy" className="mr-2" />
-              {duplicating ? "Duplicating..." : "Duplicate"}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteDialogOpen(true);
-              }}
-            >
-              <Icon name="delete" className="mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => e.stopPropagation()}
+                className=" transition-opacity"
+              >
+                <Icon name="more_horiz" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                disabled={duplicating}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  focusAgent(agent.id);
+                }}
+              >
+                <Icon name="settings" className="mr-2" />
+                Configure
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={duplicating}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  duplicate();
+                }}
+              >
+                <Icon name="content_copy" className="mr-2" />
+                {duplicating ? "Duplicating..." : "Duplicate"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <Icon name="delete" className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Container>
 

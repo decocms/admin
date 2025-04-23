@@ -63,9 +63,8 @@ function SettingsTab({ formId }: SettingsTabProps) {
     if (numberOfChanges !== previousChangesRef.current) {
       previousChangesRef.current = numberOfChanges;
 
-      // Dispatch event with the number of changes
-      const changeEvent = new CustomEvent('agent:changes-updated', {
-        detail: { numberOfChanges }
+      const changeEvent = new CustomEvent("agent:changes-updated", {
+        detail: { numberOfChanges },
       });
       globalThis.dispatchEvent(changeEvent);
     }
@@ -85,10 +84,13 @@ function SettingsTab({ formId }: SettingsTabProps) {
       }
     };
 
-    globalThis.addEventListener('agent:discard-changes', handleDiscardEvent);
+    globalThis.addEventListener("agent:discard-changes", handleDiscardEvent);
 
     return () => {
-      globalThis.removeEventListener('agent:discard-changes', handleDiscardEvent);
+      globalThis.removeEventListener(
+        "agent:discard-changes",
+        handleDiscardEvent,
+      );
     };
   }, [agent, form]);
 

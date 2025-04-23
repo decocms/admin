@@ -17,15 +17,12 @@ export function Header() {
   const user = useUser();
   const { toggleSidebar, open } = useSidebar();
   const { teamSlug } = useParams();
-  
 
   const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
   const userName = user?.metadata?.full_name || user?.email;
 
   const currentAvatarURL = teamSlug ? undefined : userAvatarURL;
   const currentName = teamSlug ? teamSlug : userName;
-
-  
 
   return (
     <SidebarHeader className="md:h-14 h-12 py-2 flex flex-row items-center bg-accent/30 px-4 md:px-2">
@@ -79,7 +76,6 @@ export function Header() {
             >
               <Icon name="menu" weight={300} size={20} />
             </Button>
-            
           </div>
         </SidebarMenuItem>
       </SidebarMenu>

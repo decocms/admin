@@ -56,8 +56,10 @@ const adapter =
         {props.api.component === mainViewName
           ? <Component {...props.params} />
           : (
-            <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700 ">
-              <Component {...props.params} />
+            <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+              <div className="flex flex-col flex-wrap">
+                <Component {...props.params} />
+              </div>
             </ScrollArea>
           )}
       </Suspense>

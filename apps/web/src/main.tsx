@@ -3,7 +3,7 @@ import "./polyfills.ts";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { ComponentProps, lazy, StrictMode, Suspense, useEffect } from "react";
+import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -20,15 +20,14 @@ import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
 
-type LazyComp = Promise<{
-  default: React.ComponentType;
+type LazyComp<P> = Promise<{
+  default: React.ComponentType<P>;
 }>;
-const wrapWithUILoadingFallback = (
-  lazyComp: LazyComp,
-): LazyComp =>
-  lazyComp.then((mod) => ({
-    // deno-lint-ignore no-explicit-any
-    default: (p: ComponentProps<any>) => (
+const wrapWithUILoadingFallback = <P,>(
+  lazyComp: LazyComp<P>,
+): LazyComp<P> =>
+  lazyComp.then(({ default: Comp }) => ({
+    default: (p: P) => (
       <Suspense
         fallback={
           <div className="h-full w-full flex items-center justify-center">
@@ -36,7 +35,7 @@ const wrapWithUILoadingFallback = (
           </div>
         }
       >
-        <mod.default {...p} />
+        <Comp {...p as JSX.IntrinsicAttributes & P} />
       </Suspense>
     ),
   }));

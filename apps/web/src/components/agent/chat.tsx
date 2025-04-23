@@ -63,6 +63,7 @@ function Conversation(props: Props) {
           <Spinner />
         </div>
       }
+      // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
       key={chatKey}
     >
       <ChatProvider

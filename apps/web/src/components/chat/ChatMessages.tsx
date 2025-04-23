@@ -84,12 +84,7 @@ export function ChatMessages() {
         : (
           <div className="flex flex-col gap-4 p-4">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className="animate-in slide-in-from-bottom duration-300"
-              >
-                <ChatMessage message={message} />
-              </div>
+              <ChatMessage key={message.id} message={message} />
             ))}
             <ChatError />
             <Dots />

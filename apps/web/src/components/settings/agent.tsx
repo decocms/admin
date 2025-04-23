@@ -21,9 +21,10 @@ import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { getDiffCount, Integration } from "./integrations/index.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useNavigate } from "react-router";
+
+import { getDiffCount, Integration } from "../toolsets/index.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -61,7 +62,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
   useEffect(() => {
     if (numberOfChanges !== previousChangesRef.current) {
       previousChangesRef.current = numberOfChanges;
-      
+
       // Dispatch event with the number of changes
       const changeEvent = new CustomEvent('agent:changes-updated', {
         detail: { numberOfChanges }
@@ -85,7 +86,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
     };
 
     globalThis.addEventListener('agent:discard-changes', handleDiscardEvent);
-    
+
     return () => {
       globalThis.removeEventListener('agent:discard-changes', handleDiscardEvent);
     };
@@ -110,9 +111,9 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const onSubmit = async (data: Agent) => {
     await updateAgent.mutateAsync(data);
 
-    if(isDraft) {
+    if (isDraft) {
       focusChat(agentId, crypto.randomUUID());
-    }else{
+    } else {
       navigate(-1);
     }
   };
@@ -217,7 +218,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
           <div className="flex-1">
             <div className="flex flex-col gap-4">
               {installedIntegrations
-                .filter((i) => i.id !== agent.id)
+                .filter((i) => i.id !== agentId)
                 .map((integration) => (
                   <Integration
                     key={integration.id}

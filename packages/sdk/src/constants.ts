@@ -106,6 +106,7 @@ export const API_HEADERS = {
 
 export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
+  setupAgent: "setupAgent",
 };
 
 export interface Model {

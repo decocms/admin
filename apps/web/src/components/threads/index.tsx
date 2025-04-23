@@ -1,4 +1,4 @@
-import { useThreads } from "@deco/sdk";
+import { useAgentThreads } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
@@ -76,7 +76,7 @@ function App({ agentId }: { agentId: string }) {
     data: threads,
     error: threadsError,
     isLoading: threadsLoading,
-  } = useThreads(agentId);
+  } = useAgentThreads(agentId);
 
   if (threadsLoading) {
     return (

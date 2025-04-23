@@ -1,4 +1,4 @@
-# deco.chat — Extensible Chat-based Agent Builder
+# deco.chat
 
 The code for https://deco.chat
 

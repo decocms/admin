@@ -11,6 +11,7 @@ export * from "./hooks/fs.ts";
 export * from "./hooks/mcp.ts";
 export * from "./hooks/store.tsx";
 export * from "./hooks/tools.ts";
+export * from "./hooks/thread.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

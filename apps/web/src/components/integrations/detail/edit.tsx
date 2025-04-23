@@ -13,6 +13,7 @@ import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
 import { DockedPageLayout, DockedToggleButton } from "../../pageLayout.tsx";
+import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import { Inspector } from "./inspector.tsx";
@@ -33,6 +34,10 @@ const TABS = {
     Component: DetailForm,
     title: "Configure",
     initialOpen: true,
+  },
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Tools",
   },
 };
 
@@ -75,6 +80,9 @@ export default function Edit() {
   const integrationId = id!;
   const { data: integration } = useIntegration(integrationId);
 
+  const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
+  const threadId = integrationId;
+
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
     defaultValues: {
@@ -92,8 +100,8 @@ export default function Edit() {
 
   return (
     <ChatProvider
-      agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
-      threadId={integrationId}
+      agentId={agentId}
+      threadId={threadId}
       initialMessage={{
         role: "user",
         content:

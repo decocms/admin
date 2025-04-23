@@ -4,6 +4,7 @@ import {
   useCreateAgent,
   useIntegration,
   useRemoveAgent,
+  useUpdateThreadMessages,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -360,6 +361,7 @@ export default function List() {
   const focusAgent = useFocusAgent();
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();
+  const updateThreadMessages = useUpdateThreadMessages();
   const { data: agents } = useAgents();
 
   // Filter agents based on the filter string
@@ -372,6 +374,7 @@ export default function List() {
     try {
       setCreating(true);
       const agent = await createAgent.mutateAsync({});
+      updateThreadMessages(agent.id, agent.id);
       focusAgent(agent.id);
 
       trackEvent("agent_create", {

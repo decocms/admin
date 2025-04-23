@@ -1,10 +1,11 @@
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { useParams } from "react-router";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
+import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -12,6 +13,7 @@ import ThreadView from "./thread.tsx";
 interface Props {
   agentId?: string;
   threadId?: string;
+  disableThreadMessages?: boolean;
 }
 
 const MAIN = {
@@ -29,11 +31,14 @@ const COMPONENTS = {
     Component: AgentPreview,
     title: "Preview",
   },
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Tools",
+  },
 };
 
 function Conversation(props: Props) {
   const params = useParams();
-  const [searchParams] = useSearchParams();
 
   const agentId = useMemo(
     () => props.agentId || params.id,
@@ -44,8 +49,6 @@ function Conversation(props: Props) {
     () => props.threadId || params.threadId,
     [props.threadId, params.threadId],
   );
-
-  const message = searchParams.get("message");
 
   if (!agentId || !threadId) {
     return <div>Agent not found</div>;
@@ -62,9 +65,7 @@ function Conversation(props: Props) {
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
-        initialMessage={message
-          ? { role: "user", content: message }
-          : undefined}
+        disableThreadMessages={props.disableThreadMessages}
       >
         <DockedPageLayout
           main={MAIN}

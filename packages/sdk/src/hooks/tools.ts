@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
-import { type MCPConnection } from "../models/mcp.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 
 export interface MCPTool {
   name: string;
@@ -72,9 +72,7 @@ export function useTools(connection: MCPConnection) {
   return useQuery({
     retry: false,
     queryKey: ["tools", connection],
-    queryFn: () => {
-      return listTools(connection);
-    },
+    queryFn: () => listTools(connection),
     initialData: INITIAL_DATA,
   });
 }

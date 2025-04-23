@@ -1,5 +1,11 @@
-import { CreateMessage, type Message, useChat } from "@ai-sdk/react";
-import { API_SERVER_URL, getModel, useAgentRoot, useMessages } from "@deco/sdk";
+import { CreateMessage, useChat } from "@ai-sdk/react";
+import {
+  API_SERVER_URL,
+  getModel,
+  useAgentRoot,
+  useInvalidateAll,
+  useThreadMessages,
+} from "@deco/sdk";
 import {
   createContext,
   PropsWithChildren,
@@ -29,7 +35,6 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
 
 type IContext = {
   chat: ReturnType<typeof useChat>;
-  initialMessages: Message[];
   agentId: string;
   agentRoot: string;
   threadId: string;
@@ -46,19 +51,33 @@ const Context = createContext<IContext | null>(null);
 interface Props {
   agentId: string;
   threadId: string;
+  /** Default initial thread message */
   initialMessage?: CreateMessage;
+  /** Disable thread messages */
+  disableThreadMessages?: boolean;
 }
+
+const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
+  "DECO_INTEGRATION_INSTALL",
+  "DECO_INTEGRATION_ENABLE",
+  "DECO_INTEGRATION_DISABLE",
+  "DECO_AGENT_CONFIGURE",
+]);
 
 export function ChatProvider({
   agentId,
   threadId,
   initialMessage,
   children,
+  disableThreadMessages,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const { data: initialMessages } = useMessages(agentId, threadId);
+  const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
+  const { data: initialMessages } = disableThreadMessages
+    ? { data: [] }
+    : useThreadMessages(agentId, threadId);
 
   const chat = useChat({
     initialMessages,
@@ -112,6 +131,15 @@ export function ChatProvider({
         return {
           success: true,
         };
+      }
+    },
+    onFinish: (message) => {
+      const shouldInvalidate = message.toolInvocations?.some((tool) =>
+        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
+      );
+
+      if (shouldInvalidate) {
+        invalidateAll();
       }
     },
   });
@@ -183,7 +211,6 @@ export function ChatProvider({
         agentId,
         threadId,
         agentRoot,
-        initialMessages,
         chat: { ...chat, handleSubmit: handleSubmit },
         scrollRef,
         fileDataRef,

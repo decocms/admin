@@ -69,8 +69,14 @@ export const createAgent = (
  * @param agentId - The id of the agent to load
  * @returns The agent
  */
-export const loadAgent = async (context: string, agentId: string) => {
-  const response = await fetchAPI([context, "agent", agentId]);
+export const loadAgent = async (
+  context: string,
+  agentId: string,
+  signal?: AbortSignal,
+) => {
+  const response = await fetchAPI([context, "agent", agentId], {
+    signal,
+  });
 
   if (response.ok) {
     return response.json() as Promise<Agent>;
@@ -83,8 +89,10 @@ export const loadAgent = async (context: string, agentId: string) => {
   throw new Error("Failed to load agent");
 };
 
-export const listAgents = async (context: string) => {
-  const response = await fetchAPI([context, "agents"]);
+export const listAgents = async (context: string, signal?: AbortSignal) => {
+  const response = await fetchAPI([context, "agents"], {
+    signal,
+  });
 
   if (response.ok) {
     return response.json() as Promise<{ items: Agent[] }>;

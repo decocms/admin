@@ -3,7 +3,7 @@ import "./polyfills.ts";
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { lazy, StrictMode, Suspense, useEffect } from "react";
+import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
@@ -20,32 +20,60 @@ import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
 
+type LazyComp<P> = Promise<{
+  default: React.ComponentType<P>;
+}>;
+const wrapWithUILoadingFallback = <P,>(
+  lazyComp: LazyComp<P>,
+): LazyComp<P> =>
+  lazyComp.then(({ default: Comp }) => ({
+    default: (p: P) => (
+      <Suspense
+        fallback={
+          <div className="h-full w-full flex items-center justify-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <Comp {...p as JSX.IntrinsicAttributes & P} />
+      </Suspense>
+    ),
+  }));
+
+/**
+ * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
+ * want custom Suspense behavior.
+ */
 const IntegrationEdit = lazy(() =>
-  import("./components/integrations/detail/edit.tsx")
+  wrapWithUILoadingFallback(import("./components/integrations/detail/edit.tsx"))
 );
 
 const IntegrationMarketplace = lazy(() =>
-  import("./components/integrations/list/marketplace.tsx")
+  wrapWithUILoadingFallback(
+    import("./components/integrations/list/marketplace.tsx"),
+  )
 );
 
 const MyIntegrations = lazy(() =>
-  import("./components/integrations/list/installed.tsx")
+  wrapWithUILoadingFallback(
+    import("./components/integrations/list/installed.tsx"),
+  )
 );
 
 const AgentsList = lazy(
-  () => import("./components/agents/list.tsx"),
+  () => wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
 );
 
 const AgentDetail = lazy(
-  () => import("./components/agent/detail.tsx"),
+  () => wrapWithUILoadingFallback(import("./components/agent/detail.tsx")),
 );
 
 const Chat = lazy(
-  () => import("./components/agent/chat.tsx"),
+  () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
 );
 
 const Wallet = lazy(
-  () => import("./components/wallet/index.tsx"),
+  () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
 );
 
 function NotFound() {
@@ -119,6 +147,8 @@ function Router() {
             <Chat
               agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
               threadId={crypto.randomUUID()}
+              disableThreadMessages
+              key="disabled-messages"
             />
           }
         />

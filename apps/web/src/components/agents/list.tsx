@@ -40,7 +40,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
-import { useFocusAgent, useFocusChat } from "./hooks.ts";
+import { useFocusAgent } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);

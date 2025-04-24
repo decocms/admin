@@ -98,7 +98,7 @@ function ToolStatus({
       const newState = !prev;
 
       setTimeout(() => {
-        if (contentRef.current) {
+        if (newState && contentRef.current) {
           contentRef.current.scrollIntoView({
             behavior: "smooth",
             block: "center",

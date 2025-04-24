@@ -1,0 +1,16 @@
+{
+  "name": "@deco/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "deno run -A https://mcp.deco.host",
+    "build": "deno build",
+    "lint": "eslint .",
+    "preview": "deno run -A https://mcp.deco.host"
+  },
+  "dependencies": {
+    "@deco/sdk": "workspace:*"
+  },
+  "devDependencies": {}
+}

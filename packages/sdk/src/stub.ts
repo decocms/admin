@@ -34,7 +34,7 @@ export const stub = <T extends Actor>(name: string) => {
           return fetch(url, {
             ...options,
             headers: {
-              ...options?.headers,
+              ...(options?.headers || {}),
               "x-trace-debug-id": getTraceDebugId(),
             },
           });

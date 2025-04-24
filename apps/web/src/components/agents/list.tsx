@@ -136,7 +136,6 @@ function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const focusAgent = useFocusAgent();
-  const focusChat = useFocusChat();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
 
   // Return loading state while fetching agent data
@@ -190,13 +189,7 @@ function AgentCard({ agent }: { agent: Agent }) {
     <>
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
-        onClick={() => {
-          if (!agent.draft) {
-            focusChat(agent.id, crypto.randomUUID());
-          } else {
-            focusAgent(agent.id);
-          }
-        }}
+        onClick={() => focusAgent(agent.id)}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
           <div className="flex flex-col gap-3 w-full">
@@ -226,17 +219,6 @@ function AgentCard({ agent }: { agent: Agent }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem
-                    disabled={duplicating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      focusAgent(agent.id);
-                    }}
-                  >
-                    <Icon name="settings" className="mr-2" />
-                    Edit Agent
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}
                     onClick={(e) => {

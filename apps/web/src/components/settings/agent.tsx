@@ -126,7 +126,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
       <form
         id={formId}
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-4 px-4 py-2 pb-16"
+        className="space-y-4  py-2 pb-16"
       >
         {/* Avatar Section */}
         <div className="flex justify-center">

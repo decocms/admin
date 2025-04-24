@@ -11,7 +11,6 @@ import {
   use,
 } from "react";
 import Docked, { Tab, togglePanel, useDock } from "./dock/index.tsx";
-import { TeamSelector } from "./sidebar/TeamSelector.tsx";
 
 export interface PageProps {
   header?: ReactNode;
@@ -32,9 +31,7 @@ export function MobileTopbar() {
       >
         <Icon name="menu" weight={300} size={20} />
       </Button>
-      <div className="flex justify-center">
-        <TeamSelector />
-      </div>
+
       <div />
     </div>
   );

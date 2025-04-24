@@ -231,7 +231,7 @@ export function AppSidebar() {
           )}
 
           {/* Footer with user info */}
-          <div className="flex-none mt-auto">
+          <div className="flex mt-auto items-start justify-start">
             <SidebarFooter />
           </div>
         </div>

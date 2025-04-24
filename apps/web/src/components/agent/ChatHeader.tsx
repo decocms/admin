@@ -145,7 +145,7 @@ ChatHeader.UI = ({ agentId }: Props) => {
                   }}
                 >
                   <Icon name="settings" className="mr-2" />
-                  Configure
+                  Edit Agent
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={duplicating}

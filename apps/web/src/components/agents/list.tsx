@@ -235,7 +235,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                     }}
                   >
                     <Icon name="settings" className="mr-2" />
-                    Configure
+                    Edit Agent
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}

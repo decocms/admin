@@ -78,7 +78,7 @@ const COMPONENTS = {
   settings: {
     Component: () => <AgentSettings formId="agent-settings-form" />,
     initialOpen: true,
-    title: "Configure",
+    title: "Edit Agent",
   },
   preview: {
     Component: AgentPreview,
@@ -236,7 +236,7 @@ function Agent(props: Props) {
                     value="settings"
                     className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                   >
-                    Settings
+                    Edit Agent
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent
@@ -247,7 +247,7 @@ function Agent(props: Props) {
                 </TabsContent>
                 <TabsContent
                   value="settings"
-                  className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none"
+                  className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
                 >
                   <AgentSettings formId="agent-settings-form" />
                 </TabsContent>

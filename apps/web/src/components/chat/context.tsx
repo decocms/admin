@@ -40,7 +40,7 @@ type IContext = {
   threadId: string;
   scrollRef: RefObject<HTMLDivElement | null>;
   fileDataRef: RefObject<FileData[]>;
-  uiOptions: {
+  uiOptions?: {
     showThreadTools?: boolean;
   };
   setAutoScroll: (e: HTMLDivElement | null, enabled: boolean) => void;
@@ -222,7 +222,7 @@ export function ChatProvider({
         chat: { ...chat, handleSubmit: handleSubmit },
         scrollRef,
         fileDataRef,
-        uiOptions,
+        uiOptions: uiOptions,
         setAutoScroll,
         isAutoScrollEnabled,
         retry: handleRetry,

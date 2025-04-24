@@ -5,11 +5,13 @@ export interface Action {
   title: string;
   type: string;
   cronExp?: string;
-  message?: string;
+  description?: string;
   threadId?: string;
   resourceId?: string;
   cronExpFormatted?: string;
-  schema?: unknown;
+  schema?: JSON;
+  url?: string;
+  prompt?: string;
   passphrase?: string;
 }
 

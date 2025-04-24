@@ -1,4 +1,8 @@
 import { AUTH_URL } from "../constants.ts";
+import { createFetcher } from "../fetcher.ts";
+
+// Create a custom fetcher for auth endpoints
+const authFetcher = createFetcher(AUTH_URL);
 
 export interface User {
   id: string;
@@ -11,8 +15,8 @@ export interface User {
 }
 
 export const fetchUser = async () => {
-  const response = await fetch(`${AUTH_URL}/api/user`, {
-    credentials: "include",
+  const response = await authFetcher({
+    path: "/api/user",
   });
 
   if (response.status === 401) {

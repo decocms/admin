@@ -1,6 +1,7 @@
 import type { Actor } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
 import { API_SERVER_URL } from "./constants.ts";
+import { getTraceDebugId } from "./constants.ts";
 
 /**
  * A utility to create a stub for an actor.
@@ -22,6 +23,25 @@ export const stub = <T extends Actor>(name: string) => {
         // TODO: do we  need this?
         // "ErrnoError": ErrnoError,
         // [ErrnoError.name]: ErrnoError,
+      },
+      fetcher: {
+        fetch: (url, options) => {
+          if (url instanceof Request) {
+            url.headers.set("x-trace-debug-id", getTraceDebugId());
+            return fetch(url, options);
+          }
+
+          return fetch(url, {
+            ...options,
+            headers: {
+              ...options?.headers,
+              "x-trace-debug-id": getTraceDebugId(),
+            },
+          });
+        },
+        createWebSocket: (url) => {
+          return new WebSocket(url);
+        },
       },
     },
   );

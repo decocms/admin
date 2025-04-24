@@ -2,7 +2,7 @@ import type { Message } from "@ai-sdk/react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
 import { useChatContext } from "./context.tsx";
 import { Picker } from "./Picker.tsx";
@@ -42,8 +42,10 @@ function isCustomUITool(toolName: string): toolName is CustomUITool {
 function ToolStatus({
   tool,
   isLast,
-}: { tool: ToolInvocation; isLast: boolean }) {
+  isSingle,
+}: { tool: ToolInvocation; isLast: boolean; isSingle: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const getIcon = (state: string) => {
     switch (state) {
@@ -91,56 +93,87 @@ function ToolStatus({
     }
   }, [tool.state]);
 
-  return (
-    <div className="flex flex-col">
-      <div className="flex items-start gap-2">
-        <div className="relative flex flex-col items-center min-h-[20px]">
-          <div
-            className={cn(
-              "w-5 h-5 rounded-full border flex items-center justify-center bg-slate-200",
-            )}
-          >
-            {getIcon(tool.state)}
-          </div>
-          {!isLast && !isExpanded && (
-            <div className="w-[1px] h-full bg-slate-200 absolute top-5 left-1/2 transform -translate-x-1/2" />
-          )}
-        </div>
-        <div className="flex-1">
-          <button
-            type="submit"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <span className="font-medium">
-              {getToolName()}
-            </span>
-            <Icon
-              className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
-              name="chevron_right"
-            />
-          </button>
+  const onClick = () => {
+    setIsExpanded((prev) => {
+      const newState = !prev;
 
-          {isExpanded && (
-            <div className="mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full">
-              <pre className="p-4 text-xs whitespace-pre-wrap break-all">
-                <code className="text-zinc-100">
-                  {JSON.stringify(
-                    {
-                      toolName: tool.toolName,
-                      state: tool.state,
-                      args: tool.args,
-                      result: tool.result,
-                      error: tool.error,
-                    },
-                    null,
-                    2,
-                  ).replace(/"(\w+)":/g, '"$1":')}
-                </code>
-              </pre>
-            </div>
+      setTimeout(() => {
+        if (contentRef.current) {
+          contentRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 100);
+
+      return newState;
+    });
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col",
+        isSingle && "p-4 hover:bg-slate-50 rounded-2xl",
+      )}
+      onClick={isSingle ? onClick : undefined}
+    >
+      <div className="flex items-start gap-2">
+        <button
+          type="submit"
+          onClick={isSingle ? undefined : onClick}
+          className={cn(
+            "w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
+            !isSingle && "hover:bg-slate-50 rounded-lg p-2",
           )}
-        </div>
+        >
+          <div className="relative flex flex-col items-center min-h-[20px]">
+            <div
+              className={cn(
+                "w-5 h-5 rounded-full border flex items-center justify-center bg-slate-200",
+              )}
+            >
+              {getIcon(tool.state)}
+            </div>
+            {!isLast && !isExpanded && (
+              <div className="w-[1px] h-[150%] bg-slate-200 absolute top-5 left-1/2 transform -translate-x-1/2" />
+            )}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">
+                {getToolName()}
+              </span>
+              <Icon
+                className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
+                name="chevron_right"
+              />
+            </div>
+
+            {isExpanded && (
+              <div
+                ref={contentRef}
+                className="text-left mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full"
+              >
+                <pre className="p-4 text-xs whitespace-pre-wrap break-all">
+                  <code className="text-zinc-100">
+                    {JSON.stringify(
+                      {
+                        toolName: tool.toolName,
+                        state: tool.state,
+                        args: tool.args,
+                        result: tool.result,
+                        error: tool.error,
+                      },
+                      null,
+                      2,
+                    ).replace(/"(\w+)":/g, '"$1":')}
+                  </code>
+                </pre>
+              </div>
+            )}
+          </div>
+        </button>
       </div>
     </div>
   );
@@ -216,12 +249,18 @@ export function ToolMessage({
     <div className="w-full space-y-4">
       {/* Timeline tools */}
       {timelineTools.length > 0 && (
-        <div className="flex flex-col gap-2 w-full p-4 border border-slate-200 rounded-2xl">
+        <div
+          className={cn(
+            "flex flex-col gap-2 w-full border border-slate-200 rounded-2xl",
+            timelineTools.length > 1 && "p-2",
+          )}
+        >
           {timelineTools.map((tool, index) => (
             <ToolStatus
               key={tool.toolCallId}
               tool={tool}
               isLast={index === timelineTools.length - 1}
+              isSingle={timelineTools.length === 1}
             />
           ))}
         </div>

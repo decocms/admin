@@ -40,7 +40,7 @@ export const saveIntegration = async (context: string, mcp: Integration) => {
  * Create a new MCP
  * @returns The new MCP
  */
-export const createIntegration = async (
+export const createIntegration = (
   context: string,
   template: Partial<Integration> = {},
 ) => {
@@ -53,9 +53,7 @@ export const createIntegration = async (
     ...template,
   };
 
-  await saveIntegration(context, mcp);
-
-  return mcp;
+  return saveIntegration(context, mcp);
 };
 
 /**

@@ -25,7 +25,6 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { useNavigate } from "react-router";
 
 import { getDiffCount, Integration } from "../toolsets/index.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;

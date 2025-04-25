@@ -1,4 +1,4 @@
-import { fetchAPI } from "../fetcher.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 
 // File system module interfaces
 export interface FileSystemOptions {
@@ -10,13 +10,25 @@ export interface FileSystemOptions {
   flag?: string;
 }
 
-export const readFile = async (path: string, options?: FileSystemOptions) => {
-  const response = await fetchAPI({
-    path: `/fs/file?path=${encodeURIComponent(path)}&opts=${
-      JSON.stringify(options)
-    }`,
-    method: "GET",
+const fetchAPI = <T extends object>(
+  path: string,
+  target: "file" | "directory",
+  opts?: T,
+  init?: RequestInit,
+) => {
+  const url = new URL(`/fs/${target}`, API_SERVER_URL);
+  url.searchParams.set("path", path);
+  url.searchParams.set("opts", JSON.stringify(opts));
+
+  return fetch(url, {
+    ...init,
+    credentials: "include",
+    headers: { ...API_HEADERS, ...init?.headers },
   });
+};
+
+export const readFile = async (path: string, options?: FileSystemOptions) => {
+  const response = await fetchAPI(path, "file", options, { method: "GET" });
 
   if (!response.ok) {
     throw new Error(`Failed to read file: ${response.statusText}`);
@@ -29,10 +41,7 @@ export const readDirectory = async (
   path: string,
   options?: FileSystemOptions,
 ) => {
-  const response = await fetchAPI({
-    path: `/fs/directory?path=${encodeURIComponent(path)}&opts=${
-      JSON.stringify(options)
-    }`,
+  const response = await fetchAPI(path, "directory", options, {
     method: "GET",
   });
 
@@ -48,10 +57,7 @@ export const writeFile = async (
   content: string | Uint8Array,
   options?: FileSystemOptions,
 ) => {
-  const response = await fetchAPI({
-    path: `/fs/file?path=${encodeURIComponent(path)}&opts=${
-      JSON.stringify(options)
-    }`,
+  const response = await fetchAPI(path, "file", options, {
     method: "POST",
     body: typeof content === "string" ? JSON.stringify({ content }) : content,
     headers: {
@@ -69,12 +75,7 @@ export const writeFile = async (
 };
 
 export const deleteFile = async (path: string, options?: FileSystemOptions) => {
-  const response = await fetchAPI({
-    path: `/fs/file?path=${encodeURIComponent(path)}&opts=${
-      JSON.stringify(options)
-    }`,
-    method: "DELETE",
-  });
+  const response = await fetchAPI(path, "file", options, { method: "DELETE" });
 
   if (!response.ok) {
     throw new Error(`Failed to delete file: ${response.statusText}`);

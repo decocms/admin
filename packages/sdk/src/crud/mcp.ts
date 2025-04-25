@@ -1,5 +1,14 @@
-import { fetchAPI } from "../fetcher.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
+
+const toPath = (segments: string[]) => segments.join("/");
+
+const fetchAPI = (segments: string[], init?: RequestInit) =>
+  fetch(new URL(toPath(segments), API_SERVER_URL), {
+    ...init,
+    credentials: "include",
+    headers: { ...API_HEADERS, ...init?.headers },
+  });
 
 export class IntegrationNotFoundError extends Error {
   integrationId: string;
@@ -15,8 +24,7 @@ export class IntegrationNotFoundError extends Error {
  * @param mcp - The MCP to save
  */
 export const saveIntegration = async (context: string, mcp: Integration) => {
-  const response = await fetchAPI({
-    segments: [context, "integration"],
+  const response = await fetchAPI([context, "integration"], {
     method: "POST",
     body: JSON.stringify(mcp),
   });
@@ -58,8 +66,7 @@ export const loadIntegration = async (
   mcpId: string,
   signal?: AbortSignal,
 ): Promise<Integration> => {
-  const response = await fetchAPI({
-    segments: [context, "integration", mcpId],
+  const response = await fetchAPI([context, "integration", mcpId], {
     signal,
   });
 
@@ -78,8 +85,7 @@ export const listIntegrations = async (
   context: string,
   signal?: AbortSignal,
 ) => {
-  const response = await fetchAPI({
-    segments: [context, "integrations"],
+  const response = await fetchAPI([context, "integrations"], {
     signal,
   });
 
@@ -95,8 +101,7 @@ export const listIntegrations = async (
  * @param mcpId - The id of the MCP to delete
  */
 export const deleteIntegration = async (context: string, mcpId: string) => {
-  const response = await fetchAPI({
-    segments: [context, "integration", mcpId],
+  const response = await fetchAPI([context, "integration", mcpId], {
     method: "DELETE",
   });
 

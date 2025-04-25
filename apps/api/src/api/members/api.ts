@@ -1,6 +1,6 @@
 import { MemberSchema } from "@deco/sdk";
 import { z } from "zod";
-import { createApiHandler } from "../../utils.ts";
+import { createApiHandler } from "../../utils/context.ts";
 
 export const getMember = createApiHandler({
   name: "MEMBERS_GET",

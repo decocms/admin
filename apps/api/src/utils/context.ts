@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 
-type AppContext = Context;
+export type AppContext = Context;
 
 export const createApiHandler = <
   T extends z.ZodType = z.ZodType,

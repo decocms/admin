@@ -5,7 +5,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
-import { State } from "./utils.ts";
+import { State } from "./utils/context.ts";
 
 const app = new Hono();
 

@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { supabase } from "../../db/client.ts";
-import { createApiHandler } from "../../utils.ts";
+import { createApiHandler } from "../../utils/context.ts";
 
 export const getTeam = createApiHandler({
-  name: "getTeam",
+  name: "TEAMS_GET",
   description: "Get a team by id",
   schema: z.object({
     teamId: z.string(),
@@ -22,7 +22,7 @@ export const getTeam = createApiHandler({
 });
 
 export const createTeam = createApiHandler({
-  name: "createTeam",
+  name: "TEAMS_CREATE",
   description: "Create a new team",
   schema: z.object({
     name: z.string(),
@@ -42,7 +42,7 @@ export const createTeam = createApiHandler({
 });
 
 export const updateTeam = createApiHandler({
-  name: "updateTeam",
+  name: "TEAMS_UPDATE",
   description: "Update an existing team",
   schema: z.object({
     teamId: z.string(),
@@ -64,7 +64,7 @@ export const updateTeam = createApiHandler({
 });
 
 export const deleteTeam = createApiHandler({
-  name: "deleteTeam",
+  name: "TEAMS_DELETE",
   description: "Delete a team by id",
   schema: z.object({
     teamId: z.string(),
@@ -79,4 +79,15 @@ export const deleteTeam = createApiHandler({
     if (error) throw error;
     return { success: true };
   },
-}); 
+});
+
+export const listTeams = createApiHandler({
+  name: "TEAMS_LIST",
+  description: "List teams for the current user",
+  schema: z.object({}),
+  handler: async () => {
+    const { data, error } = await supabase.from("teams").select("*");
+    if (error) throw error;
+    return data;
+  },
+});

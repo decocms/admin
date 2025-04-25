@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getEnv } from "../utils.ts";
+import { getEnv } from "../utils/context.ts";
 
 const supabaseUrl = getEnv("SUPABASE_URL");
 const supabaseKey = getEnv("SUPABASE_SERVER_TOKEN");

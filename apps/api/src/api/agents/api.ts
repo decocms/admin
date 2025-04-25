@@ -1,7 +1,7 @@
 import { AgentSchema } from "@deco/sdk";
 import { z } from "zod";
 import { supabase } from "../../db/client.ts";
-import { createApiHandler } from "../../utils.ts";
+import { createApiHandler } from "../../utils/context.ts";
 
 export const getAgent = createApiHandler({
   name: "AGENTS_GET",

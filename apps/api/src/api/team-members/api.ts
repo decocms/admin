@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { supabase } from "../../db/client.ts";
-import { createApiHandler } from "../../utils.ts";
+import { createApiHandler } from "../../utils/context.ts";
 
 export const getTeamMember = createApiHandler({
   name: "TEAM_MEMBERS_GET",

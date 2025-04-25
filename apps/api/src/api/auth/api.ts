@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createApiHandler } from "../../utils.ts";
+import { createApiHandler } from "../../utils/context.ts";
 
 export const getAuthUrl = createApiHandler({
   name: "AUTH_GET_URL",
@@ -47,4 +47,4 @@ export const getCurrentUser = createApiHandler({
       }],
     };
   },
-}); 
+});

@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno run -A --env-file=../web/.env main.ts",
+    "dev": "deno run -A --unstable-hmr --env-file=../web/.env main.ts",
     "lint": "eslint ."
   },
   "dependencies": {
     "@deco/sdk": "workspace:*",
+    "@deco/mcp": "npm:@jsr/deco__mcp@0.3.6",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@supabase/supabase-js": "^2.49.4",
     "hono": "^4.7.7",

@@ -1,7 +1,8 @@
+import { HttpServerTransport } from "@deco/mcp/http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { Context, Hono } from "hono";
-// import cors from "hono/cors";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
 import { State } from "./utils.ts";
@@ -36,74 +37,32 @@ const createServer = () => {
 
 const server = createServer();
 
+// Add logger middleware
+app.use(logger());
+
 // Enable CORS for all routes on api.deco.chat and localhost
-// app.use(cors());
+app.use(cors({
+  origin: (origin) => origin,
+  allowMethods: ["HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
+  exposeHeaders: ["Content-Type", "Authorization", "Set-Cookie"],
+  credentials: true,
+}));
 
 // app.use("/:workspace/mcp", authMiddleware);
 
 // Workspace MCP endpoint handler
-app.post("/mcp", async (c: Context) => {
+app.all("/mcp", async (c: Context) => {
   try {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
+    const transport = new HttpServerTransport();
 
     await server.connect(transport);
 
-    // Create a new Response object to handle the MCP response
-    const response = new Response();
-
     const handleMessage = State.bind(c, async () => {
-      return await transport.handleRequest(c.req.raw, response);
+      return await transport.handleMessage(c.req.raw);
     });
 
-    await handleMessage();
-
-    // Set the response headers and status
-    for (const [key, value] of response.headers.entries()) {
-      c.header(key, value);
-    }
-    // @ts-expect-error - Hono's status type is more restrictive
-    c.status(response.status);
-
-    // Stream the response body
-    const reader = response.body?.getReader();
-    if (reader) {
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              controller.enqueue(value);
-            }
-            controller.close();
-          } catch (error) {
-            controller.error(error);
-          }
-        },
-      });
-
-      c.res = new Response(stream, {
-        status: response.status,
-        headers: response.headers,
-      });
-    }
-
-    // Clean up when the response is done
-    c.executionCtx.waitUntil(
-      new Promise<void>((resolve) => {
-        const cleanup = () => {
-          console.log("Request closed");
-          transport.close();
-          server.close();
-          resolve();
-        };
-
-        // Clean up when the response is done
-        c.res.body?.pipeTo(new WritableStream()).then(cleanup).catch(cleanup);
-      }),
-    );
+    c.res = await handleMessage();
   } catch (error) {
     console.error("Error handling MCP request:", error);
 

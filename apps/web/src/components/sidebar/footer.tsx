@@ -42,8 +42,8 @@ function LoggedUser() {
     });
   };
 
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
-  const userName = user?.metadata?.full_name || user?.email;
+  const userAvatarURL = user?.user_metadata?.avatar_url ?? undefined;
+  const userName = user?.user_metadata?.full_name || user?.email;
   const formattedStars = stars
     ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars)
     : null;
@@ -57,7 +57,7 @@ function LoggedUser() {
             fallback={userName}
             className="w-6 h-6"
           />
-          <span className="text-xs">{user.metadata?.full_name}</span>
+          <span className="text-xs">{user.user_metadata?.full_name}</span>
         </SidebarMenuButton>
       </ResponsiveDropdownTrigger>
       <ResponsiveDropdownContent

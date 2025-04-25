@@ -18,8 +18,8 @@ export function Header() {
   const { toggleSidebar, open } = useSidebar();
   const { teamSlug } = useParams();
 
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
-  const userName = user?.metadata?.full_name || user?.email;
+  const userAvatarURL = user?.user_metadata?.avatar_url ?? undefined;
+  const userName = user?.user_metadata?.full_name || user?.email;
 
   const currentAvatarURL = teamSlug ? undefined : userAvatarURL;
   const currentName = teamSlug ? teamSlug : userName;

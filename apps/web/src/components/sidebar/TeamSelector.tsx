@@ -22,8 +22,8 @@ export function TeamSelector() {
   const teamLabel = `${teamDomain} team`;
   const isTeamBlacklisted = WELL_KNOWN_EMAIL_DOMAINS.has(teamDomain);
 
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
-  const userName = user?.metadata?.full_name || user?.email;
+  const userAvatarURL = user?.user_metadata?.avatar_url ?? undefined;
+  const userName = user?.user_metadata?.full_name || user?.email;
   const userLabel = `${userName.split(" ")[0]}'s team`;
 
   const currentAvatarURL = teamSlug ? undefined : userAvatarURL;

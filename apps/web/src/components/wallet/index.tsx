@@ -324,7 +324,7 @@ function Wallet() {
     }
   }, [queryStringAlert.alert]);
 
-  const userAvatarURL = user?.metadata?.avatar_url ?? undefined;
+  const userAvatarURL = user?.user_metadata?.avatar_url ?? undefined;
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

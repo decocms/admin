@@ -1,16 +1,10 @@
-import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
-
-const toPath = (segments: string[]) => segments.join("/");
-
-const fetchAPI = (segments: string[], init?: RequestInit) =>
-  fetch(new URL(toPath(segments), API_SERVER_URL), {
-    ...init,
-    credentials: "include",
-    headers: { ...API_HEADERS, ...init?.headers },
-  });
+import { fetchAPI } from "../fetcher.ts";
 
 export const listThreads = async (context: string, signal?: AbortSignal) => {
-  const response = await fetchAPI([context, "threads"], { signal });
+  const response = await fetchAPI({
+    segments: [context, "threads"],
+    signal,
+  });
 
   if (response.ok) {
     return response.json();

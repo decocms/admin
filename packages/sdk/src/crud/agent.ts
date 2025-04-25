@@ -1,16 +1,6 @@
-import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
+import { fetchAPI } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
-
-const toPath = (segments: string[]) => segments.join("/");
-
-const fetchAPI = (segments: string[], init?: RequestInit) =>
-  fetch(new URL(toPath(segments), API_SERVER_URL), {
-    ...init,
-    credentials: "include",
-    headers: { ...API_HEADERS, ...init?.headers },
-  });
-
 export class AgentNotFoundError extends Error {
   agentId: string;
 
@@ -25,7 +15,8 @@ export class AgentNotFoundError extends Error {
  * @param agent - The agent to save
  */
 export const saveAgent = async (context: string, agent: Partial<Agent>) => {
-  const response = await fetchAPI([context, "agent"], {
+  const response = await fetchAPI({
+    segments: [context, "agent"],
     method: "POST",
     body: JSON.stringify(agent),
   });
@@ -74,7 +65,8 @@ export const loadAgent = async (
   agentId: string,
   signal?: AbortSignal,
 ) => {
-  const response = await fetchAPI([context, "agent", agentId], {
+  const response = await fetchAPI({
+    segments: [context, "agent", agentId],
     signal,
   });
 
@@ -90,7 +82,8 @@ export const loadAgent = async (
 };
 
 export const listAgents = async (context: string, signal?: AbortSignal) => {
-  const response = await fetchAPI([context, "agents"], {
+  const response = await fetchAPI({
+    segments: [context, "agents"],
     signal,
   });
 
@@ -106,7 +99,8 @@ export const listAgents = async (context: string, signal?: AbortSignal) => {
  * @param agentId - The id of the agent to delete
  */
 export const deleteAgent = async (context: string, agentId: string) => {
-  const response = await fetchAPI([context, "agent", agentId], {
+  const response = await fetchAPI({
+    segments: [context, "agent", agentId],
     method: "DELETE",
   });
 

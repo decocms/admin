@@ -124,3 +124,12 @@ export const setModel = (model: string) => {
 export const getModel = () => {
   return localStorage.getItem("model") ?? DEFAULT_REASONING_MODEL;
 };
+
+/**
+ * Gets the trace debug ID from the URL or generates a new one
+ * @returns The trace debug ID
+ */
+export function getTraceDebugId(): string {
+  return new URL(globalThis.location.href).searchParams.get("__d") ||
+    crypto.randomUUID();
+}

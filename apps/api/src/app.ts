@@ -3,12 +3,19 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import type { User } from "@supabase/supabase-js";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
 import { State } from "./utils/context.ts";
-import { setUserMiddleware } from "./utils/user.ts";
+import { setUserMiddleware } from "./middleware/user.ts";
 
 const app = new Hono();
+
+declare module "hono" {
+  interface ContextVariableMap {
+    user?: User | null;
+  }
+}
 
 // Function to create and configure the MCP server
 const createServer = () => {
@@ -50,10 +57,9 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(setUserMiddleware);
-
 // app.use("/:workspace/mcp", authMiddleware);
 
+app.use("/mcp", setUserMiddleware);
 // Workspace MCP endpoint handler
 app.all("/mcp", async (c: Context) => {
   try {

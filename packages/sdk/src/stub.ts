@@ -25,18 +25,20 @@ export const stub = <T extends Actor>(name: string) => {
         // [ErrnoError.name]: ErrnoError,
       },
       fetcher: {
-        fetch: (url, options) => {
+        fetch: (url, options = {}) => {
           if (url instanceof Request) {
             url.headers.set("x-trace-debug-id", getTraceDebugId());
             return fetch(url, options);
           }
 
+          const headers: HeadersInit = {
+            ...(options.headers ?? {}),
+            "x-trace-debug-id": getTraceDebugId(),
+          };
+
           return fetch(url, {
             ...options,
-            headers: {
-              ...(options?.headers as HeadersInit || {}),
-              "x-trace-debug-id": getTraceDebugId(),
-            },
+            headers,
           });
         },
         createWebSocket: (url) => {

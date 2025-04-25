@@ -56,7 +56,11 @@ export const listActions = async (context: string, agentId: string) => {
   throw new Error("Failed to list actions");
 };
 
-export const listRuns = async (context: string, agentId: string, actionId: string) => {
+export const listRuns = async (
+  context: string,
+  agentId: string,
+  actionId: string,
+) => {
   const response = await fetchAPI(
     toPath([context, "agent", agentId, "action", actionId, "runs"]),
   );

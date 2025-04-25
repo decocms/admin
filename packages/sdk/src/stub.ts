@@ -31,10 +31,8 @@ export const stub = <T extends Actor>(name: string) => {
             return fetch(url, options);
           }
 
-          const headers: HeadersInit = {
-            ...(options.headers ?? {}),
-            "x-trace-debug-id": getTraceDebugId(),
-          };
+          const headers = new Headers(options.headers);
+          headers.set("x-trace-debug-id", getTraceDebugId());
 
           return fetch(url, {
             ...options,

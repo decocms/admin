@@ -11,16 +11,6 @@ import {
 import { CodeBlock } from "./CodeBlock.tsx";
 import type { ListRunsResult, Run } from "@deco/sdk";
 
-function formatRunResult(result: string) {
-  try {
-    const jsonResult = JSON.parse(result);
-    return JSON.stringify(jsonResult, null, 2);
-  } catch (_) {
-    // If not valid JSON, return as is
-    return result;
-  }
-}
-
 export function RunHistory({ runsData, isLoading }: {
   runsData: ListRunsResult | undefined;
   isLoading: boolean;
@@ -66,6 +56,7 @@ function RunHistoryTable({ runs }: { runs: Run[] }) {
             <TableHead className="whitespace-nowrap w-[100px]">
               Status
             </TableHead>
+            <TableHead className="whitespace-nowrap">Metadata</TableHead>
             <TableHead className="whitespace-nowrap">Result</TableHead>
           </TableRow>
         </TableHeader>
@@ -78,12 +69,6 @@ function RunHistoryTable({ runs }: { runs: Run[] }) {
 }
 
 function RunHistoryRow({ run }: { run: Run }) {
-  const isError = typeof run.result === "string" &&
-    (run.result.toLowerCase().includes("error") ||
-      run.result.toLowerCase().includes("fail"));
-
-  const formattedResult = formatRunResult(run.result);
-
   return (
     <TableRow>
       <TableCell className="whitespace-nowrap">
@@ -91,15 +76,22 @@ function RunHistoryRow({ run }: { run: Run }) {
       </TableCell>
       <TableCell>
         <Badge
-          variant={isError ? "destructive" : "default"}
+          variant={run.status === "success" ? "default" : "destructive"}
         >
-          {isError ? "Failed" : "Success"}
+          {run.status === "success" ? "Success" : "Failed"}
         </Badge>
       </TableCell>
       <TableCell>
         <div className="max-h-[80px] overflow-y-auto">
           <CodeBlock className="whitespace-pre-wrap break-all">
-            {formattedResult}
+            {JSON.stringify(run.metadata, null, 2)}
+          </CodeBlock>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="max-h-[80px] overflow-y-auto">
+          <CodeBlock className="whitespace-pre-wrap break-all">
+            {JSON.stringify(run.result, null, 2)}
           </CodeBlock>
         </div>
       </TableCell>

@@ -23,8 +23,10 @@ export interface ListActionsResult {
 
 export interface Run {
   id: string;
-  result: string;
+  result: Record<string, unknown>;
+  metadata: Record<string, unknown>;
   timestamp: string;
+  status: string;
 }
 
 export interface ListRunsResult {

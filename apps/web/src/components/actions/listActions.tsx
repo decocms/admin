@@ -60,7 +60,7 @@ export function ListActionsEmpty() {
       <div className="bg-slate-100 rounded-full p-3 mb-4">
         <Icon
           name="notifications_active"
-          className="h-6 w-6 text-slate-500"
+          className="text-slate-500"
         />
       </div>
       <h3 className="text-lg font-medium mb-2">No actions configured</h3>

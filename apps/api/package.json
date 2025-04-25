@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno run -A --unstable-hmr --env-file=../web/.env main.ts",
+    "dev": "deno serve -A --port 3001 --unstable-hmr --env-file=../web/.env main.ts",
     "lint": "eslint ."
   },
   "dependencies": {

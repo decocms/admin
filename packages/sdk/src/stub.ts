@@ -25,7 +25,7 @@ export const stub = <T extends Actor>(name: string) => {
         // [ErrnoError.name]: ErrnoError,
       },
       fetcher: {
-        fetch: (url, options = {}) => {
+        fetch: (url, options: RequestInit = {}) => {
           if (url instanceof Request) {
             url.headers.set("x-trace-debug-id", getTraceDebugId());
             return fetch(url, options);

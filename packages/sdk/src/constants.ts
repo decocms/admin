@@ -6,12 +6,12 @@
  * it will use the localhost version.
  */
 // @ts-ignore - Vite injects env variables at build time
-const LOCAL_DEBUGGER = import.meta.env.VITE_USE_LOCAL_BACKEND === "true";
+const LOCAL_DEBUGGER = import.meta.env?.VITE_USE_LOCAL_BACKEND === "true";
 const isLocalhost = globalThis.location?.hostname === "localhost";
 
 // Log a warning if the environment variable is not set
 // @ts-ignore - Vite injects env variables at build time
-if (isLocalhost && import.meta.env.VITE_USE_LOCAL_BACKEND === undefined) {
+if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   console.warn(
     "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
       "To use local backend services, create a .env file in apps/web/ " +

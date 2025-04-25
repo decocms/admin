@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno run -A https://mcp.deco.host",
-    "build": "deno build",
-    "lint": "eslint .",
-    "preview": "deno run -A https://mcp.deco.host"
+    "dev": "deno run -A --env-file=../web/.env main.ts",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@deco/sdk": "workspace:*"
+    "@deco/sdk": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@supabase/supabase-js": "^2.49.4",
+    "hono": "^4.7.7",
+    "zod": "^3.24.3"
   },
   "devDependencies": {}
 }

@@ -124,11 +124,11 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   return (
     <Form {...form}>
-      <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+      <div className="h-full overflow-y-auto w-full bg-gradient-to-b from-white to-slate-50 text-slate-700 p-4">
         <form
           id={formId}
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4  py-2 pb-16"
+          className="space-y-4 py-2 pb-16"
         >
           {/* Avatar Section */}
           <div className="flex justify-center">
@@ -240,7 +240,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
             </div>
           </div>
         </form>
-      </ScrollArea>
+      </div>
     </Form>
   );
 }

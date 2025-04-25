@@ -42,6 +42,7 @@
 
     :not(:first-child).dv-view {
       @apply border-x border-slate-200;
+      overflow-y: hidden !important;
     }
 
     :not(:first-child).dv-view .dv-tabs-and-actions-container {

@@ -133,7 +133,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
         <div
           className={cn(
-            "w-full not-only:rounded-2xl text-base",
+            "w-full not-only:rounded-2xl text-base break-words overflow-wrap-anywhere",
             isUser ? "bg-slate-50 p-3" : "bg-transparent",
           )}
         >

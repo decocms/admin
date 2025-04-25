@@ -85,8 +85,18 @@ export const listTeams = createApiHandler({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   schema: z.object({}),
-  handler: async () => {
-    const { data, error } = await supabase.from("teams").select("*");
+  handler: async (_, c) => {
+    const user = c.get("user");
+
+    if (!user) {
+      throw new Error("Missing user");
+    }
+
+    const { data, error } = await supabase
+      .from("teams")
+      .select("*")
+      .eq("user_id", user.id);
+
     if (error) throw error;
     return data;
   },

@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
 import { State } from "./utils/context.ts";
+import { setUserMiddleware } from "./utils/user.ts";
 
 const app = new Hono();
 
@@ -48,6 +49,8 @@ app.use(cors({
   exposeHeaders: ["Content-Type", "Authorization", "Set-Cookie"],
   credentials: true,
 }));
+
+app.use(setUserMiddleware);
 
 // app.use("/:workspace/mcp", authMiddleware);
 

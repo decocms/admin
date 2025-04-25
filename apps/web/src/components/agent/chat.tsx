@@ -9,7 +9,7 @@ import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import { ListActions } from "../actions/list.tsx";
+import { ListActions } from "../actions/listActions.tsx";
 
 interface Props {
   agentId?: string;

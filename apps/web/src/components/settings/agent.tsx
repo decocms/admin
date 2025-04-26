@@ -2,6 +2,7 @@ import {
   type Agent,
   AgentSchema,
   useAgent,
+  useAgentRoot,
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
@@ -25,6 +26,7 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { useNavigate } from "react-router";
 
 import { getDiffCount, Integration } from "../toolsets/index.tsx";
+import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -42,6 +44,8 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const previousChangesRef = useRef(0);
   const focusChat = useFocusChat();
   const navigate = useNavigate();
+  const agentRoot = useAgentRoot(agentId);
+  const agentOverrides = useAgentOverrides(agentRoot);
   const isDraft = agent?.draft;
 
   const form = useForm<Agent>({
@@ -81,6 +85,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
     const handleDiscardEvent = () => {
       if (agent) {
         form.reset(agent);
+        agentOverrides.patch({ instructions: null });
       }
     };
 
@@ -111,6 +116,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
   };
 
   const onSubmit = async (data: Agent) => {
+
     const newData = { ...data, draft: false };
     await updateAgent.mutateAsync(newData);
 

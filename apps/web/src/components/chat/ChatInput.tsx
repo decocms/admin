@@ -1,9 +1,7 @@
 import {
   AgentNotFoundError,
   API_SERVER_URL,
-  getModel,
   MODELS,
-  setModel as SDKSetModel,
   useAgent,
   useWriteFile,
 } from "@deco/sdk";
@@ -16,6 +14,7 @@ import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
 import { useChatContext } from "./context.tsx";
 import ToolsButton from "./ToolsButton.tsx";
+import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 
 export function ChatInput() {
   return (
@@ -46,13 +45,10 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
-  const [model, setModel] = useState(getModel());
+  const agentOverrides = useAgentOverrides(agentRoot);
 
-  useEffect(() => {
-    SDKSetModel(model);
-  }, [model]);
-
-  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
+  const selectedModel =
+    MODELS.find((m) => m.id === agentOverrides.value.model) || MODELS[0];
 
   const isLoadingOrUploading = isLoading || isUploading;
 
@@ -240,7 +236,10 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                       </Button>
                     )
                     : null}
-                  <ModelSelector model={model} onModelChange={setModel} />
+                  <ModelSelector
+                    model={agentOverrides.value.model}
+                    onModelChange={(model) => agentOverrides.patch({ model })}
+                  />
                   <ToolsButton />
                 </div>
                 <div className="flex items-center gap-4">

@@ -1,7 +1,6 @@
 import { CreateMessage, useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
-  getModel,
   useAgentRoot,
   useInvalidateAll,
   useThreadMessages,
@@ -16,6 +15,7 @@ import {
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -80,6 +80,7 @@ export function ChatProvider({
   uiOptions,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
+  const agentOverrides = useAgentOverrides(agentRoot);
   const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
@@ -118,7 +119,8 @@ export function ChatProvider({
 
       return {
         args: [allMessages, {
-          model: getModel(),
+          model: agentOverrides.value.model,
+          instructions: agentOverrides.value.instructions,
           bypassOpenRouter,
           lastMessages: 0,
         }],

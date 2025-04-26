@@ -117,14 +117,6 @@ export const MODELS: Model[] = [
   // },
 ];
 
-export const setModel = (model: string) => {
-  localStorage.setItem("model", model);
-};
-
-export const getModel = () => {
-  return localStorage.getItem("model") ?? DEFAULT_REASONING_MODEL;
-};
-
 /**
  * Gets the trace debug ID from the URL or generates a new one
  * @returns The trace debug ID

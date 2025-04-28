@@ -117,20 +117,35 @@ type Props =
 
 const NO_DROP_TARGET = "no-drop-target";
 
+function isMobile() {
+  return globalThis.innerWidth <= 768;
+}
+
 const addPanel = (options: AddPanelOptions, api: DockviewApi) => {
   const group = api.groups.find((group) => group.locked !== NO_DROP_TARGET);
 
-  const panel = api.addPanel({
+  const panelOptions = {
     ...options,
-    position: {
-      direction: group?.id ? "within" : "right",
-      referenceGroup: group?.id,
-    },
     minimumWidth: 300,
     initialWidth: group?.width || 400,
-    floating: false,
-  });
+    ...(isMobile()
+      ? {
+        floating: {
+          width: globalThis.innerWidth,
+          height: globalThis.innerHeight,
+          x: 0,
+          y: 0,
+        },
+      }
+      : {
+        position: {
+          direction: group?.id ? "within" : "right",
+          referenceGroup: group?.id,
+        },
+      }),
+  } as AddPanelOptions;
 
+  const panel = api.addPanel(panelOptions);
   return panel;
 };
 

@@ -56,8 +56,8 @@ export function ListActionsLoading() {
 
 export function ListActionsEmpty() {
   return (
-    <div className="p-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
-      <div className="bg-slate-100 rounded-full p-3 mb-4">
+    <div className="m-4 p-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
+      <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
         <Icon
           name="notifications_active"
           className="text-slate-500"

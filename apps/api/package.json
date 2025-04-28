@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 3001",
-    "dev:deno": "deno serve -A --port 3001 --unstable-hmr --env-file=../web/.env main.ts",
+    "dev": "deno serve -A --port 3001 --unstable-hmr --env-file=../web/.env main.ts",
+    "dev:wrangler": "wrangler dev --port 3001",
     "lint": "eslint ."
   },
   "dependencies": {

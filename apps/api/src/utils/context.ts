@@ -45,7 +45,7 @@ export const serializeError = (error: unknown): string => {
 };
 
 export const getEnv = (ctx: AppContext) => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = ctx.env;
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = honoEnv(ctx);
 
   if (
     typeof SUPABASE_URL !== "string" ||

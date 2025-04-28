@@ -49,10 +49,6 @@
       @apply bg-slate-50;
     }
 
-    .dv-groupview.dv-active-group {
-      overflow: auto !important;
-    }
-
     .dv-tab {
       @apply last:border-r border-slate-200 p-0!;
     }

@@ -16,6 +16,12 @@
     "apps/*",
     "packages/*"
   ],
+  "workspace": [
+    "./apps/web",
+    "./apps/api",
+    "./packages/ui",
+    "./packages/sdk"
+  ],
   "compilerOptions": {
     "lib": [
       "deno.window",

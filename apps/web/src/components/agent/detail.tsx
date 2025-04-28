@@ -19,8 +19,8 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts";
 import { EmptyInputPrompt } from "../chat/EmptyInputPrompt.tsx";
-import { useAgent } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -103,45 +103,27 @@ function MobileChat() {
   );
 }
 
+let renderCount = 0;
+
 function Agent(props: Props) {
   const params = useParams();
-  const [numberOfChanges, setNumberOfChanges] = useState(0);
-  const isMobile = useIsMobile();
-  const { toggleSidebar } = useSidebar();
-  const [isLoading, setIsLoading] = useState(false);
-
   const agentId = useMemo(
     () => props.agentId || params.id,
     [props.agentId, params.id],
   );
 
-  const { data: agent } = useAgent(agentId || "");
-  const isDraft = agent?.draft;
-
-  // Listen for changes from the form
-  useEffect(() => {
-    const handleChangesEvent = (
-      event: CustomEvent<{ numberOfChanges: number }>,
-    ) => {
-      setNumberOfChanges(event.detail.numberOfChanges);
-    };
-
-    globalThis.addEventListener(
-      "agent:changes-updated",
-      handleChangesEvent as EventListener,
-    );
-
-    return () => {
-      globalThis.removeEventListener(
-        "agent:changes-updated",
-        handleChangesEvent as EventListener,
-      );
-    };
-  }, []);
-
   if (!agentId) {
     return <div>Agent not found</div>;
   }
+
+  const isMobile = useIsMobile();
+  const { toggleSidebar } = useSidebar();
+  const [isLoading, setIsLoading] = useState(false);
+  const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
+  // const hasChanges = false;
+  // const discardCurrentChanges = () => console.log("discardCurrentChanges");
+
+  console.log("renderCount", renderCount++);
 
   const handleUpdate = () => {
     setIsLoading(true);
@@ -158,13 +140,6 @@ function Agent(props: Props) {
     }
   };
 
-  const handleDiscard = () => {
-    const discardEvent = new CustomEvent("agent:discard-changes");
-    globalThis.dispatchEvent(discardEvent);
-  };
-
-  const hasChanges = numberOfChanges > 0;
-
   return (
     <ChatProvider
       agentId={agentId}
@@ -175,28 +150,20 @@ function Agent(props: Props) {
         <style>{tabStyles}</style>
 
         <div className="px-4 py-2 flex justify-between items-center border-b bg-slate-50">
-          {isMobile
-            ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="mr-2"
-              >
-                <Icon name="menu" size={20} />
-              </Button>
-            )
-            : (
-              <h1 className="text-md font-medium text-slate-700">
-                {isDraft ? "Create Agent" : "Edit Agent"}
-              </h1>
-            )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="mr-2 md:invisible"
+          >
+            <Icon name="menu" size={20} />
+          </Button>
           <div className="flex gap-2">
             {hasChanges && (
               <Button
                 variant="outline"
                 className="text-slate-700"
-                onClick={handleDiscard}
+                onClick={discardCurrentChanges}
               >
                 Discard
               </Button>
@@ -206,14 +173,7 @@ function Agent(props: Props) {
               onClick={handleUpdate}
               disabled={!hasChanges}
             >
-              {isLoading
-                ? <Spinner size="xs" />
-                : <span>{isDraft ? "Create" : "Update"}</span>}
-              {hasChanges && !isDraft && !isLoading && (
-                <span className="bg-primary-dark text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                  {numberOfChanges}
-                </span>
-              )}
+              {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
             </Button>
           </div>
         </div>

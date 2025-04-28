@@ -14,7 +14,7 @@ import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
 import { useChatContext } from "./context.tsx";
 import ToolsButton from "./ToolsButton.tsx";
-import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
+import { useSelectedModel } from "../../hooks/useSelectedModel.ts";
 
 export function ChatInput() {
   return (
@@ -45,10 +45,9 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
-  const agentOverrides = useAgentOverrides(agentRoot);
+  const model = useSelectedModel();
 
-  const selectedModel =
-    MODELS.find((m) => m.id === agentOverrides.value.model) || MODELS[0];
+  const selectedModel = MODELS.find((m) => m.id === model.value) || MODELS[0];
 
   const isLoadingOrUploading = isLoading || isUploading;
 
@@ -237,8 +236,9 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                     )
                     : null}
                   <ModelSelector
-                    model={agentOverrides.value.model}
-                    onModelChange={(model) => agentOverrides.patch({ model })}
+                    model={model.value}
+                    onModelChange={(modelToSelect) =>
+                      model.update(modelToSelect)}
                   />
                   <ToolsButton />
                 </div>

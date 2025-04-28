@@ -1,17 +1,30 @@
-import { DEFAULT_REASONING_MODEL } from "@deco/sdk";
-import { useLocalStorage } from "./useLocalStorage.ts";
+import { useLocalStorage, useLocalStorageSetter } from "./useLocalStorage.ts";
+
+const key = (agentId: string) => `agent-overrides-${agentId}`;
 
 export interface AgentOverrides {
-  model: string;
-  instructions: string | null;
+  instructions?: string;
 }
 
-export function useAgentOverrides(agentRoot: string) {
-  return useLocalStorage<AgentOverrides>({
-    key: `agent-overrides-${agentRoot}`,
-    defaultValue: {
-      model: DEFAULT_REASONING_MODEL,
-      instructions: null,
-    },
+export function useAgentOverridesSetter(agentId: string) {
+  return useLocalStorageSetter<AgentOverrides | null>({
+    key: key(agentId),
   });
+}
+
+export function getAgentOverrides(agentId: string) {
+  return localStorage.getItem(key(agentId)) as AgentOverrides | null;
+}
+
+export function useAgentHasChanges(agentId: string) {
+  const query = useLocalStorage<AgentOverrides | null, boolean>({
+    key: key(agentId),
+    defaultValue: null,
+    select: (data) => data !== null,
+  });
+
+  return {
+    hasChanges: query.value,
+    discardCurrentChanges: () => query.update(null),
+  };
 }

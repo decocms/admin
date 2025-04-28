@@ -53,7 +53,6 @@ export const AgentSchema = z.object({
       name: z.string().describe("Name of the view"),
     }),
   ).describe("Views where the agent can be used"),
-  draft: z.boolean().nullish().describe("Whether the agent is in draft mode"),
 });
 
 /**

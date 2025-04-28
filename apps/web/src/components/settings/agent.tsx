@@ -2,7 +2,6 @@ import {
   type Agent,
   AgentSchema,
   useAgent,
-  useAgentRoot,
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
@@ -18,15 +17,12 @@ import {
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { useFocusChat } from "../agents/hooks.ts";
-import { useNavigate } from "react-router";
-
-import { getDiffCount, Integration } from "../toolsets/index.tsx";
-import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
+import { Integration } from "../toolsets/index.tsx";
+import { useAgentOverridesSetter } from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -41,62 +37,35 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
-  const previousChangesRef = useRef(0);
-  const focusChat = useFocusChat();
-  const navigate = useNavigate();
-  const agentRoot = useAgentRoot(agentId);
-  const agentOverrides = useAgentOverrides(agentRoot);
-  const isDraft = agent?.draft;
 
   const form = useForm<Agent>({
     resolver: zodResolver(AgentSchema),
     defaultValues: agent,
   });
 
+  /**
+   * Track unsaved changes Locally
+   * This is used to inline options on agent.stream(), 
+   * without the user needing to save the changes.
+   * persisted in localStorage.
+   * 
+   * use only the setter here to avoid a re-render loop,
+   * since this component does not need to watch for changes.
+   */
+  const agentOverrides = useAgentOverridesSetter(agentId);
+
   const toolsSet = form.watch("tools_set");
 
-  const numberOfChanges = (() => {
-    const { tools_set: _, ...rest } = form.formState.dirtyFields;
+  const formValues = form.watch();
+  useEffect(() => agentOverrides.update(formValues), [formValues]);
 
-    return Object.keys(rest).length +
-      getDiffCount(toolsSet, agent.tools_set);
-  })();
-
-  // Notify about changes when number of changes updates
-  useEffect(() => {
-    if (numberOfChanges !== previousChangesRef.current) {
-      previousChangesRef.current = numberOfChanges;
-
-      const changeEvent = new CustomEvent("agent:changes-updated", {
-        detail: { numberOfChanges },
-      });
-      globalThis.dispatchEvent(changeEvent);
-    }
-  }, [numberOfChanges]);
+  const onSubmit = async (data: Agent) => await updateAgent.mutateAsync(data);
 
   useEffect(() => {
     if (agent) {
       form.reset(agent);
+      agentOverrides.update(null);
     }
-  }, [agent, form]);
-
-  // Listen for the discard event from the header
-  useEffect(() => {
-    const handleDiscardEvent = () => {
-      if (agent) {
-        form.reset(agent);
-        agentOverrides.patch({ instructions: null });
-      }
-    };
-
-    globalThis.addEventListener("agent:discard-changes", handleDiscardEvent);
-
-    return () => {
-      globalThis.removeEventListener(
-        "agent:discard-changes",
-        handleDiscardEvent,
-      );
-    };
   }, [agent, form]);
 
   const setIntegrationTools = (
@@ -113,18 +82,6 @@ function SettingsTab({ formId }: SettingsTabProps) {
     }
 
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  const onSubmit = async (data: Agent) => {
-
-    const newData = { ...data, draft: false };
-    await updateAgent.mutateAsync(newData);
-
-    if (isDraft) {
-      focusChat(agentId, crypto.randomUUID());
-    } else {
-      navigate(-1);
-    }
   };
 
   return (
@@ -179,6 +136,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
               </FormItem>
             )}
           />
+
           <FormField
             name="description"
             render={({ field }) => (

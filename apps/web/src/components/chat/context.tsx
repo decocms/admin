@@ -15,7 +15,8 @@ import {
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
-import { useAgentOverrides } from "../../hooks/useAgentOverrides.ts";
+import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
+import { useSelectedModel } from "../../hooks/useSelectedModel.ts";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -80,7 +81,7 @@ export function ChatProvider({
   uiOptions,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const agentOverrides = useAgentOverrides(agentRoot);
+  const selectedModel = useSelectedModel();
   const invalidateAll = useInvalidateAll();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
@@ -117,10 +118,11 @@ export function ChatProvider({
       const searchParams = new URLSearchParams(globalThis.location.search);
       const bypassOpenRouter = searchParams.get("openRouter") === "false";
 
+      const overrides = getAgentOverrides(agentId);
       return {
         args: [allMessages, {
-          model: agentOverrides.value.model,
-          instructions: agentOverrides.value.instructions,
+          model: selectedModel.value,
+          instructions: overrides?.instructions,
           bypassOpenRouter,
           lastMessages: 0,
         }],

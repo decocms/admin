@@ -41,6 +41,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useFocusAgent } from "./hooks.ts";
+import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -137,6 +138,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const focusAgent = useFocusAgent();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
+  const { hasChanges } = useAgentHasChanges(agent.id);
 
   // Return loading state while fetching agent data
   if (!agent) {
@@ -176,11 +178,11 @@ function AgentCard({ agent }: { agent: Agent }) {
     }
   };
 
-  const DraftBadge = () => {
+  const UnsavedChangesBadge = () => {
     return (
       <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-16">
         <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-        Draft
+        Unsaved Changes
       </div>
     );
   };
@@ -205,6 +207,7 @@ function AgentCard({ agent }: { agent: Agent }) {
                     : agent.name.substring(0, 2)}
                   className="h-full w-full rounded-lg"
                 />
+                {hasChanges && <UnsavedChangesBadge />}
               </div>
 
               <DropdownMenu>
@@ -253,8 +256,8 @@ function AgentCard({ agent }: { agent: Agent }) {
               </div>
             </div>
 
-            {agent.draft
-              ? <DraftBadge />
+            {hasChanges
+              ? <UnsavedChangesBadge />
               : (
                 <div className="flex gap-2 flex-wrap">
                   {Object

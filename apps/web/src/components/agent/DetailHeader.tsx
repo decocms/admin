@@ -5,6 +5,9 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedToggleButton } from "../pageLayout.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Link } from "react-router";
+import { useBasePath } from "../../hooks/useBasePath.ts";
 
 interface Props {
   agentId: string;
@@ -53,6 +56,8 @@ AgentHeader.Skeleton = () => {
 
 AgentHeader.UI = ({ agentId }: Props) => {
   const { data: agent } = useAgent(agentId);
+  const withBasePath = useBasePath();
+  const newChatUrl = withBasePath(`/chat/${agentId}/${crypto.randomUUID()}`);
 
   return (
     <>
@@ -70,6 +75,16 @@ AgentHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
+        <Button
+          variant="outline"
+          title="New Chat"
+          asChild
+        >
+          <Link to={newChatUrl}>
+            <Icon name="chat_add_on" />
+            New chat
+          </Link>
+        </Button>
         <DockedToggleButton
           id="settings"
           title="Settings"

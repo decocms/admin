@@ -131,8 +131,8 @@ function Agent(props: Props) {
 
         <div
           className={cn(
-            "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-transform duration-300",
-            hasChanges && "h-auto py-2",
+            "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
+            (isMobile || hasChanges) && "h-auto py-2",
           )}
         >
           <Button
@@ -145,21 +145,23 @@ function Agent(props: Props) {
           </Button>
           <div className="flex gap-2">
             {hasChanges && (
-              <Button
-                variant="outline"
-                className="text-slate-700"
-                onClick={discardCurrentChanges}
-              >
-                Discard
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  className="text-slate-700"
+                  onClick={discardCurrentChanges}
+                >
+                  Discard
+                </Button>
+                <Button
+                  className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
+                  onClick={handleUpdate}
+                  disabled={!hasChanges}
+                >
+                  {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
+                </Button>
+              </>
             )}
-            <Button
-              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
-              onClick={handleUpdate}
-              disabled={!hasChanges}
-            >
-              {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
-            </Button>
           </div>
         </div>
         <div className="flex-1 overflow-hidden">

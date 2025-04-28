@@ -17,15 +17,15 @@ import {
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
 import {
+  getAgentOverrides,
   useAgentOverridesSetter,
   useOnAgentChangesDiscarded,
 } from "../../hooks/useAgentOverrides.ts";
+import { usePersistedDirtyForm } from "../../hooks/usePersistedDirtyForm.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -41,40 +41,26 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
 
-  const form = useForm<Agent>({
+  const agentOverrides = useAgentOverridesSetter(agentId);
+
+  const { form, discardChanges, onMutationSuccess } = usePersistedDirtyForm<
+    Agent
+  >({
     resolver: zodResolver(AgentSchema),
     defaultValues: agent,
+    persist: agentOverrides.update,
+    getOverrides: () => getAgentOverrides(agentId),
   });
 
+  useOnAgentChangesDiscarded(agentId, discardChanges);
+
+  const onSubmit = async (data: Agent) => {
+    await updateAgent.mutateAsync(data, {
+      onSuccess: onMutationSuccess,
+    });
+  };
+
   const toolsSet = form.watch("tools_set");
-
-  /**
-   * Track unsaved changes in localStorage
-   * This is used to inline options on agent.stream(),
-   * without the user needing to save the changes.
-   *
-   * use only the setter here to avoid a re-render loop,
-   * since this component does not need to watch for changes.
-   */
-  const agentOverrides = useAgentOverridesSetter(agentId);
-  const formValues = form.watch();
-  useEffect(() => {
-    if (form.formState.isDirty) {
-      agentOverrides.update(formValues);
-    }
-  }, [formValues]);
-
-  useOnAgentChangesDiscarded(agentId, () => form.reset(agent));
-
-  const onSubmit = async (data: Agent) => await updateAgent.mutateAsync(data);
-
-  useEffect(() => {
-    if (agent) {
-      agentOverrides.update(null);
-      form.reset(agent);
-    }
-  }, [agent, form]);
-
   const setIntegrationTools = (
     integrationId: string,
     tools: string[],

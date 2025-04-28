@@ -26,7 +26,10 @@ export function getAgentOverrides(agentId: string) {
 }
 
 export function useAgentHasChanges(agentId: string) {
-  const [hasChanges, setHasChanges] = useState(false);
+  const [hasChanges, setHasChanges] = useState(() => {
+    const overrides = getAgentOverrides(agentId);
+    return overrides !== null;
+  });
 
   useLocalStorageChange(key(agentId), (value) => {
     setHasChanges(value !== null);

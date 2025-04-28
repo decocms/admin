@@ -1,7 +1,7 @@
 import {
   useLocalStorageChange,
   useLocalStorageSetter,
-} from "./useLocalStorage-norc.ts";
+} from "./useLocalStorage.ts";
 import { useState } from "react";
 
 const key = (agentId: string) => `agent-overrides-${agentId}`;

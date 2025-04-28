@@ -1,6 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
-const QUERY_KEY_LOCAL_STORAGE = "use-local-storage";
+const STORAGE_EVENT = "deco-chat::storage-change";
 
 interface UseLocalStorageSetterProps<T> {
   key: string;
@@ -8,15 +8,11 @@ interface UseLocalStorageSetterProps<T> {
   onUpdate?: (value: T) => void;
 }
 
-export function useLocalStorageSetter<T>(
-  {
-    key,
-    serializer = JSON.stringify,
-    onUpdate,
-  }: UseLocalStorageSetterProps<T>,
-) {
-  const queryClient = useQueryClient();
-
+export function useLocalStorageSetter<T>({
+  key,
+  serializer = JSON.stringify,
+  onUpdate,
+}: UseLocalStorageSetterProps<T>) {
   const update = (value: T) => {
     if (value === null) {
       localStorage.removeItem(key);
@@ -24,15 +20,17 @@ export function useLocalStorageSetter<T>(
       localStorage.setItem(key, serializer(value));
     }
 
-    queryClient.setQueryData([QUERY_KEY_LOCAL_STORAGE, key], value);
+    // Dispatch custom event to notify other hooks
+    globalThis.dispatchEvent(
+      new CustomEvent(STORAGE_EVENT, {
+        detail: { key, value },
+      }),
+    );
     onUpdate?.(value);
   };
 
   const patch = (value: Partial<T>) => {
-    const currentValue = queryClient.getQueryData<T>([
-      QUERY_KEY_LOCAL_STORAGE,
-      key,
-    ]) as T;
+    const currentValue = JSON.parse(localStorage.getItem(key) || "{}") as T;
     const updatedValue = { ...currentValue, ...value };
     update(updatedValue);
   };
@@ -40,28 +38,62 @@ export function useLocalStorageSetter<T>(
   return { update, patch };
 }
 
-interface UseLocalStorageProps<T, R = T> extends UseLocalStorageSetterProps<T> {
-  defaultValue: T;
-  deserializer?: (value: string) => T;
-  select?: (data: T) => R;
+export function useLocalStorageChange(
+  key: string,
+  callback: (value: string | null) => void,
+) {
+  useEffect(() => {
+    const handleStorageChange = (
+      event: CustomEvent<{ key: string; value: string | null }>,
+    ) => {
+      if (event.detail.key === key) {
+        callback(event.detail.value);
+      }
+    };
+
+    // Listen for our custom storage events
+    globalThis.addEventListener(
+      STORAGE_EVENT,
+      handleStorageChange as EventListener,
+    );
+
+    // Also listen for actual storage events from other tabs/globalThiss
+    const handleActualStorage = (e: StorageEvent) => {
+      if (e.key === key) {
+        callback(e.newValue);
+      }
+    };
+    globalThis.addEventListener("storage", handleActualStorage);
+
+    return () => {
+      globalThis.removeEventListener(
+        STORAGE_EVENT,
+        handleStorageChange as EventListener,
+      );
+      globalThis.removeEventListener("storage", handleActualStorage);
+    };
+  }, [key]);
 }
 
-export function useLocalStorage<T, R = T>({
+interface UseLocalStorageProps<T> extends UseLocalStorageSetterProps<T> {
+  defaultValue: T;
+  deserializer?: (value: string) => T;
+}
+
+export function useLocalStorage<T>({
   key,
   defaultValue,
   serializer = JSON.stringify,
   deserializer = JSON.parse,
   onUpdate,
-  select,
-}: UseLocalStorageProps<T, R>) {
-  const query = useQuery({
-    queryKey: [QUERY_KEY_LOCAL_STORAGE, key],
-    queryFn: () => {
-      const item = localStorage.getItem(key);
-      return item ? deserializer(item) : defaultValue;
-    },
-    select,
-    initialData: defaultValue,
+}: UseLocalStorageProps<T>) {
+  const [value, setValue] = useState<T>(() => {
+    const item = localStorage.getItem(key);
+    return item ? deserializer(item) : defaultValue;
+  });
+
+  useLocalStorageChange(key, (value) => {
+    setValue(value ? deserializer(value) : defaultValue);
   });
 
   const { update, patch } = useLocalStorageSetter({
@@ -71,7 +103,7 @@ export function useLocalStorage<T, R = T>({
   });
 
   return {
-    value: query.data ?? defaultValue,
+    value,
     update,
     patch,
   };

@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import { CodeBlock } from "./CodeBlock.tsx";
+import { CodeBlock } from "./codeBlock.tsx";
 import type { ListRunsResult, Run } from "@deco/sdk";
 
 export function RunHistory({ runsData, isLoading }: {

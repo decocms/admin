@@ -1,6 +1,6 @@
 import { type Action } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { CodeBlock } from "./CodeBlock.tsx";
+import { CodeBlock } from "./codeBlock.tsx";
 
 export function WebhookDetails({ action }: { action: Action }) {
   return (

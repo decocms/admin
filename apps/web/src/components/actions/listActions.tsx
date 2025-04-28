@@ -3,8 +3,8 @@ import { useChatContext } from "../chat/context.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { ActionCard } from "./ActionCard.tsx";
-import { ActionDetails } from "./ActionDetails.tsx";
+import { ActionCard } from "./actionCard.tsx";
+import { ActionDetails } from "./actionDetails.tsx";
 
 export function ListActions() {
   const { agentId } = useChatContext();

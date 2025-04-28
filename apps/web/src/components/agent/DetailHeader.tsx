@@ -7,6 +7,7 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedToggleButton } from "../pageLayout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
+import ActionsButton from "../chat/ActionsButton.tsx";
 
 interface Props {
   agentId: string;
@@ -73,6 +74,7 @@ AgentHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
+        <ActionsButton />
         <Button
           variant="outline"
           title="New Chat"

@@ -1,15 +1,16 @@
 import { User } from "@deco/sdk";
 import type { CallToolResult } from "@modelcontextprotocol/sdk";
 import { Context } from "hono";
+import { env } from "hono/adapter";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { client } from "../db/client.ts";
+import { Client } from "../db/client.ts";
 import { Database } from "../db/schema.ts";
 
 export type AppEnv = {
   Variables: {
-    db: typeof client;
-    user?: User;
+    db: Client;
+    user: User;
   };
 };
 
@@ -37,6 +38,16 @@ export const serializeError = (error: unknown): string => {
   } catch {
     return "Unknown error";
   }
+};
+
+export const getEnv = (ctx: AppContext) => {
+  const { SUPABASE_URL, SUPABASE_KEY } = env(ctx);
+
+  if (typeof SUPABASE_URL !== "string" || typeof SUPABASE_KEY !== "string") {
+    throw new Error("Missing environment variables");
+  }
+
+  return { SUPABASE_URL, SUPABASE_KEY };
 };
 
 export const createApiHandler = <
@@ -69,14 +80,6 @@ export const createApiHandler = <
 });
 
 export type ApiHandler = ReturnType<typeof createApiHandler>;
-
-export const getEnv = (name: string) => {
-  const value = Deno.env.get(name);
-  if (!value) {
-    throw new Error(`${name} is not set`);
-  }
-  return value;
-};
 
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 

@@ -32,3 +32,4 @@ dist-ssr
 *.sw?
 
 .deco_host
+.wrangler

@@ -1,11 +1,14 @@
 import type { User } from "@deco/sdk";
 import { createSupabaseClient } from "../db/client.ts";
 import { getCookies } from "../lib/cookie.ts";
+import { AppContext, getEnv } from "../utils/context.ts";
 
 // TODO: add LRU Cache
-export const getUser = async (request: Request): Promise<User | undefined> => {
-  const cookies = getCookies(request.headers);
-  const supabase = createSupabaseClient({
+export const getUser = async (ctx: AppContext): Promise<User | undefined> => {
+  const { SUPABASE_URL, SUPABASE_KEY } = getEnv(ctx);
+
+  const cookies = getCookies(ctx.req.raw.headers);
+  const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {
       getAll: () =>
         Object.entries(cookies).map(([name, value]) => ({

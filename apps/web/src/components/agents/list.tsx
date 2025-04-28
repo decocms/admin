@@ -180,7 +180,7 @@ function AgentCard({ agent }: { agent: Agent }) {
 
   const UnsavedChangesBadge = () => {
     return (
-      <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-16">
+      <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
         <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
         Unsaved Changes
       </div>
@@ -207,7 +207,6 @@ function AgentCard({ agent }: { agent: Agent }) {
                     : agent.name.substring(0, 2)}
                   className="h-full w-full rounded-lg"
                 />
-                {hasChanges && <UnsavedChangesBadge />}
               </div>
 
               <DropdownMenu>

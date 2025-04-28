@@ -1,4 +1,5 @@
-import { useLocalStorage, useLocalStorageSetter } from "./useLocalStorage.ts";
+import { useLocalStorageChange, useLocalStorageSetter } from "./useLocalStorage-norc.ts";
+import { useState } from "react";
 
 const key = (agentId: string) => `agent-overrides-${agentId}`;
 
@@ -13,18 +14,33 @@ export function useAgentOverridesSetter(agentId: string) {
 }
 
 export function getAgentOverrides(agentId: string) {
-  return localStorage.getItem(key(agentId)) as AgentOverrides | null;
+  try {
+    const result = localStorage.getItem(key(agentId));
+    return result ? JSON.parse(result) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function useAgentHasChanges(agentId: string) {
-  const query = useLocalStorage<AgentOverrides | null, boolean>({
-    key: key(agentId),
-    defaultValue: null,
-    select: (data) => data !== null,
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useLocalStorageChange(key(agentId), (value) => {
+    setHasChanges(value !== null);
   });
 
+  const { update } = useAgentOverridesSetter(agentId);
+
   return {
-    hasChanges: query.value,
-    discardCurrentChanges: () => query.update(null),
+    hasChanges,
+    discardCurrentChanges: () => update(null),
   };
+}
+
+export function useOnAgentChangesDiscarded(agentId: string, callback: () => void) {
+  useLocalStorageChange(key(agentId), (value) => {
+    if (value === null) {
+      callback();
+    }
+  });
 }

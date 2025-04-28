@@ -22,7 +22,7 @@ import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
-import { useAgentOverridesSetter } from "../../hooks/useAgentOverrides.ts";
+import { useAgentOverridesSetter, useOnAgentChangesDiscarded } from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -43,28 +43,32 @@ function SettingsTab({ formId }: SettingsTabProps) {
     defaultValues: agent,
   });
 
+  const toolsSet = form.watch("tools_set");
+
   /**
-   * Track unsaved changes Locally
+   * Track unsaved changes in localStorage
    * This is used to inline options on agent.stream(), 
    * without the user needing to save the changes.
-   * persisted in localStorage.
    * 
    * use only the setter here to avoid a re-render loop,
    * since this component does not need to watch for changes.
    */
   const agentOverrides = useAgentOverridesSetter(agentId);
-
-  const toolsSet = form.watch("tools_set");
-
   const formValues = form.watch();
-  useEffect(() => agentOverrides.update(formValues), [formValues]);
+  useEffect(() => {
+    if (form.formState.isDirty) {
+      agentOverrides.update(formValues);
+    }
+  }, [formValues]);
+
+  useOnAgentChangesDiscarded(agentId, () => form.reset(agent));
 
   const onSubmit = async (data: Agent) => await updateAgent.mutateAsync(data);
 
   useEffect(() => {
     if (agent) {
-      form.reset(agent);
       agentOverrides.update(null);
+      form.reset(agent);
     }
   }, [agent, form]);
 

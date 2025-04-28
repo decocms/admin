@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
-import { ChatProvider, useChatContext } from "../chat/context.tsx";
+import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import {
   Tabs,
   TabsContent,
@@ -18,7 +19,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts";
-import { EmptyInputPrompt } from "../chat/EmptyInputPrompt.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 
@@ -50,19 +50,9 @@ interface Props {
   agentId?: string;
 }
 
-function ConditionalEmptyPrompt() {
-  const { chat: { messages } } = useChatContext();
-  return messages.length === 0 ? <EmptyInputPrompt /> : null;
-}
-
 const MainHeader = () => <AgentHeader />;
 const MainContent = () => <ChatMessages />;
-const MainFooter = () => (
-  <>
-    <ConditionalEmptyPrompt />
-    <ChatInput />
-  </>
-);
+const MainFooter = () => <ChatInput />;
 
 const MAIN = {
   header: MainHeader,
@@ -87,23 +77,17 @@ const COMPONENTS = {
 };
 
 function MobileChat() {
-  const { chat: { messages } } = useChatContext();
-  const isEmpty = messages.length === 0;
-
   return (
     <>
       <div className="flex-1 overflow-y-auto">
         <ChatMessages />
       </div>
       <div className="p-2 border-t">
-        {isEmpty && <EmptyInputPrompt />}
         <ChatInput />
       </div>
     </>
   );
 }
-
-let renderCount = 0;
 
 function Agent(props: Props) {
   const params = useParams();
@@ -120,10 +104,6 @@ function Agent(props: Props) {
   const { toggleSidebar } = useSidebar();
   const [isLoading, setIsLoading] = useState(false);
   const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
-  // const hasChanges = false;
-  // const discardCurrentChanges = () => console.log("discardCurrentChanges");
-
-  console.log("renderCount", renderCount++);
 
   const handleUpdate = () => {
     setIsLoading(true);
@@ -149,7 +129,10 @@ function Agent(props: Props) {
       <div className="h-screen flex flex-col">
         <style>{tabStyles}</style>
 
-        <div className="px-4 py-2 flex justify-between items-center border-b bg-slate-50">
+        <div className={cn(
+          "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-transform duration-300",
+          hasChanges && "h-auto py-2",
+        )}>
           <Button
             variant="ghost"
             size="icon"

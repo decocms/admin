@@ -6,7 +6,7 @@ const getContextUser = (c: AppContext) => {
   return c.get("user")!;
 };
 
-const assertUserHasAccessToTeam = async (
+export const assertUserHasAccessToTeam = async (
   { teamId, userId }: { teamId: number; userId: string },
   c: AppContext,
 ) => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
+import { assertUserHasAccessToTeam } from "../../auth/assertions.ts";
 
 const MemberSchema = z.object({
   user_id: z.string(),
@@ -37,18 +38,10 @@ export const getTeamMembers = createApiHandler({
     const user = c.get("user");
 
     // First verify the user has access to the team
-    const { data: teamMember, error: teamError } = await c
-      .get("db")
-      .from("members")
-      .select("*")
-      .eq("team_id", teamId)
-      .eq("user_id", user.id)
-      .single();
-
-    if (teamError) throw teamError;
-    if (!teamMember) {
-      throw new Error("Team not found or user does not have access");
-    }
+    await assertUserHasAccessToTeam(
+      { userId: user.id, teamId: props.teamId },
+      c,
+    );
 
     // Get all members of the team
     const { data, error } = await c

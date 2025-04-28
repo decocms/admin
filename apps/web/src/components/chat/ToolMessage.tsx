@@ -176,6 +176,7 @@ function ToolStatus({
               <div
                 ref={contentRef}
                 className="text-left mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full relative"
+                onClick={(e) => e.stopPropagation()}
               >
                 {showCopyButton && (
                   <Button
@@ -194,8 +195,11 @@ function ToolStatus({
                     />
                   </Button>
                 )}
-                <pre className="p-4 text-xs whitespace-pre-wrap break-all">
-                  <code className="text-zinc-100">
+                <pre
+                  className="p-4 text-xs whitespace-pre-wrap break-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <code className="text-zinc-100 select-text cursor-auto">
                     {getToolJson()}
                   </code>
                 </pre>

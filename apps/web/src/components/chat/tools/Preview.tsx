@@ -221,12 +221,6 @@ function HtmlPreview({
 
 export function Preview({ content, title, className }: PreviewProps) {
   const iframeProps = toIframeProps(content);
-
-  if (iframeProps.src === undefined) return null;
-
-  const url = new URL(iframeProps.src);
-  const isImageLike = IMAGE_REGEXP.test(url.pathname);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleExpand = () => {
@@ -237,18 +231,22 @@ export function Preview({ content, title, className }: PreviewProps) {
     );
   };
 
-  if (isImageLike) {
+  const isImageLike = iframeProps.src
+    ? IMAGE_REGEXP.test(new URL(iframeProps.src).pathname)
+    : false;
+
+  if (isImageLike && iframeProps.src) {
     return (
       <>
         <ImagePreview
-          src={url.href}
+          src={iframeProps.src}
           title={title}
           onExpand={handleExpand}
           onOpenDialog={() => setIsDialogOpen(true)}
           className={className}
         />
         <ImageDialog
-          src={url.href}
+          src={iframeProps.src}
           title={title}
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}

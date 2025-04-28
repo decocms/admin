@@ -1,4 +1,7 @@
-import { useLocalStorageChange, useLocalStorageSetter } from "./useLocalStorage-norc.ts";
+import {
+  useLocalStorageChange,
+  useLocalStorageSetter,
+} from "./useLocalStorage-norc.ts";
 import { useState } from "react";
 
 const key = (agentId: string) => `agent-overrides-${agentId}`;
@@ -37,7 +40,10 @@ export function useAgentHasChanges(agentId: string) {
   };
 }
 
-export function useOnAgentChangesDiscarded(agentId: string, callback: () => void) {
+export function useOnAgentChangesDiscarded(
+  agentId: string,
+  callback: () => void,
+) {
   useLocalStorageChange(key(agentId), (value) => {
     if (value === null) {
       callback();

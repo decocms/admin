@@ -129,10 +129,12 @@ function Agent(props: Props) {
       <div className="h-screen flex flex-col">
         <style>{tabStyles}</style>
 
-        <div className={cn(
-          "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-transform duration-300",
-          hasChanges && "h-auto py-2",
-        )}>
+        <div
+          className={cn(
+            "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-transform duration-300",
+            hasChanges && "h-auto py-2",
+          )}
+        >
           <Button
             variant="ghost"
             size="icon"

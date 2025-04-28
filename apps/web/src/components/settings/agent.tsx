@@ -22,7 +22,10 @@ import { useForm } from "react-hook-form";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
-import { useAgentOverridesSetter, useOnAgentChangesDiscarded } from "../../hooks/useAgentOverrides.ts";
+import {
+  useAgentOverridesSetter,
+  useOnAgentChangesDiscarded,
+} from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -47,9 +50,9 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   /**
    * Track unsaved changes in localStorage
-   * This is used to inline options on agent.stream(), 
+   * This is used to inline options on agent.stream(),
    * without the user needing to save the changes.
-   * 
+   *
    * use only the setter here to avoid a re-render loop,
    * since this component does not need to watch for changes.
    */

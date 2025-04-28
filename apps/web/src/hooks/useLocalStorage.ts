@@ -17,7 +17,7 @@ export function useLocalStorageSetter<T>(
 ) {
   const queryClient = useQueryClient();
 
-  const update = (value: T) => {  
+  const update = (value: T) => {
     if (value === null) {
       localStorage.removeItem(key);
     } else {
@@ -29,7 +29,10 @@ export function useLocalStorageSetter<T>(
   };
 
   const patch = (value: Partial<T>) => {
-    const currentValue = queryClient.getQueryData<T>([QUERY_KEY_LOCAL_STORAGE, key]) as T;
+    const currentValue = queryClient.getQueryData<T>([
+      QUERY_KEY_LOCAL_STORAGE,
+      key,
+    ]) as T;
     const updatedValue = { ...currentValue, ...value };
     update(updatedValue);
   };
@@ -50,8 +53,7 @@ export function useLocalStorage<T, R = T>({
   deserializer = JSON.parse,
   onUpdate,
   select,
-  }: UseLocalStorageProps<T, R>,
-) {
+}: UseLocalStorageProps<T, R>) {
   const query = useQuery({
     queryKey: [QUERY_KEY_LOCAL_STORAGE, key],
     queryFn: () => {
@@ -62,7 +64,11 @@ export function useLocalStorage<T, R = T>({
     initialData: defaultValue,
   });
 
-  const { update, patch } = useLocalStorageSetter({ key, serializer, onUpdate });
+  const { update, patch } = useLocalStorageSetter({
+    key,
+    serializer,
+    onUpdate,
+  });
 
   return {
     value: query.data ?? defaultValue,

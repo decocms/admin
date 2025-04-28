@@ -27,9 +27,7 @@ jobs:
           workingDirectory: './apps/api'
           secrets: |
             DATABASE_URL
-            ACCEPTED_API_KEYS
             SUPABASE_SERVER_TOKEN
         env:
-          ACCEPTED_API_KEYS: ${{ secrets.ACCEPTED_API_KEYS }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SUPABASE_SERVER_TOKEN: ${{ secrets.WEBDRAW_SUPABASE_SERVER_TOKEN }}
+          SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}

@@ -1,8 +1,9 @@
+import type { User } from "@deco/sdk";
 import { createSupabaseClient } from "../db/client.ts";
 import { getCookies } from "../lib/cookie.ts";
 
 // TODO: add LRU Cache
-export const getUser = async (request: Request) => {
+export const getUser = async (request: Request): Promise<User | undefined> => {
   const cookies = getCookies(request.headers);
   const supabase = createSupabaseClient({
     cookies: {
@@ -15,13 +16,14 @@ export const getUser = async (request: Request) => {
       },
     },
   });
-  const { data: _user } = await supabase.auth.getUser(
-    undefined,
-  );
-  const user = _user?.user;
+
+  const { data } = await supabase.auth.getUser(undefined);
+
+  const user = data?.user;
+
   if (!user) {
     return undefined;
   }
 
-  return user;
+  return user as unknown as User;
 };

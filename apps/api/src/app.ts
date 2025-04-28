@@ -3,19 +3,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import type { User } from "@supabase/supabase-js";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
+import * as membersAPI from "./api/members/api.ts";
+import * as teamsAPI from "./api/teams/api.ts";
+import { withContextMiddleware } from "./middlewares/context.ts";
+import { setUserMiddleware } from "./middlewares/user.ts";
 import { State } from "./utils/context.ts";
-import { setUserMiddleware } from "./middleware/user.ts";
 
 const app = new Hono();
-
-declare module "hono" {
-  interface ContextVariableMap {
-    user?: User | null;
-  }
-}
 
 // Function to create and configure the MCP server
 const createServer = () => {
@@ -34,6 +30,15 @@ const createServer = () => {
     integrationsAPI.createIntegration,
     integrationsAPI.updateIntegration,
     integrationsAPI.deleteIntegration,
+    teamsAPI.getTeam,
+    teamsAPI.createTeam,
+    teamsAPI.updateTeam,
+    teamsAPI.deleteTeam,
+    teamsAPI.listTeams,
+    membersAPI.getTeamMembers,
+    membersAPI.addTeamMember,
+    membersAPI.updateTeamMember,
+    membersAPI.removeTeamMember,
   ];
 
   for (const tool of tools) {
@@ -57,9 +62,11 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use(withContextMiddleware);
+app.use(setUserMiddleware);
+
 // app.use("/:workspace/mcp", authMiddleware);
 
-app.use("/mcp", setUserMiddleware);
 // Workspace MCP endpoint handler
 app.all("/mcp", async (c: Context) => {
   try {

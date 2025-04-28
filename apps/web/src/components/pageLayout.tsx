@@ -122,6 +122,7 @@ export function DockedToggleButton(
   return (
     <Button
       {...btnProps}
+      type="button"
       disabled={disabled || !availablePanels.has(id)}
       onClick={() => togglePanel({ id, component: id, title })}
       className={cn(className, openPanels.has(id) ? "bg-accent" : "")}

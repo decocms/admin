@@ -1,6 +1,6 @@
 import { IntegrationSchema } from "@deco/sdk";
 import { z } from "zod";
-import { supabase } from "../../db/client.ts";
+import { client } from "../../db/client.ts";
 import { createApiHandler } from "../../utils/context.ts";
 
 // API Functions
@@ -9,7 +9,7 @@ export const getIntegration = createApiHandler({
   description: "Get an integration by id",
   schema: z.object({ id: z.string().uuid() }),
   handler: async ({ id }) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("integrations")
       .select("*")
       .eq("id", id)
@@ -37,7 +37,7 @@ export const createIntegration = createApiHandler({
   description: "Create a new integration",
   schema: IntegrationSchema,
   handler: async ({ name, description, icon, connection, workspace }) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("integrations")
       .insert({
         name,
@@ -72,7 +72,7 @@ export const updateIntegration = createApiHandler({
   handler: async (
     { id, integration: { name, description, icon, connection, workspace } },
   ) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("integrations")
       .update({
         name,
@@ -107,7 +107,7 @@ export const deleteIntegration = createApiHandler({
   description: "Delete an integration by id",
   schema: z.object({ id: z.string().uuid() }),
   handler: async ({ id }) => {
-    const { error } = await supabase
+    const { error } = await client
       .from("integrations")
       .delete()
       .eq("id", id);

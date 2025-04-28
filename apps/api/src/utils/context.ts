@@ -1,20 +1,71 @@
+import { User } from "@deco/sdk";
+import type { CallToolResult } from "@modelcontextprotocol/sdk";
 import { Context } from "hono";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
+import { client } from "../db/client.ts";
+import { Database } from "../db/schema.ts";
 
-export type AppContext = Context;
+export type AppEnv = {
+  Variables: {
+    db: typeof client;
+    user: User;
+  };
+};
+
+export type AppContext = Context<AppEnv>;
+
+export interface Variables {
+  db: Database;
+  user: User;
+}
+
+const isErrorLike = (error: unknown): error is Error =>
+  Boolean((error as Error)?.message);
+
+export const serializeError = (error: unknown): string => {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (isErrorLike(error)) {
+    return error.message;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown error";
+  }
+};
 
 export const createApiHandler = <
   T extends z.ZodType = z.ZodType,
   R extends object = object,
->(props: {
+>(definition: {
   name: string;
   description: string;
   schema: T;
   handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
 }) => ({
-  ...props,
-  handler: (props: z.infer<T>) => props.handler(props, State.active()),
+  ...definition,
+  handler: async (props: z.infer<T>): Promise<CallToolResult> => {
+    try {
+      const response = await definition.handler(props, State.active());
+
+      return {
+        isError: false,
+        content: [{ type: "text", text: JSON.stringify(response) }],
+      };
+    } catch (error) {
+      console.error(error);
+
+      return {
+        isError: true,
+        content: [{ type: "text", text: serializeError(error) }],
+      };
+    }
+  },
 });
 
 export type ApiHandler = ReturnType<typeof createApiHandler>;

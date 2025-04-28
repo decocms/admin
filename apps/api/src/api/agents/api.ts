@@ -1,6 +1,6 @@
 import { AgentSchema } from "@deco/sdk";
 import { z } from "zod";
-import { supabase } from "../../db/client.ts";
+import { client } from "../../db/client.ts";
 import { createApiHandler } from "../../utils/context.ts";
 
 export const getAgent = createApiHandler({
@@ -8,7 +8,7 @@ export const getAgent = createApiHandler({
   description: "Get an agent by id",
   schema: z.object({ id: z.string().uuid() }),
   handler: async ({ id }) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("agents")
       .select("*")
       .eq("id", id)
@@ -36,7 +36,7 @@ export const createAgent = createApiHandler({
   description: "Create a new agent",
   schema: z.object({ agent: AgentSchema }),
   handler: async ({ agent }) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("agents")
       .insert(agent)
       .select()
@@ -60,7 +60,7 @@ export const updateAgent = createApiHandler({
   description: "Update an existing agent",
   schema: z.object({ id: z.string().uuid(), agent: AgentSchema }),
   handler: async ({ id, agent }) => {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("agents")
       .update(agent)
       .eq("id", id)
@@ -89,7 +89,7 @@ export const deleteAgent = createApiHandler({
   description: "Delete an agent by id",
   schema: z.object({ id: z.string().uuid() }),
   handler: async ({ id }) => {
-    const { error } = await supabase
+    const { error } = await client
       .from("agents")
       .delete()
       .eq("id", id);

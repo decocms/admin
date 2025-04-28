@@ -6,8 +6,6 @@ import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedToggleButton } from "../pageLayout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Link } from "react-router";
-import { useBasePath } from "../../hooks/useBasePath.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 
 interface Props {

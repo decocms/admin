@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
 import * as membersAPI from "./api/members/api.ts";
+import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
@@ -39,6 +40,8 @@ const createServer = () => {
     membersAPI.addTeamMember,
     membersAPI.updateTeamMember,
     membersAPI.removeTeamMember,
+    profilesAPI.getProfile,
+    profilesAPI.updateProfile,
   ];
 
   for (const tool of tools) {

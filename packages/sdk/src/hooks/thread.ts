@@ -105,6 +105,52 @@ export const useUpdateThreadTools = (agentId: string, threadId: string) => {
   });
 };
 
+export const useAddOptimisticThread = () => {
+  const client = useQueryClient();
+  const { workspace } = useSDK();
+
+  const addOptimisticThread = useCallback(
+    (threadId: string, agentId: string) => {
+      // Add a "Loading..." titled thread to the threads query
+      client.setQueryData(
+        KEYS.THREADS(workspace),
+        // deno-lint-ignore no-explicit-any
+        (oldData: any) => {
+          if (!oldData) return oldData;
+
+          // Check if the thread already exists
+          // deno-lint-ignore no-explicit-any
+          const threadExists = oldData.some((thread: any) =>
+            thread.id === threadId
+          );
+
+          if (!threadExists) {
+            return [
+              ...oldData,
+              {
+                id: threadId,
+                title: "New chat",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                metadata: {
+                  agentId,
+                },
+              },
+            ];
+          }
+
+          return oldData;
+        },
+      );
+    },
+    [client, workspace],
+  );
+
+  return {
+    addOptimisticThread,
+  };
+};
+
 export const useInvalidateAll = () => {
   const client = useQueryClient();
 

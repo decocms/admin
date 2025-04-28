@@ -23,6 +23,7 @@ import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts"
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { togglePanel, useDock } from "../dock/index.tsx";
+import { useFocusChat } from "../agents/hooks.ts";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -142,6 +143,7 @@ function Agent(props: Props) {
   const { toggleSidebar } = useSidebar();
   const [isLoading, setIsLoading] = useState(false);
   const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
+  const focusChat = useFocusChat();
 
   const handleUpdate = () => {
     setIsLoading(true);
@@ -174,14 +176,27 @@ function Agent(props: Props) {
             (isMobile || hasChanges) && "h-auto py-2",
           )}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="mr-2 md:invisible"
-          >
-            <Icon name="menu" size={20} />
-          </Button>
+          <div className="flex justify-between gap-2 w-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="mr-2 md:invisible"
+            >
+              <Icon name="menu" size={20} />
+            </Button>
+            <Button
+              variant="outline"
+              title="New Chat"
+              className={cn(
+                (hasChanges || !isMobile) && "hidden",
+              )}
+              onClick={() => focusChat(agentId, crypto.randomUUID())}
+            >
+              <Icon name="chat_add_on" />
+              New chat
+            </Button>
+          </div>
           <div className="flex gap-2">
             {hasChanges && (
               <>

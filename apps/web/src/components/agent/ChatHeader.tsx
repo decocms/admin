@@ -125,12 +125,10 @@ ChatHeader.UI = ({ agentId }: Props) => {
             <h1 className="text-sm font-medium tracking-tight">
               {agent.name}
             </h1>
-            <div className="ml-auto">
-              <ActionsButton />
-            </div>
           </div>
 
           <div>
+            <ActionsButton />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

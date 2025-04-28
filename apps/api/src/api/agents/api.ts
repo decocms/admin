@@ -1,6 +1,5 @@
 import { AgentSchema } from "@deco/sdk";
 import { z } from "zod";
-import { client } from "../../db/client.ts";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
 
@@ -14,7 +13,7 @@ export const getAgent = createApiHandler({
   handler: async ({ id, workspace }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_agents")
       .select("*")
       .eq("id", id)
@@ -47,7 +46,7 @@ export const createAgent = createApiHandler({
   handler: async ({ agent, workspace }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_agents")
       .insert({ ...agent, workspace })
       .select()
@@ -77,7 +76,7 @@ export const updateAgent = createApiHandler({
   handler: async ({ id, workspace, agent }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_agents")
       .update(agent)
       .eq("id", id)
@@ -111,7 +110,7 @@ export const deleteAgent = createApiHandler({
   handler: async ({ id, workspace }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { error } = await client
+    const { error } = await c.get("db")
       .from("deco_chat_agents")
       .delete()
       .eq("id", id);

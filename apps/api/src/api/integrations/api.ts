@@ -1,6 +1,5 @@
 import { IntegrationSchema } from "@deco/sdk";
 import { z } from "zod";
-import { client } from "../../db/client.ts";
 import { createApiHandler } from "../../utils/context.ts";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 
@@ -15,7 +14,7 @@ export const getIntegration = createApiHandler({
   handler: async ({ id, workspace }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_integrations")
       .select("*")
       .eq("id", id)
@@ -48,7 +47,7 @@ export const createIntegration = createApiHandler({
   handler: async ({ workspace, integration }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_integrations")
       .insert({ ...integration, workspace })
       .select()
@@ -78,7 +77,7 @@ export const updateIntegration = createApiHandler({
   handler: async ({ id, workspace, integration }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { data, error } = await client
+    const { data, error } = await c.get("db")
       .from("deco_chat_integrations")
       .update(integration)
       .eq("id", id)
@@ -112,7 +111,7 @@ export const deleteIntegration = createApiHandler({
   handler: async ({ id, workspace }, c) => {
     await assertUserHasAccessToWorkspace(workspace, c);
 
-    const { error } = await client
+    const { error } = await c.get("db")
       .from("deco_chat_integrations")
       .delete()
       .eq("id", id);

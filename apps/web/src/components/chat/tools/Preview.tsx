@@ -1,14 +1,15 @@
 import { Button } from "@deco/ui/components/button.tsx";
+import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
 import { ALLOWANCES } from "../../../constants.ts";
 import {
   IMAGE_REGEXP,
   openPreviewPanel,
   toIframeProps,
 } from "../utils/preview.ts";
-import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
-import { useState } from "react";
 
 interface PreviewProps {
   title?: string;
@@ -78,6 +79,8 @@ function ImagePreview({
   onOpenDialog,
   className,
 }: ImagePreviewProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
   return (
     <div
       className={cn(
@@ -104,10 +107,15 @@ function ImagePreview({
         />
       </div>
       <div className="w-max max-w-[420px]">
+        {isLoading && <Skeleton className="w-[420px] h-[420px] rounded-2xl" />}
         <img
           src={src}
           alt={title || "Preview"}
-          className="w-full h-auto rounded-2xl shadow-lg cursor-pointer"
+          className={cn(
+            "w-full h-auto rounded-2xl shadow-lg cursor-pointer transition-opacity duration-300",
+            isLoading ? "opacity-0" : "opacity-100",
+          )}
+          onLoad={() => setIsLoading(false)}
         />
       </div>
     </div>
@@ -213,9 +221,6 @@ function HtmlPreview({
 
 export function Preview({ content, title, className }: PreviewProps) {
   const iframeProps = toIframeProps(content);
-  const url = new URL(iframeProps.src ?? "");
-  const isImageLike = IMAGE_REGEXP.test(url.pathname);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleExpand = () => {
@@ -226,18 +231,22 @@ export function Preview({ content, title, className }: PreviewProps) {
     );
   };
 
-  if (isImageLike) {
+  const isImageLike = iframeProps.src
+    ? IMAGE_REGEXP.test(new URL(iframeProps.src).pathname)
+    : false;
+
+  if (isImageLike && iframeProps.src) {
     return (
       <>
         <ImagePreview
-          src={url.href}
+          src={iframeProps.src}
           title={title}
           onExpand={handleExpand}
           onOpenDialog={() => setIsDialogOpen(true)}
           className={className}
         />
         <ImageDialog
-          src={url.href}
+          src={iframeProps.src}
           title={title}
           isOpen={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}

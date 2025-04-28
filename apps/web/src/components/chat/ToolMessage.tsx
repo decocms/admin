@@ -1,6 +1,7 @@
 import type { Message } from "@ai-sdk/react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
@@ -45,6 +46,7 @@ function ToolStatus({
   isSingle,
 }: { tool: ToolInvocation; isLast: boolean; isSingle: boolean }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showCopyButton, setShowCopyButton] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const getIcon = (state: string) => {
@@ -65,6 +67,20 @@ function ToolStatus({
       return `Delegating to ${parseHandoffTool(tool.toolName)}`;
     }
     return tool.toolName;
+  };
+
+  const getToolJson = () => {
+    return JSON.stringify(
+      {
+        toolName: tool.toolName,
+        state: tool.state,
+        args: tool.args,
+        result: tool.result,
+        error: tool.error,
+      },
+      null,
+      2,
+    ).replace(/"(\w+)":/g, '"$1":');
   };
 
   useEffect(() => {
@@ -110,13 +126,19 @@ function ToolStatus({
     });
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getToolJson());
+  };
+
   return (
     <div
       className={cn(
-        "flex flex-col",
+        "flex flex-col relative",
         isSingle && "p-4 hover:bg-slate-50 rounded-2xl",
       )}
       onClick={isSingle ? onClick : undefined}
+      onMouseEnter={() => setShowCopyButton(true)}
+      onMouseLeave={() => setShowCopyButton(false)}
     >
       <div className="flex items-start gap-2">
         <button
@@ -153,21 +175,32 @@ function ToolStatus({
             {isExpanded && (
               <div
                 ref={contentRef}
-                className="text-left mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full"
+                className="text-left mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full relative"
+                onClick={(e) => e.stopPropagation()}
               >
-                <pre className="p-4 text-xs whitespace-pre-wrap break-all">
-                  <code className="text-zinc-100">
-                    {JSON.stringify(
-                      {
-                        toolName: tool.toolName,
-                        state: tool.state,
-                        args: tool.args,
-                        result: tool.result,
-                        error: tool.error,
-                      },
-                      null,
-                      2,
-                    ).replace(/"(\w+)":/g, '"$1":')}
+                {showCopyButton && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopy();
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-zinc-800 transition-colors"
+                    title="Copy tool details"
+                  >
+                    <Icon
+                      name="content_copy"
+                      className="w-4 h-4 text-zinc-400"
+                    />
+                  </Button>
+                )}
+                <pre
+                  className="p-4 text-xs whitespace-pre-wrap break-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <code className="text-zinc-100 select-text cursor-auto">
+                    {getToolJson()}
                   </code>
                 </pre>
               </div>

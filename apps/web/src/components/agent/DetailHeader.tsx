@@ -8,6 +8,7 @@ import { DockedToggleButton } from "../pageLayout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Link } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 
 interface Props {
   agentId: string;
@@ -56,8 +57,7 @@ AgentHeader.Skeleton = () => {
 
 AgentHeader.UI = ({ agentId }: Props) => {
   const { data: agent } = useAgent(agentId);
-  const withBasePath = useBasePath();
-  const newChatUrl = withBasePath(`/chat/${agentId}/${crypto.randomUUID()}`);
+  const focusChat = useFocusChat();
 
   return (
     <>
@@ -78,12 +78,10 @@ AgentHeader.UI = ({ agentId }: Props) => {
         <Button
           variant="outline"
           title="New Chat"
-          asChild
+          onClick={() => focusChat(agentId, crypto.randomUUID())}
         >
-          <Link to={newChatUrl}>
-            <Icon name="chat_add_on" />
-            New chat
-          </Link>
+          <Icon name="chat_add_on" />
+          New chat
         </Button>
         <DockedToggleButton
           id="settings"

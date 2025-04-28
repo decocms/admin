@@ -33,3 +33,5 @@ dist-ssr
 
 .deco_host
 .wrangler
+dist
+.dev.vars

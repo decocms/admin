@@ -1,7 +1,7 @@
 import { User } from "@deco/sdk";
 import type { CallToolResult } from "@modelcontextprotocol/sdk";
 import { Context } from "hono";
-import { env } from "hono/adapter";
+import { env as honoEnv } from "hono/adapter";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { Client } from "../db/client.ts";
@@ -11,6 +11,10 @@ export type AppEnv = {
   Variables: {
     db: Client;
     user: User;
+  };
+  Bindings: {
+    SUPABASE_URL?: string;
+    SUPABASE_SERVER_TOKEN?: string;
   };
 };
 
@@ -41,13 +45,16 @@ export const serializeError = (error: unknown): string => {
 };
 
 export const getEnv = (ctx: AppContext) => {
-  const { SUPABASE_URL, SUPABASE_KEY } = env(ctx);
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = ctx.env;
 
-  if (typeof SUPABASE_URL !== "string" || typeof SUPABASE_KEY !== "string") {
+  if (
+    typeof SUPABASE_URL !== "string" ||
+    typeof SUPABASE_SERVER_TOKEN !== "string"
+  ) {
     throw new Error("Missing environment variables");
   }
 
-  return { SUPABASE_URL, SUPABASE_KEY };
+  return { SUPABASE_URL, SUPABASE_SERVER_TOKEN };
 };
 
 export const createApiHandler = <

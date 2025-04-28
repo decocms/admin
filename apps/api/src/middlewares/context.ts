@@ -6,11 +6,11 @@ export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx,
   next,
 ) => {
-  const { SUPABASE_URL, SUPABASE_KEY } = getEnv(ctx);
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(ctx);
 
   ctx.set(
     "db",
-    getServerClient(SUPABASE_URL, SUPABASE_KEY),
+    getServerClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN),
   );
 
   await next();

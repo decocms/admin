@@ -5,10 +5,10 @@ import { AppContext, getEnv } from "../utils/context.ts";
 
 // TODO: add LRU Cache
 export const getUser = async (ctx: AppContext): Promise<User | undefined> => {
-  const { SUPABASE_URL, SUPABASE_KEY } = getEnv(ctx);
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(ctx);
 
   const cookies = getCookies(ctx.req.raw.headers);
-  const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, {
+  const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN, {
     cookies: {
       getAll: () =>
         Object.entries(cookies).map(([name, value]) => ({

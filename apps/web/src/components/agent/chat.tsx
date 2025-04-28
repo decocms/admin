@@ -8,6 +8,7 @@ import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import ThreadSettingsTab from "../settings/chat.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
@@ -51,6 +52,7 @@ interface Props {
   agentId?: string;
   threadId?: string;
   disableThreadMessages?: boolean;
+  includeThreadTools?: boolean;
 }
 
 const MainHeader = () => <AgentHeader />;
@@ -76,6 +78,10 @@ const COMPONENTS = {
   preview: {
     Component: AgentPreview,
     title: "Preview",
+  },
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Thread Tools",
   },
 };
 
@@ -156,7 +162,7 @@ function Agent(props: Props) {
     <ChatProvider
       agentId={agentId}
       threadId={threadId}
-      uiOptions={{ showThreadTools: false }}
+      uiOptions={{ showThreadTools: props.includeThreadTools || false }}
       disableThreadMessages={props.disableThreadMessages}
     >
       <div className="h-screen flex flex-col">

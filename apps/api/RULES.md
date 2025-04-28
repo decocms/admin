@@ -63,7 +63,8 @@ The initial implementation is present in `app.ts` and includes:
 - Base class structure for the API
 - Method stubs for Agents and Integrations CRUD operations
 - Type definitions for Agent and Integration entities
-- Server abstraction layer, no need to create any http related low lever server things
+- Server abstraction layer, no need to create any http related low lever server
+  things
 
 ## MCP (Microservice Control Plane) Requirements
 

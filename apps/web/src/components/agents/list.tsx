@@ -40,7 +40,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
-import { useFocusAgent } from "./hooks.ts";
+import { useFocusAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -136,6 +136,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const focusAgent = useFocusAgent();
+  const focusChat = useFocusChat();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
 
   // Return loading state while fetching agent data
@@ -219,6 +220,20 @@ function AgentCard({ agent }: { agent: Agent }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      if (!agent.draft) {
+                        focusChat(agent.id, crypto.randomUUID());
+                      } else {
+                        focusAgent(agent.id);
+                      }
+                    }}
+                  >
+                    <Icon name="chat" className="mr-2" />
+                    New Chat
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}
                     onClick={(e) => {

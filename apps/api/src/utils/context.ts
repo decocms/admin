@@ -9,7 +9,7 @@ import { Database } from "../db/schema.ts";
 export type AppEnv = {
   Variables: {
     db: typeof client;
-    user: User;
+    user?: User;
   };
 };
 

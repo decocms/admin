@@ -7,7 +7,7 @@ export const setUserMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx,
   next,
 ) => {
-  const user = false ? await getUser(ctx.req.raw) : {
+  const user = true ? await getUser(ctx.req.raw) : {
     id: "ec1de23c-1e7d-443e-b99c-4c7b1f75f15a",
     email: "gimenes@deco.cx",
   } as User;

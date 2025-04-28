@@ -13,7 +13,7 @@ export const getIntegration = createApiHandler({
     id: z.string().uuid(),
   }),
   handler: async ({ id, workspace }, c) => {
-    const assertions = assertUserHasAccessToWorkspace(workspace, c);
+    await assertUserHasAccessToWorkspace(workspace, c);
 
     const { data, error } = await client
       .from("deco_chat_integrations")
@@ -28,8 +28,6 @@ export const getIntegration = createApiHandler({
     if (!data) {
       throw new Error("Integration not found");
     }
-
-    await assertions;
 
     return {
       content: [{
@@ -48,7 +46,7 @@ export const createIntegration = createApiHandler({
     integration: IntegrationSchema,
   }),
   handler: async ({ workspace, integration }, c) => {
-    const assertions = assertUserHasAccessToWorkspace(workspace, c);
+    await assertUserHasAccessToWorkspace(workspace, c);
 
     const { data, error } = await client
       .from("deco_chat_integrations")
@@ -59,8 +57,6 @@ export const createIntegration = createApiHandler({
     if (error) {
       throw new Error(error.message);
     }
-
-    await assertions;
 
     return {
       content: [{
@@ -80,7 +76,7 @@ export const updateIntegration = createApiHandler({
     integration: IntegrationSchema,
   }),
   handler: async ({ id, workspace, integration }, c) => {
-    const assertions = assertUserHasAccessToWorkspace(workspace, c);
+    await assertUserHasAccessToWorkspace(workspace, c);
 
     const { data, error } = await client
       .from("deco_chat_integrations")
@@ -96,8 +92,6 @@ export const updateIntegration = createApiHandler({
     if (!data) {
       throw new Error("Integration not found");
     }
-
-    await assertions;
 
     return {
       content: [{
@@ -116,7 +110,7 @@ export const deleteIntegration = createApiHandler({
     id: z.string().uuid(),
   }),
   handler: async ({ id, workspace }, c) => {
-    const assertions = assertUserHasAccessToWorkspace(workspace, c);
+    await assertUserHasAccessToWorkspace(workspace, c);
 
     const { error } = await client
       .from("deco_chat_integrations")
@@ -126,8 +120,6 @@ export const deleteIntegration = createApiHandler({
     if (error) {
       throw new Error(error.message);
     }
-
-    await assertions;
 
     return {
       content: [{

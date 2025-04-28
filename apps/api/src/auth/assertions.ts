@@ -1,17 +1,39 @@
 import { AppContext } from "../utils/context.ts";
 import { parseWorkspace } from "../utils/workspace.ts";
 
+const getContextUser = (c: AppContext) => {
+  assertHasUser(c);
+  return c.get("user")!;
+};
+
+const assertUserHasAccessToTeam = async (
+  { teamId, userId }: { teamId: number; userId: string },
+  c: AppContext,
+) => {
+  const db = c.get("db");
+  const { data, error } = await db
+    .from("members")
+    .select("id")
+    .eq("team_id", teamId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    throw new Error("User does not have access to this workspace");
+  }
+
+  if (data) {
+    return;
+  }
+};
+
 export const assertUserHasAccessToWorkspace = async (
   workspace: string,
   c: AppContext,
 ) => {
   const { type, id } = parseWorkspace(workspace);
-  const user = c.get("user");
+  const user = getContextUser(c);
   const db = c.get("db");
-
-  if (!user) {
-    throw new Error("User not found");
-  }
 
   if (!db) {
     throw new Error("Missing database");
@@ -22,20 +44,12 @@ export const assertUserHasAccessToWorkspace = async (
   }
 
   if (type === "teamId") {
-    const { data, error } = await db
-      .from("members")
-      .select("*")
-      .eq("team_id", id)
-      .eq("user_id", user.id)
-      .single();
+    await assertUserHasAccessToTeam({
+      userId: user.id,
+      teamId: Number(id),
+    }, c);
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (data) {
-      return;
-    }
+    return;
   }
 
   throw new Error("User does not have access to this workspace");

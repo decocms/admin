@@ -8,7 +8,6 @@ routes = [
 ]
 
 [vars]
-SUPABASE_URL = "https://auth.deco.cx"
 VITE_USE_LOCAL_BACKEND = false
 
 # [[tail_consumers]]

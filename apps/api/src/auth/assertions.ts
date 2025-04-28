@@ -46,7 +46,7 @@ export const assertUserHasAccessToWorkspace = async (
   if (type === "teamId") {
     await assertUserHasAccessToTeam({
       userId: user.id,
-      teamId: Number(id),
+      teamId: id,
     }, c);
 
     return;

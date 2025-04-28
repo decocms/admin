@@ -9,7 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@deco/sdk": "workspace:*",
+    "@deco/sdk": "^0.1.1",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@supabase/ssr": "^0.6.1",

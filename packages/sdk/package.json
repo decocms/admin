@@ -5,7 +5,6 @@
   "private": true,
   "dependencies": {
     "@deco/actors": "npm:@jsr/deco__actors@0.32.7",
-    "@deco/store": "workspace:*",
     "@tanstack/react-query": "^5.72.0",
     "@zenfs/core": "^2.0.0",
     "dockview-react": "^4.2.1",

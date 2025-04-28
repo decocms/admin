@@ -41,11 +41,11 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
-import { useFocusAgent, useFocusChat } from "./hooks.ts";
+import { useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
-  const focusAgent = useFocusAgent();
+  const focusChat = useFocusChat();
   const createAgent = useCreateAgent();
 
   // Function to handle duplicating the agent
@@ -64,7 +64,9 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         model: agent.model,
         views: agent.views,
       });
-      focusAgent(duplicatedAgent.id);
+      focusChat(duplicatedAgent.id, crypto.randomUUID(), {
+        openSettings: true,
+      });
 
       trackEvent("agent_duplicate", {
         success: true,
@@ -136,7 +138,6 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
 function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const focusAgent = useFocusAgent();
   const focusChat = useFocusChat();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const { hasChanges } = useAgentHasChanges(agent.id);
@@ -192,7 +193,7 @@ function AgentCard({ agent }: { agent: Agent }) {
     <>
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
-        onClick={() => focusAgent(agent.id)}
+        onClick={() => focusChat(agent.id, crypto.randomUUID())}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
           <div className="flex flex-col gap-3 w-full">
@@ -222,16 +223,6 @@ function AgentCard({ agent }: { agent: Agent }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      focusChat(agent.id, crypto.randomUUID());
-                    }}
-                  >
-                    <Icon name="chat" className="mr-2" />
-                    New Chat
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}
                     onClick={(e) => {
@@ -353,7 +344,7 @@ function listReducer(state: ListState, action: ListAction): ListState {
 export default function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { filter } = state;
-  const focusAgent = useFocusAgent();
+  const focusChat = useFocusChat();
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();
   const updateThreadMessages = useUpdateThreadMessages();
@@ -370,7 +361,9 @@ export default function List() {
       setCreating(true);
       const agent = await createAgent.mutateAsync({});
       updateThreadMessages(agent.id, agent.id);
-      focusAgent(agent.id);
+      focusChat(agent.id, crypto.randomUUID(), {
+        openSettings: true,
+      });
 
       trackEvent("agent_create", {
         success: true,

@@ -11,7 +11,7 @@ export const DECO_CHAT_PAGE_CONTENT = {
       "https://assets.decocache.com/decochat/13bf3020-4db9-41b2-955e-587cb3a69ba9/bg.svg",
     heroImageMobile:
       "https://assets.decocache.com/decochat/d658bcf4-75b8-4774-97be-02d883d973d4/mobile.svg",
-    primaryButtonLink: "https://deco.chat/login",
+    primaryButtonLink: "/login",
     secondaryButtonLink: "#features",
   },
   features: {
@@ -390,7 +390,7 @@ export const DECO_CHAT_PAGE_CONTENT = {
       "https://assets.decocache.com/decochat/13bf3020-4db9-41b2-955e-587cb3a69ba9/bg.svg",
     title: "Finally, your team leveraging AI productivity without the risks",
     buttonText: "Try now",
-    buttonLink: "https://deco.chat/login",
+    buttonLink: "/login",
   },
   footer: {
     logo:

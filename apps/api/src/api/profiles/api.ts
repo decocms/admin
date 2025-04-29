@@ -4,7 +4,7 @@ import { createApiHandler } from "../../utils/context.ts";
 
 export const getProfile = createApiHandler({
   name: "PROFILES_GET",
-  description: "Get a profile by id",
+  description: "Get the current user's profile",
   schema: z.object({}),
   handler: async (_, c) => {
     const user = c.get("user");
@@ -36,7 +36,7 @@ export const getProfile = createApiHandler({
 
 export const updateProfile = createApiHandler({
   name: "PROFILES_UPDATE",
-  description: "Update an existing profile",
+  description: "Update the current user's profile",
   schema: z.object({
     name: z.string().nullable().optional(),
     email: z.string().optional(),

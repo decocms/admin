@@ -1,34 +1,30 @@
 import { z } from "zod";
 import { assertHasUser } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
+import { enrichUser } from "../../user/index.ts";
 
 export const getProfile = createApiHandler({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
   schema: z.object({}),
-  handler: async (_, c) => {
+  handler: (_, c) => {
     const user = c.get("user");
 
     assertHasUser(c);
 
-    const { data, error } = await c.get("db")
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    // TODO: change profile data to have necessary info
+    // const { data } = await c.get("db")
+    // .from("profiles")
+    // .select("*")
+    // .eq("user_id", user.id)
+    // .single();
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (!data) {
-      throw new Error("Profile not found");
-    }
+    const enrichedUser = enrichUser(user);
 
     return {
       content: [{
         type: "text",
-        text: JSON.stringify(data),
+        text: JSON.stringify(enrichedUser),
       }],
     };
   },

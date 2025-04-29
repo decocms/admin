@@ -1,4 +1,4 @@
-import { AUTH_URL } from "@deco/sdk";
+import { AUTH_URL, callTool } from "@deco/sdk";
 import { use } from "react";
 
 export interface User {
@@ -27,20 +27,23 @@ export class NotLoggedInError extends Error {
   }
 }
 
-const fetchUser = async () => {
-  const response = await fetch(`${AUTH_URL}/api/user`, {
-    credentials: "include",
-  });
+const fetchUser = async (): Promise<User> => {
+  try {
+    const { content } = await callTool({
+      type: "HTTP",
+      url: new URL("/mcp", AUTH_URL).href,
+    }, {
+      arguments: {},
+      name: "PROFILES_GET",
+    });
+    const [{ text }] = content as [{ text: string }];
+    const { content: [{ text: stringData }] } = JSON.parse(text);
+    const user = JSON.parse(stringData);
 
-  if (response.status === 401) {
+    return user;
+  } catch (_) {
     throw new NotLoggedInError("User is not logged in");
   }
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch user");
-  }
-
-  return response.json() as Promise<User>;
 };
 
 const promise = fetchUser();

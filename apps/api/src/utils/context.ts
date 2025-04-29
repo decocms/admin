@@ -86,10 +86,10 @@ export const createApiHandler = <
   name: string;
   description: string;
   schema: T;
-  handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
+  handler: (props: z.infer<T>, c: AppContext) => Promise<R> | R;
 }) => ({
   ...definition,
-  handler: (props: z.infer<T>): Promise<R> =>
+  handler: (props: z.infer<T>): Promise<R> | R =>
     definition.handler(props, State.getStore()),
 });
 

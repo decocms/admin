@@ -155,16 +155,6 @@ Object.entries(loginRoutes).forEach(([route, honoApp]) => {
   app.route(route, honoApp);
 });
 
-app.all("/api/user", (c: AppContext) => {
-  const user = c.get("user");
-  if (!user) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-
-  // TODO: enrich user
-  return c.json(enrichUser(user));
-});
-
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 

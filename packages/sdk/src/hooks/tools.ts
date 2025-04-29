@@ -28,6 +28,8 @@ type ToolsData = {
   capabilities?: Record<string, unknown>;
 };
 
+const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
+
 const fetchAPI = (path: string, init?: RequestInit) =>
   fetch(new URL(path, API_SERVER_URL), {
     ...init,
@@ -67,11 +69,23 @@ export const callTool = async (
 };
 
 export function useTools(connection: MCPConnection) {
-  return useQuery({
+  const response = useQuery({
     retry: false,
-    queryKey: ["tools", connection],
+    queryKey: [
+      "tools",
+      connection.type,
+      // deno-lint-ignore no-explicit-any
+      (connection as any).url || (connection as any).tenant ||
+      // deno-lint-ignore no-explicit-any
+      (connection as any).name,
+    ],
     queryFn: () => listTools(connection),
   });
+
+  return {
+    ...response,
+    data: response.data || INITIAL_DATA,
+  };
 }
 
 export function useToolCall(connection: MCPConnection) {

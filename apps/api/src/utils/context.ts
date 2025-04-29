@@ -59,7 +59,7 @@ export const AUTH_URL = (ctx: AppContext) =>
 
 export const createAIHandler =
   // deno-lint-ignore no-explicit-any
-  (cb: (...args: any[]) => Promise<any>) =>
+  (cb: (...args: any[]) => Promise<any> | any) =>
   // deno-lint-ignore no-explicit-any
   async (...args: any[]): Promise<CallToolResult> => {
     try {

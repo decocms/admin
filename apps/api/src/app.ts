@@ -11,14 +11,8 @@ import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import {
-  ApiHandler,
-  AppContext,
-  createAIHandler,
-  State,
-} from "./utils/context.ts";
+import { ApiHandler, createAIHandler, State } from "./utils/context.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
-import { enrichUser } from "./user/index.ts";
 
 const app = new Hono();
 

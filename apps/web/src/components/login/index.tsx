@@ -1,7 +1,7 @@
 import { SplitScreenLayout } from "./layout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { providers } from "./providers.tsx";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 
 function Login() {
@@ -38,8 +38,8 @@ function Login() {
                 className="rounded-3xl p-5 min-w-80"
                 asChild
               >
-                <a
-                  href={provider.authURL(next || globalThis.location.origin)}
+                <Link
+                  to={provider.authURL(next || globalThis.location.origin)}
                   className="flex items-center gap-2.5 h-6"
                   onClick={() => handleProviderClick(provider.name)}
                 >
@@ -54,7 +54,7 @@ function Login() {
                   <span className="text-sm font-semibold">
                     Continue with {provider.name}
                   </span>
-                </a>
+                </Link>
               </Button>
             );
           })}

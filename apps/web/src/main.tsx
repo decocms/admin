@@ -19,7 +19,6 @@ import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
-import MagicLink from "./components/login/magicLink.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -75,6 +74,10 @@ const EditAgent = lazy(
 
 const Wallet = lazy(
   () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
+);
+
+const MagicLink = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/login/magicLink.tsx"))
 );
 
 function NotFound() {

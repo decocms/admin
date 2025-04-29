@@ -42,7 +42,7 @@ export const providers: Provider[] = [
     iconURL:
       "https://assets.decocache.com/webdraw/15eec989-84bc-4905-a8e3-3beadf1e13c1/email.svg",
     authURL: (next) => {
-      const url = new URL(AUTH_URL);
+      const url = new URL(globalThis.location.href);
       url.pathname = "/login/magiclink";
       if (next) {
         url.searchParams.set("next", next);

@@ -19,6 +19,7 @@ import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
+import MagicLink from "./components/login/magicLink.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -137,6 +138,7 @@ function Router() {
   return (
     <Routes>
       <Route path="login" element={<Login />} />
+      <Route path="login/magiclink" element={<MagicLink />} />
 
       <Route path="about" element={<About />} />
 

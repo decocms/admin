@@ -1,8 +1,4 @@
-import { AUTH_URL } from "../constants.ts";
-import { createFetcher } from "../fetcher.ts";
-
-// Create a custom fetcher for auth endpoints
-const authFetcher = createFetcher(AUTH_URL);
+import { callToolFor } from "../fetcher.ts";
 
 export interface User {
   id: string;
@@ -15,9 +11,7 @@ export interface User {
 }
 
 export const fetchUser = async () => {
-  const response = await authFetcher({
-    path: "/api/user",
-  });
+  const response = await callToolFor("", "PROFILES_GET", {});
 
   if (response.status === 401) {
     throw new Error("User is not logged in");
@@ -27,5 +21,7 @@ export const fetchUser = async () => {
     throw new Error("Failed to fetch user");
   }
 
-  return response.json() as Promise<User>;
+  const { data } = await response.json();
+
+  return JSON.parse(data.content[0].text);
 };

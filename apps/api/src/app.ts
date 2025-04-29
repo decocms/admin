@@ -69,7 +69,11 @@ const createMCPHandlerFor = (
 
     await server.connect(transport);
 
-    c.res = await State.run(c, transport.handleMessage.bind(transport), c.req.raw);
+    c.res = await State.run(
+      c,
+      transport.handleMessage.bind(transport),
+      c.req.raw,
+    );
 
     return c.res;
   };

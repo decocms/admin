@@ -1,16 +1,15 @@
-import { User } from "@deco/sdk";
 import type { CallToolResult } from "@modelcontextprotocol/sdk";
 import { Context } from "hono";
 import { env as honoEnv } from "hono/adapter";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { Client } from "../db/client.ts";
-import { Database } from "../db/schema.ts";
+import { type User as SupaUser } from "npm:@supabase/supabase-js@^2.49.4";
 
 export type AppEnv = {
   Variables: {
     db: Client;
-    user: User;
+    user: SupaUser;
   };
   Bindings: {
     SUPABASE_URL?: string;
@@ -19,11 +18,6 @@ export type AppEnv = {
 };
 
 export type AppContext = Context<AppEnv>;
-
-export interface Variables {
-  db: Database;
-  user: User;
-}
 
 const isErrorLike = (error: unknown): error is Error =>
   Boolean((error as Error)?.message);
@@ -56,6 +50,11 @@ export const getEnv = (ctx: AppContext) => {
 
   return { SUPABASE_URL, SUPABASE_SERVER_TOKEN };
 };
+
+export const AUTH_URL = (ctx: AppContext) =>
+  honoEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
+    ? "http://localhost:3001"
+    : "https://api.deco.chat";
 
 export const createAIHandler =
   // deno-lint-ignore no-explicit-any

@@ -28,8 +28,8 @@ export const API_SERVER_URL = LOCAL_DEBUGGER
   : "https://api.deco.chat";
 
 export const AUTH_URL = LOCAL_DEBUGGER
-  ? "http://localhost:5173"
-  : "https://auth.deco.chat";
+  ? "http://localhost:3001"
+  : "https://api.deco.chat";
 
 export const API_HEADERS = {
   "content-type": "application/json",

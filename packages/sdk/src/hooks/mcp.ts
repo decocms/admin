@@ -117,7 +117,7 @@ export const useIntegrations = () => {
   const data = useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace),
     queryFn: async ({ signal }) => {
-      const items = await listIntegrations(workspace, signal);
+      const { items } = await listIntegrations(workspace, signal);
 
       for (const item of items) {
         const itemKey = KEYS.INTEGRATION(workspace, item.id);

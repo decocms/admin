@@ -127,7 +127,7 @@ export const useAgents = () => {
   const data = useSuspenseQuery({
     queryKey: KEYS.AGENT(workspace),
     queryFn: async ({ signal }) => {
-      const items = await listAgents(workspace, signal);
+      const { items } = await listAgents(workspace, signal);
 
       for (const item of items) {
         const itemKey = KEYS.AGENT(workspace, item.id);

@@ -1,6 +1,6 @@
 import type { Actor } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
-import { LEGACY_API_SERVER_URL } from "./constants.ts";
+import { API_SERVER_URL } from "./constants.ts";
 import { getTraceDebugId } from "./constants.ts";
 
 /**
@@ -15,7 +15,7 @@ export const stub = <T extends Actor>(name: string) => {
     {
       server: {
         credentials: "include",
-        url: LEGACY_API_SERVER_URL,
+        url: API_SERVER_URL,
       },
       maxWsChunkSize: 768e3, // 768kb to make a message binary.
       errorHandling: {

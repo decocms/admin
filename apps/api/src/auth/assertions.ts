@@ -1,79 +1,53 @@
-import { HTTPException } from "hono/http-exception";
 import { AppContext } from "../utils/context.ts";
+import { parseWorkspace } from "../utils/workspace.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
   return c.get("user")!;
 };
 
-export const assertUserHasAccessToTeamById = async (
+export const assertUserHasAccessToTeam = async (
   { teamId, userId }: { teamId: number; userId: string },
   c: AppContext,
 ) => {
-  const { data } = await c
-    .get("db")
+  const db = c.get("db");
+  const { data, error } = await db
     .from("members")
     .select("id")
     .eq("team_id", teamId)
     .eq("user_id", userId)
     .single();
 
-  if (data) {
-    return;
+  if (error) {
+    throw new Error("User does not have access to this workspace");
   }
-
-  throw new HTTPException(403, {
-    message: "User does not have access to this team",
-  });
-};
-
-export const assertUserHasAccessToTeamBySlug = async (
-  { teamSlug, userId }: { teamSlug: string; userId: string },
-  c: AppContext,
-) => {
-  const { data } = await c.get("db")
-    .from("members")
-    .select(`
-      id,
-      team:teams!inner (
-        id,
-        slug
-      )
-    `)
-    .eq("user_id", userId)
-    .eq("team.slug", teamSlug)
-    .single();
 
   if (data) {
     return;
   }
-
-  throw new HTTPException(403, {
-    message: "User does not have access to this workspace",
-  });
 };
 
 export const assertUserHasAccessToWorkspace = async (
-  root: string,
-  slug: string,
+  workspace: string,
   c: AppContext,
 ) => {
+  const { type, id } = parseWorkspace(workspace);
   const user = getContextUser(c);
   const db = c.get("db");
 
   if (!db) {
-    throw new HTTPException(500, { message: "Missing database" });
+    throw new Error("Missing database");
   }
 
-  if (root === "users" && user.id === slug) {
+  if (type === "userId" && user.id === id) {
     return;
   }
 
-  if (root === "shared") {
-    await assertUserHasAccessToTeamBySlug(
-      { userId: user.id, teamSlug: slug },
-      c,
-    );
+  if (type === "teamId") {
+    await assertUserHasAccessToTeam({
+      userId: user.id,
+      teamId: id,
+    }, c);
 
     return;
   }
@@ -85,6 +59,6 @@ export const assertHasUser = (c: AppContext) => {
   const user = c.get("user");
 
   if (!user) {
-    throw new HTTPException(401, { message: "Unauthorized" });
+    throw new Error("User not found");
   }
 };

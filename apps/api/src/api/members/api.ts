@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
-import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
+import { assertUserHasAccessToTeam } from "../../auth/assertions.ts";
 
 const MemberSchema = z.object({
   user_id: z.string(),
@@ -38,7 +38,7 @@ export const getTeamMembers = createApiHandler({
     const user = c.get("user");
 
     // First verify the user has access to the team
-    await assertUserHasAccessToTeamById(
+    await assertUserHasAccessToTeam(
       { userId: user.id, teamId: props.teamId },
       c,
     );

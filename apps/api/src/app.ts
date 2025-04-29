@@ -2,7 +2,6 @@ import { HttpServerTransport } from "@deco/mcp/http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { cors } from "hono/cors";
-import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
@@ -11,102 +10,48 @@ import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import { ApiHandler, createAIHandler, State } from "./utils/context.ts";
+import { State } from "./utils/context.ts";
 
 const app = new Hono();
 
-// Register tools for each API handler
-const GLOBAL_TOOLS = [
-  teamsAPI.getTeam,
-  teamsAPI.createTeam,
-  teamsAPI.updateTeam,
-  teamsAPI.deleteTeam,
-  teamsAPI.listTeams,
-  membersAPI.getTeamMembers,
-  membersAPI.addTeamMember,
-  membersAPI.updateTeamMember,
-  membersAPI.removeTeamMember,
-  profilesAPI.getProfile,
-  profilesAPI.updateProfile,
-];
-
-// Tools tied to an specific workspace
-const WORKSPACE_TOOLS = [
-  agentsAPI.getAgent,
-  agentsAPI.deleteAgent,
-  agentsAPI.createAgent,
-  agentsAPI.updateAgent,
-  agentsAPI.listAgents,
-  integrationsAPI.getIntegration,
-  integrationsAPI.createIntegration,
-  integrationsAPI.updateIntegration,
-  integrationsAPI.deleteIntegration,
-  integrationsAPI.listIntegrations,
-];
-
-/**
- * Creates and sets up an MCP server for the given tools
- */
-const createMCPHandlerFor = (
-  tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS,
-) => {
+// Function to create and configure the MCP server
+const createServer = () => {
   const server = new McpServer(
     { name: "@deco/api", version: "1.0.0" },
     { capabilities: { tools: {} } },
   );
 
+  // Register tools for each API handler
+  const tools = [
+    agentsAPI.getAgent,
+    agentsAPI.deleteAgent,
+    agentsAPI.createAgent,
+    agentsAPI.updateAgent,
+    integrationsAPI.getIntegration,
+    integrationsAPI.createIntegration,
+    integrationsAPI.updateIntegration,
+    integrationsAPI.deleteIntegration,
+    teamsAPI.getTeam,
+    teamsAPI.createTeam,
+    teamsAPI.updateTeam,
+    teamsAPI.deleteTeam,
+    teamsAPI.listTeams,
+    membersAPI.getTeamMembers,
+    membersAPI.addTeamMember,
+    membersAPI.updateTeamMember,
+    membersAPI.removeTeamMember,
+    profilesAPI.getProfile,
+    profilesAPI.updateProfile,
+  ];
+
   for (const tool of tools) {
-    server.tool(
-      tool.name,
-      tool.description,
-      tool.schema.shape,
-      createAIHandler(tool.handler),
-    );
+    server.tool(tool.name, tool.description, tool.schema.shape, tool.handler);
   }
 
-  return async (c: Context) => {
-    const transport = new HttpServerTransport();
-
-    await server.connect(transport);
-
-    c.res = await State.run(
-      c,
-      transport.handleMessage.bind(transport),
-      c.req.raw,
-    );
-
-    return c.res;
-  };
+  return server;
 };
 
-/**
- * Setup a handler for handling tool calls. It's used so that
- * UIs can call the tools without suffering the serialization
- * of the protocol.
- */
-const createToolCallHandlerFor =
-  (tools: ApiHandler[]) => async (c: Context) => {
-    const tool = c.req.param("tool");
-    const args = await c.req.json();
-
-    const t = tools.find((t) => t.name === tool);
-
-    if (!t) {
-      throw new HTTPException(404, { message: "Tool not found" });
-    }
-
-    const { data, error } = t.schema.safeParse(args);
-
-    if (error || !data) {
-      throw new HTTPException(400, {
-        message: error?.message ?? "Invalid arguments",
-      });
-    }
-
-    const result = await State.run(c, t.handler, data);
-
-    return c.json({ data: result });
-  };
+const server = createServer();
 
 // Add logger middleware
 app.use(logger());
@@ -123,36 +68,35 @@ app.use(cors({
 app.use(withContextMiddleware);
 app.use(setUserMiddleware);
 
-// MCP endpoint handlers
-app.all(
-  "/mcp",
-  createMCPHandlerFor(GLOBAL_TOOLS),
-);
-app.all(
-  "/:root/:slug/mcp",
-  createMCPHandlerFor(WORKSPACE_TOOLS),
-);
+// app.use("/:workspace/mcp", authMiddleware);
 
-// Tool call endpoint handlers
-app.post(
-  "/tools/call/:tool",
-  createToolCallHandlerFor(GLOBAL_TOOLS),
-);
-app.post(
-  "/:root/:slug/tools/call/:tool",
-  createToolCallHandlerFor(WORKSPACE_TOOLS),
-);
+// Workspace MCP endpoint handler
+app.all("/mcp", async (c: Context) => {
+  try {
+    const transport = new HttpServerTransport();
+
+    await server.connect(transport);
+
+    const handleMessage = State.bind(c, async () => {
+      return await transport.handleMessage(c.req.raw);
+    });
+
+    c.res = await handleMessage();
+  } catch (error) {
+    console.error("Error handling MCP request:", error);
+
+    return c.json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: "Internal server error",
+      },
+      id: null,
+    }, 500);
+  }
+});
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
-
-app.onError((err, c) => {
-  console.error(err);
-
-  return c.json(
-    { error: err?.message ?? "Internal server error" },
-    err instanceof HTTPException ? err.status : 500,
-  );
-});
 
 export default app;

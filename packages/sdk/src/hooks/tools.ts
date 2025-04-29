@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 
 export interface MCPTool {
@@ -31,7 +31,7 @@ type ToolsData = {
 const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 
 const fetchAPI = (path: string, init?: RequestInit) =>
-  fetch(new URL(path, LEGACY_API_SERVER_URL), {
+  fetch(new URL(path, API_SERVER_URL), {
     ...init,
     credentials: "include",
     headers: { ...API_HEADERS, ...init?.headers },

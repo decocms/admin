@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { fetchAPI } from "../fetcher.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
 
 export class IntegrationNotFoundError extends Error {
@@ -12,35 +12,31 @@ export class IntegrationNotFoundError extends Error {
 
 /**
  * Save an MCP to the file system
- * @param integration - The MCP to save
+ * @param mcp - The MCP to save
  */
-export const saveIntegration = async (
-  workspace: string,
-  integration: Integration,
-) => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_UPDATE", {
-    id: integration.id,
-    integration,
+export const saveIntegration = async (context: string, mcp: Integration) => {
+  const response = await fetchAPI({
+    segments: [context, "integration"],
+    method: "POST",
+    body: JSON.stringify(mcp),
   });
 
-  const { error, data } = await response.json();
-
-  if (error) {
-    throw new Error(error.message || "Failed to save integration");
+  if (response.ok) {
+    return response.json() as Promise<Integration>;
   }
 
-  return data;
+  throw new Error("Failed to save integration");
 };
 
 /**
  * Create a new MCP
  * @returns The new MCP
  */
-export const createIntegration = async (
-  workspace: string,
+export const createIntegration = (
+  context: string,
   template: Partial<Integration> = {},
 ) => {
-  const integration: Integration = {
+  const mcp: Integration = {
     id: crypto.randomUUID(),
     name: "New Integration",
     description: "A new multi-channel platform integration",
@@ -49,19 +45,7 @@ export const createIntegration = async (
     ...template,
   };
 
-  const response = await callToolFor(
-    workspace,
-    "INTEGRATIONS_CREATE",
-    integration,
-  );
-
-  const { error, data } = await response.json();
-
-  if (error) {
-    throw new Error(error.message || "Failed to save integration");
-  }
-
-  return data;
+  return saveIntegration(context, mcp);
 };
 
 /**
@@ -70,60 +54,57 @@ export const createIntegration = async (
  * @returns The MCP
  */
 export const loadIntegration = async (
-  workspace: string,
+  context: string,
   mcpId: string,
   signal?: AbortSignal,
 ): Promise<Integration> => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_GET", {
-    id: mcpId,
-  }, { signal });
+  const response = await fetchAPI({
+    segments: [context, "integration", mcpId],
+    signal,
+  });
+
+  if (response.ok) {
+    return response.json() as Promise<Integration>;
+  }
 
   if (response.status === 404) {
     throw new IntegrationNotFoundError(mcpId);
   }
 
-  const { error, data } = await response.json();
-
-  if (error) {
-    throw new Error(error.message || "Failed to load integration");
-  }
-
-  return data;
+  throw new Error("Failed to load integration");
 };
 
 export const listIntegrations = async (
-  workspace: string,
+  context: string,
   signal?: AbortSignal,
-): Promise<Integration[]> => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_LIST", {}, {
+) => {
+  const response = await fetchAPI({
+    segments: [context, "integrations"],
     signal,
   });
 
-  const { error, data } = await response.json();
-
-  if (error) {
-    throw new Error(error.message || "Failed to list integrations");
+  if (response.ok) {
+    return response.json() as Promise<{ items: Integration[] }>;
   }
 
-  return data;
+  throw new Error("Failed to list integrations");
 };
 
 /**
  * Delete an MCP from the file system
  * @param mcpId - The id of the MCP to delete
  */
-export const deleteIntegration = async (workspace: string, mcpId: string) => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_DELETE", {
-    id: mcpId,
+export const deleteIntegration = async (context: string, mcpId: string) => {
+  const response = await fetchAPI({
+    segments: [context, "integration", mcpId],
+    method: "DELETE",
   });
 
-  const { error, data } = await response.json();
-
-  if (error) {
-    throw new Error(error.message || "Failed to delete integration");
+  if (response.ok) {
+    return response.json();
   }
 
-  return data;
+  throw new Error("Failed to delete integration");
 };
 
 /**

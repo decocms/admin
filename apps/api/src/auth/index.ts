@@ -1,6 +1,6 @@
 import type { User } from "@deco/sdk";
 import { createSupabaseClient } from "../db/client.ts";
-import { getCookies } from "../lib/cookie.ts";
+import { getCookies } from "../utils/cookie.ts";
 import { AppContext, getEnv } from "../utils/context.ts";
 
 // TODO: add LRU Cache

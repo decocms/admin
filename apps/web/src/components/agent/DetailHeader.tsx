@@ -74,15 +74,16 @@ AgentHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
-        <ActionsButton />
         <Button
           variant="outline"
-          title="New Chat"
-          onClick={() => focusChat(agentId, crypto.randomUUID())}
+          title="Test agent"
+          onClick={() =>
+            focusChat(agentId, crypto.randomUUID(), { history: false })}
         >
           <Icon name="chat_add_on" />
-          New chat
+          Test agent
         </Button>
+        <ActionsButton />
         <DockedToggleButton
           id="settings"
           title="Settings"

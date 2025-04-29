@@ -1,29 +1,28 @@
-import { Suspense, useMemo, useState } from "react";
-import { useParams } from "react-router";
-import { ChatInput } from "../chat/ChatInput.tsx";
-import { ChatMessages } from "../chat/ChatMessages.tsx";
-import { ChatProvider } from "../chat/context.tsx";
-import { DockedPageLayout } from "../pageLayout.tsx";
-import AgentSettings from "../settings/agent.tsx";
-import AgentPreview from "./preview.tsx";
-import ThreadView from "./thread.tsx";
-import ThreadSettingsTab from "../settings/chat.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { Suspense, useMemo, useState } from "react";
+import { useParams } from "react-router";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useFocusChat } from "../agents/hooks.ts";
+import { ChatInput } from "../chat/ChatInput.tsx";
+import { ChatMessages } from "../chat/ChatMessages.tsx";
+import { ChatProvider } from "../chat/context.tsx";
+import { DockedPageLayout } from "../pageLayout.tsx";
+import AgentSettings from "../settings/agent.tsx";
+import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
-import { ListActions } from "../actions/listActions.tsx";
+import AgentPreview from "./preview.tsx";
+import ThreadView from "./thread.tsx";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -78,10 +77,6 @@ const COMPONENTS = {
   tools: {
     Component: ThreadSettingsTab,
     title: "Thread Tools",
-  },
-  actions: {
-    Component: ListActions,
-    title: "Actions",
   },
 };
 
@@ -177,7 +172,8 @@ function Agent(props: Props) {
                 className={cn(
                   (hasChanges || !isMobile) && "hidden",
                 )}
-                onClick={() => focusChat(agentId, crypto.randomUUID())}
+                onClick={() =>
+                  focusChat(agentId, crypto.randomUUID(), { history: false })}
               >
                 <Icon name="chat_add_on" />
                 New chat

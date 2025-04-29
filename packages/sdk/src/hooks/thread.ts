@@ -21,10 +21,6 @@ export const useThreadMessages = (agentId: string, threadId: string) => {
   const data = useSuspenseQuery({
     queryKey: KEYS.THREADS(workspace, agentId, threadId),
     queryFn: () => agentStub.query({}),
-    staleTime: 0,
-    gcTime: 0,
-    networkMode: "always",
-    refetchOnMount: "always",
   });
 
   return data;
@@ -35,11 +31,11 @@ export const useUpdateThreadMessages = () => {
   const client = useQueryClient();
 
   return useCallback(
-    (agentId: string, threadId: string) => {
+    (agentId: string, threadId: string, messages: unknown[] = []) => {
       const messagesKey = KEYS.THREADS(workspace, agentId, threadId);
 
       client.cancelQueries({ queryKey: messagesKey });
-      client.setQueryData(messagesKey, []);
+      client.setQueryData(messagesKey, messages);
     },
     [client, workspace],
   );

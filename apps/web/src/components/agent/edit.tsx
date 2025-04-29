@@ -1,5 +1,20 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
 import { useParams } from "react-router";
+import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
+import { ListActions } from "../actions/listActions.tsx";
+import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
@@ -8,20 +23,6 @@ import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
-import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
-import { useFocusChat } from "../agents/hooks.ts";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -75,6 +76,10 @@ const COMPONENTS = {
   preview: {
     Component: AgentPreview,
     title: "Preview",
+  },
+  actions: {
+    Component: ListActions,
+    title: "Actions",
   },
 };
 
@@ -167,7 +172,8 @@ function Agent(props: Props) {
                 className={cn(
                   (hasChanges || !isMobile) && "hidden",
                 )}
-                onClick={() => focusChat(agentId, crypto.randomUUID())}
+                onClick={() =>
+                  focusChat(agentId, crypto.randomUUID(), { history: false })}
               >
                 <Icon name="chat_add_on" />
                 New chat

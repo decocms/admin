@@ -1,12 +1,12 @@
 import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { useChatContext } from "../chat/context.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
-import { AgentAvatar } from "../common/Avatar.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import ActionsButton from "../chat/ActionsButton.tsx";
+import { useChatContext } from "../chat/context.tsx";
+import { AgentAvatar } from "../common/Avatar.tsx";
 
 interface Props {
   agentId: string;
@@ -77,13 +77,11 @@ ChatHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
-        <div className="ml-auto">
-          <ActionsButton />
-        </div>
         <Button
           variant="outline"
           title="New Chat"
-          onClick={() => focusChat(agentId, crypto.randomUUID())}
+          onClick={() =>
+            focusChat(agentId, crypto.randomUUID(), { history: false })}
         >
           <Icon name="chat_add_on" />
           New chat
@@ -94,7 +92,7 @@ ChatHeader.UI = ({ agentId }: Props) => {
           variant="outline"
           size="icon"
           onClick={() => {
-            focusEditAgent(agentId, crypto.randomUUID());
+            focusEditAgent(agentId, crypto.randomUUID(), { history: false });
           }}
         >
           <Icon name="tune" />

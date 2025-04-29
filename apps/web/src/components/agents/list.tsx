@@ -45,7 +45,7 @@ import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
-  const focusChat = useFocusChat();
+  const focusEditAgent = useEditAgent();
   const createAgent = useCreateAgent();
 
   // Function to handle duplicating the agent
@@ -64,7 +64,9 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         model: agent.model,
         views: agent.views,
       });
-      focusChat(duplicatedAgent.id, crypto.randomUUID());
+      focusEditAgent(duplicatedAgent.id, crypto.randomUUID(), {
+        history: false,
+      });
 
       trackEvent("agent_duplicate", {
         success: true,
@@ -136,6 +138,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
 function AgentCard({ agent }: { agent: Agent }) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const focusEditAgent = useEditAgent();
   const focusChat = useFocusChat();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const { hasChanges } = useAgentHasChanges(agent.id);
@@ -191,7 +194,8 @@ function AgentCard({ agent }: { agent: Agent }) {
     <>
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
-        onClick={() => focusChat(agent.id, crypto.randomUUID())}
+        onClick={() =>
+          focusEditAgent(agent.id, crypto.randomUUID(), { history: false })}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
           <div className="flex flex-col gap-3 w-full">
@@ -221,6 +225,19 @@ function AgentCard({ agent }: { agent: Agent }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem
+                    disabled={duplicating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      focusChat(agent.id, crypto.randomUUID(), {
+                        history: false,
+                      });
+                    }}
+                  >
+                    <Icon name="chat_add_on" className="mr-2" />
+                    New chat
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}
                     onClick={(e) => {
@@ -359,7 +376,7 @@ export default function List() {
       setCreating(true);
       const agent = await createAgent.mutateAsync({});
       updateThreadMessages(agent.id, agent.id);
-      focusEditAgent(agent.id, crypto.randomUUID());
+      focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
 
       trackEvent("agent_create", {
         success: true,

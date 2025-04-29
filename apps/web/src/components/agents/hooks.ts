@@ -1,9 +1,11 @@
+import { useUpdateThreadMessages } from "@deco/sdk";
 import { useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useBasePath } from "../../hooks/useBasePath.ts";
 
 interface AgentNavigationOptions {
   message?: string;
+  history?: boolean;
 }
 
 const getEditAgentPath = (agentId: string, threadId?: string): string =>
@@ -14,9 +16,14 @@ const getChatPath = (agentId: string, threadId: string): string =>
 export const useEditAgent = () => {
   const navigate = useNavigate();
   const withBasePath = useBasePath();
-
+  const updateMessages = useUpdateThreadMessages();
   return useCallback(
     (agentId: string, threadId?: string, options?: AgentNavigationOptions) => {
+      // If history is false, disable fetching history for faster navigation
+      if (options?.history === false) {
+        updateMessages(agentId, threadId ?? agentId);
+      }
+
       const pathname = withBasePath(getEditAgentPath(agentId, threadId));
       // Add query parameters if options are provided
       let url = pathname;
@@ -34,16 +41,22 @@ export const useEditAgent = () => {
       // Navigate to the agent page
       navigate(url);
     },
-    [navigate, withBasePath],
+    [navigate, withBasePath, history, updateMessages],
   );
 };
 
 export const useFocusChat = () => {
   const navigate = useNavigate();
   const withBasePath = useBasePath();
+  const updateMessages = useUpdateThreadMessages();
 
   const navigateToAgent = useCallback(
     (agentId: string, threadId: string, options?: AgentNavigationOptions) => {
+      // If history is false, disable fetching history for faster navigation
+      if (options?.history === false) {
+        updateMessages(agentId, threadId);
+      }
+
       const pathname = withBasePath(getChatPath(agentId, threadId));
       // Add query parameters if options are provided
       let url = pathname;
@@ -61,7 +74,7 @@ export const useFocusChat = () => {
       // Navigate to the agent page
       navigate(url);
     },
-    [withBasePath, navigate],
+    [withBasePath, navigate, history, updateMessages],
   );
 
   return navigateToAgent;

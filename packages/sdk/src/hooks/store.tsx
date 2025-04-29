@@ -13,7 +13,7 @@ const client = new QueryClient({
     queries: {
       retry: 1,
       staleTime: Infinity,
-      gcTime: 24 * 60 * 60 * 1000,
+      gcTime: 5 * 60 * 1000, // 5 minutes in milliseconds
       networkMode: "offlineFirst",
     },
   },

@@ -135,6 +135,10 @@ export function ChatProvider({
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,
+          smoothStreaming: {
+            delayInMs: 20,
+            chunk: "word",
+          },
         }],
         metadata: { threadId: threadId ?? agentId },
       };

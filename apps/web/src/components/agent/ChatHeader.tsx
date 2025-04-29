@@ -77,6 +77,9 @@ ChatHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
+        <div className="ml-auto">
+          <ActionsButton />
+        </div>
         <Button
           variant="outline"
           title="New Chat"

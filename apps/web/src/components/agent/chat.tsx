@@ -23,7 +23,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatHeader } from "./ChatHeader.tsx";
-import ListActions from "../actions/listActions.tsx";
+import { ListActions } from "../actions/listActions.tsx";
 
 // Custom CSS to override shadow styles
 const tabStyles = `

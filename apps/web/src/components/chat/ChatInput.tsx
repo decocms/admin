@@ -1,6 +1,6 @@
 import {
   AgentNotFoundError,
-  API_SERVER_URL,
+  LEGACY_API_SERVER_URL,
   MODELS,
   useAgent,
   useWriteFile,
@@ -148,7 +148,7 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
         content: uint8Array,
       });
 
-      const url = `${API_SERVER_URL}${agentRoot}/${file.name}`;
+      const url = `${LEGACY_API_SERVER_URL}${agentRoot}/${file.name}`;
       return {
         name: file.name,
         contentType: file.type,

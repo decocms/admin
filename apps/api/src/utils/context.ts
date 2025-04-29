@@ -57,19 +57,13 @@ export const getEnv = (ctx: AppContext) => {
   return { SUPABASE_URL, SUPABASE_SERVER_TOKEN };
 };
 
-export const createApiHandler = <
-  T extends z.ZodType = z.ZodType,
-  R extends object = object,
->(definition: {
-  name: string;
-  description: string;
-  schema: T;
-  handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
-}) => ({
-  ...definition,
-  handler: async (props: z.infer<T>): Promise<CallToolResult> => {
+export const createAIHandler =
+  // deno-lint-ignore no-explicit-any
+  (cb: (...args: any[]) => Promise<any>) =>
+  // deno-lint-ignore no-explicit-any
+  async (...args: any[]): Promise<CallToolResult> => {
     try {
-      const response = await definition.handler(props, State.active());
+      const response = await cb(...args);
 
       return {
         isError: false,
@@ -83,7 +77,20 @@ export const createApiHandler = <
         content: [{ type: "text", text: serializeError(error) }],
       };
     }
-  },
+  };
+
+export const createApiHandler = <
+  T extends z.ZodType = z.ZodType,
+  R extends object | boolean = object,
+>(definition: {
+  name: string;
+  description: string;
+  schema: T;
+  handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
+}) => ({
+  ...definition,
+  handler: (props: z.infer<T>): Promise<R> =>
+    definition.handler(props, State.active()),
 });
 
 export type ApiHandler = ReturnType<typeof createApiHandler>;

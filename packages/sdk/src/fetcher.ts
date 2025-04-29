@@ -1,5 +1,9 @@
-import { API_HEADERS, API_SERVER_URL } from "./constants.ts";
-import { getTraceDebugId } from "./constants.ts";
+import {
+  API_HEADERS,
+  API_SERVER_URL,
+  getTraceDebugId,
+  LEGACY_API_SERVER_URL,
+} from "./constants.ts";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -13,7 +17,7 @@ export interface FetchOptions extends RequestInit {
  * @returns A configured fetch function
  */
 export function createFetcher(
-  baseUrl: string = API_SERVER_URL,
+  baseUrl: string = LEGACY_API_SERVER_URL,
   defaultHeaders: HeadersInit = API_HEADERS,
 ) {
   return function fetchAPI(options: FetchOptions = {}) {
@@ -39,6 +43,31 @@ export function createFetcher(
     });
   };
 }
+
+export const callToolFor = (
+  workspace: string,
+  name: string,
+  args: Record<string, unknown>,
+  init: RequestInit = {},
+) =>
+  fetch(
+    new URL(
+      `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join("/"),
+      API_SERVER_URL,
+    ),
+    {
+      body: JSON.stringify(args),
+      method: "POST",
+      credentials: "include",
+      ...init,
+    },
+  );
+
+export const callTool = (
+  name: string,
+  args: Record<string, unknown>,
+  init: RequestInit = {},
+) => callToolFor("", name, args, init);
 
 // Default fetcher instance with API_SERVER_URL and API_HEADERS
 export const fetchAPI = createFetcher();

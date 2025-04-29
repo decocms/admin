@@ -1,37 +1,59 @@
 import { AppContext } from "../utils/context.ts";
-import { parseWorkspace } from "../utils/workspace.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
   return c.get("user")!;
 };
 
-export const assertUserHasAccessToTeam = async (
+export const assertUserHasAccessToTeamById = async (
   { teamId, userId }: { teamId: number; userId: string },
   c: AppContext,
 ) => {
-  const db = c.get("db");
-  const { data, error } = await db
+  const { data } = await c
+    .get("db")
     .from("members")
     .select("id")
     .eq("team_id", teamId)
     .eq("user_id", userId)
     .single();
 
-  if (error) {
-    throw new Error("User does not have access to this workspace");
+  if (data) {
+    return;
   }
+
+  throw new Error("User does not have access to this workspace");
+};
+
+export const assertUserHasAccessToTeamBySlug = async (
+  { teamSlug, userId }: { teamSlug: string; userId: string },
+  c: AppContext,
+) => {
+  const { data } = await c
+    .get("db")
+    .from("members")
+    .select(`
+      id,
+      team:teams!inner (
+        id,
+        slug
+      )
+    `)
+    .eq("user_id", userId)
+    .eq("team.slug", teamSlug)
+    .single();
 
   if (data) {
     return;
   }
+
+  throw new Error("User does not have access to this workspace");
 };
 
 export const assertUserHasAccessToWorkspace = async (
-  workspace: string,
+  root: string,
+  slug: string,
   c: AppContext,
 ) => {
-  const { type, id } = parseWorkspace(workspace);
   const user = getContextUser(c);
   const db = c.get("db");
 
@@ -39,15 +61,15 @@ export const assertUserHasAccessToWorkspace = async (
     throw new Error("Missing database");
   }
 
-  if (type === "userId" && user.id === id) {
+  if (root === "users" && user.id === slug) {
     return;
   }
 
-  if (type === "teamId") {
-    await assertUserHasAccessToTeam({
-      userId: user.id,
-      teamId: id,
-    }, c);
+  if (root === "shared") {
+    await assertUserHasAccessToTeamBySlug(
+      { userId: user.id, teamSlug: slug },
+      c,
+    );
 
     return;
   }

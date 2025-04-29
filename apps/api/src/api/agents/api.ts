@@ -2,22 +2,27 @@ import { AgentSchema } from "@deco/sdk";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
+import { NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from "./well-known.ts";
 
 export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
-  schema: z.object({
-    id: z.string().uuid(),
-    workspace: z.string(),
-  }),
-  handler: async ({ id, workspace }, c) => {
-    await assertUserHasAccessToWorkspace(workspace, c);
+  schema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_agents")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+
+    const { data, error } = id in WELL_KNOWN_AGENTS
+      ? { data: WELL_KNOWN_AGENTS[id] }
+      : await c.get("db")
+        .from("deco_chat_agents")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    await assertions;
 
     if (error) {
       throw new Error(error.message);
@@ -27,41 +32,37 @@ export const getAgent = createApiHandler({
       throw new Error("Agent not found");
     }
 
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(data),
-      }],
-    };
+    return data;
   },
 });
 
 export const createAgent = createApiHandler({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  schema: z.object({
-    workspace: z.string(),
-    agent: AgentSchema,
-  }),
-  handler: async ({ agent, workspace }, c) => {
-    await assertUserHasAccessToWorkspace(workspace, c);
+  schema: AgentSchema.partial(),
+  handler: async (agent, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
     const { data, error } = await c.get("db")
       .from("deco_chat_agents")
-      .insert({ ...agent, workspace })
+      .insert({
+        ...NEW_AGENT_TEMPLATE,
+        ...agent,
+        workspace: `/${root}/${slug}`,
+      })
       .select()
       .single();
+
+    await assertions;
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(data),
-      }],
-    };
+    return data;
   },
 });
 
@@ -69,19 +70,23 @@ export const updateAgent = createApiHandler({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
   schema: z.object({
-    id: z.string().uuid(),
-    workspace: z.string(),
-    agent: AgentSchema,
+    id: z.string(),
+    agent: AgentSchema.partial(),
   }),
-  handler: async ({ id, workspace, agent }, c) => {
-    await assertUserHasAccessToWorkspace(workspace, c);
+  handler: async ({ id, agent }, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
     const { data, error } = await c.get("db")
       .from("deco_chat_agents")
-      .update(agent)
+      .update({ ...agent, id, workspace: `/${root}/${slug}` })
       .eq("id", id)
       .select()
       .single();
+
+    await assertions;
 
     if (error) {
       throw new Error(error.message);
@@ -91,39 +96,56 @@ export const updateAgent = createApiHandler({
       throw new Error("Agent not found");
     }
 
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(data),
-      }],
-    };
+    return data;
   },
 });
 
 export const deleteAgent = createApiHandler({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
-  schema: z.object({
-    id: z.string().uuid(),
-    workspace: z.string(),
-  }),
-  handler: async ({ id, workspace }, c) => {
-    await assertUserHasAccessToWorkspace(workspace, c);
+  schema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
     const { error } = await c.get("db")
       .from("deco_chat_agents")
       .delete()
       .eq("id", id);
 
+    await assertions;
+
     if (error) {
       throw new Error(error.message);
     }
 
-    return {
-      content: [{
-        type: "text",
-        text: "Agent deleted successfully",
-      }],
-    };
+    return true;
+  },
+});
+
+export const listAgents = createApiHandler({
+  name: "AGENTS_LIST",
+  description: "List all agents",
+  schema: z.object({}),
+  handler: async (_, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+
+    const { data, error } = await c.get("db")
+      .from("deco_chat_agents")
+      .select("*")
+      .ilike("workspace", `%${root}/${slug}`);
+
+    await assertions;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   },
 });

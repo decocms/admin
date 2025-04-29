@@ -80,20 +80,17 @@ export const createIntegration = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
-    const [{ data, error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_integrations")
-        .insert({
-          ...NEW_INTEGRATION_TEMPLATE,
-          ...integration,
-          workspace: `/${root}/${slug}`,
-        })
-        .select()
-        .single(),
-      assertions,
-    ]);
+    const { data, error } = await c.get("db")
+      .from("deco_chat_integrations")
+      .insert({
+        ...NEW_INTEGRATION_TEMPLATE,
+        ...integration,
+        workspace: `/${root}/${slug}`,
+      })
+      .select()
+      .single();
 
     if (error) {
       throw new Error(error.message);
@@ -117,7 +114,7 @@ export const updateIntegration = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
     const { uuid, type } = parseId(id);
 
@@ -125,15 +122,12 @@ export const updateIntegration = createApiHandler({
       throw new Error("Cannot update an agent integration");
     }
 
-    const [{ data, error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_integrations")
-        .update({ ...integration, id: uuid, workspace: `/${root}/${slug}` })
-        .eq("id", uuid)
-        .select()
-        .single(),
-      assertions,
-    ]);
+    const { data, error } = await c.get("db")
+      .from("deco_chat_integrations")
+      .update({ ...integration, id: uuid, workspace: `/${root}/${slug}` })
+      .eq("id", uuid)
+      .select()
+      .single();
 
     if (error) {
       throw new Error(error.message);
@@ -160,7 +154,7 @@ export const deleteIntegration = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
     const { uuid, type } = parseId(id);
 
@@ -168,13 +162,10 @@ export const deleteIntegration = createApiHandler({
       throw new Error("Cannot delete an agent integration");
     }
 
-    const [{ error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_integrations")
-        .delete()
-        .eq("id", uuid),
-      assertions,
-    ]);
+    const { error } = await c.get("db")
+      .from("deco_chat_integrations")
+      .delete()
+      .eq("id", uuid);
 
     if (error) {
       throw new Error(error.message);

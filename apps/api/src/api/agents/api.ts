@@ -45,7 +45,7 @@ export const createAgent = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
     const [{ data, error }] = await Promise.all([
       c.get("db")
@@ -57,7 +57,6 @@ export const createAgent = createApiHandler({
         })
         .select()
         .single(),
-      assertions,
     ]);
 
     if (error) {
@@ -79,17 +78,14 @@ export const updateAgent = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
-    const [{ data, error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_agents")
-        .update({ ...agent, id, workspace: `/${root}/${slug}` })
-        .eq("id", id)
-        .select()
-        .single(),
-      assertions,
-    ]);
+    const { data, error } = await c.get("db")
+      .from("deco_chat_agents")
+      .update({ ...agent, id, workspace: `/${root}/${slug}` })
+      .eq("id", id)
+      .select()
+      .single();
 
     if (error) {
       throw new Error(error.message);
@@ -111,15 +107,12 @@ export const deleteAgent = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(root, slug, c);
 
-    const [{ error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_agents")
-        .delete()
-        .eq("id", id),
-      assertions,
-    ]);
+    const { error } = await c.get("db")
+      .from("deco_chat_agents")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       throw new Error(error.message);

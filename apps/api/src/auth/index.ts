@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { type User } from "@deco/sdk";
 import {
   EmailOtpType,
   type Provider,

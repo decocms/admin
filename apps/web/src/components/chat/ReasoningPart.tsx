@@ -38,7 +38,7 @@ export function ReasoningPart({
   };
 
   return (
-    <div className="flex flex-col border rounded-lg overflow-hidden">
+    <div className="flex flex-col border border-slate-200 rounded-2xl overflow-hidden">
       <button
         type="button"
         onClick={handleToggle}

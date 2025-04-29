@@ -196,7 +196,7 @@ function ToolStatus({
                   </Button>
                 )}
                 <pre
-                  className="p-4 text-xs whitespace-pre-wrap break-all"
+                  className="p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <code className="text-zinc-100 select-text cursor-auto">

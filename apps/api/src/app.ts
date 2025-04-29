@@ -69,7 +69,7 @@ const createMCPHandlerFor = (
 
     await server.connect(transport);
 
-    c.res = await State.run(c, transport.handleMessage, c.req.raw);
+    c.res = await State.run(c, transport.handleMessage.bind(transport), c.req.raw);
 
     return c.res;
   };
@@ -142,11 +142,13 @@ app.post(
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
-app.onError((err, c) =>
-  c.json(
+app.onError((err, c) => {
+  console.error(err);
+
+  return c.json(
     { error: err?.message ?? "Internal server error" },
     err instanceof HTTPException ? err.status : 500,
-  )
-);
+  );
+});
 
 export default app;

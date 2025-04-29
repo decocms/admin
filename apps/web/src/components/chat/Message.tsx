@@ -48,6 +48,7 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   const mergedParts: MessagePart[] = [];
   let currentToolGroup: NonNullable<Message["toolInvocations"]> = [];
   let currentTextContent: string[] = [];
+  let currentReasoning: string[] = [];
 
   const flushToolGroup = () => {
     if (currentToolGroup.length > 0) {
@@ -69,28 +70,40 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
     }
   };
 
+  const flushReasoning = () => {
+    if (currentReasoning.length > 0) {
+      mergedParts.push({
+        type: "reasoning",
+        reasoning: currentReasoning.join("\n").trim(),
+      });
+      currentReasoning = [];
+    }
+  };
+
   parts.forEach((part) => {
     if (part.type === "tool-invocation") {
-      // If we have pending text content, flush it first
+      // If we have pending text content or reasoning, flush them first
       flushTextContent();
+      flushReasoning();
       currentToolGroup.push(part.toolInvocation);
     } else if (part.type === "text") {
-      // If we have pending tool invocations, flush them first
+      // If we have pending tool invocations or reasoning, flush them first
       flushToolGroup();
+      flushReasoning();
       // Only add non-empty text parts
       if (part.text.trim()) {
         currentTextContent.push(part.text);
       }
     } else if (part.type === "reasoning") {
-      flushTextContent();
-      mergedParts.push({
-        type: "reasoning",
-        reasoning: part.reasoning,
-      });
+      // If we have pending tool invocations, flush them first
+      flushToolGroup();
+      currentReasoning.push(part.reasoning);
     }
   });
 
+  // Flush any remaining content in the correct order: tools -> reasoning -> text
   flushToolGroup();
+  flushReasoning();
   flushTextContent();
 
   return mergedParts;
@@ -178,13 +191,16 @@ export function ChatMessage(
               <div className="space-y-2 w-full">
                 {mergedParts.map((part, index) => {
                   if (part.type === "reasoning") {
+                    const isLastReasoningPart = mergedParts
+                      .slice(index + 1)
+                      .every(p => p.type !== "reasoning");
                     return (
                       <ReasoningPart
                         key={index}
                         reasoning={part.reasoning || ""}
                         messageId={message.id}
                         index={index}
-                        isStreaming={isReasoningStreaming}
+                        isStreaming={isLastReasoningPart && isReasoningStreaming}
                         isResponseStreaming={isResponseStreaming}
                       />
                     );

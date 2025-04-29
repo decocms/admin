@@ -1,3 +1,4 @@
+import { HTTPException } from "hono/http-exception";
 import { AppContext } from "../utils/context.ts";
 
 const getContextUser = (c: AppContext) => {
@@ -21,15 +22,16 @@ export const assertUserHasAccessToTeamById = async (
     return;
   }
 
-  throw new Error("User does not have access to this workspace");
+  throw new HTTPException(403, {
+    message: "User does not have access to this team",
+  });
 };
 
 export const assertUserHasAccessToTeamBySlug = async (
   { teamSlug, userId }: { teamSlug: string; userId: string },
   c: AppContext,
 ) => {
-  const { data } = await c
-    .get("db")
+  const { data } = await c.get("db")
     .from("members")
     .select(`
       id,
@@ -46,7 +48,9 @@ export const assertUserHasAccessToTeamBySlug = async (
     return;
   }
 
-  throw new Error("User does not have access to this workspace");
+  throw new HTTPException(403, {
+    message: "User does not have access to this workspace",
+  });
 };
 
 export const assertUserHasAccessToWorkspace = async (
@@ -58,7 +62,7 @@ export const assertUserHasAccessToWorkspace = async (
   const db = c.get("db");
 
   if (!db) {
-    throw new Error("Missing database");
+    throw new HTTPException(500, { message: "Missing database" });
   }
 
   if (root === "users" && user.id === slug) {
@@ -81,6 +85,6 @@ export const assertHasUser = (c: AppContext) => {
   const user = c.get("user");
 
   if (!user) {
-    throw new Error("User not found");
+    throw new HTTPException(401, { message: "Unauthorized" });
   }
 };

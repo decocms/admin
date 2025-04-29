@@ -46,15 +46,16 @@ export const getIntegration = createApiHandler({
 
     const { uuid, type } = parseId(id);
 
-    const { data, error } = uuid in INNATE_INTEGRATIONS
-      ? { data: INNATE_INTEGRATIONS[uuid] }
-      : await c.get("db")
-        .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-        .select("*")
-        .eq("id", uuid)
-        .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      uuid in INNATE_INTEGRATIONS
+        ? { data: INNATE_INTEGRATIONS[uuid], error: null }
+        : c.get("db")
+          .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
+          .select("*")
+          .eq("id", uuid)
+          .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -81,17 +82,18 @@ export const createIntegration = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_integrations")
-      .insert({
-        ...NEW_INTEGRATION_TEMPLATE,
-        ...integration,
-        workspace: `/${root}/${slug}`,
-      })
-      .select()
-      .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_integrations")
+        .insert({
+          ...NEW_INTEGRATION_TEMPLATE,
+          ...integration,
+          workspace: `/${root}/${slug}`,
+        })
+        .select()
+        .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -123,14 +125,15 @@ export const updateIntegration = createApiHandler({
       throw new Error("Cannot update an agent integration");
     }
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_integrations")
-      .update({ ...integration, id: uuid, workspace: `/${root}/${slug}` })
-      .eq("id", uuid)
-      .select()
-      .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_integrations")
+        .update({ ...integration, id: uuid, workspace: `/${root}/${slug}` })
+        .eq("id", uuid)
+        .select()
+        .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -165,12 +168,13 @@ export const deleteIntegration = createApiHandler({
       throw new Error("Cannot delete an agent integration");
     }
 
-    const { error } = await c.get("db")
-      .from("deco_chat_integrations")
-      .delete()
-      .eq("id", uuid);
-
-    await assertions;
+    const [{ error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_integrations")
+        .delete()
+        .eq("id", uuid),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -199,9 +203,8 @@ export const listIntegrations = createApiHandler({
         .from("deco_chat_agents")
         .select("*")
         .ilike("workspace", `%${root}/${slug}`),
+      assertions,
     ]);
-
-    await assertions;
 
     const error = integrations.error || agents.error;
 

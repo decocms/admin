@@ -2,6 +2,7 @@ import { HttpServerTransport } from "@deco/mcp/http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
@@ -46,7 +47,9 @@ const WORKSPACE_TOOLS = [
 /**
  * Creates and sets up an MCP server for the given tools
  */
-const createMCPHandlerFor = (tools: ApiHandler[]) => {
+const createMCPHandlerFor = (
+  tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS,
+) => {
   const server = new McpServer(
     { name: "@deco/api", version: "1.0.0" },
     { capabilities: { tools: {} } },
@@ -62,26 +65,13 @@ const createMCPHandlerFor = (tools: ApiHandler[]) => {
   }
 
   return async (c: Context) => {
-    try {
-      const transport = new HttpServerTransport();
+    const transport = new HttpServerTransport();
 
-      await server.connect(transport);
+    await server.connect(transport);
 
-      const handler = State.bind(c, transport.handleMessage.bind(transport));
+    c.res = await State.run(c, transport.handleMessage, c.req.raw);
 
-      c.res = await handler(c.req.raw);
-    } catch (error) {
-      console.error("Error handling MCP request:", error);
-
-      return c.json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32603,
-          message: "Internal server error",
-        },
-        id: null,
-      }, 500);
-    }
+    return c.res;
   };
 };
 
@@ -98,29 +88,18 @@ const createToolCallHandlerFor =
     const t = tools.find((t) => t.name === tool);
 
     if (!t) {
-      return c.json({
-        error: {
-          code: -32601,
-          message: "Tool not found",
-        },
-      }, 404);
+      throw new HTTPException(404, { message: "Tool not found" });
     }
 
     const { data, error } = t.schema.safeParse(args);
 
     if (error || !data) {
-      return c.json({
-        error: {
-          code: -32602,
-          message: error?.message ?? "Invalid arguments",
-        },
-      }, 400);
+      throw new HTTPException(400, {
+        message: error?.message ?? "Invalid arguments",
+      });
     }
 
-    // deno-lint-ignore no-explicit-any
-    const handleMessage = State.bind(c, (d: any) => t.handler(d));
-
-    const result = await handleMessage(data);
+    const result = await State.run(c, t.handler, data);
 
     return c.json({ data: result });
   };
@@ -162,5 +141,12 @@ app.post(
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
+
+app.onError((err, c) =>
+  c.json(
+    { error: err?.message ?? "Internal server error" },
+    err instanceof HTTPException ? err.status : 500,
+  )
+);
 
 export default app;

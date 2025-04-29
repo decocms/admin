@@ -14,15 +14,16 @@ export const getAgent = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { data, error } = id in WELL_KNOWN_AGENTS
-      ? { data: WELL_KNOWN_AGENTS[id] }
-      : await c.get("db")
-        .from("deco_chat_agents")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      id in WELL_KNOWN_AGENTS
+        ? { data: WELL_KNOWN_AGENTS[id], error: null }
+        : c.get("db")
+          .from("deco_chat_agents")
+          .select("*")
+          .eq("id", id)
+          .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -46,17 +47,18 @@ export const createAgent = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_agents")
-      .insert({
-        ...NEW_AGENT_TEMPLATE,
-        ...agent,
-        workspace: `/${root}/${slug}`,
-      })
-      .select()
-      .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_agents")
+        .insert({
+          ...NEW_AGENT_TEMPLATE,
+          ...agent,
+          workspace: `/${root}/${slug}`,
+        })
+        .select()
+        .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -79,14 +81,15 @@ export const updateAgent = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_agents")
-      .update({ ...agent, id, workspace: `/${root}/${slug}` })
-      .eq("id", id)
-      .select()
-      .single();
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_agents")
+        .update({ ...agent, id, workspace: `/${root}/${slug}` })
+        .eq("id", id)
+        .select()
+        .single(),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -110,12 +113,13 @@ export const deleteAgent = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { error } = await c.get("db")
-      .from("deco_chat_agents")
-      .delete()
-      .eq("id", id);
-
-    await assertions;
+    const [{ error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_agents")
+        .delete()
+        .eq("id", id),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);
@@ -135,12 +139,13 @@ export const listAgents = createApiHandler({
 
     const assertions = assertUserHasAccessToWorkspace(root, slug, c);
 
-    const { data, error } = await c.get("db")
-      .from("deco_chat_agents")
-      .select("*")
-      .ilike("workspace", `%${root}/${slug}`);
-
-    await assertions;
+    const [{ data, error }] = await Promise.all([
+      c.get("db")
+        .from("deco_chat_agents")
+        .select("*")
+        .ilike("workspace", `%${root}/${slug}`),
+      assertions,
+    ]);
 
     if (error) {
       throw new Error(error.message);

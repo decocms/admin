@@ -90,7 +90,7 @@ export const createApiHandler = <
 }) => ({
   ...definition,
   handler: (props: z.infer<T>): Promise<R> =>
-    definition.handler(props, State.active()),
+    definition.handler(props, State.getStore()),
 });
 
 export type ApiHandler = ReturnType<typeof createApiHandler>;
@@ -98,7 +98,7 @@ export type ApiHandler = ReturnType<typeof createApiHandler>;
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 
 export const State = {
-  active: () => {
+  getStore: () => {
     const store = asyncLocalStorage.getStore();
 
     if (!store) {
@@ -107,9 +107,9 @@ export const State = {
 
     return store;
   },
-  bind: <R, TArgs extends unknown[]>(
+  run: <R, TArgs extends unknown[]>(
     ctx: AppContext,
     f: (...args: TArgs) => R,
-  ): (...args: TArgs) => R =>
-  (...args: TArgs): R => asyncLocalStorage.run(ctx, f, ...args),
+    ...args: TArgs
+  ): R => asyncLocalStorage.run(ctx, f, ...args),
 };

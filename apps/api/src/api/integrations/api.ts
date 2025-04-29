@@ -31,7 +31,52 @@ const agentAsIntegrationFor =
     },
   });
 
-// API Functions
+export const listIntegrations = createApiHandler({
+  name: "INTEGRATIONS_LIST",
+  description: "List all integrations",
+  schema: z.object({}),
+  handler: async (_, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const [
+      _assertions,
+      integrations,
+      agents,
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      c.get("db")
+        .from("deco_chat_integrations")
+        .select("*")
+        .ilike("workspace", `%${root}/${slug}`),
+      c.get("db")
+        .from("deco_chat_agents")
+        .select("*")
+        .ilike("workspace", `%${root}/${slug}`),
+    ]);
+
+    const error = integrations.error || agents.error;
+
+    if (error) {
+      throw new Error(error.message || "Failed to list integrations");
+    }
+
+    return [
+      ...integrations.data.map((item) => ({
+        ...item,
+        id: formatId("i", item.id),
+      })),
+      ...agents.data
+        .map((item) => AgentSchema.safeParse(item)?.data)
+        .filter((a) => !!a)
+        .map(agentAsIntegrationFor(`${root}/${slug}`)),
+      ...Object.values(INNATE_INTEGRATIONS),
+    ]
+      .map((i) => IntegrationSchema.safeParse(i)?.data)
+      .filter((i) => !!i);
+  },
+});
+
 export const getIntegration = createApiHandler({
   name: "INTEGRATIONS_GET",
   description: "Get an integration by id",
@@ -42,11 +87,13 @@ export const getIntegration = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
-
     const { uuid, type } = parseId(id);
 
-    const [{ data, error }] = await Promise.all([
+    const [
+      _assertions,
+      { data, error },
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
       uuid in INNATE_INTEGRATIONS
         ? { data: INNATE_INTEGRATIONS[uuid], error: null }
         : c.get("db")
@@ -54,7 +101,6 @@ export const getIntegration = createApiHandler({
           .select("*")
           .eq("id", uuid)
           .single(),
-      assertions,
     ]);
 
     if (error) {
@@ -65,10 +111,10 @@ export const getIntegration = createApiHandler({
       throw new Error("Integration not found");
     }
 
-    return {
+    return IntegrationSchema.parse({
       ...data,
       id: formatId(type, data.id),
-    };
+    });
   },
 });
 
@@ -96,10 +142,10 @@ export const createIntegration = createApiHandler({
       throw new Error(error.message);
     }
 
-    return {
+    return IntegrationSchema.parse({
       ...data,
       id: formatId("i", data.id),
-    };
+    });
   },
 });
 
@@ -137,10 +183,10 @@ export const updateIntegration = createApiHandler({
       throw new Error("Integration not found");
     }
 
-    return {
+    return IntegrationSchema.parse({
       ...data,
       id: formatId(type, data.id),
-    };
+    });
   },
 });
 
@@ -172,46 +218,5 @@ export const deleteIntegration = createApiHandler({
     }
 
     return true;
-  },
-});
-
-export const listIntegrations = createApiHandler({
-  name: "INTEGRATIONS_LIST",
-  description: "List all integrations",
-  schema: z.object({}),
-  handler: async (_, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
-
-    const [integrations, agents] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_integrations")
-        .select("*")
-        .ilike("workspace", `%${root}/${slug}`),
-      c.get("db")
-        .from("deco_chat_agents")
-        .select("*")
-        .ilike("workspace", `%${root}/${slug}`),
-      assertions,
-    ]);
-
-    const error = integrations.error || agents.error;
-
-    if (error) {
-      throw new Error(error.message || "Failed to list integrations");
-    }
-
-    return [
-      ...integrations.data.map((item) => ({
-        ...item,
-        id: formatId("i", item.id),
-      })),
-      ...agents.data
-        .map((item) => AgentSchema.parse(item))
-        .map(agentAsIntegrationFor(`${root}/${slug}`)),
-      ...Object.values(INNATE_INTEGRATIONS),
-    ];
   },
 });

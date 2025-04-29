@@ -29,7 +29,7 @@ export const AgentSchema = z.object({
     "Maximum number of steps the agent can take, defaults to 7",
   ),
   /** Maximum number of tokens the agent can use */
-  max_tokens: z.number().optional().describe(
+  max_tokens: z.number().nullable().optional().describe(
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */

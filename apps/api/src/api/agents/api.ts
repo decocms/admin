@@ -4,6 +4,35 @@ import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
 import { NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from "./well-known.ts";
 
+export const listAgents = createApiHandler({
+  name: "AGENTS_LIST",
+  description: "List all agents",
+  schema: z.object({}),
+  handler: async (_, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    const [
+      _assertions,
+      { data, error },
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      c.get("db")
+        .from("deco_chat_agents")
+        .select("*")
+        .ilike("workspace", `%${root}/${slug}`),
+    ]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data
+      .map((item) => AgentSchema.safeParse(item)?.data)
+      .filter((a) => !!a);
+  },
+});
+
 export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
@@ -12,9 +41,11 @@ export const getAgent = createApiHandler({
     const root = c.req.param("root");
     const slug = c.req.param("slug");
 
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
-
-    const [{ data, error }] = await Promise.all([
+    const [
+      _assertions,
+      { data, error },
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
       id in WELL_KNOWN_AGENTS
         ? { data: WELL_KNOWN_AGENTS[id], error: null }
         : c.get("db")
@@ -22,7 +53,6 @@ export const getAgent = createApiHandler({
           .select("*")
           .eq("id", id)
           .single(),
-      assertions,
     ]);
 
     if (error) {
@@ -33,7 +63,7 @@ export const getAgent = createApiHandler({
       throw new Error("Agent not found");
     }
 
-    return data;
+    return AgentSchema.parse(data);
   },
 });
 
@@ -63,7 +93,7 @@ export const createAgent = createApiHandler({
       throw new Error(error.message);
     }
 
-    return data;
+    return AgentSchema.parse(data);
   },
 });
 
@@ -95,7 +125,7 @@ export const updateAgent = createApiHandler({
       throw new Error("Agent not found");
     }
 
-    return data;
+    return AgentSchema.parse(data);
   },
 });
 
@@ -119,31 +149,5 @@ export const deleteAgent = createApiHandler({
     }
 
     return true;
-  },
-});
-
-export const listAgents = createApiHandler({
-  name: "AGENTS_LIST",
-  description: "List all agents",
-  schema: z.object({}),
-  handler: async (_, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-
-    const assertions = assertUserHasAccessToWorkspace(root, slug, c);
-
-    const [{ data, error }] = await Promise.all([
-      c.get("db")
-        .from("deco_chat_agents")
-        .select("*")
-        .ilike("workspace", `%${root}/${slug}`),
-      assertions,
-    ]);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
   },
 });

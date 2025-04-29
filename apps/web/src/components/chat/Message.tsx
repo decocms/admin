@@ -193,14 +193,15 @@ export function ChatMessage(
                   if (part.type === "reasoning") {
                     const isLastReasoningPart = mergedParts
                       .slice(index + 1)
-                      .every(p => p.type !== "reasoning");
+                      .every((p) => p.type !== "reasoning");
                     return (
                       <ReasoningPart
                         key={index}
                         reasoning={part.reasoning || ""}
                         messageId={message.id}
                         index={index}
-                        isStreaming={isLastReasoningPart && isReasoningStreaming}
+                        isStreaming={isLastReasoningPart &&
+                          isReasoningStreaming}
                         isResponseStreaming={isResponseStreaming}
                       />
                     );

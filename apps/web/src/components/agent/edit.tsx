@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { Suspense, useMemo, useState } from "react";
+import { useParams } from "react-router";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
@@ -8,7 +8,6 @@ import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import ThreadSettingsTab from "../settings/chat.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
@@ -22,7 +21,6 @@ import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
-import { togglePanel, useDock } from "../dock/index.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 
 // Custom CSS to override shadow styles

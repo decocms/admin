@@ -342,7 +342,6 @@ function listReducer(state: ListState, action: ListAction): ListState {
 export default function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { filter } = state;
-  const focusChat = useFocusChat();
   const focusEditAgent = useEditAgent();
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();

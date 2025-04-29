@@ -35,7 +35,9 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
 };
 
 // TODO: add LRU Cache
-export const getUser = async (ctx: AppContext): Promise<User | undefined> => {
+export const getUser = async (
+  ctx: AppContext,
+): Promise<SupaUser | undefined> => {
   const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(ctx);
 
   const cookies = getCookies(ctx.req.raw.headers);
@@ -59,7 +61,7 @@ export const getUser = async (ctx: AppContext): Promise<User | undefined> => {
     return undefined;
   }
 
-  return user as unknown as User;
+  return user as unknown as SupaUser;
 };
 
 export const createLoginUrl = async (ctx: AppContext) => {

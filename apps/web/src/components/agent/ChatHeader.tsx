@@ -1,9 +1,11 @@
-import { AgentNotFoundError, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
-import { AgentHeader } from "./DetailHeader.tsx";
+import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
+import { AgentAvatar } from "../common/Avatar.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 
 interface Props {
   agentId: string;
@@ -50,7 +52,50 @@ ChatHeader.Skeleton = () => {
   return <div className="h-10 w-full" />;
 };
 
-ChatHeader.UI = AgentHeader.UI;
+ChatHeader.UI = ({ agentId }: Props) => {
+  const { data: agent } = useAgent(agentId);
+  const focusChat = useFocusChat();
+  const focusEditAgent = useEditAgent();
+
+  return (
+    <>
+      <Container>
+        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+          <AgentAvatar
+            name={agent.name}
+            avatar={agent.avatar}
+            className="rounded-lg text-xs"
+          />
+        </div>
+        <h1 className="text-sm font-medium tracking-tight">
+          {agent.name}
+        </h1>
+      </Container>
+
+      <div className="flex items-center gap-2 py-1">
+        <Button
+          variant="outline"
+          title="New Chat"
+          onClick={() => focusChat(agentId, crypto.randomUUID())}
+        >
+          <Icon name="chat_add_on" />
+          New chat
+        </Button>
+        <Button
+          id="settings"
+          title="Settings"
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            focusEditAgent(agentId, crypto.randomUUID());
+          }}
+        >
+          <Icon name="tune" />
+        </Button>
+      </div>
+    </>
+  );
+};
 
 const Container = ({ children }: { children: React.ReactNode }) => {
   return (

@@ -7,7 +7,6 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedToggleButton } from "../pageLayout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
-import { useOpenSettingsIfQueryParam } from "./chat.tsx";
 
 interface Props {
   agentId: string;
@@ -55,7 +54,6 @@ AgentHeader.Skeleton = () => {
 };
 
 AgentHeader.UI = ({ agentId }: Props) => {
-  useOpenSettingsIfQueryParam();
   const { data: agent } = useAgent(agentId);
   const focusChat = useFocusChat();
 

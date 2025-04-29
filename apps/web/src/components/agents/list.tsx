@@ -41,7 +41,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
-import { useFocusChat } from "./hooks.ts";
+import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -64,9 +64,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         model: agent.model,
         views: agent.views,
       });
-      focusChat(duplicatedAgent.id, crypto.randomUUID(), {
-        openSettings: true,
-      });
+      focusChat(duplicatedAgent.id, crypto.randomUUID());
 
       trackEvent("agent_duplicate", {
         success: true,
@@ -345,6 +343,7 @@ export default function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { filter } = state;
   const focusChat = useFocusChat();
+  const focusEditAgent = useEditAgent();
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();
   const updateThreadMessages = useUpdateThreadMessages();
@@ -361,9 +360,7 @@ export default function List() {
       setCreating(true);
       const agent = await createAgent.mutateAsync({});
       updateThreadMessages(agent.id, agent.id);
-      focusChat(agent.id, crypto.randomUUID(), {
-        openSettings: true,
-      });
+      focusEditAgent(agent.id, crypto.randomUUID());
 
       trackEvent("agent_create", {
         success: true,

@@ -69,9 +69,7 @@ export function AgentCard(
         {displayLink && (
           <Button
             onClick={() => {
-              focusChat(id, crypto.randomUUID(), {
-                openSettings: true,
-              });
+              focusChat(id, crypto.randomUUID());
             }}
             size="sm"
             className="text-sm"

@@ -28,8 +28,6 @@ type ToolsData = {
   capabilities?: Record<string, unknown>;
 };
 
-const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
-
 const fetchAPI = (path: string, init?: RequestInit) =>
   fetch(new URL(path, API_SERVER_URL), {
     ...init,
@@ -73,7 +71,6 @@ export function useTools(connection: MCPConnection) {
     retry: false,
     queryKey: ["tools", connection],
     queryFn: () => listTools(connection),
-    initialData: INITIAL_DATA,
   });
 }
 

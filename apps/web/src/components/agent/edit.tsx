@@ -18,7 +18,7 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
-import { useIsMobile } from "../../../../../packages/ui/src/hooks/use-mobile.ts";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useFocusChat } from "../agents/hooks.ts";

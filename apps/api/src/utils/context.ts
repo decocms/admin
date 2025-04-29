@@ -57,19 +57,13 @@ export const getEnv = (ctx: AppContext) => {
   return { SUPABASE_URL, SUPABASE_SERVER_TOKEN };
 };
 
-export const createApiHandler = <
-  T extends z.ZodType = z.ZodType,
-  R extends object = object,
->(definition: {
-  name: string;
-  description: string;
-  schema: T;
-  handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
-}) => ({
-  ...definition,
-  handler: async (props: z.infer<T>): Promise<CallToolResult> => {
+export const createAIHandler =
+  // deno-lint-ignore no-explicit-any
+  (cb: (...args: any[]) => Promise<any>) =>
+  // deno-lint-ignore no-explicit-any
+  async (...args: any[]): Promise<CallToolResult> => {
     try {
-      const response = await definition.handler(props, State.active());
+      const response = await cb(...args);
 
       return {
         isError: false,
@@ -83,7 +77,20 @@ export const createApiHandler = <
         content: [{ type: "text", text: serializeError(error) }],
       };
     }
-  },
+  };
+
+export const createApiHandler = <
+  T extends z.ZodType = z.ZodType,
+  R extends object | boolean = object,
+>(definition: {
+  name: string;
+  description: string;
+  schema: T;
+  handler: (props: z.infer<T>, c: AppContext) => Promise<R>;
+}) => ({
+  ...definition,
+  handler: (props: z.infer<T>): Promise<R> =>
+    definition.handler(props, State.getStore()),
 });
 
 export type ApiHandler = ReturnType<typeof createApiHandler>;
@@ -91,7 +98,7 @@ export type ApiHandler = ReturnType<typeof createApiHandler>;
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 
 export const State = {
-  active: () => {
+  getStore: () => {
     const store = asyncLocalStorage.getStore();
 
     if (!store) {
@@ -100,9 +107,9 @@ export const State = {
 
     return store;
   },
-  bind: <R, TArgs extends unknown[]>(
+  run: <R, TArgs extends unknown[]>(
     ctx: AppContext,
     f: (...args: TArgs) => R,
-  ): (...args: TArgs) => R =>
-  (...args: TArgs): R => asyncLocalStorage.run(ctx, f, ...args),
+    ...args: TArgs
+  ): R => asyncLocalStorage.run(ctx, f, ...args),
 };

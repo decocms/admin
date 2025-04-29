@@ -19,9 +19,13 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   );
 }
 
-export const API_SERVER_URL = LOCAL_DEBUGGER
+export const LEGACY_API_SERVER_URL = LOCAL_DEBUGGER
   ? "http://localhost:8000"
   : "https://fs.deco.chat";
+
+export const API_SERVER_URL = LOCAL_DEBUGGER
+  ? "http://localhost:3001"
+  : "https://api.deco.chat";
 
 export const AUTH_URL = LOCAL_DEBUGGER
   ? "http://localhost:5173"

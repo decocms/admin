@@ -24,7 +24,8 @@ export const DecoConnectionSchema = z.object({
 
 export const InnateConnectionSchema = z.object({
   type: z.literal("INNATE"),
-  name: z.enum(["CORE"]),
+  name: z.string(),
+  workspace: z.string().optional(),
 });
 
 export const HTTPConnectionSchema = z.object({

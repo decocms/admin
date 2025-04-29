@@ -94,7 +94,7 @@ export const loadIntegration = async (
 export const listIntegrations = async (
   workspace: string,
   signal?: AbortSignal,
-) => {
+): Promise<Integration[]> => {
   const response = await callToolFor(workspace, "INTEGRATIONS_LIST", {}, {
     signal,
   });

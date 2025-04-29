@@ -60,10 +60,13 @@ export const loadAgent = async (
   workspace: string,
   agentId: string,
   signal?: AbortSignal,
-) => {
-  const response = await callToolFor(workspace, "AGENTS_GET", { id: agentId }, {
-    signal,
-  });
+): Promise<Agent> => {
+  const response = await callToolFor(
+    workspace,
+    "AGENTS_GET",
+    { id: agentId },
+    { signal },
+  );
 
   if (response.status === 404) {
     throw new AgentNotFoundError(agentId);
@@ -78,9 +81,16 @@ export const loadAgent = async (
   return data;
 };
 
-export const listAgents = async (workspace: string, signal?: AbortSignal) => {
-  const response = await callToolFor(workspace, "AGENTS_LIST", {}, { signal });
-
+export const listAgents = async (
+  workspace: string,
+  signal?: AbortSignal,
+): Promise<Agent[]> => {
+  const response = await callToolFor(
+    workspace,
+    "AGENTS_LIST",
+    {},
+    { signal },
+  );
   const { error, data } = await response.json();
 
   if (error) {

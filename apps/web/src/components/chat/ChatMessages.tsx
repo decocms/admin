@@ -34,10 +34,13 @@ export function ChatMessages() {
   const {
     agentId,
     scrollRef,
-    chat: { messages },
+    chat,
     isAutoScrollEnabled,
     setAutoScroll,
   } = useChatContext();
+
+  const isStreaming = chat.status === "streaming";
+  const { messages } = chat;
 
   const scrollToBottom = useCallback(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -86,7 +89,11 @@ export function ChatMessages() {
         : (
           <div className="flex flex-col gap-4 p-4">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage
+                key={message.id}
+                message={message}
+                isStreaming={isStreaming}
+              />
             ))}
             <ChatError />
             <Dots />

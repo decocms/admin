@@ -134,6 +134,7 @@ export function ChatProvider({
           instructions: overrides?.instructions,
           bypassOpenRouter,
           lastMessages: 0,
+          sendReasoning: true,
         }],
         metadata: { threadId: threadId ?? agentId },
       };

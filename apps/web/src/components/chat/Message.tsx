@@ -5,15 +5,18 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo } from "react";
 import { MemoizedMarkdown } from "./Markdown.tsx";
 import { ToolMessage } from "./ToolMessage.tsx";
+import { ReasoningPart } from "./ReasoningPart.tsx";
 
 interface ChatMessageProps {
   message: Message;
+  isStreaming?: boolean;
 }
 
 interface MessagePart {
-  type: "text" | "tool-invocation-group";
+  type: "text" | "tool-invocation-group" | "reasoning";
   content?: string;
   toolInvocations?: NonNullable<Message["toolInvocations"]>;
+  reasoning?: string;
 }
 
 interface MessageAttachment {
@@ -32,7 +35,12 @@ interface ToolPart {
   toolInvocation: NonNullable<Message["toolInvocations"]>[0];
 }
 
-type Part = TextPart | ToolPart;
+interface ReasoningPart {
+  type: "reasoning";
+  reasoning: string;
+}
+
+type Part = TextPart | ToolPart | ReasoningPart;
 
 function mergeParts(parts: Part[] | undefined): MessagePart[] {
   if (!parts) return [];
@@ -73,6 +81,12 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
       if (part.text.trim()) {
         currentTextContent.push(part.text);
       }
+    } else if (part.type === "reasoning") {
+      flushTextContent();
+      mergedParts.push({
+        type: "reasoning",
+        reasoning: part.reasoning,
+      });
     }
   });
 
@@ -82,7 +96,9 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   return mergedParts;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage(
+  { message, isStreaming = false }: ChatMessageProps,
+) {
   const isUser = message.role === "user";
   const timestamp = new Date(message.createdAt || Date.now())
     .toLocaleTimeString([], {
@@ -114,6 +130,26 @@ export function ChatMessage({ message }: ChatMessageProps) {
       message.content;
   }, [message.parts, message.content]);
 
+  const isReasoningStreaming = useMemo(() => {
+    if (!isStreaming) return false;
+    // If we have parts and the last part is reasoning, it's streaming
+    if (message.parts && message.parts.length > 0) {
+      const lastPart = message.parts[message.parts.length - 1];
+      return lastPart.type === "reasoning";
+    }
+    return false;
+  }, [message.parts, isStreaming]);
+
+  const isResponseStreaming = useMemo(() => {
+    if (!isStreaming) return false;
+    // If we have parts and the last part is text, it's streaming
+    if (message.parts && message.parts.length > 0) {
+      const lastPart = message.parts[message.parts.length - 1];
+      return lastPart.type === "text";
+    }
+    return false;
+  }, [message.parts, isStreaming]);
+
   return (
     <div
       className={cn(
@@ -141,7 +177,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
             ? (
               <div className="space-y-2 w-full">
                 {mergedParts.map((part, index) => {
-                  if (part.type === "text") {
+                  if (part.type === "reasoning") {
+                    return (
+                      <ReasoningPart
+                        key={index}
+                        reasoning={part.reasoning || ""}
+                        messageId={message.id}
+                        index={index}
+                        isStreaming={isReasoningStreaming}
+                        isResponseStreaming={isResponseStreaming}
+                      />
+                    );
+                  } else if (part.type === "text") {
                     return (
                       <MemoizedMarkdown
                         key={index}

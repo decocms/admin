@@ -1,3 +1,5 @@
+import { AppContext } from "./context.ts";
+
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {
   const cookie = headers.get("Cookie");
@@ -15,4 +17,10 @@ export function getCookies(headers: Headers): Record<string, string> {
     return out;
   }
   return {};
+}
+
+export function setHeaders(headers: Headers, ctx: AppContext) {
+  headers.forEach((headerValue, headerName) => {
+    ctx.res.headers.append(headerName, headerValue);
+  });
 }

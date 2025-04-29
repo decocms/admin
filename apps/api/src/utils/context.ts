@@ -39,7 +39,8 @@ export const serializeError = (error: unknown): string => {
 };
 
 export const getEnv = (ctx: AppContext) => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = honoEnv(ctx);
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN, VITE_USE_LOCAL_BACKEND } =
+    honoEnv(ctx);
 
   if (
     typeof SUPABASE_URL !== "string" ||
@@ -48,11 +49,11 @@ export const getEnv = (ctx: AppContext) => {
     throw new Error("Missing environment variables");
   }
 
-  return { SUPABASE_URL, SUPABASE_SERVER_TOKEN };
+  return { SUPABASE_URL, SUPABASE_SERVER_TOKEN, VITE_USE_LOCAL_BACKEND };
 };
 
 export const AUTH_URL = (ctx: AppContext) =>
-  honoEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
+  getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3001"
     : "https://api.deco.chat";
 

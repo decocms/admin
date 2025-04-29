@@ -11,16 +11,14 @@ import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import { ApiHandler, createAIHandler, State } from "./utils/context.ts";
 import {
-  createLoginUrl,
-  createMagicLinkEmail,
-  enrichUser,
-  loginMagicLink,
-  loginUser,
-  logoutUser,
-  ROUTES as loginRoutes,
-} from "./auth/index.ts";
+  ApiHandler,
+  AppContext,
+  createAIHandler,
+  State,
+} from "./utils/context.ts";
+import { ROUTES as loginRoutes } from "./auth/index.ts";
+import { enrichUser } from "./user/index.ts";
 
 const app = new Hono();
 
@@ -152,76 +150,9 @@ app.post(
   createToolCallHandlerFor(WORKSPACE_TOOLS),
 );
 
-// Login flow
-
-app.all(loginRoutes.loginOauth, async (c: AppContext) => {
-  const user = c.get("user");
-
-  // user already logged in, set by userMiddleware
-  if (user) {
-    return c.redirect("/");
-  }
-
-  const { url, headers } = await createLoginUrl(c);
-
-  if (url) {
-    headers.forEach((headerValue, headerName) => {
-      c.res.headers.append(headerName, headerValue);
-    });
-
-    return c.redirect(url);
-  }
-
-  throw new Error("deco.chat auth failed to log in.");
-});
-
-app.all(loginRoutes.loginMagicLink, async (c: AppContext) => {
-  const data = await createMagicLinkEmail(c);
-  return c.json(data);
-});
-
-app.all(loginRoutes.authCallbackPath, async (c: AppContext) => {
-  try {
-    const { headers, redirectUrl } = await loginUser(c);
-    headers.forEach((headerValue, headerName) => {
-      c.res.headers.append(headerName, headerValue);
-    });
-
-    return c.redirect(redirectUrl);
-  } catch (e) {
-    if (e instanceof Error) {
-      return c.text(e.message, 400);
-    }
-
-    return c.text("Something went wrong", 400);
-  }
-});
-
-app.all(loginRoutes.authCallbackMagiclinkPath, async (c: AppContext) => {
-  try {
-    const { headers, redirectUrl } = await loginMagicLink(c);
-    headers.forEach((headerValue, headerName) => {
-      c.res.headers.append(headerName, headerValue);
-    });
-
-    return c.redirect(redirectUrl);
-  } catch (e) {
-    if (e instanceof Error) {
-      return c.text(e.message, 400);
-    }
-
-    return c.text("Something went wrong", 400);
-  }
-});
-
-app.all(loginRoutes.logout, async (c: AppContext) => {
-  const { headers, redirectUrl } = await logoutUser(c);
-
-  headers.forEach((headerValue, headerName) => {
-    c.res.headers.append(headerName, headerValue);
-  });
-
-  return c.redirect(redirectUrl);
+// Login and auth routes
+Object.entries(loginRoutes).forEach(([route, honoApp]) => {
+  app.route(route, honoApp);
 });
 
 app.all("/api/user", (c: AppContext) => {

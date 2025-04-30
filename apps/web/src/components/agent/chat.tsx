@@ -154,7 +154,6 @@ function Agent(props: Props) {
                 onClick={() =>
                   focusChat(agentId, crypto.randomUUID(), { history: false })}
               >
-                <Icon name="chat_add_on" />
                 New chat
               </Button>
             </div>
@@ -164,38 +163,9 @@ function Agent(props: Props) {
           <div className="flex-1 overflow-hidden">
             {isMobile
               ? (
-                <Tabs
-                  defaultValue="chat"
-                  className="w-full h-full flex flex-col custom-tabs"
-                >
-                  <TabsList className="w-full border-b bg-slate-50 p-0 shadow-none h-12 border-none relative">
-                    <TabsTrigger
-                      value="chat"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
-                    >
-                      Chat
-                    </TabsTrigger>
-                    <div className="tab-divider"></div>
-                    <TabsTrigger
-                      value="settings"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
-                    >
-                      Edit Agent
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent
-                    value="chat"
-                    className="flex-1 overflow-hidden flex flex-col m-0 p-0 border-0 shadow-none"
-                  >
-                    <MobileChat />
-                  </TabsContent>
-                  <TabsContent
-                    value="settings"
-                    className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
-                  >
-                    <AgentSettings formId="agent-settings-form" />
-                  </TabsContent>
-                </Tabs>
+                <div className="flex-1 overflow-hidden flex h-full justify-center flex-col m-0 p-0 border-0 shadow-none">
+                  <MobileChat />
+                </div>
               )
               : (
                 <DockedPageLayout

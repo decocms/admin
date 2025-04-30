@@ -41,7 +41,7 @@ function ListActionsInner() {
   }
 
   return (
-    <div className="p-4 grid grid-cols-1 gap-4 w-full">
+    <div className="grid grid-cols-1 gap-4 w-full">
       {actions?.actions?.map((action, index) => (
         <ActionCard
           key={`real-${index}`}
@@ -55,7 +55,7 @@ function ListActionsInner() {
 
 export function ListActionsLoading() {
   return (
-    <div className="p-4 grid grid-cols-1 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {Array.from({ length: 3 }).map((_, index) => (
         <Skeleton key={`skeleton-${index}`} className="h-36 w-full" />
       ))}
@@ -65,7 +65,7 @@ export function ListActionsLoading() {
 
 export function ListActionsEmpty() {
   return (
-    <div className="m-4 p-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
+    <div className="border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
       <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
         <Icon
           name="notifications_active"

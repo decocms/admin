@@ -72,7 +72,7 @@ EmptyState.UI = ({ agentId }: { agentId: string }) => {
             <div className="flex items-center gap-2">
               <h2 className="text-3xl font-medium text-slate-800">
                 {agent?.name
-                  ? `Hello, I'm ${agent.name}`
+                  ? agent.name
                   : "Tell me who I am and how I should be"}
               </h2>
               {uiOptions?.showEditAgent !== false && (
@@ -97,7 +97,7 @@ EmptyState.UI = ({ agentId }: { agentId: string }) => {
                 </Tooltip>
               )}
             </div>
-            <p className="text-slate-500 mx-6">
+            <p className="text-slate-500 mx-6 text-center">
               {agent?.description ?? "The more you share, the better I get."}
             </p>
           </div>

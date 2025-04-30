@@ -38,15 +38,7 @@ const tabStyles = `
   outline: none !important;
   box-shadow: none !important;
 }
-.tab-divider {
-  position: absolute;
-  top: 1%;
-  bottom: 1%;
-  width: 1px;
-  background-color: #e2e8f0;
-  left: 50%;
-  transform: translateX(-50%);
-}
+
 `;
 
 interface Props {
@@ -182,16 +174,6 @@ function Agent(props: Props) {
               >
                 <Icon name="menu" size={20} />
               </Button>
-              <Button
-                variant="outline"
-                title="New Chat"
-                className={cn(!isMobile && "hidden")}
-                onClick={() =>
-                  focusChat(agentId, crypto.randomUUID(), { history: false })}
-              >
-                <Icon name="chat_add_on" />
-                New chat
-              </Button>
             </div>
           </div>
           <div className="flex-1 overflow-hidden">
@@ -208,12 +190,19 @@ function Agent(props: Props) {
                     >
                       Edit Agent
                     </TabsTrigger>
-                    <div className="tab-divider"></div>
+                    <div className="h-full w-[1px] bg-slate-200" />
                     <TabsTrigger
                       value="chat"
                       className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
                     >
-                      Chat
+                      Test Agent
+                    </TabsTrigger>
+                    <div className="h-full w-[1px] bg-slate-200" />
+                    <TabsTrigger
+                      value="triggers"
+                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
+                    >
+                      Triggers
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent
@@ -227,6 +216,12 @@ function Agent(props: Props) {
                     className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
                   >
                     <AgentSettings formId="agent-settings-form" />
+                  </TabsContent>
+                  <TabsContent
+                    value="triggers"
+                    className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
+                  >
+                    <ListActions />
                   </TabsContent>
                 </Tabs>
               )

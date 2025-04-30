@@ -30,15 +30,6 @@ const tabStyles = `
   outline: none !important;
   box-shadow: none !important;
 }
-.tab-divider {
-  position: absolute;
-  top: 1%;
-  bottom: 1%;
-  width: 1px;
-  background-color: #e2e8f0;
-  left: 50%;
-  transform: translateX(-50%);
-}
 `;
 
 interface Props {

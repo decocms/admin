@@ -18,9 +18,15 @@ interface Props {
 }
 
 export function ChatHeader() {
-  const { agentId } = useChatContext();
+  const { agentId, chat } = useChatContext();
 
-  if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
+  if (
+    agentId === WELL_KNOWN_AGENT_IDS.teamAgent
+  ) {
+    if (chat.messages.length === 0) {
+      return null;
+    }
+
     return (
       <Container>
         <Icon name="forum" size={16} />
@@ -59,6 +65,7 @@ ChatHeader.Skeleton = () => {
 };
 
 ChatHeader.UI = ({ agentId }: Props) => {
+  const { chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const focusChat = useFocusChat();
   const focusEditAgent = useEditAgent();
@@ -66,16 +73,20 @@ ChatHeader.UI = ({ agentId }: Props) => {
   return (
     <>
       <Container>
-        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-          <AgentAvatar
-            name={agent.name}
-            avatar={agent.avatar}
-            className="rounded-lg text-xs"
-          />
-        </div>
-        <h1 className="text-sm font-medium tracking-tight">
-          {agent.name}
-        </h1>
+        {chat.messages.length > 0 && (
+          <>
+            <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+              <AgentAvatar
+                name={agent.name}
+                avatar={agent.avatar}
+                className="rounded-lg text-xs"
+              />
+            </div>
+            <h1 className="text-sm font-medium tracking-tight">
+              {agent.name}
+            </h1>
+          </>
+        )}
       </Container>
 
       <div className="flex items-center gap-2 py-1">

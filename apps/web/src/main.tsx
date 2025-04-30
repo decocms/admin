@@ -151,9 +151,9 @@ function Router() {
           element={
             <Chat
               includeThreadTools
+              disableThreadMessages
               agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
               threadId={crypto.randomUUID()}
-              disableThreadMessages
               key="disabled-messages"
             />
           }

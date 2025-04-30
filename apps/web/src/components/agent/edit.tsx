@@ -91,7 +91,7 @@ const COMPONENTS = {
   },
   chat: {
     Component: Chat,
-    initialOpen: true,
+    // initialOpen: true,
     title: "Test agent",
   },
   preview: {

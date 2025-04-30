@@ -37,10 +37,10 @@ import { Suspense, useReducer, useState } from "react";
 import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
-import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
@@ -194,8 +194,11 @@ function AgentCard({ agent }: { agent: Agent }) {
     <>
       <Card
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
-        onClick={() =>
-          focusEditAgent(agent.id, crypto.randomUUID(), { history: false })}
+        onClick={() => {
+          focusChat(agent.id, crypto.randomUUID(), {
+            history: false,
+          });
+        }}
       >
         <CardContent className="gap-4 flex flex-col flex-grow">
           <div className="flex flex-col gap-3 w-full">
@@ -230,13 +233,13 @@ function AgentCard({ agent }: { agent: Agent }) {
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      focusChat(agent.id, crypto.randomUUID(), {
+                      focusEditAgent(agent.id, crypto.randomUUID(), {
                         history: false,
                       });
                     }}
                   >
-                    <Icon name="chat_add_on" className="mr-2" />
-                    New chat
+                    <Icon name="edit" className="mr-2" />
+                    Edit agent
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={duplicating}

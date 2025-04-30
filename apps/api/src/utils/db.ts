@@ -6,6 +6,9 @@ import {
 
 export type Options = Parameters<typeof createServerClient>;
 
+export const getCookieDomain = (hostname: string) =>
+  hostname.split(".").slice(-2).join(".");
+
 export const getServerClientOptions = (
   { cookies, setCookie }: {
     cookies: Record<string, string>;
@@ -29,7 +32,7 @@ export const authSetCookie = ({ request }: { request: Request }) => {
   const headers = new Headers();
   const setCookie: SetAllCookies = (cookies) => {
     const url = new URL(request.url);
-    const rootDomain = url.hostname.split(".").slice(-2).join(".");
+    const rootDomain = getCookieDomain(url.hostname);
     for (const { name, value, options } of cookies) {
       headers.append(
         "set-cookie",

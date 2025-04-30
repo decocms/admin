@@ -10,7 +10,6 @@ import { AppContext, AUTH_URL, getEnv } from "../utils/context.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
-const HAS_LOGGED_IN_COOKIE = "hasLoggedInBefore";
 
 const appAuth = new Hono();
 const appLogin = new Hono();
@@ -33,11 +32,6 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
   );
 
   return { headers, db };
-};
-
-const markUserAsLoggedIn = (headers: Headers) => {
-  headers.append("set-cookie", `${HAS_LOGGED_IN_COOKIE}=true; Path=/`);
-  return headers;
 };
 
 // TODO: add LRU Cache
@@ -185,8 +179,6 @@ appAuth.all("/callback/oauth", async (ctx: AppContext) => {
       throw new Error("Failed to finish login flow");
     }
 
-    markUserAsLoggedIn(headers);
-
     setHeaders(headers, ctx);
 
     return ctx.redirect(redirectUrl);
@@ -225,8 +217,6 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
     if (error) {
       throw new Error("Failed to finish login flow");
     }
-
-    markUserAsLoggedIn(headers);
 
     setHeaders(headers, ctx);
 

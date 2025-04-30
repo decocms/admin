@@ -10,11 +10,18 @@ export interface User {
   };
 }
 
+export class NotLoggedInError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotLoggedInError";
+  }
+}
+
 export const fetchUser = async () => {
   const response = await callToolFor("", "PROFILES_GET", {});
 
   if (response.status === 401) {
-    throw new Error("User is not logged in");
+    throw new NotLoggedInError("User is not logged in");
   }
 
   if (!response.ok) {

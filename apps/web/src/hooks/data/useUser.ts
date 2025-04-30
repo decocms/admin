@@ -20,13 +20,6 @@ export interface User {
   };
 }
 
-export class NotLoggedInError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotLoggedInError";
-  }
-}
-
 const promise = fetchUser();
 
 export const onUserChange = (callback: (user: User) => void) =>

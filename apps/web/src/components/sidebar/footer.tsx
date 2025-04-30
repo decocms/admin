@@ -1,4 +1,4 @@
-import { AUTH_URL } from "@deco/sdk";
+import { AUTH_URL, NotLoggedInError } from "@deco/sdk";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -16,7 +16,7 @@ import {
 import { Suspense, useMemo } from "react";
 import { Link, useLocation } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { NotLoggedInError, useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";

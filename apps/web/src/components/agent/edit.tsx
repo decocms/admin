@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo } from "react";
+import { ComponentType, Suspense, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
 import { ListActions } from "../actions/listActions.tsx";
@@ -24,6 +24,7 @@ import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader, Container } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import AgentViews from "./AgentViews.tsx";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -100,7 +101,7 @@ const TABS = {
     title: "Test agent",
   },
   preview: {
-    Component: AgentPreview,
+    Component: AgentPreview as ComponentType,
     title: "Preview",
   },
   actions: {
@@ -230,11 +231,14 @@ function Agent(props: Props) {
                 </Tabs>
               )
               : (
-                <DockedPageLayout
-                  main={MAIN}
-                  tabs={TABS}
-                  key={agentId}
-                />
+                <>
+                  <DockedPageLayout
+                    main={MAIN}
+                    tabs={TABS}
+                    key={agentId}
+                  />
+                  <AgentViews agentId={agentId} />
+                </>
               )}
           </div>
         </div>

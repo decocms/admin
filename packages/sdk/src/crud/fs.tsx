@@ -8,6 +8,8 @@ export interface FileSystemOptions {
   mode?: number;
   /** File flags */
   flag?: string;
+  /** File ensure dir */
+  ensureDir?: boolean;
 }
 
 export const readFile = async (path: string, options?: FileSystemOptions) => {

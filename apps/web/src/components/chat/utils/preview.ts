@@ -1,4 +1,4 @@
-import { togglePanel } from "../../dock/index.tsx";
+import { openPanel, togglePanel } from "../../dock/index.tsx";
 
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
 
@@ -19,7 +19,7 @@ export const toIframeProps = (content: string) => {
   }
 };
 
-export const openPreviewPanel = (
+export const togglePreviewPanel = (
   id: string,
   content: string,
   title: string,
@@ -28,6 +28,21 @@ export const openPreviewPanel = (
     id,
     component: "preview",
     title,
-    params: toIframeProps(content),
+    params: { title, ...toIframeProps(content) },
+  });
+};
+
+export const openPreviewPanel = (
+  { content, id, title }: {
+    content: string;
+    id: string;
+    title: string;
+  },
+) => {
+  openPanel({
+    id,
+    component: "preview",
+    title,
+    params: { title, ...toIframeProps(content) },
   });
 };

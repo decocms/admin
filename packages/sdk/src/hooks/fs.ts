@@ -72,12 +72,14 @@ export const useWriteFile = () => {
   });
 };
 
-export const useDeleteFile = (path: string, options?: FileSystemOptions) => {
+export const useDeleteFile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => deleteFile(path, options),
-    onMutate: async () => {
+    mutationFn: (
+      { path, options }: { path: string; options?: FileSystemOptions },
+    ) => deleteFile(path, options),
+    onMutate: async ({ path, options }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: KEYS.FILE(path, options) });
 
@@ -89,18 +91,20 @@ export const useDeleteFile = (path: string, options?: FileSystemOptions) => {
 
       return { previousData };
     },
-    onError: (_err, _variables, context) => {
+    onError: (_err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousData) {
         queryClient.setQueryData(
-          KEYS.FILE(path, options),
+          KEYS.FILE(variables?.path, variables?.options),
           context.previousData,
         );
       }
     },
-    onSettled: () => {
+    onSettled: (_, __, variables) => {
       // Always refetch after error or success to ensure data is in sync
-      queryClient.invalidateQueries({ queryKey: KEYS.FILE(path, options) });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.FILE(variables.path, variables.options),
+      });
     },
   });
 };

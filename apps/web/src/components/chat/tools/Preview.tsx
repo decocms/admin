@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ALLOWANCES } from "../../../constants.ts";
 import {
   IMAGE_REGEXP,
-  openPreviewPanel,
+  togglePreviewPanel,
   toIframeProps,
 } from "../utils/preview.ts";
 
@@ -224,7 +224,7 @@ export function Preview({ content, title, className }: PreviewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleExpand = () => {
-    openPreviewPanel(
+    togglePreviewPanel(
       `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
       content,
       title || "Preview",

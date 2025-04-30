@@ -18,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -82,25 +83,21 @@ const TAB_COMPONENTS = {
 const channel = new EventTarget();
 
 type Message = {
-  type: "toggle" | "open" | "update";
+  type: "toggle" | "open" | "update" | "add";
   payload: AddPanelOptions<object>;
 };
 
-export const togglePanel = <T extends object>(
-  detail: AddPanelOptions<T>,
+const createChannelDispatcher = (type: Message["type"]) =>
+<T extends object>(
+  payload: AddPanelOptions<T>,
 ) => {
   channel.dispatchEvent(
-    new CustomEvent("message", { detail: { type: "toggle", payload: detail } }),
+    new CustomEvent("message", { detail: { type, payload } }),
   );
 };
 
-export const openPanel = <T extends object>(
-  detail: AddPanelOptions<T>,
-) => {
-  channel.dispatchEvent(
-    new CustomEvent("message", { detail: { type: "open", payload: detail } }),
-  );
-};
+export const togglePanel = createChannelDispatcher("toggle");
+export const openPanel = createChannelDispatcher("open");
 
 export interface Tab {
   Component: ComponentType;
@@ -121,7 +118,7 @@ function isMobile() {
   return globalThis.innerWidth <= 768;
 }
 
-const addPanel = (options: AddPanelOptions, api: DockviewApi) => {
+const addPanelAPI = (options: AddPanelOptions, api: DockviewApi) => {
   const group = api.groups.find((group) => group.locked !== NO_DROP_TARGET);
 
   const panelOptions = {
@@ -184,6 +181,37 @@ function Docked(
     return new Set(Object.keys(components));
   }, [components]);
 
+  // while api isn't set, events from channel will be enqueued to be dispatch when API is set.
+  const enqueuedEventsCb = useRef<CustomEvent<Message>[]>([]);
+  const enqueueEvent = (cb: CustomEvent<Message>) => {
+    enqueuedEventsCb.current.push(cb);
+  };
+
+  const handleMessage = (
+    event: CustomEvent<Message>,
+  ) => {
+    if (!api) {
+      enqueueEvent(event);
+      return;
+    }
+    const { type, payload } = event.detail;
+    const panel = api.getPanel(payload.id);
+
+    if (panel) {
+      if (type === "toggle") {
+        panel.api.close();
+      } else if (type === "open") {
+        panel.api.updateParameters(payload.params || {});
+      }
+    } else {
+      addPanelAPI(payload, api);
+    }
+  };
+  const flushQueue = () => {
+    enqueuedEventsCb.current.forEach((event) => handleMessage(event));
+    enqueuedEventsCb.current = [];
+  };
+
   const handleReady = useCallback((event: DockviewReadyEvent) => {
     setApi(event.api);
 
@@ -200,7 +228,7 @@ function Docked(
       if (value.initialOpen) {
         initialPanels.add(key);
 
-        addPanel({ id: key, component: key, title: value.title }, event.api);
+        addPanelAPI({ id: key, component: key, title: value.title }, event.api);
       }
     });
 
@@ -218,27 +246,9 @@ function Docked(
   }, [onReady, mainViewName, components]);
 
   useEffect(() => {
-    if (!api) {
-      return;
+    if (api) {
+      flushQueue();
     }
-
-    const handleMessage = (
-      event: CustomEvent<Message>,
-    ) => {
-      const { type, payload } = event.detail;
-      const panel = api.getPanel(payload.id);
-
-      if (panel) {
-        if (type === "toggle") {
-          panel.api.close();
-        } else if (type === "open") {
-          panel.api.updateParameters(payload.params || {});
-        }
-      } else {
-        addPanel(payload, api);
-      }
-    };
-
     // @ts-expect-error - I don't really know how to properly type this
     channel.addEventListener("message", handleMessage);
 

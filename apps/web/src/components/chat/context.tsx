@@ -14,7 +14,7 @@ import {
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { IMAGE_REGEXP, togglePreviewPanel } from "./utils/preview.ts";
 import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 import { useSelectedModel } from "../../hooks/useSelectedModel.ts";
 import { useAddOptimisticThread } from "@deco/sdk";
@@ -158,7 +158,7 @@ export function ChatProvider({
         const isImageLike = content && IMAGE_REGEXP.test(content);
 
         if (!isImageLike) {
-          openPreviewPanel(
+          togglePreviewPanel(
             `preview-${toolCall.toolCallId}`,
             content,
             title,

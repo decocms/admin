@@ -235,7 +235,7 @@ function Agent(props: Props) {
                 <DockedPageLayout
                   main={{
                     header: agentId === WELL_KNOWN_AGENT_IDS.teamAgent
-                      ? null
+                      ? undefined
                       : MainHeader,
                     main: MainContent,
                     footer: MainFooter,

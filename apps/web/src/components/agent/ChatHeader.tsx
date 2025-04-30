@@ -1,10 +1,10 @@
 import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@deco/ui/components/dropdown-menu.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
-import ActionsButton from "../chat/ActionsButton.tsx";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
@@ -22,9 +22,6 @@ export function ChatHeader() {
         <h1 className="text-sm font-medium tracking-tight">
           New chat
         </h1>
-        <div className="ml-auto">
-          <ActionsButton />
-        </div>
       </Container>
     );
   }
@@ -77,26 +74,36 @@ ChatHeader.UI = ({ agentId }: Props) => {
       </Container>
 
       <div className="flex items-center gap-2 py-1">
-        <Button
-          variant="outline"
-          title="New Chat"
-          onClick={() =>
-            focusChat(agentId, crypto.randomUUID(), { history: false })}
-        >
-          <Icon name="chat_add_on" />
-          New chat
-        </Button>
-        <Button
-          id="settings"
-          title="Settings"
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            focusEditAgent(agentId, crypto.randomUUID(), { history: false });
-          }}
-        >
-          <Icon name="tune" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              id="settings"
+              title="Settings"
+              variant="outline"
+              size="icon"
+            >
+              <Icon name="more_vert" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => {
+                focusChat(agentId, crypto.randomUUID(), { history: false });
+              }}
+            >
+              <Icon name="chat_add_on" className="mr-2 h-4 w-4" />
+              New Chat
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                focusEditAgent(agentId, crypto.randomUUID(), { history: false });
+              }}
+            >
+              <Icon name="edit" className="mr-2 h-4 w-4" />
+              Edit Agent
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   );

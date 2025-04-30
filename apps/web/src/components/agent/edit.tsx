@@ -12,15 +12,17 @@ import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
 import { useParams } from "react-router";
+import { useAgent } from "../../../../../packages/sdk/src/index.ts";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { ListActions } from "../actions/listActions.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
-import { ChatProvider } from "../chat/context.tsx";
+import { ChatProvider, useChatContext } from "../chat/context.tsx";
+import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
 import AgentSettings from "../settings/agent.tsx";
-import { AgentHeader } from "./DetailHeader.tsx";
+import { AgentHeader, Container } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 
@@ -53,14 +55,33 @@ interface Props {
   threadId?: string;
 }
 
-const MainHeader = () => <AgentHeader />;
-const MainContent = () => <ChatMessages />;
-const MainFooter = () => <ChatInput />;
+const Chat = () => {
+  const { agentId } = useChatContext();
+  const { data: agent } = useAgent(agentId);
+
+  return (
+    <div className="grid grid-rows-[auto_1fr_auto] p-4 h-full">
+      <Container>
+        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+          <AgentAvatar
+            name={agent.name}
+            avatar={agent.avatar}
+            className="rounded-lg text-xs"
+          />
+        </div>
+        <h1 className="text-sm font-medium tracking-tight">
+          {agent.name}
+        </h1>
+      </Container>
+      <ChatMessages />
+      <ChatInput />
+    </div>
+  );
+};
 
 const MAIN = {
-  header: MainHeader,
-  main: MainContent,
-  footer: MainFooter,
+  header: AgentHeader,
+  main: () => <AgentSettings formId="agent-settings-form" />,
 };
 
 const COMPONENTS = {
@@ -68,10 +89,10 @@ const COMPONENTS = {
     Component: ThreadView,
     title: "Thread",
   },
-  settings: {
-    Component: () => <AgentSettings formId="agent-settings-form" />,
+  chat: {
+    Component: Chat,
     initialOpen: true,
-    title: "Edit Agent",
+    title: "Test agent",
   },
   preview: {
     Component: AgentPreview,

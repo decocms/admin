@@ -1,13 +1,11 @@
-import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { AgentNotFoundError, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
+import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedToggleButton } from "../pageLayout.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { useFocusChat } from "../agents/hooks.ts";
-import ActionsButton from "../chat/ActionsButton.tsx";
 
 interface Props {
   agentId: string;
@@ -33,7 +31,7 @@ export function AgentHeader() {
       shouldCatch={(e) => e instanceof AgentNotFoundError}
     >
       <Suspense fallback={<AgentHeader.Skeleton />}>
-        <AgentHeader.UI agentId={agentId} />
+        <AgentHeader.UI />
       </Suspense>
     </ErrorBoundary>
   );
@@ -54,50 +52,38 @@ AgentHeader.Skeleton = () => {
   return null;
 };
 
-AgentHeader.UI = ({ agentId }: Props) => {
-  const { data: agent } = useAgent(agentId);
-  const focusChat = useFocusChat();
+AgentHeader.UI = () => {
+  const navigate = useNavigate();
 
   return (
     <>
-      <Container>
-        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-          <AgentAvatar
-            name={agent.name}
-            avatar={agent.avatar}
-            className="rounded-lg text-xs"
-          />
-        </div>
-        <h1 className="text-sm font-medium tracking-tight">
-          {agent.name}
-        </h1>
-      </Container>
-
+      <Button onClick={() => navigate(-1)} variant="ghost">
+        <Icon name="arrow_back" />
+        Back
+      </Button>
       <div className="flex items-center gap-2 py-1">
-        <Button
+        <DockedToggleButton
+          id="chat"
+          title="Settings"
           variant="outline"
-          title="Test agent"
-          onClick={() =>
-            focusChat(agentId, crypto.randomUUID(), { history: false })}
         >
           <Icon name="chat_add_on" />
           Test agent
-        </Button>
-        <ActionsButton />
+        </DockedToggleButton>
         <DockedToggleButton
-          id="settings"
-          title="Settings"
+          id="actions"
+          title="Actions"
           variant="outline"
-          size="icon"
         >
-          <Icon name="tune" />
+          Actions
+          <Icon name="check_circle" />
         </DockedToggleButton>
       </div>
     </>
   );
 };
 
-const Container = ({ children }: { children: React.ReactNode }) => {
+export const Container = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="justify-self-start flex items-center gap-3 text-slate-700 py-1">
       {children}

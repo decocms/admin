@@ -10,7 +10,7 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { ListActions } from "../actions/listActions.tsx";
@@ -23,6 +23,7 @@ import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import TestAgent from "./testAgent.tsx";
 
 // Custom CSS to override shadow styles
 const tabStyles = `
@@ -54,24 +55,23 @@ interface Props {
 }
 
 const MainHeader = () => <AgentHeader />;
-const MainContent = () => <ChatMessages />;
-const MainFooter = () => <ChatInput />;
+const MainContent = () => <AgentSettings formId="agent-settings-form" />;
 
 const MAIN = {
   header: MainHeader,
   main: MainContent,
-  footer: MainFooter,
 };
 
 const COMPONENTS = {
+  testAgent: {
+    title: "Test Agent",
+    initialOpen: true,
+    Component: TestAgent,
+    hideDefaultHeader: true,
+  },
   chatView: {
     Component: ThreadView,
     title: "Thread",
-  },
-  settings: {
-    Component: () => <AgentSettings formId="agent-settings-form" />,
-    initialOpen: true,
-    title: "Edit Agent",
   },
   preview: {
     Component: AgentPreview,
@@ -89,9 +89,7 @@ function MobileChat() {
       <div className="flex-1 overflow-y-auto">
         <ChatMessages />
       </div>
-      <div className="p-2 border-t">
-        <ChatInput />
-      </div>
+      <ChatInput />
     </>
   );
 }
@@ -114,23 +112,8 @@ function Agent(props: Props) {
 
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-  const [isLoading, setIsLoading] = useState(false);
   const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
   const focusChat = useFocusChat();
-
-  const handleUpdate = () => {
-    setIsLoading(true);
-    try {
-      const form = document.getElementById(
-        "agent-settings-form",
-      ) as HTMLFormElement;
-      if (form) {
-        form.requestSubmit();
-      }
-    } catch (error) {
-      console.error("Error updating agent:", error);
-    }
-  };
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
@@ -154,7 +137,7 @@ function Agent(props: Props) {
           <div
             className={cn(
               "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
-              (isMobile || hasChanges) && "h-auto py-2",
+              isMobile && "h-auto py-2",
             )}
           >
             <div className="flex justify-between gap-2 w-full">
@@ -178,26 +161,6 @@ function Agent(props: Props) {
                 <Icon name="chat_add_on" />
                 New chat
               </Button>
-            </div>
-            <div className="flex gap-2">
-              {hasChanges && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="text-slate-700"
-                    onClick={discardCurrentChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
-                    onClick={handleUpdate}
-                    disabled={!hasChanges}
-                  >
-                    {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
-                  </Button>
-                </>
-              )}
             </div>
           </div>
           <div className="flex-1 overflow-hidden">

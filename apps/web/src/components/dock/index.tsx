@@ -26,6 +26,7 @@ const Context = createContext<
     mainViewName: string;
     openPanels: Set<string>;
     availablePanels: Set<string>;
+    noTabPanels: Set<string>;
   } | null
 >(null);
 
@@ -57,23 +58,25 @@ const adapter =
 
 const TAB_COMPONENTS = {
   default: (props: IDockviewPanelHeaderProps) => {
-    const { mainViewName } = useDock();
+    const { mainViewName, noTabPanels } = useDock();
 
-    if (props.api.component === mainViewName) {
+    if (props.api.component === mainViewName || noTabPanels.has(props.api.component)) {
       return null;
     }
 
     return (
       <div className="flex items-center justify-between gap-2 px-4 py-4">
         <p className="text-sm">{props.api.title}</p>
-        <Button
-          className="p-1 h-6 w-6"
-          variant="ghost"
-          size="icon"
-          onClick={() => props.api.close()}
-        >
-          <Icon name="close" size={12} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            className="p-1 h-6 w-6"
+            variant="ghost"
+            size="icon"
+            onClick={() => props.api.close()}
+          >
+            <Icon name="close" size={12} />
+          </Button>
+        </div>
       </div>
     );
   },
@@ -104,8 +107,9 @@ export const openPanel = <T extends object>(
 
 export interface Tab {
   Component: ComponentType;
-  initialOpen?: boolean;
   title: string;
+  initialOpen?: boolean;
+  hideDefaultHeader?: boolean;
 }
 
 type Props =
@@ -184,6 +188,12 @@ function Docked(
     return new Set(Object.keys(components));
   }, [components]);
 
+  const noTabPanels = useMemo(() => {
+    return new Set(Object.entries(components)
+      .filter(([_, component]) => component.hideDefaultHeader)
+      .map(([id, _]) => id));
+  }, [components]);
+
   const handleReady = useCallback((event: DockviewReadyEvent) => {
     setApi(event.api);
 
@@ -249,7 +259,7 @@ function Docked(
   }, [api, channel]);
 
   return (
-    <Context.Provider value={{ mainViewName, openPanels, availablePanels }}>
+    <Context.Provider value={{ mainViewName, openPanels, availablePanels, noTabPanels }}>
       <DockviewReact
         components={wrappedComponents}
         tabComponents={TAB_COMPONENTS}

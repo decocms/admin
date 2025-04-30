@@ -55,45 +55,18 @@ AgentHeader.Skeleton = () => {
 };
 
 AgentHeader.UI = ({ agentId }: Props) => {
-  const { data: agent } = useAgent(agentId);
-  const focusChat = useFocusChat();
-
   return (
-    <>
-      <Container>
-        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-          <AgentAvatar
-            name={agent.name}
-            avatar={agent.avatar}
-            className="rounded-lg text-xs"
-          />
-        </div>
-        <h1 className="text-sm font-medium tracking-tight">
-          {agent.name}
-        </h1>
-      </Container>
-
-      <div className="flex items-center gap-2 py-1">
-        <Button
-          variant="outline"
-          title="Test agent"
-          onClick={() =>
-            focusChat(agentId, crypto.randomUUID(), { history: false })}
-        >
-          <Icon name="chat_add_on" />
-          Test agent
-        </Button>
-        <ActionsButton />
-        <DockedToggleButton
-          id="settings"
-          title="Settings"
-          variant="outline"
-          size="icon"
-        >
-          <Icon name="tune" />
-        </DockedToggleButton>
-      </div>
-    </>
+    <div className="flex items-center justify-end w-full gap-2 py-1">
+      <DockedToggleButton
+        id="testAgent"
+        title="Test agent"
+        variant="outline"
+      >
+        <Icon name="forum" />
+        Test agent
+      </DockedToggleButton>
+    </div>
+  
   );
 };
 

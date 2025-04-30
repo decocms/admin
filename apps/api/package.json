@@ -10,6 +10,7 @@
   "dependencies": {
     "@deco/sdk": "^0.1.1",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
+    "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",

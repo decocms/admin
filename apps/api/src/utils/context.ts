@@ -12,8 +12,10 @@ export type AppEnv = {
     user: SupaUser;
   };
   Bindings: {
-    SUPABASE_URL?: string;
-    SUPABASE_SERVER_TOKEN?: string;
+    SUPABASE_URL: string;
+    SUPABASE_SERVER_TOKEN: string;
+    TURSO_GROUP_DATABASE_TOKEN: string;
+    TURSO_ORGANIZATION: string;
   };
 };
 

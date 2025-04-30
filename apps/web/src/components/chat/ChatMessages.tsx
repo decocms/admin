@@ -83,11 +83,11 @@ export function ChatMessages() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="w-full max-w-[800px] mx-auto">
+    <div className="w-full max-w-[640px] mx-auto">
       {isEmpty
         ? <EmptyState agentId={agentId} />
         : (
-          <div className="flex flex-col gap-4 p-4">
+          <div className="flex flex-col gap-4">
             {messages.map((message) => (
               <ChatMessage
                 key={message.id}

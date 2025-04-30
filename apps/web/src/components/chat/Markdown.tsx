@@ -43,7 +43,7 @@ const MemoizedMarkdownBlock = memo(
           pre: (props) => (
             <pre
               {...props}
-              className="flex max-w-[calc(800px-64px)] my-4 bg-gray-100 rounded"
+              className="flex max-w-[calc(640px-64px)] my-4 bg-gray-100 rounded"
             >
               <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
                 {props.children}

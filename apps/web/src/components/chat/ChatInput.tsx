@@ -188,15 +188,15 @@ ChatInput.UI = (
   };
 
   return (
-    <div className="w-full max-w-[800px] mx-auto">
+    <div className="w-full max-w-[640px] mx-auto">
       <form
         onSubmit={onSubmit}
         className={cn(
-          "relative flex items-center gap-2 p-4 pt-0",
+          "relative flex items-center gap-2 pt-0",
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="w-full px-2">
+        <div className="w-full">
           <div className="relative rounded-md w-full mx-auto">
             <div className="relative flex flex-col">
               <div

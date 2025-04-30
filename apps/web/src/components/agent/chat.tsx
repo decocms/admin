@@ -41,7 +41,11 @@ interface Props {
 
 const MainHeader = () => <ChatHeader />;
 const MainContent = () => <ChatMessages />;
-const MainFooter = () => <ChatInput />;
+const MainFooter = () => (
+  <div className="h-full w-full pb-4">
+    <ChatInput />
+  </div>
+);
 
 const COMPONENTS = {
   chatView: {
@@ -64,7 +68,7 @@ function MobileChat() {
       <div className="flex-1 overflow-y-auto">
         <ChatMessages />
       </div>
-      <div className="p-2 border-t">
+      <div className="pb-4 p-2">
         <ChatInput withoutTools />
       </div>
     </>

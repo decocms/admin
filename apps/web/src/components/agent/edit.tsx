@@ -1,5 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
@@ -50,25 +51,31 @@ const Chat = () => {
   const { data: agent } = useAgent(agentId);
 
   return (
-    <div className="grid grid-rows-[auto_1fr_auto] p-4 h-full">
-      <Container>
-        {chat.messages.length > 0 && (
-          <>
-            <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-              <AgentAvatar
-                name={agent.name}
-                avatar={agent.avatar}
-                className="rounded-lg text-xs"
-              />
-            </div>
-            <h1 className="text-sm font-medium tracking-tight">
-              {agent.name}
-            </h1>
-          </>
-        )}
-      </Container>
-      <ChatMessages />
-      <ChatInput />
+    <div className="flex flex-col h-full min-w-[320px]">
+      <div className="flex-none p-4">
+        <Container>
+          {chat.messages.length > 0 && (
+            <>
+              <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+                <AgentAvatar
+                  name={agent.name}
+                  avatar={agent.avatar}
+                  className="rounded-lg text-xs"
+                />
+              </div>
+              <h1 className="text-sm font-medium tracking-tight">
+                {agent.name}
+              </h1>
+            </>
+          )}
+        </Container>
+      </div>
+      <ScrollArea className="flex-1 min-h-0">
+        <ChatMessages />
+      </ScrollArea>
+      <div className="flex-none pb-4 px-4">
+        <ChatInput />
+      </div>
     </div>
   );
 };
@@ -76,7 +83,7 @@ const Chat = () => {
 const MAIN = {
   header: AgentHeader,
   main: () => (
-    <div className="h-full w-full max-w-[800px] mx-auto">
+    <div className="h-full w-full max-w-[640px] mx-auto">
       <AgentSettings formId="agent-settings-form" />
     </div>
   ),
@@ -108,7 +115,7 @@ function MobileChat() {
       <div className="flex-1 overflow-y-auto">
         <ChatMessages />
       </div>
-      <div className="p-2 border-t">
+      <div className="pb-2 px-2">
         <ChatInput />
       </div>
     </>

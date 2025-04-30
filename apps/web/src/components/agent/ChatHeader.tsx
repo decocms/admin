@@ -1,7 +1,12 @@
 import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@deco/ui/components/dropdown-menu.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
@@ -96,7 +101,9 @@ ChatHeader.UI = ({ agentId }: Props) => {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                focusEditAgent(agentId, crypto.randomUUID(), { history: false });
+                focusEditAgent(agentId, crypto.randomUUID(), {
+                  history: false,
+                });
               }}
             >
               <Icon name="edit" className="mr-2 h-4 w-4" />

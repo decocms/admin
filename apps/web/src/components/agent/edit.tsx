@@ -19,6 +19,7 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
+import EditTabs from "./editTabs.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
@@ -55,7 +56,7 @@ interface Props {
 }
 
 const MainHeader = () => <AgentHeader />;
-const MainContent = () => <AgentSettings formId="agent-settings-form" />;
+const MainContent = () => <EditTabs />;
 
 const MAIN = {
   header: MainHeader,

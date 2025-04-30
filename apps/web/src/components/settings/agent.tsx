@@ -34,9 +34,9 @@ import { ControllerRenderProps, FieldValues } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 
@@ -62,7 +62,7 @@ function SystemPromptTextarea({
               variant="outline"
               size="icon"
               title="Expand prompt"
-        >
+            >
               <Icon name="expand_content" size={16} />
             </Button>
           </DialogTrigger>
@@ -114,14 +114,18 @@ function SaveChangesSnackbar() {
   };
 
   return (
-    <div 
+    <div
       className={`fixed w-[500px] bottom-4 left-1/2 -translate-x-1/2 flex gap-2 justify-between items-center bg-white rounded-full border border-slate-200 p-2 shadow-md transition-transform duration-300 ease-in-out ${
-        !hasChanges && !isLoading ? 'translate-y-[200%]' : 'translate-y-0'
+        !hasChanges && !isLoading ? "translate-y-[200%]" : "translate-y-0"
       }`}
     >
       <p className="pl-2">You have unsaved changes</p>
       <div className="flex items-center gap-2">
-        <Button variant="outline" className="w-24" onClick={discardCurrentChanges}>
+        <Button
+          variant="outline"
+          className="w-24"
+          onClick={discardCurrentChanges}
+        >
           Discard
         </Button>
         <Button
@@ -188,12 +192,12 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   return (
     <Form {...form}>
-      <div className="h-full overflow-y-auto w-full text-slate-700 md:p-4 md:px-16 relative">
+      <div className="h-full overflow-y-auto w-full text-slate-700 md:p-4 md:pt-0 md:px-16 relative">
         <SaveChangesSnackbar />
         <form
           id={formId}
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 py-8 pb-16"
+          className="space-y-8 pb-16"
         >
           <div className="flex gap-4 items-end">
             <div className="flex-shrink-0 h-18 w-18">

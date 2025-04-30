@@ -31,6 +31,7 @@ import { usePersistedDirtyForm } from "../../hooks/usePersistedDirtyForm.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
+import { FormSubmitControls } from "../common/FormSubmit.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -209,33 +210,11 @@ function SettingsTab({ formId }: SettingsTabProps) {
             </div>
           </div>
 
-          <div
-            className={cn(
-              "fixed bottom-0 left-1/2 -translate-x-1/2 bg-background",
-              "shadow border boder-input rounded-full p-2",
-              "flex items-center justify-center gap-2",
-              "transition-transform",
-              hasChanges ? "-translate-y-4" : "translate-y-full",
-              "z-10",
-            )}
-          >
-            <span className="ml-4 mr-2 text-nowrap hidden md:block">
-              You have unsaved changes
-            </span>
-            <Button
-              variant="outline"
-              className="text-slate-700"
-              onClick={discardCurrentChanges}
-            >
-              Discard
-            </Button>
-            <Button
-              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
-              disabled={!hasChanges}
-            >
-              {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
-            </Button>
-          </div>
+          <FormSubmitControls
+            numberOfChanges={hasChanges ? 1 : 0}
+            submitting={isLoading}
+            onDiscard={discardCurrentChanges}
+          />
         </form>
       </div>
     </Form>

@@ -3,7 +3,6 @@ import {
   type MCPConnection,
   useUpdateIntegration,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -21,20 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef } from "react";
-import { useNavigate } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { useBasePath } from "../../../hooks/useBasePath.ts";
+import { FormSubmitControls } from "../../common/FormSubmit.tsx";
 import { TabScrollArea } from "../../pageLayout.tsx";
 import { useFormContext } from "./context.ts";
 
 export function DetailForm() {
   const { integration: editIntegration, form } = useFormContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
-  const withBasePath = useBasePath();
 
   const updateIntegration = useUpdateIntegration();
 
@@ -93,6 +88,10 @@ export function DetailForm() {
   // Function to trigger file input click
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDiscard = () => {
+    form.reset(editIntegration);
   };
 
   const onSubmit = async (data: Integration) => {
@@ -351,35 +350,11 @@ export function DetailForm() {
             </div>
           </div>
 
-          {numberOfChanges > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() =>
-                  navigate(withBasePath("/integrations/marketplace"))}
-              >
-                Discard
-              </Button>
-              <Button
-                type="submit"
-                disabled={isMutating}
-                className="gap-2 flex-1"
-              >
-                {isMutating
-                  ? (
-                    <>
-                      <Spinner size="xs" />
-                      Saving...
-                    </>
-                  )
-                  : `Save ${numberOfChanges} change${
-                    numberOfChanges > 1 ? "s" : ""
-                  }`}
-              </Button>
-            </div>
-          )}
+          <FormSubmitControls
+            numberOfChanges={numberOfChanges}
+            submitting={isMutating}
+            onDiscard={handleDiscard}
+          />
         </form>
       </Form>
     </TabScrollArea>

@@ -14,7 +14,6 @@ import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
 import { ListActions } from "../actions/listActions.tsx";
-import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -134,8 +133,6 @@ function Agent(props: Props) {
 
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-
-  const focusChat = useFocusChat();
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 

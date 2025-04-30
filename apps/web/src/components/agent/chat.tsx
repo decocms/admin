@@ -3,12 +3,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo } from "react";
@@ -18,7 +12,6 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
-import AgentSettings from "../settings/agent.tsx";
 import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";

@@ -67,16 +67,16 @@ AgentHeader.UI = () => {
           title="Settings"
           variant="outline"
         >
-          <Icon name="chat_add_on" />
+          <Icon name="chat_bubble" />
           Test agent
         </DockedToggleButton>
         <DockedToggleButton
           id="actions"
-          title="Actions"
+          title="Triggers"
           variant="outline"
         >
-          Actions
-          <Icon name="check_circle" />
+          <Icon name="task_alt" />
+          Triggers
         </DockedToggleButton>
       </div>
     </>

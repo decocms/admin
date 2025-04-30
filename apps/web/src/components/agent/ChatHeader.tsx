@@ -1,12 +1,11 @@
-import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { AgentNotFoundError, useAgent } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
@@ -18,24 +17,7 @@ interface Props {
 }
 
 export function ChatHeader() {
-  const { agentId, chat } = useChatContext();
-
-  if (
-    agentId === WELL_KNOWN_AGENT_IDS.teamAgent
-  ) {
-    if (chat.messages.length === 0) {
-      return null;
-    }
-
-    return (
-      <Container>
-        <Icon name="forum" size={16} />
-        <h1 className="text-sm font-medium tracking-tight">
-          New chat
-        </h1>
-      </Container>
-    );
-  }
+  const { agentId } = useChatContext();
 
   return (
     <ErrorBoundary
@@ -72,56 +54,55 @@ ChatHeader.UI = ({ agentId }: Props) => {
 
   return (
     <>
-      <Container>
+      <div className="flex items-center gap-2">
         {chat.messages.length > 0 && (
           <>
-            <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-              <AgentAvatar
-                name={agent.name}
-                avatar={agent.avatar}
-                className="rounded-lg text-xs"
-              />
-            </div>
-            <h1 className="text-sm font-medium tracking-tight">
-              {agent.name}
-            </h1>
+            <Container>
+              <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+                <AgentAvatar
+                  name={agent.name}
+                  avatar={agent.avatar}
+                  className="rounded-lg text-xs"
+                />
+              </div>
+              <h1 className="text-sm font-medium tracking-tight">
+                {agent.name}
+              </h1>
+            </Container>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="h-6 w-6"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    focusEditAgent(agentId, crypto.randomUUID(), {
+                      history: false,
+                    });
+                  }}
+                >
+                  <Icon name="edit" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Edit Agent
+              </TooltipContent>
+            </Tooltip>
           </>
         )}
-      </Container>
+      </div>
 
       <div className="flex items-center gap-2 py-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              id="settings"
-              title="Settings"
-              variant="outline"
-              size="icon"
-            >
-              <Icon name="more_vert" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                focusChat(agentId, crypto.randomUUID(), { history: false });
-              }}
-            >
-              <Icon name="chat_add_on" className="mr-2 h-4 w-4" />
-              New Chat
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                focusEditAgent(agentId, crypto.randomUUID(), {
-                  history: false,
-                });
-              }}
-            >
-              <Icon name="edit" className="mr-2 h-4 w-4" />
-              Edit Agent
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {chat.messages.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              focusChat(agentId, crypto.randomUUID(), { history: false });
+            }}
+          >
+            New Chat
+          </Button>
+        )}
       </div>
     </>
   );

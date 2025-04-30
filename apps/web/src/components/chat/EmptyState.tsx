@@ -1,6 +1,14 @@
 import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { useEditAgent } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
 export function EmptyState({ agentId }: { agentId: string }) {
@@ -45,6 +53,7 @@ EmptyState.Skeleton = () => {
 
 EmptyState.UI = ({ agentId }: { agentId: string }) => {
   const { data: agent } = useAgent(agentId);
+  const focusEditAgent = useEditAgent();
 
   return (
     <div className="h-full flex flex-col justify-between py-12">
@@ -58,11 +67,32 @@ EmptyState.UI = ({ agentId }: { agentId: string }) => {
             />
           </div>
           <div className="flex flex-col items-center gap-4">
-            <h2 className="text-3xl font-medium text-slate-800">
-              {agent?.name
-                ? `Hello, I'm ${agent.name}`
-                : "Tell me who I am and how I should be"}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-3xl font-medium text-slate-800">
+                {agent?.name
+                  ? `Hello, I'm ${agent.name}`
+                  : "Tell me who I am and how I should be"}
+              </h2>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="h-6 w-6"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      focusEditAgent(agentId, crypto.randomUUID(), {
+                        history: false,
+                      });
+                    }}
+                  >
+                    <Icon name="edit" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Edit Agent
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="text-slate-500 mx-6">
               {agent?.description ?? "The more you share, the better I get."}
             </p>

@@ -63,9 +63,9 @@ export function ListActionsEmpty() {
           className="text-slate-500"
         />
       </div>
-      <h3 className="text-lg font-medium mb-2">No actions configured</h3>
+      <h3 className="text-lg font-medium mb-2">No triggers configured</h3>
       <p className="text-sm text-muted-foreground max-w-md mb-4">
-        Actions allow you to trigger your agent on a schedule or from external
+        Triggers allow you to trigger your agent on a schedule or from external
         systems.
       </p>
     </div>

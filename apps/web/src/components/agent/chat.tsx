@@ -1,3 +1,4 @@
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
@@ -58,12 +59,6 @@ interface Props {
 const MainHeader = () => <ChatHeader />;
 const MainContent = () => <ChatMessages />;
 const MainFooter = () => <ChatInput />;
-
-const MAIN = {
-  header: MainHeader,
-  main: MainContent,
-  footer: MainFooter,
-};
 
 const COMPONENTS = {
   chatView: {
@@ -238,7 +233,13 @@ function Agent(props: Props) {
               )
               : (
                 <DockedPageLayout
-                  main={MAIN}
+                  main={{
+                    header: agentId === WELL_KNOWN_AGENT_IDS.teamAgent
+                      ? null
+                      : MainHeader,
+                    main: MainContent,
+                    footer: MainFooter,
+                  }}
                   tabs={COMPONENTS}
                   key={agentId}
                 />

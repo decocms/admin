@@ -100,7 +100,7 @@ const COMPONENTS = {
   },
   actions: {
     Component: ListActions,
-    title: "Actions",
+    title: "Triggers",
   },
 };
 

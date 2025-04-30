@@ -5,6 +5,7 @@ import {
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -15,17 +16,21 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useChatContext } from "../chat/context.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "../toolsets/index.tsx";
+import { useState } from "react";
 import {
   getAgentOverrides,
+  useAgentHasChanges,
   useAgentOverridesSetter,
   useOnAgentChangesDiscarded,
 } from "../../hooks/useAgentOverrides.ts";
 import { usePersistedDirtyForm } from "../../hooks/usePersistedDirtyForm.ts";
+import { useChatContext } from "../chat/context.tsx";
+import { AgentAvatar } from "../common/Avatar.tsx";
+import { Integration } from "../toolsets/index.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -41,6 +46,9 @@ function SettingsTab({ formId }: SettingsTabProps) {
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
+
   const agentOverrides = useAgentOverridesSetter(agentId);
 
   const { form, discardChanges, onMutationSuccess } = usePersistedDirtyForm<
@@ -55,9 +63,14 @@ function SettingsTab({ formId }: SettingsTabProps) {
   useOnAgentChangesDiscarded(agentId, discardChanges);
 
   const onSubmit = async (data: Agent) => {
-    await updateAgent.mutateAsync(data, {
-      onSuccess: onMutationSuccess,
-    });
+    setIsLoading(true);
+    try {
+      await updateAgent.mutateAsync(data, {
+        onSuccess: onMutationSuccess,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toolsSet = form.watch("tools_set");
@@ -79,7 +92,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   return (
     <Form {...form}>
-      <div className="h-full overflow-y-auto w-full bg-gradient-to-b from-white to-slate-50 text-slate-700 p-4">
+      <div className="h-full overflow-y-auto w-full p-4">
         <form
           id={formId}
           onSubmit={form.handleSubmit(onSubmit)}
@@ -194,6 +207,34 @@ function SettingsTab({ formId }: SettingsTabProps) {
                   ))}
               </div>
             </div>
+          </div>
+
+          <div
+            className={cn(
+              "fixed bottom-0 left-1/2 -translate-x-1/2 bg-background",
+              "shadow border boder-input rounded-full p-2",
+              "flex items-center justify-center gap-2",
+              "transition-transform",
+              hasChanges ? "-translate-y-4" : "translate-y-full",
+              "z-10",
+            )}
+          >
+            <span className="ml-4 mr-2 text-nowrap hidden md:block">
+              You have unsaved changes
+            </span>
+            <Button
+              variant="outline"
+              className="text-slate-700"
+              onClick={discardCurrentChanges}
+            >
+              Discard
+            </Button>
+            <Button
+              className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
+              disabled={!hasChanges}
+            >
+              {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
+            </Button>
           </div>
         </form>
       </div>

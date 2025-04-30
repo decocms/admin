@@ -11,9 +11,8 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
@@ -107,23 +106,8 @@ function Agent(props: Props) {
 
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-  const [isLoading, setIsLoading] = useState(false);
-  const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
-  const focusChat = useFocusChat();
 
-  const handleUpdate = () => {
-    setIsLoading(true);
-    try {
-      const form = document.getElementById(
-        "agent-settings-form",
-      ) as HTMLFormElement;
-      if (form) {
-        form.requestSubmit();
-      }
-    } catch (error) {
-      console.error("Error updating agent:", error);
-    }
-  };
+  const focusChat = useFocusChat();
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
@@ -143,13 +127,13 @@ function Agent(props: Props) {
         uiOptions={{ showThreadTools: props.includeThreadTools || false }}
         disableThreadMessages={props.disableThreadMessages}
       >
-        <div className="h-screen flex flex-col">
+        <div className="h-full flex flex-col">
           <style>{tabStyles}</style>
 
           <div
             className={cn(
               "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
-              (isMobile || hasChanges) && "h-auto py-2",
+              isMobile && "h-auto py-2",
             )}
           >
             <div className="flex justify-between gap-2 w-full">
@@ -165,7 +149,7 @@ function Agent(props: Props) {
                 variant="outline"
                 title="New Chat"
                 className={cn(
-                  (hasChanges || !isMobile) && "hidden",
+                  !isMobile && "hidden",
                 )}
                 onClick={() =>
                   focusChat(agentId, crypto.randomUUID(), { history: false })}
@@ -175,24 +159,6 @@ function Agent(props: Props) {
               </Button>
             </div>
             <div className="flex gap-2">
-              {hasChanges && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="text-slate-700"
-                    onClick={discardCurrentChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
-                    onClick={handleUpdate}
-                    disabled={!hasChanges}
-                  >
-                    {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
-                  </Button>
-                </>
-              )}
             </div>
           </div>
           <div className="flex-1 overflow-hidden">

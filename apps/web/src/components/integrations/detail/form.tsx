@@ -27,8 +27,8 @@ import { useRef } from "react";
 import { useNavigate } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useBasePath } from "../../../hooks/useBasePath.ts";
+import { TabScrollArea } from "../../pageLayout.tsx";
 import { useFormContext } from "./context.ts";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export function DetailForm() {
   const { integration: editIntegration, form } = useFormContext();
@@ -121,8 +121,8 @@ export function DetailForm() {
   };
 
   return (
-    <Form {...form}>
-      <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+    <TabScrollArea>
+      <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-4 px-1"
@@ -381,7 +381,7 @@ export function DetailForm() {
             </div>
           )}
         </form>
-      </ScrollArea>
-    </Form>
+      </Form>
+    </TabScrollArea>
   );
 }

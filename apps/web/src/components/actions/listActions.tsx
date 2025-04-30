@@ -1,12 +1,21 @@
 import { type Action, useListActions } from "@deco/sdk";
-import { useChatContext } from "../chat/context.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import { useChatContext } from "../chat/context.tsx";
+import { TabScrollArea } from "../pageLayout.tsx";
 import { ActionCard } from "./actionCard.tsx";
 import { ActionDetails } from "./actionDetails.tsx";
 
 export function ListActions() {
+  return (
+    <TabScrollArea>
+      <ListActionsInner />
+    </TabScrollArea>
+  );
+}
+
+function ListActionsInner() {
   const { agentId } = useChatContext();
   const { data: actions, isLoading } = useListActions(agentId, {
     refetchOnMount: true,

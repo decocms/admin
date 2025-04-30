@@ -10,10 +10,9 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
-import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { ListActions } from "../actions/listActions.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
@@ -56,22 +55,26 @@ interface Props {
 }
 
 const Chat = () => {
-  const { agentId } = useChatContext();
+  const { agentId, chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
 
   return (
     <div className="grid grid-rows-[auto_1fr_auto] p-4 h-full">
       <Container>
-        <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-          <AgentAvatar
-            name={agent.name}
-            avatar={agent.avatar}
-            className="rounded-lg text-xs"
-          />
-        </div>
-        <h1 className="text-sm font-medium tracking-tight">
-          {agent.name}
-        </h1>
+        {chat.messages.length > 0 && (
+          <>
+            <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
+              <AgentAvatar
+                name={agent.name}
+                avatar={agent.avatar}
+                className="rounded-lg text-xs"
+              />
+            </div>
+            <h1 className="text-sm font-medium tracking-tight">
+              {agent.name}
+            </h1>
+          </>
+        )}
       </Container>
       <ChatMessages />
       <ChatInput />
@@ -81,17 +84,21 @@ const Chat = () => {
 
 const MAIN = {
   header: AgentHeader,
-  main: () => <AgentSettings formId="agent-settings-form" />,
+  main: () => (
+    <div className="h-full w-full max-w-[800px] mx-auto">
+      <AgentSettings formId="agent-settings-form" />
+    </div>
+  ),
 };
 
-const COMPONENTS = {
+const TABS = {
   chatView: {
     Component: ThreadView,
     title: "Thread",
   },
   chat: {
     Component: Chat,
-    // initialOpen: true,
+    initialOpen: true,
     title: "Test agent",
   },
   preview: {
@@ -135,23 +142,8 @@ function Agent(props: Props) {
 
   const isMobile = useIsMobile();
   const { toggleSidebar } = useSidebar();
-  const [isLoading, setIsLoading] = useState(false);
-  const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
-  const focusChat = useFocusChat();
 
-  const handleUpdate = () => {
-    setIsLoading(true);
-    try {
-      const form = document.getElementById(
-        "agent-settings-form",
-      ) as HTMLFormElement;
-      if (form) {
-        form.requestSubmit();
-      }
-    } catch (error) {
-      console.error("Error updating agent:", error);
-    }
-  };
+  const focusChat = useFocusChat();
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
@@ -167,15 +159,18 @@ function Agent(props: Props) {
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
-        uiOptions={{ showThreadTools: false }}
+        uiOptions={{
+          showThreadTools: false,
+          showEditAgent: false,
+        }}
       >
-        <div className="h-screen flex flex-col">
+        <div className="h-full flex flex-col">
           <style>{tabStyles}</style>
 
           <div
             className={cn(
               "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
-              (isMobile || hasChanges) && "h-auto py-2",
+              isMobile && "h-auto py-2",
             )}
           >
             <div className="flex justify-between gap-2 w-full">
@@ -190,9 +185,7 @@ function Agent(props: Props) {
               <Button
                 variant="outline"
                 title="New Chat"
-                className={cn(
-                  (hasChanges || !isMobile) && "hidden",
-                )}
+                className={cn(!isMobile && "hidden")}
                 onClick={() =>
                   focusChat(agentId, crypto.randomUUID(), { history: false })}
               >
@@ -200,47 +193,27 @@ function Agent(props: Props) {
                 New chat
               </Button>
             </div>
-            <div className="flex gap-2">
-              {hasChanges && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="text-slate-700"
-                    onClick={discardCurrentChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    className="bg-primary-light text-primary-dark hover:bg-primary-light/90 flex items-center justify-center w-[108px] gap-2"
-                    onClick={handleUpdate}
-                    disabled={!hasChanges}
-                  >
-                    {isLoading ? <Spinner size="xs" /> : <span>Save</span>}
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
           <div className="flex-1 overflow-hidden">
             {isMobile
               ? (
                 <Tabs
-                  defaultValue="chat"
+                  defaultValue="settings"
                   className="w-full h-full flex flex-col custom-tabs"
                 >
                   <TabsList className="w-full border-b bg-slate-50 p-0 shadow-none h-12 border-none relative">
-                    <TabsTrigger
-                      value="chat"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
-                    >
-                      Chat
-                    </TabsTrigger>
-                    <div className="tab-divider"></div>
                     <TabsTrigger
                       value="settings"
                       className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                     >
                       Edit Agent
+                    </TabsTrigger>
+                    <div className="tab-divider"></div>
+                    <TabsTrigger
+                      value="chat"
+                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
+                    >
+                      Chat
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent
@@ -260,7 +233,7 @@ function Agent(props: Props) {
               : (
                 <DockedPageLayout
                   main={MAIN}
-                  tabs={COMPONENTS}
+                  tabs={TABS}
                   key={agentId}
                 />
               )}

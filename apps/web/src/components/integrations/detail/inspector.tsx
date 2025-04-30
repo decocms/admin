@@ -10,13 +10,12 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, useError } from "../../../ErrorBoundary.tsx";
 import { EmptyState } from "../../common/EmptyState.tsx";
+import { TabScrollArea } from "../../pageLayout.tsx";
 import { ConnStatus } from "./connStatus.tsx";
 import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
 import { ToolCallResult } from "./toolCallResult.tsx";
 import type { MCPToolCallResult } from "./types.ts";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-
 interface InspectorProps {
   connection: MCPConnection;
 }
@@ -29,9 +28,9 @@ export function Inspector() {
   return (
     <ErrorBoundary fallback={<Inspector.ErrorFallback />}>
       <Suspense fallback={<Inspector.Skeleton />}>
-        <ScrollArea className="h-full w-full px-4 py-2 bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700">
+        <TabScrollArea>
           <Inspector.UI connection={connection} />
-        </ScrollArea>
+        </TabScrollArea>
       </Suspense>
     </ErrorBoundary>
   );

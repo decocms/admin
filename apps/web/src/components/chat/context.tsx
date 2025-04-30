@@ -45,6 +45,7 @@ type IContext = {
   fileDataRef: RefObject<FileData[]>;
   uiOptions?: {
     showThreadTools?: boolean;
+    showEditAgent?: boolean;
   };
   setAutoScroll: (e: HTMLDivElement | null, enabled: boolean) => void;
   isAutoScrollEnabled: (e: HTMLDivElement | null) => boolean;
@@ -63,6 +64,7 @@ interface Props {
   disableThreadMessages?: boolean;
   uiOptions?: {
     showThreadTools?: boolean;
+    showEditAgent?: boolean;
   };
 }
 

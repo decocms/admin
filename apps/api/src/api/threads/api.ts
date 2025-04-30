@@ -56,52 +56,86 @@ const createSQLClientFor = async (
 
 export const listThreads = createApiHandler({
   name: "THREADS_LIST",
-  description: "List all threads in a workspace with pagination",
+  description:
+    "List all threads in a workspace with cursor-based pagination and filtering",
   schema: z.object({
-    page: z.number().min(1).default(1),
     limit: z.number().min(1).max(100).default(20),
+    agentId: z.string().optional(),
+    orderBy: z.enum([
+      "createdAt_desc",
+      "createdAt_asc",
+      "updatedAt_desc",
+      "updatedAt_asc",
+    ]).default("createdAt_desc"),
+    cursor: z.string().optional(),
   }),
-  handler: async ({ page, limit }, c) => {
+  handler: async ({ limit, agentId, orderBy, cursor }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
     const root = c.req.param("root");
     const slug = c.req.param("slug");
     const workspace = `/${root}/${slug}`;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
+    // Parse orderBy parameter
+    const [field, direction] = orderBy.split("_");
+    const isDesc = direction === "desc";
 
-    const offset = (page - 1) * limit;
+    // Build the WHERE clause for filtering
+    const whereClauses = [];
+    const args = [];
 
-    // Get total count for pagination
-    const countResult = await client.execute({
-      sql: `SELECT COUNT(*) as total FROM mastra_threads`,
-      args: [],
-    });
-    const total = Number(countResult.rows[0].total);
+    if (agentId) {
+      whereClauses.push("json_extract(metadata, '$.agentId') = ?");
+      args.push(agentId);
+    }
+
+    if (cursor) {
+      const operator = isDesc ? "<" : ">";
+      whereClauses.push(`${field} ${operator} ?`);
+      args.push(cursor);
+    }
+
+    const whereClause = whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(" AND ")}`
+      : "";
 
     // Get paginated threads
     const result = await client.execute({
       sql:
-        `SELECT * FROM mastra_threads ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
-      args: [limit, offset],
+        `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+      args: [...args, limit + 1], // Fetch one extra to determine if there are more
     });
 
     const threads = result.rows
       .map((row: unknown) => ThreadSchema.safeParse(row)?.data)
       .filter((a): a is Thread => !!a);
 
+    // Check if there are more results
+    const hasMore = threads.length > limit;
+    if (hasMore) {
+      threads.pop(); // Remove the extra item
+    }
+
+    // Get the cursor for the next page
+    const nextCursor = threads.length > 0
+      ? field === "createdAt"
+        ? threads[threads.length - 1].createdAt
+        : threads[threads.length - 1].updatedAt
+      : null;
+
     return {
       threads,
       pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        hasMore,
+        nextCursor,
       },
     };
   },
@@ -117,36 +151,46 @@ export const getThread = createApiHandler({
     const slug = c.req.param("slug");
     const workspace = `/${root}/${slug}`;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
-
-    // Get thread details
-    const threadResult = await client.execute({
-      sql: "SELECT * FROM mastra_threads WHERE id = ?",
+    // Get thread details and messages in a single query
+    const result = await client.execute({
+      sql: `
+        SELECT 
+          t.*,
+          json_group_array(
+            json_object(
+              'id', m.id,
+              'thread_id', m.thread_id,
+              'content', m.content,
+              'role', m.role,
+              'type', m.type,
+              'createdAt', m.createdAt
+            )
+          ) as messages
+        FROM mastra_threads t
+        LEFT JOIN mastra_messages m ON t.id = m.thread_id
+        WHERE t.id = ?
+        GROUP BY t.id
+      `,
       args: [id],
     });
 
-    if (!threadResult.rows.length) {
+    if (!result.rows.length) {
       throw new Error("Thread not found");
     }
 
-    const thread = ThreadSchema.parse(threadResult.rows[0]);
-
-    // Get messages for this thread
-    const messagesResult = await client.execute({
-      sql:
-        "SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC",
-      args: [id],
-    });
-
-    const messages = messagesResult.rows
+    const thread = ThreadSchema.parse(result.rows[0]);
+    const messages = JSON.parse(String(result.rows[0].messages || "[]"))
       .map((row: unknown) => MessageSchema.safeParse(row)?.data)
-      .filter((a): a is Message => !!a);
+      .filter((a: Message | undefined): a is Message => !!a);
 
     return {
       ...thread,

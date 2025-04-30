@@ -27,6 +27,10 @@ jobs:
           secrets: |
             SUPABASE_URL
             SUPABASE_SERVER_TOKEN
+            TURSO_ORGANIZATION
+            TURSO_GROUP_DATABASE_TOKEN
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
+          TURSO_ORGANIZATION: ${{ secrets.TURSO_ORGANIZATION }}
+          TURSO_GROUP_DATABASE_TOKEN: ${{ secrets.TURSO_GROUP_DATABASE_TOKEN }}

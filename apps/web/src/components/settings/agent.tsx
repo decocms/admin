@@ -5,7 +5,6 @@ import {
   useIntegrations,
   useUpdateAgent,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -16,9 +15,7 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import {
@@ -30,8 +27,8 @@ import {
 import { usePersistedDirtyForm } from "../../hooks/usePersistedDirtyForm.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "../toolsets/index.tsx";
 import { FormSubmitControls } from "../common/FormSubmit.tsx";
+import { Integration } from "../toolsets/index.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;

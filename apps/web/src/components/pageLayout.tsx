@@ -8,7 +8,7 @@ import {
   ComponentType,
   createContext,
   ReactNode,
-  use
+  use,
 } from "react";
 import Docked, { Tab, togglePanel, useDock } from "./dock/index.tsx";
 

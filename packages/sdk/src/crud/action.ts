@@ -1,4 +1,4 @@
-import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
+import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
 
 export interface Action {
   id: string;
@@ -38,7 +38,7 @@ export interface ListRunsResult {
 const toPath = (segments: string[]) => segments.join("/");
 
 const fetchAPI = (path: string, init?: RequestInit) =>
-  fetch(new URL(path, API_SERVER_URL), {
+  fetch(new URL(path, LEGACY_API_SERVER_URL), {
     ...init,
     credentials: "include",
     headers: { ...API_HEADERS, ...init?.headers },

@@ -159,9 +159,7 @@ export function ChatProvider({
 
         if (!isImageLike) {
           togglePreviewPanel(
-            `preview-${toolCall.toolCallId}`,
-            content,
-            title,
+            { id: `preview-${toolCall.toolCallId}`, content, title },
           );
         }
 

@@ -225,6 +225,9 @@ function CustomToolUI({ tool }: {
         <Preview
           content={tool.result.data.content as "url" | "html"}
           title={tool.result.data.title as string}
+          urlInputSchema={tool.result.data.pageUrlInputSchema as
+            | string
+            | undefined}
         />
       );
     }

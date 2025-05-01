@@ -2,6 +2,7 @@ import { DetailedHTMLProps, IframeHTMLAttributes, useMemo } from "react";
 import { useParams } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import {
+  LEGACY_API_SERVER_URL,
   useAgent,
   useAgentRoot,
   useDeleteFile,
@@ -15,6 +16,17 @@ import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP, togglePreviewPanel } from "../chat/utils/preview.ts";
 
 const getAgentViewFilepath = (root: string) => [root, "views"].join("/");
+const parseUrlInputJSONSchema = (
+  schema?: string,
+): Record<string, unknown> | undefined => {
+  if (!schema) return undefined;
+  try {
+    return JSON.parse(schema);
+  } catch {
+    console.error(`failed to parse: ${schema}`);
+    return undefined;
+  }
+};
 
 /**
  * @description hook that returns pin agent UI view.
@@ -34,9 +46,10 @@ const usePinAgentUI = (
     [propSrc, agent.data],
   );
   const handlePinAgentUI = useMutation({
-    mutationFn: async ({ content, title, src: propSrc }: {
+    mutationFn: async ({ content, title, src: propSrc, urlInputSchema }: {
       content?: string;
       src?: string;
+      urlInputSchema?: string;
       title: string;
     }) => {
       if (!agent || !agentId) return;
@@ -56,19 +69,21 @@ const usePinAgentUI = (
             options: { encoding: "utf-8", ensureDir: true },
           });
 
-          src = new URL(filePath, "https://fs.deco.chat/").href;
+          src = new URL(filePath, LEGACY_API_SERVER_URL).href;
         }
+
+        const newView = {
+          url: src ?? "",
+          name: title,
+          urlInputSchema: parseUrlInputJSONSchema(urlInputSchema),
+        };
 
         // Then update the agent with the view reference
         const updatedAgent = await updateAgent.mutateAsync({
           ...agent.data,
           views: [
             ...agent.data.views.filter((view) => view.url !== src),
-            {
-              // How get file url
-              url: src ?? "",
-              name: title,
-            },
+            newView,
           ],
         });
 
@@ -82,8 +97,17 @@ const usePinAgentUI = (
 
   const handleUnpingAgentUI = useMutation({
     mutationFn: async ({ title, src }: { src: string; title: string }) => {
-      togglePreviewPanel(`agent-${agentId}-view-${title}`, "", title);
-      await deleteFile.mutateAsync({ path: new URL(src).pathname });
+      togglePreviewPanel({
+        id: `agent-${agentId}-view-${title}`,
+        content: "",
+        title,
+      });
+      const path = decodeURIComponent(new URL(src).pathname);
+      try {
+        await deleteFile.mutateAsync({ path });
+      } catch {
+        console.error(`Failed to delete file with path: ${path}`);
+      }
       return await updateAgent.mutateAsync({
         ...agent.data,
         views: [
@@ -102,10 +126,11 @@ interface Props extends
     HTMLIFrameElement
   > {
   title: string;
+  urlInputSchema?: string;
 }
 
 function Preview(props: Props) {
-  const { src, title, srcDoc } = props;
+  const { src, title, srcDoc, urlInputSchema, ...otherProps } = props;
   const isImageLike = src && IMAGE_REGEXP.test(src);
 
   const { id: agentId } = useParams();
@@ -141,6 +166,7 @@ function Preview(props: Props) {
               content: srcDoc,
               src,
               title,
+              urlInputSchema,
             })}
       >
         {isPending ? <Spinner /> : (
@@ -157,7 +183,10 @@ function Preview(props: Props) {
         allowFullScreen
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
         className="w-full h-full"
-        {...props}
+        srcDoc={srcDoc}
+        src={src}
+        title={title}
+        {...otherProps}
       />
     </div>
   );

@@ -21,15 +21,18 @@ export const toIframeProps = (content: string) => {
 };
 
 export const togglePreviewPanel = (
-  id: string,
-  content: string,
-  title: string,
+  { id, content, title, urlInputSchema }: {
+    id: string;
+    content: string;
+    title: string;
+    urlInputSchema?: string;
+  },
 ) => {
   togglePanel({
     id,
     component: "preview",
     title,
-    params: { title, ...toIframeProps(content) },
+    params: { title, urlInputSchema, ...toIframeProps(content) },
   });
 };
 

@@ -15,6 +15,7 @@ interface PreviewProps {
   title?: string;
   content: string;
   className?: string;
+  urlInputSchema?: string;
 }
 
 const BUTTON_STYLES = {
@@ -219,15 +220,20 @@ function HtmlPreview({
   );
 }
 
-export function Preview({ content, title, className }: PreviewProps) {
+export function Preview(
+  { content, title, className, urlInputSchema }: PreviewProps,
+) {
   const iframeProps = toIframeProps(content);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleExpand = () => {
     togglePreviewPanel(
-      `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
-      content,
-      title || "Preview",
+      {
+        id: `preview-${title?.toLowerCase().replace(/\s+/g, "-")}`,
+        content,
+        title: title || "Preview",
+        urlInputSchema,
+      },
     );
   };
 

@@ -21,7 +21,11 @@ import { Inspector } from "./inspector.tsx";
 const MAIN = {
   header: Header,
   main: ChatMessages,
-  footer: ChatInput,
+  footer: () => (
+    <div className="h-full w-full pb-4">
+      <ChatInput />
+    </div>
+  ),
 };
 
 const TABS = {

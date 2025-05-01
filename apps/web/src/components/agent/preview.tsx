@@ -111,12 +111,13 @@ interface Props extends
 }
 
 function Preview(props: Props) {
-  const isImageLike = props.src && IMAGE_REGEXP.test(props.src);
+  const { src, title, srcDoc } = props;
+  const isImageLike = src && IMAGE_REGEXP.test(src);
 
   const { id: agentId } = useParams();
   const { handlePinAgentUI, handleUnpingAgentUI, isPinned } = usePinAgentUI({
     agentId: agentId ?? "",
-    src: props.src,
+    src,
   });
 
   if (isImageLike) {
@@ -138,11 +139,11 @@ function Preview(props: Props) {
         className="absolute right-4"
         onClick={() =>
           isPinned
-            ? handleUnpingAgentUI({ src: props.src ?? "", title: props.title })
+            ? handleUnpingAgentUI({ src: src ?? "", title })
             : handlePinAgentUI({
-              content: props.srcDoc,
-              src: props.src,
-              title: props.title,
+              content: srcDoc,
+              src,
+              title,
             })}
       >
         <Icon name="keep" filled={isPinned} size={16} className="rotate-45" />

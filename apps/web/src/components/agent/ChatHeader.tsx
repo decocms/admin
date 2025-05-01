@@ -14,9 +14,10 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 
 interface Props {
   agentId: string;
+  mode?: "read-only";
 }
 
-export function ChatHeader() {
+export function ChatHeader({ mode }: { mode?: "read-only" }) {
   const { agentId } = useChatContext();
 
   return (
@@ -25,7 +26,7 @@ export function ChatHeader() {
       shouldCatch={(e) => e instanceof AgentNotFoundError}
     >
       <Suspense fallback={<ChatHeader.Skeleton />}>
-        <ChatHeader.UI agentId={agentId} />
+        <ChatHeader.UI agentId={agentId} mode={mode} />
       </Suspense>
     </ErrorBoundary>
   );
@@ -46,7 +47,7 @@ ChatHeader.Skeleton = () => {
   return <div className="h-10 w-full" />;
 };
 
-ChatHeader.UI = ({ agentId }: Props) => {
+ChatHeader.UI = ({ agentId, mode }: Props) => {
   const { chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const focusChat = useFocusChat();
@@ -69,31 +70,33 @@ ChatHeader.UI = ({ agentId }: Props) => {
                 {agent.name}
               </h1>
             </Container>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="h-6 w-6"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    focusEditAgent(agentId, crypto.randomUUID(), {
-                      history: false,
-                    });
-                  }}
-                >
-                  <Icon name="edit" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Edit Agent
-              </TooltipContent>
-            </Tooltip>
+            {mode !== "read-only" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="h-6 w-6"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      focusEditAgent(agentId, crypto.randomUUID(), {
+                        history: false,
+                      });
+                    }}
+                  >
+                    <Icon name="edit" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Edit Agent
+                </TooltipContent>
+              </Tooltip>
+            )}
           </>
         )}
       </div>
 
       <div className="flex items-center gap-2 py-1">
-        {chat.messages.length > 0 && (
+        {mode !== "read-only" && chat.messages.length > 0 && (
           <Button
             variant="outline"
             onClick={() => {

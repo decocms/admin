@@ -15,8 +15,10 @@ function ThreadView({ agentId, threadId }: Props) {
 
   return (
     <ChatProvider agentId={agentId} threadId={threadId}>
+      <div className="flex items-center justify-between p-4">
+        <ChatHeader mode="read-only" />
+      </div>
       <TabScrollArea>
-        <ChatHeader />
         <ChatMessages />
       </TabScrollArea>
     </ChatProvider>

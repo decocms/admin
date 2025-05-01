@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/tabs.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { ComponentType, Suspense, useMemo, useState } from "react";
+import { ComponentType, Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
 import { ListActions } from "../actions/listActions.tsx";

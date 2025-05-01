@@ -5,7 +5,7 @@ import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useMemo } from "react";
+import { ComponentType, Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
@@ -53,7 +53,7 @@ const COMPONENTS = {
     title: "Thread",
   },
   preview: {
-    Component: AgentPreview,
+    Component: AgentPreview as ComponentType,
     title: "Preview",
   },
   tools: {

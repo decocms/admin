@@ -1,3 +1,4 @@
+import type { AddPanelOptions } from "dockview-react";
 import { openPanel, togglePanel } from "../../dock/index.tsx";
 
 export const IMAGE_REGEXP = /\.png|\.jpg|\.jpeg|\.gif|\.webp/;
@@ -33,13 +34,14 @@ export const togglePreviewPanel = (
 };
 
 export const openPreviewPanel = (
-  { content, id, title }: {
+  { content, id, title, ...options }: {
     content: string;
     id: string;
     title: string;
-  },
+  } & Partial<AddPanelOptions<object>>,
 ) => {
   openPanel({
+    ...options,
     id,
     component: "preview",
     title,

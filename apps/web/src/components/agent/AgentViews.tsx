@@ -11,6 +11,7 @@ export default function AgentViews({ agentId }: { agentId: string }) {
         id: `agent-${agentId}-view-${view.name}`,
         title: view.name,
         content: view.url,
+        inactive: true,
       });
     });
   }, [agent.data?.views]);

@@ -143,6 +143,7 @@ const addPanelAPI = (options: AddPanelOptions, api: DockviewApi) => {
   } as AddPanelOptions;
 
   const panel = api.addPanel(panelOptions);
+
   return panel;
 };
 

@@ -1,10 +1,6 @@
-import {
-  DetailedHTMLProps,
-  IframeHTMLAttributes,
-  useCallback,
-  useMemo,
-} from "react";
+import { DetailedHTMLProps, IframeHTMLAttributes, useMemo } from "react";
 import { useParams } from "react-router";
+import { useMutation } from "@tanstack/react-query";
 import {
   useAgent,
   useAgentRoot,
@@ -14,6 +10,7 @@ import {
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP, togglePreviewPanel } from "../chat/utils/preview.ts";
 
@@ -36,9 +33,8 @@ const usePinAgentUI = (
     () => agent.data.views.some((v) => v.url === propSrc),
     [propSrc, agent.data],
   );
-
-  const handlePinAgentUI = useCallback(
-    async ({ content, title, src: propSrc }: {
+  const handlePinAgentUI = useMutation({
+    mutationFn: async ({ content, title, src: propSrc }: {
       content?: string;
       src?: string;
       title: string;
@@ -82,11 +78,10 @@ const usePinAgentUI = (
         return { success: false, error };
       }
     },
-    [writeFile, updateAgent],
-  );
+  });
 
-  const handleUnpingAgentUI = useCallback(
-    async ({ title, src }: { src: string; title: string }) => {
+  const handleUnpingAgentUI = useMutation({
+    mutationFn: async ({ title, src }: { src: string; title: string }) => {
       togglePreviewPanel(`agent-${agentId}-view-${title}`, "", title);
       await deleteFile.mutateAsync({ path: new URL(src).pathname });
       return await updateAgent.mutateAsync({
@@ -96,8 +91,7 @@ const usePinAgentUI = (
         ],
       });
     },
-    [writeFile, updateAgent, agent],
-  );
+  });
 
   return { handlePinAgentUI, handleUnpingAgentUI, isPinned };
 };
@@ -130,6 +124,8 @@ function Preview(props: Props) {
     );
   }
 
+  const isPending = handlePinAgentUI.isPending || handleUnpingAgentUI.isPending;
+
   return (
     <div className="h-full w-full relative">
       <Button
@@ -137,16 +133,24 @@ function Preview(props: Props) {
         variant="outline"
         size="icon"
         className="absolute right-4"
+        disabled={isPending}
         onClick={() =>
           isPinned
-            ? handleUnpingAgentUI({ src: src ?? "", title })
-            : handlePinAgentUI({
+            ? handleUnpingAgentUI.mutateAsync({ src: src ?? "", title })
+            : handlePinAgentUI.mutateAsync({
               content: srcDoc,
               src,
               title,
             })}
       >
-        <Icon name="keep" filled={isPinned} size={16} className="rotate-45" />
+        {isPending ? <Spinner /> : (
+          <Icon
+            name="keep"
+            filled={isPinned}
+            size={16}
+            className="rotate-45"
+          />
+        )}
       </Button>
       <iframe
         allow={ALLOWANCES}

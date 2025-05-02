@@ -1,12 +1,20 @@
 import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import Ajv from "ajv";
 import { useState } from "react";
 import { useCreateTrigger, webhookTriggerSchema } from "@deco/sdk";
-import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 
 function JsonSchemaInput({ value, onChange }: {
   value: string;
@@ -75,195 +83,152 @@ function JsonSchemaInput({ value, onChange }: {
   );
 }
 
-export function WebhookTriggerForm(
-  { agentId }: { agentId: string },
-) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [passphrase, setPassphrase] = useState("");
-  const [outputSchema, setOutputSchema] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [successUrl, setSuccessUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+type WebhookTriggerFormType = z.infer<typeof webhookTriggerSchema>;
 
+export function WebhookTriggerForm({ agentId }: { agentId: string }) {
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErrors({});
-    setSuccessUrl(null);
-    const result = webhookTriggerSchema.safeParse({
-      title: name,
-      description,
-      passphrase,
-      schema: outputSchema,
+  const form = useForm<WebhookTriggerFormType>({
+    resolver: zodResolver(webhookTriggerSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      passphrase: "",
+      schema: "",
       type: "webhook",
-    });
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const err of result.error.errors) {
-        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
-      }
-      setErrors(fieldErrors);
-      return;
-    }
+    },
+  });
+
+  function handleOutputSchemaChange(val: string) {
+    form.setValue("schema", val, { shouldValidate: true });
+  }
+
+  const onSubmit = (data: WebhookTriggerFormType) => {
     let schemaObj: object | undefined = undefined;
-    if (outputSchema && outputSchema.trim().length > 0) {
+    if (data.schema && data.schema.trim().length > 0) {
       try {
-        schemaObj = JSON.parse(outputSchema);
+        schemaObj = JSON.parse(data.schema);
       } catch {
-        setErrors({ outputSchema: "Output Schema must be valid JSON" });
+        form.setError("schema", {
+          message: "Output Schema must be valid JSON",
+        });
         return;
       }
     }
     createTrigger(
       {
-        title: name,
-        description: description || undefined,
+        title: data.title,
+        description: data.description || undefined,
         type: "webhook",
-        passphrase: passphrase || undefined,
+        passphrase: data.passphrase || undefined,
         // deno-lint-ignore no-explicit-any
         schema: schemaObj as unknown as any || undefined,
       },
       {
-        onSuccess: (result) => {
-          setErrors({});
-          setName("");
-          setDescription("");
-          setPassphrase("");
-          setOutputSchema("");
-          setSuccessUrl(result?.url ?? null);
+        onSuccess: () => {
+          form.reset();
         },
         onError: (error: Error) => {
-          setErrors({ form: error?.message || "Failed to create trigger" });
+          form.setError("root", {
+            message: error?.message || "Failed to create trigger",
+          });
         },
       },
     );
-  }
+  };
 
   return (
-    <div>
-      {successUrl
-        ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <div className="p-6 text-center max-w-md w-full">
-              <div className="font-semibold text-lg mb-2">Webhook created!</div>
-              <div className="mb-4 flex flex-col items-center gap-2">
-                <div className="flex w-full gap-2">
-                  <Input
-                    ref={inputRef}
-                    value={successUrl}
-                    readOnly
-                    className="flex-1 cursor-pointer select-all"
-                    onClick={() => {
-                      inputRef.current?.select();
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={async () => {
-                      if (successUrl) {
-                        await navigator.clipboard.writeText(successUrl);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 1500);
-                      }
-                    }}
-                  >
-                    <Icon
-                      name={copied ? "check" : "content_copy"}
-                      size={18}
-                      className="mr-1 align-middle"
-                    />
-                    {copied ? "Copiado!" : "Copiar"}
-                  </Button>
-                </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Send birthday message"
+                  className="rounded-md"
+                  required
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Description</FormLabel>
+                <span className="text-xs text-slate-400">Optional</span>
               </div>
-            </div>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  placeholder="Send birthday message to the user"
+                  rows={3}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="passphrase"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Passphrase</FormLabel>
+                <span className="text-xs text-slate-400">Optional</span>
+              </div>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Passphrase"
+                  className="rounded-md"
+                  type="text"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="schema"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Output Schema</FormLabel>
+                <span className="text-xs text-slate-400">Optional</span>
+              </div>
+              <FormControl>
+                <JsonSchemaInput
+                  value={field.value}
+                  onChange={handleOutputSchemaChange}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {form.formState.errors.root && (
+          <div className="text-xs text-red-500 mt-1">
+            {form.formState.errors.root.message}
           </div>
-        )
-        : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="webhook-name">Name</Label>
-              <Input
-                id="webhook-name"
-                name="name"
-                className="rounded-md"
-                placeholder="Send birthday message"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              {errors.name && (
-                <div className="text-xs text-red-500 mt-1">{errors.name}</div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="webhook-description">Description</Label>
-                <span className="text-xs text-slate-400">Optional</span>
-              </div>
-              <Textarea
-                id="webhook-description"
-                name="description"
-                placeholder="Send birthday message to the user"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-              {errors.description && (
-                <div className="text-xs text-red-500 mt-1">
-                  {errors.description}
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="webhook-passphrase">Passphrase</Label>
-                <span className="text-xs text-slate-400">Optional</span>
-              </div>
-              <Input
-                id="webhook-passphrase"
-                name="passphrase"
-                placeholder="Passphrase"
-                className="rounded-md"
-                type="text"
-                value={passphrase}
-                onChange={(e) => setPassphrase(e.target.value)}
-              />
-              {errors.passphrase && (
-                <div className="text-xs text-red-500 mt-1">
-                  {errors.passphrase}
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="webhook-schema">Output Schema</Label>
-                <span className="text-xs text-slate-400">Optional</span>
-              </div>
-              <JsonSchemaInput
-                value={outputSchema}
-                onChange={setOutputSchema}
-              />
-              {errors.outputSchema && (
-                <div className="text-xs text-red-500 mt-1">
-                  {errors.outputSchema}
-                </div>
-              )}
-            </div>
-            {errors.form && (
-              <div className="text-xs text-red-500 mt-1">{errors.form}</div>
-            )}
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Creating..." : "Create"}
-              </Button>
-            </div>
-          </form>
         )}
-    </div>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Creating..." : "Create"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

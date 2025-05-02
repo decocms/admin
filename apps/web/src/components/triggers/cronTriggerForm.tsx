@@ -11,6 +11,17 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { useState } from "react";
 import { cronTriggerSchema, useCreateTrigger } from "@deco/sdk";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 
 const cronPresets = [
   { label: "Every hour", value: "0 * * * *" },
@@ -130,133 +141,160 @@ function CronSelectInput({ value, onChange, required, error }: {
   );
 }
 
+type CronTriggerFormType = z.infer<typeof cronTriggerSchema>;
+
 export function CronTriggerForm({ agentId, onSuccess }: {
   agentId: string;
   onSuccess?: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [frequency, setFrequency] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setErrors({});
-
-    if (!prompt.trim()) {
-      setErrors({ prompt: "Prompt is required" });
-      return;
-    }
-
-    if (!frequency || !isValidCron(frequency)) {
-      setErrors({ frequency: "Frequency is required and must be valid" });
-      return;
-    }
-
-    const result = cronTriggerSchema.safeParse({
-      title: name,
-      description,
-      cronExp: frequency,
-      prompt: { messages: [{ role: "user", content: prompt }] },
+  const form = useForm<CronTriggerFormType>({
+    resolver: zodResolver(cronTriggerSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      cronExp: cronPresets[0].value,
+      prompt: { messages: [{ role: "user", content: "" }] },
       type: "cron",
-    });
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      for (const err of result.error.errors) {
-        if (err.path[0]) fieldErrors[err.path[0]] = err.message;
-      }
-      setErrors(fieldErrors);
+    },
+  });
+
+  const onSubmit = (data: CronTriggerFormType) => {
+    if (!data.prompt?.messages?.[0]?.content?.trim()) {
+      form.setError("prompt", { message: "Prompt is required" });
+      return;
+    }
+    if (!data.cronExp || !isValidCron(data.cronExp)) {
+      form.setError("cronExp", {
+        message: "Frequency is required and must be valid",
+      });
       return;
     }
     createTrigger(
       {
-        title: name,
-        description: description || undefined,
-        cronExp: frequency,
-        prompt: { messages: [{ role: "user", content: prompt }] },
+        title: data.title,
+        description: data.description || undefined,
+        cronExp: data.cronExp,
+        prompt: {
+          messages: [{
+            role: "user",
+            content: data.prompt.messages[0].content,
+          }],
+        },
         type: "cron",
       },
       {
         onSuccess: () => {
-          setErrors({});
-          setName("");
-          setDescription("");
-          setFrequency("");
-          setPrompt("");
+          form.reset();
           onSuccess?.();
         },
         onError: (error: Error) => {
-          setErrors({ form: error?.message || "Failed to create trigger" });
+          form.setError("root", {
+            message: error?.message || "Failed to create trigger",
+          });
         },
       },
     );
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="cron-name">Name</Label>
-        <Input
-          id="cron-name"
-          name="name"
-          className="rounded-md"
-          placeholder="Send birthday message"
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="Send birthday message"
+                  className="rounded-md"
+                  required
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.name && (
-          <div className="text-xs text-red-500 mt-1">{errors.name}</div>
-        )}
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="cron-description">Description</Label>
-          <span className="text-xs text-slate-400">Optional</span>
-        </div>
-        <Textarea
-          id="cron-description"
+        <FormField
+          control={form.control}
           name="description"
-          placeholder="Send birthday message to the user"
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>Description</FormLabel>
+                <span className="text-xs text-slate-400">Optional</span>
+              </div>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  placeholder="Send birthday message to the user"
+                  rows={3}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.description && (
-          <div className="text-xs text-red-500 mt-1">{errors.description}</div>
-        )}
-      </div>
-      <CronSelectInput
-        value={frequency}
-        onChange={setFrequency}
-        required
-        error={errors.frequency}
-      />
-      <div className="space-y-2">
-        <Label htmlFor="cron-prompt">Prompt</Label>
-        <Textarea
-          id="cron-prompt"
+        <FormField
+          control={form.control}
+          name="cronExp"
+          render={() => (
+            <FormItem>
+              <FormControl>
+                <Controller
+                  control={form.control}
+                  name="cronExp"
+                  render={({ field: ctrlField }) => (
+                    <CronSelectInput
+                      value={ctrlField.value}
+                      onChange={ctrlField.onChange}
+                      required
+                      error={form.formState.errors.cronExp?.message}
+                    />
+                  )}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="prompt"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Send birthday message to the user using the SEND_BIRTHDAY_MESSAGE tool"
-          rows={3}
-          required
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prompt</FormLabel>
+              <FormControl>
+                <Textarea
+                  value={field.value?.messages?.[0]?.content || ""}
+                  onChange={(e) =>
+                    field.onChange({
+                      messages: [{ role: "user", content: e.target.value }],
+                    })}
+                  placeholder="Send birthday message to the user using the SEND_BIRTHDAY_MESSAGE tool"
+                  rows={3}
+                  required
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.prompt && (
-          <div className="text-xs text-red-500 mt-1">{errors.prompt}</div>
+        {form.formState.errors.root && (
+          <div className="text-xs text-red-500 mt-1">
+            {form.formState.errors.root.message}
+          </div>
         )}
-      </div>
-      {errors.form && (
-        <div className="text-xs text-red-500 mt-1">{errors.form}</div>
-      )}
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating..." : "Create"}
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Creating..." : "Create"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

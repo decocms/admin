@@ -14,7 +14,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
-import { ListActions } from "../actions/listActions.tsx";
+import { ListTriggers } from "../triggers/listTriggers.tsx";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -103,8 +103,8 @@ const TABS = {
     Component: AgentPreview,
     title: "Preview",
   },
-  actions: {
-    Component: ListActions,
+  triggers: {
+    Component: ListTriggers,
     title: "Triggers",
   },
 };
@@ -225,7 +225,7 @@ function Agent(props: Props) {
                     value="triggers"
                     className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
                   >
-                    <ListActions />
+                    <ListTriggers />
                   </TabsContent>
                 </Tabs>
               )

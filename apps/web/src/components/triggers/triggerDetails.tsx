@@ -1,5 +1,5 @@
-import { type Action } from "@deco/sdk";
-import { useListActionRuns } from "@deco/sdk";
+import { type Trigger } from "@deco/sdk";
+import { useListTriggerRuns } from "@deco/sdk";
 import { useChatContext } from "../chat/context.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -8,46 +8,50 @@ import { WebhookDetails } from "./webhookDetails.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { RunHistory } from "./runHistory.tsx";
 
-export function ActionDetails({ action, onBack }: {
-  action: Action;
+export function TriggerDetails({ trigger, onBack }: {
+  trigger: Trigger;
   onBack: () => void;
 }) {
   const { agentId } = useChatContext();
-  const { data: runsData, isLoading } = useListActionRuns(agentId, action.id, {
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  const { data: runsData, isLoading } = useListTriggerRuns(
+    agentId,
+    trigger.id,
+    {
+      refetchOnMount: true,
+      staleTime: 0,
+    },
+  );
 
   return (
-    <div className="p-4 space-y-6 max-w-full">
+    <div className="mx-16 space-y-6 max-w-full pb-16">
       <Button
         variant="ghost"
         className="flex items-center gap-1 text-sm mb-2"
         onClick={onBack}
       >
         <Icon name="arrow_back" className="h-4 w-4" />
-        Back to actions
+        Back to triggers
       </Button>
 
       <div className="flex items-center gap-2">
-        <ActionIcon type={action.type} />
-        <h2 className="text-xl font-semibold">{action.title}</h2>
+        <TriggerIcon type={trigger.type} />
+        <h2 className="text-xl font-semibold">{trigger.title}</h2>
         <Badge variant="outline" className="ml-2">
-          {action.type}
+          {trigger.type}
         </Badge>
       </div>
 
-      {action.description && (
+      {trigger.description && (
         <div>
           <h4 className="text-sm font-medium mb-1">Description</h4>
           <p className="text-sm text-muted-foreground">
-            {action.description}
+            {trigger.description}
           </p>
         </div>
       )}
 
-      {action.type === "webhook" && <WebhookDetails action={action} />}
-      {action.type === "cron" && <CronDetails action={action} />}
+      {trigger.type === "webhook" && <WebhookDetails trigger={trigger} />}
+      {trigger.type === "cron" && <CronDetails trigger={trigger} />}
 
       <div className="w-full">
         <h4 className="text-sm font-medium mb-2">Run History</h4>
@@ -57,7 +61,7 @@ export function ActionDetails({ action, onBack }: {
   );
 }
 
-function ActionIcon({ type }: { type: Action["type"] }) {
+function TriggerIcon({ type }: { type: Trigger["type"] }) {
   return (
     <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md">
       {type === "cron" && (

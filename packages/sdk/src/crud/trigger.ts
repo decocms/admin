@@ -1,6 +1,6 @@
 import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
 
-export interface Action {
+export interface Trigger {
   id: string;
   title: string;
   type: string;
@@ -13,12 +13,18 @@ export interface Action {
   url?: string;
   prompt?: string;
   passphrase?: string;
+  createdAt?: string;
+  author?: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
-export interface ListActionsResult {
+export interface ListTriggersResult {
   success: boolean;
   message: string;
-  actions?: Action[];
+  actions?: Trigger[];
 }
 
 export interface Run {
@@ -44,13 +50,13 @@ const fetchAPI = (path: string, init?: RequestInit) =>
     headers: { ...API_HEADERS, ...init?.headers },
   });
 
-export const listActions = async (context: string, agentId: string) => {
+export const listTriggers = async (context: string, agentId: string) => {
   const response = await fetchAPI(
     toPath([context, "agent", agentId, "actions"]),
   );
 
   if (response.ok) {
-    return response.json() as Promise<ListActionsResult>;
+    return response.json() as Promise<ListTriggersResult>;
   }
 
   throw new Error("Failed to list actions");
@@ -59,10 +65,10 @@ export const listActions = async (context: string, agentId: string) => {
 export const listRuns = async (
   context: string,
   agentId: string,
-  actionId: string,
+  triggerId: string,
 ) => {
   const response = await fetchAPI(
-    toPath([context, "agent", agentId, "action", actionId, "runs"]),
+    toPath([context, "agent", agentId, "action", triggerId, "runs"]),
   );
 
   if (response.ok) {

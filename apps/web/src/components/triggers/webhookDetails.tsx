@@ -1,8 +1,8 @@
-import { type Action } from "@deco/sdk";
+import { type Trigger } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { CodeBlock } from "./codeBlock.tsx";
 
-export function WebhookDetails({ action }: { action: Action }) {
+export function WebhookDetails({ trigger }: { trigger: Trigger }) {
   return (
     <div className="space-y-4 border p-4 rounded-md bg-slate-50">
       <div className="flex items-center gap-2">
@@ -13,28 +13,28 @@ export function WebhookDetails({ action }: { action: Action }) {
       <div>
         <div className="text-sm font-medium mb-1">Webhook URL</div>
         <CodeBlock className="break-all">
-          {action.url}
+          {trigger.url}
         </CodeBlock>
       </div>
 
-      {action.passphrase && (
+      {trigger.passphrase && (
         <div>
           <div className="text-sm font-medium mb-1">Passphrase</div>
-          <CodeBlock>{action.passphrase}</CodeBlock>
+          <CodeBlock>{trigger.passphrase}</CodeBlock>
         </div>
       )}
 
-      {action.schema && (
+      {trigger.schema && (
         <div>
           <div className="text-sm font-medium mb-1">Schema</div>
           <CodeBlock className="max-h-[200px] overflow-y-auto">
-            {JSON.stringify(action.schema, null, 2)}
+            {JSON.stringify(trigger.schema, null, 2)}
           </CodeBlock>
         </div>
       )}
 
       <div className="text-sm text-muted-foreground">
-        Use this URL to trigger this action from external systems.
+        Use this URL to trigger this trigger from external systems.
       </div>
     </div>
   );

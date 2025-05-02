@@ -1,30 +1,30 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import {
-  listActions,
-  type ListActionsResult,
+  listTriggers,
+  type ListTriggersResult,
   listRuns,
   type ListRunsResult,
-} from "../crud/action.ts";
+} from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
 
-export function useListActions(
+export function useListTriggers(
   agentId: string,
   options?: Omit<
-    UseQueryOptions<ListActionsResult, Error, ListActionsResult, string[]>,
+    UseQueryOptions<ListTriggersResult, Error, ListTriggersResult, string[]>,
     "queryKey" | "queryFn"
   >,
 ) {
   const { workspace } = useSDK();
   return useQuery({
-    queryKey: ["actions", agentId],
-    queryFn: () => listActions(workspace, agentId),
+    queryKey: ["triggers", agentId],
+    queryFn: () => listTriggers(workspace, agentId),
     ...options,
   });
 }
 
-export function useListActionRuns(
+export function useListTriggerRuns(
   agentId: string,
-  actionId: string,
+  triggerId: string,
   options?: Omit<
     UseQueryOptions<ListRunsResult, Error, ListRunsResult, string[]>,
     "queryKey" | "queryFn"
@@ -32,8 +32,8 @@ export function useListActionRuns(
 ) {
   const { workspace } = useSDK();
   return useQuery({
-    queryKey: ["action-runs", agentId, actionId],
-    queryFn: () => listRuns(workspace, agentId, actionId),
+    queryKey: ["trigger-runs", agentId, triggerId],
+    queryFn: () => listRuns(workspace, agentId, triggerId),
     ...options,
   });
 }

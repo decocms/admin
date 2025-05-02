@@ -71,7 +71,7 @@ AgentHeader.UI = () => {
           Test agent
         </DockedToggleButton>
         <DockedToggleButton
-          id="actions"
+          id="triggers"
           title="Triggers"
           variant="outline"
         >

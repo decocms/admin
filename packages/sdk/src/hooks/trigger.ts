@@ -1,9 +1,9 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import {
-  listTriggers,
-  type ListTriggersResult,
   listRuns,
   type ListRunsResult,
+  listTriggers,
+  type ListTriggersResult,
 } from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
 

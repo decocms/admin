@@ -6,6 +6,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
 
 export function ListTriggers() {
   const { agentId } = useChatContext();
@@ -47,6 +48,7 @@ export function ListTriggers() {
             className="w-full py-2 rounded-full border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
           />
         </div>
+        <AddTriggerModalButton agentId={agentId} />
       </div>
       <div className="grid grid-cols-1 gap-4">
         {filteredTriggers.map((trigger, index) => (
@@ -72,6 +74,7 @@ export function ListTriggersLoading() {
 }
 
 export function ListTriggersEmpty() {
+  const { agentId } = useChatContext();
   return (
     <div className="mx-16 p-4 mt-4 m-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
       <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
@@ -85,6 +88,7 @@ export function ListTriggersEmpty() {
         Triggers allow you to trigger your agent on a schedule or from external
         systems.
       </p>
+      <AddTriggerModalButton agentId={agentId} />
     </div>
   );
 }

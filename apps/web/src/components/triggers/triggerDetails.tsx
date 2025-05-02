@@ -23,7 +23,7 @@ export function TriggerDetails({ trigger, onBack }: {
   );
 
   return (
-    <div className="mx-16 space-y-6 max-w-full pb-16">
+    <div className="mx-16 space-y-6 max-w-full py-8">
       <Button
         variant="ghost"
         className="flex items-center gap-1 text-sm mb-2"

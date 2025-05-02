@@ -1,6 +1,7 @@
 import {
   useMutation,
   useQuery,
+  useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import {
@@ -46,8 +47,12 @@ export function useListTriggerRuns(
 
 export function useCreateTrigger(agentId: string) {
   const { workspace } = useSDK();
+  const client = useQueryClient();
   return useMutation({
     mutationFn: (trigger: CreateTriggerInput) =>
       createTrigger(workspace, agentId, trigger),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["triggers", agentId] });
+    },
   });
 }

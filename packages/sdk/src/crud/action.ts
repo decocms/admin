@@ -13,6 +13,12 @@ export interface Action {
   url?: string;
   prompt?: string;
   passphrase?: string;
+  createdAt?: string;
+  author?: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
 export interface ListActionsResult {

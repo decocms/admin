@@ -65,6 +65,12 @@ export const assertUserHasAccessToWorkspace = async (
     throw new HTTPException(500, { message: "Missing database" });
   }
 
+  // TODO: remove this hard coded access for @deco.cx
+  const isAdmin = user?.email?.endsWith("@deco.cx");
+  if (isAdmin) {
+    return;
+  }
+
   if (root === "users" && user.id === slug) {
     return;
   }

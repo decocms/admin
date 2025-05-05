@@ -43,7 +43,7 @@ interface ReasoningPart {
 type Part = TextPart | ToolPart | ReasoningPart;
 
 function mergeParts(parts: Part[] | undefined): MessagePart[] {
-  if (!parts) return [];
+  if (!parts || !Array.isArray(parts)) return [];
 
   const mergedParts: MessagePart[] = [];
   let currentToolGroup: NonNullable<Message["toolInvocations"]> = [];
@@ -126,29 +126,30 @@ export function ChatMessage(
   );
 
   const handleCopy = async () => {
-    const content = message.parts
-      ? (message.parts as Part[]).filter((part) => part.type === "text").map((
-        part,
-      ) => part.text).join("\n")
-      : message.content;
+    const content = Array.isArray(message.parts)
+      ? (message.parts as Part[])
+          .filter((part) => part?.type === "text")
+          .map((part) => part?.text || "")
+          .join("\n")
+      : message.content || "";
     await navigator.clipboard.writeText(content);
   };
 
-  const mergedParts = useMemo(() => mergeParts(message.parts as Part[]), [
+  const mergedParts = useMemo(() => mergeParts(Array.isArray(message.parts) ? message.parts as Part[] : undefined), [
     message.parts,
   ]);
 
   const hasTextContent = useMemo(() => {
-    return (message.parts as Part[])?.some((part) => part.type === "text") ||
-      message.content;
+    return Array.isArray(message.parts) && (message.parts as Part[])?.some((part) => part?.type === "text") ||
+      !!message.content;
   }, [message.parts, message.content]);
 
   const isReasoningStreaming = useMemo(() => {
     if (!isStreaming) return false;
     // If we have parts and the last part is reasoning, it's streaming
-    if (message.parts && message.parts.length > 0) {
+    if (Array.isArray(message.parts) && message.parts.length > 0) {
       const lastPart = message.parts[message.parts.length - 1];
-      return lastPart.type === "reasoning";
+      return lastPart?.type === "reasoning";
     }
     return false;
   }, [message.parts, isStreaming]);
@@ -156,9 +157,9 @@ export function ChatMessage(
   const isResponseStreaming = useMemo(() => {
     if (!isStreaming) return false;
     // If we have parts and the last part is text, it's streaming
-    if (message.parts && message.parts.length > 0) {
+    if (Array.isArray(message.parts) && message.parts.length > 0) {
       const lastPart = message.parts[message.parts.length - 1];
-      return lastPart.type === "text";
+      return lastPart?.type === "text";
     }
     return false;
   }, [message.parts, isStreaming]);

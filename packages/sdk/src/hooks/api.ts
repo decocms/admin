@@ -23,4 +23,8 @@ export const KEYS = {
     agentId: string,
     threadId: string,
   ) => ["tools", workspace, agentId, threadId],
+  MEMBERS: (
+    workspace: Workspace,
+    teamId?: number,
+  ) => ["members", workspace, teamId],
 };

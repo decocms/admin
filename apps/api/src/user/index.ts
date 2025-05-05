@@ -10,10 +10,13 @@ export const enrichUser = (user: SupaUser) => {
 const getUserMetadata = (
   user: SupaUser,
 ): User["metadata"] => {
+  console.log(user.user_metadata);
   return {
     full_name: user.user_metadata.full_name,
     avatar_url: user.user_metadata.avatar_url,
-    username: generateUsername(user.user_metadata.full_name),
+    username: user.user_metadata.full_name
+      ? generateUsername(user.user_metadata.full_name)
+      : user.email ?? "",
   };
 };
 

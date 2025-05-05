@@ -11,8 +11,14 @@ import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
 
+interface ConfirmOption {
+  value: string;
+  label: string;
+}
+
 interface ToolMessageProps {
   toolInvocations: NonNullable<Message["toolInvocations"]>;
+  isLastMessage?: boolean;
 }
 
 // Tools that have custom UI rendering and shouldn't show in the timeline
@@ -212,8 +218,9 @@ function ToolStatus({
   );
 }
 
-function CustomToolUI({ tool }: {
+function CustomToolUI({ tool, isLastMessage }: {
   tool: ToolInvocation;
+  isLastMessage?: boolean;
 }) {
   const { select } = useChatContext();
 
@@ -244,16 +251,19 @@ function CustomToolUI({ tool }: {
     }
     case "SHOW_PICKER":
     case "CONFIRM": {
-      const options = (tool.result.data.options as string[]).map((option) => ({
-        id: option,
-        label: option,
-        value: option,
+      const options = (tool.result.data.options as ConfirmOption[]).map((
+        option,
+      ) => ({
+        id: option.value,
+        ...option,
       }));
+
       return (
         <Picker
           question={tool.result.data.question as string}
           options={options}
           onSelect={(value) => select(tool.toolCallId, value)}
+          disabled={!isLastMessage}
         />
       );
     }
@@ -265,6 +275,7 @@ function CustomToolUI({ tool }: {
 
 export function ToolMessage({
   toolInvocations,
+  isLastMessage,
 }: ToolMessageProps) {
   // Separate tools into timeline tools and custom UI tools
   const timelineTools: ToolInvocation[] = [];
@@ -301,7 +312,11 @@ export function ToolMessage({
 
       {/* Custom UI tools */}
       {customUITools.map((tool) => (
-        <CustomToolUI key={tool.toolCallId} tool={tool} />
+        <CustomToolUI
+          key={tool.toolCallId}
+          tool={tool}
+          isLastMessage={isLastMessage}
+        />
       ))}
     </div>
   );

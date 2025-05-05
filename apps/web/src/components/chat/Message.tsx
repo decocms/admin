@@ -10,6 +10,7 @@ import { ReasoningPart } from "./ReasoningPart.tsx";
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+  isLastMessage?: boolean;
 }
 
 interface MessagePart {
@@ -110,7 +111,7 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
 }
 
 export function ChatMessage(
-  { message, isStreaming = false }: ChatMessageProps,
+  { message, isStreaming = false, isLastMessage = false }: ChatMessageProps,
 ) {
   const isUser = message.role === "user";
   const timestamp = new Date(message.createdAt || Date.now())
@@ -221,6 +222,7 @@ export function ChatMessage(
                       <ToolMessage
                         key={index}
                         toolInvocations={part.toolInvocations}
+                        isLastMessage={isLastMessage}
                       />
                     );
                   }

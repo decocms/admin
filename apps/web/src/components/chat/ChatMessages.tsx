@@ -88,11 +88,12 @@ export function ChatMessages() {
         ? <EmptyState agentId={agentId} />
         : (
           <div className="flex flex-col gap-4">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <ChatMessage
                 key={message.id}
                 message={message}
                 isStreaming={isStreaming}
+                isLastMessage={messages.length === index + 1}
               />
             ))}
             <ChatError />

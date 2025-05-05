@@ -8,6 +8,7 @@ import {
   createTrigger,
   CreateTriggerInput,
   deleteTrigger,
+  listAllTriggers,
   listRuns,
   type ListRunsResult,
   listTriggers,
@@ -15,7 +16,7 @@ import {
 } from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
 
-export function useListTriggers(
+export function useListTriggersByAgentId(
   agentId: string,
   options?: Omit<
     UseQueryOptions<ListTriggersResult, Error, ListTriggersResult, string[]>,
@@ -27,6 +28,14 @@ export function useListTriggers(
     queryKey: ["triggers", agentId],
     queryFn: () => listTriggers(workspace, agentId),
     ...options,
+  });
+}
+
+export function useListTriggers() {
+  const { workspace } = useSDK();
+  return useQuery({
+    queryKey: ["triggers"],
+    queryFn: () => listAllTriggers(workspace),
   });
 }
 

@@ -19,6 +19,7 @@ import { Layout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
+import { ListTriggers } from "./components/triggers/listTriggers.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -185,6 +186,10 @@ function Router() {
         <Route
           path="integration/:id"
           element={<IntegrationEdit />}
+        />
+        <Route
+          path="triggers"
+          element={<ListTriggers />}
         />
       </Route>
 

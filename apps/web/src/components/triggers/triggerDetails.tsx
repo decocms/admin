@@ -1,6 +1,5 @@
 import { type Trigger } from "@deco/sdk";
 import { useListTriggerRuns } from "@deco/sdk";
-import { useChatContext } from "../chat/context.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -8,11 +7,15 @@ import { WebhookDetails } from "./webhookDetails.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { RunHistory } from "./runHistory.tsx";
 
-export function TriggerDetails({ trigger, onBack }: {
+interface TriggerDetailsProps {
   trigger: Trigger;
   onBack: () => void;
-}) {
-  const { agentId } = useChatContext();
+  agentId: string;
+}
+
+export function TriggerDetails(
+  { trigger, onBack, agentId }: TriggerDetailsProps,
+) {
   const { data: runsData, isLoading } = useListTriggerRuns(
     agentId,
     trigger.id,

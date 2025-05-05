@@ -1,95 +1,133 @@
-import { type Trigger, useListTriggers } from "@deco/sdk";
-import { useChatContext } from "../chat/context.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useState } from "react";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { TriggerCard } from "./triggerCard.tsx";
-import { TriggerDetails } from "./triggerDetails.tsx";
+import { useListTriggers } from "@deco/sdk";
+import type { Trigger } from "@deco/sdk";
 import { Input } from "@deco/ui/components/input.tsx";
-import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useState } from "react";
+import { TriggerCardList } from "./TriggerCardList.tsx";
+import { TriggerDetails } from "./triggerDetails.tsx";
+import { TriggerTableList } from "./TriggerTableList.tsx";
+
+const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
+type SortKey = typeof SORTABLE_KEYS[number];
+type SortDirection = "asc" | "desc";
+type ViewMode = "table" | "cards";
 
 export function ListTriggers() {
-  const { agentId } = useChatContext();
-  const { data: triggers, isLoading } = useListTriggers(agentId, {
-    refetchOnMount: true,
-    staleTime: 0,
-  });
-  const [selectedTrigger, setSelectedTrigger] = useState<Trigger | null>(null);
+  const { data, isLoading } = useListTriggers();
+  const [sortKey, setSortKey] = useState<SortKey>("title");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [selectedTrigger, setSelectedTrigger] = useState<Trigger | null>(null);
 
-  if (isLoading) {
-    return <ListTriggersLoading />;
+  const triggers: Trigger[] = data?.actions || [];
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
   }
-  if (!triggers?.actions?.length) {
-    return <ListTriggersEmpty />;
+
+  function getSortValue(trigger: Trigger, key: SortKey): string {
+    if (key === "agent") return trigger.agent?.name?.toLowerCase() || "";
+    if (key === "author") return trigger.author?.name?.toLowerCase() || "";
+    return (trigger[key] as string)?.toLowerCase?.() || "";
   }
+
+  const filteredTriggers = search.trim().length > 0
+    ? triggers.filter((t) =>
+      t.title.toLowerCase().includes(search.toLowerCase())
+    )
+    : triggers;
+
+  const sortedTriggers = [...filteredTriggers].sort((a, b) => {
+    const aVal = getSortValue(a, sortKey);
+    const bVal = getSortValue(b, sortKey);
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
   if (selectedTrigger) {
     return (
       <TriggerDetails
         trigger={selectedTrigger}
+        agentId={selectedTrigger.agent?.id || ""}
         onBack={() => setSelectedTrigger(null)}
       />
     );
   }
 
-  const filteredTriggers = triggers.actions.filter((trigger) =>
-    trigger.title.toLowerCase().includes(search.toLowerCase())
-  );
+  if (isLoading) {
+    return <div className="py-12 text-center">Loading...</div>;
+  }
 
   return (
-    <div className="mx-16 mt-8">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full py-2 rounded-full border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-          />
-        </div>
-        <AddTriggerModalButton agentId={agentId} />
-      </div>
-      <div className="grid grid-cols-1 gap-4">
-        {filteredTriggers.map((trigger, index) => (
-          <TriggerCard
-            key={`real-${index}`}
-            trigger={trigger}
-            agentId={agentId}
-            onClick={(trigger) => setSelectedTrigger(trigger)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function ListTriggersLoading() {
-  return (
-    <div className="grid grid-cols-1 gap-4 mx-16">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <Skeleton key={`skeleton-${index}`} className="h-36 w-full" />
-      ))}
-    </div>
-  );
-}
-
-export function ListTriggersEmpty() {
-  const { agentId } = useChatContext();
-  return (
-    <div className="mx-16 p-4 mt-4 m-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
-      <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
-        <Icon
-          name="notifications_active"
-          className="text-slate-500"
+    <div className="mx-8 my-6">
+      <div className="mb-4 flex items-center justify-between">
+        <Input
+          type="text"
+          placeholder="Search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-80 rounded-full border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
         />
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === "cards" ? "secondary" : "ghost"}
+            size="icon"
+            aria-label="Card view"
+            onClick={() => setViewMode("cards")}
+            className={viewMode === "cards" ? "bg-slate-100" : ""}
+          >
+            <Icon
+              name="grid_view"
+              size={24}
+              className={viewMode === "cards"
+                ? "text-primary"
+                : "text-slate-500"}
+            />
+          </Button>
+          <Button
+            variant={viewMode === "table" ? "secondary" : "ghost"}
+            size="icon"
+            aria-label="Table view"
+            onClick={() => setViewMode("table")}
+            className={viewMode === "table" ? "bg-slate-100" : ""}
+          >
+            <Icon
+              name="menu"
+              size={24}
+              className={viewMode === "table"
+                ? "text-primary"
+                : "text-slate-500"}
+            />
+          </Button>
+        </div>
       </div>
-      <h3 className="text-lg font-medium mb-2">No triggers configured</h3>
-      <p className="text-sm text-muted-foreground max-w-md mb-4">
-        Triggers allow you to trigger your agent on a schedule or from external
-        systems.
-      </p>
-      <AddTriggerModalButton agentId={agentId} />
+      {viewMode === "table"
+        ? (
+          <div className="overflow-x-auto">
+            <TriggerTableList
+              triggers={sortedTriggers}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onTriggerClick={setSelectedTrigger}
+            />
+          </div>
+        )
+        : (
+          <TriggerCardList
+            triggers={sortedTriggers}
+            onTriggerClick={setSelectedTrigger}
+            className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          />
+        )}
     </div>
   );
 }

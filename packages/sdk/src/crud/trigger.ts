@@ -1,5 +1,6 @@
 import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
 import { z } from "zod";
+import { Agent } from "../models/agent.ts";
 
 export interface Trigger {
   id: string;
@@ -15,6 +16,7 @@ export interface Trigger {
   prompt?: string;
   passphrase?: string;
   createdAt?: string;
+  agent?: Agent;
   author?: {
     id: string;
     name: string;
@@ -54,6 +56,18 @@ const fetchAPI = (path: string, init?: RequestInit) =>
 export const listTriggers = async (context: string, agentId: string) => {
   const response = await fetchAPI(
     toPath([context, "agent", agentId, "actions"]),
+  );
+
+  if (response.ok) {
+    return response.json() as Promise<ListTriggersResult>;
+  }
+
+  throw new Error("Failed to list actions");
+};
+
+export const listAllTriggers = async (context: string) => {
+  const response = await fetchAPI(
+    toPath([context, "actions"]),
   );
 
   if (response.ok) {

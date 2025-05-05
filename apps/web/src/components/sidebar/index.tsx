@@ -30,12 +30,17 @@ const STATIC_ITEMS = [
   {
     url: "/integrations",
     title: "Integrations",
-    icon: "conversion_path",
+    icon: "widgets",
   },
   {
     url: "/agents",
     title: "Agents",
     icon: "groups",
+  },
+  {
+    url: "/triggers",
+    title: "Triggers",
+    icon: "conversion_path",
   },
 ];
 

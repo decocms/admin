@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router";
 
 const joinPaths = (base: string | undefined, path: string) => {
   const withoutStartingSlash = path.startsWith("/") ? path.slice(1) : path;
-  return `/${base ?? ""}/${withoutStartingSlash}`;
+
+  return `/${[base, withoutStartingSlash].filter(Boolean).join("/")}`;
 };
 
 export const useNavigateWorkspace = () => {

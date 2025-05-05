@@ -3,13 +3,42 @@ import { callToolFor } from "../fetcher.ts";
 export interface Member {
   id: number;
   user_id: string;
-  admin: boolean;
+  admin: boolean | null;
   created_at: string;
-  profiles: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  profiles: Profiles;
+}
+
+export interface Profiles {
+  id: number;
+  name: string;
+  email: string;
+  metadata: Metadata;
+}
+
+export interface Metadata {
+  id: string;
+  raw_user_meta_data: RawUserMetaData;
+}
+
+export interface RawUserMetaData {
+  iss: string;
+  sub: string;
+  name: string;
+  email: string;
+  picture?: string;
+  full_name: string;
+  avatar_url?: string;
+  provider_id: string;
+  custom_claims?: CustomClaims;
+  email_verified: boolean;
+  phone_verified: boolean;
+  user_name?: string;
+  preferred_username?: string;
+  teamId?: number;
+}
+
+export interface CustomClaims {
+  hd: string;
 }
 
 export interface MemberFormData {

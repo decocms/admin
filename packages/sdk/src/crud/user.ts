@@ -28,7 +28,11 @@ export const fetchUser = async () => {
     throw new Error("Failed to fetch user");
   }
 
-  const { data } = await response.json();
+  const { error, data } = await response.json();
 
-  return JSON.parse(data.content[0].text);
+  if (error) {
+    throw new Error(error.message || "Failed to fetch user");
+  }
+
+  return data;
 };

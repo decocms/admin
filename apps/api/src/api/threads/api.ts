@@ -4,6 +4,7 @@ import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
 import { generateUUIDv5, toAlphanumericId } from "../../utils/slugify.ts";
+import { convertToUIMessages } from "../../utils/convertToUIMessages.ts";
 
 const safeParse = (str: string) => {
   try {
@@ -198,9 +199,11 @@ export const getThread = createApiHandler({
       .map((row: unknown) => MessageSchema.safeParse(row)?.data)
       .filter((a: Message | undefined): a is Message => !!a);
 
+    const uiMessages = convertToUIMessages(messages);
+
     return {
       ...thread,
-      messages,
+      messages: uiMessages,
     };
   },
 });

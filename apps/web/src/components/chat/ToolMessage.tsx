@@ -1,7 +1,7 @@
 import type { Message } from "@ai-sdk/react";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
@@ -169,9 +169,9 @@ function ToolStatus({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium">
+              <div className="font-medium truncate max-w-3xs md:max-w-full">
                 {getToolName()}
-              </span>
+              </div>
               <Icon
                 className={cn("text-sm ml-auto", isExpanded && "rotate-90")}
                 name="chevron_right"

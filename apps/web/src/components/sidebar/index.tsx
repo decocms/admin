@@ -44,7 +44,7 @@ const STATIC_ITEMS = [
   },
   {
     url: "/audits",
-    title: "Audit Logs",
+    title: "Chat Logs",
     icon: "quick_reference_all",
   },
 ];

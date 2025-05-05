@@ -46,7 +46,8 @@ export const getTeamMembers = createApiHandler({
         profiles!inner (
           id,
           name,
-          email
+          email,
+          metadata:users_meta_data_view(id, raw_user_meta_data)
         )
       `)
       .eq("team_id", teamId)

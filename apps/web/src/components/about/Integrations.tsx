@@ -127,7 +127,7 @@ export default function Integrations({
               const pos = positions[index] || positions[0];
               return (
                 <div
-                  className="w-24 h-24 bg-white rounded-3xl outline outline-1 outline-offset-[-1px] outline-dc-200 inline-flex justify-center items-center absolute hidden md:flex"
+                  className="w-24 h-24 bg-white rounded-3xl outline-1 outline-offset-[-1px] outline-dc-200  justify-center items-center absolute hidden md:flex"
                   style={{
                     left: pos.left,
                     top: pos.top,
@@ -159,7 +159,7 @@ export default function Integrations({
         >
           <div className="inline-flex justify-center items-start gap-2 flex-wrap content-start px-4 md:px-0">
             {logos.map((logo) => (
-              <div className="w-16 h-16 md:w-24 md:h-24 bg-white rounded-2xl md:rounded-3xl outline outline-[1.51px] outline-offset-[-1.51px] outline-dc-200 flex justify-center items-center gap-5 overflow-hidden">
+              <div className="w-16 h-16 md:w-24 md:h-24 bg-white rounded-2xl md:rounded-3xl outline-[1.51px] outline-offset-[-1.51px] outline-dc-200 flex justify-center items-center gap-5 overflow-hidden">
                 <img
                   className="w-10 h-10 md:w-16 md:h-16 object-contain"
                   src={logo.image}

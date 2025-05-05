@@ -1,0 +1,133 @@
+import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@deco/ui/components/avatar.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { useMemo } from "react";
+import { useParams } from "react-router";
+import { AgentAvatar } from "../common/Avatar.tsx";
+import { useUser } from "../../hooks/data/useUser.ts";
+
+interface AgentInfoProps {
+  agentId?: string;
+  className?: string;
+}
+
+function AgentInfo({ agentId, className }: AgentInfoProps) {
+  const { data: agents } = useAgents();
+  const agent = useMemo(
+    () => agents?.find((a) => a.id === agentId),
+    [agents, agentId],
+  );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
+          <div className="w-8 h-8">
+            <AgentAvatar
+              name={agent?.name ?? agentId ?? "Unknown"}
+              avatar={agent?.avatar}
+            />
+          </div>
+          <span className="truncate hidden md:inline">
+            {agent ? agent.name : agentId || "Unknown"}
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{agent ? agent.name : agentId}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+interface UserInfoProps {
+  userId?: string;
+  className?: string;
+  showDetails?: boolean; // If true, show name/email block (for detail view)
+}
+
+function UserInfo({
+  userId,
+  className,
+  showDetails = false,
+}: UserInfoProps) {
+  const user = useUser();
+  const params = useParams();
+  const resolvedTeamSlug = params.teamSlug;
+  const { data: teams } = useTeams();
+  const teamId = useMemo(
+    () => teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null,
+    [teams, resolvedTeamSlug],
+  );
+
+  // If userId matches current user, use user data directly
+  const isCurrentUser = userId && user && userId === user.id;
+
+  // Only fetch team members if not current user and teamId is not null
+  const members = (!isCurrentUser && teamId !== null)
+    ? useTeamMembers(teamId).data
+    : undefined;
+  const member = useMemo(
+    () => members?.find((m) => m.user_id === userId),
+    [members, userId],
+  );
+
+  // Data source for avatar and name/email
+  const avatarUrl = isCurrentUser
+    ? user.metadata.avatar_url
+    : member?.profiles?.metadata?.raw_user_meta_data?.avatar_url;
+  const name = isCurrentUser ? user.metadata.full_name : member?.profiles?.name;
+  const email = isCurrentUser ? user.email : member?.profiles?.email;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
+          <Avatar>
+            <AvatarImage
+              src={avatarUrl}
+              alt={name}
+            />
+            <AvatarFallback>
+              {name?.[0] ?? "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div
+            className={`flex-col items-start text-left leading-tight w-full ${
+              showDetails ? "hidden md:flex" : "flex"
+            }`}
+          >
+            <span className="truncate max-w-[120px] block text-xs font-medium text-slate-800">
+              {name || "Unknown"}
+            </span>
+            <span className="truncate max-w-[120px] block text-xs font-normal text-slate-500">
+              {email || ""}
+            </span>
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        {name
+          ? (
+            <div className="flex flex-col">
+              <span>{name}</span>
+              <span>{email}</span>
+            </div>
+          )
+          : <span>{userId}</span>}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export { AgentInfo, UserInfo };

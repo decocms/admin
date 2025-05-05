@@ -16,12 +16,13 @@ import { useSDK } from "./store.tsx";
  * Hook to fetch team members
  * @param teamId - The ID of the team to fetch members for
  */
-export const useTeamMembers = (teamId: number) => {
+export const useTeamMembers = (teamId: number | null) => {
   const { workspace } = useSDK();
 
   return useSuspenseQuery({
-    queryKey: KEYS.MEMBERS(workspace, teamId),
-    queryFn: ({ signal }) => getTeamMembers(teamId, signal),
+    queryKey: KEYS.MEMBERS(workspace, teamId ?? -1),
+    queryFn: ({ signal }) =>
+      typeof teamId === "number" ? getTeamMembers(teamId, signal) : [],
   });
 };
 

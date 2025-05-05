@@ -8,22 +8,22 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { listThreads } from "../crud/thread.ts";
+import { getThreadWithMessages, listThreads } from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
 /** Hook for fetching messages from a thread */
-export const useThreadMessages = (agentId: string, threadId: string) => {
+export const useThreadMessages = (threadId: string) => {
   const { workspace } = useSDK();
-  const agentStub = useAgentStub(agentId, threadId);
 
-  const data = useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace, agentId, threadId),
-    queryFn: () => agentStub.query({}),
+  const result = useSuspenseQuery({
+    queryKey: KEYS.THREADS(workspace, threadId),
+    queryFn: ({ signal }) =>
+      getThreadWithMessages(workspace, threadId, { signal }),
   });
 
-  return data;
+  return result;
 };
 
 export const useUpdateThreadMessages = () => {
@@ -31,8 +31,8 @@ export const useUpdateThreadMessages = () => {
   const client = useQueryClient();
 
   return useCallback(
-    (agentId: string, threadId: string, messages: unknown[] = []) => {
-      const messagesKey = KEYS.THREADS(workspace, agentId, threadId);
+    (threadId: string, messages: unknown[] = []) => {
+      const messagesKey = KEYS.THREADS(workspace, threadId);
 
       client.cancelQueries({ queryKey: messagesKey });
       client.setQueryData(messagesKey, messages);

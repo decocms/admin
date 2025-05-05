@@ -19,7 +19,7 @@ export const useEditAgent = () => {
     (agentId: string, threadId?: string, options?: AgentNavigationOptions) => {
       // If history is false, disable fetching history for faster navigation
       if (options?.history === false) {
-        updateMessages(agentId, threadId ?? agentId);
+        updateMessages(threadId ?? agentId);
       }
 
       const pathname = getEditAgentPath(agentId, threadId);
@@ -51,7 +51,7 @@ export const useFocusChat = () => {
     (agentId: string, threadId: string, options?: AgentNavigationOptions) => {
       // If history is false, disable fetching history for faster navigation
       if (options?.history === false) {
-        updateMessages(agentId, threadId);
+        updateMessages(threadId);
       }
 
       const pathname = getChatPath(agentId, threadId);

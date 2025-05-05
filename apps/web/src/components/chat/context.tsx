@@ -92,9 +92,10 @@ export function ChatProvider({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
   const onceRef = useRef(false);
-  const { data: initialMessages } = disableThreadMessages
-    ? { data: [] }
-    : useThreadMessages(agentId, threadId);
+  const { data: messagesData } = disableThreadMessages
+    ? { data: undefined }
+    : useThreadMessages(threadId);
+  const initialMessages = messagesData?.messages ?? [];
 
   const chat = useChat({
     initialMessages,

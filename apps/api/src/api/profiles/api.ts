@@ -21,12 +21,7 @@ export const getProfile = createApiHandler({
 
     const enrichedUser = enrichUser(user);
 
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(enrichedUser),
-      }],
-    };
+    return enrichedUser;
   },
 });
 
@@ -67,11 +62,6 @@ export const updateProfile = createApiHandler({
       throw new Error("Profile not found");
     }
 
-    return {
-      content: [{
-        type: "text",
-        text: JSON.stringify(data),
-      }],
-    };
+    return data;
   },
 });

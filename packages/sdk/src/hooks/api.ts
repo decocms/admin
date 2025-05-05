@@ -16,9 +16,8 @@ export const KEYS = {
   ) => ["integration", workspace, integrationId],
   THREADS: (
     workspace: Workspace,
-    agentId?: string,
     threadId?: string,
-  ) => ["threads", workspace, agentId, threadId],
+  ) => ["threads", workspace, threadId],
   TOOLS: (
     workspace: Workspace,
     agentId: string,
@@ -36,9 +35,5 @@ export const KEYS = {
     options.cursor,
     options.limit,
   ],
-  AUDIT: (workspace: Workspace, threadId: string) => [
-    "audit",
-    workspace,
-    threadId,
-  ],
+  TEAMS: () => ["teams"],
 };

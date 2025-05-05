@@ -3,7 +3,6 @@ import {
   useInstallFromMarketplace,
   useMarketplaceIntegrations,
   useUpdateThreadMessages,
-  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
@@ -75,7 +74,7 @@ function AvailableIntegrationCard({
 
   const handleEditIntegration = () => {
     if (!createdIntegrationId) return;
-    updateThreadMessages(WELL_KNOWN_AGENT_IDS.setupAgent, createdIntegrationId);
+    updateThreadMessages(createdIntegrationId);
     navigateWorkspace(`/integration/${createdIntegrationId}`);
   };
 

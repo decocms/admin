@@ -378,7 +378,7 @@ export default function List() {
     try {
       setCreating(true);
       const agent = await createAgent.mutateAsync({});
-      updateThreadMessages(agent.id, agent.id);
+      updateThreadMessages(agent.id);
       focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
 
       trackEvent("agent_create", {

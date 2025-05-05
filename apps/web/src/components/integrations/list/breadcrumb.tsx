@@ -3,7 +3,6 @@ import {
   useIntegrations,
   useMarketplaceIntegrations,
   useUpdateThreadMessages,
-  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -66,7 +65,7 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
   const handleCreate = async () => {
     try {
       const result = await create.mutateAsync({});
-      updateThreadMessages(WELL_KNOWN_AGENT_IDS.setupAgent, result.id);
+      updateThreadMessages(result.id);
       navigateWorkspace(`/integration/${result.id}`);
     } catch (err) {
       setError(

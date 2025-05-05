@@ -1,9 +1,13 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import {
   addTeamMember,
   getTeamMembers,
+  type Member,
   removeTeamMember,
-  type MemberFormData,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
@@ -32,11 +36,14 @@ export const useAddTeamMember = () => {
   return useMutation({
     mutationFn: ({ teamId, email }: { teamId: number; email: string }) =>
       addTeamMember(teamId, email),
-    onSuccess: (_, { teamId }) => {
-      // Invalidate and refetch members list
-      queryClient.invalidateQueries({
-        queryKey: KEYS.MEMBERS(workspace, teamId),
-      });
+    onSuccess: (newMember, { teamId }) => {
+      const membersKey = KEYS.MEMBERS(workspace, teamId);
+
+      queryClient.cancelQueries({ queryKey: membersKey });
+      queryClient.setQueryData<Member[]>(
+        membersKey,
+        (old) => [newMember, ...(old ?? [])],
+      );
     },
   });
 };
@@ -52,11 +59,15 @@ export const useRemoveTeamMember = () => {
   return useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: number; memberId: number }) =>
       removeTeamMember(teamId, memberId),
-    onSuccess: (_, { teamId }) => {
-      // Invalidate and refetch members list
-      queryClient.invalidateQueries({
-        queryKey: KEYS.MEMBERS(workspace, teamId),
-      });
+    onSuccess: (_, { teamId, memberId }) => {
+      const membersKey = KEYS.MEMBERS(workspace, teamId);
+
+      queryClient.cancelQueries({ queryKey: membersKey });
+      queryClient.setQueryData<Member[]>(
+        membersKey,
+        (old) => old?.filter((member) => member.id !== memberId) ?? [],
+      );
     },
   });
 };
+

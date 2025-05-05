@@ -2,15 +2,6 @@ import { z } from "zod";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
 
-const MemberSchema = z.object({
-  user_id: z.string(),
-  admin: z.boolean().optional(),
-  activity: z.array(z.any()).optional(),
-  created_at: z.string().optional(),
-  deleted_at: z.string().optional(),
-  stripe_customer_id: z.string().optional(),
-});
-
 // Helper function to check if user is admin of a team
 async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
   const { data: teamMember, error } = await c

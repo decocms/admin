@@ -64,7 +64,7 @@ AgentHeader.UI = () => {
       <div className="flex items-center gap-2 py-1">
         <DockedToggleButton
           id="chat"
-          title="Settings"
+          title="Test agent"
           variant="outline"
         >
           <Icon name="chat_bubble" />

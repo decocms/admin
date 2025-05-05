@@ -52,7 +52,7 @@ export const AgentSchema = z.object({
       /** Name of the view */
       name: z.string().describe("Name of the view"),
       /** Url input JSON Schema */
-      urlInputSchema: z.record(z.string(), z.unknown()).optional().describe(
+      urlInputSchema: z.record(z.string(), z.any()).optional().describe(
         "Url input JSON Schema ",
       ),
     }),

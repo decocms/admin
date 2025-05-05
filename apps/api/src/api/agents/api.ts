@@ -151,3 +151,23 @@ export const deleteAgent = createApiHandler({
     return true;
   },
 });
+
+export const listAgentViews = createApiHandler({
+  name: "AGENTS_LIST_VIEWS",
+  description: "List agent views",
+  schema: z.object({ id: z.string().describe("Agent id") }),
+  handler: async ({ id }, c) => {
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+
+    await assertUserHasAccessToWorkspace(root, slug, c);
+
+    const { data } = await c.get("db")
+      .from("deco_chat_agents")
+      .select("views")
+      .eq("id", id)
+      .maybeSingle();
+
+    return data?.views;
+  },
+});

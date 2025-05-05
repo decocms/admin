@@ -1,7 +1,6 @@
 import { useUpdateThreadMessages } from "@deco/sdk";
 import { useCallback } from "react";
-import { useNavigate } from "react-router";
-import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 
 interface AgentNavigationOptions {
   message?: string;
@@ -14,8 +13,7 @@ const getChatPath = (agentId: string, threadId: string): string =>
   `/chat/${agentId}/${threadId}`;
 
 export const useEditAgent = () => {
-  const navigate = useNavigate();
-  const withBasePath = useBasePath();
+  const navigateWorkspace = useNavigateWorkspace();
   const updateMessages = useUpdateThreadMessages();
   return useCallback(
     (agentId: string, threadId?: string, options?: AgentNavigationOptions) => {
@@ -24,7 +22,7 @@ export const useEditAgent = () => {
         updateMessages(agentId, threadId ?? agentId);
       }
 
-      const pathname = withBasePath(getEditAgentPath(agentId, threadId));
+      const pathname = getEditAgentPath(agentId, threadId);
       // Add query parameters if options are provided
       let url = pathname;
       const searchParams = new URLSearchParams();
@@ -39,15 +37,14 @@ export const useEditAgent = () => {
       }
 
       // Navigate to the agent page
-      navigate(url);
+      navigateWorkspace(url);
     },
-    [navigate, withBasePath, history, updateMessages],
+    [navigateWorkspace, updateMessages],
   );
 };
 
 export const useFocusChat = () => {
-  const navigate = useNavigate();
-  const withBasePath = useBasePath();
+  const navigateWorkspace = useNavigateWorkspace();
   const updateMessages = useUpdateThreadMessages();
 
   const navigateToAgent = useCallback(
@@ -57,7 +54,7 @@ export const useFocusChat = () => {
         updateMessages(agentId, threadId);
       }
 
-      const pathname = withBasePath(getChatPath(agentId, threadId));
+      const pathname = getChatPath(agentId, threadId);
       // Add query parameters if options are provided
       let url = pathname;
       const searchParams = new URLSearchParams();
@@ -72,9 +69,9 @@ export const useFocusChat = () => {
       }
 
       // Navigate to the agent page
-      navigate(url);
+      navigateWorkspace(url);
     },
-    [withBasePath, navigate, history, updateMessages],
+    [navigateWorkspace, updateMessages],
   );
 
   return navigateToAgent;

@@ -19,9 +19,8 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type ChangeEvent, type MouseEvent, useReducer } from "react";
-import { useNavigate } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { useBasePath } from "../../../hooks/useBasePath.ts";
+import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { IntegrationPage } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
@@ -134,8 +133,7 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 export default function InstalledIntegrations() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const withBasePath = useBasePath();
-  const navigate = useNavigate();
+  const navigateWorkspace = useNavigateWorkspace();
   const { mutateAsync: removeIntegration } = useRemoveIntegration();
   const { filter, deleteDialogOpen, integrationToDelete, deleting } = state;
 
@@ -151,7 +149,7 @@ export default function InstalledIntegrations() {
 
   // Function to handle configuring/editing an existing integration
   const handleConfigure = (integration: Integration) => {
-    navigate(withBasePath(`/integration/${integration.id}`));
+    navigateWorkspace(`/integration/${integration.id}`);
   };
 
   // Function to handle delete confirmation
@@ -222,8 +220,7 @@ export default function InstalledIntegrations() {
               description="Connect services to expand what your agents can do."
               buttonProps={{
                 children: "Connect an integration",
-                onClick: () =>
-                  navigate(withBasePath("/integrations/marketplace")),
+                onClick: () => navigateWorkspace("/integrations/marketplace"),
               }}
             />
           )

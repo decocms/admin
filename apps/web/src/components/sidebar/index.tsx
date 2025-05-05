@@ -16,7 +16,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { ReactNode, Suspense } from "react";
 import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { groupThreadsByDate, Thread } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
@@ -169,9 +169,9 @@ function PrefetchAgents() {
 }
 
 export function AppSidebar() {
-  const withBasePath = useBasePath();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const workspaceLink = useWorkspaceLink();
 
   const handleStaticItemClick = (title: string) => {
     trackEvent("sidebar_navigation_click", {
@@ -197,7 +197,7 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
                   {STATIC_ITEMS.map((item) => {
-                    const href = withBasePath(item.url);
+                    const href = workspaceLink(item.url);
 
                     return (
                       <SidebarMenuItem key={item.title}>

@@ -8,7 +8,8 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
@@ -46,14 +47,16 @@ const TABS = {
 };
 
 function Header() {
+  const navigateWorkspace = useNavigateWorkspace();
   return (
     <>
       <div>
-        <Button asChild variant="ghost" onClick={() => {}}>
-          <Link to="/integrations">
-            <Icon name="arrow_back" />
-            Back
-          </Link>
+        <Button
+          variant="ghost"
+          onClick={() => navigateWorkspace("/integrations")}
+        >
+          <Icon name="arrow_back" />
+          Back
         </Button>
       </div>
 

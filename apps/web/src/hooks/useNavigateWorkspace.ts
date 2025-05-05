@@ -1,19 +1,30 @@
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router";
 
+const joinPaths = (base: string | undefined, path: string) => {
+  const withoutStartingSlash = path.startsWith("/") ? path.slice(1) : path;
+  return `/${base ?? ""}/${withoutStartingSlash}`;
+};
+
 export const useNavigateWorkspace = () => {
   const navigate = useNavigate();
   const { teamSlug } = useParams();
 
   const navigateWorkspace = useCallback(
-    (path: string) => {
-      const base = teamSlug ? `${teamSlug}` : "";
-      const withoutStartingSlash = path.startsWith("/") ? path.slice(1) : path;
-
-      navigate(`/${base}/${withoutStartingSlash}`);
-    },
+    (path: string) => navigate(joinPaths(teamSlug, path)),
     [navigate, teamSlug],
   );
 
   return navigateWorkspace;
+};
+
+export const useWorkspaceLink = () => {
+  const { teamSlug } = useParams();
+
+  const getLinkFor = useCallback(
+    (path: string) => joinPaths(teamSlug, path),
+    [teamSlug],
+  );
+
+  return getLinkFor;
 };

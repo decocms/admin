@@ -41,7 +41,6 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { format } from "date-fns";
 import { Suspense, useMemo, useState } from "react";
-import { useParams } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 
@@ -71,11 +70,7 @@ function AuditListErrorFallback() {
   );
 }
 
-interface AuditListContentProps {
-  teamSlug?: string;
-}
-
-function AuditListContent({ teamSlug }: AuditListContentProps) {
+function AuditListContent() {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   );
@@ -344,8 +339,6 @@ function AuditListContent({ teamSlug }: AuditListContentProps) {
 }
 
 function AuditList() {
-  const { teamSlug } = useParams();
-
   return (
     <div className="flex flex-col gap-6 w-full px-6 py-10 h-full">
       <div className="text-slate-700 text-2xl">
@@ -359,7 +352,7 @@ function AuditList() {
             </div>
           }
         >
-          <AuditListContent teamSlug={teamSlug} />
+          <AuditListContent />
         </Suspense>
       </ErrorBoundary>
     </div>

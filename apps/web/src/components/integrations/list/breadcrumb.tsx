@@ -18,8 +18,11 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ReactNode, useState } from "react";
-import { Link, useMatch, useNavigate } from "react-router";
-import { useBasePath } from "../../../hooks/useBasePath.ts";
+import { Link, useMatch } from "react-router";
+import {
+  useNavigateWorkspace,
+  useWorkspaceLink,
+} from "../../../hooks/useNavigateWorkspace.ts";
 import { PageLayout } from "../../pageLayout.tsx";
 
 function BreadcrumbItem({
@@ -50,9 +53,9 @@ function BreadcrumbItem({
 }
 
 export function IntegrationPage({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
-  const withBasePath = useBasePath();
-  const connected = useMatch({ path: "/integrations" });
+  const navigateWorkspace = useNavigateWorkspace();
+  const workspaceLink = useWorkspaceLink();
+  const connected = useMatch({ path: `:teamSlug?/integrations` });
   const [error, setError] = useState<string | null>(null);
 
   const create = useCreateIntegration();
@@ -64,7 +67,7 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
     try {
       const result = await create.mutateAsync({});
       updateThreadMessages(WELL_KNOWN_AGENT_IDS.setupAgent, result.id);
-      navigate(withBasePath(`/integration/${result.id}`));
+      navigateWorkspace(`/integration/${result.id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create integration",
@@ -86,14 +89,14 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
                   count={installedIntegrations?.filter((integration) =>
                     integration.connection.type !== "INNATE"
                   ).length ?? 0}
-                  to={withBasePath("/integrations")}
+                  to={workspaceLink("/integrations")}
                 />
 
                 <BreadcrumbItem
                   active={!connected}
                   label="All"
                   count={marketplaceIntegrations?.integrations.length ?? 0}
-                  to={withBasePath("/integrations/marketplace")}
+                  to={workspaceLink("/integrations/marketplace")}
                 />
               </div>
             </div>

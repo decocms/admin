@@ -61,6 +61,7 @@ export const listThreads = createApiHandler({
   schema: z.object({
     limit: z.number().min(1).max(10).default(10),
     agentId: z.string().optional(),
+    resourceId: z.string().optional(),
     orderBy: z.enum([
       "createdAt_desc",
       "createdAt_asc",
@@ -69,7 +70,7 @@ export const listThreads = createApiHandler({
     ]).default("createdAt_desc"),
     cursor: z.string().optional(),
   }),
-  handler: async ({ limit, agentId, orderBy, cursor }, c) => {
+  handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
     const root = c.req.param("root");
     const slug = c.req.param("slug");
@@ -95,6 +96,11 @@ export const listThreads = createApiHandler({
     if (agentId) {
       whereClauses.push("json_extract(metadata, '$.agentId') = ?");
       args.push(agentId);
+    }
+
+    if (resourceId) {
+      whereClauses.push("resourceId = ?");
+      args.push(resourceId);
     }
 
     if (cursor) {

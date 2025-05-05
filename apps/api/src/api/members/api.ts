@@ -72,9 +72,11 @@ export const addTeamMember = createApiHandler({
     await verifyTeamAdmin(c, teamId, user.id);
 
     // TODO: add flow to invite user that is not present in system.
-    const { data: profile } = await c.get("db").from("profiles").select("user_id").eq("email", email).single();
+    const { data: profile } = await c.get("db").from("profiles").select(
+      "user_id",
+    ).eq("email", email).single();
 
-    if(!profile) {
+    if (!profile) {
       throw new Error("Email not found");
     }
 

@@ -24,12 +24,11 @@ export function AddTriggerModal({ agentId }: { agentId: string }) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
-          className="flex items-center justify-center rounded-full border border-slate-200 bg-white hover:bg-slate-100 transition-colors"
+          variant="special"
           title="Add Trigger"
         >
-          <Icon name="add" className="text-muted-foreground" />
+          <Icon name="add" />
+          Create trigger
         </Button>
       </DialogTrigger>
       <DialogContent>

@@ -1,4 +1,4 @@
-import { type Trigger, useDeleteTrigger } from "@deco/sdk";
+import { type Trigger } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import cronstrue from "cronstrue";
@@ -10,14 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-} from "@deco/ui/components/dialog.tsx";
 import { useState } from "react";
+import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
 
 export function TriggerCard({ trigger, onClick, agentId }: {
   trigger: Trigger;
@@ -108,7 +102,7 @@ function TriggerActions({ trigger, agentId }: {
             className="text-red-500"
             onClick={() => setOpen(true)}
           >
-            Delete Trigger
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -121,38 +115,3 @@ function TriggerActions({ trigger, agentId }: {
     </>
   );
 }
-
-const DeleteTriggerModal = (
-  { trigger, agentId, open, onOpenChange }: {
-    trigger: Trigger;
-    agentId: string;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-  },
-) => {
-  const { mutate: deleteTrigger } = useDeleteTrigger(agentId);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>Delete Trigger</DialogHeader>
-        <DialogDescription>
-          Are you sure you want to delete this trigger?
-        </DialogDescription>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              deleteTrigger(trigger.id);
-              onOpenChange(false);
-            }}
-          >
-            Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};

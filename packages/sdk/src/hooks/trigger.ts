@@ -74,6 +74,7 @@ export function useDeleteTrigger(agentId: string) {
     mutationFn: (triggerId: string) =>
       deleteTrigger(workspace, agentId, triggerId),
     onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["triggers"] });
       client.invalidateQueries({ queryKey: ["triggers", agentId] });
     },
   });

@@ -112,11 +112,13 @@ function TriggerTableRow(
 ) {
   const [open, setOpen] = useState(false);
   return (
-    <TableRow
-      onClick={() => onTriggerClick?.(trigger)}
-      className="cursor-pointer hover:bg-slate-50"
-    >
-      <TableCell className="px-4">{trigger.title}</TableCell>
+    <TableRow className="cursor-pointer hover:bg-slate-50">
+      <TableCell
+        onClick={() => onTriggerClick?.(trigger)}
+        className="px-4"
+      >
+        {trigger.title}
+      </TableCell>
       <TableCell>
         {trigger.type === "webhook"
           ? (

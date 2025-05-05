@@ -1,8 +1,8 @@
 import { fetchAPI } from "../fetcher.ts";
 
-export const listThreads = async (context: string, signal?: AbortSignal) => {
+export const listThreads = async (workspace: string, signal?: AbortSignal) => {
   const response = await fetchAPI({
-    segments: [context, "threads"],
+    segments: [workspace, "threads"],
     signal,
   });
 

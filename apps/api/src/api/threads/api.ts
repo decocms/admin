@@ -59,7 +59,7 @@ export const listThreads = createApiHandler({
   description:
     "List all threads in a workspace with cursor-based pagination and filtering",
   schema: z.object({
-    limit: z.number().min(1).max(10).default(10),
+    limit: z.number().min(1).max(20).default(10),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
     orderBy: z.enum([

@@ -1,0 +1,369 @@
+import { useAgents, useAuditEvents } from "@deco/sdk";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@deco/ui/components/avatar.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@deco/ui/components/pagination.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@deco/ui/components/table.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { format } from "date-fns";
+import { Suspense, useMemo, useState } from "react";
+import { useParams } from "react-router";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+
+type AuditOrderBy =
+  | "createdAt_desc"
+  | "createdAt_asc"
+  | "updatedAt_desc"
+  | "updatedAt_asc";
+
+const SORT_OPTIONS: { value: AuditOrderBy; label: string }[] = [
+  { value: "createdAt_desc", label: "Newest" },
+  { value: "createdAt_asc", label: "Oldest" },
+  { value: "updatedAt_desc", label: "Recently Updated" },
+  { value: "updatedAt_asc", label: "Least Recently Updated" },
+];
+
+const limit = 11;
+
+function AuditListErrorFallback() {
+  return (
+    <Alert variant="destructive" className="my-8">
+      <AlertTitle>Error loading audit events</AlertTitle>
+      <AlertDescription>
+        Something went wrong while loading the audit events.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+interface AuditListContentProps {
+  teamSlug?: string;
+}
+
+function AuditListContent({ teamSlug }: AuditListContentProps) {
+  const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
+    undefined,
+  );
+  const [sort, setSort] = useState<AuditOrderBy>(SORT_OPTIONS[0].value);
+  // Cursor-based pagination state
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
+    undefined,
+  );
+  const [prevCursors, setPrevCursors] = useState<string[]>([]);
+  const navigate = useNavigateWorkspace();
+
+  // Fetch agents for filter dropdown
+  const { data: agents } = useAgents();
+
+  // Memoize agent map for fast lookup
+  const agentMap = useMemo(() => {
+    if (!agents) return {};
+    return Object.fromEntries(agents.map((a) => [a.id, a]));
+  }, [agents]);
+
+  // Fetch audit events
+  const { data: auditData } = useAuditEvents({
+    agentId: selectedAgent,
+    orderBy: sort,
+    cursor: currentCursor,
+    limit,
+  });
+
+  // Pagination logic
+  const threads = auditData?.threads ?? [];
+  const pagination = auditData?.pagination;
+
+  // Handlers
+  function handleAgentChange(value: string) {
+    setSelectedAgent(value === "all" ? undefined : value);
+    setCurrentCursor(undefined);
+    setPrevCursors([]);
+  }
+  function handleNextPage() {
+    if (pagination?.hasMore && pagination?.nextCursor) {
+      setPrevCursors((prev) => [...prev, currentCursor ?? ""]);
+      setCurrentCursor(pagination.nextCursor);
+    }
+  }
+  function handlePrevPage() {
+    if (prevCursors.length > 0) {
+      const newPrevCursors = [...prevCursors];
+      const prevCursor = newPrevCursors.pop();
+      setPrevCursors(newPrevCursors);
+      setCurrentCursor(
+        prevCursor && prevCursor.length > 0 ? prevCursor : undefined,
+      );
+    }
+  }
+
+  // Empty state
+  if (!threads.length) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <span className="text-lg font-medium">No audit events found</span>
+      </div>
+    );
+  }
+
+  // Table columns: Updated, Created, Agent, Resource, Thread name
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="flex flex-col gap-2 min-w-[180px]">
+          <Label htmlFor="agent-select">Agent</Label>
+          <Select
+            value={selectedAgent ?? "all"}
+            onValueChange={handleAgentChange}
+          >
+            <SelectTrigger id="agent-select" className="w-full">
+              <SelectValue placeholder="All agents" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All agents</SelectItem>
+              {agents?.map((agent) => (
+                <SelectItem key={agent.id} value={agent.id}>
+                  {agent.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {/* Table */}
+      <Table>
+        <TableHeader>
+          <tr>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => {
+                setSort((prev) =>
+                  prev === "updatedAt_desc" ? "updatedAt_asc" : "updatedAt_desc"
+                );
+                setCurrentCursor(undefined);
+                setPrevCursors([]);
+              }}
+            >
+              <span className="inline-flex items-center gap-1">
+                Last updated
+                <Icon
+                  name="arrow_drop_down"
+                  className={`transition-transform ${
+                    sort.startsWith("updatedAt")
+                      ? "text-primary opacity-100"
+                      : "opacity-0"
+                  }`}
+                  style={{
+                    transform: sort === "updatedAt_asc"
+                      ? "rotate(180deg)"
+                      : undefined,
+                  }}
+                  size={18}
+                />
+              </span>
+            </TableHead>
+            <TableHead
+              className="cursor-pointer select-none"
+              onClick={() => {
+                setSort((prev) =>
+                  prev === "createdAt_desc" ? "createdAt_asc" : "createdAt_desc"
+                );
+                setCurrentCursor(undefined);
+                setPrevCursors([]);
+              }}
+            >
+              <span className="inline-flex items-center gap-1">
+                Created at
+                <Icon
+                  name="arrow_drop_down"
+                  className={`transition-transform ${
+                    sort.startsWith("createdAt")
+                      ? "text-primary opacity-100"
+                      : "opacity-0"
+                  }`}
+                  style={{
+                    transform: sort === "createdAt_asc"
+                      ? "rotate(180deg)"
+                      : undefined,
+                  }}
+                  size={18}
+                />
+              </span>
+            </TableHead>
+            <TableHead className="max-w-[150px]">Agent</TableHead>
+            <TableHead>Resource</TableHead>
+            <TableHead className="max-w-xs">Thread name</TableHead>
+          </tr>
+        </TableHeader>
+        <TableBody>
+          {threads.map((thread) => {
+            const agent = agentMap[thread.metadata.agentId];
+            return (
+              <TableRow
+                key={thread.id}
+                className="cursor-pointer hover:bg-accent/40 transition-colors"
+                onClick={() => {
+                  navigate(`/audit/${thread.id}`);
+                }}
+              >
+                <TableCell>
+                  <div className="flex flex-col items-start text-left leading-tight">
+                    <span className="text-xs font-medium text-slate-800">
+                      {format(new Date(thread.updatedAt), "MMM dd, yyyy")}
+                    </span>
+                    <span className="text-xs font-normal text-slate-500">
+                      {format(new Date(thread.updatedAt), "HH:mm:ss")}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-col items-start text-left leading-tight">
+                    <span className="text-xs font-medium text-slate-800">
+                      {format(new Date(thread.createdAt), "MMM dd, yyyy")}
+                    </span>
+                    <span className="text-xs font-normal text-slate-500">
+                      {format(new Date(thread.createdAt), "HH:mm:ss")}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="max-w-[150px]">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2">
+                        <Avatar>
+                          <AvatarImage src={agent?.avatar} alt={agent?.name} />
+                          <AvatarFallback>
+                            {agent?.name?.[0] ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate max-w-[90px] cursor-help block">
+                          {agent?.name ?? thread.metadata.agentId}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {agent?.name ?? thread.metadata.agentId}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>{thread.resourceId}</TableCell>
+                <TableCell className="max-w-xs truncate">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="truncate block cursor-help">
+                        {thread.title}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="whitespace-pre-line break-words max-w-xs">
+                      {thread.title}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {/* Pagination */}
+      <div className="flex justify-center mt-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (prevCursors.length > 0) handlePrevPage();
+                }}
+                aria-disabled={prevCursors.length === 0}
+                tabIndex={prevCursors.length === 0 ? -1 : 0}
+                className={prevCursors.length === 0
+                  ? "opacity-50 pointer-events-none"
+                  : ""}
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <span className="px-3 py-1 text-sm text-muted-foreground select-none">
+                Page {prevCursors.length + 1}
+              </span>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (pagination?.hasMore) handleNextPage();
+                }}
+                aria-disabled={!pagination?.hasMore}
+                tabIndex={!pagination?.hasMore ? -1 : 0}
+                className={!pagination?.hasMore
+                  ? "opacity-50 pointer-events-none"
+                  : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    </div>
+  );
+}
+
+function AuditList() {
+  const { teamSlug } = useParams();
+
+  return (
+    <div className="flex flex-col gap-6 w-full px-6 py-10 h-full">
+      <div className="text-slate-700 text-2xl">
+        Audit
+      </div>
+      <ErrorBoundary fallback={<AuditListErrorFallback />}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center h-64">
+              <Spinner />
+            </div>
+          }
+        >
+          <AuditListContent teamSlug={teamSlug} />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
+}
+
+export default AuditList;

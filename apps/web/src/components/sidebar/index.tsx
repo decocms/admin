@@ -42,6 +42,11 @@ const STATIC_ITEMS = [
     title: "Triggers",
     icon: "conversion_path",
   },
+  {
+    url: "/audits",
+    title: "Audit Logs",
+    icon: "quick_reference_all",
+  },
 ];
 
 const WithActive = (

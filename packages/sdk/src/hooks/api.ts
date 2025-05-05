@@ -1,3 +1,4 @@
+import { Options } from "../crud/audit.ts";
 import type { FileSystemOptions, Workspace } from "../index.ts";
 
 export const KEYS = {
@@ -27,4 +28,17 @@ export const KEYS = {
     workspace: Workspace,
     teamId?: number,
   ) => ["members", workspace, teamId],
+  AUDITS: (workspace: Workspace, options: Options) => [
+    "audit",
+    workspace,
+    options.agentId,
+    options.orderBy,
+    options.cursor,
+    options.limit,
+  ],
+  AUDIT: (workspace: Workspace, threadId: string) => [
+    "audit",
+    workspace,
+    threadId,
+  ],
 };

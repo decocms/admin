@@ -20,6 +20,7 @@
     "@tiptap/extension-placeholder": "^2.11.7",
     "@tiptap/react": "^2.11.7",
     "@tiptap/starter-kit": "^2.11.7",
+    "date-fns": "^4.1.0",
     "dockview-react": "^4.2.1",
     "gsap": "^3.12.7",
     "marked": "^15.0.7",

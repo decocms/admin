@@ -77,6 +77,14 @@ const Wallet = lazy(
   () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
 );
 
+const AuditList = lazy(
+  () => wrapWithUILoadingFallback(import("./components/audit/list.tsx")),
+);
+
+const AuditDetail = lazy(
+  () => wrapWithUILoadingFallback(import("./components/audit/detail.tsx")),
+);
+
 const MagicLink = lazy(() =>
   wrapWithUILoadingFallback(import("./components/login/magicLink.tsx"))
 );
@@ -190,6 +198,14 @@ function Router() {
         <Route
           path="triggers"
           element={<ListTriggers />}
+        />
+        <Route
+          path="audits"
+          element={<AuditList />}
+        />
+        <Route
+          path="audit/:id"
+          element={<AuditDetail />}
         />
       </Route>
 

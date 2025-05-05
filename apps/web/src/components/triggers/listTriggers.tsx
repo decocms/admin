@@ -55,6 +55,7 @@ export function ListTriggers() {
           <TriggerCard
             key={`real-${index}`}
             trigger={trigger}
+            agentId={agentId}
             onClick={(trigger) => setSelectedTrigger(trigger)}
           />
         ))}

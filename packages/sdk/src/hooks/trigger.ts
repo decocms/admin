@@ -7,6 +7,7 @@ import {
 import {
   createTrigger,
   CreateTriggerInput,
+  deleteTrigger,
   listRuns,
   type ListRunsResult,
   listTriggers,
@@ -51,6 +52,18 @@ export function useCreateTrigger(agentId: string) {
   return useMutation({
     mutationFn: (trigger: CreateTriggerInput) =>
       createTrigger(workspace, agentId, trigger),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["triggers", agentId] });
+    },
+  });
+}
+
+export function useDeleteTrigger(agentId: string) {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (triggerId: string) =>
+      deleteTrigger(workspace, agentId, triggerId),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["triggers", agentId] });
     },

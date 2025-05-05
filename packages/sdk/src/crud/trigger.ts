@@ -99,6 +99,23 @@ export const createTrigger = async (
   throw new Error("Failed to create trigger");
 };
 
+export const deleteTrigger = async (
+  context: string,
+  agentId: string,
+  triggerId: string,
+) => {
+  const response = await fetchAPI(
+    toPath([context, "agent", agentId, "action", triggerId]),
+    {
+      method: "DELETE",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to delete trigger");
+  }
+};
+
 export const PromptSchema = z.object({
   threadId: z.string().optional().describe(
     "if not provided, the same conversation thread will be used, you can pass any string you want to use",

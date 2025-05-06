@@ -15,7 +15,7 @@ import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { Suspense, useState } from "react";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useTeams } from "@deco/sdk";
+import { useTeam, useTeams } from "@deco/sdk";
 
 interface Team {
   avatarURL: string | undefined;
@@ -74,9 +74,12 @@ function useUserTeams() {
   return teamsWithoutCurrentTeam;
 }
 
-function CurrentTeamDropdownTrigger() {
+function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
   const { open } = useSidebar();
-  const { avatarURL, label } = useCurrentTeam();
+  const { avatarURL, label, isPersonalTeam } = useCurrentTeam();
+  const teamName = (isPersonalTeam && !fallback)
+    ? null
+    : useTeam(label).data.name;
 
   return (
     <ResponsiveDropdownTrigger asChild>
@@ -95,7 +98,7 @@ function CurrentTeamDropdownTrigger() {
           className="w-6 h-6"
         />
         <span className="text-xs truncate ml-2">
-          {label}
+          {teamName || label}
         </span>
         <Icon name="unfold_more" className="text-xs ml-1" size={16} />
       </Button>
@@ -105,19 +108,23 @@ function CurrentTeamDropdownTrigger() {
 
 function CurrentTeamDropdownOptions() {
   const buildWorkspaceLink = useWorkspaceLink();
-  const { avatarURL, url, label } = useCurrentTeam();
+  const { avatarURL, url, label, isPersonalTeam } = useCurrentTeam();
+  const teamName = isPersonalTeam ? null : useTeam(label).data.name;
 
   return (
     <>
       <ResponsiveDropdownItem asChild>
-        <Link to={url} className="w-full flex items-center gap-4 cursor-pointer">
+        <Link
+          to={url}
+          className="w-full flex items-center gap-4 cursor-pointer"
+        >
           <Avatar
             className="rounded-full w-6 h-6"
             url={avatarURL}
             fallback={label}
           />
           <span className="md:text-xs flex-grow justify-self-start">
-            {label}
+            {teamName || label}
           </span>
         </Link>
       </ResponsiveDropdownItem>
@@ -148,6 +155,14 @@ function CurrentTeamDropdownOptions() {
     </>
   );
 }
+
+CurrentTeamDropdownOptions.Skeleton = () => (
+  <div className="flex flex-col gap-2 h-36 overflow-y-auto">
+    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
+    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
+    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
+  </div>
+);
 
 function SwitchTeam() {
   const availableTeamsToSwitch = useUserTeams();
@@ -267,9 +282,13 @@ function SwitchTeam() {
 export function TeamSelector() {
   return (
     <ResponsiveDropdown>
-      <CurrentTeamDropdownTrigger />
+      <Suspense fallback={<CurrentTeamDropdownTrigger fallback />}>
+        <CurrentTeamDropdownTrigger />
+      </Suspense>
       <ResponsiveDropdownContent align="start">
-        <CurrentTeamDropdownOptions />
+        <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
+          <CurrentTeamDropdownOptions />
+        </Suspense>
         <ResponsiveDropdownSeparator />
         <Suspense fallback={<div>Loading...</div>}>
           <SwitchTeam />

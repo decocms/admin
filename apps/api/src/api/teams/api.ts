@@ -3,12 +3,12 @@ import { createApiHandler } from "../../utils/context.ts";
 
 export const getTeam = createApiHandler({
   name: "TEAMS_GET",
-  description: "Get a team by id",
+  description: "Get a team by slug",
   schema: z.object({
-    teamId: z.number(),
+    slug: z.string(),
   }),
   handler: async (props, c) => {
-    const { teamId } = props;
+    const { slug } = props;
     const user = c.get("user");
 
     const { data, error } = await c
@@ -22,7 +22,7 @@ export const getTeam = createApiHandler({
           admin
         )
       `)
-      .eq("id", teamId)
+      .eq("slug", slug)
       .eq("members.user_id", user.id)
       .single();
 

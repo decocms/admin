@@ -29,7 +29,7 @@ export const getTeam = async (
   slug: string,
   init?: RequestInit,
 ): Promise<Team> => {
-  const response = await callToolFor("", "TEAM_GET", { slug }, init);
+  const response = await callToolFor("", "TEAMS_GET", { slug }, init);
 
   if (!response.ok) {
     throw new Error("Failed to fetch team");

@@ -3,7 +3,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { format } from "date-fns";
 import { useParams } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
@@ -26,7 +25,6 @@ const useThreadId = () => {
 
 function Header() {
   const id = useThreadId();
-  const navigate = useNavigateWorkspace();
   const {
     data: {
       createdAt,

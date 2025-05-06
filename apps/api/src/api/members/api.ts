@@ -49,13 +49,13 @@ const mapMember = (
 // Helper function to check if user is admin of a team.
 // Admin is the first user from the team
 async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
+  // TODO: implement Roles & Permission
   const { data: teamMember, error } = await getTeamAdmin(c, teamId);
 
   if (error) throw error;
-  if (!teamMember) {
+  if (!teamMember || teamMember.user_id === userId) {
     throw new Error("User does not have admin access to this team");
   }
-  return teamMember.user_id === userId;
 }
 
 export const getTeamMembers = createApiHandler({

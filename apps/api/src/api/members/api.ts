@@ -117,6 +117,16 @@ export const addTeamMember = createApiHandler({
       throw new Error("Email not found");
     }
 
+    const { data: alreadyMember, error: alreadyMemberError } = await c.get("db")
+      .from("members")
+      .select(
+        "id",
+      ).eq("team_id", teamId).eq("user_id", profile.user_id).maybeSingle();
+
+    if (alreadyMember || alreadyMemberError) {
+      throw new Error(`User with email ${email} belongs to the team`);
+    }
+
     const { data, error } = await c
       .get("db")
       .from("members")

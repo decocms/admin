@@ -57,16 +57,37 @@ interface MembersViewProps {
   teamId: number;
 }
 
+function MemberTitle() {
+  return (
+    <div className="flex items-center justify-between">
+      <h2 className="text-2xl">Members</h2>
+    </div>
+  );
+}
+
+function MemberTableHeader(
+  { onChange, disabled }: {
+    disabled?: boolean;
+    onChange: (value: string) => void;
+  },
+) {
+  return (
+    <div className="">
+      <Input
+        placeholder="Search"
+        onChange={(e) => onChange(e.currentTarget.value)}
+        className="w-80"
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
 function MembersViewLoading() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Team Members</h2>
-        <Button variant="default" size="icon" disabled>
-          <span className="sr-only">Add member</span>
-          <Icon name="add" />
-        </Button>
-      </div>
+      <MemberTitle />
+      <MemberTableHeader disabled onChange={() => {}} />
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">Loading members...</span>
@@ -105,7 +126,7 @@ function AddTeamMemberButton({ teamId }: { teamId: number }) {
     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
-          <span className="sr-only">Add member</span>
+          <span className="sr-only">close add member dialog</span>
           <Icon name="add" />
         </Button>
       </DialogTrigger>
@@ -176,7 +197,9 @@ function MembersViewContent({ teamId }: MembersViewProps) {
     () =>
       deferredQuery
         ? members.filter((member) =>
-          member.profiles.name.toLowerCase().includes(deferredQuery) ||
+          member.profiles.metadata.full_name.toLowerCase().includes(
+            deferredQuery,
+          ) ||
           member.profiles.email.toLowerCase().includes(deferredQuery)
         )
         : members,
@@ -202,13 +225,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="">
-          <Input
-            placeholder="Search"
-            onChange={(e) => setQuery(e.currentTarget.value)}
-            className="w-80"
-          />
-        </div>
+        <MemberTableHeader onChange={setQuery} />
         <Table>
           <TableHeader>
             <TableRow>
@@ -236,14 +253,14 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                         <span>
                           <Avatar
                             url="todo"
-                            fallback={member.profiles.name}
+                            fallback={member.profiles.metadata.full_name}
                             className="w-8 h-8"
                           />
                         </span>
 
                         <span className="flex flex-col gap-1 w-80">
                           <span className="font-semibold text-xs truncate">
-                            {member.profiles.name || "N/A"}
+                            {member.profiles.metadata.full_name || "N/A"}
                           </span>
                           <span className="text-[10px] leading-3.5 text-slate-500 truncate">
                             {member.profiles.email || "N/A"}

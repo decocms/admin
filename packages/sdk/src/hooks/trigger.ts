@@ -62,6 +62,7 @@ export function useCreateTrigger(agentId: string) {
     mutationFn: (trigger: CreateTriggerInput) =>
       createTrigger(workspace, agentId, trigger),
     onSuccess: () => {
+      client.invalidateQueries({ queryKey: ["triggers"] });
       client.invalidateQueries({ queryKey: ["triggers", agentId] });
     },
   });

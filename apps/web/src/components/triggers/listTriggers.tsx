@@ -7,6 +7,7 @@ import { useState } from "react";
 import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
+import { AddTriggerModal } from "./AddTriggerModal.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 type SortKey = typeof SORTABLE_KEYS[number];
@@ -107,6 +108,7 @@ export function ListTriggers() {
                 : "text-slate-500"}
             />
           </Button>
+          <AddTriggerModal />
         </div>
       </div>
       {viewMode === "table"

@@ -1,4 +1,5 @@
 import type { Agent } from "@deco/sdk";
+import { DEFAULT_REASONING_MODEL } from "@deco/sdk";
 
 /**
  * TODO: something is weird with the tools set here.
@@ -12,7 +13,7 @@ export const WELL_KNOWN_AGENTS: Record<string, Agent> = {
     avatar:
       "https://assets.decocache.com/webdraw/b010a0b9-d576-4d57-9c3a-b86aee1eca1f/explorer.jpeg",
     description: "I can help you with anything you need.",
-    model: "google:gemini-2.5-pro-preview-03-25",
+    model: DEFAULT_REASONING_MODEL,
     tools_set: {
       DECO_AGENTS: [
         "DECO_AGENTS_CREATE",
@@ -68,7 +69,7 @@ export const WELL_KNOWN_AGENTS: Record<string, Agent> = {
     name: "Integration configurator",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you setting up this integration.",
-    model: "google:gemini-2.5-pro-preview-03-25",
+    model: DEFAULT_REASONING_MODEL,
     tools_set: {
       DECO_INTEGRATIONS: [
         "DECO_INTEGRATIONS_SEARCH",
@@ -92,7 +93,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description:
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
-  model: "google:gemini-2.5-pro-preview-03-25",
+  model: DEFAULT_REASONING_MODEL,
   tools_set: {
     DECO_AGENTS: [
       "DECO_AGENTS_CONFIGURATION",

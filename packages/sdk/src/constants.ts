@@ -60,7 +60,7 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
-export const DEFAULT_REASONING_MODEL = "google:gemini-2.5-pro-preview-03-25";
+export const DEFAULT_REASONING_MODEL = "anthropic:claude-3.7-sonnet:thinking";
 
 type Capability =
   | "reasoning"
@@ -70,17 +70,17 @@ type Capability =
 
 export const MODELS: Model[] = [
   {
-    id: "google:gemini-2.5-pro-preview-03-25",
-    name: "Google Gemini 2.5 Pro",
-    logo: LOGOS.google,
-    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
-  },
-  {
     id: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude 3.7 Sonnet",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
+  },
+  {
+    id: "google:gemini-2.5-pro-preview-03-25",
+    name: "Google Gemini 2.5 Pro",
+    logo: LOGOS.google,
+    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
   },
   {
     id: "openai:gpt-4.1",

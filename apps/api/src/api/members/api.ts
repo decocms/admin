@@ -13,6 +13,37 @@ const getTeamAdmin = async (c: AppContext, teamId: number) =>
     .limit(1)
     .single();
 
+export const updateActivityLog = async (c: AppContext, {
+  teamId,
+  userId,
+  action,
+}: {
+  teamId: number;
+  userId: string;
+  action: "add_member" | "remove_member";
+}) => {
+  const currentTimestamp = new Date().toISOString();
+  const { data } = await c.get("db")
+    .from("members")
+    .select("activity")
+    .eq("user_id", userId)
+    .eq("team_id", teamId)
+    .single();
+
+  const activityLog = data?.activity || [];
+
+  return await c.get("db")
+    .from("members")
+    .update({
+      activity: [...activityLog, {
+        action,
+        timestamp: currentTimestamp,
+      }],
+    })
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+};
+
 const transformMetadata = (metadata: Record<string, string>) => {
   return {
     avatar_url: metadata.avatar_url,
@@ -183,6 +214,12 @@ export const addTeamMember = createApiHandler({
       `)
       .single();
 
+    await updateActivityLog(c, {
+      teamId,
+      userId: profile.user_id,
+      action: "add_member",
+    });
+
     if (error) throw error;
     return mapMember(data);
   },
@@ -209,9 +246,10 @@ export const updateTeamMember = createApiHandler({
     const { data: member, error: memberError } = await c
       .get("db")
       .from("members")
-      .select("*")
+      .select("id")
       .eq("id", memberId)
       .eq("team_id", teamId)
+      .is("deleted_at", null)
       .single();
 
     if (memberError) throw memberError;
@@ -252,9 +290,10 @@ export const removeTeamMember = createApiHandler({
     const { data: member, error: memberError } = await c
       .get("db")
       .from("members")
-      .select("*")
+      .select("id, admin, user_id")
       .eq("id", memberId)
       .eq("team_id", teamId)
+      .is("deleted_at", null)
       .single();
 
     if (memberError) throw memberError;
@@ -278,12 +317,21 @@ export const removeTeamMember = createApiHandler({
       }
     }
 
+    const currentTimestamp = new Date();
     const { error } = await c
       .get("db")
       .from("members")
-      .delete()
-      .eq("id", memberId)
-      .eq("team_id", teamId);
+      .update({
+        deleted_at: currentTimestamp.toISOString(),
+      })
+      .eq("team_id", teamId)
+      .eq("user_id", member.user_id!);
+
+    await updateActivityLog(c, {
+      teamId,
+      userId: member.user_id!,
+      action: "remove_member",
+    });
 
     if (error) throw error;
     return { success: true };

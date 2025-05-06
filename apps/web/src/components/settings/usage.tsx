@@ -1,5 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@deco/ui/components/card.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
 import { Progress } from "@deco/ui/components/progress.tsx";
 import { useState } from "react";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
@@ -12,7 +22,7 @@ export default function UsageSettings() {
   return (
     <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="usage" />
-      
+
       <div className="py-6 flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Usage</h1>
@@ -21,7 +31,10 @@ export default function UsageSettings() {
           </p>
         </div>
 
-        <Tabs value={period} onValueChange={(value) => setPeriod(value as UsagePeriod)}>
+        <Tabs
+          value={period}
+          onValueChange={(value) => setPeriod(value as UsagePeriod)}
+        >
           <TabsList className="mb-6">
             <TabsTrigger value="current">Current Month</TabsTrigger>
             <TabsTrigger value="last-month">Last Month</TabsTrigger>
@@ -56,7 +69,9 @@ export default function UsageSettings() {
               </CardHeader>
               <CardContent>
                 <div className="h-80 flex items-center justify-center border border-dashed rounded-md">
-                  <p className="text-muted-foreground">Usage chart will be displayed here</p>
+                  <p className="text-muted-foreground">
+                    Usage chart will be displayed here
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -125,7 +140,7 @@ function UsageCard({
   unit: string;
 }) {
   const percentage = Math.min(100, Math.round((used / limit) * 100));
-  
+
   return (
     <Card>
       <CardHeader>
@@ -137,7 +152,7 @@ function UsageCard({
           <div className="flex justify-between text-sm">
             <div>
               <span className="font-medium">{used}</span>
-              <span className="text-muted-foreground"> used</span>
+              <span className="text-muted-foreground">used</span>
             </div>
             <div className="text-muted-foreground">
               {used} / {limit} {unit}
@@ -147,4 +162,4 @@ function UsageCard({
       </CardContent>
     </Card>
   );
-} 
+}

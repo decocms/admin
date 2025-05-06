@@ -33,8 +33,9 @@ function BaseLayout({
       </SDKProvider>
     </SidebarProvider>
   );
-
 }
 
 export const WorkspaceLayout = () => <BaseLayout sidebar={<AppSidebar />} />;
-export const WorkspaceSettingsLayout = () => <BaseLayout sidebar={<SettingsSidebar />} />;
+export const WorkspaceSettingsLayout = () => (
+  <BaseLayout sidebar={<SettingsSidebar />} />
+);

@@ -42,7 +42,13 @@ export const SETTINGS_ITEMS = [
   },
 ] as const;
 
-export type SettingsPage = (typeof SETTINGS_ITEMS)[number]['title'] | 'general' | 'members' | 'billing' | 'usage' | 'audit';
+export type SettingsPage =
+  | (typeof SETTINGS_ITEMS)[number]["title"]
+  | "general"
+  | "members"
+  | "billing"
+  | "usage"
+  | "audit";
 
 const WithActive = (
   { children, ...props }: {
@@ -87,7 +93,7 @@ export function SettingsSidebar() {
                 </Link>
               </SidebarMenuButton>
             </div>
-            
+
             <div className="md:hidden w-full flex justify-between items-center gap-2">
               <div className="flex-1">
                 <SidebarMenuButton asChild>
@@ -155,4 +161,4 @@ export function SettingsSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-} 
+}

@@ -10,7 +10,9 @@ import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 export default function GeneralSettings() {
   const { teamSlug } = useParams();
   const user = useUser();
-  const [workspaceName, setWorkspaceName] = useState(teamSlug || user?.metadata?.full_name || "");
+  const [workspaceName, setWorkspaceName] = useState(
+    teamSlug || user?.metadata?.full_name || "",
+  );
   const [notifications, setNotifications] = useState(true);
 
   const handleSave = () => {
@@ -21,7 +23,7 @@ export default function GeneralSettings() {
   return (
     <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="general" />
-      
+
       <div className="py-6 flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Settings</h1>
@@ -29,7 +31,7 @@ export default function GeneralSettings() {
             Manage your workspace settings and preferences
           </p>
         </div>
-        
+
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
             <div>
@@ -38,7 +40,7 @@ export default function GeneralSettings() {
                 Configure your workspace identity and preferences.
               </p>
             </div>
-            
+
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="workspace-name">Workspace Name</Label>
@@ -59,12 +61,12 @@ export default function GeneralSettings() {
                 Configure your notification preferences.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-2">
-              <Switch 
-                id="notifications" 
-                checked={notifications} 
-                onCheckedChange={setNotifications} 
+              <Switch
+                id="notifications"
+                checked={notifications}
+                onCheckedChange={setNotifications}
               />
               <Label htmlFor="notifications">Enable email notifications</Label>
             </div>
@@ -79,4 +81,4 @@ export default function GeneralSettings() {
       </div>
     </div>
   );
-} 
+}

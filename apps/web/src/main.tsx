@@ -15,7 +15,10 @@ import {
 import { About } from "./components/about/index.tsx";
 import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
-import { WorkspaceLayout, WorkspaceSettingsLayout } from "./components/layout.tsx";
+import {
+  WorkspaceLayout,
+  WorkspaceSettingsLayout,
+} from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
@@ -91,23 +94,23 @@ const MagicLink = lazy(() =>
 );
 
 const GeneralSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/general.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/general.tsx"))
 );
 
 const MembersSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/members.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/members.tsx"))
 );
 
 const BillingSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/billing.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/billing.tsx"))
 );
 
 const UsageSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/usage.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/usage.tsx"))
 );
 
 const AuditSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/audit.tsx")),
+  wrapWithUILoadingFallback(import("./components/settings/audit.tsx"))
 );
 
 function NotFound() {

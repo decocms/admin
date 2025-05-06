@@ -1,5 +1,11 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 
@@ -7,7 +13,7 @@ export default function BillingSettings() {
   return (
     <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="billing" />
-      
+
       <div className="py-6 flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Billing</h1>
@@ -57,7 +63,11 @@ export default function BillingSettings() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center justify-center h-40 border border-dashed rounded-md">
-                <Icon name="credit_card" size={36} className="mb-2 text-muted-foreground" />
+                <Icon
+                  name="credit_card"
+                  size={36}
+                  className="mb-2 text-muted-foreground"
+                />
                 <p className="text-muted-foreground">No payment method added</p>
               </div>
             </CardContent>
@@ -73,13 +83,22 @@ export default function BillingSettings() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center h-40 text-center">
-              <Icon name="receipt_long" size={36} className="mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">No billing history available</p>
-              <p className="text-sm text-muted-foreground">Your invoice history will appear here once you upgrade to a paid plan</p>
+              <Icon
+                name="receipt_long"
+                size={36}
+                className="mb-2 text-muted-foreground"
+              />
+              <p className="text-muted-foreground">
+                No billing history available
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Your invoice history will appear here once you upgrade to a paid
+                plan
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-} 
+}

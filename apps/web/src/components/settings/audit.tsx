@@ -1,7 +1,18 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent, CardHeader, CardTitle } from "@deco/ui/components/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@deco/ui/components/card.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@deco/ui/components/select.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
@@ -75,7 +86,7 @@ export default function AuditSettings() {
     if (filterType !== "all" && log.type !== filterType) {
       return false;
     }
-    
+
     // Filter by search query if not empty
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -86,14 +97,14 @@ export default function AuditSettings() {
         log.details.toLowerCase().includes(query)
       );
     }
-    
+
     return true;
   });
 
   return (
     <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="audit" />
-      
+
       <div className="py-6 flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Audit Log</h1>
@@ -117,7 +128,11 @@ export default function AuditSettings() {
                 />
               </div>
               <div className="w-40">
-                <Select value={filterType} onValueChange={(value) => setFilterType(value as AuditLogType)}>
+                <Select
+                  value={filterType}
+                  onValueChange={(value) =>
+                    setFilterType(value as AuditLogType)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by type" />
                   </SelectTrigger>
@@ -135,40 +150,48 @@ export default function AuditSettings() {
               </Button>
             </div>
 
-            {filteredLogs.length > 0 ? (
-              <div className="border rounded-md">
-                <div className="grid grid-cols-5 gap-4 p-4 font-medium border-b">
-                  <div>User</div>
-                  <div>Action</div>
-                  <div>Resource</div>
-                  <div>Details</div>
-                  <div>Timestamp</div>
-                </div>
-
-                {filteredLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="grid grid-cols-5 gap-4 p-4 items-center border-b last:border-0"
-                  >
-                    <div className="truncate">{log.user}</div>
-                    <div>{log.action}</div>
-                    <div>{log.resource}</div>
-                    <div className="truncate">{log.details}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </div>
+            {filteredLogs.length > 0
+              ? (
+                <div className="border rounded-md">
+                  <div className="grid grid-cols-5 gap-4 p-4 font-medium border-b">
+                    <div>User</div>
+                    <div>Action</div>
+                    <div>Resource</div>
+                    <div>Details</div>
+                    <div>Timestamp</div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-40 text-center">
-                <Icon name="search_off" size={36} className="mb-2 text-muted-foreground" />
-                <p className="text-muted-foreground">No matching logs found</p>
-              </div>
-            )}
+
+                  {filteredLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="grid grid-cols-5 gap-4 p-4 items-center border-b last:border-0"
+                    >
+                      <div className="truncate">{log.user}</div>
+                      <div>{log.action}</div>
+                      <div>{log.resource}</div>
+                      <div className="truncate">{log.details}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+              : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <Icon
+                    name="search_off"
+                    size={36}
+                    className="mb-2 text-muted-foreground"
+                  />
+                  <p className="text-muted-foreground">
+                    No matching logs found
+                  </p>
+                </div>
+              )}
           </CardContent>
         </Card>
       </div>
     </div>
   );
-} 
+}

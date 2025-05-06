@@ -68,7 +68,9 @@ function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
     avatarURL,
     url,
     label,
-    isBlacklisted: isPersonalTeam ? userTeam.isBlacklisted : emailDomainTeam.isBlacklisted,
+    isBlacklisted: isPersonalTeam
+      ? userTeam.isBlacklisted
+      : emailDomainTeam.isBlacklisted,
     isPersonalTeam,
   };
 }
@@ -81,9 +83,7 @@ function useUserTeams() {
   const emailDomainTeam = useEmailDomainTeam();
   const { isPersonalTeam: isCurrentTeamPersonal } = useCurrentTeam();
 
-  return isCurrentTeamPersonal
-    ? [emailDomainTeam]
-    : [personalTeam];
+  return isCurrentTeamPersonal ? [emailDomainTeam] : [personalTeam];
 }
 
 function CurrentTeamDropdownTrigger() {
@@ -165,9 +165,9 @@ function SwitchTeam() {
   const availableTeamsToSwitch = useUserTeams();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  
+
   const filteredTeams = availableTeamsToSwitch
-    .filter(team => 
+    .filter((team) =>
       team.label.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .slice(0, 3); // Limit to 3 teams
@@ -196,16 +196,16 @@ function SwitchTeam() {
         <span className="md:text-[10px] text-xs font-medium">
           Switch team
         </span>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="h-6 w-6"
           onClick={toggleSearch}
         >
           <Icon name="search" size={16} />
         </Button>
       </div>
-      
+
       {showSearch && (
         <div className="p-2 hidden md:block">
           <Input
@@ -219,28 +219,34 @@ function SwitchTeam() {
           />
         </div>
       )}
-      
-      {filteredTeams.length > 0 ? (
-        filteredTeams.map((team) => (
-          <ResponsiveDropdownItem asChild key={team.url}>
-            <Link
-              to={team.url}
-              className="flex items-center gap-4 cursor-pointer"
-            >
-              <Avatar className="w-6 h-6" url={team.avatarURL} fallback={team.label} />
-              <span className="md:text-xs">
-                {team.label}
-              </span>
-            </Link>
-          </ResponsiveDropdownItem>
-        ))
-      ) : (
-        <div className="text-xs text-center py-2 text-muted-foreground">
-          No teams found
-        </div>
-      )}
 
-       {showSearch && (
+      {filteredTeams.length > 0
+        ? (
+          filteredTeams.map((team) => (
+            <ResponsiveDropdownItem asChild key={team.url}>
+              <Link
+                to={team.url}
+                className="flex items-center gap-4 cursor-pointer"
+              >
+                <Avatar
+                  className="w-6 h-6"
+                  url={team.avatarURL}
+                  fallback={team.label}
+                />
+                <span className="md:text-xs">
+                  {team.label}
+                </span>
+              </Link>
+            </ResponsiveDropdownItem>
+          ))
+        )
+        : (
+          <div className="text-xs text-center py-2 text-muted-foreground">
+            No teams found
+          </div>
+        )}
+
+      {showSearch && (
         <div className="p-2 md:hidden">
           <Input
             placeholder="Search teams..."
@@ -253,7 +259,7 @@ function SwitchTeam() {
           />
         </div>
       )}
-      
+
       <ResponsiveDropdownItem
         className="gap-4 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
         aria-disabled

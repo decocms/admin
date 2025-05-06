@@ -38,7 +38,7 @@ export default function MembersSettings() {
   return (
     <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="members" />
-      
+
       <div className="py-6 flex flex-col gap-6">
         <div>
           <h1 className="text-2xl font-semibold">Members</h1>
@@ -94,4 +94,4 @@ export default function MembersSettings() {
       </div>
     </div>
   );
-} 
+}

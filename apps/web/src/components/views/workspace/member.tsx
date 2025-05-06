@@ -133,9 +133,6 @@ function AddTeamMemberButton({ teamId }: { teamId: number }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Team Member</DialogTitle>
-          <DialogDescription>
-            Enter their email.
-          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

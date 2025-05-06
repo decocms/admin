@@ -40,6 +40,7 @@ import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
+import { useParams } from "react-router";
 
 type AuditOrderBy =
   | "createdAt_desc"

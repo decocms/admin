@@ -1,4 +1,4 @@
-import { Options } from "../crud/audit.ts";
+import { Options } from "../crud/thread.ts";
 import type { FileSystemOptions, Workspace } from "../index.ts";
 
 export const KEYS = {
@@ -34,6 +34,7 @@ export const KEYS = {
     options.orderBy,
     options.cursor,
     options.limit,
+    options.resourceId,
   ],
   TEAMS: () => ["teams"],
 };

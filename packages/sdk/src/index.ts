@@ -7,6 +7,7 @@ export * from "./crud/user.ts";
 export * from "./crud/wallet.ts";
 export * from "./crud/trigger.ts";
 export * from "./crud/members.ts";
+export * from "./crud/thread.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/fs.ts";

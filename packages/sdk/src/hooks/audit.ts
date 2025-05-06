@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import type { Options } from "../crud/audit.ts";
-import { listAuditEvents } from "../crud/audit.ts";
+import { listThreads, type Options } from "../crud/thread.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
@@ -9,6 +8,6 @@ export const useAuditEvents = (options: Options = {}) => {
 
   return useSuspenseQuery({
     queryKey: KEYS.AUDITS(workspace, options),
-    queryFn: ({ signal }) => listAuditEvents(workspace, options, { signal }),
+    queryFn: ({ signal }) => listThreads(workspace, options, { signal }),
   });
 };

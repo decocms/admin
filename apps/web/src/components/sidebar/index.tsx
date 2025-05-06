@@ -1,4 +1,4 @@
-import { useAgents, useIntegrations, useThreads } from "@deco/sdk";
+import { Thread, useAgents, useIntegrations, useThreads } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -16,8 +16,9 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { ReactNode, Suspense } from "react";
 import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { groupThreadsByDate, Thread } from "../threads/index.tsx";
+import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 
@@ -113,8 +114,9 @@ function SidebarThreadsSkeleton() {
 }
 
 function SidebarThreads() {
-  const { data: threads } = useThreads();
-  const groupedThreads = groupThreadsByDate(threads);
+  const user = useUser();
+  const { data } = useThreads(user?.id ?? "");
+  const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (
     <>

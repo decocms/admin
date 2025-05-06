@@ -54,12 +54,17 @@ export const useAgentThreads = (agentId: string) => {
 };
 
 /** Hook for fetching all threads for the user */
-export const useThreads = () => {
+export const useThreads = (userId: string) => {
   const { workspace } = useSDK();
 
   return useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace),
-    queryFn: ({ signal }) => listThreads(workspace, signal),
+    queryKey: KEYS.THREADS(workspace, userId),
+    queryFn: ({ signal }) =>
+      listThreads(workspace, {
+        resourceId: userId,
+        orderBy: "createdAt_desc",
+        limit: 20,
+      }, { signal }),
   });
 };
 

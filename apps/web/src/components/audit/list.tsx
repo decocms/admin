@@ -1,4 +1,4 @@
-import { useAgents, useAuditEvents } from "@deco/sdk";
+import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
 import {
   Alert,
   AlertDescription,
@@ -40,6 +40,7 @@ import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { AgentInfo, UserInfo } from "./common.tsx";
+import { useParams } from "react-router";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -71,6 +72,9 @@ function AuditListContent() {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   );
+  const [selectedUser, setSelectedUser] = useState<string | undefined>(
+    undefined,
+  );
   const [sort, setSort] = useState<AuditOrderBy>(SORT_OPTIONS[0].value);
   // Cursor-based pagination state
   const [currentCursor, setCurrentCursor] = useState<string | undefined>(
@@ -82,9 +86,24 @@ function AuditListContent() {
   // Fetch agents for filter dropdown
   const { data: agents } = useAgents();
 
+  // Get teamId from teams and params
+  const params = useParams();
+  const { data: teams } = useTeams();
+  const resolvedTeamSlug = params.teamSlug;
+  const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
+  const members = teamId !== null ? useTeamMembers(teamId).data : [];
+
+  // Sort members by name (or fallback to email or user_id)
+  const sortedMembers = [...(members ?? [])].sort((a, b) => {
+    const nameA = a.profiles?.metadata?.full_name || a.profiles?.email || a.user_id;
+    const nameB = b.profiles?.metadata?.full_name || b.profiles?.email || b.user_id;
+    return nameA.localeCompare(nameB);
+  });
+
   // Fetch audit events
   const { data: auditData } = useAuditEvents({
     agentId: selectedAgent,
+    resourceId: selectedUser,
     orderBy: sort,
     cursor: currentCursor,
     limit,
@@ -97,6 +116,11 @@ function AuditListContent() {
   // Handlers
   function handleAgentChange(value: string) {
     setSelectedAgent(value === "all" ? undefined : value);
+    setCurrentCursor(undefined);
+    setPrevCursors([]);
+  }
+  function handleUserChange(value: string) {
+    setSelectedUser(value === "all" ? undefined : value);
     setCurrentCursor(undefined);
     setPrevCursors([]);
   }
@@ -138,6 +162,34 @@ function AuditListContent() {
                   {agent.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2 min-w-[180px]">
+          <Label htmlFor="user-select">Used by</Label>
+          <Select
+            value={selectedUser ?? "all"}
+            onValueChange={handleUserChange}
+          >
+            <SelectTrigger id="user-select" className="w-full">
+              <SelectValue placeholder="All users" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All users</SelectItem>
+              {sortedMembers.map((member) => {
+                const name = member.profiles?.metadata?.full_name || member.profiles?.email || member.user_id;
+                const email = member.profiles?.email;
+                return (
+                  <SelectItem key={member.user_id} value={member.user_id}>
+                    <span>
+                      {name}
+                      {email && email !== name && (
+                        <span className="ml-2 text-xs text-slate-400">{email}</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

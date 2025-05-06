@@ -1,16 +1,7 @@
-import { useAgentThreads } from "@deco/sdk";
+import { type Thread, useAgentThreads } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
-
-export interface Thread {
-  id: string;
-  resourceId: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  metadata: Record<string, string>;
-}
 
 interface GroupedThreads {
   today: Thread[];

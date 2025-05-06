@@ -85,7 +85,13 @@ function JsonSchemaInput({ value, onChange }: {
 
 type WebhookTriggerFormType = z.infer<typeof webhookTriggerSchema>;
 
-export function WebhookTriggerForm({ agentId }: { agentId: string }) {
+export function WebhookTriggerForm({
+  agentId,
+  onSuccess,
+}: {
+  agentId: string;
+  onSuccess?: () => void;
+}) {
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
   const form = useForm<WebhookTriggerFormType>({
@@ -127,6 +133,7 @@ export function WebhookTriggerForm({ agentId }: { agentId: string }) {
       {
         onSuccess: () => {
           form.reset();
+          onSuccess?.();
         },
         onError: (error: Error) => {
           form.setError("root", {

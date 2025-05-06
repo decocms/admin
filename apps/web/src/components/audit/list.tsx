@@ -95,8 +95,10 @@ function AuditListContent() {
 
   // Sort members by name (or fallback to email or user_id)
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
-    const nameA = a.profiles?.metadata?.full_name || a.profiles?.email || a.user_id;
-    const nameB = b.profiles?.metadata?.full_name || b.profiles?.email || b.user_id;
+    const nameA = a.profiles?.metadata?.full_name || a.profiles?.email ||
+      a.user_id;
+    const nameB = b.profiles?.metadata?.full_name || b.profiles?.email ||
+      b.user_id;
     return nameA.localeCompare(nameB);
   });
 
@@ -177,14 +179,17 @@ function AuditListContent() {
             <SelectContent>
               <SelectItem value="all">All users</SelectItem>
               {sortedMembers.map((member) => {
-                const name = member.profiles?.metadata?.full_name || member.profiles?.email || member.user_id;
+                const name = member.profiles?.metadata?.full_name ||
+                  member.profiles?.email || member.user_id;
                 const email = member.profiles?.email;
                 return (
                   <SelectItem key={member.user_id} value={member.user_id}>
                     <span>
                       {name}
                       {email && email !== name && (
-                        <span className="ml-2 text-xs text-slate-400">{email}</span>
+                        <span className="ml-2 text-xs text-slate-400">
+                          {email}
+                        </span>
                       )}
                     </span>
                   </SelectItem>

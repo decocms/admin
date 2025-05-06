@@ -83,8 +83,10 @@ function UserInfo({
   // Data source for avatar and name/email
   const avatarUrl = isCurrentUser
     ? user.metadata.avatar_url
-    : member?.profiles?.metadata?.raw_user_meta_data?.avatar_url;
-  const name = isCurrentUser ? user.metadata.full_name : member?.profiles?.name;
+    : member?.profiles?.metadata?.avatar_url;
+  const name = isCurrentUser
+    ? user.metadata.full_name
+    : member?.profiles?.metadata?.full_name;
   const email = isCurrentUser ? user.email : member?.profiles?.email;
 
   return (
@@ -94,10 +96,7 @@ function UserInfo({
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
           <Avatar>
-            <AvatarImage
-              src={avatarUrl}
-              alt={name}
-            />
+            <AvatarImage src={avatarUrl} alt={name} />
             <AvatarFallback>
               {name?.[0] ?? "?"}
             </AvatarFallback>

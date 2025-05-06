@@ -34,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { format } from "date-fns";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
@@ -152,74 +153,84 @@ function AuditListContent() {
           <>
             {/* Table */}
             <Table>
-              <TableHeader>
-                <tr>
-                  <TableHead
-                    className="select-none max-w-[100px]"
-                    onClick={() => {
-                      setSort((prev) =>
-                        prev === "updatedAt_desc"
-                          ? "updatedAt_asc"
-                          : "updatedAt_desc"
-                      );
-                      setCurrentCursor(undefined);
-                      setPrevCursors([]);
-                    }}
-                  >
-                    <span className="inline-flex items-center gap-1">
+              <TableHeader className="[&>*:first-child]:border-b-0 mb-2">
+                <TableRow className="hover:bg-transparent h-14">
+                  <TableHead className="px-4 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10 rounded-l-full">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 cursor-pointer select-none"
+                      onClick={() => {
+                        setSort((prev) =>
+                          prev === "updatedAt_desc"
+                            ? "updatedAt_asc"
+                            : "updatedAt_desc"
+                        );
+                        setCurrentCursor(undefined);
+                        setPrevCursors([]);
+                      }}
+                    >
                       Last updated
                       <Icon
-                        name="arrow_drop_down"
-                        className={`transition-transform ${
+                        name="arrow_upward"
+                        size={16}
+                        className={cn(
+                          "transition-transform",
                           sort.startsWith("updatedAt")
-                            ? "text-primary opacity-100"
-                            : "opacity-0"
-                        }`}
+                            ? "text-slate-700"
+                            : "text-slate-300",
+                        )}
                         style={{
                           transform: sort === "updatedAt_asc"
                             ? "rotate(180deg)"
                             : undefined,
                         }}
-                        size={18}
                       />
-                    </span>
+                    </button>
                   </TableHead>
-                  <TableHead
-                    className="select-none max-w-[100px]"
-                    onClick={() => {
-                      setSort((prev) =>
-                        prev === "createdAt_desc"
-                          ? "createdAt_asc"
-                          : "createdAt_desc"
-                      );
-                      setCurrentCursor(undefined);
-                      setPrevCursors([]);
-                    }}
-                  >
-                    <span className="inline-flex items-center gap-1">
+                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 cursor-pointer select-none"
+                      onClick={() => {
+                        setSort((prev) =>
+                          prev === "createdAt_desc"
+                            ? "createdAt_asc"
+                            : "createdAt_desc"
+                        );
+                        setCurrentCursor(undefined);
+                        setPrevCursors([]);
+                      }}
+                    >
                       Created at
                       <Icon
-                        name="arrow_drop_down"
-                        className={`transition-transform ${
+                        name="arrow_upward"
+                        size={16}
+                        className={cn(
+                          "transition-transform",
                           sort.startsWith("createdAt")
-                            ? "text-primary opacity-100"
-                            : "opacity-0"
-                        }`}
+                            ? "text-slate-700"
+                            : "text-slate-300",
+                        )}
                         style={{
                           transform: sort === "createdAt_asc"
                             ? "rotate(180deg)"
                             : undefined,
                         }}
-                        size={18}
                       />
-                    </span>
+                    </button>
                   </TableHead>
-                  <TableHead className="max-w-[125px]">Agent</TableHead>
-                  <TableHead className="max-w-[125px]">Used by</TableHead>
-                  <TableHead className="max-w-xs">Thread name</TableHead>
-                </tr>
+                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
+                    Agent
+                  </TableHead>
+                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
+                    Used by
+                  </TableHead>
+                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10 rounded-r-full">
+                    Thread name
+                  </TableHead>
+                </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&>*:first-child]:border-t-0">
                 {threads.map((thread) => {
                   return (
                     <TableRow

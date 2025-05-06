@@ -1,27 +1,36 @@
 import { z } from "zod";
 import { assertHasUser } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
-import { enrichUser } from "../../user/index.ts";
+import { userFromDatabase } from "../../utils/user.ts";
 
 export const getProfile = createApiHandler({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
   schema: z.object({}),
-  handler: (_, c) => {
+  handler: async (_, c) => {
     const user = c.get("user");
 
     assertHasUser(c);
 
     // TODO: change profile data to have necessary info
-    // const { data } = await c.get("db")
-    // .from("profiles")
-    // .select("*")
-    // .eq("user_id", user.id)
-    // .single();
+    const { data, error } = await c.get("db")
+      .from("profiles")
+      .select(`
+        id,
+        user_id,
+        name,
+        email,
+        metadata:users_meta_data_view(id, raw_user_meta_data)
+      `)
+      .eq("user_id", user.id)
+      .single();
 
-    const enrichedUser = enrichUser(user);
+    if (error) {
+      throw new Error(error.message);
+    }
 
-    return enrichedUser;
+    // @ts-expect-error - Supabase user metadata is not typed
+    return userFromDatabase(data);
   },
 });
 

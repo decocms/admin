@@ -39,7 +39,7 @@ function Header() {
   return (
     <div className="flex justify-between items-center gap-2 w-full">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={() => navigate("/settings/audit")}>
+        <Button variant="ghost" onClick={() => globalThis.history.back()}>
           <Icon name="arrow_back" />
           Back
         </Button>
@@ -84,10 +84,11 @@ function Header() {
 
 function AuditDetail() {
   const id = useThreadId();
+  const { data: thread } = useThreadMessages(id);
 
   return (
     <ChatProvider
-      agentId={id}
+      agentId={thread?.metadata?.agentId ?? id}
       threadId={id}
       uiOptions={{ showEditAgent: false }}
     >

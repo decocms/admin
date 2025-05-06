@@ -6,6 +6,7 @@ import { WebhookDetails } from "./webhookDetails.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { useParams } from "react-router";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { AuditListContent } from "../audit/list.tsx";
 
 export function TriggerDetails(
   { triggerId: _triggerId, onBack, agentId: _agentId }: {
@@ -67,6 +68,14 @@ export function TriggerDetails(
 
       {trigger.type === "webhook" && <WebhookDetails trigger={trigger} />}
       {trigger.type === "cron" && <CronDetails trigger={trigger} />}
+
+      <div className="mt-10">
+        <h3 className="text-lg font-semibold mb-2">Logs</h3>
+        <AuditListContent
+          showFilters={false}
+          options={{ resourceId: trigger.id, agentId }}
+        />
+      </div>
     </div>
   );
 }

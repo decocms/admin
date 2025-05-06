@@ -1,11 +1,10 @@
 import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
+import type { Options } from "@deco/sdk";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -13,35 +12,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@deco/ui/components/pagination.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@deco/ui/components/table.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { format } from "date-fns";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
-import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 import { useParams } from "react-router";
 import { SettingsMobileHeader } from "../settings/SettingsMobileHeader.tsx";
+import { AuditFilters } from "./AuditFilters.tsx";
+import { AuditTable } from "./AuditTable.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -69,7 +47,14 @@ function AuditListErrorFallback() {
   );
 }
 
-function AuditListContent() {
+interface AuditListContentProps {
+  showFilters?: boolean;
+  options?: Partial<Options>;
+}
+
+export function AuditListContent(
+  { showFilters = true, options: optionsProp }: AuditListContentProps,
+) {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   );
@@ -85,7 +70,7 @@ function AuditListContent() {
   const navigate = useNavigateWorkspace();
 
   // Fetch agents for filter dropdown
-  const { data: agents } = useAgents();
+  const { data: agents = [] } = useAgents();
 
   // Get teamId from teams and params
   const params = useParams();
@@ -94,22 +79,12 @@ function AuditListContent() {
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
   const members = teamId !== null ? useTeamMembers(teamId).data : [];
 
-  // Sort members by name (or fallback to email or user_id)
-  const sortedMembers = [...(members ?? [])].sort((a, b) => {
-    const nameA = a.profiles?.metadata?.full_name || a.profiles?.email ||
-      a.user_id;
-    const nameB = b.profiles?.metadata?.full_name || b.profiles?.email ||
-      b.user_id;
-    return nameA.localeCompare(nameB);
-  });
-
-  // Fetch audit events
   const { data: auditData } = useAuditEvents({
-    agentId: selectedAgent,
-    resourceId: selectedUser,
-    orderBy: sort,
-    cursor: currentCursor,
-    limit,
+    agentId: optionsProp?.agentId ?? selectedAgent,
+    resourceId: optionsProp?.resourceId ?? selectedUser,
+    orderBy: optionsProp?.orderBy ?? sort,
+    cursor: optionsProp?.cursor ?? currentCursor,
+    limit: optionsProp?.limit ?? limit,
   });
 
   // Pagination logic
@@ -124,6 +99,11 @@ function AuditListContent() {
   }
   function handleUserChange(value: string) {
     setSelectedUser(value === "all" ? undefined : value);
+    setCurrentCursor(undefined);
+    setPrevCursors([]);
+  }
+  function handleSortChange(newSort: string) {
+    setSort(newSort as AuditOrderBy);
     setCurrentCursor(undefined);
     setPrevCursors([]);
   }
@@ -144,64 +124,18 @@ function AuditListContent() {
     }
   }
 
-  // Table columns: Updated, Created, Agent, Resource, Thread name
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex flex-col gap-2 min-w-[180px]">
-          <Label htmlFor="agent-select">Agent</Label>
-          <Select
-            value={selectedAgent ?? "all"}
-            onValueChange={handleAgentChange}
-          >
-            <SelectTrigger id="agent-select" className="w-full">
-              <SelectValue placeholder="All agents" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All agents</SelectItem>
-              {agents?.map((agent) => (
-                <SelectItem key={agent.id} value={agent.id}>
-                  {agent.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {sortedMembers.length > 0 && (
-          <div className="flex flex-col gap-2 min-w-[180px]">
-            <Label htmlFor="user-select">Used by</Label>
-            <Select
-              value={selectedUser ?? "all"}
-              onValueChange={handleUserChange}
-            >
-              <SelectTrigger id="user-select" className="w-full">
-                <SelectValue placeholder="All users" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All users</SelectItem>
-                {sortedMembers.map((member) => {
-                  const name = member.profiles?.metadata?.full_name ||
-                    member.profiles?.email || member.user_id;
-                  const email = member.profiles?.email;
-                  return (
-                    <SelectItem key={member.user_id} value={member.user_id}>
-                      <span>
-                        {name}
-                        {email && email !== name && (
-                          <span className="ml-2 text-xs text-slate-400">
-                            {email}
-                          </span>
-                        )}
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
+      {showFilters && (
+        <AuditFilters
+          agents={agents}
+          members={members}
+          selectedAgent={selectedAgent}
+          selectedUser={selectedUser}
+          onAgentChange={handleAgentChange}
+          onUserChange={handleUserChange}
+        />
+      )}
       {/* Empty state */}
       {!threads.length
         ? (
@@ -211,148 +145,12 @@ function AuditListContent() {
         )
         : (
           <>
-            {/* Table */}
-            <Table>
-              <TableHeader className="[&>*:first-child]:border-b-0 mb-2">
-                <TableRow className="hover:bg-transparent h-14">
-                  <TableHead className="px-4 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10 rounded-l-full">
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 cursor-pointer select-none"
-                      onClick={() => {
-                        setSort((prev) =>
-                          prev === "updatedAt_desc"
-                            ? "updatedAt_asc"
-                            : "updatedAt_desc"
-                        );
-                        setCurrentCursor(undefined);
-                        setPrevCursors([]);
-                      }}
-                    >
-                      Last updated
-                      <Icon
-                        name="arrow_upward"
-                        size={16}
-                        className={cn(
-                          "transition-transform",
-                          sort.startsWith("updatedAt")
-                            ? "text-slate-700"
-                            : "text-slate-300",
-                        )}
-                        style={{
-                          transform: sort === "updatedAt_asc"
-                            ? "rotate(180deg)"
-                            : undefined,
-                        }}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 cursor-pointer select-none"
-                      onClick={() => {
-                        setSort((prev) =>
-                          prev === "createdAt_desc"
-                            ? "createdAt_asc"
-                            : "createdAt_desc"
-                        );
-                        setCurrentCursor(undefined);
-                        setPrevCursors([]);
-                      }}
-                    >
-                      Created at
-                      <Icon
-                        name="arrow_upward"
-                        size={16}
-                        className={cn(
-                          "transition-transform",
-                          sort.startsWith("createdAt")
-                            ? "text-slate-700"
-                            : "text-slate-300",
-                        )}
-                        style={{
-                          transform: sort === "createdAt_asc"
-                            ? "rotate(180deg)"
-                            : undefined,
-                        }}
-                      />
-                    </button>
-                  </TableHead>
-                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
-                    Agent
-                  </TableHead>
-                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
-                    Used by
-                  </TableHead>
-                  <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10 rounded-r-full">
-                    Thread name
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="[&>*:first-child]:border-t-0">
-                {threads.map((thread) => {
-                  return (
-                    <TableRow
-                      key={thread.id}
-                      className="cursor-pointer hover:bg-accent/40 transition-colors"
-                      onClick={() => {
-                        navigate(`/settings/audit/${thread.id}`);
-                      }}
-                    >
-                      <TableCell>
-                        <div className="max-w-[100px]">
-                          <div className="flex flex-col items-start text-left leading-tight">
-                            <span className="font-medium text-slate-800">
-                              {format(
-                                new Date(thread.updatedAt),
-                                "MMM dd, yyyy",
-                              )}
-                            </span>
-                            <span className="font-normal text-slate-500">
-                              {format(new Date(thread.updatedAt), "HH:mm:ss")}
-                            </span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-[100px]">
-                          <div className="flex flex-col items-start text-left leading-tight">
-                            <span className="font-medium text-slate-800">
-                              {format(
-                                new Date(thread.createdAt),
-                                "MMM dd, yyyy",
-                              )}
-                            </span>
-                            <span className="font-normal text-slate-500">
-                              {format(new Date(thread.createdAt), "HH:mm:ss")}
-                            </span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[125px]">
-                        <AgentInfo agentId={thread.metadata.agentId} />
-                      </TableCell>
-                      <TableCell className="max-w-[125px]">
-                        <UserInfo userId={thread.resourceId} />
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="truncate block">
-                              {thread.title}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent className="whitespace-pre-line break-words max-w-xs">
-                            {thread.title}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <AuditTable
+              threads={threads}
+              sort={sort}
+              onSortChange={handleSortChange}
+              onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
+            />
             {/* Pagination */}
             <div className="flex justify-center mt-4">
               <Pagination>

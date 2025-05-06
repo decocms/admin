@@ -25,7 +25,10 @@ export const listTeams = async (
   return data as Team[];
 };
 
-export const getTeam = async (slug: string, init?: RequestInit): Promise<Team> => {
+export const getTeam = async (
+  slug: string,
+  init?: RequestInit,
+): Promise<Team> => {
   const response = await callToolFor("", "TEAM_GET", { slug }, init);
 
   if (!response.ok) {

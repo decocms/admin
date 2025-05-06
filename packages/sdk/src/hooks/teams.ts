@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { listTeams, getTeam } from "../crud/teams.ts";
+import { getTeam, listTeams } from "../crud/teams.ts";
 import { KEYS } from "./api.ts";
 
 export const useTeams = () => {

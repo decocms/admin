@@ -20,13 +20,12 @@ export default function GeneralSettings() {
   return (
     <div className="container h-full max-w-7xl text-slate-700">
       <SettingsMobileHeader currentPage="general" />
-      <div className="p-6 h-full overflow-auto pb-20 md:px-[120px]">
+      <div className="h-full overflow-auto py-20 md:px-[120px]">
         <div className="flex flex-col gap-6 w-full">
           <div className="w-full hidden md:block">
             <h2 className="text-2xl">General</h2>
           </div>
           <div className="max-w-[500px] mx-auto space-y-8">
-            {/* Team Logo and Basic Info */}
             <div className="flex flex-col items-center mb-6">
               <div className="w-24 h-24 rounded-full bg-green-800 flex items-center justify-center mb-4">
                 <Avatar
@@ -37,7 +36,6 @@ export default function GeneralSettings() {
               </div>
             </div>
 
-            {/* Team Information */}
             <div className="p-6 space-y-4 bg-background rounded-lg">
               <div className="space-y-2">
                 <label htmlFor="team-name" className="text-sm font-medium">

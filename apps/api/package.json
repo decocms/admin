@@ -8,17 +8,20 @@
     "dev:wrangler": "wrangler dev --port 3001"
   },
   "dependencies": {
-    "@deco/sdk": "^0.1.1",
+    "@cloudflare/workers-types": "^4.20250506.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
+    "@deco/sdk": "^0.1.1",
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "ai": "^4.3.13",
+    "cloudflare": "^4.2.0",
     "hono": "^4.7.7",
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "supabase": "^2.22.12",
     "wrangler": "^4.13.2"
   },
   "engines": {

@@ -24,9 +24,12 @@ async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
 export const getTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  schema: z.object({ teamId: z.number() }),
+  schema: z.object({
+    teamId: z.number(),
+    withActivity: z.boolean().optional(),
+  }),
   handler: async (props, c) => {
-    const { teamId } = props;
+    const { teamId, withActivity } = props;
     const user = c.get("user");
 
     // First verify the user has access to the team
@@ -55,6 +58,33 @@ export const getTeamMembers = createApiHandler({
       .is("deleted_at", null);
 
     if (error) throw error;
+
+    let activityByUserId: Record<string, string> = {};
+
+    if (withActivity) {
+      const { data: activityData } = await c.get("db").rpc(
+        "get_latest_user_activity",
+        {
+          p_resource: "team",
+          p_key: "id",
+          p_value: `${teamId}`,
+        },
+      ).select("user_id, created_at");
+
+      if (activityData) {
+        activityByUserId = activityData.reduce((res, activity) => {
+          res[activity.user_id] = activity.created_at;
+          return res;
+        }, {} as Record<string, string>);
+      }
+
+      return data.map((member) => ({
+        ...member,
+        // @ts-expect-error - Supabase user metadata is not typed
+        profiles: userFromDatabase(member.profiles),
+        lastActivity: activityByUserId[member.user_id ?? ""],
+      }));
+    }
 
     return data.map((member) => ({
       ...member,

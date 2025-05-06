@@ -1,6 +1,5 @@
 import { Suspense, useDeferredValue, useMemo, useState } from "react";
 import {
-  type Member,
   useAddTeamMember,
   useRemoveTeamMember,
   useTeamMembers,
@@ -30,7 +29,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,7 +36,6 @@ import { z } from "zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -47,6 +44,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 import { Avatar } from "../../common/Avatar.tsx";
+import { timeAgo } from "../../../utils/timeAgo.ts";
 
 // Form validation schema
 const addMemberSchema = z.object({
@@ -72,47 +70,6 @@ function MembersViewLoading() {
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">Loading members...</span>
-      </div>
-    </div>
-  );
-}
-
-function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
-  return (
-    <div className="rounded-md bg-red-50 p-4 my-4">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <svg
-            className="h-5 w-5 text-red-400"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-red-800">
-            Error loading team members
-          </h3>
-          <div className="mt-2 text-sm text-red-700">
-            <p>{error.message || "An unexpected error occurred"}</p>
-          </div>
-          <div className="mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRetry}
-              className="bg-red-50 text-red-800 hover:bg-red-100"
-            >
-              Try again
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -211,7 +168,7 @@ function AddTeamMemberButton({ teamId }: { teamId: number }) {
 }
 
 function MembersViewContent({ teamId }: MembersViewProps) {
-  const { data: members } = useTeamMembers(teamId);
+  const { data: members } = useTeamMembers(teamId, { withActivity: true });
   const removeMemberMutation = useRemoveTeamMember();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -236,11 +193,6 @@ function MembersViewContent({ teamId }: MembersViewProps) {
     } catch (error) {
       console.error("Failed to remove team member:", error);
     }
-  };
-
-  // Format date to a more readable format
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -299,7 +251,11 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                         </span>
                       </span>
                     </TableCell>
-                    <TableCell>fix: {formatDate(member.created_at)}</TableCell>
+                    <TableCell>
+                      {member.lastActivity
+                        ? timeAgo(member.lastActivity)
+                        : "N/A"}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -314,8 +270,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() =>
-                              handleRemoveMember(member.id)}
+                            onClick={() => handleRemoveMember(member.id)}
                             disabled={removeMemberMutation.isPending}
                           >
                             <Icon name="delete" />

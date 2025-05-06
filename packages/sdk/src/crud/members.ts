@@ -7,6 +7,11 @@ export interface Member {
   admin: boolean | null;
   created_at: string;
   profiles: User;
+  lastActivity?: string;
+}
+
+export interface MemberFormData {
+  email: string;
 }
 
 /**
@@ -15,11 +20,12 @@ export interface Member {
  * @returns List of team members
  */
 export const getTeamMembers = async (
-  teamId: number,
+  { teamId, withActivity }: { teamId: number; withActivity?: boolean },
   signal?: AbortSignal,
 ): Promise<Member[]> => {
   const response = await callToolFor("", "TEAM_MEMBERS_GET", {
     teamId,
+    withActivity,
   }, { signal });
 
   if (!response.ok) {

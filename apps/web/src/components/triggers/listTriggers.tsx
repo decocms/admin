@@ -7,7 +7,7 @@ import { useState } from "react";
 import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
-import { AddTriggerModal as AddTriggerModalButton } from "./AddTriggerModal.tsx";
+import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 type SortKey = typeof SORTABLE_KEYS[number];

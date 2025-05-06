@@ -5,14 +5,47 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { TriggerCardList } from "./TriggerCardList.tsx";
-import { TriggerDetails } from "./triggerDetails.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
+import { useNavigate } from "react-router";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 type SortKey = typeof SORTABLE_KEYS[number];
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "cards";
+
+function ListTriggersSkeleton() {
+  return (
+    <div className="mx-8 my-6">
+      <div className="mb-4 flex items-center justify-between">
+        <Skeleton className="w-80 h-10 rounded-full" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-10 h-10 rounded-full" />
+          <Skeleton className="w-10 h-10 rounded-full" />
+          <Skeleton className="w-36 h-10 rounded-full" />
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <div>
+          <div className="flex flex-col divide-y divide-slate-100">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4">
+                <Skeleton className="w-64 h-6 rounded" />
+                <Skeleton className="w-44 h-6 rounded" />
+                <Skeleton className="w-32 h-6 rounded" />
+                <Skeleton className="w-64 h-6 rounded" />
+                <Skeleton className="w-40 h-6 rounded" />
+                <Skeleton className="w-8 h-6 rounded-full ml-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ListTriggers() {
   const { data, isLoading } = useListTriggers();
@@ -20,7 +53,8 @@ export function ListTriggers() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [selectedTrigger, setSelectedTrigger] = useState<Trigger | null>(null);
+  const workspaceLink = useWorkspaceLink();
+  const navigate = useNavigate();
 
   const triggers: Trigger[] = data?.actions || [];
 
@@ -53,18 +87,15 @@ export function ListTriggers() {
     return 0;
   });
 
-  if (selectedTrigger) {
-    return (
-      <TriggerDetails
-        trigger={selectedTrigger}
-        agentId={selectedTrigger.agent?.id || ""}
-        onBack={() => setSelectedTrigger(null)}
-      />
-    );
+  function handleTriggerClick(trigger: Trigger) {
+    if (trigger.agent?.id && trigger.id) {
+      const href = workspaceLink(`/trigger/${trigger.agent.id}/${trigger.id}`);
+      navigate(href);
+    }
   }
 
   if (isLoading) {
-    return <div className="py-12 text-center">Loading...</div>;
+    return <ListTriggersSkeleton />;
   }
 
   return (
@@ -119,14 +150,14 @@ export function ListTriggers() {
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSort={handleSort}
-              onTriggerClick={setSelectedTrigger}
+              onTriggerClick={handleTriggerClick}
             />
           </div>
         )
         : (
           <TriggerCardList
             triggers={sortedTriggers}
-            onTriggerClick={setSelectedTrigger}
+            onTriggerClick={handleTriggerClick}
             className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
           />
         )}

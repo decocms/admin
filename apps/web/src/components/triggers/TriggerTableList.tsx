@@ -7,11 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
@@ -22,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
-import { timeAgo } from "../../utils/timeAgo.ts";
 import cronstrue from "cronstrue";
+import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
+import { format } from "date-fns";
 
 interface TriggerTableListProps {
   triggers: Trigger[];
@@ -97,7 +93,11 @@ function TriggersTableHeader(
             {renderSortIcon("author")}
           </button>
         </TableHead>
-        <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm rounded-r-full w-8 h-10">
+
+        <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10">
+          Created at
+        </TableHead>
+        <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm w-8 h-10 rounded-r-full">
         </TableHead>
       </TableRow>
     </TableHeader>
@@ -113,10 +113,7 @@ function TriggerTableRow(
   const [open, setOpen] = useState(false);
   return (
     <TableRow className="cursor-pointer hover:bg-slate-50">
-      <TableCell
-        onClick={() => onTriggerClick?.(trigger)}
-        className="px-4"
-      >
+      <TableCell className="px-4" onClick={() => onTriggerClick?.(trigger)}>
         {trigger.title}
       </TableCell>
       <TableCell>
@@ -137,56 +134,23 @@ function TriggerTableRow(
           )}
       </TableCell>
       <TableCell>
-        <a
-          href={trigger.agent?.id
-            ? `/agent/${trigger.agent.id}/${trigger.agent.id}`
-            : "#"}
-          className="flex items-center gap-2 group hover:underline focus-visible:underline outline-none"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Avatar className="size-6 rounded-sm">
-            {trigger.agent?.avatar
-              ? (
-                <AvatarImage
-                  src={trigger.agent.avatar}
-                  alt={trigger.agent.name}
-                />
-              )
-              : (
-                <AvatarFallback className="rounded-xl bg-[#E3E0FF]">
-                  {trigger.agent?.name?.[0] || "A"}
-                </AvatarFallback>
-              )}
-          </Avatar>
-          <span className="font-mediu ml-2 align-middle group-hover:underline group-focus-visible:underline">
-            {trigger.agent?.name}
-          </span>
-        </a>
+        <AgentInfo agentId={trigger.agent?.id} />
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <Avatar className="size-6">
-            {trigger.author?.avatar
-              ? (
-                <AvatarImage
-                  src={trigger.author.avatar}
-                  alt={trigger.author.name}
-                />
-              )
-              : (
-                <AvatarFallback>
-                  {trigger.author?.name?.[0] || "U"}
-                </AvatarFallback>
-              )}
-          </Avatar>
-          <span className="font-mediu ml-2 align-middle">
-            {trigger.author?.name}
-          </span>
-          {trigger.createdAt && (
-            <span className="text-xs text-slate-400 ml-1">
-              {timeAgo(trigger.createdAt)}
+          <UserInfo userId={trigger.author?.id} />
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="max-w-[100px]">
+          <div className="flex flex-col items-start text-left leading-tight">
+            <span className="font-medium text-slate-800">
+              {format(new Date(trigger.createdAt || ""), "MMM dd, yyyy")}
             </span>
-          )}
+            <span className="font-normal text-slate-500">
+              {format(new Date(trigger.createdAt || ""), "HH:mm:ss")}
+            </span>
+          </div>
         </div>
       </TableCell>
       <TableCell>

@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { AgentAvatar } from "../common/Avatar.tsx";
+import { AgentAvatar } from "./Avatar.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 
 interface AgentInfoProps {

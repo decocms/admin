@@ -26,7 +26,7 @@ export function AgentTriggers() {
   if (selectedTrigger) {
     return (
       <TriggerDetails
-        trigger={selectedTrigger}
+        triggerId={selectedTrigger.id}
         agentId={agentId}
         onBack={() => setSelectedTrigger(null)}
       />

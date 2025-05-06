@@ -7,7 +7,7 @@ import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
-import { AgentInfo, UserInfo } from "./common.tsx";
+import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 
 const MAIN = {
   header: Header,

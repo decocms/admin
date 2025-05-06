@@ -20,6 +20,7 @@ import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
 import { ListTriggers } from "./components/triggers/listTriggers.tsx";
+import { TriggerDetails } from "./components/triggers/triggerDetails.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -198,6 +199,10 @@ function Router() {
         <Route
           path="triggers"
           element={<ListTriggers />}
+        />
+        <Route
+          path="trigger/:agentId/:triggerId"
+          element={<TriggerDetails />}
         />
         <Route
           path="audits"

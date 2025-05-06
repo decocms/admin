@@ -16,6 +16,7 @@ export interface Trigger {
   prompt?: string;
   passphrase?: string;
   createdAt?: string;
+  updatedAt?: string;
   agent?: Agent;
   author?: {
     id: string;
@@ -28,20 +29,6 @@ export interface ListTriggersResult {
   success: boolean;
   message: string;
   actions?: Trigger[];
-}
-
-export interface Run {
-  id: string;
-  result: Record<string, unknown>;
-  metadata: Record<string, unknown>;
-  timestamp: string;
-  status: string;
-}
-
-export interface ListRunsResult {
-  success: boolean;
-  message: string;
-  runs?: Run[];
 }
 
 const toPath = (segments: string[]) => segments.join("/");
@@ -75,22 +62,6 @@ export const listAllTriggers = async (context: string) => {
   }
 
   throw new Error("Failed to list actions");
-};
-
-export const listRuns = async (
-  context: string,
-  agentId: string,
-  triggerId: string,
-) => {
-  const response = await fetchAPI(
-    toPath([context, "agent", agentId, "action", triggerId, "runs"]),
-  );
-
-  if (response.ok) {
-    return response.json() as Promise<ListRunsResult>;
-  }
-
-  throw new Error("Failed to list runs");
 };
 
 export const createTrigger = async (

@@ -9,12 +9,11 @@ import {
   CreateTriggerInput,
   deleteTrigger,
   listAllTriggers,
-  listRuns,
-  type ListRunsResult,
   listTriggers,
   type ListTriggersResult,
 } from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
+import { KEYS } from "./api.ts";
 
 export function useListTriggersByAgentId(
   agentId: string,
@@ -25,7 +24,7 @@ export function useListTriggersByAgentId(
 ) {
   const { workspace } = useSDK();
   return useQuery({
-    queryKey: ["triggers", agentId],
+    queryKey: KEYS.TRIGGERS(workspace, agentId),
     queryFn: () => listTriggers(workspace, agentId),
     ...options,
   });
@@ -34,24 +33,8 @@ export function useListTriggersByAgentId(
 export function useListTriggers() {
   const { workspace } = useSDK();
   return useQuery({
-    queryKey: ["triggers"],
+    queryKey: KEYS.TRIGGERS(workspace),
     queryFn: () => listAllTriggers(workspace),
-  });
-}
-
-export function useListTriggerRuns(
-  agentId: string,
-  triggerId: string,
-  options?: Omit<
-    UseQueryOptions<ListRunsResult, Error, ListRunsResult, string[]>,
-    "queryKey" | "queryFn"
-  >,
-) {
-  const { workspace } = useSDK();
-  return useQuery({
-    queryKey: ["trigger-runs", agentId, triggerId],
-    queryFn: () => listRuns(workspace, agentId, triggerId),
-    ...options,
   });
 }
 
@@ -62,8 +45,8 @@ export function useCreateTrigger(agentId: string) {
     mutationFn: (trigger: CreateTriggerInput) =>
       createTrigger(workspace, agentId, trigger),
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["triggers"] });
-      client.invalidateQueries({ queryKey: ["triggers", agentId] });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, agentId) });
     },
   });
 }
@@ -75,8 +58,8 @@ export function useDeleteTrigger(agentId: string) {
     mutationFn: (triggerId: string) =>
       deleteTrigger(workspace, agentId, triggerId),
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["triggers"] });
-      client.invalidateQueries({ queryKey: ["triggers", agentId] });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, agentId) });
     },
   });
 }

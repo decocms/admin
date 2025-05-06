@@ -39,8 +39,7 @@ import { format } from "date-fns";
 import { Suspense, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
-import { AgentInfo, UserInfo } from "./common.tsx";
-import { useParams } from "react-router";
+import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -302,13 +301,13 @@ function AuditListContent() {
                       <TableCell>
                         <div className="max-w-[100px]">
                           <div className="flex flex-col items-start text-left leading-tight">
-                            <span className="text-xs font-medium text-slate-800">
+                            <span className="font-medium text-slate-800">
                               {format(
                                 new Date(thread.updatedAt),
                                 "MMM dd, yyyy",
                               )}
                             </span>
-                            <span className="text-xs font-normal text-slate-500">
+                            <span className="font-normal text-slate-500">
                               {format(new Date(thread.updatedAt), "HH:mm:ss")}
                             </span>
                           </div>
@@ -317,13 +316,13 @@ function AuditListContent() {
                       <TableCell>
                         <div className="max-w-[100px]">
                           <div className="flex flex-col items-start text-left leading-tight">
-                            <span className="text-xs font-medium text-slate-800">
+                            <span className="font-medium text-slate-800">
                               {format(
                                 new Date(thread.createdAt),
                                 "MMM dd, yyyy",
                               )}
                             </span>
-                            <span className="text-xs font-normal text-slate-500">
+                            <span className="font-normal text-slate-500">
                               {format(new Date(thread.createdAt), "HH:mm:ss")}
                             </span>
                           </div>

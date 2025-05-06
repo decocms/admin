@@ -167,37 +167,39 @@ function AuditListContent() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-col gap-2 min-w-[180px]">
-          <Label htmlFor="user-select">Used by</Label>
-          <Select
-            value={selectedUser ?? "all"}
-            onValueChange={handleUserChange}
-          >
-            <SelectTrigger id="user-select" className="w-full">
-              <SelectValue placeholder="All users" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All users</SelectItem>
-              {sortedMembers.map((member) => {
-                const name = member.profiles?.metadata?.full_name ||
-                  member.profiles?.email || member.user_id;
-                const email = member.profiles?.email;
-                return (
-                  <SelectItem key={member.user_id} value={member.user_id}>
-                    <span>
-                      {name}
-                      {email && email !== name && (
-                        <span className="ml-2 text-xs text-slate-400">
-                          {email}
-                        </span>
-                      )}
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+        {sortedMembers.length > 0 && (
+          <div className="flex flex-col gap-2 min-w-[180px]">
+            <Label htmlFor="user-select">Used by</Label>
+            <Select
+              value={selectedUser ?? "all"}
+              onValueChange={handleUserChange}
+            >
+              <SelectTrigger id="user-select" className="w-full">
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All users</SelectItem>
+                {sortedMembers.map((member) => {
+                  const name = member.profiles?.metadata?.full_name ||
+                    member.profiles?.email || member.user_id;
+                  const email = member.profiles?.email;
+                  return (
+                    <SelectItem key={member.user_id} value={member.user_id}>
+                      <span>
+                        {name}
+                        {email && email !== name && (
+                          <span className="ml-2 text-xs text-slate-400">
+                            {email}
+                          </span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
       {/* Empty state */}
       {!threads.length

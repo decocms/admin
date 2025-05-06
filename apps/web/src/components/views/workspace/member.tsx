@@ -249,7 +249,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                       <span className="flex gap-2 items-center">
                         <span>
                           <Avatar
-                            url="todo"
+                            url={member.profiles.metadata.avatar_url}
                             fallback={member.profiles.metadata.full_name}
                             className="w-8 h-8"
                           />

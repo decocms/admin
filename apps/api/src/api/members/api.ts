@@ -13,6 +13,39 @@ const getTeamAdmin = async (c: AppContext, teamId: number) =>
     .limit(1)
     .single();
 
+const transformMetadata = (metadata: Record<string, string>) => {
+  return {
+    avatar_url: metadata.avatar_url,
+  };
+};
+
+interface DbMember {
+  id: number;
+  user_id: string | null;
+  admin: boolean | null;
+  created_at: string | null;
+  profiles: {
+    id: number;
+    name: string | null;
+    email: string;
+    metadata: {
+      id: string | null;
+      // deno-lint-ignore no-explicit-any
+      raw_user_meta_data: any;
+    };
+  };
+}
+
+const mapMember = (
+  member: DbMember,
+  admin?: Pick<DbMember, "user_id"> | null,
+) => ({
+  ...member,
+  // @ts-expect-error - Supabase user metadata is not typed
+  profiles: userFromDatabase(member.profiles),
+  admin: member.user_id === admin?.user_id,
+});
+
 // Helper function to check if user is admin of a team.
 // Admin is the first user from the team
 async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
@@ -66,12 +99,7 @@ export const getTeamMembers = createApiHandler({
 
     if (error) throw error;
 
-    const members = data.map((member) => ({
-      ...member,
-      // @ts-expect-error - Supabase user metadata is not typed
-      profiles: userFromDatabase(member.profiles),
-      admin: member.user_id === teamAdminMember?.user_id,
-    }));
+    const members = data.map((member) => mapMember(member, teamAdminMember));
 
     let activityByUserId: Record<string, string> = {};
 
@@ -125,33 +153,38 @@ export const addTeamMember = createApiHandler({
       throw new Error("Email not found");
     }
 
-    const { data: alreadyMember, error: alreadyMemberError } = await c.get("db")
-      .from("members")
-      .select(
-        "id",
-      ).eq("team_id", teamId).eq("user_id", profile.user_id).maybeSingle();
-
-    if (alreadyMember || alreadyMemberError) {
-      throw new Error(`User with email ${email} belongs to the team`);
-    }
+    const { data: alreadyMember } = await c.get("db").from("members").select(
+      "id",
+    ).eq(
+      "team_id",
+      teamId,
+    ).eq("user_id", profile.user_id).maybeSingle();
 
     const { data, error } = await c
       .get("db")
       .from("members")
-      .insert([{ user_id: profile.user_id, team_id: teamId }])
-      .select(`id,
+      .upsert([{
+        id: alreadyMember?.id,
+        user_id: profile.user_id,
+        team_id: teamId,
+        deleted_at: null,
+      }])
+      .select(`
+        id,
         user_id,
         admin,
         created_at,
         profiles!inner (
           id,
           name,
-          email
-        )`)
+          email,
+          metadata:users_meta_data_view(id, raw_user_meta_data)
+        )
+      `)
       .single();
 
     if (error) throw error;
-    return data;
+    return mapMember(data);
   },
 });
 
@@ -163,7 +196,6 @@ export const updateTeamMember = createApiHandler({
     memberId: z.number(),
     data: z.object({
       admin: z.boolean().optional(),
-      activity: z.array(z.any()).optional(),
     }),
   }),
   handler: async (props, c) => {

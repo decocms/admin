@@ -77,9 +77,8 @@ function useUserTeams() {
 function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
   const { open } = useSidebar();
   const { avatarURL, label, isPersonalTeam } = useCurrentTeam();
-  const teamName = (isPersonalTeam && !fallback)
-    ? null
-    : useTeam(label).data.name;
+  const teamName =
+    useTeam((isPersonalTeam && !fallback) ? "" : label)?.data?.name || label;
 
   return (
     <ResponsiveDropdownTrigger asChild>
@@ -98,7 +97,7 @@ function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
           className="w-6 h-6"
         />
         <span className="text-xs truncate ml-2">
-          {teamName || label}
+          {teamName}
         </span>
         <Icon name="unfold_more" className="text-xs ml-1" size={16} />
       </Button>
@@ -109,7 +108,7 @@ function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
 function CurrentTeamDropdownOptions() {
   const buildWorkspaceLink = useWorkspaceLink();
   const { avatarURL, url, label, isPersonalTeam } = useCurrentTeam();
-  const teamName = isPersonalTeam ? null : useTeam(label).data.name;
+  const teamName = useTeam(isPersonalTeam ? "" : label)?.data?.name || label;
 
   return (
     <>
@@ -124,7 +123,7 @@ function CurrentTeamDropdownOptions() {
             fallback={label}
           />
           <span className="md:text-xs flex-grow justify-self-start">
-            {teamName || label}
+            {teamName}
           </span>
         </Link>
       </ResponsiveDropdownItem>
@@ -179,10 +178,6 @@ function SwitchTeam() {
     setSearchQuery(e.target.value);
   };
 
-  const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-  };
-
   const toggleSearch = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowSearch(!showSearch);
@@ -214,7 +209,6 @@ function SwitchTeam() {
             placeholder="Search teams..."
             value={searchQuery}
             onChange={handleSearchChange}
-            onClick={handleInputClick}
             onKeyDown={(e) => e.stopPropagation()}
             className="h-8 text-xs md:text-xs"
             autoFocus
@@ -256,7 +250,6 @@ function SwitchTeam() {
             placeholder="Search teams..."
             value={searchQuery}
             onChange={handleSearchChange}
-            onClick={handleInputClick}
             onKeyDown={(e) => e.stopPropagation()}
             className="h-8 text-xs md:text-xs"
             autoFocus

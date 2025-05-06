@@ -12,7 +12,6 @@ export function SettingsMobileHeader(
 ) {
   const { toggleSidebar } = useSidebar();
 
-  // Find the settings item that matches the current page
   const currentItem = SETTINGS_ITEMS.find(
     (item) => item.title.toLowerCase() === currentPage,
   ) || SETTINGS_ITEMS[0];
@@ -33,7 +32,7 @@ export function SettingsMobileHeader(
         <span className="font-medium">{currentItem.title}</span>
       </div>
 
-      <div className="w-9 flex-none"></div> {/* Spacer for alignment */}
+      <div className="w-9 flex-none"></div>
     </div>
   );
 }

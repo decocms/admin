@@ -12,6 +12,11 @@ export const useTeams = () => {
 export const useTeam = (slug: string) => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM(slug),
-    queryFn: ({ signal }) => getTeam(slug, { signal }),
+    queryFn: ({ signal }) => {
+      if (!slug.length) {
+        return null;
+      }
+      return getTeam(slug, { signal });
+    },
   });
 };

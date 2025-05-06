@@ -84,7 +84,7 @@ async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
   const { data: teamMember, error } = await getTeamAdmin(c, teamId);
 
   if (error) throw error;
-  if (!teamMember || teamMember.user_id === userId) {
+  if (!teamMember || teamMember.user_id !== userId) {
     throw new Error("User does not have admin access to this team");
   }
 }

@@ -44,19 +44,14 @@ export const updateActivityLog = async (c: AppContext, {
     .eq("user_id", userId);
 };
 
-const transformMetadata = (metadata: Record<string, string>) => {
-  return {
-    avatar_url: metadata.avatar_url,
-  };
-};
-
 interface DbMember {
   id: number;
   user_id: string | null;
   admin: boolean | null;
   created_at: string | null;
   profiles: {
-    id: number;
+    /** @description is user id */
+    id: string;
     name: string | null;
     email: string;
     metadata: {
@@ -206,7 +201,7 @@ export const addTeamMember = createApiHandler({
         admin,
         created_at,
         profiles!inner (
-          id,
+          id:user_id,
           name,
           email,
           metadata:users_meta_data_view(id, raw_user_meta_data)

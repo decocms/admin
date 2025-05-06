@@ -41,6 +41,7 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 
 import { Avatar } from "../../common/Avatar.tsx";
 import { timeAgo } from "../../../utils/timeAgo.ts";
@@ -202,6 +203,8 @@ function MembersViewContent({ teamId }: MembersViewProps) {
     [members, deferredQuery],
   );
 
+  const isMobile = useIsMobile();
+
   // Remove member
   const handleRemoveMember = async (memberId: number) => {
     try {
@@ -227,7 +230,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Last active</TableHead>
+              {!isMobile && <TableHead>Last active</TableHead>}
               <TableHead className="w-[50px]">
                 <AddTeamMemberButton teamId={teamId} />
               </TableHead>
@@ -246,7 +249,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                 filteredMembers.map((member) => (
                   <TableRow key={member.id} className="px-4 py-1.5">
                     <TableCell>
-                      <span className="flex gap-2 items-center">
+                      <span className="flex gap-2 items-center w-43 md:w-56">
                         <span>
                           <Avatar
                             url={member.profiles.metadata.avatar_url}
@@ -255,9 +258,10 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                           />
                         </span>
 
-                        <span className="flex flex-col gap-1 w-80">
+                        <span className="flex flex-col gap-1 min-w-0">
                           <span className="font-semibold text-xs truncate">
-                            {member.profiles.metadata.full_name || "N/A"}
+                            {member.profiles.metadata.full_name ||
+                              member.profiles.email}
                           </span>
                           <span className="text-[10px] leading-3.5 text-slate-500 truncate">
                             {member.profiles.email || "N/A"}
@@ -268,11 +272,13 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                     <TableCell>
                       {member.admin ? "Admin" : "Member"}
                     </TableCell>
-                    <TableCell>
-                      {member.lastActivity
-                        ? timeAgo(member.lastActivity)
-                        : "N/A"}
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        {member.lastActivity
+                          ? timeAgo(member.lastActivity)
+                          : "N/A"}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -287,7 +293,8 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => handleRemoveMember(member.id)}
+                            onClick={() =>
+                              handleRemoveMember(member.id)}
                             disabled={removeMemberMutation.isPending}
                           >
                             <Icon name="delete" />

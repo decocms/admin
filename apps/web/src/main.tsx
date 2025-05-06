@@ -109,10 +109,6 @@ const UsageSettings = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/usage.tsx"))
 );
 
-const AuditSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/audit.tsx"))
-);
-
 function NotFound() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -183,7 +179,8 @@ function Router() {
         <Route path="settings/members" element={<MembersSettings />} />
         <Route path="settings/billing" element={<BillingSettings />} />
         <Route path="settings/usage" element={<UsageSettings />} />
-        <Route path="settings/audit" element={<AuditSettings />} />
+        <Route path="settings/audit" element={<AuditList />} />
+        <Route path="settings/audit/:id" element={<AuditDetail />} />
       </Route>
 
       <Route path="/:teamSlug?" element={<WorkspaceLayout />}>
@@ -234,14 +231,6 @@ function Router() {
         <Route
           path="trigger/:agentId/:triggerId"
           element={<TriggerDetails />}
-        />
-        <Route
-          path="audits"
-          element={<AuditList />}
-        />
-        <Route
-          path="audit/:id"
-          element={<AuditDetail />}
         />
       </Route>
 

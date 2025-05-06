@@ -9,19 +9,18 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Link, useParams } from "react-router";
-import { WELL_KNOWN_EMAIL_DOMAINS } from "../../constants.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
-import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { useState } from "react";
 import { Input } from "@deco/ui/components/input.tsx";
+import { useTeams } from "@deco/sdk";
 
 interface Team {
   avatarURL: string | undefined;
   url: string;
   label: string;
-  isBlacklisted: boolean;
 }
 
 function useUserTeam(): Team {
@@ -35,31 +34,15 @@ function useUserTeam(): Team {
     avatarURL,
     url: "/",
     label,
-    isBlacklisted: false,
-  };
-}
-
-function useEmailDomainTeam(): Team {
-  const user = useUser();
-  const teamDomain = user.email.split("@")[1];
-  const teamLabel = `${teamDomain} team`;
-  const isTeamBlacklisted = WELL_KNOWN_EMAIL_DOMAINS.has(teamDomain);
-
-  return {
-    avatarURL: undefined,
-    url: `/${teamDomain}`,
-    label: teamLabel,
-    isBlacklisted: isTeamBlacklisted,
   };
 }
 
 function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
   const { teamSlug } = useParams();
   const userTeam = useUserTeam();
-  const emailDomainTeam = useEmailDomainTeam();
 
   const avatarURL = teamSlug ? undefined : userTeam.avatarURL;
-  const url = teamSlug ? emailDomainTeam.url : userTeam.url;
+  const url = teamSlug ? `/${teamSlug}` : userTeam.url;
   const label = teamSlug ? teamSlug : userTeam.label;
 
   const isPersonalTeam = !teamSlug;
@@ -68,22 +51,27 @@ function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
     avatarURL,
     url,
     label,
-    isBlacklisted: isPersonalTeam
-      ? userTeam.isBlacklisted
-      : emailDomainTeam.isBlacklisted,
     isPersonalTeam,
   };
 }
 
-/**
- * TODO(@gimenes): Change this to use the Teams API
- */
 function useUserTeams() {
+  const { data: teams } = useTeams();
   const personalTeam = useUserTeam();
-  const emailDomainTeam = useEmailDomainTeam();
-  const { isPersonalTeam: isCurrentTeamPersonal } = useCurrentTeam();
+  const { url } = useCurrentTeam();
 
-  return isCurrentTeamPersonal ? [emailDomainTeam] : [personalTeam];
+  const allTeams = [
+    personalTeam,
+    ...teams.map((team) => ({
+      avatarURL: undefined,
+      url: `/${team.slug}`,
+      label: team.name,
+    })),
+  ];
+
+  const teamsWithoutCurrentTeam = allTeams.filter((team) => team.url !== url);
+
+  return teamsWithoutCurrentTeam;
 }
 
 function CurrentTeamDropdownTrigger() {
@@ -116,7 +104,7 @@ function CurrentTeamDropdownTrigger() {
 }
 
 function CurrentTeamDropdownOptions() {
-  const withBasePath = useBasePath();
+  const buildWorkspaceLink = useWorkspaceLink();
   const { avatarURL, url, label } = useCurrentTeam();
 
   return (
@@ -135,7 +123,7 @@ function CurrentTeamDropdownOptions() {
       </ResponsiveDropdownItem>
       <ResponsiveDropdownItem asChild>
         <Link
-          to={withBasePath("/settings")}
+          to={buildWorkspaceLink("/settings")}
           className="flex items-center gap-4 cursor-pointer"
         >
           <span className="grid place-items-center p-1">
@@ -169,8 +157,7 @@ function SwitchTeam() {
   const filteredTeams = availableTeamsToSwitch
     .filter((team) =>
       team.label.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .slice(0, 3); // Limit to 3 teams
+    );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
@@ -222,23 +209,25 @@ function SwitchTeam() {
 
       {filteredTeams.length > 0
         ? (
-          filteredTeams.map((team) => (
-            <ResponsiveDropdownItem asChild key={team.url}>
-              <Link
-                to={team.url}
-                className="flex items-center gap-4 cursor-pointer"
-              >
-                <Avatar
-                  className="w-6 h-6"
-                  url={team.avatarURL}
-                  fallback={team.label}
-                />
-                <span className="md:text-xs">
-                  {team.label}
-                </span>
-              </Link>
-            </ResponsiveDropdownItem>
-          ))
+          <div className="flex flex-col gap-2 h-36 overflow-y-auto">
+            {filteredTeams.map((team) => (
+              <ResponsiveDropdownItem asChild key={team.url}>
+                <Link
+                  to={team.url}
+                  className="flex items-center gap-4 cursor-pointer"
+                >
+                  <Avatar
+                    className="w-6 h-6"
+                    url={team.avatarURL}
+                    fallback={team.label}
+                  />
+                  <span className="md:text-xs">
+                    {team.label}
+                  </span>
+                </Link>
+              </ResponsiveDropdownItem>
+            ))}
+          </div>
         )
         : (
           <div className="text-xs text-center py-2 text-muted-foreground">

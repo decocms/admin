@@ -12,7 +12,7 @@ import {
 import { ReactNode } from "react";
 import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useBasePath } from "../../hooks/useBasePath.ts";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 
 export const SETTINGS_ITEMS = [
   {
@@ -37,8 +37,8 @@ export const SETTINGS_ITEMS = [
   },
   {
     url: "/settings/audit",
-    title: "Audit",
-    icon: "fact_check",
+    title: "Chat Logs",
+    icon: "quick_reference_all",
   },
 ] as const;
 
@@ -67,7 +67,7 @@ const WithActive = (
 };
 
 export function SettingsSidebar() {
-  const withBasePath = useBasePath();
+  const buildWorkspaceLink = useWorkspaceLink();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -85,7 +85,7 @@ export function SettingsSidebar() {
             <div className="hidden md:block">
               <SidebarMenuButton asChild>
                 <Link
-                  to={withBasePath("/")}
+                  to={buildWorkspaceLink("/")}
                   className="flex items-center gap-2"
                 >
                   <Icon name="arrow_back" size={16} />
@@ -98,7 +98,7 @@ export function SettingsSidebar() {
               <div className="flex-1">
                 <SidebarMenuButton asChild>
                   <Link
-                    to={withBasePath("/")}
+                    to={buildWorkspaceLink("/")}
                     className="flex items-center gap-2"
                   >
                     <Icon name="arrow_back" size={16} />
@@ -124,7 +124,7 @@ export function SettingsSidebar() {
           <div className="flex-none">
             <SidebarMenu className="gap-0.5 mt-1 px-2">
               {SETTINGS_ITEMS.map((item) => {
-                const href = withBasePath(item.url);
+                const href = buildWorkspaceLink(item.url);
 
                 return (
                   <SidebarMenuItem key={item.title}>

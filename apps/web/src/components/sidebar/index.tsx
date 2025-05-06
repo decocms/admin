@@ -43,11 +43,6 @@ const STATIC_ITEMS = [
     title: "Triggers",
     icon: "conversion_path",
   },
-  {
-    url: "/audits",
-    title: "Chat Logs",
-    icon: "quick_reference_all",
-  },
 ];
 
 const WithActive = (

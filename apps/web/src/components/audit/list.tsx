@@ -296,7 +296,7 @@ function AuditListContent() {
                       key={thread.id}
                       className="cursor-pointer hover:bg-accent/40 transition-colors"
                       onClick={() => {
-                        navigate(`/audit/${thread.id}`);
+                        navigate(`/settings/audit/${thread.id}`);
                       }}
                     >
                       <TableCell>

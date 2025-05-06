@@ -197,8 +197,6 @@ export const listTeams = createApiHandler({
       throw error;
     }
 
-    console.log(data[0]);
-
     return data.map(({ members: _members, ...teamData }) => teamData);
   },
 });

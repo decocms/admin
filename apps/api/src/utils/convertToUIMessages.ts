@@ -82,7 +82,12 @@ export function convertToUIMessages(messages: MessageType[]): Message[] {
       let textContent = "";
       const toolInvocations: ToolInvocation[] = [];
 
-      if (typeof curr.content === "string") {
+      // When we safeParse a user message that MIGHT be valid json for coincidence,
+      // we force it to be a formatted json string. Only messages we expect to be json
+      // are those from the assistant/tools.
+      if (curr.role === "user" && typeof curr.content !== "string") {
+        textContent = `\`\`\`json\n${JSON.stringify(curr.content, null, 2)}`;
+      } else if (typeof curr.content === "string") {
         textContent = curr.content;
       } else if (typeof curr.content === "number") {
         textContent = String(curr.content);

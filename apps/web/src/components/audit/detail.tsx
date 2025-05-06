@@ -39,7 +39,7 @@ function Header() {
   return (
     <div className="flex justify-between items-center gap-2 w-full">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" onClick={() => navigate("/audits")}>
+        <Button variant="ghost" onClick={() => navigate("/settings/audit")}>
           <Icon name="arrow_back" />
           Back
         </Button>

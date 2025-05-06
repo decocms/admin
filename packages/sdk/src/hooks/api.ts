@@ -37,6 +37,7 @@ export const KEYS = {
     options.resourceId,
   ],
   TEAMS: () => ["teams"],
+  TEAM: (slug: string) => ["team", slug],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,

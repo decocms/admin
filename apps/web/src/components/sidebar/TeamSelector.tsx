@@ -37,7 +37,7 @@ function useUserTeam(): Team {
   };
 }
 
-function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
+export function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
   const { teamSlug } = useParams();
   const userTeam = useUserTeam();
 

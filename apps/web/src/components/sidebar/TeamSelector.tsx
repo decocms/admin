@@ -13,7 +13,7 @@ import { useUser } from "../../hooks/data/useUser.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useTeams } from "@deco/sdk";
 
@@ -110,7 +110,7 @@ function CurrentTeamDropdownOptions() {
   return (
     <>
       <ResponsiveDropdownItem asChild>
-        <Link to={url} className="flex items-center gap-4 cursor-pointer">
+        <Link to={url} className="w-full flex items-center gap-4 cursor-pointer">
           <Avatar
             className="rounded-full w-6 h-6"
             url={avatarURL}
@@ -124,7 +124,7 @@ function CurrentTeamDropdownOptions() {
       <ResponsiveDropdownItem asChild>
         <Link
           to={buildWorkspaceLink("/settings")}
-          className="flex items-center gap-4 cursor-pointer"
+          className="w-full flex items-center gap-4 cursor-pointer"
         >
           <span className="grid place-items-center p-1">
             <Icon name="settings" size={18} />
@@ -157,7 +157,7 @@ function SwitchTeam() {
   const filteredTeams = availableTeamsToSwitch
     .filter((team) =>
       team.label.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ).slice(0, 4);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
@@ -214,7 +214,7 @@ function SwitchTeam() {
               <ResponsiveDropdownItem asChild key={team.url}>
                 <Link
                   to={team.url}
-                  className="flex items-center gap-4 cursor-pointer"
+                  className="w-full flex items-center gap-4 cursor-pointer"
                 >
                   <Avatar
                     className="w-6 h-6"
@@ -271,7 +271,9 @@ export function TeamSelector() {
       <ResponsiveDropdownContent align="start">
         <CurrentTeamDropdownOptions />
         <ResponsiveDropdownSeparator />
-        <SwitchTeam />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SwitchTeam />
+        </Suspense>
       </ResponsiveDropdownContent>
     </ResponsiveDropdown>
   );

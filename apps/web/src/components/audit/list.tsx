@@ -41,6 +41,7 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 import { useParams } from "react-router";
+import { SettingsMobileHeader } from "../settings/SettingsMobileHeader.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -400,21 +401,24 @@ function AuditListContent() {
 
 function AuditList() {
   return (
-    <div className="flex flex-col gap-6 w-full px-6 py-10 h-full">
-      <div className="text-slate-700 text-2xl">
-        Chat logs
+    <div className="container h-full max-w-7xl text-slate-700">
+      <SettingsMobileHeader currentPage="chat logs" />
+      <div className="flex flex-col gap-6 w-full px-6 py-10 h-full">
+        <div className="text-slate-700 text-2xl hidden md:block">
+          Chat logs
+        </div>
+        <ErrorBoundary fallback={<AuditListErrorFallback />}>
+          <Suspense
+            fallback={
+              <div className="flex justify-center items-center h-64">
+                <Spinner />
+              </div>
+            }
+          >
+            <AuditListContent />
+          </Suspense>
+        </ErrorBoundary>
       </div>
-      <ErrorBoundary fallback={<AuditListErrorFallback />}>
-        <Suspense
-          fallback={
-            <div className="flex justify-center items-center h-64">
-              <Spinner />
-            </div>
-          }
-        >
-          <AuditListContent />
-        </Suspense>
-      </ErrorBoundary>
     </div>
   );
 }

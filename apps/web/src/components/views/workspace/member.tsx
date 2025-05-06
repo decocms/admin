@@ -15,7 +15,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -227,6 +226,7 @@ function MembersViewContent({ teamId }: MembersViewProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Last active</TableHead>
               <TableHead className="w-[50px]">
                 <AddTeamMemberButton teamId={teamId} />
@@ -264,6 +264,9 @@ function MembersViewContent({ teamId }: MembersViewProps) {
                           </span>
                         </span>
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {member.admin ? "Admin" : "Member"}
                     </TableCell>
                     <TableCell>
                       {member.lastActivity

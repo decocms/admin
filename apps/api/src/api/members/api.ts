@@ -3,10 +3,8 @@ import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
 
-// Helper function to check if user is admin of a team.
-// Admin is the first user from the team
-async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
-  const { data: teamMember, error } = await c
+const getTeamAdmin = async (c: AppContext, teamId: number) =>
+  await c
     .get("db")
     .from("members")
     .select("*")
@@ -14,6 +12,11 @@ async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
     .order("created_at", { ascending: true })
     .limit(1)
     .single();
+
+// Helper function to check if user is admin of a team.
+// Admin is the first user from the team
+async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
+  const { data: teamMember, error } = await getTeamAdmin(c, teamId);
 
   if (error) throw error;
   if (!teamMember) {
@@ -40,10 +43,11 @@ export const getTeamMembers = createApiHandler({
     );
 
     // Get all members of the team
-    const { data, error } = await c
-      .get("db")
-      .from("members")
-      .select(`
+    const [{ data, error }, { data: teamAdminMember }] = await Promise.all([
+      c
+        .get("db")
+        .from("members")
+        .select(`
         id,
         user_id,
         admin,
@@ -55,10 +59,19 @@ export const getTeamMembers = createApiHandler({
           metadata:users_meta_data_view(id, raw_user_meta_data)
         )
       `)
-      .eq("team_id", teamId)
-      .is("deleted_at", null);
+        .eq("team_id", teamId)
+        .is("deleted_at", null),
+      getTeamAdmin(c, teamId),
+    ]);
 
     if (error) throw error;
+
+    const members = data.map((member) => ({
+      ...member,
+      // @ts-expect-error - Supabase user metadata is not typed
+      profiles: userFromDatabase(member.profiles),
+      admin: member.user_id === teamAdminMember?.user_id,
+    }));
 
     let activityByUserId: Record<string, string> = {};
 
@@ -79,19 +92,13 @@ export const getTeamMembers = createApiHandler({
         }, {} as Record<string, string>);
       }
 
-      return data.map((member) => ({
+      return members.map((member) => ({
         ...member,
-        // @ts-expect-error - Supabase user metadata is not typed
-        profiles: userFromDatabase(member.profiles),
         lastActivity: activityByUserId[member.user_id ?? ""],
       }));
     }
 
-    return data.map((member) => ({
-      ...member,
-      // @ts-expect-error - Supabase user metadata is not typed
-      profiles: userFromDatabase(member.profiles),
-    }));
+    return members;
   },
 });
 

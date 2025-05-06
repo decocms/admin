@@ -15,6 +15,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
@@ -55,6 +56,7 @@ type IContext = {
     showAgentVisibility: boolean;
     showEditAgent: boolean;
   };
+  setStreamTools: (tools: Record<string, string[]> | null) => void;
 };
 
 const Context = createContext<IContext | null>(null);
@@ -91,6 +93,9 @@ export function ChatProvider({
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const invalidateAll = useInvalidateAll();
+  const [streamTools, setStreamTools] = useState<
+    Record<string, string[]> | null
+  >(null);
   const {
     addOptimisticThread,
   } = useAddOptimisticThread();
@@ -150,6 +155,7 @@ export function ChatProvider({
             delayInMs: 20,
             chunk: "word",
           },
+          tools: streamTools,
         }],
         metadata: { threadId: threadId ?? agentId },
       };
@@ -258,6 +264,7 @@ export function ChatProvider({
         retry: handleRetry,
         select: handlePickerSelect,
         correlationIdRef,
+        setStreamTools,
       }}
     >
       {children}

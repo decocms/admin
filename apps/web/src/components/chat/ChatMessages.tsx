@@ -89,6 +89,7 @@ export function ChatMessages() {
             <ChatMessage
               key={message.id}
               message={message}
+              agentId={agentId}
               isStreaming={isStreaming}
               isLastMessage={messages.length === index + 1}
             />

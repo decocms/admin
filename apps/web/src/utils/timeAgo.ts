@@ -1,31 +1,38 @@
+let formatter: Intl.RelativeTimeFormat;
 export function timeAgo(date: string | Date): string {
   const now = new Date();
   const past = new Date(date);
-  const msPerMinute = 60 * 1000;
-  const msPerHour = msPerMinute * 60;
-  const msPerDay = msPerHour * 24;
-  const msPerMonth = msPerDay * 30;
-  const msPerYear = msPerDay * 365;
-
   const elapsed = now.getTime() - past.getTime();
 
-  if (elapsed < msPerMinute) {
-    const seconds = Math.round(elapsed / 1000);
-    return `${seconds} ${seconds === 1 ? "second" : "seconds"} ago`;
-  } else if (elapsed < msPerHour) {
-    const minutes = Math.round(elapsed / msPerMinute);
-    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
-  } else if (elapsed < msPerDay) {
-    const hours = Math.round(elapsed / msPerHour);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-  } else if (elapsed < msPerMonth) {
-    const days = Math.round(elapsed / msPerDay);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  } else if (elapsed < msPerYear) {
-    const months = Math.round(elapsed / msPerMonth);
-    return `${months} ${months === 1 ? "month" : "months"} ago`;
+  // Create formatter with English locale
+  formatter ??= new Intl.RelativeTimeFormat("en", {
+    numeric: "auto",
+    style: "long",
+  });
+
+  // Time units in milliseconds
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const WEEK = 7 * DAY;
+  const MONTH = 30 * DAY;
+  const YEAR = 365 * DAY;
+
+  // Determine the appropriate time unit
+  if (Math.abs(elapsed) < MINUTE) {
+    return formatter.format(-Math.round(elapsed / SECOND), "second");
+  } else if (Math.abs(elapsed) < HOUR) {
+    return formatter.format(-Math.round(elapsed / MINUTE), "minute");
+  } else if (Math.abs(elapsed) < DAY) {
+    return formatter.format(-Math.round(elapsed / HOUR), "hour");
+  } else if (Math.abs(elapsed) < WEEK) {
+    return formatter.format(-Math.round(elapsed / DAY), "day");
+  } else if (Math.abs(elapsed) < MONTH) {
+    return formatter.format(-Math.round(elapsed / WEEK), "week");
+  } else if (Math.abs(elapsed) < YEAR) {
+    return formatter.format(-Math.round(elapsed / MONTH), "month");
   } else {
-    const years = Math.round(elapsed / msPerYear);
-    return `${years} ${years === 1 ? "year" : "years"} ago`;
+    return formatter.format(-Math.round(elapsed / YEAR), "year");
   }
 }

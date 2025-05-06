@@ -37,6 +37,8 @@ export function useAgentHasChanges(agentId: string) {
 
   const { update } = useAgentOverridesSetter(agentId);
 
+  console.log({ hasChanges });
+
   return {
     hasChanges,
     discardCurrentChanges: () => update(null),

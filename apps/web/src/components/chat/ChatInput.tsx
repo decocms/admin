@@ -10,11 +10,11 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
-import { useChatContext } from "./context.tsx";
 import ToolsButton from "./ToolsButton.tsx";
-import { useSelectedModel } from "../../hooks/useSelectedModel.ts";
 
 export function ChatInput({ withoutTools }: { withoutTools?: boolean }) {
   return (
@@ -49,9 +49,10 @@ ChatInput.UI = (
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
-  const model = useSelectedModel();
+  const { preferences, setPreferences } = useUserPreferences();
+  const model = preferences.defaultModel;
 
-  const selectedModel = MODELS.find((m) => m.id === model.value) || MODELS[0];
+  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   const isLoadingOrUploading = isLoading || isUploading;
 
@@ -240,9 +241,12 @@ ChatInput.UI = (
                     )
                     : null}
                   <ModelSelector
-                    model={model.value}
+                    model={model}
                     onModelChange={(modelToSelect) =>
-                      model.update(modelToSelect)}
+                      setPreferences({
+                        ...preferences,
+                        defaultModel: modelToSelect,
+                      })}
                   />
                   {!withoutTools && <ToolsButton />}
                 </div>

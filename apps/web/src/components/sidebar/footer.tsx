@@ -1,4 +1,24 @@
 import { AUTH_URL, NotLoggedInError } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -6,25 +26,122 @@ import {
   ResponsiveDropdownSeparator,
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   SidebarFooter as SidebarFooterInner,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
-import { Suspense, useMemo } from "react";
+import { Switch } from "@deco/ui/components/switch.tsx";
+import { Suspense, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useLocation } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
+import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { Avatar } from "../common/Avatar.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
+
+function UserPreferencesModal({ open, onOpenChange }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { preferences, setPreferences } = useUserPreferences();
+  const form = useForm({
+    defaultValues: {
+      defaultModel: preferences.defaultModel,
+      useOpenRouter: preferences.useOpenRouter,
+    },
+  });
+  const { handleSubmit, formState: { isDirty } } = form;
+
+  function onSubmit(data: { defaultModel: string; useOpenRouter: boolean }) {
+    setPreferences(data);
+    form.reset(data);
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>User Preferences</DialogTitle>
+          <DialogDescription>
+            These will only apply to your user.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-6 py-2"
+          >
+            <FormField
+              name="defaultModel"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2">
+                    <FormLabel>Default Model</FormLabel>
+                    <FormControl>
+                      <ModelSelector
+                        model={field.value}
+                        onModelChange={field.onChange}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormDescription>
+                    Choose the default AI model for new chats.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="useOpenRouter"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Switch
+                        id="openrouter-switch"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel htmlFor="openrouter-switch">
+                      Use OpenRouter
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Improve availability of AI responses.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={!isDirty}>
+                Save Preferences
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function LoggedUser() {
   const user = useUser();
   const location = useLocation();
   const { data: stars } = useGitHubStars();
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   const logoutUrl = useMemo(() => {
     const url = new URL(AUTH_URL);
@@ -96,6 +213,19 @@ function LoggedUser() {
         <ResponsiveDropdownSeparator />
 
         <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
+            onClick={() => setPreferencesOpen(true)}
+          >
+            <Icon name="settings" />
+            Preferences
+          </button>
+        </ResponsiveDropdownItem>
+
+        <ResponsiveDropdownSeparator />
+
+        <ResponsiveDropdownItem asChild>
           <a
             href={logoutUrl}
             className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs"
@@ -105,6 +235,12 @@ function LoggedUser() {
           </a>
         </ResponsiveDropdownItem>
       </ResponsiveDropdownContent>
+      {preferencesOpen && (
+        <UserPreferencesModal
+          open={preferencesOpen}
+          onOpenChange={setPreferencesOpen}
+        />
+      )}
     </ResponsiveDropdown>
   );
 }

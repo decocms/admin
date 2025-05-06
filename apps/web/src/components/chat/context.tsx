@@ -1,6 +1,7 @@
 import { CreateMessage, useChat } from "@ai-sdk/react";
 import {
   LEGACY_API_SERVER_URL,
+  useAddOptimisticThread,
   useAgentRoot,
   useInvalidateAll,
   useThreadMessages,
@@ -14,10 +15,9 @@ import {
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
-import { useSelectedModel } from "../../hooks/useSelectedModel.ts";
-import { useAddOptimisticThread } from "@deco/sdk";
+import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -84,7 +84,6 @@ export function ChatProvider({
   uiOptions,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const selectedModel = useSelectedModel();
   const invalidateAll = useInvalidateAll();
   const {
     addOptimisticThread,
@@ -96,6 +95,7 @@ export function ChatProvider({
     ? { data: undefined }
     : useThreadMessages(threadId);
   const initialMessages = messagesData?.messages ?? [];
+  const { preferences } = useUserPreferences();
 
   const chat = useChat({
     initialMessages,
@@ -127,13 +127,12 @@ export function ChatProvider({
       if (last) {
         last.annotations = annotations;
       }
-      const searchParams = new URLSearchParams(globalThis.location.search);
-      const bypassOpenRouter = searchParams.get("openRouter") === "false";
+      const bypassOpenRouter = !preferences.useOpenRouter;
 
       const overrides = getAgentOverrides(agentId);
       return {
         args: [allMessages, {
-          model: selectedModel.value,
+          model: preferences.defaultModel,
           instructions: overrides?.instructions,
           bypassOpenRouter,
           lastMessages: 0,

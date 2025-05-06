@@ -107,8 +107,8 @@ To run database migrations with Supabase:
    supabase db migrate
    ```
 6. Now you can run `deno run db:migration`
-7. You can create a new migration by running `supabase migration new $YOUR_MIGRATION_NAME`
-**Made with ❤️ by deco.chat**
+7. You can create a new migration by running
+   `supabase migration new $YOUR_MIGRATION_NAME` **Made with ❤️ by deco.chat**
 
 Empowering businesses to scale AI safely, visually, and efficiently. Explore our
 enterprise-grade managed solution at [deco.chat](https://deco.chat).

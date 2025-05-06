@@ -8,11 +8,25 @@ const Hosts = {
   APPS: "deco.page",
 } as const;
 
+const APPS_DOMAIN_QS = "app_host";
+export const appsDomainOf = (req: Request, url?: URL) => {
+  url ??= new URL(req.url);
+  const referer = req.headers.get("referer");
+
+  return url.searchParams.get(APPS_DOMAIN_QS) ||
+    (referer && new URL(referer).searchParams.get(APPS_DOMAIN_QS));
+};
+
 const normalizeHost = (req: Request) => {
   const host = req.headers.get("host") ?? "localhost";
+  const appsHost = appsDomainOf(req);
+  if (appsHost) {
+    return Hosts.API;
+  }
   return {
     [Hosts.API]: Hosts.API,
     localhost: Hosts.API,
+    "localhost:3001": Hosts.API,
     "localhost:8000": Hosts.API,
   }[host] ?? Hosts.APPS;
 };

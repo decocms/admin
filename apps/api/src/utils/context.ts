@@ -1,4 +1,3 @@
-import { type DispatchNamespace } from "@cloudflare/workers-types/index.ts";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
 import { type User as SupaUser } from "@supabase/supabase-js";
 import Cloudflare from "cloudflare";
@@ -21,7 +20,7 @@ export type AppEnv = {
     TURSO_ORGANIZATION: string;
     CF_ACCOUNT_ID: string;
     CF_API_TOKEN: string;
-    PROD_DISPATCHER: DispatchNamespace;
+    PROD_DISPATCHER: { get: (script: string) => { fetch: typeof fetch } };
   };
 };
 

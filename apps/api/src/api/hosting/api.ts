@@ -1,22 +1,37 @@
 import { z } from "zod";
 import { Database } from "../../db/schema.ts";
 import { createApiHandler } from "../../utils/context.ts";
+import { slugify } from "../../utils/slugify.ts";
 
 const DISPATCHER_NAMESPACE = "deco-chat-prod";
 
 const HOSTING_APPS_DOMAIN = ".deco.page";
-const Entrypoint = {
-  build: (appSlug: string, workspace: string) => {
-    const [root, workspaceSlug] = workspace.split("/");
+export const Entrypoint = {
+  domain: (
+    appSlug: string,
+    root: string,
+    urlCompatibleWorkspaceSlug: string,
+  ) => {
     const prefix = root === "user" ? "u-" : "";
     const slug = appSlug === "default" ? "" : `${appSlug}--`;
-    return `https://${prefix}${slug}${workspaceSlug}${HOSTING_APPS_DOMAIN}`;
+    return `https://${prefix}${slug}${urlCompatibleWorkspaceSlug}${HOSTING_APPS_DOMAIN}`;
+  },
+  build: (appSlug: string, workspace: string) => {
+    const [root, workspaceSlug] = workspace.split("/");
+    const urlCompatibleWorkspaceSlug = slugify(workspaceSlug);
+    return {
+      url: Entrypoint.domain(appSlug, root, urlCompatibleWorkspaceSlug),
+      slug: urlCompatibleWorkspaceSlug,
+    };
+  },
+  script: (domain: string) => {
+    return domain.split(HOSTING_APPS_DOMAIN)[0];
   },
 };
 // Zod schemas for input
 const AppSchema = z.object({
   slug: z.string().optional(), // defaults to 'default'
-  endpoint: z.string(),
+  entrypoint: z.string(),
 });
 
 const AppInputSchema = z.object({
@@ -39,7 +54,7 @@ const Mappers = {
     return {
       id: data.id,
       slug: data.slug,
-      endpoint: Entrypoint.build(data.slug, data.workspace),
+      entrypoint: Entrypoint.build(data.slug, data.workspace).url,
     };
   },
 };
@@ -74,7 +89,8 @@ export const deployApp = createApiHandler({
     const root = c.req.param("root");
     const wksSlug = c.req.param("slug");
     const workspace = `${root}/${wksSlug}`;
-    const slug = appSlug ?? "default";
+    const scriptSlug = appSlug ?? "default";
+    const { url: entrypoint, slug } = Entrypoint.build(scriptSlug, workspace);
     // Use the fixed dispatcher namespace
     const namespace = DISPATCHER_NAMESPACE;
     const scriptName = `${slug}.mjs`;
@@ -114,7 +130,7 @@ export const deployApp = createApiHandler({
     );
 
     // Return app info
-    return { app: slug, entrypoint: Entrypoint.build(slug, workspace) };
+    return { app: slug, entrypoint };
   },
 });
 
@@ -128,7 +144,8 @@ export const deleteApp = createApiHandler({
     const root = c.req.param("root");
     const wksSlug = c.req.param("slug");
     const workspace = `${root}/${wksSlug}`;
-    const slug = appSlug ?? "default";
+    const scriptSlug = appSlug ?? "default";
+    const { slug } = Entrypoint.build(scriptSlug, workspace);
     const namespace = DISPATCHER_NAMESPACE;
     const scriptName = `${slug}.mjs`;
 
@@ -141,7 +158,7 @@ export const deleteApp = createApiHandler({
           account_id: c.env.CF_ACCOUNT_ID,
         },
       );
-    } catch (err) {
+    } catch {
       // Optionally, log error but don't throw if script doesn't exist
       // (idempotency)
     }
@@ -168,7 +185,8 @@ export const getAppInfo = createApiHandler({
     const root = c.req.param("root");
     const wksSlug = c.req.param("slug");
     const workspace = `${root}/${wksSlug}`;
-    const slug = appSlug ?? "default";
+    const scriptSlug = appSlug ?? "default";
+    const { url: entrypoint, slug } = Entrypoint.build(scriptSlug, workspace);
 
     // 1. Fetch from DB
     const { data, error } = await c.var.db
@@ -194,9 +212,8 @@ export const getAppInfo = createApiHandler({
 
     return {
       app: slug,
-      entrypoint: Entrypoint.build(slug, workspace),
-      // endpoint: `https://<cloudflare-worker-endpoint>/${slug}`,
-      content: await content.blob(), // Replace with real metadata if needed
+      entrypoint,
+      content: await content.blob(),
     };
   },
 });

@@ -123,7 +123,14 @@ app.use(logger());
 app.use(cors({
   origin: (origin) => origin,
   allowMethods: ["HEAD", "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowHeaders: ["Content-Type", "Authorization", "Cookie", "Accept"],
+  allowHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Cookie",
+    "Accept",
+    "cache-control",
+    "pragma",
+  ],
   exposeHeaders: ["Content-Type", "Authorization", "Set-Cookie"],
   credentials: true,
 }));

@@ -3,22 +3,23 @@ import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
 
-// Helper function to check if user is admin of a team
+// Helper function to check if user is admin of a team.
+// Admin is the first user from the team
 async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
   const { data: teamMember, error } = await c
     .get("db")
     .from("members")
     .select("*")
     .eq("team_id", teamId)
-    .eq("user_id", userId)
-    .eq("admin", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .single();
 
   if (error) throw error;
   if (!teamMember) {
     throw new Error("User does not have admin access to this team");
   }
-  return teamMember;
+  return teamMember.user_id === userId;
 }
 
 export const getTeamMembers = createApiHandler({
@@ -131,7 +132,15 @@ export const addTeamMember = createApiHandler({
       .get("db")
       .from("members")
       .insert([{ user_id: profile.user_id, team_id: teamId }])
-      .select()
+      .select(`id,
+        user_id,
+        admin,
+        created_at,
+        profiles!inner (
+          id,
+          name,
+          email
+        )`)
       .single();
 
     if (error) throw error;

@@ -36,6 +36,7 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
             <AgentAvatar
               name={agent?.name ?? agentId ?? "Unknown"}
               avatar={agent?.avatar}
+              className="rounded-lg"
             />
           </div>
           <span className="truncate hidden md:inline">

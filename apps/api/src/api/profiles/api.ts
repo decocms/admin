@@ -16,8 +16,7 @@ export const getProfile = createApiHandler({
     const { data, error } = await c.get("db")
       .from("profiles")
       .select(`
-        id,
-        user_id,
+        id:user_id,
         name,
         email,
         metadata:users_meta_data_view(id, raw_user_meta_data)

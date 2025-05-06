@@ -164,6 +164,7 @@ function CurrentTeamDropdownOptions() {
 function SwitchTeam() {
   const availableTeamsToSwitch = useUserTeams();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   
   const filteredTeams = availableTeamsToSwitch
     .filter(team => 
@@ -180,21 +181,45 @@ function SwitchTeam() {
     e.stopPropagation();
   };
 
+  const toggleSearch = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowSearch(!showSearch);
+    if (!showSearch) {
+      // Clear search when opening
+      setSearchQuery("");
+    }
+  };
+
   return (
     <>
-      <span className="md:text-[10px] text-xs font-medium px-2">
-        Switch team
-      </span>
-      <div className="p-2">
-        <Input
-          placeholder="Search teams..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onClick={handleInputClick}
-          onKeyDown={(e) => e.stopPropagation()}
-          className="h-8 text-xs"
-        />
+      <div className="flex justify-between items-center px-2">
+        <span className="md:text-[10px] text-xs font-medium">
+          Switch team
+        </span>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6"
+          onClick={toggleSearch}
+        >
+          <Icon name="search" size={16} />
+        </Button>
       </div>
+      
+      {showSearch && (
+        <div className="p-2 hidden md:block">
+          <Input
+            placeholder="Search teams..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onClick={handleInputClick}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="h-8 text-xs md:text-xs"
+            autoFocus
+          />
+        </div>
+      )}
+      
       {filteredTeams.length > 0 ? (
         filteredTeams.map((team) => (
           <ResponsiveDropdownItem asChild key={team.url}>
@@ -214,6 +239,21 @@ function SwitchTeam() {
           No teams found
         </div>
       )}
+
+       {showSearch && (
+        <div className="p-2 md:hidden">
+          <Input
+            placeholder="Search teams..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onClick={handleInputClick}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="h-8 text-xs md:text-xs"
+            autoFocus
+          />
+        </div>
+      )}
+      
       <ResponsiveDropdownItem
         className="gap-4 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
         aria-disabled

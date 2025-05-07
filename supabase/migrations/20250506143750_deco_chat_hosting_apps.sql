@@ -15,7 +15,7 @@ CREATE TABLE deco_chat_hosting_apps(
 CREATE INDEX idx_hosting_apps_workspace
   ON deco_chat_hosting_apps (workspace);
 
--- Optional: index for fast lookup by workspace
+-- Optional: index for fast lookup by slug
 CREATE INDEX idx_hosting_apps_slug
   ON deco_chat_hosting_apps (slug);
 

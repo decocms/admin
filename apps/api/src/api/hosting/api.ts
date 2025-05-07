@@ -110,26 +110,29 @@ export const deployApp = createApiHandler({
     };
 
     // 2. Create or update the script under the fixed namespace
-    await c.var.cf.workersForPlatforms.dispatch.namespaces.scripts.update(
-      env.CF_DISPATCH_NAMESPACE,
-      scriptSlug,
-      {
-        account_id: env.CF_ACCOUNT_ID,
-        metadata: {
-          main_module: scriptFileName,
-          compatibility_flags: ["nodejs_compat"],
+    const result = await c.var.cf.workersForPlatforms.dispatch.namespaces
+      .scripts.update(
+        env.CF_DISPATCH_NAMESPACE,
+        scriptSlug,
+        {
+          account_id: env.CF_ACCOUNT_ID,
+          metadata: {
+            main_module: scriptFileName,
+            compatibility_flags: ["nodejs_compat"],
+          },
         },
-      },
-      {
-        method: "put",
-        body,
-      },
-    );
+        {
+          method: "put",
+          body,
+        },
+      );
     // 1. Try to update first
     const { data: updated, error: updateError } = await c.var.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .update({
         updated_at: new Date().toISOString(),
+        cloudflare_script_hash: result.etag,
+        cloudflare_worker_id: result.id,
       })
       .eq("slug", scriptSlug)
       .select("*")
@@ -151,6 +154,8 @@ export const deployApp = createApiHandler({
         workspace,
         slug: scriptSlug,
         updated_at: new Date().toISOString(),
+        cloudflare_script_hash: result.etag,
+        cloudflare_worker_id: result.id,
       })
       .select("*")
       .single();

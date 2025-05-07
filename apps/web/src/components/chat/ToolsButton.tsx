@@ -1,6 +1,6 @@
-import { useThreadTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense, useMemo } from "react";
+import { useTools } from "../../hooks/useTools.ts";
 import { DockedToggleButton } from "../pageLayout.tsx";
 import { useChatContext } from "./context.tsx";
 
@@ -31,10 +31,10 @@ ToolsButton.Skeleton = () => (
 
 ToolsButton.UI = () => {
   const { agentId, threadId } = useChatContext();
-  const { data: tools } = useThreadTools(agentId, threadId);
+  const tools_set = useTools(agentId, threadId);
   const numberOfTools = useMemo(
-    () => Object.values(tools).reduce((acc, tool) => acc + tool.length, 0),
-    [tools],
+    () => Object.values(tools_set).reduce((acc, tool) => acc + tool.length, 0),
+    [tools_set],
   );
 
   return (

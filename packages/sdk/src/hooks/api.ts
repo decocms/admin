@@ -43,4 +43,16 @@ export const KEYS = {
     workspace,
     agentId,
   ],
+  THREAD: (
+    workspace: Workspace,
+    threadId: string,
+  ) => ["thread", workspace, threadId],
+  THREAD_MESSAGES: (
+    workspace: Workspace,
+    threadId: string,
+  ) => ["thread-messages", workspace, threadId],
+  THREAD_TOOLS: (
+    workspace: Workspace,
+    threadId: string,
+  ) => ["thread-tools", workspace, threadId],
 };

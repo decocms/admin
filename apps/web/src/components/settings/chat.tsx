@@ -1,9 +1,4 @@
-import {
-  AgentSchema,
-  useIntegrations,
-  useThreadTools,
-  useUpdateThreadTools,
-} from "@deco/sdk";
+import { AgentSchema, useIntegrations, useUpdateThreadTools } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Form, FormDescription, FormLabel } from "@deco/ui/components/form.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -11,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
+import { useTools } from "../../hooks/useTools.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { TabScrollArea } from "../pageLayout.tsx";
 import { getDiffCount, Integration } from "../toolsets/index.tsx";
@@ -23,10 +19,10 @@ type Chat = z.infer<typeof ChatSchema>;
 
 function ThreadSettingsTab() {
   const { agentId, threadId } = useChatContext();
-  const { data: tools } = useThreadTools(agentId, threadId);
+  const tools_set = useTools(agentId, threadId);
   const { data: installedIntegrations } = useIntegrations();
   const updateTools = useUpdateThreadTools(agentId, threadId);
-  const defaultValues = useMemo(() => ({ tools_set: tools }), [tools]);
+  const defaultValues = useMemo(() => ({ tools_set }), [tools_set]);
 
   const form = useForm<Chat>({
     resolver: zodResolver(ChatSchema),
@@ -39,7 +35,7 @@ function ThreadSettingsTab() {
     const { tools_set: _, ...rest } = form.formState.dirtyFields;
 
     return Object.keys(rest).length +
-      getDiffCount(toolsSet, tools);
+      getDiffCount(toolsSet, tools_set);
   })();
 
   const setIntegrationTools = (

@@ -1,12 +1,12 @@
-import { useThreadMessages } from "@deco/sdk";
+import { useThread } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { format } from "date-fns";
 import { useParams } from "react-router";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
-import { DockedPageLayout } from "../pageLayout.tsx";
 import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
+import { DockedPageLayout } from "../pageLayout.tsx";
 
 const MAIN = {
   header: Header,
@@ -32,7 +32,7 @@ function Header() {
       resourceId,
       metadata: { agentId } = {},
     } = {},
-  } = useThreadMessages(id);
+  } = useThread(id);
 
   return (
     <div className="flex justify-between items-center gap-2 w-full">
@@ -82,7 +82,7 @@ function Header() {
 
 function AuditDetail() {
   const id = useThreadId();
-  const { data: thread } = useThreadMessages(id);
+  const { data: thread } = useThread(id);
 
   return (
     <ChatProvider

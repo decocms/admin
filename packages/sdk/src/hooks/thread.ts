@@ -8,22 +8,41 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { getThreadWithMessages, listThreads } from "../crud/thread.ts";
+import {
+  getThread,
+  getThreadMessages,
+  getThreadTools,
+  listThreads,
+} from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
+/** Hook for fetching thread details */
+export const useThread = (threadId: string) => {
+  const { workspace } = useSDK();
+  return useSuspenseQuery({
+    queryKey: KEYS.THREAD(workspace, threadId),
+    queryFn: ({ signal }) => getThread(workspace, threadId, { signal }),
+  });
+};
+
 /** Hook for fetching messages from a thread */
 export const useThreadMessages = (threadId: string) => {
   const { workspace } = useSDK();
-
-  const result = useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace, threadId),
-    queryFn: ({ signal }) =>
-      getThreadWithMessages(workspace, threadId, { signal }),
+  return useSuspenseQuery({
+    queryKey: KEYS.THREAD_MESSAGES(workspace, threadId),
+    queryFn: ({ signal }) => getThreadMessages(workspace, threadId, { signal }),
   });
+};
 
-  return result;
+/** Hook for fetching tools_set from a thread */
+export const useThreadTools = (threadId: string) => {
+  const { workspace } = useSDK();
+  return useSuspenseQuery({
+    queryKey: KEYS.THREAD_TOOLS(workspace, threadId),
+    queryFn: ({ signal }) => getThreadTools(workspace, threadId, { signal }),
+  });
 };
 
 export const useUpdateThreadMessages = () => {
@@ -32,7 +51,7 @@ export const useUpdateThreadMessages = () => {
 
   return useCallback(
     (threadId: string, messages: unknown[] = []) => {
-      const messagesKey = KEYS.THREADS(workspace, threadId);
+      const messagesKey = KEYS.THREAD_MESSAGES(workspace, threadId);
 
       client.cancelQueries({ queryKey: messagesKey });
       client.setQueryData(messagesKey, messages);
@@ -68,16 +87,6 @@ export const useThreads = (userId: string) => {
   });
 };
 
-export const useThreadTools = (agentId: string, threadId: string) => {
-  const { workspace } = useSDK();
-  const agentStub = useAgentStub(agentId, threadId);
-
-  return useSuspenseQuery<Record<string, string[]>>({
-    queryKey: KEYS.TOOLS(workspace, agentId, threadId),
-    queryFn: () => agentStub.getThreadTools(),
-  });
-};
-
 export const useUpdateThreadTools = (agentId: string, threadId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
@@ -99,8 +108,8 @@ export const useUpdateThreadTools = (agentId: string, threadId: string) => {
     },
     onSuccess: (_, variables) => {
       client.setQueryData(
-        KEYS.TOOLS(workspace, agentId, threadId),
-        () => variables,
+        KEYS.THREAD_TOOLS(workspace, threadId),
+        () => ({ tools_set: variables }),
       );
     },
   });

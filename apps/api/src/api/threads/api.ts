@@ -4,11 +4,15 @@ import {
   type InStatement,
 } from "@libsql/client/web";
 import { env } from "hono/adapter";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
+import {
+  convertToUIMessages,
+  MessageType,
+} from "../../utils/convertToUIMessages.ts";
 import { generateUUIDv5, toAlphanumericId } from "../../utils/slugify.ts";
-import { convertToUIMessages } from "../../utils/convertToUIMessages.ts";
 
 const safeParse = (str: string) => {
   try {
@@ -163,9 +167,9 @@ export const listThreads = createApiHandler({
   },
 });
 
-export const getThread = createApiHandler({
-  name: "THREADS_GET_WITH_MESSAGES",
-  description: "Get a thread and its messages by thread id",
+export const getThreadMessages = createApiHandler({
+  name: "THREADS_GET_MESSAGES",
+  description: "Get only the messages for a thread by thread id",
   schema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
@@ -182,43 +186,84 @@ export const getThread = createApiHandler({
       ),
     ]);
 
-    // Get thread details and messages in a single query
-    const result = await client.execute({
-      sql: `
-        SELECT 
-          t.*,
-          json_group_array(
-            json_object(
-              'id', m.id,
-              'thread_id', m.thread_id,
-              'content', m.content,
-              'role', m.role,
-              'type', m.type,
-              'createdAt', m.createdAt
-            )
-          ) as messages
-        FROM mastra_threads t
-        LEFT JOIN mastra_messages m ON t.id = m.thread_id
-        WHERE t.id = ?
-        GROUP BY t.id
-      `,
+    const { data: result, error } = await safeExecute(client, {
+      sql:
+        `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
       args: [id],
     });
 
-    if (!result.rows.length) {
-      throw new Error("Thread not found");
+    if (!result?.rows.length || error) {
+      return [];
     }
 
-    const thread = ThreadSchema.parse(result.rows[0]);
-    const messages = JSON.parse(String(result.rows[0].messages || "[]"))
+    const messages = result.rows
       .map((row: unknown) => MessageSchema.safeParse(row)?.data)
       .filter((a: Message | undefined): a is Message => !!a);
 
-    const uiMessages = convertToUIMessages(messages);
+    return convertToUIMessages(messages as unknown as MessageType[]);
+  },
+});
 
-    return {
-      ...thread,
-      messages: uiMessages,
-    };
+export const getThread = createApiHandler({
+  name: "THREADS_GET",
+  description: "Get a thread by thread id (without messages)",
+  schema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
+
+    const { data: result, error } = await safeExecute(client, {
+      sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
+      args: [id],
+    });
+
+    if (!result?.rows.length || error) {
+      throw new HTTPException(404, { message: "Thread not found" });
+    }
+
+    const thread = ThreadSchema.parse(result.rows[0]);
+
+    return thread;
+  },
+});
+
+export const getThreadTools = createApiHandler({
+  name: "THREADS_GET_TOOLS",
+  description: "Get the tools_set for a thread by thread id",
+  schema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(root, slug, c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
+
+    const { data: result } = await safeExecute(client, {
+      sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
+      args: [id],
+    });
+
+    const { data: thread } = ThreadSchema.safeParse(result?.rows[0] ?? {});
+
+    return { tools_set: thread?.metadata.tools_set ?? null };
   },
 });

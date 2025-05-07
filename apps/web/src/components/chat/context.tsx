@@ -91,14 +91,14 @@ export function ChatProvider({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
   const onceRef = useRef(false);
-  const { data: messagesData } = disableThreadMessages
+  const { data: initialMessages } = disableThreadMessages
     ? { data: undefined }
     : useThreadMessages(threadId);
-  const initialMessages = messagesData?.messages ?? [];
+
   const { preferences } = useUserPreferences();
 
   const chat = useChat({
-    initialMessages,
+    initialMessages: initialMessages || [],
     credentials: "include",
     headers: { "x-deno-isolate-instance-id": agentRoot },
     api: new URL("/actors/AIAgent/invoke/stream", LEGACY_API_SERVER_URL).href,

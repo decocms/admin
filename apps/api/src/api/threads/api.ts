@@ -1,4 +1,8 @@
-import { createClient } from "@libsql/client/web";
+import {
+  type Client,
+  createClient,
+  type InStatement,
+} from "@libsql/client/web";
 import { env } from "hono/adapter";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
@@ -11,6 +15,14 @@ const safeParse = (str: string) => {
     return JSON.parse(str);
   } catch {
     return str;
+  }
+};
+
+const safeExecute = async (client: Client, stmt: InStatement) => {
+  try {
+    return { data: await client.execute(stmt), error: null };
+  } catch (e) {
+    return { data: null, error: e };
   }
 };
 
@@ -114,12 +126,15 @@ export const listThreads = createApiHandler({
       ? `WHERE ${whereClauses.join(" AND ")}`
       : "";
 
-    // Get paginated threads
-    const result = await client.execute({
+    const { data: result, error } = await safeExecute(client, {
       sql:
         `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
       args: [...args, limit + 1], // Fetch one extra to determine if there are more
     });
+
+    if (!result || error) {
+      return { threads: [], pagination: { hasMore: false, nextCursor: null } };
+    }
 
     const threads = result.rows
       .map((row: unknown) => ThreadSchema.safeParse(row)?.data)

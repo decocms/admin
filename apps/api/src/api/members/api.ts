@@ -217,7 +217,7 @@ export const addTeamMember = createApiHandler({
 
 export const updateTeamMember = createApiHandler({
   name: "TEAM_MEMBERS_UPDATE",
-  description: "Update a team member. Usefull for updating admin status.",
+  description: "Update a team member. Useful for updating admin status.",
   schema: z.object({
     teamId: z.number(),
     memberId: z.number(),

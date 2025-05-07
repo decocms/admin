@@ -27,6 +27,31 @@ export const assertUserHasAccessToTeamById = async (
   });
 };
 
+// Helper function to check if user is admin of a team.
+// Admin is the first user from the team
+export async function assertUserIsTeamAdmin(
+  c: AppContext,
+  teamId: number,
+  userId: string,
+) {
+  // TODO: implement Roles & Permission
+  const { data: teamMember, error } = await c
+    .get("db")
+    .from("members")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error) throw error;
+  if (!teamMember || teamMember.user_id !== userId) {
+    throw new HTTPException(403, {
+      message: "User does not have admin access to this team",
+    });
+  }
+}
+
 export const assertUserHasAccessToTeamBySlug = async (
   { teamSlug, userId }: { teamSlug: string; userId: string },
   c: AppContext,

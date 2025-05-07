@@ -23,10 +23,6 @@ export const KEYS = {
     agentId: string,
     threadId: string,
   ) => ["tools", workspace, agentId, threadId],
-  MEMBERS: (
-    workspace: Workspace,
-    teamId?: number,
-  ) => ["members", workspace, teamId],
   AUDITS: (workspace: Workspace, options: Options) => [
     "audit",
     workspace,
@@ -38,6 +34,9 @@ export const KEYS = {
   ],
   TEAMS: () => ["teams"],
   TEAM: (slug: string) => ["team", slug],
+  TEAM_MEMBERS: (
+    slugOrId: string | number,
+  ) => ["taem", slugOrId, "members"],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,

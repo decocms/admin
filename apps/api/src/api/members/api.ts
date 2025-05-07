@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
+import {
+  assertUserHasAccessToTeamById,
+  assertUserIsTeamAdmin,
+} from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
 
@@ -71,18 +74,6 @@ const mapMember = (
   profiles: userFromDatabase(member.profiles),
   admin: member.user_id === admin?.user_id,
 });
-
-// Helper function to check if user is admin of a team.
-// Admin is the first user from the team
-async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
-  // TODO: implement Roles & Permission
-  const { data: teamMember, error } = await getTeamAdmin(c, teamId);
-
-  if (error) throw error;
-  if (!teamMember || teamMember.user_id !== userId) {
-    throw new Error("User does not have admin access to this team");
-  }
-}
 
 export const getTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_GET",
@@ -168,7 +159,7 @@ export const addTeamMember = createApiHandler({
     const user = c.get("user");
 
     // Verify the user has admin access to the team
-    await verifyTeamAdmin(c, teamId, user.id);
+    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     // TODO: add flow to invite user that is not present in system.
     const { data: profile } = await c.get("db").from("profiles").select(
@@ -235,7 +226,7 @@ export const updateTeamMember = createApiHandler({
     const user = c.get("user");
 
     // Verify the user has admin access to the team
-    await verifyTeamAdmin(c, teamId, user.id);
+    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -279,7 +270,7 @@ export const removeTeamMember = createApiHandler({
     const user = c.get("user");
 
     // Verify the user has admin access to the team
-    await verifyTeamAdmin(c, teamId, user.id);
+    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c

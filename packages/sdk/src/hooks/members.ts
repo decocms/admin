@@ -10,7 +10,6 @@ import {
   removeTeamMember,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
 
 /**
  * Hook to fetch team members
@@ -20,10 +19,8 @@ export const useTeamMembers = (
   teamId: number | null,
   { withActivity }: { withActivity?: boolean } = { withActivity: false },
 ) => {
-  const { workspace } = useSDK();
-
   return useSuspenseQuery({
-    queryKey: KEYS.MEMBERS(workspace, teamId ?? -1),
+    queryKey: KEYS.TEAM_MEMBERS(teamId ?? -1),
     queryFn: ({ signal }) =>
       typeof teamId === "number"
         ? getTeamMembers({ teamId, withActivity }, signal)
@@ -37,13 +34,12 @@ export const useTeamMembers = (
  */
 export const useAddTeamMember = () => {
   const queryClient = useQueryClient();
-  const { workspace } = useSDK();
 
   return useMutation({
     mutationFn: ({ teamId, email }: { teamId: number; email: string }) =>
       addTeamMember(teamId, email),
     onSuccess: (newMember, { teamId }) => {
-      const membersKey = KEYS.MEMBERS(workspace, teamId);
+      const membersKey = KEYS.TEAM_MEMBERS(teamId);
 
       queryClient.cancelQueries({ queryKey: membersKey });
       queryClient.setQueryData<Member[]>(
@@ -60,13 +56,12 @@ export const useAddTeamMember = () => {
  */
 export const useRemoveTeamMember = () => {
   const queryClient = useQueryClient();
-  const { workspace } = useSDK();
 
   return useMutation({
     mutationFn: ({ teamId, memberId }: { teamId: number; memberId: number }) =>
       removeTeamMember(teamId, memberId),
     onSuccess: (_, { teamId, memberId }) => {
-      const membersKey = KEYS.MEMBERS(workspace, teamId);
+      const membersKey = KEYS.TEAM_MEMBERS(teamId);
 
       queryClient.cancelQueries({ queryKey: membersKey });
       queryClient.setQueryData<Member[]>(

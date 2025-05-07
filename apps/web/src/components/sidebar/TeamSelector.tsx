@@ -37,7 +37,10 @@ function useUserTeam(): Team {
   };
 }
 
-export function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
+export function useCurrentTeam(): Team & {
+  isPersonalTeam: boolean;
+  teamSlug?: string;
+} {
   const { teamSlug } = useParams();
   const userTeam = useUserTeam();
 
@@ -49,6 +52,7 @@ export function useCurrentTeam(): Team & { isPersonalTeam: boolean } {
 
   return {
     avatarURL,
+    teamSlug,
     url,
     label,
     isPersonalTeam,

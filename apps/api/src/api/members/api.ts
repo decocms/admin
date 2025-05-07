@@ -1,89 +1,41 @@
 import { z } from "zod";
-import {
-  assertUserHasAccessToTeamById,
-  assertUserIsTeamAdmin,
-} from "../../auth/assertions.ts";
+import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
+import {
+  sendInviteEmail,
+  getInviteIdByEmailAndTeam,
+  checkAlreadyExistUserIdInTeam,
+  insertInvites,
+  getTeamById,
+  userBelongsToTeam
+} from "./invitesUtils.ts";
 
-const getTeamAdmin = async (c: AppContext, teamId: number) =>
-  await c
+// Helper function to check if user is admin of a team
+async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
+  const { data: teamMember, error } = await c
     .get("db")
     .from("members")
     .select("*")
     .eq("team_id", teamId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
-
-export const updateActivityLog = async (c: AppContext, {
-  teamId,
-  userId,
-  action,
-}: {
-  teamId: number;
-  userId: string;
-  action: "add_member" | "remove_member";
-}) => {
-  const currentTimestamp = new Date().toISOString();
-  const { data } = await c.get("db")
-    .from("members")
-    .select("activity")
     .eq("user_id", userId)
-    .eq("team_id", teamId)
+    .eq("admin", true)
     .single();
 
-  const activityLog = data?.activity || [];
-
-  return await c.get("db")
-    .from("members")
-    .update({
-      activity: [...activityLog, {
-        action,
-        timestamp: currentTimestamp,
-      }],
-    })
-    .eq("team_id", teamId)
-    .eq("user_id", userId);
-};
-
-interface DbMember {
-  id: number;
-  user_id: string | null;
-  admin: boolean | null;
-  created_at: string | null;
-  profiles: {
-    /** @description is user id */
-    id: string;
-    name: string | null;
-    email: string;
-    metadata: {
-      id: string | null;
-      // deno-lint-ignore no-explicit-any
-      raw_user_meta_data: any;
-    };
-  };
+  if (error) throw error;
+  if (!teamMember) {
+    throw new Error("User does not have admin access to this team");
+  }
+  return teamMember;
 }
 
-const mapMember = (
-  member: DbMember,
-  admin?: Pick<DbMember, "user_id"> | null,
-) => ({
-  ...member,
-  // @ts-expect-error - Supabase user metadata is not typed
-  profiles: userFromDatabase(member.profiles),
-  admin: member.user_id === admin?.user_id,
-});
-
+// New API handlers
 export const getTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  schema: z.object({
-    teamId: z.number(),
-    withActivity: z.boolean().optional(),
-  }),
+  schema: z.object({ teamId: z.number() }),
   handler: async (props, c) => {
-    const { teamId, withActivity } = props;
+    const { teamId } = props;
     const user = c.get("user");
 
     // First verify the user has access to the team
@@ -93,90 +45,6 @@ export const getTeamMembers = createApiHandler({
     );
 
     // Get all members of the team
-    const [{ data, error }, { data: teamAdminMember }] = await Promise.all([
-      c
-        .get("db")
-        .from("members")
-        .select(`
-        id,
-        user_id,
-        admin,
-        created_at,
-        profiles!inner (
-          id:user_id,
-          name,
-          email,
-          metadata:users_meta_data_view(id, raw_user_meta_data)
-        )
-      `)
-        .eq("team_id", teamId)
-        .is("deleted_at", null),
-      getTeamAdmin(c, teamId),
-    ]);
-
-    if (error) throw error;
-
-    const members = data.map((member) => mapMember(member, teamAdminMember));
-
-    let activityByUserId: Record<string, string> = {};
-
-    if (withActivity) {
-      const { data: activityData } = await c.get("db").rpc(
-        "get_latest_user_activity",
-        {
-          p_resource: "team",
-          p_key: "id",
-          p_value: `${teamId}`,
-        },
-      ).select("user_id, created_at");
-
-      if (activityData) {
-        activityByUserId = activityData.reduce((res, activity) => {
-          res[activity.user_id] = activity.created_at;
-          return res;
-        }, {} as Record<string, string>);
-      }
-
-      return members.map((member) => ({
-        ...member,
-        lastActivity: activityByUserId[member.user_id ?? ""],
-      }));
-    }
-
-    return members;
-  },
-});
-
-export const addTeamMember = createApiHandler({
-  name: "TEAM_MEMBERS_ADD",
-  description: "Add a new member to a team",
-  schema: z.object({
-    teamId: z.number(),
-    email: z.string(),
-  }),
-  handler: async (props, c) => {
-    const { teamId, email } = props;
-    const user = c.get("user");
-
-    // Verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
-
-    // TODO: add flow to invite user that is not present in system.
-    const { data: profile } = await c.get("db").from("profiles").select(
-      "user_id",
-    ).eq("email", email).single();
-
-    if (!profile) {
-      throw new Error("Email not found");
-    }
-
-    const { data: alreadyMember } = await c.get("db").from("members").select(
-      "id",
-    ).eq(
-      "team_id",
-      teamId,
-    ).eq("user_id", profile.user_id).maybeSingle();
-
     const { data, error } = await c
       .get("db")
       .from("members")
@@ -202,16 +70,274 @@ export const addTeamMember = createApiHandler({
           metadata:users_meta_data_view(id, raw_user_meta_data)
         )
       `)
-      .single();
-
-    await updateActivityLog(c, {
-      teamId,
-      userId: profile.user_id,
-      action: "add_member",
-    });
+      .eq("team_id", teamId)
+      .is("deleted_at", null);
 
     if (error) throw error;
-    return mapMember(data);
+
+    return data.map((member) => ({
+      ...member,
+      // @ts-expect-error - Supabase user metadata is not typed
+      profiles: userFromDatabase(member.profiles),
+    }));
+  },
+});
+
+// New invite team member handler
+export const inviteTeamMembers = createApiHandler({
+  name: "TEAM_MEMBERS_INVITE",
+  description: "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
+  schema: z.object({
+    teamId: z.string(),
+    invitees: z.array(z.object({
+      email: z.string().email(),
+      roles: z.array(z.object({
+        id: z.number(),
+        name: z.string()
+      }))
+    }))
+  }),
+  handler: async (props, c) => {
+    const { teamId, invitees } = props;
+    const db = c.get("db");
+    const user = c.get("user");
+    const teamIdAsNum = Number(teamId);
+
+    // Check for valid inputs
+    if (!invitees || !teamId || Number.isNaN(teamIdAsNum)) {
+      throw new Error("Missing or invalid information");
+    }
+
+    if (invitees.some(({ email }) => !email)) {
+      throw new Error("Missing emails");
+    }
+
+    // Apply default owner role for invitees without roles
+    const processedInvitees = invitees.map(invitee => {
+      if (!invitee.roles || invitee.roles.length === 0) {
+        return {
+          ...invitee,
+          roles: [{ id: 1, name: "owner" }]
+        };
+      }
+      return invitee;
+    });
+
+    // Check if any invitee has owner role and verify current user is owner
+    const hasOwnerInvitee = processedInvitees.some(({ roles }) => {
+      return roles.some(({ id }) => id === 1); // Assuming OWNER role ID is 1
+    });
+
+    if (hasOwnerInvitee) {
+      // Verify the user is an owner
+      const { data: teamOwners } = await db
+        .from("members")
+        .select("id")
+        .eq("team_id", teamIdAsNum)
+        .eq("user_id", user.id)
+        .eq("admin", true) // Assuming admin=true means owner
+        .limit(1);
+
+      if (!teamOwners || teamOwners.length === 0) {
+        throw new Error("You are not allowed to invite users as owners");
+      }
+    }
+
+    // Process each invitee
+    const inviteesPromises = processedInvitees.map(async (invitee) => {
+      const email = invitee.email.trim();
+      
+      // Check if already invited or already a team member
+      const [invites, alreadyExistsUserInTeam] = await Promise.all([
+        getInviteIdByEmailAndTeam({ email, teamId }, db),
+        checkAlreadyExistUserIdInTeam({ email, teamId }, db),
+      ]);
+
+      return {
+        invitee,
+        ignoreInvitee: (invites && invites.length > 0) || alreadyExistsUserInTeam,
+      };
+    });
+
+    const inviteesResults = await Promise.all(inviteesPromises);
+
+    // Filter out invitees that already have an invite or are already team members
+    const inviteesToInvite = inviteesResults
+      .filter((inviteeResult) => !inviteeResult.ignoreInvitee)
+      .map((inviteeResult) => inviteeResult.invitee);
+
+    if (inviteesToInvite.length === 0) {
+      return { message: "All users already invited or are members of the team" };
+    }
+
+    // Get team data
+    const { data: teamData, error: teamError } = await getTeamById(teamId, db);
+
+    if (!teamData || teamError) {
+      throw new Error("Team not found");
+    }
+
+    if (!userBelongsToTeam(teamData, user.id)) {
+      throw new Error(`You don't have access to team ${teamId}`);
+    }
+
+    // Create invites
+    const invites = inviteesToInvite.map((invitee) => ({
+      invited_email: invitee.email.toLowerCase(),
+      team_id: teamIdAsNum,
+      team_name: teamData.name,
+      inviter_id: user.id,
+      invited_roles: invitee.roles,
+    }));
+
+    const inviteResult = await insertInvites(invites, db);
+
+    if (inviteResult.error) {
+      throw new Error("Failed to create invites");
+    }
+
+    // Send emails
+    const requestPromises = inviteResult.data?.map(async (invite) => {
+      const rolesNames = invite.invited_roles.map(({ name }) => name);
+
+      await sendInviteEmail({
+        ...invite,
+        inviter: user.email,
+        roles: rolesNames,
+      });
+      
+      // Track event
+      // Note: This would need to be implemented or imported
+      // invoke["deco-sites/admin"].actions.userevents.sendEvent({
+      //   name: "invite_team_member",
+      //   properties: { teamId, invitedEmail: invite.invited_email },
+      // });
+    });
+
+    await Promise.all(requestPromises || []);
+
+    return {
+      message: `Invite sent to their home screen. Ask them to log in at https://deco.cx/admin`,
+    };
+  },
+});
+
+// Accept invite handler
+export const acceptInvite = createApiHandler({
+  name: "TEAM_INVITE_ACCEPT",
+  description: "Accept a team invitation",
+  schema: z.object({
+    id: z.string(),
+  }),
+  handler: async (props, c) => {
+    const { id } = props;
+    const db = c.get("db");
+    const user = c.get("user");
+
+    // Get invite details
+    const { data: invite, error: inviteError } = await db
+      .from("invites")
+      .select("team_id, team_name, invited_email, invited_roles")
+      .eq("id", id)
+      .single();
+
+    if (!invite || inviteError) {
+      throw new Error("We couldn't find your invitation. It may be invalid or already accepted.");
+    }
+
+    // Check if the invite is for the current user
+    const { data: profiles, error: profilesError } = await db
+      .from("profiles")
+      .select("user_id")
+      .eq("email", invite.invited_email.toLowerCase());
+
+    if (profilesError) {
+      throw profilesError;
+    }
+
+    if (!profiles || !profiles[0]) {
+      throw new Error("Profile not found");
+    }
+
+    if (profiles[0].user_id !== user.id) {
+      throw new Error("It looks like this invite isn't for you. Please ensure your email matches the one specified in the invitation.");
+    }
+
+    // Check if user is already in the team
+    const alreadyExistsUserInTeam = await checkAlreadyExistUserIdInTeam({
+      userId: user.id,
+      teamId: invite.team_id.toString(),
+    }, db);
+
+    let insertResult = null;
+    let insertError = null;
+
+    // Add user to team if not already a member
+    if (!alreadyExistsUserInTeam) {
+      const { data, error } = await db
+        .from("members")
+        .insert({
+          team_id: invite.team_id,
+          user_id: user.id,
+          deleted_at: null,
+        })
+        .select();
+
+      insertResult = data;
+      insertError = error;
+
+      if (error) {
+        throw error;
+      }
+
+      // Apply roles
+      // This would require implementing or importing PolicyClient
+      // const policyClient = PolicyClient.getInstance();
+      // await Promise.all(invite.invited_roles.map(async ({ id }) => {
+      //   await policyClient.updateUserRole(
+      //     Number(invite.team_id),
+      //     invite.invited_email,
+      //     {
+      //       roleId: id,
+      //       action: "grant",
+      //     },
+      //   );
+      // }));
+    }
+
+    // Delete the invite
+    await db.from("invites").delete().eq("id", id);
+
+    return {
+      ok: true,
+      teamId: invite.team_id,
+      teamName: invite.team_name,
+    };
+  },
+});
+
+// Delete invite handler
+export const deleteInvite = createApiHandler({
+  name: "TEAM_INVITE_DELETE",
+  description: "Delete a team invitation",
+  schema: z.object({
+    id: z.string(),
+  }),
+  handler: async (props, c) => {
+    const { id } = props;
+    const db = c.get("db");
+
+    const { data } = await db
+      .from("invites")
+      .delete()
+      .eq("id", id)
+      .select();
+
+    if (!data || data.length === 0) {
+      throw new Error("Invite not found");
+    }
+
+    return { ok: true };
   },
 });
 
@@ -222,7 +348,8 @@ export const updateTeamMember = createApiHandler({
     teamId: z.number(),
     memberId: z.number(),
     data: z.object({
-      admin: z.boolean().optional(),
+      admin: z.boolean().optional(),  
+      activity: z.array(z.any()).optional(),
     }),
   }),
   handler: async (props, c) => {
@@ -230,16 +357,15 @@ export const updateTeamMember = createApiHandler({
     const user = c.get("user");
 
     // Verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
+    await verifyTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
       .get("db")
       .from("members")
-      .select("id")
+      .select("*")
       .eq("id", memberId)
       .eq("team_id", teamId)
-      .is("deleted_at", null)
       .single();
 
     if (memberError) throw memberError;
@@ -274,16 +400,15 @@ export const removeTeamMember = createApiHandler({
     const user = c.get("user");
 
     // Verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
+    await verifyTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
       .get("db")
       .from("members")
-      .select("id, admin, user_id")
+      .select("*")
       .eq("id", memberId)
       .eq("team_id", teamId)
-      .is("deleted_at", null)
       .single();
 
     if (memberError) throw memberError;
@@ -307,21 +432,12 @@ export const removeTeamMember = createApiHandler({
       }
     }
 
-    const currentTimestamp = new Date();
     const { error } = await c
       .get("db")
       .from("members")
-      .update({
-        deleted_at: currentTimestamp.toISOString(),
-      })
-      .eq("team_id", teamId)
-      .eq("user_id", member.user_id!);
-
-    await updateActivityLog(c, {
-      teamId,
-      userId: member.user_id!,
-      action: "remove_member",
-    });
+      .delete()
+      .eq("id", memberId)
+      .eq("team_id", teamId);
 
     if (error) throw error;
     return { success: true };

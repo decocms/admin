@@ -27,10 +27,12 @@ const GLOBAL_TOOLS = [
   teamsAPI.deleteTeam,
   teamsAPI.listTeams,
   membersAPI.getTeamMembers,
-  membersAPI.addTeamMember,
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
   membersAPI.registerMemberActivity,
+  membersAPI.getMyInvites,
+  membersAPI.acceptInvite,
+  membersAPI.inviteTeamMembers,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
 ];

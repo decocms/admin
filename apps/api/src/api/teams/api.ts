@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createApiHandler } from "../../utils/context.ts";
-import { error } from "node:console";
+import { assertUserIsTeamAdmin } from "../../auth/assertions.ts";
+
+const OWNER_ROLE_ID = 1;
 
 export const getTeam = createApiHandler({
   name: "TEAMS_GET",
@@ -11,6 +13,8 @@ export const getTeam = createApiHandler({
   handler: async (props, c) => {
     const { slug } = props;
     const user = c.get("user");
+
+    await assertUserIsTeamAdmin(c, slug, user.id);
 
     const { data, error } = await c
       .get("db")
@@ -44,6 +48,13 @@ export const createTeam = createApiHandler({
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
+  /**
+   * This function handle this steps:
+   * 1. check if team slug already exists;
+   * 2. If team slug is free ok, procceed, and create team
+   * 3. Add user that made the request as team member of team with activity
+   * 4. Add member role as onwer (id: 1).
+   */
   handler: async (props, c) => {
     const { name, slug, stripe_subscription_id } = props;
     const user = c.get("user");
@@ -80,13 +91,19 @@ export const createTeam = createApiHandler({
         {
           team_id: team.id,
           user_id: user.id,
-          admin: true,
+          activity: [{
+            action: "add_member",
+            timestamp: new Date().toISOString(),
+          }],
         },
       ])
       .select()
       .single();
 
-    if (memberError) throw memberError;
+    if (memberError) {
+      await c.get("db").from("teams").delete().eq("id", team.id);
+      throw memberError;
+    }
 
     // Set the member's role_id to 1 in member_roles
     const { error: roleError } = await c
@@ -95,7 +112,7 @@ export const createTeam = createApiHandler({
       .insert([
         {
           member_id: member.id,
-          role_id: 1,
+          role_id: OWNER_ROLE_ID,
         },
       ]);
 
@@ -112,7 +129,7 @@ export const updateTeam = createApiHandler({
     id: z.number(),
     data: z.object({
       name: z.string().optional(),
-      slug: z.string().optional(),
+      slug: z.string(),
       stripe_subscription_id: z.string().optional(),
     }),
   }),
@@ -121,27 +138,9 @@ export const updateTeam = createApiHandler({
     const user = c.get("user");
 
     // First verify the user has admin access to the team
-    const { data: team, error: teamError } = await c
-      .get("db")
-      .from("teams")
-      .select(`
-        *,
-        members!inner (
-          id,
-          user_id,
-          admin
-        )
-      `)
-      .eq("id", id)
-      .eq("members.user_id", user.id)
-      .single();
+    await assertUserIsTeamAdmin(c, id, user.id);
 
-    if (teamError) throw teamError;
-
-    if (!team) {
-      throw new Error("Team not found or user does not have admin access");
-    }
-
+    // TODO: check if it's required
     // Enforce unique slug if being updated
     if (data.slug) {
       const { data: existingTeam, error: slugError } = await c
@@ -182,26 +181,8 @@ export const deleteTeam = createApiHandler({
     const { teamId } = props;
     const user = c.get("user");
 
-    // Verify admin access
-    const { data: team, error: teamError } = await c
-      .get("db")
-      .from("teams")
-      .select(`
-        *,
-        members!inner (
-          id,
-          user_id,
-          admin
-        )
-      `)
-      .eq("id", teamId)
-      .eq("members.user_id", user.id)
-      .single();
-
-    if (teamError) throw teamError;
-    if (!team) {
-      throw new Error("Team not found or user does not have admin access");
-    }
+    // First verify the user has admin access to the team
+    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     const { error } = await c
       .get("db")

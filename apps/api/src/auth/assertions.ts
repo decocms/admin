@@ -31,16 +31,27 @@ export const assertUserHasAccessToTeamById = async (
 // Admin is the first user from the team
 export async function assertUserIsTeamAdmin(
   c: AppContext,
-  teamId: number,
+  teamIdOrSlug: number | string,
   userId: string,
 ) {
   // TODO: implement Roles & Permission
-  const { data: teamMember, error } = await c
+  let queryBuilder = c
     .get("db")
     .from("members")
-    .select("*")
-    .eq("team_id", teamId)
-    .order("created_at", { ascending: true })
+    .select("user_id");
+
+  if (typeof teamIdOrSlug === "number") {
+    queryBuilder = queryBuilder.eq("team_id", teamIdOrSlug);
+  } else if (typeof teamIdOrSlug === "string") {
+    queryBuilder = queryBuilder.eq("slug", teamIdOrSlug);
+  } else {
+    throw new HTTPException(404, { message: "invalid team identifier" });
+  }
+
+  const { data: teamMember, error } = await queryBuilder
+    .order("created_at", {
+      ascending: true,
+    })
     .limit(1)
     .single();
 

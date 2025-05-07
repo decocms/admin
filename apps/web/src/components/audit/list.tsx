@@ -149,7 +149,7 @@ export function AuditListContent(
               threads={threads}
               sort={sort}
               onSortChange={handleSortChange}
-              onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
+              onRowClick={(threadId) => navigate(`/settings/audit/${threadId}`)}
             />
             {/* Pagination */}
             <div className="flex justify-center mt-4">

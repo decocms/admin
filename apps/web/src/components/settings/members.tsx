@@ -326,11 +326,11 @@ function MembersViewContent() {
 
 export default function MembersSettings() {
   return (
-    <>
+    <div className="container h-full max-w-7xl">
       <SettingsMobileHeader currentPage="members" />
       <Suspense fallback={<MembersViewLoading />}>
         <MembersViewContent />
       </Suspense>
-    </>
+    </div>
   );
 }

@@ -1,5 +1,12 @@
-import { Suspense, useDeferredValue, useMemo, useState } from "react";
 import {
+  PropsWithChildren,
+  Suspense,
+  useDeferredValue,
+  useMemo,
+  useState,
+} from "react";
+import {
+  type Member,
   useAddTeamMember,
   useRemoveTeamMember,
   useTeamMembers,
@@ -48,6 +55,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { timeAgo } from "../../utils/timeAgo.ts";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { cn } from "../../../../../packages/ui/src/lib/utils.ts";
 
 // Form validation schema
 const addMemberSchema = z.object({
@@ -185,6 +193,91 @@ function AddTeamMemberButton({ teamId }: { teamId?: number }) {
   );
 }
 
+type Columns = "name" | "role" | "lastActivity";
+type SortDir = "asc" | "desc";
+type Sort = `${Columns}_${SortDir}`;
+
+const getMemberName = (member: Member) =>
+  member.profiles.metadata.full_name ||
+  member.profiles.email;
+
+const compareMemberActivity = (a: Member, b: Member) => {
+  const aD = a.lastActivity ? new Date(a.lastActivity).getTime() : Infinity;
+  const bD = b.lastActivity ? new Date(b.lastActivity).getTime() : Infinity;
+
+  return aD - bD;
+};
+
+const compareMemberRole = (a: Member, b: Member) =>
+  (a.admin ? 0 : 1) - (b.admin ? 0 : 1);
+
+const sortFnS: Record<
+  Columns,
+  Partial<Record<SortDir, (a: Member, b: Member) => number>>
+> = {
+  name: {
+    asc: (a, b) => getMemberName(a).localeCompare(getMemberName(b)),
+    desc: (a, b) => -getMemberName(a).localeCompare(getMemberName(b)),
+  },
+  role: {
+    asc: (a, b) => compareMemberRole(a, b),
+    desc: (a, b) => -compareMemberRole(a, b),
+  },
+  lastActivity: {
+    asc: (a, b) => compareMemberActivity(a, b),
+    desc: (a, b) => -compareMemberActivity(a, b),
+  },
+} as const;
+
+function TableHeadSort(
+  { onClick, sort, children, mode }: PropsWithChildren<
+    { onClick: () => void; sort?: SortDir; mode?: SortDir }
+  >,
+) {
+  const hasBothArrows = mode === undefined;
+  const hasAsc = hasBothArrows || mode === "asc";
+  const hasDesc = hasBothArrows || mode === "desc";
+  return (
+    <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-slate-700 text-sm h-10">
+      <button
+        type="button"
+        className="flex items-center gap-1 cursor-pointer select-none"
+        onClick={onClick}
+      >
+        {children}
+        <span
+          className={cn(
+            "inline-flex items-center transition-transform",
+          )}
+        >
+          {hasAsc && (
+            <Icon
+              key="desc"
+              name="arrow_upward"
+              size={16}
+              className={cn(
+                "transition-colors",
+                sort === "asc" ? "text-slate-700" : "text-slate-300",
+              )}
+            />
+          )}
+          {hasDesc && (
+            <Icon
+              key="up"
+              name="arrow_upward"
+              size={16}
+              className={cn(
+                "transition-colors rotate-180 text-slate-300",
+                sort === "desc" ? "text-slate-700" : "text-slate-300",
+              )}
+            />
+          )}
+        </span>
+      </button>
+    </TableHead>
+  );
+}
+
 function MembersViewContent() {
   const { teamSlug } = useCurrentTeam();
   const { data: teams } = useTeams();
@@ -197,6 +290,7 @@ function MembersViewContent() {
   });
   const removeMemberMutation = useRemoveTeamMember();
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("name_asc");
   const deferredQuery = useDeferredValue(query);
   const filteredMembers = useMemo(
     () =>
@@ -210,6 +304,13 @@ function MembersViewContent() {
         : members,
     [members, deferredQuery],
   );
+  const sortInfo = useMemo(() => sort.split("_") as [Columns, SortDir], [sort]);
+  const sortMembers = useMemo(() => {
+    const [col, sortDir] = sortInfo;
+    const fn = sortFnS[col][sortDir] ?? sortFnS.name.asc;
+
+    return filteredMembers.sort(fn);
+  }, [sort, filteredMembers]);
 
   const isMobile = useIsMobile();
 
@@ -226,6 +327,8 @@ function MembersViewContent() {
     }
   };
 
+  const [col, sortDir] = sortInfo;
+
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
       <MemberTitle />
@@ -234,11 +337,36 @@ function MembersViewContent() {
         <MemberTableHeader onChange={setQuery} />
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Role</TableHead>
-              {!isMobile && <TableHead>Last active</TableHead>}
-              <TableHead className="w-[50px]">
+            <TableRow className="h-14">
+              <TableHeadSort
+                onClick={() => setSort("name_asc")}
+                sort={col === "name" ? sortDir : undefined}
+                mode="asc"
+              >
+                Name
+              </TableHeadSort>
+              <TableHeadSort
+                onClick={() =>
+                  setSort(sort === "role_asc" ? "role_desc" : "role_asc")}
+                sort={col === "role" ? sortDir : undefined}
+              >
+                Role
+              </TableHeadSort>
+              {!isMobile &&
+                (
+                  <TableHeadSort
+                    onClick={() =>
+                      setSort(
+                        sort === "lastActivity_asc"
+                          ? "lastActivity_desc"
+                          : "lastActivity_asc",
+                      )}
+                    sort={col === "lastActivity" ? sortDir : undefined}
+                  >
+                    Last active
+                  </TableHeadSort>
+                )}
+              <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-slate-700 text-sm h-10 w-12.5">
                 <AddTeamMemberButton teamId={teamId} />
               </TableHead>
             </TableRow>
@@ -247,13 +375,16 @@ function MembersViewContent() {
             {members.length === 0
               ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-slate-700 "
+                  >
                     No members found. Add team members to get started.
                   </TableCell>
                 </TableRow>
               )
               : (
-                filteredMembers.map((member) => (
+                sortMembers.map((member) => (
                   <TableRow key={member.id} className="px-4 py-1.5">
                     <TableCell>
                       <span className="flex gap-2 items-center w-43 md:w-56">
@@ -267,8 +398,7 @@ function MembersViewContent() {
 
                         <span className="flex flex-col gap-1 min-w-0">
                           <span className="font-semibold text-xs truncate">
-                            {member.profiles.metadata.full_name ||
-                              member.profiles.email}
+                            {getMemberName(member)}
                           </span>
                           <span className="text-[10px] leading-3.5 text-slate-500 truncate">
                             {member.profiles.email || "N/A"}
@@ -326,7 +456,7 @@ function MembersViewContent() {
 
 export default function MembersSettings() {
   return (
-    <div className="container h-full max-w-7xl">
+    <div className="h-full text-slate-700">
       <SettingsMobileHeader currentPage="members" />
       <Suspense fallback={<MembersViewLoading />}>
         <MembersViewContent />

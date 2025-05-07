@@ -1,17 +1,12 @@
 /**
  * Code generated inspired by https://github.com/mastra-ai/mastra/blob/7d8b7c78e61a96f0caf98e87f8c4d2b343995cbd/packages/core/src/memory/memory.ts#L532
  * and add some fixes.
- * 
+ *
  * Somehow I was not able to correctly type this. Maybe someone with more knowledge on the codebase with these types can fix it.
  * Maybe @camudo?
  */
 
-import type {
-  AssistantContent,
-  Message,
-  ToolContent,
-  UserContent
-} from "ai";
+import type { AssistantContent, Message, ToolContent, UserContent } from "ai";
 
 // Types for the memory system
 // TODO: better type this

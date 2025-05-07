@@ -111,10 +111,13 @@ export function ChatProvider({
       const files = fileDataRef.current;
       const allMessages = (messages as CreateMessage[]).slice(
         -LAST_MESSAGES_COUNT,
-      ).filter((msg) =>
-        JSON.stringify({ parts: msg.parts, content: msg.content }).length <
-          MAX_TOKENS
-      );
+      ).filter((msg, i, arr) => {
+        const isLast = i === arr.length - 1;
+        const isTooLong =
+          JSON.stringify({ parts: msg.parts, content: msg.content }).length >
+            MAX_TOKENS;
+        return isLast || !isTooLong;
+      });
       const last = allMessages.at(-1);
       const annotations = files && files.length > 0
         ? [

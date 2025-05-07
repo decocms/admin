@@ -1,18 +1,20 @@
 /**
- * Code generated from https://github.com/mastra-ai/mastra/blob/7d8b7c78e61a96f0caf98e87f8c4d2b343995cbd/packages/core/src/memory/memory.ts#L532
+ * Code generated inspired by https://github.com/mastra-ai/mastra/blob/7d8b7c78e61a96f0caf98e87f8c4d2b343995cbd/packages/core/src/memory/memory.ts#L532
+ * and add some fixes.
+ * 
+ * Somehow I was not able to correctly type this. Maybe someone with more knowledge on the codebase with these types can fix it.
+ * Maybe @camudo?
  */
 
 import type {
   AssistantContent,
-  CoreToolMessage,
   Message,
   ToolContent,
-  ToolInvocation,
-  ToolResultPart,
-  UserContent,
+  UserContent
 } from "ai";
 
 // Types for the memory system
+// TODO: better type this
 export type MessageType = {
   id: string;
   content: UserContent | AssistantContent | ToolContent;
@@ -26,108 +28,84 @@ export type MessageType = {
   type: "text" | "tool-call" | "tool-result";
 };
 
-function addToolMessageToChat({
-  toolMessage,
-  messages,
-  toolResultContents,
-}: {
-  toolMessage: CoreToolMessage;
-  messages: Message[];
-  toolResultContents: ToolResultPart[];
-}): {
-  chatMessages: Message[];
-  toolResultContents: ToolResultPart[];
-} {
-  const chatMessages = messages.map((message) => {
-    if (message.toolInvocations) {
-      return {
-        ...message,
-        toolInvocations: message.toolInvocations.map((toolInvocation) => {
-          const toolResult = toolMessage.content.find((tool) =>
-            tool.toolCallId === toolInvocation.toolCallId
-          );
+const toParts = (results: Map<string, unknown>) =>
+// deno-lint-ignore no-explicit-any
+(item: any): NonNullable<Message["parts"]>[number] => {
+  if (item.type === "tool-call") {
+    const result = results.get(item.toolCallId);
 
-          if (toolResult) {
-            return {
-              ...toolInvocation,
-              state: "result",
-              result: toolResult.result,
-            };
-          }
+    return {
+      type: "tool-invocation",
+      toolInvocation: {
+        state: result ? "result" : "call",
+        toolCallId: item.toolCallId,
+        toolName: item.toolName,
+        args: item.args,
+        result: result ?? undefined,
+      },
+    };
+  }
 
-          return toolInvocation;
-        }),
-      };
-    }
+  if (item.type === "reasoning") {
+    return {
+      ...item,
+      reasoning: item.text,
+    };
+  }
 
-    return message;
-  }) as Message[];
-
-  const resultContents = [...toolResultContents, ...toolMessage.content];
-
-  return { chatMessages, toolResultContents: resultContents };
-}
+  return item;
+};
 
 export function convertToUIMessages(messages: MessageType[]): Message[] {
-  const { chatMessages } = messages.reduce(
-    (acc, curr) => {
-      if (curr.role === "tool") {
-        return addToolMessageToChat({
-          toolMessage: curr as unknown as CoreToolMessage,
-          messages: acc.chatMessages,
-          toolResultContents: acc.toolResultContents,
-        });
+  const toolResults = new Map<string, unknown>();
+
+  for (const message of messages) {
+    if (message.type !== "tool-result") {
+      continue;
+    }
+
+    if (!Array.isArray(message.content)) {
+      console.error("Not Implemented");
+      continue;
+    }
+
+    for (const item of message.content) {
+      if (item.type !== "tool-result") {
+        console.error("Not Implemented");
+        continue;
       }
 
-      let textContent = "";
-      const toolInvocations: ToolInvocation[] = [];
+      toolResults.set(item.toolCallId, item.result);
+    }
+  }
 
-      // When we safeParse a user message that MIGHT be valid json for coincidence,
-      // we force it to be a formatted json string. Only messages we expect to be json
-      // are those from the assistant/tools.
-      if (
-        curr.role === "user" && typeof curr.content !== "string" &&
-        !Array.isArray(curr.content)
-      ) {
-        textContent = `\`\`\`json\n${JSON.stringify(curr.content, null, 2)}`;
-      } else if (typeof curr.content === "string") {
-        textContent = curr.content;
-      } else if (typeof curr.content === "number") {
-        textContent = String(curr.content);
-      } else if (Array.isArray(curr.content)) {
-        for (const content of curr.content) {
-          if (content.type === "text") {
-            textContent += content.text;
-          } else if (content.type === "tool-call") {
-            const toolResult = acc.toolResultContents.find((tool) =>
-              tool.toolCallId === content.toolCallId
-            );
-            toolInvocations.push({
-              state: toolResult ? "result" : "call",
-              toolCallId: content.toolCallId ?? "",
-              toolName: content.toolName ?? "",
-              args: content.args,
-              result: toolResult?.result,
-            });
-          }
-        }
-      }
+  const uiMessages: Message[] = [];
 
-      acc.chatMessages.push({
-        id: (curr as MessageType).id,
-        role: curr.role as Message["role"],
-        content: textContent,
-        toolInvocations,
-        createdAt: new Date(curr.createdAt),
-      });
+  for (const message of messages) {
+    if (message.role !== "assistant" && message.role !== "user") {
+      continue;
+    }
 
-      return acc;
-    },
-    { chatMessages: [], toolResultContents: [] } as {
-      chatMessages: Message[];
-      toolResultContents: ToolResultPart[];
-    },
-  );
+    if (typeof message.content === "string") {
+      uiMessages.push(message as unknown as Message);
+    } else if (typeof message.content === "number") {
+      uiMessages.push({
+        ...message,
+        content: String(message.content),
+      } as unknown as Message);
+    } else if (Array.isArray(message.content)) {
+      uiMessages.push({
+        ...message,
+        content: "",
+        parts: message.content.map(toParts(toolResults)),
+      } as unknown as Message);
+    } else if (message.role === "user") {
+      uiMessages.push({
+        ...message,
+        content: `\`\`\`json\n${JSON.stringify(message.content, null, 2)}`,
+      } as unknown as Message);
+    }
+  }
 
-  return chatMessages;
+  return uiMessages;
 }

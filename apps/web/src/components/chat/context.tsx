@@ -19,6 +19,7 @@ import {
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { MentionItem } from "./extensions/Mention.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
 const LAST_MESSAGES_COUNT = 10;
@@ -56,7 +57,7 @@ type IContext = {
     showAgentVisibility: boolean;
     showEditAgent: boolean;
   };
-  setStreamTools: (tools: Record<string, string[]> | null) => void;
+  setMentions: (tools: MentionItem[] | null) => void;
 };
 
 const Context = createContext<IContext | null>(null);
@@ -93,9 +94,7 @@ export function ChatProvider({
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const invalidateAll = useInvalidateAll();
-  const [streamTools, setStreamTools] = useState<
-    Record<string, string[]> | null
-  >(null);
+  const [mentions, setMentions] = useState<MentionItem[] | null>(null);
   const {
     addOptimisticThread,
   } = useAddOptimisticThread();
@@ -141,6 +140,7 @@ export function ChatProvider({
       }
 
       const bypassOpenRouter = !preferences.useOpenRouter;
+      const integrations = mentions?.map((tool) => tool.id);
 
       return {
         args: [messagesWindow, {
@@ -151,11 +151,11 @@ export function ChatProvider({
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,
+          integrations,
           smoothStream: {
             delayInMs: 20,
             chunk: "word",
           },
-          tools: streamTools,
         }],
         metadata: { threadId: threadId ?? agentId },
       };
@@ -264,7 +264,7 @@ export function ChatProvider({
         retry: handleRetry,
         select: handlePickerSelect,
         correlationIdRef,
-        setStreamTools,
+        setMentions,
       }}
     >
       {children}

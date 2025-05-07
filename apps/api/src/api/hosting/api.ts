@@ -2,7 +2,9 @@ import { z } from "zod";
 import { Database } from "../../db/schema.ts";
 import { AppContext, createApiHandler, getEnv } from "../../utils/context.ts";
 
+const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
+const METADATA_FILE_NAME = "metadata.json";
 export const Entrypoint = {
   build: (appSlug: string) => {
     return `https://${appSlug}${HOSTING_APPS_DOMAIN}`;
@@ -93,18 +95,17 @@ export const deployApp = createApiHandler({
     // Use the fixed dispatcher namespace
     const env = getEnv(c);
 
-    const scriptFileName = "script.mjs";
     const metadata = {
-      main_module: scriptFileName,
+      main_module: SCRIPT_FILE_NAME,
       compatibility_flags: ["nodejs_compat"],
       compatibility_date: "2024-11-27",
     };
 
     const body = {
-      metadata: new File([JSON.stringify(metadata)], "metadata.json", {
+      metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
         type: "application/json",
       }),
-      [scriptFileName]: new File([script], scriptFileName, {
+      [SCRIPT_FILE_NAME]: new File([script], SCRIPT_FILE_NAME, {
         type: "application/javascript+module",
       }),
     };
@@ -117,7 +118,7 @@ export const deployApp = createApiHandler({
         {
           account_id: env.CF_ACCOUNT_ID,
           metadata: {
-            main_module: scriptFileName,
+            main_module: SCRIPT_FILE_NAME,
             compatibility_flags: ["nodejs_compat"],
           },
         },
@@ -234,10 +235,12 @@ export const getAppInfo = createApiHandler({
         { account_id: env.CF_ACCOUNT_ID },
       );
 
+    const form = await content.formData();
+
     return {
       app: slug,
       entrypoint,
-      content: await content.blob(),
+      content: form.get(SCRIPT_FILE_NAME)?.toString(),
     };
   },
 });

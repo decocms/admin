@@ -50,6 +50,7 @@ const WORKSPACE_TOOLS = [
   hostingAPI.listApps,
   hostingAPI.deployApp,
   hostingAPI.deleteApp,
+  hostingAPI.getAppInfo,
 ];
 
 /**

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { AppEnv } from "./utils/context.ts";
-import { appsDomainOf } from "./app.ts";
 import { Entrypoint } from "./api/hosting/api.ts";
+import { appsDomainOf } from "./app.ts";
+import { AppEnv } from "./utils/context.ts";
 
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
@@ -11,8 +11,27 @@ app.all("/*", async (c) => {
     return new Response("No host", { status: 400 });
   }
   const script = Entrypoint.script(host);
-  const dispatcher = c.env.PROD_DISPATCHER.get(script);
-
-  return await dispatcher.fetch(c.req.raw);
+  let dispatcher: typeof c.env.PROD_DISPATCHER;
+  if ("PROD_DISPATCHER" in c.env) {
+    dispatcher = c.env.PROD_DISPATCHER;
+  } else {
+    dispatcher = {
+      get: () => {
+        return {
+          fetch: (req, opts) => fetch(req, opts),
+        };
+      },
+    };
+  }
+  const url = new URL(c.req.url);
+  url.host = host;
+  const scriptFetcher = dispatcher.get(script);
+  const req = new Request(url, c.req.raw);
+  return await scriptFetcher.fetch(req).catch((err) => {
+    if ("message" in err && err.message.startsWith("Worker not found")) {
+      // we tried to get a worker that doesn't exist in our dispatch namespace
+      return new Response("worker not found", { status: 404 });
+    }
+  });
 });
 export default app;

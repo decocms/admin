@@ -21,7 +21,7 @@ const normalizeHost = (req: Request) => {
   const host = req.headers.get("host") ?? "localhost";
   const appsHost = appsDomainOf(req);
   if (appsHost) {
-    return Hosts.API;
+    return Hosts.APPS;
   }
   return {
     [Hosts.API]: Hosts.API,

@@ -20,6 +20,7 @@ export type AppEnv = {
     TURSO_ORGANIZATION: string;
     CF_ACCOUNT_ID: string;
     CF_API_TOKEN: string;
+    CF_DISPATCH_NAMESPACE: string;
     PROD_DISPATCHER: { get: (script: string) => { fetch: typeof fetch } };
   };
 };
@@ -47,6 +48,7 @@ export const serializeError = (error: unknown): string => {
 
 export const getEnv = (ctx: AppContext) => {
   const {
+    CF_DISPATCH_NAMESPACE,
     CF_ACCOUNT_ID,
     CF_API_TOKEN,
     VITE_USE_LOCAL_BACKEND,
@@ -61,6 +63,7 @@ export const getEnv = (ctx: AppContext) => {
     typeof SUPABASE_URL !== "string" ||
     typeof SUPABASE_SERVER_TOKEN !== "string" ||
     typeof CF_API_TOKEN !== "string" ||
+    typeof CF_DISPATCH_NAMESPACE !== "string" ||
     typeof TURSO_GROUP_DATABASE_TOKEN !== "string" ||
     typeof TURSO_ORGANIZATION !== "string"
   ) {
@@ -70,6 +73,7 @@ export const getEnv = (ctx: AppContext) => {
   return {
     CF_ACCOUNT_ID,
     CF_API_TOKEN,
+    CF_DISPATCH_NAMESPACE,
     VITE_USE_LOCAL_BACKEND,
     SUPABASE_URL,
     SUPABASE_SERVER_TOKEN,

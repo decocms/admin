@@ -38,3 +38,4 @@ jobs:
           TURSO_GROUP_DATABASE_TOKEN: ${{ secrets.TURSO_GROUP_DATABASE_TOKEN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_DISPATCH_NAMESPACE: "deco-chat-prod"

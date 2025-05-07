@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createApiHandler } from "../../utils/context.ts";
+import { error } from "node:console";
 
 export const getTeam = createApiHandler({
   name: "TEAMS_GET",
@@ -47,6 +48,20 @@ export const createTeam = createApiHandler({
     const { name, slug, stripe_subscription_id } = props;
     const user = c.get("user");
 
+    // Enforce unique slug if provided
+    if (slug) {
+      const { data: existingTeam, error: slugError } = await c
+        .get("db")
+        .from("teams")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (slugError) throw slugError;
+      if (existingTeam) {
+        throw new Error("A team with this slug already exists.");
+      }
+    }
+
     // Create the team
     const { data: team, error: createError } = await c
       .get("db")
@@ -58,16 +73,33 @@ export const createTeam = createApiHandler({
     if (createError) throw createError;
 
     // Add the creator as an admin member
-    const { error: memberError } = await c
+    const { data: member, error: memberError } = await c
       .get("db")
       .from("members")
-      .insert([{
-        team_id: team.id,
-        user_id: user.id,
-        admin: true,
-      }]);
+      .insert([
+        {
+          team_id: team.id,
+          user_id: user.id,
+          admin: true,
+        },
+      ])
+      .select()
+      .single();
 
     if (memberError) throw memberError;
+
+    // Set the member's role_id to 1 in member_roles
+    const { error: roleError } = await c
+      .get("db")
+      .from("member_roles")
+      .insert([
+        {
+          member_id: member.id,
+          role_id: 1,
+        },
+      ]);
+
+    if (roleError) throw roleError;
 
     return team;
   },
@@ -102,13 +134,27 @@ export const updateTeam = createApiHandler({
       `)
       .eq("id", id)
       .eq("members.user_id", user.id)
-      .eq("members.admin", true)
       .single();
 
     if (teamError) throw teamError;
 
     if (!team) {
       throw new Error("Team not found or user does not have admin access");
+    }
+
+    // Enforce unique slug if being updated
+    if (data.slug) {
+      const { data: existingTeam, error: slugError } = await c
+        .get("db")
+        .from("teams")
+        .select("id")
+        .eq("slug", data.slug)
+        .neq("id", id)
+        .maybeSingle();
+      if (slugError) throw slugError;
+      if (existingTeam) {
+        throw new Error("A team with this slug already exists.");
+      }
     }
 
     // Update the team
@@ -150,7 +196,6 @@ export const deleteTeam = createApiHandler({
       `)
       .eq("id", teamId)
       .eq("members.user_id", user.id)
-      .eq("members.admin", true)
       .single();
 
     if (teamError) throw teamError;

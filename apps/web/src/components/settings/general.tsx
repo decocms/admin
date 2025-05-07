@@ -1,21 +1,175 @@
-import { useState } from "react";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { useDeleteTeam, useUpdateTeam } from "@deco/sdk";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Avatar } from "../common/Avatar.tsx";
+import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
-export default function GeneralSettings() {
-  const { label: currentTeamName, url: currentTeamUrl, avatarURL } =
-    useCurrentTeam();
-  const [teamName, setTeamName] = useState(currentTeamName);
-  const [teamUrl, setTeamUrl] = useState(currentTeamUrl.replace("/", ""));
-  const [workspaceEmailDomain, setWorkspaceEmailDomain] = useState(true);
-  const [teamSystemPrompt, setTeamSystemPrompt] = useState("");
-  const [personalSystemPrompt, setPersonalSystemPrompt] = useState("");
+interface GeneralSettingsFormValues {
+  teamName: string;
+  teamSlug: string;
+  workspaceEmailDomain: boolean;
+  teamSystemPrompt: string;
+  personalSystemPrompt: string;
+}
+
+const generalSettingsSchema = z.object({
+  teamName: z.string(),
+  teamSlug: z
+    .string()
+    .regex(/^[a-zA-Z0-9_.-]+$/, {
+      message:
+        "Team slug can only contain letters, numbers, dashes, underscores, and dots.",
+    }),
+  workspaceEmailDomain: z.boolean(),
+  teamSystemPrompt: z.string(),
+  personalSystemPrompt: z.string(),
+});
+
+function DeleteTeamDialog({
+  isOpen,
+  onOpenChange,
+  isReadOnly,
+  isPending,
+  onDelete,
+  error,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  isReadOnly: boolean;
+  isPending: boolean;
+  onDelete: () => Promise<void>;
+  error: string | null;
+}) {
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogTrigger asChild>
+        <Button
+          className="w-fit"
+          variant="destructive"
+          disabled={isReadOnly || isPending}
+        >
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently
+            delete the team and all its data.
+          </AlertDialogDescription>
+          {error && (
+            <div className="text-destructive text-sm mt-2">
+              {error}
+            </div>
+          )}
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isPending}
+              onClick={async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                await onDelete();
+              }}
+            >
+              {isPending ? (
+                <span className="flex items-center gap-2">
+                  <Spinner size="xs" /> Deleting...
+                </span>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function GeneralSettings() {
+  const {
+    label: currentTeamName,
+    slug: currentTeamSlug,
+    avatarUrl,
+    id: currentTeamId,
+  } = useCurrentTeam();
+
+  // If slug is empty, it's a personal team
+  const isPersonalTeam = !currentTeamSlug;
+
+  const updateTeam = useUpdateTeam();
+  const deleteTeam = useDeleteTeam();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const form = useForm<GeneralSettingsFormValues>({
+    resolver: zodResolver(generalSettingsSchema),
+    defaultValues: {
+      teamName: currentTeamName,
+      teamSlug: currentTeamSlug,
+      workspaceEmailDomain: true,
+      teamSystemPrompt: "",
+      personalSystemPrompt: "",
+    },
+    mode: "onChange",
+  });
+
+  async function onSubmit(data: GeneralSettingsFormValues) {
+    if (isPersonalTeam) return;
+    const prevSlug = currentTeamSlug;
+    await updateTeam.mutateAsync({
+      id: typeof currentTeamId === "number"
+        ? currentTeamId
+        : Number(currentTeamId) || 0,
+      data: {
+        name: data.teamName,
+        slug: data.teamSlug,
+      },
+    });
+    form.reset(data);
+    // If the slug changed, navigate to the new team's settings page
+    if (data.teamSlug !== prevSlug) {
+      globalThis.location.href = `/${data.teamSlug}/settings`;
+    }
+  }
+
+  const isReadOnly = isPersonalTeam;
 
   return (
     <div className="container h-full max-w-7xl text-slate-700">
@@ -29,129 +183,169 @@ export default function GeneralSettings() {
             <div className="flex flex-col items-center mb-6">
               <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mb-4">
                 <Avatar
-                  fallback={teamName}
-                  url={avatarURL}
+                  fallback={currentTeamName}
+                  url={avatarUrl}
                   className="w-[120px] h-[120px]"
                 />
               </div>
             </div>
-
-            <div className="p-6 space-y-4 bg-background rounded-lg">
-              <div className="space-y-2">
-                <label htmlFor="team-name" className="text-sm font-medium">
-                  Team Name
-                </label>
-                <Input
-                  id="team-name"
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="The name of your company or organization"
-                  readOnly
+            <Form {...form}>
+              <form
+                className="space-y-8"
+                onSubmit={form.handleSubmit(onSubmit)}
+              >
+                <FormField
+                  control={form.control}
+                  name="teamName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="The name of your company or organization"
+                          readOnly={isReadOnly}
+                          disabled={isReadOnly}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The name of your company or organization
+                      </FormDescription>
+                    </FormItem>
+                  )}
                 />
-                <p className="text-xs text-muted-foreground">
-                  The name of your company or organization
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="team-url" className="text-sm font-medium">
-                  Team URL
-                </label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="team-url"
-                    value={teamUrl}
-                    onChange={(e) => setTeamUrl(e.target.value)}
-                    placeholder="your-team"
-                    disabled
-                  />
+                <FormField
+                  control={form.control}
+                  name="teamSlug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team Slug</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="your-team"
+                          readOnly={isReadOnly}
+                          disabled={isReadOnly}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Changing the team slug will redirect you to the new
+                        address
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="teamSystemPrompt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team System Prompt</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="This prompt is added at the start of all agent messages for your team. Use it to set tone, context, or rules."
+                          rows={6}
+                          disabled
+                          readOnly={isReadOnly}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        This prompt is added at the start of all agent messages
+                        for your team. Use it to set tone, context, or rules.
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+                <Separator />
+                <FormField
+                  control={form.control}
+                  name="personalSystemPrompt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Personal System Prompt</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="This prompt is added at the end of agent messages just for you. Use it to personalize style or add your own context."
+                          rows={6}
+                          disabled
+                          readOnly={isReadOnly}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        This prompt is added at the end of agent messages just
+                        for you. Use it to personalize style or add your own
+                        context.
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+                <div className="p-6 bg-slate-50 rounded-lg">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="font-semibold">Delete Team</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Permanently remove this team, all its connected
+                      integrations and uploaded data
+                    </p>
+                    <DeleteTeamDialog
+                      isOpen={isDeleteDialogOpen}
+                      onOpenChange={(open) => {
+                        setIsDeleteDialogOpen(open);
+                        if (!open) setDeleteError(null);
+                      }}
+                      isReadOnly={isReadOnly}
+                      isPending={deleteTeam.isPending}
+                      error={deleteError}
+                      onDelete={async () => {
+                        setDeleteError(null);
+                        if (!currentTeamId) return;
+                        try {
+                          await deleteTeam.mutateAsync(
+                            typeof currentTeamId === "number"
+                              ? currentTeamId
+                              : Number(currentTeamId) || 0,
+                          );
+                          // Do not close the dialog automatically
+                          globalThis.location.href = "/";
+                        } catch (err) {
+                          setDeleteError(
+                            err instanceof Error
+                              ? err.message
+                              : "Failed to delete team."
+                          );
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Changing the team URL will redirect you to the new address
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div>
-                  <h3 className="font-medium">Workspace email domain</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Allow others with a @acme.com email to join this workspace
-                  </p>
-                </div>
-                <Switch
-                  disabled
-                  checked={workspaceEmailDomain}
-                  onCheckedChange={setWorkspaceEmailDomain}
-                />
-              </div>
-            </div>
-
-            {/* System Prompts */}
-            <div className="p-6 space-y-6 bg-background rounded-lg">
-              <div className="space-y-2">
-                <label
-                  htmlFor="team-system-prompt"
-                  className="text-sm font-medium"
-                >
-                  Team System Prompt
-                </label>
-                <Textarea
-                  id="team-system-prompt"
-                  value={teamSystemPrompt}
-                  onChange={(e) => setTeamSystemPrompt(e.target.value)}
-                  placeholder="This prompt is added at the start of all agent messages for your team. Use it to set tone, context, or rules."
-                  rows={6}
-                  disabled
-                />
-                <p className="text-xs text-muted-foreground">
-                  This prompt is added at the start of all agent messages for
-                  your team. Use it to set tone, context, or rules.
-                </p>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="personal-system-prompt"
-                  className="text-sm font-medium"
-                >
-                  Personal System Prompt
-                </label>
-                <Textarea
-                  id="personal-system-prompt"
-                  value={personalSystemPrompt}
-                  onChange={(e) => setPersonalSystemPrompt(e.target.value)}
-                  placeholder="This prompt is added at the end of agent messages just for you. Use it to personalize style or add your own context."
-                  rows={6}
-                  disabled
-                />
-                <p className="text-xs text-muted-foreground">
-                  This prompt is added at the end of agent messages just for
-                  you. Use it to personalize style or add your own context.
-                </p>
-              </div>
-
-              <div className="p-6 bg-slate-50 rounded-lg">
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-semibold">Delete Team</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently remove this team, all its connected integrations
-                    and uploaded data
-                  </p>
+                <div className="flex justify-end gap-2 pt-6">
                   <Button
-                    className="w-fit"
-                    variant="destructive"
-                    disabled
+                    type="button"
+                    variant="outline"
+                    onClick={() => form.reset()}
+                    disabled={isReadOnly || !form.formState.isDirty ||
+                      form.formState.isSubmitting}
                   >
-                    Delete
+                    Discard
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={isReadOnly || !form.formState.isDirty ||
+                      form.formState.isSubmitting || updateTeam.isPending}
+                  >
+                    {updateTeam.isPending ? "Saving..." : "Save"}
                   </Button>
                 </div>
-              </div>
-            </div>
+              </form>
+            </Form>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default GeneralSettings;

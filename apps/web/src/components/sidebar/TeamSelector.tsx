@@ -1,4 +1,7 @@
+import { useTeam, useTeams } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -6,83 +9,76 @@ import {
   ResponsiveDropdownSeparator,
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useUser } from "../../hooks/data/useUser.ts";
-import { Avatar } from "../common/Avatar.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { Suspense, useState } from "react";
-import { Input } from "@deco/ui/components/input.tsx";
-import { useTeam, useTeams } from "@deco/sdk";
+import { Avatar } from "../common/Avatar.tsx";
+import { CreateTeamDialog } from "./CreateTeamDialog.tsx";
 
-interface Team {
-  avatarURL: string | undefined;
-  url: string;
+interface CurrentTeam {
+  avatarUrl: string | undefined;
+  slug: string;
+  id: number | string;
   label: string;
 }
 
-function useUserTeam(): Team {
+function useUserTeam(): CurrentTeam {
   const user = useUser();
-
-  const avatarURL = user?.metadata?.avatar_url ?? undefined;
+  const avatarUrl = user?.metadata?.avatar_url ?? undefined;
   const name = user?.metadata?.full_name || user?.email;
   const label = `${name.split(" ")[0]}'s team`;
-
   return {
-    avatarURL,
-    url: "/",
+    avatarUrl,
     label,
+    id: user?.id ?? "",
+    slug: "",
   };
 }
 
-export function useCurrentTeam(): Team & {
-  isPersonalTeam: boolean;
-  teamSlug?: string;
-} {
+export function useCurrentTeam(): CurrentTeam {
   const { teamSlug } = useParams();
   const userTeam = useUserTeam();
-
-  const avatarURL = teamSlug ? undefined : userTeam.avatarURL;
-  const url = teamSlug ? `/${teamSlug}` : userTeam.url;
-  const label = teamSlug ? teamSlug : userTeam.label;
-
-  const isPersonalTeam = !teamSlug;
-
+  const { data: teamData } = useTeam(teamSlug);
+  if (!teamSlug) {
+    return userTeam;
+  }
   return {
-    avatarURL,
-    teamSlug,
-    url,
-    label,
-    isPersonalTeam,
+    avatarUrl: undefined,
+    label: teamData?.name || teamSlug || "",
+    id: teamData?.id ?? "",
+    slug: teamData?.slug ?? teamSlug ?? "",
   };
 }
 
 function useUserTeams() {
   const { data: teams } = useTeams();
   const personalTeam = useUserTeam();
-  const { url } = useCurrentTeam();
+  const { slug: currentSlug } = useCurrentTeam();
 
-  const allTeams = [
+  const allTeams: CurrentTeam[] = [
     personalTeam,
     ...teams.map((team) => ({
-      avatarURL: undefined,
-      url: `/${team.slug}`,
+      avatarUrl: undefined,
+      slug: team.slug,
       label: team.name,
+      id: team.id,
     })),
   ];
 
-  const teamsWithoutCurrentTeam = allTeams.filter((team) => team.url !== url);
+  const teamsWithoutCurrentTeam = allTeams.filter((team) =>
+    team.slug !== currentSlug
+  );
 
   return teamsWithoutCurrentTeam;
 }
 
-function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
+function CurrentTeamDropdownTrigger() {
   const { open } = useSidebar();
-  const { avatarURL, label, isPersonalTeam } = useCurrentTeam();
-  const teamName =
-    useTeam((isPersonalTeam || fallback) ? "" : label)?.data?.name || label;
+  const { avatarUrl, label } = useCurrentTeam();
 
   return (
     <ResponsiveDropdownTrigger asChild>
@@ -96,12 +92,12 @@ function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
         variant="ghost"
       >
         <Avatar
-          url={avatarURL}
+          url={avatarUrl}
           fallback={label}
           className="w-6 h-6"
         />
         <span className="text-xs truncate ml-2">
-          {teamName}
+          {label}
         </span>
         <Icon name="unfold_more" className="text-xs ml-1" size={16} />
       </Button>
@@ -111,8 +107,8 @@ function CurrentTeamDropdownTrigger({ fallback }: { fallback?: boolean }) {
 
 function CurrentTeamDropdownOptions() {
   const buildWorkspaceLink = useWorkspaceLink();
-  const { avatarURL, url, label, isPersonalTeam } = useCurrentTeam();
-  const teamName = useTeam(isPersonalTeam ? "" : label)?.data?.name || label;
+  const { avatarUrl, slug, label } = useCurrentTeam();
+  const url = slug ? `/${slug}` : "/";
 
   return (
     <>
@@ -123,11 +119,11 @@ function CurrentTeamDropdownOptions() {
         >
           <Avatar
             className="rounded-full w-6 h-6"
-            url={avatarURL}
+            url={avatarUrl}
             fallback={label}
           />
           <span className="md:text-xs flex-grow justify-self-start">
-            {teamName}
+            {label}
           </span>
         </Link>
       </ResponsiveDropdownItem>
@@ -167,7 +163,9 @@ CurrentTeamDropdownOptions.Skeleton = () => (
   </div>
 );
 
-function SwitchTeam() {
+function SwitchTeam(
+  { onRequestCreateTeam }: { onRequestCreateTeam: () => void },
+) {
   const availableTeamsToSwitch = useUserTeams();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -224,14 +222,14 @@ function SwitchTeam() {
         ? (
           <div className="flex flex-col gap-2 h-36 overflow-y-auto">
             {filteredTeams.map((team) => (
-              <ResponsiveDropdownItem asChild key={team.url}>
+              <ResponsiveDropdownItem asChild key={team.slug}>
                 <Link
-                  to={team.url}
+                  to={`/${team.slug}`}
                   className="w-full flex items-center gap-4 cursor-pointer"
                 >
                   <Avatar
                     className="w-6 h-6"
-                    url={team.avatarURL}
+                    url={team.avatarUrl}
                     fallback={team.label}
                   />
                   <span className="md:text-xs">
@@ -263,7 +261,7 @@ function SwitchTeam() {
 
       <ResponsiveDropdownItem
         className="gap-4 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
-        aria-disabled
+        onClick={onRequestCreateTeam}
       >
         <span className="grid place-items-center p-1">
           <Icon name="add" size={18} />
@@ -277,20 +275,35 @@ function SwitchTeam() {
 }
 
 export function TeamSelector() {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   return (
-    <ResponsiveDropdown>
-      <Suspense fallback={<CurrentTeamDropdownTrigger fallback />}>
-        <CurrentTeamDropdownTrigger />
-      </Suspense>
-      <ResponsiveDropdownContent align="start">
-        <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
-          <CurrentTeamDropdownOptions />
+    <>
+      <ResponsiveDropdown>
+        <Suspense fallback={<CurrentTeamDropdownTrigger />}>
+          <CurrentTeamDropdownTrigger />
         </Suspense>
-        <ResponsiveDropdownSeparator />
-        <Suspense fallback={<div>Loading...</div>}>
-          <SwitchTeam />
-        </Suspense>
-      </ResponsiveDropdownContent>
-    </ResponsiveDropdown>
+        <ResponsiveDropdownContent align="start">
+          <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
+            <CurrentTeamDropdownOptions />
+          </Suspense>
+          <ResponsiveDropdownSeparator />
+          <Suspense
+            fallback={
+              <div className="h-full flex items-center justify-center">
+                <Spinner size="xs" />
+              </div>
+            }
+          >
+            <SwitchTeam
+              onRequestCreateTeam={() => setIsCreateDialogOpen(true)}
+            />
+          </Suspense>
+        </ResponsiveDropdownContent>
+      </ResponsiveDropdown>
+      <CreateTeamDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+      />
+    </>
   );
 }

@@ -125,24 +125,39 @@ export const deployApp = createApiHandler({
         body,
       },
     );
-
-    // Update updated_at for upsert semantics
-    const { error: upsertError, data } = await c.var.db
+    // 1. Try to update first
+    const { data: updated, error: updateError } = await c.var.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .upsert({
-        workspace,
-        slug: scriptSlug,
+      .update({
         updated_at: new Date().toISOString(),
-      }, { onConflict: "workspace,slug", ignoreDuplicates: true })
-      .eq("workspace", workspace)
+      })
       .eq("slug", scriptSlug)
       .select("*")
       .single();
 
-    if (upsertError) throw upsertError;
+    if (updateError && updateError.code !== "PGRST116") { // PGRST116: Results contain 0 rows
+      throw updateError;
+    }
 
-    // Return app info
-    return Mappers.toApp(data);
+    if (updated) {
+      // Row existed and was updated
+      return Mappers.toApp(updated);
+    }
+
+    // 2. If not updated, insert
+    const { data: inserted, error: insertError } = await c.var.db
+      .from(DECO_CHAT_HOSTING_APPS_TABLE)
+      .insert({
+        workspace,
+        slug: scriptSlug,
+        updated_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+
+    if (insertError) throw insertError;
+
+    return Mappers.toApp(inserted);
   },
 });
 

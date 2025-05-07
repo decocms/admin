@@ -8,7 +8,7 @@ const Hosts = {
   APPS: "deco.page",
 } as const;
 
-const APPS_DOMAIN_QS = "app_host";
+export const APPS_DOMAIN_QS = "app_host";
 export const appsDomainOf = (req: Request, url?: URL) => {
   url ??= new URL(req.url);
   const referer = req.headers.get("referer");

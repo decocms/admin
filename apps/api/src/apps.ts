@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Entrypoint } from "./api/hosting/api.ts";
-import { appsDomainOf } from "./app.ts";
+import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import { AppEnv } from "./utils/context.ts";
 
 export type DispatcherFetch = typeof fetch;
@@ -24,7 +24,12 @@ app.all("/*", async (c) => {
     };
   }
   const url = new URL(c.req.url);
-  url.host = host;
+  if (url.host !== host) {
+    url.host = host;
+    url.protocol = "https";
+    url.port = `443`;
+    url.searchParams.delete(APPS_DOMAIN_QS);
+  }
   const scriptFetcher = dispatcher.get(script);
   const req = new Request(url, c.req.raw);
   return await scriptFetcher.fetch(req).catch((err) => {
@@ -32,6 +37,7 @@ app.all("/*", async (c) => {
       // we tried to get a worker that doesn't exist in our dispatch namespace
       return new Response("worker not found", { status: 404 });
     }
+    throw err;
   });
 });
 export default app;

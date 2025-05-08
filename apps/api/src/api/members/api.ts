@@ -49,16 +49,6 @@ export const getTeamMembers = createApiHandler({
     const { data, error } = await c
       .get("db")
       .from("members")
-      .upsert([{
-        ...(alreadyMember?.id
-          ? {
-            id: alreadyMember.id,
-          }
-          : {}),
-        user_id: profile.user_id,
-        team_id: teamId,
-        deleted_at: null,
-      }])
       .select(`
         id,
         user_id,

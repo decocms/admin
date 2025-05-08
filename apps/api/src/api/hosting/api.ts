@@ -177,7 +177,14 @@ const createNamespaceOnce = async (c: AppContext) => {
 };
 
 const ENTRYPOINT = "main.ts";
-// Deploy multiple files
+
+// First, let's define a new type for the file structure
+const FileSchema = z.object({
+  path: z.string(),
+  content: z.string(),
+});
+
+// Update the schema in deployFiles
 export const deployFiles = createApiHandler({
   name: "HOSTING_APP_DEPLOY",
   description:
@@ -194,21 +201,27 @@ Common patterns:
    // main.ts
    import { lodash, z, createClient } from "./deps.ts";
 
-Example deployment:
-{
-  "main.ts": \`
-    import { z } from "./deps.ts";
-    
-    export default {
-      async fetch(req: Request) {
-        return new Response("Hello from Deno!");
+Example of files deployment:
+[
+  {
+    "path": "main.ts",
+    "content": \`
+      import { z } from "./deps.ts";
+      
+      export default {
+        async fetch(req: Request) {
+          return new Response("Hello from Deno!");
+        }
       }
-    }
-  \`,
-  "deps.ts": \`
-    export { z } from "npm:zod";
-  \`
-}
+    \`
+  },
+  {
+    "path": "deps.ts",
+    "content": \`
+      export { z } from "npm:zod";
+    \`
+  }
+]
 
 Note: 
 - Do not use Deno.* namespace functions
@@ -217,19 +230,26 @@ Note:
 - Dependencies are imported directly using npm: or jsr: specifiers`,
   schema: z.object({
     appSlug: z.string().describe("The slug identifier for the app"),
-    files: z.record(z.string()).describe(
-      "A record of file paths to their contents. Must include main.ts as entrypoint",
+    files: z.array(FileSchema).describe(
+      "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
   }),
   handler: async ({ appSlug, files }, c) => {
-    if (!(ENTRYPOINT in files)) {
+    // Convert array to record for bundler
+    const filesRecord = files.reduce((acc, file) => {
+      acc[file.path] = file.content;
+      return acc;
+    }, {} as Record<string, string>);
+
+    if (!(ENTRYPOINT in filesRecord)) {
       throw new Error(`${ENTRYPOINT} is not in the files`);
     }
+
     await createNamespaceOnce(c);
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
 
     // Bundle the files
-    const bundledScript = await bundler(files, ENTRYPOINT);
+    const bundledScript = await bundler(filesRecord, ENTRYPOINT);
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
@@ -243,7 +263,7 @@ Note:
       SCRIPT_FILE_NAME,
       fileObjects,
     );
-    return updateDatabase(c, workspace, scriptSlug, result, files);
+    return updateDatabase(c, workspace, scriptSlug, result, filesRecord);
   },
 });
 

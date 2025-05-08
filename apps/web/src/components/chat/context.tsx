@@ -75,6 +75,21 @@ const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
   "DECO_AGENT_CONFIGURE",
 ]);
 
+// This is a temporary fix to ensure that the reasoning details are not lost
+const fixReasoning = (message: CreateMessage): CreateMessage => {
+  if ("parts" in message) {
+    return {
+      ...message,
+      parts: message?.parts?.map((part) =>
+        part.type === "reasoning"
+          ? { ...part, details: part.details ?? [] }
+          : part
+      ),
+    };
+  }
+  return message;
+};
+
 export function ChatProvider({
   agentId,
   threadId,
@@ -110,7 +125,7 @@ export function ChatProvider({
       const files = fileDataRef.current;
       const allMessages = (messages as CreateMessage[]).slice(
         -LAST_MESSAGES_COUNT,
-      );
+      ).map(fixReasoning);
       const last = allMessages.at(-1);
       const annotations = files && files.length > 0
         ? [

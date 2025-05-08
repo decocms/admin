@@ -94,7 +94,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
             className={cn(
               "text-sm",
             )}
-            filled={true}
+            filled
             name={isListening ? "stop" : "mic"}
           />
         </Button>

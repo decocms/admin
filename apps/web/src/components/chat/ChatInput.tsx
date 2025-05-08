@@ -44,7 +44,7 @@ ChatInput.UI = (
 ) => {
   const {
     agentRoot,
-    chat: { stop, input, handleInputChange, handleSubmit, status },
+    chat: { input, handleInputChange, handleSubmit, status },
   } = useChatContext();
   const [isUploading, setIsUploading] = useState(false);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
@@ -264,7 +264,7 @@ ChatInput.UI = (
                         "text-sm",
                         isLoadingOrUploading && "animate-spin",
                       )}
-                      filled={true}
+                      filled
                       name={isLoadingOrUploading ? "sync" : "send"}
                     />
                   </Button>

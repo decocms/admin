@@ -44,6 +44,7 @@ export function Icon(
 ) {
   return (
     <span
+      translate="no"
       className={cn("material-symbols-outlined", className)}
       style={{
         fontVariationSettings: Object.entries({

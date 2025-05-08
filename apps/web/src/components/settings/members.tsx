@@ -66,6 +66,7 @@ import { timeAgo } from "../../utils/timeAgo.ts";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { cn } from "../../../../../packages/ui/src/lib/utils.ts";
+import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -119,195 +120,16 @@ function MembersViewLoading() {
 }
 
 function AddTeamMemberButton({ teamId }: { teamId?: number }) {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const inviteMemberMutation = useInviteTeamMember();
-  const { data: roles = [] } = useTeamRoles(teamId ?? null);
-  const ownerRoleId = useMemo(() => {
-    const ownerRole = roles.find(role => role.name.toLowerCase() === "owner");
-    return ownerRole?.id.toString() || "";
-  }, [roles]);
-
-  const form = useForm<InviteMemberFormData>({
-    resolver: zodResolver(inviteMemberSchema),
-    defaultValues: {
-      invitees: [{ email: "", roleId: ownerRoleId || "" }],
-    },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "invitees",
-  });
-
-  // Add new invitee
-  const handleAddInvitee = () => {
-    append({ email: "", roleId: ownerRoleId });
-  };
-
-  // Remove invitee
-  const handleRemoveInvitee = (index: number) => {
-    if (fields.length > 1) {
-      remove(index);
-    }
-  };
-
-  // Invite team members
-  const handleInviteMembers = async (data: InviteMemberFormData) => {
-    if (!teamId) return;
-    try {
-      // Transform data for API call
-      const invitees = data.invitees.map(({ email, roleId }) => ({
-        email,
-        roles: [{ 
-          id: Number(roleId), 
-          name: roles.find(r => r.id === Number(roleId))?.name || "" 
-        }],
-      }));
-
-      // Call API to invite members
-      await inviteMemberMutation.mutateAsync({
-        teamId,
-        invitees,
-      });
-
-      // Reset form and close dialog
-      form.reset();
-      setIsAddDialogOpen(false);
-      toast.success(
-        invitees.length === 1 
-          ? "Team member invited successfully!" 
-          : `${invitees.length} team members invited successfully!`
-      );
-    } catch (error) {
-      console.error("Failed to invite team members:", error);
-    }
-  };
-
   return (
-    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-      <DialogTrigger asChild>
+    <InviteTeamMembersDialog
+      teamId={teamId}
+      trigger={
         <Button variant="ghost" size="icon">
           <span className="sr-only">Invite team members</span>
           <Icon name="add" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Invite Team Members</DialogTitle>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleInviteMembers)}
-            className="space-y-6"
-          >
-            <div className="space-y-6">
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex gap-3 items-start border-b pb-5 mb-2">
-                  <div className="flex-1 grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name={`invitees.${index}.email`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter email address"
-                              {...field}
-                              autoComplete="email"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`invitees.${index}.roleId`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {roles.map((role) => (
-                                <SelectItem 
-                                  key={role.id} 
-                                  value={role.id.toString()}
-                                >
-                                  {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="self-end mb-1"
-                    onClick={() => handleRemoveInvitee(index)}
-                    disabled={fields.length <= 1}
-                  >
-                    <Icon name="remove" />
-                  </Button>
-                </div>
-              ))}
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2 w-full"
-                onClick={handleAddInvitee}
-              >
-                <Icon name="add" className="mr-2" />
-                Add another invitee
-              </Button>
-            </div>
-
-            <div className="text-sm text-slate-500 mt-4 border-t pt-4">
-              Users will receive an invite email to join this team.
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setIsAddDialogOpen(false);
-                }}
-                type="button"
-                disabled={inviteMemberMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={inviteMemberMutation.isPending ||
-                  !form.formState.isValid}
-              >
-                {inviteMemberMutation.isPending ? "Inviting..." : "Invite Members"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+      }
+    />
   );
 }
 

@@ -63,7 +63,7 @@ export const getMyInvites = async (
  */
 export const acceptInvite = async (
   inviteId: string,
-): Promise<{ ok: boolean; teamId: number; teamName: string }> => {
+): Promise<{ ok: boolean; teamId: number; teamName: string; teamSlug: string }> => {
   const response = await callToolFor("", "TEAM_INVITE_ACCEPT", {
     id: inviteId,
   });

@@ -279,6 +279,18 @@ export const acceptInvite = createApiHandler({
       );
     }
 
+    // Fetch team slug
+    const { data: team, error: teamError } = await db
+      .from("teams")
+      .select("slug")
+      .eq("id", invite.team_id)
+      .single();
+
+    if (teamError) {
+      console.error("Error fetching team slug:", teamError);
+      // Continue even if we don't get the slug
+    }
+
     // Check if the invite is for the current user
     const { data: profiles, error: profilesError } = await db
       .from("profiles")
@@ -351,6 +363,7 @@ export const acceptInvite = createApiHandler({
       ok: true,
       teamId: invite.team_id,
       teamName: invite.team_name,
+      teamSlug: team?.slug || invite.team_name.toLowerCase().replace(/\s+/g, '-'),
     };
   },
 });

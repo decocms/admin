@@ -5,12 +5,16 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 import {
+  acceptInvite,
+  getMyInvites,
   getTeamMembers,
   getTeamRoles,
   inviteTeamMembers,
+  type Invite,
   type Member,
   registerActivity,
   removeTeamMember,
+  type Role,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 
@@ -42,6 +46,33 @@ export const useTeamRoles = (teamId: number | null) => {
       typeof teamId === "number"
         ? getTeamRoles(teamId, signal)
         : [],
+  });
+};
+
+/**
+ * Hook to fetch user's invites
+ * @returns Query with invites data
+ */
+export const useInvites = () => {
+  return useSuspenseQuery({
+    queryKey: KEYS.MY_INVITES(),
+    queryFn: ({ signal }) => getMyInvites(signal),
+  });
+};
+
+/**
+ * Hook to accept an invite
+ * @returns Mutation function for accepting an invite
+ */
+export const useAcceptInvite = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (inviteId: string) => acceptInvite(inviteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: KEYS.MY_INVITES() });
+      queryClient.invalidateQueries({ queryKey: KEYS.TEAMS() });
+    },
   });
 };
 

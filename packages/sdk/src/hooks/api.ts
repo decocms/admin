@@ -40,6 +40,7 @@ export const KEYS = {
   TEAM_ROLES: (
     teamId: number,
   ) => ["team", teamId, "roles"],
+  MY_INVITES: () => ["my_invites"],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,

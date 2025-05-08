@@ -14,13 +14,13 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
-import { AgentTriggers } from "../triggers/agentTriggers.tsx";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { DockedPageLayout } from "../pageLayout.tsx";
 import AgentSettings from "../settings/agent.tsx";
+import { AgentTriggers } from "../triggers/agentTriggers.tsx";
 import { AgentHeader, Container } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -157,7 +157,6 @@ function Agent(props: Props) {
         threadId={threadId}
         uiOptions={{
           showThreadTools: false,
-          showEditAgent: false,
         }}
       >
         <div className="h-full flex flex-col">
@@ -165,7 +164,7 @@ function Agent(props: Props) {
 
           <div
             className={cn(
-              "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
+              "px-4 flex justify-between items-center bg-slate-50 h-px overflow-hidden transition-all duration-300",
               isMobile && "h-auto py-2",
             )}
           >

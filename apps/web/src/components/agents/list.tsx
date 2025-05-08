@@ -42,6 +42,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../pageLayout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
+import { HeaderSlot } from "../layout.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -398,10 +399,39 @@ export default function List() {
   };
 
   return (
-    <PageLayout
-      header={
-        <>
-          <div className="justify-self-start">
+    <>
+      <HeaderSlot position="start">
+        <div className="flex items-center gap-3">
+          <Icon name="groups" />
+          Agents
+        </div>
+      </HeaderSlot>
+      <HeaderSlot position="end">
+        <Button
+          onClick={handleCreate}
+          disabled={creating}
+          variant="special"
+          className="gap-2"
+        >
+          {creating
+            ? (
+              <>
+                <Spinner size="xs" />
+                Creating...
+              </>
+            )
+            : (
+              <>
+                <Icon name="add" />
+                Create Agent
+              </>
+            )}
+        </Button>
+      </HeaderSlot>
+
+      <PageLayout
+        header={
+          <div className="justify-self-start py-4">
             <Input
               placeholder="Filter agents..."
               value={filter}
@@ -410,71 +440,49 @@ export default function List() {
               className="w-full md:w-64 border-slate-200 placeholder:text-slate-400 text-slate-500 focus-visible:ring-slate-200"
             />
           </div>
-          <div>
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              variant="special"
-              className="gap-2"
-            >
-              {creating
-                ? (
-                  <>
-                    <Spinner size="xs" />
-                    Creating...
-                  </>
-                )
-                : (
-                  <>
-                    <Icon name="add" />
-                    Create Agent
-                  </>
-                )}
-            </Button>
-          </div>
-        </>
-      }
-      main={
-        <>
-          {!agents
-            ? (
-              <div className="flex h-48 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            )
-            : agents.length > 0
-            ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
-                  {filteredAgents?.map((agent) => (
-                    <AgentCard key={agent.id} agent={agent} />
-                  ))}
+        }
+        main={
+          <>
+            {!agents
+              ? (
+                <div className="flex h-48 items-center justify-center">
+                  <Spinner size="lg" />
                 </div>
-                <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-                  <Icon
-                    name="search_off"
-                    className="mb-2 text-4xl text-muted-foreground"
-                  />
-                  <p className="text-muted-foreground">
-                    No agents match your filter. Try adjusting your search.
-                  </p>
-                </div>
-              </>
-            )
-            : (
-              <EmptyState
-                icon="groups"
-                title="No agents yet"
-                description="Create an agent to automate tasks and improve your workflow."
-                buttonProps={{
-                  disabled: creating,
-                  children: creating ? "Creating..." : "Create Agent",
-                  onClick: handleCreate,
-                }}
-              />
-            )}
-        </>
-      }
-    />
+              )
+              : agents.length > 0
+              ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
+                    {filteredAgents?.map((agent) => (
+                      <AgentCard key={agent.id} agent={agent} />
+                    ))}
+                  </div>
+                  <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
+                    <Icon
+                      name="search_off"
+                      className="mb-2 text-4xl text-muted-foreground"
+                    />
+                    <p className="text-muted-foreground">
+                      No agents match your filter. Try adjusting your search.
+                    </p>
+                  </div>
+                </>
+              )
+              : (
+                <EmptyState
+                  icon="groups"
+                  title="No agents yet"
+                  description="Create an agent to automate tasks and improve your workflow."
+                  buttonProps={{
+                    disabled: creating,
+                    children: creating ? "Creating..." : "Create Agent",
+                    onClick: handleCreate,
+                  }}
+                />
+              )}
+          </>
+        }
+      />
+    </>
   );
 }

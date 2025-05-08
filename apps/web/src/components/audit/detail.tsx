@@ -88,7 +88,6 @@ function AuditDetail() {
     <ChatProvider
       agentId={thread?.metadata?.agentId ?? id}
       threadId={id}
-      uiOptions={{ showEditAgent: false }}
     >
       <DockedPageLayout main={MAIN} tabs={{}} />
     </ChatProvider>

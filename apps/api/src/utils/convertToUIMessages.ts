@@ -44,6 +44,7 @@ const toParts = (results: Map<string, unknown>) =>
   if (item.type === "reasoning") {
     return {
       ...item,
+      details: item.details ?? [],
       reasoning: item.text,
     };
   }

@@ -1,15 +1,14 @@
-import { useListTriggers } from "@deco/sdk";
 import type { Trigger } from "@deco/sdk";
-import { Input } from "@deco/ui/components/input.tsx";
+import { useListTriggers } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useState } from "react";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { Suspense, useState } from "react";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
-import { useNavigate } from "react-router";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 type SortKey = typeof SORTABLE_KEYS[number];
@@ -48,13 +47,20 @@ function ListTriggersSkeleton() {
 }
 
 export function ListTriggers() {
+  return (
+    <Suspense fallback={<ListTriggersSkeleton />}>
+      <ListTriggersSuspended />
+    </Suspense>
+  );
+}
+
+function ListTriggersSuspended() {
   const { data, isLoading } = useListTriggers();
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const workspaceLink = useWorkspaceLink();
-  const navigate = useNavigate();
+  const navigate = useNavigateWorkspace();
 
   const triggers: Trigger[] = data?.actions || [];
 
@@ -89,8 +95,7 @@ export function ListTriggers() {
 
   function handleTriggerClick(trigger: Trigger) {
     if (trigger.agent?.id && trigger.id) {
-      const href = workspaceLink(`/trigger/${trigger.agent.id}/${trigger.id}`);
-      navigate(href);
+      navigate(`/trigger/${trigger.agent.id}/${trigger.id}`);
     }
   }
 

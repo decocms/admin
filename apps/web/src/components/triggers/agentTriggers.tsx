@@ -38,7 +38,7 @@ export function AgentTriggers() {
   );
 
   return (
-    <div className="mx-16 mt-8">
+    <div className="mx-2 mt-8">
       <div className="flex items-center gap-4 mb-4">
         <div className="relative flex-1">
           <Input
@@ -49,7 +49,7 @@ export function AgentTriggers() {
             className="w-full py-2 rounded-full border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
           />
         </div>
-        <AddTriggerModalButton agentId={agentId} />
+        <AddTriggerModalButton agentId={agentId} variant="standalone" />
       </div>
       <TriggerCardList
         triggers={filteredTriggers}
@@ -61,7 +61,7 @@ export function AgentTriggers() {
 
 export function ListTriggersLoading() {
   return (
-    <div className="grid grid-cols-1 gap-4 mx-16">
+    <div className="grid grid-cols-1 gap-4 mx-2">
       {Array.from({ length: 3 }).map((_, index) => (
         <Skeleton key={`skeleton-${index}`} className="h-36 w-full" />
       ))}
@@ -72,7 +72,7 @@ export function ListTriggersLoading() {
 export function ListTriggersEmpty() {
   const { agentId } = useChatContext();
   return (
-    <div className="mx-16 p-4 mt-4 m-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
+    <div className="mx-2 p-4 mt-4 m-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
       <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
         <Icon
           name="notifications_active"
@@ -84,7 +84,7 @@ export function ListTriggersEmpty() {
         Triggers allow you to trigger your agent on a schedule or from external
         systems.
       </p>
-      <AddTriggerModalButton agentId={agentId} />
+      <AddTriggerModalButton agentId={agentId} variant="standalone" />
     </div>
   );
 }

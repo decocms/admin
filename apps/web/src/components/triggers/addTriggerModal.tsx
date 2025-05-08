@@ -27,6 +27,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import type { Agent } from "@deco/sdk";
+import { HeaderSlot } from "../layout.tsx";
 
 function AgentSelect({
   agents,
@@ -83,7 +84,12 @@ function AgentSelect({
   );
 }
 
-export function AddTriggerModal({ agentId }: { agentId?: string }) {
+export function AddTriggerModal(
+  { agentId, variant = "layout" }: {
+    agentId?: string;
+    variant?: "layout" | "standalone";
+  },
+) {
   const { data: agents = [] } = useAgents();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
@@ -93,7 +99,7 @@ export function AddTriggerModal({ agentId }: { agentId?: string }) {
 
   const hasAgents = agents.length > 0;
 
-  return (
+  const standalone = (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
@@ -181,5 +187,23 @@ export function AddTriggerModal({ agentId }: { agentId?: string }) {
           )}
       </DialogContent>
     </Dialog>
+  );
+
+  if (variant === "standalone") {
+    return standalone;
+  }
+
+  return (
+    <>
+      <HeaderSlot position="start">
+        <div className="flex items-center gap-3">
+          <Icon name="conversion_path" />
+          Triggers
+        </div>
+      </HeaderSlot>
+      <HeaderSlot position="end">
+        {standalone}
+      </HeaderSlot>
+    </>
   );
 }

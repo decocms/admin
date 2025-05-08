@@ -48,7 +48,7 @@ export function PageLayout({ header, main, footer }: PageProps) {
       {header && (
         <header className="w-full flex flex-col">
           <MobileTopbar />
-          <div className="w-full flex items-center justify-between gap-4 px-4 h-14">
+          <div className="w-full flex items-center justify-between gap-4 px-4">
             {header}
           </div>
         </header>

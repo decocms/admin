@@ -23,6 +23,7 @@ interface ToolMessageProps {
 
 // Tools that have custom UI rendering and shouldn't show in the timeline
 const CUSTOM_UI_TOOLS = [
+  "HOSTING_APP_DEPLOY",
   "RENDER",
   "SHOW_PICKER",
   "CONFIRM",
@@ -228,6 +229,14 @@ function CustomToolUI({ tool, isLastMessage }: {
 
   switch (tool.toolName) {
     case "RENDER": {
+      return (
+        <Preview
+          content={tool.result.data.content as "url" | "html"}
+          title={tool.result.data.title as string}
+        />
+      );
+    }
+    case "HOSTING_APP_DEPLOY": {
       return (
         <Preview
           content={tool.result.data.content as "url" | "html"}

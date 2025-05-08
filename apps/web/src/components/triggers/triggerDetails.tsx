@@ -39,7 +39,7 @@ export function TriggerDetails(
   };
 
   return (
-    <div className="mx-16 space-y-6 max-w-full py-8">
+    <div className="mx-2 space-y-6 max-w-full py-8">
       <Button
         variant="ghost"
         className="flex items-center gap-1 text-sm mb-2"
@@ -93,7 +93,7 @@ function TriggerIcon({ type }: { type: Trigger["type"] }) {
 
 export function TriggerDetailsSkeleton() {
   return (
-    <div className="mx-16 space-y-6 max-w-full py-8">
+    <div className="mx-2 space-y-6 max-w-full py-8">
       <Skeleton className="w-32 h-8 mb-2" />
       <div className="flex items-center gap-2">
         <Skeleton className="w-8 h-8 rounded-md" />

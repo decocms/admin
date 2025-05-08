@@ -120,7 +120,7 @@ function Agent(props: Props) {
 
           <div
             className={cn(
-              "px-4 flex justify-between items-center border-b bg-slate-50 h-px overflow-hidden transition-all duration-300",
+              "px-4 flex justify-between items-center bg-slate-50 h-px overflow-hidden transition-all duration-300",
               isMobile && "h-auto py-2",
             )}
           >
@@ -158,9 +158,9 @@ function Agent(props: Props) {
               : (
                 <DockedPageLayout
                   main={{
-                    header: agentId === WELL_KNOWN_AGENT_IDS.teamAgent
-                      ? undefined
-                      : MainHeader,
+                    header: agentId !== WELL_KNOWN_AGENT_IDS.teamAgent
+                      ? MainHeader
+                      : undefined,
                     main: MainContent,
                     footer: MainFooter,
                   }}

@@ -22,6 +22,7 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../../hooks/useNavigateWorkspace.ts";
+import { HeaderSlot } from "../../layout.tsx";
 import { PageLayout } from "../../pageLayout.tsx";
 
 function BreadcrumbItem({
@@ -76,11 +77,41 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
 
   return (
     <>
+      <HeaderSlot position="start">
+        <div className="flex items-center gap-3">
+          <Icon name="widgets" />
+          Integrations
+        </div>
+      </HeaderSlot>
+
+      <HeaderSlot position="end">
+        <Button
+          onClick={handleCreate}
+          disabled={create.isPending}
+          variant="special"
+          className="gap-2"
+        >
+          {create.isPending
+            ? (
+              <>
+                <Spinner size="xs" />
+                Creating...
+              </>
+            )
+            : (
+              <>
+                <Icon name="add" />
+                Create Integration
+              </>
+            )}
+        </Button>
+      </HeaderSlot>
+
       <PageLayout
         main={children}
         header={
           <>
-            <div className="justify-self-start">
+            <div className="justify-self-start py-4">
               <div className="flex gap-2">
                 <BreadcrumbItem
                   active={!!connected}
@@ -98,28 +129,6 @@ export function IntegrationPage({ children }: { children: ReactNode }) {
                   to={workspaceLink("/integrations/marketplace")}
                 />
               </div>
-            </div>
-            <div>
-              <Button
-                onClick={handleCreate}
-                disabled={create.isPending}
-                variant="special"
-                className="gap-2"
-              >
-                {create.isPending
-                  ? (
-                    <>
-                      <Spinner size="xs" />
-                      Creating...
-                    </>
-                  )
-                  : (
-                    <>
-                      <Icon name="add" />
-                      Create Integration
-                    </>
-                  )}
-              </Button>
             </div>
           </>
         }

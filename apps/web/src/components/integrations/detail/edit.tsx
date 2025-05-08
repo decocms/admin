@@ -13,6 +13,7 @@ import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
+import { HeaderSlot } from "../../layout.tsx";
 import { DockedPageLayout, DockedToggleButton } from "../../pageLayout.tsx";
 import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
@@ -48,9 +49,10 @@ const TABS = {
 
 function Header() {
   const navigateWorkspace = useNavigateWorkspace();
+
   return (
     <>
-      <div>
+      <HeaderSlot position="start">
         <Button
           variant="ghost"
           onClick={() => navigateWorkspace("/integrations")}
@@ -58,26 +60,28 @@ function Header() {
           <Icon name="arrow_back" />
           Back
         </Button>
-      </div>
+      </HeaderSlot>
 
-      <div className="flex items-center gap-2">
-        <DockedToggleButton
-          id="form"
-          title="Settings"
-          variant="outline"
-          size="icon"
-        >
-          <Icon name="settings" />
-        </DockedToggleButton>
-        <DockedToggleButton
-          id="inspector"
-          title="Inspector"
-          variant="outline"
-          size="icon"
-        >
-          <Icon name="frame_inspect" />
-        </DockedToggleButton>
-      </div>
+      <HeaderSlot position="end">
+        <div className="flex items-center gap-2">
+          <DockedToggleButton
+            id="form"
+            title="Settings"
+            variant="outline"
+            size="icon"
+          >
+            <Icon name="settings" />
+          </DockedToggleButton>
+          <DockedToggleButton
+            id="inspector"
+            title="Inspector"
+            variant="outline"
+            size="icon"
+          >
+            <Icon name="frame_inspect" />
+          </DockedToggleButton>
+        </div>
+      </HeaderSlot>
     </>
   );
 }

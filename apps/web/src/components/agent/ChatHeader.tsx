@@ -11,6 +11,7 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import { HeaderSlot } from "../layout.tsx";
 
 interface Props {
   agentId: string;
@@ -55,58 +56,65 @@ ChatHeader.UI = ({ agentId, mode }: Props) => {
 
   return (
     <>
-      <div className="flex items-center gap-2">
-        {chat.messages.length > 0 && (
-          <>
-            <Container>
-              <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
-                <AgentAvatar
-                  name={agent.name}
-                  avatar={agent.avatar}
-                  className="rounded-lg text-xs"
-                />
-              </div>
-              <h1 className="text-sm font-medium tracking-tight">
-                {agent.name}
-              </h1>
-            </Container>
-            {mode !== "read-only" && (
+      <HeaderSlot position="start">
+        <div className="flex items-center gap-3 h-10">
+          <div className="w-6 h-6 rounded-xs overflow-hidden flex items-center justify-center">
+            <AgentAvatar
+              name={agent.name}
+              avatar={agent.avatar}
+              className="rounded-lg text-xs"
+            />
+          </div>
+          <h1 className="text-sm font-medium tracking-tight">
+            {agent.name}
+          </h1>
+        </div>
+      </HeaderSlot>
+
+      {mode !== "read-only" && (
+        <HeaderSlot position="end">
+          <div className="flex items-center">
+            {chat.messages.length > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    className="h-6 w-6"
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      focusEditAgent(agentId, crypto.randomUUID(), {
+                      focusChat(agentId, crypto.randomUUID(), {
                         history: false,
                       });
                     }}
                   >
-                    <Icon name="edit" />
+                    <Icon name="edit_square" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Edit Agent
+                  New chat
                 </TooltipContent>
               </Tooltip>
             )}
-          </>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 py-1">
-        {mode !== "read-only" && chat.messages.length > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              focusChat(agentId, crypto.randomUUID(), { history: false });
-            }}
-          >
-            New Chat
-          </Button>
-        )}
-      </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    focusEditAgent(agentId, crypto.randomUUID(), {
+                      history: false,
+                    });
+                  }}
+                >
+                  <Icon name="tune" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Edit Agent
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </HeaderSlot>
+      )}
     </>
   );
 };

@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
@@ -63,12 +63,14 @@ function CodeBlock(
   { language, content }: { language: string; content: string },
 ) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<number>(null);
 
-  function handleCopy() {
-    navigator.clipboard.writeText(content);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  }
+    timeoutRef.current && clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
+  };
 
   return (
     <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border">

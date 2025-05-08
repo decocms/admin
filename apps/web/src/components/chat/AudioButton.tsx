@@ -6,7 +6,6 @@ import type {
   SpeechRecognitionEvent,
 } from "../../types/speech.d.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.js";
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;

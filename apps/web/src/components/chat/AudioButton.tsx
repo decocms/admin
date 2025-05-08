@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Mic, MicOff } from "lucide-react";
 import type {
   SpeechRecognition,
   SpeechRecognitionError,
   SpeechRecognitionEvent,
 } from "../../types/speech";
+import { Icon } from "@deco/ui/components/icon.js";
+import { cn } from "@deco/ui/lib/utils.js";
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;
@@ -88,14 +89,18 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
       <div className="flex gap-4">
         <Button
           type="button"
-          variant={isListening ? "destructive" : "default"}
+          variant={isListening ? "default" : "outline"}
           size="icon"
           onClick={toggleListening}
           className="h-8 w-8 rounded-full cursor-pointer"
         >
-          {isListening
-            ? <MicOff className="w-4 h-4" />
-            : <Mic className="w-4 h-4" />}
+          <Icon
+            className={cn(
+              "text-sm",
+            )}
+            filled={true}
+            name={isListening ? "stop" : "mic"}
+          />
         </Button>
       </div>
     </div>

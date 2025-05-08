@@ -264,6 +264,7 @@ ChatInput.UI = (
                         "text-sm",
                         isLoadingOrUploading && "animate-spin",
                       )}
+                      filled={true}
                       name={isLoadingOrUploading ? "sync" : "send"}
                     />
                   </Button>

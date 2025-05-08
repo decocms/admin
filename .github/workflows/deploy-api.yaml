@@ -31,6 +31,7 @@ jobs:
             TURSO_GROUP_DATABASE_TOKEN
             CF_ACCOUNT_ID
             CF_API_TOKEN
+            CF_DISPATCH_NAMESPACE
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}

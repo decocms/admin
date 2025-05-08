@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   assertUserHasAccessToTeamById,
-  assertUserHasAccessToTeamBySlug,
   assertUserIsTeamAdmin,
 } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";

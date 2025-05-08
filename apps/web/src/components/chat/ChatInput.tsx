@@ -44,7 +44,7 @@ ChatInput.UI = (
 ) => {
   const {
     agentRoot,
-    chat: { input, handleInputChange, handleSubmit, status },
+    chat: { stop, input, handleInputChange, handleSubmit, status },
   } = useChatContext();
   const [isUploading, setIsUploading] = useState(false);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
@@ -254,18 +254,19 @@ ChatInput.UI = (
                   {!withoutTools && <ToolsButton />}
                   <AudioButton onMessage={handleRichTextChange} />
                   <Button
-                    type="submit"
+                    type={isLoadingOrUploading ? "button" : "submit"}
                     size="icon"
-                    disabled={isLoadingOrUploading || disabled || !input.trim()}
-                    className="h-8 w-8"
+                    disabled={!isLoadingOrUploading &&
+                      (!input.trim() && !files)}
+                    onClick={isLoadingOrUploading ? stop : undefined}
+                    className="h-8 w-8 transition-all hover:opacity-70"
+                    title={isLoadingOrUploading
+                      ? "Stop generating"
+                      : "Send message (Enter)"}
                   >
                     <Icon
-                      className={cn(
-                        "text-sm",
-                        isLoadingOrUploading && "animate-spin",
-                      )}
                       filled
-                      name={isLoadingOrUploading ? "sync" : "send"}
+                      name={isLoadingOrUploading ? "stop" : "send"}
                     />
                   </Button>
                 </div>

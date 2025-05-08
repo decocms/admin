@@ -24,7 +24,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
       "webkitSpeechRecognition" in globalThis
     ) {
       const SpeechRecognition = globalThis.SpeechRecognition ||
-      globalThis.webkitSpeechRecognition;
+        globalThis.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;

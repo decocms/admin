@@ -3,12 +3,11 @@ import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useChatContext } from "./context.tsx";
 
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {

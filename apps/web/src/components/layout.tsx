@@ -5,41 +5,11 @@ import { useUser } from "../hooks/data/useUser.ts";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { SettingsSidebar } from "./sidebar/settings.tsx";
 
-function LegacyLayout({
-  sidebar,
-}: {
-  sidebar: React.ReactNode;
-}) {
-  const { teamSlug } = useParams();
-  const user = useUser();
-
-  const rootContext: Workspace = teamSlug
-    ? `shared/${teamSlug}`
-    : `users/${user?.id}`;
-
-  return (
-    <SidebarProvider
-      className="h-full"
-      style={{
-        "--sidebar-width": "16rem",
-        "--sidebar-width-mobile": "14rem",
-      } as Record<string, string>}
-    >
-      <SDKProvider workspace={rootContext}>
-        {sidebar}
-        <SidebarInset className="h-full">
-          <Outlet />
-        </SidebarInset>
-      </SDKProvider>
-    </SidebarProvider>
-  );
-}
-
 export const WorkspaceSettingsLayout = () => (
-  <LegacyLayout sidebar={<SettingsSidebar />} />
+  <Layout sidebar={<SettingsSidebar />} />
 );
 
-export const Layout = () => {
+export const Layout = ({ sidebar }: { sidebar?: React.ReactNode }) => {
   const { teamSlug } = useParams();
   const user = useUser();
 
@@ -49,16 +19,18 @@ export const Layout = () => {
 
   return (
     <SidebarProvider
-      className="h-full"
+      className="h-full bg-slate-50"
       style={{
         "--sidebar-width": "16rem",
         "--sidebar-width-mobile": "14rem",
       } as Record<string, string>}
     >
       <SDKProvider workspace={rootContext}>
-        <AppSidebar />
-        <SidebarInset className="h-full ">
-          <Outlet />
+        {sidebar ?? <AppSidebar />}
+        <SidebarInset className="h-full p-2 bg-slate-50">
+          <div className="h-full bg-background rounded-xl shadow-md overflow-hidden">
+            <Outlet />
+          </div>
         </SidebarInset>
       </SDKProvider>
     </SidebarProvider>

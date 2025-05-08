@@ -1,13 +1,88 @@
 import { marked } from "marked";
-import { memo, useMemo, useRef } from "react";
+import { memo, Suspense, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { useState } from "react";
+import { lazy, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+const LazyHighlighter = lazy(() => import("./LazyHighlighter.tsx"));
+
+function LazyHighlighterFallback() {
+  const lines = [85, 70];
+
+  return (
+    <div
+      className="p-4 font-mono text-sm"
+      style={{
+        background: "#2d2d2d",
+        borderRadius: "0 0 0.5rem 0.5rem",
+        overflow: "auto",
+        minHeight: "4rem",
+      }}
+    >
+      {lines.map((width, i) => (
+        <div
+          key={i}
+          className="flex gap-2 items-center my-1"
+        >
+          {(i > 2 && i < 7) && (
+            <div
+              className="w-4 h-4 rounded-sm opacity-40 animate-pulse"
+              style={{
+                background: "rgba(128, 128, 128, 0.3)",
+                animationDelay: `${i * 0.1}s`,
+              }}
+            />
+          )}
+
+          {i % 4 === 0 && (
+            <div
+              className="h-4 rounded animate-pulse"
+              style={{
+                width: "3rem",
+                background: "rgba(128, 128, 128, 0.3)",
+                animationDelay: `${i * 0.12}s`,
+              }}
+            />
+          )}
+
+          {i % 3 === 1 && (
+            <div
+              className="h-4 rounded animate-pulse"
+              style={{
+                width: "2.5rem",
+                background: "rgba(128, 128, 128, 0.3)",
+                animationDelay: `${i * 0.14}s`,
+              }}
+            />
+          )}
+
+          <div
+            className="h-4 rounded animate-pulse"
+            style={{
+              width: `${width}%`,
+              background: "rgba(255, 255, 255, 0.1)",
+              animationDelay: `${i * 0.1}s`,
+            }}
+          />
+
+          {i % 5 === 2 && (
+            <div
+              className="h-4 rounded animate-pulse"
+              style={{
+                width: "4rem",
+                background: "rgba(128, 128, 128, 0.3)",
+                animationDelay: `${i * 0.16}s`,
+              }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
@@ -63,12 +138,13 @@ function CodeBlock(
   { language, content }: { language: string; content: string },
 ) {
   const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<number>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
     setCopied(true);
     timeoutRef.current && clearTimeout(timeoutRef.current);
+    // @ts-ignore - setTimeout returns number in browser
     timeoutRef.current = setTimeout(() => setCopied(false), 1200);
   };
 
@@ -89,24 +165,9 @@ function CodeBlock(
         </Button>
       </div>
 
-      <SyntaxHighlighter
-        language={language || "text"}
-        style={tomorrow}
-        customStyle={{
-          margin: 0,
-          padding: "1rem",
-          fontSize: "0.875rem",
-          borderRadius: "0 0 0.5rem 0.5rem",
-          background: "#2d2d2d",
-          position: "relative",
-          overflow: "auto",
-        }}
-        codeTagProps={{
-          className: "font-mono",
-        }}
-      >
-        {content}
-      </SyntaxHighlighter>
+      <Suspense fallback={<LazyHighlighterFallback />}>
+        <LazyHighlighter language={language} content={content} />
+      </Suspense>
     </div>
   );
 }

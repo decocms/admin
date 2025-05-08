@@ -4,8 +4,8 @@ import type {
   SpeechRecognition,
   SpeechRecognitionError,
   SpeechRecognitionEvent,
-} from "../../types/speech";
-import { Icon } from "@deco/ui/components/icon.js";
+} from "../../types/speech.d.ts";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.js";
 
 interface AudioButtonProps {
@@ -42,7 +42,6 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
       };
 
       recognition.onerror = (event: SpeechRecognitionError) => {
-        console.error("Speech recognition error:", event.error);
         if (event.error === "aborted") {
           // Ignore aborted errors as they're expected when stopping recognition
           return;
@@ -56,13 +55,13 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         if (recognition) {
           try {
             recognition.stop();
-          } catch (e) {
+          } catch (_e) {
             // Ignore errors when stopping recognition during cleanup
           }
         }
       };
     }
-  }, [onMessage]);
+  }, []);
 
   const toggleListening = useCallback(() => {
     if (!recognition) return;
@@ -70,6 +69,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
     try {
       if (isListening) {
         recognition.stop();
+        setIsListening(false);
       } else {
         recognition.start();
         setIsListening(true);

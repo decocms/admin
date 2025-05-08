@@ -15,6 +15,7 @@ import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
 import ToolsButton from "./ToolsButton.tsx";
+import { AudioButton } from "./AudioButton.tsx";
 
 export function ChatInput({ withoutTools }: { withoutTools?: boolean }) {
   return (
@@ -57,7 +58,7 @@ ChatInput.UI = (
   const isLoadingOrUploading = isLoading || isUploading;
 
   const getAcceptedFileTypes = () => {
-    const acceptTypes = [];
+    const acceptTypes: string[] = [];
     if (selectedModel.capabilities.includes("image-upload")) {
       acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
     }
@@ -248,35 +249,22 @@ ChatInput.UI = (
                         defaultModel: modelToSelect,
                       })}
                   />
-                  {!withoutTools && <ToolsButton />}
                 </div>
-                <div className="flex items-center gap-4">
-                  {input && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium bg-background border rounded-md">
-                        shift
-                      </kbd>
-                      <span>+</span>
-                      <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium bg-background border rounded-md">
-                        return
-                      </kbd>
-                      <span className="opacity-75">for new line</span>
-                    </span>
-                  )}
+                <div className="flex items-center gap-2">
+                  {!withoutTools && <ToolsButton />}
+                  <AudioButton onMessage={handleRichTextChange} />
                   <Button
-                    type={isLoadingOrUploading ? "button" : "submit"}
+                    type="submit"
                     size="icon"
-                    disabled={!isLoadingOrUploading &&
-                      (!input.trim() && !files)}
-                    onClick={isLoadingOrUploading ? stop : undefined}
-                    className="h-8 w-8 transition-all hover:opacity-70"
-                    title={isLoadingOrUploading
-                      ? "Stop generating"
-                      : "Send message (Enter)"}
+                    disabled={isLoadingOrUploading || disabled || !input.trim()}
+                    className="h-8 w-8"
                   >
                     <Icon
-                      name={isLoadingOrUploading ? "stop" : "send"}
-                      filled
+                      className={cn(
+                        "text-sm",
+                        isLoadingOrUploading && "animate-spin",
+                      )}
+                      name={isLoadingOrUploading ? "sync" : "send"}
                     />
                   </Button>
                 </div>

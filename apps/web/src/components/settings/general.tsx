@@ -83,8 +83,8 @@ function DeleteTeamDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Team?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently
-            delete the team and all its data.
+            This action cannot be undone. This will permanently delete the team
+            and all its data.
           </AlertDialogDescription>
           {error && (
             <div className="text-destructive text-sm mt-2">
@@ -107,13 +107,15 @@ function DeleteTeamDialog({
                 await onDelete();
               }}
             >
-              {isPending ? (
-                <span className="flex items-center gap-2">
-                  <Spinner size="xs" /> Deleting...
-                </span>
-              ) : (
-                "Delete"
-              )}
+              {isPending
+                ? (
+                  <span className="flex items-center gap-2">
+                    <Spinner size="xs" /> Deleting...
+                  </span>
+                )
+                : (
+                  "Delete"
+                )}
             </Button>
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -313,7 +315,7 @@ export function GeneralSettings() {
                           setDeleteError(
                             err instanceof Error
                               ? err.message
-                              : "Failed to delete team."
+                              : "Failed to delete team.",
                           );
                         }
                       }}

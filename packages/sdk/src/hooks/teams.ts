@@ -59,7 +59,7 @@ export function useDeleteTeam() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (teamId: number) => deleteTeam(teamId),
-    onSuccess: (_, teamId) => {
+    onSuccess: () => {
       client.invalidateQueries({ queryKey: KEYS.TEAMS() });
       // Remove all team caches (by id or slug if needed)
     },

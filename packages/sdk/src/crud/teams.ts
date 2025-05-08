@@ -49,7 +49,9 @@ export async function createTeam(
 
 export interface UpdateTeamInput {
   id: number;
-  data: Partial<Pick<Team, "name" | "slug"> & { stripe_subscription_id?: string }>;
+  data: Partial<
+    Pick<Team, "name" | "slug"> & { stripe_subscription_id?: string }
+  >;
   [key: string]: unknown;
 }
 

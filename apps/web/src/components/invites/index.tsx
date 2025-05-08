@@ -92,7 +92,7 @@ function InviteItem(
         ).join(", ")}
       </TableCell>
       <TableCell>{timeAgo(invite.createdAt)}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-center">
         <Button
           onClick={handleAccept}
           disabled={isLoading}
@@ -113,6 +113,7 @@ function InvitesViewContent() {
   const acceptInviteMutation = useAcceptInvite();
   const navigate = useNavigate();
 
+  console.log({ invites });
   if (!invites.length) {
     return <InvitesViewEmpty />;
   }
@@ -147,7 +148,7 @@ function InvitesViewContent() {
                 <TableHead>Invited By</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Invited</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

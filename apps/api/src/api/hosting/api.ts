@@ -31,12 +31,27 @@ type AppRow =
 export type App = z.infer<typeof AppSchema>;
 
 const Mappers = {
-  toApp: (data: AppRow): App & { id: string; workspace: string } => {
+  toApp: (
+    data: AppRow,
+  ): App & {
+    id: string;
+    workspace: string;
+    files: z.infer<typeof FileSchema>[];
+  } => {
+    const files = Object.entries(
+      data.files ?? {} as Record<string, string>,
+    ).map((
+      [path, content],
+    ) => ({
+      path,
+      content,
+    }));
     return {
       id: data.id,
       slug: data.slug,
       entrypoint: Entrypoint.build(data.slug),
       workspace: data.workspace,
+      files,
     };
   },
 };
@@ -312,8 +327,6 @@ export const getAppInfo = createApiHandler({
   schema: AppInputSchema,
   handler: async ({ appSlug }, c) => {
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
-    const entrypoint = Entrypoint.build(slug);
-    const env = getEnv(c);
     // 1. Fetch from DB
     const { data, error } = await c.var.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -326,22 +339,6 @@ export const getAppInfo = createApiHandler({
       throw new Error("App not found");
     }
 
-    const cf = c.var.cf;
-    const namespace = env.CF_DISPATCH_NAMESPACE;
-    const content = await cf.workersForPlatforms.dispatch.namespaces.scripts
-      .content.get(
-        namespace,
-        slug,
-        { account_id: env.CF_ACCOUNT_ID },
-      );
-
-    // @ts-ignore: formData is not typed
-    const form = await content.formData();
-
-    return {
-      app: slug,
-      entrypoint,
-      content: form.get(SCRIPT_FILE_NAME)?.toString(),
-    };
+    return Mappers.toApp(data);
   },
 });

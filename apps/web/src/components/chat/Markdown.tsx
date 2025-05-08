@@ -76,16 +76,17 @@ function CodeBlock(
         <span className="text-xs font-mono uppercase text-muted-foreground tracking-widest select-none">
           {language ? language : "text"}
         </span>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={handleCopy}
+          aria-label="Copy code"
+          className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
+        >
+          <Icon name={copied ? "check" : "content_copy"} size={14} />
+        </Button>
       </div>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={handleCopy}
-        aria-label="Copy code"
-        className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
-      >
-        <Icon name={copied ? "check" : "content_copy"} size={14} />
-      </Button>
+
       <SyntaxHighlighter
         language={language || "text"}
         style={tomorrow}

@@ -101,6 +101,10 @@ const TriggerDetails = lazy(() =>
   wrapWithUILoadingFallback(import("./components/triggers/triggerDetails.tsx"))
 );
 
+const InvitesList = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/invites/index.tsx"))
+);
+
 function NotFound() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -165,6 +169,10 @@ function Router() {
       <Route path="login/magiclink" element={<MagicLink />} />
 
       <Route path="about" element={<About />} />
+
+      <Route path="invites" element={<RouteLayout />}>
+        <Route index element={<InvitesList />} />
+      </Route>
 
       <Route path="/:teamSlug?" element={<RouteLayout />}>
         <Route

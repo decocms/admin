@@ -47,6 +47,8 @@ const WORKSPACE_TOOLS = [
   integrationsAPI.listIntegrations,
   threadsAPI.listThreads,
   threadsAPI.getThread,
+  threadsAPI.getThreadMessages,
+  threadsAPI.getThreadTools,
   hostingAPI.listApps,
   hostingAPI.deployApp,
   hostingAPI.deleteApp,

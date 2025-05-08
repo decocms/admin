@@ -10,14 +10,12 @@
   "dependencies": {
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
     "@deco/sdk": "^0.1.1",
-    "@luca/esbuild-deno-loader": "npm:@jsr/luca__esbuild-deno-loader@^0.11.1",
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "ai": "^4.3.13",
     "cloudflare": "^4.2.0",
-    "esbuild": "^0.25.4",
     "hono": "^4.7.7",
     "zod": "^3.24.3"
   },

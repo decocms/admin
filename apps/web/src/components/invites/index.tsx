@@ -25,7 +25,6 @@ import {
   CardTitle,
 } from "@deco/ui/components/card.tsx";
 import { timeAgo } from "../../utils/timeAgo.ts";
-import { Layout } from "../layout.tsx";
 
 function InvitesTitle() {
   return (
@@ -91,7 +90,7 @@ function InviteItem({ invite, onAccept }: { invite: Invite; onAccept: (id: strin
         {invite.roles.map(role => role.name.charAt(0).toUpperCase() + role.name.slice(1)).join(", ")}
       </TableCell>
       <TableCell>{timeAgo(invite.createdAt)}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-center">
         <Button 
           onClick={handleAccept} 
           disabled={isLoading}
@@ -110,6 +109,7 @@ function InvitesViewContent() {
   const acceptInviteMutation = useAcceptInvite();
   const navigate = useNavigate();
 
+  console.log({ invites });
   if (!invites.length) {
     return <InvitesViewEmpty />;
   }
@@ -144,7 +144,7 @@ function InvitesViewContent() {
                 <TableHead>Invited By</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Invited</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,12 +165,10 @@ function InvitesViewContent() {
 
 export default function InvitesList() {
   return (
-    <Layout>
-      <div className="h-full text-slate-700 max-w-5xl mx-auto">
-        <Suspense fallback={<InvitesViewLoading />}>
-          <InvitesViewContent />
-        </Suspense>
-      </div>
-    </Layout>
+    <div className="h-full text-slate-700 max-w-5xl mx-auto">
+      <Suspense fallback={<InvitesViewLoading />}>
+        <InvitesViewContent />
+      </Suspense>
+    </div>
   );
 } 

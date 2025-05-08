@@ -175,8 +175,9 @@ function Router() {
 
       <Route path="about" element={<About />} />
 
-      {/* Standalone invites route (outside any workspace context) */}
-      <Route path="invites" element={<InvitesList />} />
+      <Route path="invites" element={<Layout />}>
+        <Route index element={<InvitesList />} />
+      </Route>
 
       <Route path="/:teamSlug?/settings" element={<WorkspaceSettingsLayout />}>
         <Route index element={<GeneralSettings />} />

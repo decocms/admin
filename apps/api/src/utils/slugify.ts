@@ -64,21 +64,3 @@ export async function generateUUIDv5(
     hex.slice(20, 32),
   ].join("-");
 }
-
-/**
- * Slugifies a string to be used as a subdomain
- * @param name The name to slugify
- * @returns A slugified string
- */
-export const slugify = (name: string) => {
-  // Lowercase and replace all non-alphanumeric with hyphens
-  let slug = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
-  // Replace multiple hyphens with a single hyphen
-  slug = slug.replace(/-+/g, "-");
-  // Remove leading and trailing hyphens
-  slug = slug.replace(/^-+|-+$/g, "");
-  // Ensure max length of 63 characters (DNS subdomain limit)
-  slug = slug.slice(0, 63);
-  // If the result is empty, return a default value (e.g., "subdomain")
-  return slug || "subdomain";
-};

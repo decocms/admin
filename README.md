@@ -82,34 +82,6 @@ Help shape the future of UI-rich, self-building AI agents!
 
 ---
 
-## 🛠️ Supabase Migrations
-
-To run database migrations with Supabase:
-
-1. Install the Supabase CLI:
-   ```sh
-   npm install -g supabase
-   ```
-2. Log in:
-   ```sh
-   supabase login
-   ```
-3. Link the project:
-   ```sh
-   supabase link --project-ref ozksgdmyrqcxcwhnbepg
-   ```
-4. Get the database password from
-   [1Password](https://decocx.1password.com/app#/v254wmdcgkot7sbjm2rrzsqgzu/Search/v254wmdcgkot7sbjm2rrzsqgzu63fbqw56r7ee5okdfbbk3s2q5a?itemListId=supabase).
-5. Run migrations as needed:
-   ```sh
-   supabase db push
-   # or
-   supabase db migrate
-   ```
-6. Now you can run `deno run db:migration`
-7. You can create a new migration by running
-   `supabase migration new $YOUR_MIGRATION_NAME`
-
 **Made with ❤️ by deco.chat**
 
 Empowering businesses to scale AI safely, visually, and efficiently. Explore our

@@ -33,6 +33,7 @@ const GLOBAL_TOOLS = [
   membersAPI.getMyInvites,
   membersAPI.acceptInvite,
   membersAPI.inviteTeamMembers,
+  membersAPI.teamRolesList,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
 ];

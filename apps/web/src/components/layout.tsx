@@ -17,6 +17,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Fragment, ReactNode } from "react";
 import { Link, Outlet, useParams } from "react-router";
+import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../hooks/useNavigateWorkspace.ts";
 import RegisterActivity from "./common/RegisterActivity.tsx";
@@ -45,6 +46,7 @@ export function RouteLayout() {
           <Outlet />
         </SidebarInset>
         <RegisterActivity teamSlug={teamSlug} />
+        <Toaster />
       </SDKProvider>
     </SidebarProvider>
   );

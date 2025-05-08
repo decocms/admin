@@ -5,11 +5,13 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 import {
-  addTeamMember,
   getTeamMembers,
+  getTeamRoles,
+  inviteTeamMembers,
   type Member,
   registerActivity,
   removeTeamMember,
+  type Role,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 
@@ -31,23 +33,40 @@ export const useTeamMembers = (
 };
 
 /**
- * Hook to add a new team member
- * @returns Mutation function for adding a team member
+ * Hook to fetch team roles
+ * @param teamId - The ID of the team to fetch roles for
  */
-export const useAddTeamMember = () => {
+export const useTeamRoles = (teamId: number | null) => {
+  return useSuspenseQuery({
+    queryKey: KEYS.TEAM_ROLES(teamId ?? -1),
+    queryFn: ({ signal }) =>
+      typeof teamId === "number"
+        ? getTeamRoles(teamId, signal)
+        : [],
+  });
+};
+
+/**
+ * Hook to invite team members
+ * @returns Mutation function for inviting team members
+ */
+export const useInviteTeamMember = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ teamId, email }: { teamId: number; email: string }) =>
-      addTeamMember(teamId, email),
-    onSuccess: (newMember, { teamId }) => {
+    mutationFn: ({ 
+      teamId, 
+      invitees 
+    }: { 
+      teamId: number; 
+      invitees: Array<{
+        email: string;
+        roles: Array<{ id: number; name: string }>;
+      }>;
+    }) => inviteTeamMembers(teamId, invitees),
+    onSuccess: (_, { teamId }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
-
-      queryClient.cancelQueries({ queryKey: membersKey });
-      queryClient.setQueryData<Member[]>(
-        membersKey,
-        (old) => [newMember, ...(old ?? [])],
-      );
+      queryClient.invalidateQueries({ queryKey: membersKey });
     },
   });
 };

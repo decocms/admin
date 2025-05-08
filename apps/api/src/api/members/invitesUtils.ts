@@ -1,4 +1,5 @@
-import { type AppContext } from "../../utils/context.ts";
+
+import type { Client } from "../../db/client.ts";
 
 // Email sending functionality
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -143,7 +144,7 @@ export async function sendInviteEmail(
 export async function getInviteIdByEmailAndTeam({ email, teamId }: {
   email: string;
   teamId: string;
-}, db: AppContext["get"]["db"]) {
+}, db: Client) {
   const { data } = await db.from("invites").select("id").eq(
     "invited_email",
     email,
@@ -159,7 +160,7 @@ export async function checkAlreadyExistUserIdInTeam({
   userId?: string;
   teamId: string;
   email?: string;
-}, db: AppContext["get"]["db"]) {
+}, db: Client) {
   if (userId) {
     const { data } = await db.from("members")
       .select("id")
@@ -198,7 +199,7 @@ export async function insertInvites(
     inviter_id: string;
     invited_roles: Array<{ id: number; name: string }>;
   }>,
-  db: AppContext["get"]["db"],
+  db: Client,
 ) {
   const { data, error } = await db.from("invites").insert(invites).select();
 
@@ -209,7 +210,7 @@ export async function insertInvites(
   return { data, error: null, status: 201 };
 }
 
-export async function getTeamById(teamId: string, db: AppContext["get"]["db"]) {
+export async function getTeamById(teamId: string, db: Client) {
   const { data, error } = await db.from("teams")
     .select("id, name, members(user_id)")
     .eq("id", Number(teamId))
@@ -236,7 +237,7 @@ export interface Role {
 }
 
 export async function updateUserRole(
-  db: AppContext["get"]["db"],
+  db: Client,
   teamId: number,
   email: string,
   { roleId, action }: {

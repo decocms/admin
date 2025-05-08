@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "PWD=$PWD/apps/web deno run dev",
-    "dev": "PWD=$PWD/apps/web deno run dev & PWD=$PWD/apps/api deno run dev",
+    "dev": "deno run -A npm:concurrently \"cd apps/web && deno run dev\" \"cd apps/api && deno run dev\"",
     "build": "PWD=$PWD/apps/web deno run build",
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",

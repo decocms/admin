@@ -174,13 +174,13 @@ function Router() {
 
       <Route path="about" element={<About />} />
 
-      <Route path="/:teamSlug?" element={<WorkspaceSettingsLayout />}>
-        <Route path="settings" element={<GeneralSettings />} />
-        <Route path="settings/members" element={<MembersSettings />} />
-        <Route path="settings/billing" element={<BillingSettings />} />
-        <Route path="settings/usage" element={<UsageSettings />} />
-        <Route path="settings/audit" element={<AuditList />} />
-        <Route path="settings/audit/:id" element={<AuditDetail />} />
+      <Route path="/:teamSlug?/settings" element={<WorkspaceSettingsLayout />}>
+        <Route index element={<GeneralSettings />} />
+        <Route path="members" element={<MembersSettings />} />
+        <Route path="billing" element={<BillingSettings />} />
+        <Route path="usage" element={<UsageSettings />} />
+        <Route path="audit" element={<AuditList />} />
+        <Route path="audit/:id" element={<AuditDetail />} />
       </Route>
 
       <Route path="/:teamSlug?" element={<WorkspaceLayout />}>

@@ -48,14 +48,6 @@ export interface SpeechRecognition extends SpeechRecognitionEvent {
 }
 
 declare global {
-  interface Window {
-    SpeechRecognition: {
-      prototype: SpeechRecognition;
-      new (): SpeechRecognition;
-    };
-    webkitSpeechRecognition: {
-      prototype: SpeechRecognition;
-      new (): SpeechRecognition;
-    };
-  }
+  var SpeechRecognition: new () => SpeechRecognition;
+  var webkitSpeechRecognition: new () => SpeechRecognition;
 }

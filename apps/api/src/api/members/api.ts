@@ -321,23 +321,26 @@ export const acceptInvite = createApiHandler({
       }
 
       // Apply roles
-      const rolePromises = invite.invited_roles.map(async ({ id }) => {
-        return await updateUserRole(
-          db,
-          Number(invite.team_id),
-          invite.invited_email,
-          {
-            roleId: id,
-            action: "grant",
-          },
-        );
-      });
+      if (invite.invited_roles && Array.isArray(invite.invited_roles)) {
+        const rolePromises = invite.invited_roles.map(async (roleData) => {
+          const role = roleData as { id: number; name: string };
+          return await updateUserRole(
+            db,
+            Number(invite.team_id),
+            invite.invited_email,
+            {
+              roleId: role.id,
+              action: "grant",
+            },
+          );
+        });
 
-      try {
-        await Promise.all(rolePromises);
-      } catch (error) {
-        console.error("Error assigning roles:", error);
-        // We'll continue even if role assignment fails
+        try {
+          await Promise.all(rolePromises);
+        } catch (error) {
+          console.error("Error assigning roles:", error);
+          // We'll continue even if role assignment fails
+        }
       }
     }
 
@@ -480,14 +483,22 @@ export const removeTeamMember = createApiHandler({
   },
 });
 
+<<<<<<< HEAD
 export const registerMemberActivity = createApiHandler({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
   description: "Register that the user accessed a team",
+=======
+// Get team roles list
+export const teamRolesList = createApiHandler({
+  name: "TEAM_ROLES_LIST",
+  description: "Get all roles available for a team, including basic deco roles",
+>>>>>>> 7b0ed31 (Invite member UI)
   schema: z.object({
     teamId: z.number(),
   }),
   handler: async (props, c) => {
     const { teamId } = props;
+<<<<<<< HEAD
     const user = c.get("user");
 
     // Verify the user has admin access to the team
@@ -504,5 +515,29 @@ export const registerMemberActivity = createApiHandler({
     });
 
     return { success: true };
+=======
+    const db = c.get("db");
+    const user = c.get("user");
+
+    // Verify the user has access to the team
+    await assertUserHasAccessToTeamById(
+      { userId: user.id, teamId },
+      c,
+    );
+
+    // Helper function to create the team or deco basic roles query
+    const getTeamOrDecoBasicRolesQuery = (teamId: number) => {
+      return `team_id.eq.${teamId},team_id.is.null`;
+    };
+
+    // Get all roles for this team and deco basic roles
+    const { data, error } = await db.from("roles").select(
+      "id, name, description, team_id",
+    ).or(getTeamOrDecoBasicRolesQuery(teamId));
+
+    if (error) throw error;
+
+    return data;
+>>>>>>> 7b0ed31 (Invite member UI)
   },
 });

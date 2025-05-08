@@ -1,7 +1,11 @@
 import { SDKProvider, Workspace } from "@deco/sdk";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
+<<<<<<< HEAD
 import { PropsWithChildren, ReactNode } from "react";
 import { createPortal } from "react-dom";
+=======
+import { Toaster } from "@deco/ui/components/sonner.tsx";
+>>>>>>> 7b0ed31 (Invite member UI)
 import { Outlet, useParams } from "react-router";
 import { lazy, Suspense } from "react";
 import { useUser } from "../hooks/data/useUser.ts";
@@ -63,9 +67,13 @@ export function Layout(
             <Outlet />
           </div>
         </SidebarInset>
+<<<<<<< HEAD
         <Suspense fallback={null}>
           <RegisterActivity teamSlug={teamSlug} />
         </Suspense>
+=======
+        <Toaster />
+>>>>>>> 7b0ed31 (Invite member UI)
       </SDKProvider>
     </SidebarProvider>
   );

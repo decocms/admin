@@ -27,7 +27,7 @@ export const speak = async (text: string) => {
       headers: {
         "Content-Type": "application/json",
         // You'll need to replace this with your actual API key or authentication method
-        "X-goog-api-key": `AIzaSyBrbbNjqrSjnCsQX856SboY5E-jfVggppk`,
+        "X-goog-api-key": ``,
       },
       body: JSON.stringify(requestBody),
     },

@@ -83,6 +83,62 @@ export const getTeamMembers = createApiHandler({
   },
 });
 
+// User's invites list handler
+export const getMyInvites = createApiHandler({
+  name: "MY_INVITES_LIST",
+  description: "List all team invites for the current logged in user",
+  schema: z.object({}),
+  handler: async (_props, c) => {
+    const user = c.get("user");
+    const db = c.get("db");
+
+    // Get profile to find user email
+    const { data: profile, error: profileError } = await db
+      .from("profiles")
+      .select("email")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+    if (!profile) {
+      throw new Error("User profile not found");
+    }
+
+    // Find invites for this email
+    const { data: invites, error } = await db
+      .from("invites")
+      .select(`
+        id,
+        team_id,
+        team_name,
+        invited_email,
+        invited_roles,
+        created_at,
+        profiles!invites_inviter_id_fkey (
+          name,
+          email
+        )
+      `)
+      .eq("invited_email", profile.email.toLowerCase());
+
+    if (error) throw error;
+
+    // Transform data to a nicer format for the frontend
+    return invites.map(invite => ({
+      id: invite.id,
+      teamId: invite.team_id,
+      teamName: invite.team_name,
+      email: invite.invited_email,
+      roles: invite.invited_roles,
+      createdAt: invite.created_at,
+      inviter: {
+        name: invite.profiles?.name || null,
+        email: invite.profiles?.email || null
+      }
+    }));
+  },
+});
+
 // New invite team member handler
 export const inviteTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_INVITE",
@@ -123,25 +179,7 @@ export const inviteTeamMembers = createApiHandler({
       return invitee;
     });
 
-    // Check if any invitee has owner role and verify current user is owner
-    const hasOwnerInvitee = processedInvitees.some(({ roles }) => {
-      return roles.some(({ id }) => id === 1); // Assuming OWNER role ID is 1
-    });
-
-    if (hasOwnerInvitee) {
-      // Verify the user is an owner
-      const { data: teamOwners } = await db
-        .from("members")
-        .select("id")
-        .eq("team_id", teamIdAsNum)
-        .eq("user_id", user.id)
-        .eq("admin", true) // Assuming admin=true means owner
-        .limit(1);
-
-      if (!teamOwners || teamOwners.length === 0) {
-        throw new Error("You are not allowed to invite users as owners");
-      }
-    }
+    // TODO: Verify if invites have owner role and verify current user is owner
 
     // Process each invitee
     const inviteesPromises = processedInvitees.map(async (invitee) => {
@@ -197,27 +235,25 @@ export const inviteTeamMembers = createApiHandler({
     }
 
     // Send emails
-    const requestPromises = inviteResult.data?.map(async (invite) => {
+    const requestPromises = inviteResult.data?.map(async (invite: {
+      id: string;
+      invited_email: string;
+      team_name: string;
+      invited_roles: Array<{ name: string; id: number }>;
+    }) => {
       const rolesNames = invite.invited_roles.map(({ name }) => name);
 
       await sendInviteEmail({
         ...invite,
-        inviter: user.email,
+        inviter: user.email || 'Unknown',
         roles: rolesNames,
       });
-      
-      // Track event
-      // Note: This would need to be implemented or imported
-      // invoke["deco-sites/admin"].actions.userevents.sendEvent({
-      //   name: "invite_team_member",
-      //   properties: { teamId, invitedEmail: invite.invited_email },
-      // });
     });
 
     await Promise.all(requestPromises || []);
 
     return {
-      message: `Invite sent to their home screen. Ask them to log in at https://deco.cx/admin`,
+      message: `Invite sent to their home screen. Ask them to log in at https://deco.chat`,
     };
   },
 });
@@ -269,12 +305,10 @@ export const acceptInvite = createApiHandler({
       teamId: invite.team_id.toString(),
     }, db);
 
-    let insertResult = null;
-    let insertError = null;
 
     // Add user to team if not already a member
     if (!alreadyExistsUserInTeam) {
-      const { data, error } = await db
+      const { data: insertResult, error } = await db
         .from("members")
         .insert({
           team_id: invite.team_id,
@@ -282,9 +316,6 @@ export const acceptInvite = createApiHandler({
           deleted_at: null,
         })
         .select();
-
-      insertResult = data;
-      insertError = error;
 
       if (error) {
         throw error;

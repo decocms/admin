@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
+import { callToolFor } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 
 export interface MCPTool {
@@ -30,42 +30,38 @@ type ToolsData = {
 
 const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 
-const fetchAPI = (path: string, init?: RequestInit) =>
-  fetch(new URL(path, LEGACY_API_SERVER_URL), {
-    ...init,
-    credentials: "include",
-    headers: { ...API_HEADERS, ...init?.headers },
-  });
-
 export const listTools = async (
   connection: MCPConnection,
 ): Promise<ToolsData> => {
-  const response = await fetchAPI(`/inspect/list-tools`, {
-    method: "POST",
-    body: JSON.stringify(connection),
+  const response = await callToolFor("", "MCP_LIST_TOOLS", {
+    connection,
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to list tools");
+  const { error, data } = await response.json();
+
+  if (error) {
+    throw new Error(error);
   }
 
-  return response.json() as Promise<ToolsData>;
+  return data as ToolsData;
 };
 
 export const callTool = async (
   connection: MCPConnection,
   toolCall: MCPToolCall,
 ) => {
-  const response = await fetchAPI("/inspect/call-tool", {
-    method: "POST",
-    body: JSON.stringify({ connection, toolCall }),
+  const response = await callToolFor("", "MCP_CALL_TOOL", {
+    connection,
+    tool: toolCall,
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to call tool");
+  const { error, data } = await response.json();
+
+  if (error) {
+    throw new Error(error);
   }
 
-  return response.json() as Promise<MCPToolCallResult>;
+  return data as MCPToolCallResult;
 };
 
 export function useTools(connection: MCPConnection) {

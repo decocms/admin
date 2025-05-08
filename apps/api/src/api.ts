@@ -5,17 +5,17 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import * as agentsAPI from "./api/agents/api.ts";
+import * as hostingAPI from "./api/hosting/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
+import * as mcpAPI from "./api/mcp/api.ts";
 import * as membersAPI from "./api/members/api.ts";
 import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import * as threadsAPI from "./api/threads/api.ts";
-import * as hostingAPI from "./api/hosting/api.ts";
+import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
-import { ROUTES as loginRoutes } from "./auth/index.ts";
-
 export const app = new Hono<AppEnv>();
 
 // Register tools for each API handler
@@ -31,6 +31,8 @@ const GLOBAL_TOOLS = [
   membersAPI.removeTeamMember,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
+  mcpAPI.listIntegrationTools,
+  mcpAPI.callIntegrationTool,
 ];
 
 // Tools tied to an specific workspace

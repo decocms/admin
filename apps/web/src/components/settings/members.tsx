@@ -279,11 +279,11 @@ function TableHeadSort(
 }
 
 function MembersViewContent() {
-  const { teamSlug } = useCurrentTeam();
+  const { slug } = useCurrentTeam();
   const { data: teams } = useTeams();
   const teamId = useMemo(
-    () => teams.find((team) => team.slug === teamSlug)?.id,
-    [teams, teamSlug],
+    () => teams.find((team) => team.slug === slug)?.id,
+    [teams, slug],
   );
   const { data: members } = useTeamMembers(teamId ?? null, {
     withActivity: true,

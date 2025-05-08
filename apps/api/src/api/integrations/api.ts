@@ -70,9 +70,9 @@ export const listIntegrations = createApiHandler({
       id: formatId("i", "user-management"),
       name: "User Management",
       description: "Manage your teams, invites and profile",
-      connection: { 
-        type: "HTTP", 
-        url: `${baseUrl}/mcp` 
+      connection: {
+        type: "HTTP",
+        url: `${baseUrl}/mcp`,
       },
       icon: "https://i.imgur.com/GD4o7vx.png",
       workspace: `${root}/${slug}`,
@@ -84,9 +84,9 @@ export const listIntegrations = createApiHandler({
       id: formatId("i", "workspace-management"),
       name: "Workspace Management",
       description: "Manage your agents, integrations and threads",
-      connection: { 
-        type: "HTTP", 
-        url: `${baseUrl}/${root}/${slug}/mcp` 
+      connection: {
+        type: "HTTP",
+        url: `${baseUrl}/${root}/${slug}/mcp`,
       },
       icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
       workspace: `${root}/${slug}`,

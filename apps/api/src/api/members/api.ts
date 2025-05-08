@@ -3,13 +3,13 @@ import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
 import {
-  sendInviteEmail,
-  getInviteIdByEmailAndTeam,
   checkAlreadyExistUserIdInTeam,
-  insertInvites,
+  getInviteIdByEmailAndTeam,
   getTeamById,
+  insertInvites,
+  sendInviteEmail,
+  updateUserRole,
   userBelongsToTeam,
-  updateUserRole
 } from "./invitesUtils.ts";
 
 // Helper function to check if user is admin of a team
@@ -125,7 +125,7 @@ export const getMyInvites = createApiHandler({
     if (error) throw error;
 
     // Transform data to a nicer format for the frontend
-    return invites.map(invite => ({
+    return invites.map((invite) => ({
       id: invite.id,
       teamId: invite.team_id,
       teamName: invite.team_name,
@@ -134,8 +134,8 @@ export const getMyInvites = createApiHandler({
       createdAt: invite.created_at,
       inviter: {
         name: invite.profiles?.name || null,
-        email: invite.profiles?.email || null
-      }
+        email: invite.profiles?.email || null,
+      },
     }));
   },
 });
@@ -143,16 +143,17 @@ export const getMyInvites = createApiHandler({
 // New invite team member handler
 export const inviteTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_INVITE",
-  description: "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
+  description:
+    "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
   schema: z.object({
     teamId: z.string(),
     invitees: z.array(z.object({
       email: z.string().email(),
       roles: z.array(z.object({
         id: z.number(),
-        name: z.string()
-      }))
-    }))
+        name: z.string(),
+      })),
+    })),
   }),
   handler: async (props, c) => {
     const { teamId, invitees } = props;
@@ -170,11 +171,11 @@ export const inviteTeamMembers = createApiHandler({
     }
 
     // Apply default owner role for invitees without roles
-    const processedInvitees = invitees.map(invitee => {
+    const processedInvitees = invitees.map((invitee) => {
       if (!invitee.roles || invitee.roles.length === 0) {
         return {
           ...invitee,
-          roles: [{ id: 1, name: "owner" }]
+          roles: [{ id: 1, name: "owner" }],
         };
       }
       return invitee;
@@ -185,7 +186,7 @@ export const inviteTeamMembers = createApiHandler({
     // Process each invitee
     const inviteesPromises = processedInvitees.map(async (invitee) => {
       const email = invitee.email.trim();
-      
+
       // Check if already invited or already a team member
       const [invites, alreadyExistsUserInTeam] = await Promise.all([
         getInviteIdByEmailAndTeam({ email, teamId }, db),
@@ -194,7 +195,8 @@ export const inviteTeamMembers = createApiHandler({
 
       return {
         invitee,
-        ignoreInvitee: (invites && invites.length > 0) || alreadyExistsUserInTeam,
+        ignoreInvitee: (invites && invites.length > 0) ||
+          alreadyExistsUserInTeam,
       };
     });
 
@@ -206,7 +208,9 @@ export const inviteTeamMembers = createApiHandler({
       .map((inviteeResult) => inviteeResult.invitee);
 
     if (inviteesToInvite.length === 0) {
-      return { message: "All users already invited or are members of the team" };
+      return {
+        message: "All users already invited or are members of the team",
+      };
     }
 
     // Get team data
@@ -246,7 +250,7 @@ export const inviteTeamMembers = createApiHandler({
 
       await sendInviteEmail({
         ...invite,
-        inviter: user.email || 'Unknown',
+        inviter: user.email || "Unknown",
         roles: rolesNames,
       });
     });
@@ -254,7 +258,8 @@ export const inviteTeamMembers = createApiHandler({
     await Promise.all(requestPromises || []);
 
     return {
-      message: `Invite sent to their home screen. Ask them to log in at https://deco.chat`,
+      message:
+        `Invite sent to their home screen. Ask them to log in at https://deco.chat`,
     };
   },
 });
@@ -279,7 +284,9 @@ export const acceptInvite = createApiHandler({
       .single();
 
     if (!invite || inviteError) {
-      throw new Error("We couldn't find your invitation. It may be invalid or already accepted.");
+      throw new Error(
+        "We couldn't find your invitation. It may be invalid or already accepted.",
+      );
     }
 
     // Check if the invite is for the current user
@@ -297,7 +304,9 @@ export const acceptInvite = createApiHandler({
     }
 
     if (profiles[0].user_id !== user.id) {
-      throw new Error("It looks like this invite isn't for you. Please ensure your email matches the one specified in the invitation.");
+      throw new Error(
+        "It looks like this invite isn't for you. Please ensure your email matches the one specified in the invitation.",
+      );
     }
 
     // Check if user is already in the team
@@ -306,10 +315,9 @@ export const acceptInvite = createApiHandler({
       teamId: invite.team_id.toString(),
     }, db);
 
-
     // Add user to team if not already a member
     if (!alreadyExistsUserInTeam) {
-      const { data: insertResult, error } = await db
+      const { error } = await db
         .from("members")
         .insert({
           team_id: invite.team_id,
@@ -331,7 +339,7 @@ export const acceptInvite = createApiHandler({
           {
             roleId: id,
             action: "grant",
-          }
+          },
         );
       });
 
@@ -386,7 +394,7 @@ export const updateTeamMember = createApiHandler({
     teamId: z.number(),
     memberId: z.number(),
     data: z.object({
-      admin: z.boolean().optional(),  
+      admin: z.boolean().optional(),
       activity: z.array(z.any()).optional(),
     }),
   }),

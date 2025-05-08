@@ -18,6 +18,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { speak } from "./TextToSpeechButton.tsx";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -111,6 +112,7 @@ export function ChatProvider({
       const allMessages = (messages as CreateMessage[]).slice(
         -LAST_MESSAGES_COUNT,
       );
+      console.log("allMessages", allMessages);
       const last = allMessages.at(-1);
       const annotations = files && files.length > 0
         ? [
@@ -174,6 +176,14 @@ export function ChatProvider({
       const shouldInvalidate = message.toolInvocations?.some((tool) =>
         THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
       );
+
+      if (message.role === "assistant") {
+        message.parts?.forEach((part) => {
+          if (part.type === "text") {
+            speak(part.text || "");
+          }
+        });
+      }
 
       if (shouldInvalidate) {
         invalidateAll();

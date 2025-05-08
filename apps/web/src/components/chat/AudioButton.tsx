@@ -10,9 +10,10 @@ import { cn } from "@deco/ui/lib/utils.js";
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;
+  callMode: boolean;
 }
 
-export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
+export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage, callMode }) => {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(
     null,

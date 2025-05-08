@@ -51,6 +51,7 @@ ChatInput.UI = (
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
   const { preferences, setPreferences } = useUserPreferences();
+  const [callMode, setCallMode] = useState<boolean>(false);
   const model = preferences.defaultModel;
 
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
@@ -191,6 +192,22 @@ ChatInput.UI = (
 
   return (
     <div className="w-full max-w-[640px] mx-auto">
+      {
+        callMode && (
+          <>
+            <div className="bg-white w-full h-full z-100000 absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-14 h-14 rounded-full bg-black" />
+              <button
+                onClick={() => setCallMode(false)}
+                className="absolute top-4 right-4 p-2 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 pointer-events-auto"
+                title="Exit call mode"
+              >
+                <Icon name="close" className="w-5 h-5" />
+              </button>
+            </div>
+          </>
+        )
+      }
       <form
         onSubmit={onSubmit}
         className={cn(
@@ -252,12 +269,18 @@ ChatInput.UI = (
                 </div>
                 <div className="flex items-center gap-2">
                   {!withoutTools && <ToolsButton />}
-                  <AudioButton onMessage={handleRichTextChange} />
+                  <AudioButton onMessage={handleRichTextChange} callMode={callMode} />
                   <Button
                     type="submit"
                     size="icon"
-                    disabled={isLoadingOrUploading || disabled || !input.trim()}
+                    disabled={isLoadingOrUploading || disabled}
                     className="h-8 w-8"
+                    onClick={(e) => {
+                      if (!input.trim()) {
+                        e.preventDefault();
+                        setCallMode(true);
+                      }
+                    }}
                   >
                     <Icon
                       className={cn(
@@ -265,7 +288,7 @@ ChatInput.UI = (
                         isLoadingOrUploading && "animate-spin",
                       )}
                       filled
-                      name={isLoadingOrUploading ? "sync" : "send"}
+                      name={(!input.trim() && !isLoadingOrUploading) ? "call" : isLoadingOrUploading ? "sync" : "send"}
                     />
                   </Button>
                 </div>

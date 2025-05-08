@@ -7,6 +7,19 @@ import {
 
 const OWNER_ROLE_ID = 1;
 
+export const sanitizeTeamName = (name: string): string => {
+  if (!name) return "";
+  const nameWithoutAccents = removeNameAccents(name);
+  return nameWithoutAccents.trim().replace(/\s+/g, " ").replace(
+    /[^\w\s\-.+@]/g,
+    "",
+  );
+};
+
+export const removeNameAccents = (name: string): string => {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
 export const getTeam = createApiHandler({
   name: "TEAMS_GET",
   description: "Get a team by slug",
@@ -75,7 +88,7 @@ export const createTeam = createApiHandler({
     const { data: team, error: createError } = await c
       .get("db")
       .from("teams")
-      .insert([{ name, slug, stripe_subscription_id }])
+      .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
       .select()
       .single();
 
@@ -158,7 +171,10 @@ export const updateTeam = createApiHandler({
     const { data: updatedTeam, error: updateError } = await c
       .get("db")
       .from("teams")
-      .update(data)
+      .update({
+        ...data,
+        ...(data.name ? { name: sanitizeTeamName(data.name) } : {}),
+      })
       .eq("id", id)
       .select()
       .single();

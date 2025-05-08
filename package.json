@@ -43,10 +43,6 @@
   "unstable": [
     "kv"
   ],
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2",
-    "hono": "^4.7.7"
-  },
   "devDependencies": {
     "supabase": "^2.22.12"
   }

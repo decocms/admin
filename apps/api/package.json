@@ -8,7 +8,6 @@
     "dev:wrangler": "wrangler dev --port 3001"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20250506.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
     "@deco/sdk": "^0.1.1",
     "@libsql/client": "^0.15.4",

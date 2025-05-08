@@ -235,6 +235,7 @@ export const getAppInfo = createApiHandler({
         { account_id: env.CF_ACCOUNT_ID },
       );
 
+    // @ts-ignore: formData is not typed
     const form = await content.formData();
 
     return {

@@ -1,5 +1,1 @@
-import app from "./src/app.ts";
-
-export default {
-  fetch: app.fetch,
-};
+export { default } from "./src/app.ts";

@@ -358,6 +358,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_hosting_apps: {
+        Row: {
+          cloudflare_script_hash: string | null;
+          cloudflare_worker_id: string | null;
+          created_at: string;
+          deleted_at: string | null;
+          id: string;
+          metadata: Json | null;
+          slug: string;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          cloudflare_script_hash?: string | null;
+          cloudflare_worker_id?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          metadata?: Json | null;
+          slug: string;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          cloudflare_script_hash?: string | null;
+          cloudflare_worker_id?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          metadata?: Json | null;
+          slug?: string;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
       deco_chat_integrations: {
         Row: {
           connection: Json;

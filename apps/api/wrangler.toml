@@ -5,6 +5,7 @@ main = "main.ts"
 compatibility_date = "2024-11-27"
 routes = [
   { pattern = "api.deco.chat", custom_domain = true },
+  { pattern = "*/*", zone_name = "deco.page" },
 ]
 
 [vars]
@@ -13,5 +14,6 @@ VITE_USE_LOCAL_BACKEND = false
 [observability]
 enabled = true
 
-# [[tail_consumers]]
-# service = "hyperdx-tail"
+[[dispatch_namespaces]]
+binding = "PROD_DISPATCHER"
+namespace = "deco-chat-prod"

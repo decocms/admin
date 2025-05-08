@@ -1,21 +1,27 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
+import { type User as SupaUser } from "@supabase/supabase-js";
+import Cloudflare from "cloudflare";
 import { Context } from "hono";
 import { env as honoEnv } from "hono/adapter";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { Client } from "../db/client.ts";
-import { type User as SupaUser } from "npm:@supabase/supabase-js@^2.49.4";
 
 export type AppEnv = {
   Variables: {
     db: Client;
     user: SupaUser;
+    cf: Cloudflare;
   };
   Bindings: {
     SUPABASE_URL: string;
     SUPABASE_SERVER_TOKEN: string;
     TURSO_GROUP_DATABASE_TOKEN: string;
     TURSO_ORGANIZATION: string;
+    CF_ACCOUNT_ID: string;
+    CF_API_TOKEN: string;
+    CF_DISPATCH_NAMESPACE: string;
+    PROD_DISPATCHER: { get: (script: string) => { fetch: typeof fetch } };
   };
 };
 
@@ -41,17 +47,39 @@ export const serializeError = (error: unknown): string => {
 };
 
 export const getEnv = (ctx: AppContext) => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN, VITE_USE_LOCAL_BACKEND } =
-    honoEnv(ctx);
+  const {
+    CF_DISPATCH_NAMESPACE,
+    CF_ACCOUNT_ID,
+    CF_API_TOKEN,
+    VITE_USE_LOCAL_BACKEND,
+    SUPABASE_URL,
+    SUPABASE_SERVER_TOKEN,
+    TURSO_GROUP_DATABASE_TOKEN,
+    TURSO_ORGANIZATION,
+  } = honoEnv(ctx);
 
   if (
+    typeof CF_ACCOUNT_ID !== "string" ||
     typeof SUPABASE_URL !== "string" ||
-    typeof SUPABASE_SERVER_TOKEN !== "string"
+    typeof SUPABASE_SERVER_TOKEN !== "string" ||
+    typeof CF_API_TOKEN !== "string" ||
+    typeof CF_DISPATCH_NAMESPACE !== "string" ||
+    typeof TURSO_GROUP_DATABASE_TOKEN !== "string" ||
+    typeof TURSO_ORGANIZATION !== "string"
   ) {
     throw new Error("Missing environment variables");
   }
 
-  return { SUPABASE_URL, SUPABASE_SERVER_TOKEN, VITE_USE_LOCAL_BACKEND };
+  return {
+    CF_ACCOUNT_ID,
+    CF_API_TOKEN,
+    CF_DISPATCH_NAMESPACE,
+    VITE_USE_LOCAL_BACKEND,
+    SUPABASE_URL,
+    SUPABASE_SERVER_TOKEN,
+    TURSO_GROUP_DATABASE_TOKEN,
+    TURSO_ORGANIZATION,
+  };
 };
 
 export const AUTH_URL = (ctx: AppContext) =>

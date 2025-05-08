@@ -10,7 +10,10 @@
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",
     "check": "deno check --allow-import --config ./package.json .",
-    "ui": "npx shadcn@latest add -c ./packages/ui"
+    "ui": "npx shadcn@latest add -c ./packages/ui",
+    "db:repair": "supabase migration repair --status reverted",
+    "db:migration": "supabase migration up --linked",
+    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > apps/api/src/db/schema.ts"
   },
   "workspaces": [
     "apps/*",
@@ -28,7 +31,8 @@
       "dom",
       "esnext",
       "deno.ns",
-      "deno.unstable"
+      "deno.unstable",
+      "dom.iterable"
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "react"
@@ -42,5 +46,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
     "hono": "^4.7.7"
+  },
+  "devDependencies": {
+    "supabase": "^2.22.12"
   }
 }

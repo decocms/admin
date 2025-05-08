@@ -237,10 +237,12 @@ ChatInput.UI = (
                         className="h-8 w-8 border hover:bg-slate-100"
                         title="Attach files"
                       >
-                        <Icon className="text-sm" name="attach_file" />
+                        <Icon className="text-sm" name="add" />
                       </Button>
                     )
                     : null}
+                </div>
+                <div className="flex items-center gap-2">
                   <ModelSelector
                     model={model}
                     onModelChange={(modelToSelect) =>
@@ -249,8 +251,6 @@ ChatInput.UI = (
                         defaultModel: modelToSelect,
                       })}
                   />
-                </div>
-                <div className="flex items-center gap-2">
                   {!withoutTools && <ToolsButton />}
                   <AudioButton onMessage={handleRichTextChange} />
                   <Button

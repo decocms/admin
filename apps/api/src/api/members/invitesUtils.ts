@@ -2,7 +2,8 @@ import { type AppContext } from "../../utils/context.ts";
 
 // Email sending functionality
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ADMIN_CANONICAL_DOMAIN = Deno.env.get("ADMIN_CANONICAL_DOMAIN") || "https://deco.cx";
+const ADMIN_CANONICAL_DOMAIN = Deno.env.get("ADMIN_CANONICAL_DOMAIN") ||
+  "https://deco.cx";
 
 export function sanitizeTeamName(name: string): string {
   return name.replace(/[<>&'"]/g, "");
@@ -131,7 +132,7 @@ export async function sendInviteEmail(
   });
 
   if (res.status >= 400) {
-    console.log(await res.json())
+    console.log(await res.json());
     throw new Error(res.statusText);
   }
 
@@ -150,8 +151,8 @@ export async function getInviteIdByEmailAndTeam({ email, teamId }: {
   return data;
 }
 
-export async function checkAlreadyExistUserIdInTeam({ 
-  userId, 
+export async function checkAlreadyExistUserIdInTeam({
+  userId,
   teamId,
   email,
 }: {
@@ -166,15 +167,15 @@ export async function checkAlreadyExistUserIdInTeam({
       .eq("team_id", Number(teamId))
       .is("deleted_at", null)
       .limit(1);
-    
+
     return data && data.length > 0;
   } else if (email) {
     const { data: profiles } = await db.from("profiles")
       .select("user_id")
       .eq("email", email.toLowerCase());
-    
+
     if (!profiles || profiles.length === 0) return false;
-    
+
     const userId = profiles[0].user_id;
     const { data } = await db.from("members")
       .select("id")
@@ -182,26 +183,29 @@ export async function checkAlreadyExistUserIdInTeam({
       .eq("team_id", Number(teamId))
       .is("deleted_at", null)
       .limit(1);
-    
+
     return data && data.length > 0;
   }
-  
+
   return false;
 }
 
-export async function insertInvites(invites: Array<{
-  invited_email: string;
-  team_id: number;
-  team_name: string;
-  inviter_id: string;
-  invited_roles: Array<{ id: number; name: string }>;
-}>, db: AppContext["get"]["db"]) {
+export async function insertInvites(
+  invites: Array<{
+    invited_email: string;
+    team_id: number;
+    team_name: string;
+    inviter_id: string;
+    invited_roles: Array<{ id: number; name: string }>;
+  }>,
+  db: AppContext["get"]["db"],
+) {
   const { data, error } = await db.from("invites").insert(invites).select();
-  
+
   if (error) {
     return { error, status: 400 };
   }
-  
+
   return { data, error: null, status: 201 };
 }
 
@@ -210,13 +214,16 @@ export async function getTeamById(teamId: string, db: AppContext["get"]["db"]) {
     .select("id, name, members(user_id)")
     .eq("id", Number(teamId))
     .single();
-  
+
   return { data, error };
 }
 
-export function userBelongsToTeam(team: { members: Array<{ user_id: string }> }, userId?: string) {
+export function userBelongsToTeam(
+  team: { members: Array<{ user_id: string }> },
+  userId?: string,
+) {
   if (!userId) return false;
-  return team.members.some(member => member.user_id === userId);
+  return team.members.some((member) => member.user_id === userId);
 }
 
 // Interface for Role data structure based on database schema
@@ -235,7 +242,7 @@ export async function updateUserRole(
   { roleId, action }: {
     roleId: number;
     action: "grant" | "revoke";
-  }
+  },
 ): Promise<Role | null> {
   // Get the team member data with their profile
   const { data: userTeamMemberData, error } = await db
@@ -245,18 +252,18 @@ export async function updateUserRole(
     .eq("profiles.email", email);
 
   const userTeamMember = userTeamMemberData?.[0];
-  
+
   if (!userTeamMember || error) {
     throw new Error("Not Allowed - User not found in team");
   }
-  
+
   // Get the role data
   const { data: role, error: roleError } = await db
     .from("roles")
     .select("*")
     .eq("id", roleId)
     .single();
-    
+
   if (!role || roleError) {
     throw new Error("Role not found");
   }
@@ -270,14 +277,14 @@ export async function updateUserRole(
       .eq("role_id", role.id)
       .select()
       .single();
-      
+
     if (deleteError) {
       throw deleteError;
     }
-    
+
     return deletedRole !== null ? role : null;
   }
-  
+
   // Check if role already exists for this member
   const { data: memberRole, error: memberRoleError } = await db
     .from("member_roles")
@@ -285,11 +292,11 @@ export async function updateUserRole(
     .eq("member_id", userTeamMember.id)
     .eq("role_id", role.id)
     .single();
-    
-  if (memberRoleError && memberRoleError.code !== 'PGRST116') {
+
+  if (memberRoleError && memberRoleError.code !== "PGRST116") {
     throw memberRoleError;
   }
-  
+
   // If role doesn't exist for this member, create it
   if (!memberRole) {
     const { data: createdRole, error: createError } = await db
@@ -297,11 +304,11 @@ export async function updateUserRole(
       .insert({ role_id: role.id, member_id: userTeamMember.id })
       .select()
       .single();
-      
+
     if (createError || !createdRole) {
       throw createError || new Error("Failed to create role assignment");
     }
   }
-  
+
   return role;
-} 
+}

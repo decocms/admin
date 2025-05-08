@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
 import { INNATE_INTEGRATIONS, NEW_INTEGRATION_TEMPLATE } from "./well-known.ts";
+import { Hosts } from "../../app.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -31,6 +32,19 @@ const agentAsIntegrationFor =
     },
   });
 
+const apiDecoChatIntegrations = (workspace: string): Integration[] => {
+  return [{
+    id: "WORSKPACE_TOOLS",
+    name: "Workspace Tools",
+    description: "Tools for managing the workspace",
+    icon: "https://assets.webdraw.app/uploads/agents.png",
+    connection: {
+      type: "HTTP",
+      url: `https://${Hosts.API}/${workspace}/mcp`,
+    },
+  }];
+};
+
 export const listIntegrations = createApiHandler({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
@@ -38,6 +52,7 @@ export const listIntegrations = createApiHandler({
   handler: async (_, c) => {
     const root = c.req.param("root");
     const slug = c.req.param("slug");
+    const workspace = `${root}/${slug}`;
 
     const [
       _assertions,
@@ -48,11 +63,11 @@ export const listIntegrations = createApiHandler({
       c.get("db")
         .from("deco_chat_integrations")
         .select("*")
-        .ilike("workspace", `%${root}/${slug}`),
+        .ilike("workspace", `%${workspace}`),
       c.get("db")
         .from("deco_chat_agents")
         .select("*")
-        .ilike("workspace", `%${root}/${slug}`),
+        .ilike("workspace", `%${workspace}`),
     ]);
 
     const error = integrations.error || agents.error;
@@ -62,7 +77,9 @@ export const listIntegrations = createApiHandler({
     }
 
     return [
-      ...integrations.data.map((item) => ({
+      ...[...integrations.data, ...apiDecoChatIntegrations(workspace)].map((
+        item,
+      ) => ({
         ...item,
         id: formatId("i", item.id),
       })),

@@ -4,7 +4,7 @@ import api from "./api.ts";
 import apps from "./apps.ts";
 import { AppEnv } from "./utils/context.ts";
 
-const Hosts = {
+export const Hosts = {
   API: "api.deco.chat",
   APPS: "deco.page",
 } as const;

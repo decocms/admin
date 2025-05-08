@@ -19,9 +19,7 @@ export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
 
   ctx.set(
     "cf",
-    new Cloudflare({
-      apiToken: CF_API_TOKEN,
-    }),
+    new Cloudflare({ apiToken: CF_API_TOKEN }),
   );
 
   await next();

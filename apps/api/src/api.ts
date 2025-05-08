@@ -4,17 +4,18 @@ import { Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
+import { endTime, startTime } from "hono/timing";
 import * as agentsAPI from "./api/agents/api.ts";
+import * as hostingAPI from "./api/hosting/api.ts";
 import * as integrationsAPI from "./api/integrations/api.ts";
 import * as membersAPI from "./api/members/api.ts";
 import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import * as threadsAPI from "./api/threads/api.ts";
-import * as hostingAPI from "./api/hosting/api.ts";
+import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
-import { ROUTES as loginRoutes } from "./auth/index.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -78,13 +79,17 @@ const createMCPHandlerFor = (
   return async (c: Context) => {
     const transport = new HttpServerTransport();
 
+    startTime(c, "mcp-connect");
     await server.connect(transport);
+    endTime(c, "mcp-connect");
 
+    startTime(c, "mcp-handle-message");
     c.res = await State.run(
       c,
       transport.handleMessage.bind(transport),
       c.req.raw,
     );
+    endTime(c, "mcp-handle-message");
 
     return c.res;
   };
@@ -95,12 +100,14 @@ const createMCPHandlerFor = (
  * UIs can call the tools without suffering the serialization
  * of the protocol.
  */
-const createToolCallHandlerFor =
-  (tools: ApiHandler[]) => async (c: Context) => {
+const createToolCallHandlerFor = (tools: ApiHandler[]) => {
+  const toolMap = new Map(tools.map((t) => [t.name, t]));
+
+  return async (c: Context) => {
     const tool = c.req.param("tool");
     const args = await c.req.json();
 
-    const t = tools.find((t) => t.name === tool);
+    const t = toolMap.get(tool);
 
     if (!t) {
       throw new HTTPException(404, { message: "Tool not found" });
@@ -114,10 +121,13 @@ const createToolCallHandlerFor =
       });
     }
 
+    startTime(c, tool);
     const result = await State.run(c, t.handler, data);
+    endTime(c, tool);
 
     return c.json({ data: result });
   };
+};
 
 // Add logger middleware
 app.use(logger());

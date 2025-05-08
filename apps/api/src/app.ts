@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { timing } from "hono/timing";
 import api from "./api.ts";
 import apps from "./apps.ts";
 import { AppEnv } from "./utils/context.ts";
@@ -9,6 +10,7 @@ const Hosts = {
 } as const;
 
 export const APPS_DOMAIN_QS = "app_host";
+
 export const appsDomainOf = (req: Request, url?: URL) => {
   url ??= new URL(req.url);
   const referer = req.headers.get("referer");
@@ -38,6 +40,9 @@ export const app = new Hono<AppEnv>({
     req.url.replace(/^https?:\/\/[^/]+(\/[^?]*)(?:\?.*)?$/, "$1"),
 });
 
+app.use(timing({ crossOrigin: true, total: true }));
+
 app.route(`/${Hosts.API}`, api);
 app.route(`/${Hosts.APPS}`, apps);
+
 export default app;

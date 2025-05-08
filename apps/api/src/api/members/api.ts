@@ -8,7 +8,8 @@ import {
   checkAlreadyExistUserIdInTeam,
   insertInvites,
   getTeamById,
-  userBelongsToTeam
+  userBelongsToTeam,
+  updateUserRole
 } from "./invitesUtils.ts";
 
 // Helper function to check if user is admin of a team
@@ -322,18 +323,24 @@ export const acceptInvite = createApiHandler({
       }
 
       // Apply roles
-      // This would require implementing or importing PolicyClient
-      // const policyClient = PolicyClient.getInstance();
-      // await Promise.all(invite.invited_roles.map(async ({ id }) => {
-      //   await policyClient.updateUserRole(
-      //     Number(invite.team_id),
-      //     invite.invited_email,
-      //     {
-      //       roleId: id,
-      //       action: "grant",
-      //     },
-      //   );
-      // }));
+      const rolePromises = invite.invited_roles.map(async ({ id }) => {
+        return await updateUserRole(
+          db,
+          Number(invite.team_id),
+          invite.invited_email,
+          {
+            roleId: id,
+            action: "grant",
+          }
+        );
+      });
+
+      try {
+        await Promise.all(rolePromises);
+      } catch (error) {
+        console.error("Error assigning roles:", error);
+        // We'll continue even if role assignment fails
+      }
     }
 
     // Delete the invite

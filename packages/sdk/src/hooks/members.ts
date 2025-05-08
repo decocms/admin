@@ -11,7 +11,6 @@ import {
   type Member,
   registerActivity,
   removeTeamMember,
-  type Role,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 

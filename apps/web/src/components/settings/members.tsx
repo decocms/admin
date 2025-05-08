@@ -8,7 +8,6 @@ import {
 import { toast } from "sonner";
 import {
   type Member,
-  type Role,
   useInviteTeamMember,
   useRemoveTeamMember,
   useTeam,

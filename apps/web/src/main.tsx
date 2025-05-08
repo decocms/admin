@@ -15,10 +15,7 @@ import {
 import { About } from "./components/about/index.tsx";
 import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
-import {
-  WorkspaceLayout,
-  WorkspaceSettingsLayout,
-} from "./components/layout.tsx";
+import { Layout, WorkspaceSettingsLayout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
@@ -183,7 +180,7 @@ function Router() {
         <Route path="audit/:id" element={<AuditDetail />} />
       </Route>
 
-      <Route path="/:teamSlug?" element={<WorkspaceLayout />}>
+      <Route path="/:teamSlug?" element={<Layout />}>
         <Route
           index
           element={

@@ -20,15 +20,14 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
 
   useEffect(() => {
     if (
-      typeof window !== "undefined" && "SpeechRecognition" in window ||
-      "webkitSpeechRecognition" in window
+      typeof globalThis !== "undefined" && "SpeechRecognition" in globalThis ||
+      "webkitSpeechRecognition" in globalThis
     ) {
-      const SpeechRecognition = window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
+      const SpeechRecognition = globalThis.SpeechRecognition ||
+      globalThis.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "pt-BR";
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)

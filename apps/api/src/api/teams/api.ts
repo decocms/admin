@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { createApiHandler } from "../../utils/context.ts";
-import { assertUserIsTeamAdmin } from "../../auth/assertions.ts";
+import {
+  assertUserHasAccessToTeamBySlug,
+  assertUserIsTeamAdmin,
+} from "../../auth/assertions.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -14,27 +17,22 @@ export const getTeam = createApiHandler({
     const { slug } = props;
     const user = c.get("user");
 
-    await assertUserIsTeamAdmin(c, slug, user.id);
-
-    const { data, error } = await c
+    // check user belongs to team
+    await assertUserHasAccessToTeamBySlug(
+      { teamSlug: slug, userId: user.id },
+      c,
+    );
+    const { data: teamData, error } = await c
       .get("db")
       .from("teams")
-      .select(`
-        *,
-        members!inner (
-          id,
-          user_id,
-          admin
-        )
-      `)
+      .select("*")
       .eq("slug", slug)
-      .eq("members.user_id", user.id)
       .single();
 
     if (error) throw error;
-    if (!data) throw new Error("Team not found or user does not have access");
-
-    const { members: _members, ...teamData } = data;
+    if (!teamData) {
+      throw new Error("Team not found or user does not have access");
+    }
 
     return teamData;
   },
@@ -184,11 +182,26 @@ export const deleteTeam = createApiHandler({
     // First verify the user has admin access to the team
     await assertUserIsTeamAdmin(c, teamId, user.id);
 
-    const { error } = await c
-      .get("db")
-      .from("teams")
-      .delete()
-      .eq("id", teamId);
+    const members = await c.get("db")
+      .from("members")
+      .select("id")
+      .eq("team_id", teamId);
+
+    const memberIds = members.data?.map((member) => Number(member.id));
+
+    if (!memberIds) {
+      return { data: null, error: "No members found" };
+    }
+
+    // TODO: delete roles, policies and role_policy
+    await c.get("db").from("member_roles").delete().in("member_id", memberIds);
+    await c.get("db").from("members").delete().eq("team_id", teamId);
+
+    const { error } = await c.get("db").from("teams").delete().eq(
+      "id",
+      teamId,
+    )
+      .select("id");
 
     if (error) throw error;
     return { success: true };

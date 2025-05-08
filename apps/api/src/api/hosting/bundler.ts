@@ -10,10 +10,13 @@ export const bundler = async (
   entrypoint: string = "index.ts",
 ): Promise<string> => {
   const response = await fetch(
-    "https://mcp.deco.site/live/invoke/js-bundler/actions/build.ts",
+    "https://bundler.deco.site",
     {
       method: "POST",
       body: JSON.stringify({ files, entrypoint }),
+      headers: {
+        "content-type": "application/json",
+      },
     },
   );
 

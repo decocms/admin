@@ -28,6 +28,7 @@ const DECO_CHAT_HOSTING_APPS_TABLE = "deco_chat_hosting_apps" as const;
 
 type AppRow =
   Database["public"]["Tables"][typeof DECO_CHAT_HOSTING_APPS_TABLE]["Row"];
+
 export type App = z.infer<typeof AppSchema>;
 
 const Mappers = {
@@ -267,9 +268,13 @@ Note:
     const bundledScript = await bundler(filesRecord, ENTRYPOINT);
 
     const fileObjects = {
-      [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
-        type: "application/javascript+module",
-      }),
+      [SCRIPT_FILE_NAME]: new File(
+        [bundledScript],
+        SCRIPT_FILE_NAME,
+        {
+          type: "application/javascript+module",
+        },
+      ),
     };
 
     const result = await deployToCloudflare(

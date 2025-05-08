@@ -120,18 +120,25 @@ function InvitesViewContent() {
 
   const handleAccept = async (inviteId: string) => {
     try {
+      // Accept the invitation
       const result = await acceptInviteMutation.mutateAsync(inviteId);
-      toast.success("You have successfully joined the team!");
 
-      // Navigate to the team after accepting
-      if (result.teamId) {
-        navigate(`/${result.teamName.toLowerCase().replace(/\s+/g, "-")}`);
+      if (!result.teamId) {
+        toast.error("Failed to get team information");
+        navigate("/");
+        return;
+      }
+
+      const teamSlug = result.teamSlug;
+
+      if (teamSlug) {
+        navigate(`/${teamSlug}`);
       } else {
         navigate("/");
       }
     } catch (error) {
+      console.error("Accept invitation error:", error);
       toast.error("Failed to accept invitation");
-      console.error("Failed to accept invitation:", error);
     }
   };
 

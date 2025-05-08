@@ -1,9 +1,11 @@
 import { SDKProvider, Workspace } from "@deco/sdk";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Outlet, useParams } from "react-router";
+import { lazy, Suspense } from "react";
 import { useUser } from "../hooks/data/useUser.ts";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { SettingsSidebar } from "./sidebar/settings.tsx";
+const RegistryActivity = lazy(() => import("./common/RegistryActivity.tsx"));
 
 function BaseLayout({
   sidebar,
@@ -30,6 +32,9 @@ function BaseLayout({
         <SidebarInset className="h-full">
           <Outlet />
         </SidebarInset>
+        <Suspense fallback={null}>
+          <RegistryActivity teamSlug={teamSlug} />
+        </Suspense>
       </SDKProvider>
     </SidebarProvider>
   );

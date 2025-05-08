@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   assertUserHasAccessToTeamById,
+  assertUserHasAccessToTeamBySlug,
   assertUserIsTeamAdmin,
 } from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
@@ -324,6 +325,33 @@ export const removeTeamMember = createApiHandler({
     });
 
     if (error) throw error;
+    return { success: true };
+  },
+});
+
+export const registryMemberActivity = createApiHandler({
+  name: "TEAM_MEMBER_ACTIVITY_REGISTRY",
+  description: "Remove a member from a team",
+  schema: z.object({
+    teamId: z.number(),
+  }),
+  handler: async (props, c) => {
+    const { teamId } = props;
+    const user = c.get("user");
+
+    // Verify the user has admin access to the team
+    await assertUserHasAccessToTeamById({
+      teamId,
+      userId: user.id,
+    }, c);
+
+    await c.get("db").from("user_activity").insert({
+      user_id: user.id,
+      resource: "team",
+      key: "id",
+      value: `${teamId}`,
+    });
+
     return { success: true };
   },
 });

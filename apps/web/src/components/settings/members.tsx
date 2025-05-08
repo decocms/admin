@@ -9,8 +9,8 @@ import {
   type Member,
   useAddTeamMember,
   useRemoveTeamMember,
+  useTeam,
   useTeamMembers,
-  useTeams,
 } from "@deco/sdk";
 import {
   Table,
@@ -280,11 +280,8 @@ function TableHeadSort(
 
 function MembersViewContent() {
   const { slug } = useCurrentTeam();
-  const { data: teams } = useTeams();
-  const teamId = useMemo(
-    () => teams.find((team) => team.slug === slug)?.id,
-    [teams, slug],
-  );
+  const { data: team } = useTeam(slug);
+  const teamId = team?.id;
   const { data: members } = useTeamMembers(teamId ?? null, {
     withActivity: true,
   });

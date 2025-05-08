@@ -3,10 +3,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   addTeamMember,
   getTeamMembers,
   type Member,
+  registryActivity,
   removeTeamMember,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
@@ -70,4 +72,12 @@ export const useRemoveTeamMember = () => {
       );
     },
   });
+};
+
+export const useRegisterActivity = (teamId?: number) => {
+  useEffect(() => {
+    if (!teamId) return;
+
+    registryActivity(teamId);
+  }, [teamId]);
 };

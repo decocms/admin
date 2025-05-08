@@ -29,6 +29,7 @@ const GLOBAL_TOOLS = [
   membersAPI.addTeamMember,
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
+  membersAPI.registryMemberActivity,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
 ];

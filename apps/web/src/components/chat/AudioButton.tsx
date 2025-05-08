@@ -50,10 +50,6 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         setIsListening(false);
       };
 
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
       setRecognition(recognition);
 
       return () => {

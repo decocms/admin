@@ -52,7 +52,6 @@ const WORKSPACE_TOOLS = [
   threadsAPI.getThreadTools,
   hostingAPI.listApps,
   hostingAPI.deployFiles,
-  hostingAPI.deployScript,
   hostingAPI.deleteApp,
   hostingAPI.getAppInfo,
 ];

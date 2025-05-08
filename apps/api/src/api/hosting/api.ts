@@ -24,11 +24,6 @@ const AppInputSchema = z.object({
   appSlug: z.string(), // defaults to 'default'
 });
 
-const DeployAppSchema = z.object({
-  appSlug: z.string(), // defaults to 'default'
-  script: z.string(),
-});
-
 const DECO_CHAT_HOSTING_APPS_TABLE = "deco_chat_hosting_apps" as const;
 
 type AppRow =
@@ -127,6 +122,7 @@ async function updateDatabase(
   workspace: string,
   scriptSlug: string,
   result: DeployResult,
+  files?: Record<string, string>,
 ) {
   // Try to update first
   const { data: updated, error: updateError } = await c.var.db
@@ -135,6 +131,7 @@ async function updateDatabase(
       updated_at: new Date().toISOString(),
       cloudflare_script_hash: result.etag,
       cloudflare_worker_id: result.id,
+      files,
     })
     .eq("slug", scriptSlug)
     .select("*")
@@ -157,6 +154,7 @@ async function updateDatabase(
       updated_at: new Date().toISOString(),
       cloudflare_script_hash: result.etag,
       cloudflare_worker_id: result.id,
+      files,
     })
     .select("*")
     .single();
@@ -178,53 +176,60 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
-// 1. Deploy single script
-export const deployScript = createApiHandler({
-  name: "HOSTING_APP_DEPLOY_SCRIPT",
-  description:
-    "Deploy a single script that implements the fetch API. Example: export default { fetch(req) { return new Response('Hello, world!') } }",
-  schema: DeployAppSchema,
-  handler: async ({ appSlug, script }, c) => {
-    await createNamespaceOnce(c);
-    const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
-
-    const files = {
-      [SCRIPT_FILE_NAME]: new File([script], SCRIPT_FILE_NAME, {
-        type: "application/javascript+module",
-      }),
-    };
-
-    const result = await deployToCloudflare(
-      c,
-      scriptSlug,
-      SCRIPT_FILE_NAME,
-      files,
-    );
-    return updateDatabase(c, workspace, scriptSlug, result);
-  },
-});
-
-// 2. Deploy multiple files
+const ENTRYPOINT = "main.ts";
+// Deploy multiple files
 export const deployFiles = createApiHandler({
-  name: "HOSTING_APP_DEPLOY_FILES",
-  description: `Deploy multiple TypeScript files that use Deno as runtime. 
-For npm dependencies, use the npm: specifier (e.g. npm:lodash or npm:lodash@4.17.21).
-No package.json or deno.json is needed - dependencies are imported directly using npm: or jsr: specifiers.`,
+  name: "HOSTING_APP_DEPLOY",
+  description:
+    `Deploy multiple TypeScript files that use Deno as runtime. The entrypoint should always be ${ENTRYPOINT}.
+
+Common patterns:
+1. Use a deps.ts file to centralize dependencies:
+   // deps.ts
+   export { default as lodash } from "npm:lodash";
+   export { z } from "npm:zod";
+   export { createClient } from "npm:@supabase/supabase-js";
+
+2. Import from deps.ts in your files:
+   // main.ts
+   import { lodash, z, createClient } from "./deps.ts";
+
+Example deployment:
+{
+  "main.ts": \`
+    import { z } from "./deps.ts";
+    
+    export default {
+      async fetch(req: Request) {
+        return new Response("Hello from Deno!");
+      }
+    }
+  \`,
+  "deps.ts": \`
+    export { z } from "npm:zod";
+  \`
+}
+
+Note: 
+- Do not use Deno.* namespace functions
+- Use npm: or jsr: specifiers for dependencies
+- No package.json or deno.json needed
+- Dependencies are imported directly using npm: or jsr: specifiers`,
   schema: z.object({
     appSlug: z.string().describe("The slug identifier for the app"),
     files: z.record(z.string()).describe(
-      "A record of file paths to their contents",
-    ),
-    entrypoint: z.string().default("index.ts").describe(
-      "The entry point file (defaults to index.ts)",
+      "A record of file paths to their contents. Must include main.ts as entrypoint",
     ),
   }),
-  handler: async ({ appSlug, files, entrypoint }, c) => {
+  handler: async ({ appSlug, files }, c) => {
+    if (!(ENTRYPOINT in files)) {
+      throw new Error(`${ENTRYPOINT} is not in the files`);
+    }
     await createNamespaceOnce(c);
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
 
     // Bundle the files
-    const bundledScript = await bundler(files, entrypoint);
+    const bundledScript = await bundler(files, ENTRYPOINT);
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
@@ -238,11 +243,11 @@ No package.json or deno.json is needed - dependencies are imported directly usin
       SCRIPT_FILE_NAME,
       fileObjects,
     );
-    return updateDatabase(c, workspace, scriptSlug, result);
+    return updateDatabase(c, workspace, scriptSlug, result, files);
   },
 });
 
-// 3. Delete app (and worker)
+// Delete app (and worker)
 export const deleteApp = createApiHandler({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
@@ -280,7 +285,7 @@ export const deleteApp = createApiHandler({
   },
 });
 
-// 4. Get app info (metadata, endpoint, etc)
+// Get app info (metadata, endpoint, etc)
 export const getAppInfo = createApiHandler({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",

@@ -364,6 +364,7 @@ export type Database = {
           cloudflare_worker_id: string | null;
           created_at: string;
           deleted_at: string | null;
+          files: Json | null;
           id: string;
           metadata: Json | null;
           slug: string;
@@ -375,6 +376,7 @@ export type Database = {
           cloudflare_worker_id?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          files?: Json | null;
           id?: string;
           metadata?: Json | null;
           slug: string;
@@ -386,6 +388,7 @@ export type Database = {
           cloudflare_worker_id?: string | null;
           created_at?: string;
           deleted_at?: string | null;
+          files?: Json | null;
           id?: string;
           metadata?: Json | null;
           slug?: string;

@@ -8,6 +8,7 @@ CREATE TABLE deco_chat_hosting_apps(
   cloudflare_worker_id text, -- the Cloudflare worker identifier
   cloudflare_script_hash text, -- hash of the deployed script for versioning
   metadata jsonb, -- any extra metadata (optional)
+  files jsonb, -- the files that make up the app
   UNIQUE(slug)
 );
 

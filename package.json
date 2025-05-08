@@ -31,7 +31,8 @@
       "dom",
       "esnext",
       "deno.ns",
-      "deno.unstable"
+      "deno.unstable",
+      "dom.iterable"
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "react"

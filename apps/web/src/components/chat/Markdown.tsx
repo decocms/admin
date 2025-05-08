@@ -3,11 +3,12 @@ import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-
-function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown);
-  return tokens.map((token) => token.raw);
-}
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useChatContext } from "./context.tsx";
 
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
@@ -59,19 +60,80 @@ const MemoizedMarkdownBlock = memo(
   (prevProps, nextProps) => prevProps.content === nextProps.content,
 );
 
+function CodeBlock(
+  { language, content }: { language: string; content: string },
+) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
+
+  return (
+    <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border">
+      <div className="flex items-center justify-between p-1 pl-4 bg-muted border-b border-border">
+        <span className="text-xs font-mono uppercase text-muted-foreground tracking-widest select-none">
+          {language ? language : "text"}
+        </span>
+      </div>
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={handleCopy}
+        aria-label="Copy code"
+        className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
+      >
+        <Icon name={copied ? "check" : "content_copy"} size={14} />
+      </Button>
+      <SyntaxHighlighter
+        language={language || "text"}
+        style={tomorrow}
+        customStyle={{
+          margin: 0,
+          padding: "1rem",
+          fontSize: "0.875rem",
+          borderRadius: "0 0 0.5rem 0.5rem",
+          background: "#2d2d2d",
+          position: "relative",
+          overflow: "auto",
+        }}
+        codeTagProps={{
+          className: "font-mono",
+        }}
+      >
+        {content}
+      </SyntaxHighlighter>
+    </div>
+  );
+}
+
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
 
-export const MemoizedMarkdown = memo(
-  ({ content, id }: { content: string; id: string }) => {
-    const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
+export const MemoizedMarkdown = (
+  { content, id }: { content: string; id: string },
+) => {
+  const blocks = useMemo(() => marked.lexer(content), [content]);
 
-    return blocks.map((block, index) => (
+  return blocks.map((block, index) => {
+    if (block.type === "code") {
+      return (
+        <CodeBlock
+          language={block.lang}
+          content={block.text}
+          key={`${id}-block_${index}`}
+        />
+      );
+    }
+
+    return (
       <MemoizedMarkdownBlock
-        content={block}
+        content={block.raw}
         key={`${id}-block_${index}`}
       />
-    ));
-  },
-);
+    );
+  });
+};
 
 MemoizedMarkdown.displayName = "MemoizedMarkdown";

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "dom", "esnext", "deno.ns", "deno.unstable"],
+    "types": ["@cloudflare/workers-types"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}

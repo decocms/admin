@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { useInviteTeamMember, useTeamRoles } from "@deco/sdk";
 import {
   Dialog,

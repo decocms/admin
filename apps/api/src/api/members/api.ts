@@ -330,7 +330,7 @@ export const removeTeamMember = createApiHandler({
 
 export const registerMemberActivity = createApiHandler({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
-  description: "Remove a member from a team",
+  description: "Register that the user accessed a team",
   schema: z.object({
     teamId: z.number(),
   }),

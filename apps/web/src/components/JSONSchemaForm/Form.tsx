@@ -1,0 +1,229 @@
+import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
+import { FormEvent, useState } from "react";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { BooleanField } from "./components/BooleanField.tsx";
+import { JsonTextField } from "./components/JsonTextField.tsx";
+import { NumberField } from "./components/NumberField.tsx";
+import { SelectField } from "./components/SelectField.tsx";
+import { StringField } from "./components/StringField.tsx";
+
+import { formatPropertyName } from "./utils.ts";
+
+export type SchemaType = string | number | boolean | object | null;
+
+export interface JsonSchemaFormProps<
+  T extends FieldValues = Record<string, SchemaType>,
+> {
+  schema: JSONSchema7;
+  form: UseFormReturn<T>;
+  disabled?: boolean;
+  onSubmit: (e: FormEvent) => Promise<void> | void;
+  // deno-lint-ignore no-explicit-any
+  error?: any;
+}
+
+export function Form<T extends FieldValues = Record<string, unknown>>(
+  { schema, form, disabled = false, onSubmit, error }: JsonSchemaFormProps<T>,
+) {
+  const [loading, setLoading] = useState(false);
+  if (!schema || typeof schema !== "object") {
+    return <div className="text-sm text-destructive">Invalid schema</div>;
+  }
+
+  // Handle root schema
+  if (schema.type === "object" && schema.properties) {
+    return (
+      <form
+        className="space-y-4"
+        onSubmit={async (e) => {
+          setLoading(true);
+          try {
+            await onSubmit(e);
+          } finally {
+            setLoading(false);
+          }
+        }}
+      >
+        {renderObjectProperties<T>(
+          schema.properties,
+          schema.required || [],
+          form,
+          disabled,
+        )}
+
+        {error && (
+          <div className="text-sm text-destructive mt-2">
+            {JSON.stringify(error)}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            className="flex-1 gap-2"
+            disabled={loading}
+          >
+            {loading
+              ? (
+                <>
+                  <Spinner size="xs" />
+                  Processing...
+                </>
+              )
+              : "Execute Tool Call"}
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="text-sm text-muted-foreground">
+      Schema type not supported
+    </div>
+  );
+}
+
+// Render object properties recursively
+function renderObjectProperties<
+  T extends FieldValues = Record<string, unknown>,
+>(
+  properties: Record<string, JSONSchema7Definition>,
+  required: string[] = [],
+  form: JsonSchemaFormProps<T>["form"],
+  disabled: boolean,
+) {
+  return (
+    <div className="space-y-4">
+      {Object.entries(properties).map(([name, propSchema]) => {
+        const isRequired = required.includes(name);
+        return renderField<T>(
+          name,
+          propSchema as JSONSchema7,
+          form,
+          isRequired,
+          disabled,
+        );
+      })}
+    </div>
+  );
+}
+
+// Render a field based on its type
+function renderField<T extends FieldValues = Record<string, unknown>>(
+  name: string,
+  schema: JSONSchema7,
+  form: JsonSchemaFormProps<T>["form"],
+  isRequired: boolean = false,
+  disabled: boolean = false,
+) {
+  const type = schema.type as string | undefined;
+  const description = schema.description as string | undefined;
+  const title = (schema.title as string | undefined) ||
+    formatPropertyName(name);
+
+  switch (type) {
+    case "string":
+      if (schema.enum) {
+        return (
+          <SelectField<T>
+            key={name}
+            name={name}
+            title={title}
+            options={schema.enum as string[]}
+            description={description}
+            form={form}
+            isRequired={isRequired}
+            disabled={disabled}
+          />
+        );
+      }
+      return (
+        <StringField<T>
+          key={name}
+          name={name}
+          title={title}
+          description={description}
+          form={form}
+          isRequired={isRequired}
+          disabled={disabled}
+        />
+      );
+    case "number":
+    case "integer":
+      return (
+        <NumberField<T>
+          key={name}
+          name={name}
+          title={title}
+          description={description}
+          form={form}
+          isRequired={isRequired}
+          disabled={disabled}
+        />
+      );
+    case "boolean":
+      return (
+        <BooleanField<T>
+          key={name}
+          name={name}
+          title={title}
+          description={description}
+          form={form}
+          isRequired={isRequired}
+          disabled={disabled}
+        />
+      );
+    case "object":
+      if (schema.properties) {
+        return (
+          <div key={name} className="border rounded-md p-4">
+            <h3 className="text-md font-medium mb-2">{title}</h3>
+            {description && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {description}
+              </p>
+            )}
+            {renderObjectProperties<T>(
+              schema.properties as Record<string, JSONSchema7Definition>,
+              schema.required || [],
+              form,
+              disabled,
+            )}
+          </div>
+        );
+      }
+      return (
+        <JsonTextField<T>
+          key={name}
+          name={name}
+          title={title}
+          description={description}
+          form={form}
+          isRequired={isRequired}
+          disabled={disabled}
+        />
+      );
+    case "array":
+      // For simplicity, render arrays as JSON text fields
+      return (
+        <JsonTextField<T>
+          key={name}
+          name={name}
+          title={title}
+          description={description}
+          form={form}
+          isRequired={isRequired}
+          disabled={disabled}
+        />
+      );
+    default:
+      return (
+        <div key={name} className="text-sm text-muted-foreground">
+          Field type '{type}' not supported
+        </div>
+      );
+  }
+}

@@ -1,6 +1,6 @@
 import { Suspense, useState } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { type Invite, useAcceptInvite, useInvites } from "@deco/sdk";
 import {
   Table,

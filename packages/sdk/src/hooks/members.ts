@@ -8,7 +8,7 @@ import {
   addTeamMember,
   getTeamMembers,
   type Member,
-  registryActivity,
+  registerActivity,
   removeTeamMember,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
@@ -78,6 +78,6 @@ export const useRegisterActivity = (teamId?: number) => {
   useEffect(() => {
     if (!teamId) return;
 
-    registryActivity(teamId);
+    registerActivity(teamId);
   }, [teamId]);
 };

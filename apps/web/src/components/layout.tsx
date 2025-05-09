@@ -5,7 +5,7 @@ import { lazy, Suspense } from "react";
 import { useUser } from "../hooks/data/useUser.ts";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { SettingsSidebar } from "./sidebar/settings.tsx";
-const RegistryActivity = lazy(() => import("./common/RegistryActivity.tsx"));
+const RegisterActivity = lazy(() => import("./common/RegisterActivity.tsx"));
 
 function BaseLayout({
   sidebar,
@@ -33,7 +33,7 @@ function BaseLayout({
           <Outlet />
         </SidebarInset>
         <Suspense fallback={null}>
-          <RegistryActivity teamSlug={teamSlug} />
+          <RegisterActivity teamSlug={teamSlug} />
         </Suspense>
       </SDKProvider>
     </SidebarProvider>

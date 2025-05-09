@@ -497,22 +497,14 @@ export const removeTeamMember = createApiHandler({
   },
 });
 
-<<<<<<< HEAD
 export const registerMemberActivity = createApiHandler({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
   description: "Register that the user accessed a team",
-=======
-// Get team roles list
-export const teamRolesList = createApiHandler({
-  name: "TEAM_ROLES_LIST",
-  description: "Get all roles available for a team, including basic deco roles",
->>>>>>> 7b0ed31 (Invite member UI)
   schema: z.object({
     teamId: z.number(),
   }),
   handler: async (props, c) => {
     const { teamId } = props;
-<<<<<<< HEAD
     const user = c.get("user");
 
     // Verify the user has admin access to the team
@@ -529,7 +521,18 @@ export const teamRolesList = createApiHandler({
     });
 
     return { success: true };
-=======
+  },
+});
+
+// Get team roles list
+export const teamRolesList = createApiHandler({
+  name: "TEAM_ROLES_LIST",
+  description: "Get all roles available for a team, including basic deco roles",
+  schema: z.object({
+    teamId: z.number(),
+  }),
+  handler: async (props, c) => {
+    const { teamId } = props;
     const db = c.get("db");
     const user = c.get("user");
 
@@ -552,6 +555,5 @@ export const teamRolesList = createApiHandler({
     if (error) throw error;
 
     return data;
->>>>>>> 7b0ed31 (Invite member UI)
   },
 });

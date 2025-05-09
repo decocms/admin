@@ -96,9 +96,6 @@ export const listIntegrations = createApiHandler({
     // TODO: Make Actor Backend able to handle these two virtual integrations
 
     return [
-      ...integrations.data.map((
-        item,
-      ) => ({
       userManagementIntegration,
       workspaceManagementIntegration,
       ...integrations.data.map((item) => ({

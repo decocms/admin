@@ -10,7 +10,6 @@ import {
   useRemoveTeamMember,
   useTeam,
   useTeamMembers,
-  useTeams,
 } from "@deco/sdk";
 import {
   Table,

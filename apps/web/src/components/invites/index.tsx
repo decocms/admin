@@ -1,11 +1,7 @@
 import { Suspense, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-  type Invite,
-  useAcceptInvite,
-  useInvites,
-} from "@deco/sdk";
+import { type Invite, useAcceptInvite, useInvites } from "@deco/sdk";
 import {
   Table,
   TableBody,
@@ -48,14 +44,16 @@ function InvitesViewLoading() {
 
 function InvitesViewEmpty() {
   const navigate = useNavigate();
-  
+
   return (
     <div className="p-6 flex flex-col gap-6">
       <InvitesTitle />
       <Card className="w-full">
         <CardHeader>
           <CardTitle>No Invitations</CardTitle>
-          <CardDescription>You don't have any pending team invitations.</CardDescription>
+          <CardDescription>
+            You don't have any pending team invitations.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={() => navigate("/")} className="mt-2">
@@ -68,7 +66,9 @@ function InvitesViewEmpty() {
   );
 }
 
-function InviteItem({ invite, onAccept }: { invite: Invite; onAccept: (id: string) => void }) {
+function InviteItem(
+  { invite, onAccept }: { invite: Invite; onAccept: (id: string) => void },
+) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAccept = async () => {
@@ -87,16 +87,20 @@ function InviteItem({ invite, onAccept }: { invite: Invite; onAccept: (id: strin
         {invite.inviter.name || invite.inviter.email || "Unknown"}
       </TableCell>
       <TableCell>
-        {invite.roles.map(role => role.name.charAt(0).toUpperCase() + role.name.slice(1)).join(", ")}
+        {invite.roles.map((role) =>
+          role.name.charAt(0).toUpperCase() + role.name.slice(1)
+        ).join(", ")}
       </TableCell>
       <TableCell>{timeAgo(invite.createdAt)}</TableCell>
       <TableCell className="text-center">
-        <Button 
-          onClick={handleAccept} 
+        <Button
+          onClick={handleAccept}
           disabled={isLoading}
           size="sm"
         >
-          {isLoading ? <Spinner size="xs" className="mr-2" /> : <Icon name="check" className="mr-2" />}
+          {isLoading
+            ? <Spinner size="xs" className="mr-2" />
+            : <Icon name="check" className="mr-2" />}
           Accept Invitation
         </Button>
       </TableCell>
@@ -124,9 +128,9 @@ function InvitesViewContent() {
         navigate("/");
         return;
       }
-      
+
       const teamSlug = result.teamSlug;
-                      
+
       if (teamSlug) {
         navigate(`/${teamSlug}`);
       } else {
@@ -141,7 +145,7 @@ function InvitesViewContent() {
   return (
     <div className="p-6 flex flex-col gap-6">
       <InvitesTitle />
-      
+
       <Card>
         <CardContent className="p-6">
           <Table>
@@ -156,10 +160,10 @@ function InvitesViewContent() {
             </TableHeader>
             <TableBody>
               {invites.map((invite) => (
-                <InviteItem 
-                  key={invite.id} 
-                  invite={invite} 
-                  onAccept={handleAccept} 
+                <InviteItem
+                  key={invite.id}
+                  invite={invite}
+                  onAccept={handleAccept}
                 />
               ))}
             </TableBody>
@@ -178,4 +182,4 @@ export default function InvitesList() {
       </Suspense>
     </div>
   );
-} 
+}

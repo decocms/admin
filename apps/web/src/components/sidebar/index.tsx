@@ -1,4 +1,10 @@
-import { Thread, useAgents, useIntegrations, useInvites, useThreads } from "@deco/sdk";
+import {
+  Thread,
+  useAgents,
+  useIntegrations,
+  useInvites,
+  useThreads,
+} from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -165,7 +171,7 @@ function PrefetchAgents() {
   return null;
 }
 
-function InvitesLinkErrorFallback() {
+function _InvitesLinkErrorFallback() {
   // Return null on error to ensure the sidebar doesn't break
   return null;
 }
@@ -175,7 +181,7 @@ function InvitesLink() {
   const href = "/invites";
   const match = useMatch(href);
 
-  console.log({ invites })
+  console.log({ invites });
   // If no invites, don't show the link
   if (!invites.length) {
     return null;

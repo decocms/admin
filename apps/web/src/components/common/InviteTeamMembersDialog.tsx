@@ -1,17 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useInviteTeamMember, useTeamRoles } from "@deco/sdk";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogTrigger
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -36,9 +35,11 @@ import React from "react";
 const inviteMemberSchema = z.object({
   invitees: z.array(
     z.object({
-      email: z.string().email({ message: "Please enter a valid email address" }),
+      email: z.string().email({
+        message: "Please enter a valid email address",
+      }),
       roleId: z.string().min(1, { message: "Please select a role" }),
-    })
+    }),
   ).min(1),
 });
 
@@ -50,20 +51,20 @@ interface InviteTeamMembersDialogProps {
   onComplete?: () => void;
 }
 
-export function InviteTeamMembersDialog({ 
-  teamId, 
+export function InviteTeamMembersDialog({
+  teamId,
   trigger,
-  onComplete
+  onComplete,
 }: InviteTeamMembersDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   console.log("Dialog state:", { isOpen, teamId });
-  
+
   const handleOpenChange = (open: boolean) => {
     console.log("Dialog open change:", { current: isOpen, new: open });
     setIsOpen(open);
   };
-  
+
   const openDialog = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -72,11 +73,11 @@ export function InviteTeamMembersDialog({
       setIsOpen(true);
     }, 50);
   };
-  
+
   const inviteMemberMutation = useInviteTeamMember();
   const { data: roles = [] } = useTeamRoles(teamId ?? null);
   const ownerRoleId = useMemo(() => {
-    const ownerRole = roles.find(role => role.name.toLowerCase() === "owner");
+    const ownerRole = roles.find((role) => role.name.toLowerCase() === "owner");
     return ownerRole?.id.toString() || "";
   }, [roles]);
 
@@ -89,7 +90,7 @@ export function InviteTeamMembersDialog({
 
   useEffect(() => {
     if (ownerRoleId) {
-      form.setValue('invitees.0.roleId', ownerRoleId);
+      form.setValue("invitees.0.roleId", ownerRoleId);
     }
   }, [ownerRoleId, form]);
 
@@ -117,9 +118,9 @@ export function InviteTeamMembersDialog({
       // Transform data for API call
       const invitees = data.invitees.map(({ email, roleId }) => ({
         email,
-        roles: [{ 
-          id: Number(roleId), 
-          name: roles.find(r => r.id === Number(roleId))?.name || "" 
+        roles: [{
+          id: Number(roleId),
+          name: roles.find((r) => r.id === Number(roleId))?.name || "",
         }],
       }));
 
@@ -133,11 +134,11 @@ export function InviteTeamMembersDialog({
       form.reset();
       setIsOpen(false);
       toast.success(
-        invitees.length === 1 
-          ? "Team member invited successfully!" 
-          : `${invitees.length} team members invited successfully!`
+        invitees.length === 1
+          ? "Team member invited successfully!"
+          : `${invitees.length} team members invited successfully!`,
       );
-      
+
       if (onComplete) {
         onComplete();
       }
@@ -148,7 +149,7 @@ export function InviteTeamMembersDialog({
 
   // Create a cloned trigger with an onClick handler
   const wrappedTrigger = React.cloneElement(trigger as React.ReactElement, {
-    onClick: openDialog
+    onClick: openDialog,
   });
 
   return (
@@ -167,7 +168,10 @@ export function InviteTeamMembersDialog({
             >
               <div className="space-y-6">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="flex gap-3 items-start border-b pb-5 mb-2">
+                  <div
+                    key={field.id}
+                    className="flex gap-3 items-start border-b pb-5 mb-2"
+                  >
                     <div className="flex-1 grid grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
@@ -187,7 +191,7 @@ export function InviteTeamMembersDialog({
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name={`invitees.${index}.roleId`}
@@ -206,11 +210,12 @@ export function InviteTeamMembersDialog({
                               </FormControl>
                               <SelectContent>
                                 {roles.map((role) => (
-                                  <SelectItem 
-                                    key={role.id} 
+                                  <SelectItem
+                                    key={role.id}
                                     value={role.id.toString()}
                                   >
-                                    {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                                    {role.name.charAt(0).toUpperCase() +
+                                      role.name.slice(1)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -220,20 +225,21 @@ export function InviteTeamMembersDialog({
                         )}
                       />
                     </div>
-                    
+
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="self-end mb-1"
                       onClick={() => handleRemoveInvitee(index)}
-                      disabled={fields.length <= 1 || inviteMemberMutation.isPending}
+                      disabled={fields.length <= 1 ||
+                        inviteMemberMutation.isPending}
                     >
                       <Icon name="remove" />
                     </Button>
                   </div>
                 ))}
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -268,7 +274,9 @@ export function InviteTeamMembersDialog({
                   disabled={inviteMemberMutation.isPending ||
                     !form.formState.isValid}
                 >
-                  {inviteMemberMutation.isPending ? "Inviting..." : "Invite Members"}
+                  {inviteMemberMutation.isPending
+                    ? "Inviting..."
+                    : "Invite Members"}
                 </Button>
               </DialogFooter>
             </form>
@@ -277,4 +285,4 @@ export function InviteTeamMembersDialog({
       </Dialog>
     </>
   );
-} 
+}

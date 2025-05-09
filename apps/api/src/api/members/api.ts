@@ -363,7 +363,8 @@ export const acceptInvite = createApiHandler({
       ok: true,
       teamId: invite.team_id,
       teamName: invite.team_name,
-      teamSlug: team?.slug || invite.team_name.toLowerCase().replace(/\s+/g, '-'),
+      teamSlug: team?.slug ||
+        invite.team_name.toLowerCase().replace(/\s+/g, "-"),
     };
   },
 });

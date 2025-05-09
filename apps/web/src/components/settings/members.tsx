@@ -5,14 +5,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { toast } from "sonner";
 import {
   type Member,
-  useInviteTeamMember,
   useRemoveTeamMember,
   useTeam,
   useTeamMembers,
-  useTeamRoles,
   useTeams,
 } from "@deco/sdk";
 import {
@@ -23,14 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -40,24 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@deco/ui/components/form.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 
@@ -72,9 +44,11 @@ import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
 const inviteMemberSchema = z.object({
   invitees: z.array(
     z.object({
-      email: z.string().email({ message: "Please enter a valid email address" }),
+      email: z.string().email({
+        message: "Please enter a valid email address",
+      }),
       roleId: z.string().min(1, { message: "Please select a role" }),
-    })
+    }),
   ).min(1),
 });
 

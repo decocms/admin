@@ -141,8 +141,8 @@ function CurrentTeamDropdownOptions() {
           </span>
         </Link>
       </ResponsiveDropdownItem>
-      <InviteTeamMembersDialog 
-        teamId={typeof teamId === 'number' ? teamId : undefined}
+      <InviteTeamMembersDialog
+        teamId={typeof teamId === "number" ? teamId : undefined}
         trigger={
           <ResponsiveDropdownItem
             className="gap-4 cursor-pointer"

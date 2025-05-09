@@ -1,4 +1,3 @@
-
 import type { Client } from "../../db/client.ts";
 
 // Email sending functionality

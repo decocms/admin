@@ -238,7 +238,7 @@ function Router() {
           element={<TriggerDetails />}
         />
       </Route>
-      
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

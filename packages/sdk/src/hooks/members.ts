@@ -9,12 +9,12 @@ import {
   getMyInvites,
   getTeamMembers,
   getTeamRoles,
+  type Invite as _Invite,
   inviteTeamMembers,
-  type Invite,
   type Member,
   registerActivity,
   removeTeamMember,
-  type Role,
+  type Role as _Role,
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 
@@ -43,9 +43,7 @@ export const useTeamRoles = (teamId: number | null) => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM_ROLES(teamId ?? -1),
     queryFn: ({ signal }) =>
-      typeof teamId === "number"
-        ? getTeamRoles(teamId, signal)
-        : [],
+      typeof teamId === "number" ? getTeamRoles(teamId, signal) : [],
   });
 };
 
@@ -84,11 +82,11 @@ export const useInviteTeamMember = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ 
-      teamId, 
-      invitees 
-    }: { 
-      teamId: number; 
+    mutationFn: ({
+      teamId,
+      invitees,
+    }: {
+      teamId: number;
       invitees: Array<{
         email: string;
         roles: Array<{ id: number; name: string }>;

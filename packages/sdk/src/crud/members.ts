@@ -52,7 +52,7 @@ export const getMyInvites = async (
   if (error) {
     throw new Error(error.message || "Failed to fetch invites");
   }
-  
+
   return data;
 };
 
@@ -63,7 +63,9 @@ export const getMyInvites = async (
  */
 export const acceptInvite = async (
   inviteId: string,
-): Promise<{ ok: boolean; teamId: number; teamName: string; teamSlug: string }> => {
+): Promise<
+  { ok: boolean; teamId: number; teamName: string; teamSlug: string }
+> => {
   const response = await callToolFor("", "TEAM_INVITE_ACCEPT", {
     id: inviteId,
   });

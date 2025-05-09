@@ -173,7 +173,7 @@ function PrefetchAgents() {
   return null;
 }
 
-function InvitesLinkErrorFallback() {
+function _InvitesLinkErrorFallback() {
   // Return null on error to ensure the sidebar doesn't break
   return null;
 }

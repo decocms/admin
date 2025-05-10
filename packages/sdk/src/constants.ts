@@ -77,10 +77,11 @@ export const MODELS: Model[] = [
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
   },
   {
-    id: "google:gemini-2.5-pro-preview-03-25",
+    id: "google:gemini-2.5-pro-preview",
     name: "Google Gemini 2.5 Pro",
     logo: LOGOS.google,
     capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
+    legacyId: "google:gemini-2.5-pro-preview-03-25",
   },
   {
     id: "openai:gpt-4.1",

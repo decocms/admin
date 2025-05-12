@@ -395,7 +395,7 @@ Inspector.UI = ({ connection }: InspectorProps) => {
                 {selectedToolObject
                   ? (
                     <>
-                      <div className="mb-4">
+                      <div>
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-lg font-semibold truncate">
                             {selectedToolObject.name}
@@ -406,7 +406,7 @@ Inspector.UI = ({ connection }: InspectorProps) => {
                             {selectedToolObject.description}
                           </p>
                         )}
-                        <Separator className="mb-4" />
+                        <Separator />
                       </div>
                       <ToolCallForm
                         tool={selectedToolObject}

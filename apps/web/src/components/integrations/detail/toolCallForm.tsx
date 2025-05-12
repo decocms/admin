@@ -107,13 +107,6 @@ export function ToolCallForm(
 
   return (
     <div className="space-y-4">
-      <div>
-        <div className="text-sm font-medium mb-2">Input Schema</div>
-        <pre className="p-4 rounded-lg bg-muted text-sm overflow-auto">
-          {JSON.stringify(tool.inputSchema, null, 2)}
-        </pre>
-      </div>
-
       <div className="flex items-center space-x-2">
         <div className="text-sm font-medium">Form Mode</div>
         <Switch
@@ -129,6 +122,13 @@ export function ToolCallForm(
       {rawMode
         ? (
           <div>
+            <div>
+              <div className="text-sm font-medium mb-2">Input Schema</div>
+              <pre className="p-4 rounded-lg bg-muted text-sm overflow-auto">
+          {JSON.stringify(tool.inputSchema, null, 2)}
+              </pre>
+            </div>
+
             <div className="text-sm font-medium mb-2">Raw JSON Payload</div>
             <Textarea
               value={payload}

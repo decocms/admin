@@ -67,10 +67,6 @@ const TAB_COMPONENTS = {
   default: (props: IDockviewPanelHeaderProps) => {
     const { openPanels } = useDock();
 
-    if (openPanels.size === 1) {
-      return null;
-    }
-
     if (props.api.component === DOCKED_VIEWS_TAB.id) {
       return (
         <div className="flex items-center justify-between gap-2 py-3 px-2 bg-slate-50">
@@ -91,6 +87,14 @@ const TAB_COMPONENTS = {
           </Button>
         </div>
       );
+    }
+
+    const shouldRenderTabs = openPanels.has(DOCKED_VIEWS_TAB.id)
+      ? openPanels.size > 2
+      : openPanels.size > 1;
+
+    if (!shouldRenderTabs) {
+      return null;
     }
 
     return (
@@ -156,13 +160,9 @@ function isMobile() {
 }
 
 const addPanel = (options: AddPanelOptions, api: DockviewApi) => {
-  let targetGroup = api.groups[0];
-  for (const group of api.groups) {
-    if (group.locked === NO_DROP_TARGET || !group.isActive) {
-      continue;
-    }
-    targetGroup = group;
-  }
+  const targetGroup = api.groups.find((group) =>
+    group.locked !== NO_DROP_TARGET
+  );
 
   const mobile = isMobile();
   const views = options.id === DOCKED_VIEWS_TAB.id;
@@ -322,6 +322,9 @@ Docked.Provider = (
 
 Docked.Views = () => {
   const { tabs, openPanels } = useDock();
+  const disabled = openPanels.has(DOCKED_VIEWS_TAB.id)
+    ? openPanels.size <= 2
+    : openPanels.size <= 1;
 
   return (
     <div className="h-full flex flex-col gap-2 p-2 bg-slate-50">
@@ -334,12 +337,13 @@ Docked.Views = () => {
             <button
               key={id}
               type="button"
+              disabled={disabled && isActive}
               onClick={() =>
                 togglePanel({ id, component: id, title: tab.title })}
               className={cn(
                 "flex items-center justify-between gap-3",
                 "p-2 rounded-xl",
-                "cursor-pointer",
+                "cursor-pointer disabled:cursor-not-allowed",
                 "hover:bg-slate-100 text-slate-700",
                 isActive && "bg-slate-100 ",
               )}

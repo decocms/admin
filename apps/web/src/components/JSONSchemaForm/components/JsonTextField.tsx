@@ -1,5 +1,12 @@
 // filepath: /Users/igorbrasileiro/dev/deco/chat/apps/web/src/components/common/jsonSchemaForm/components/JsonTextField.tsx
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@deco/ui/components/form.tsx";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 
@@ -18,7 +25,7 @@ export function JsonTextField<T extends FieldValues = FieldValues>({
   description,
   form,
   isRequired,
-  disabled
+  disabled,
 }: JsonTextFieldProps<T>) {
   return (
     <FormField
@@ -27,11 +34,16 @@ export function JsonTextField<T extends FieldValues = FieldValues>({
       name={name as unknown as FieldPath<T>}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{title}{isRequired && <span className="text-destructive ml-1">*</span>}</FormLabel>
+          <FormLabel>
+            {title}
+            {isRequired && <span className="text-destructive ml-1">*</span>}
+          </FormLabel>
           <FormControl>
             <Textarea
               {...field}
-              value={typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value}
+              value={typeof field.value === "object"
+                ? JSON.stringify(field.value, null, 2)
+                : field.value}
               onChange={(e) => {
                 try {
                   const value = JSON.parse(e.target.value);

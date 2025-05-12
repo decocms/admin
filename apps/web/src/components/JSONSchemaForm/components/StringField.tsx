@@ -1,5 +1,12 @@
 // filepath: /Users/igorbrasileiro/dev/deco/chat/apps/web/src/components/common/jsonSchemaForm/components/StringField.tsx
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@deco/ui/components/form.tsx";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 
@@ -18,7 +25,7 @@ export function StringField<T extends FieldValues = FieldValues>({
   description,
   form,
   isRequired,
-  disabled
+  disabled,
 }: StringFieldProps<T>) {
   return (
     <FormField
@@ -27,7 +34,10 @@ export function StringField<T extends FieldValues = FieldValues>({
       name={name as unknown as FieldPath<T>}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{title}{isRequired && <span className="text-destructive ml-1">*</span>}</FormLabel>
+          <FormLabel>
+            {title}
+            {isRequired && <span className="text-destructive ml-1">*</span>}
+          </FormLabel>
           <FormControl>
             <Input {...field} disabled={disabled} />
           </FormControl>

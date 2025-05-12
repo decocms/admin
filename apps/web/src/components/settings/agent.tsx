@@ -29,6 +29,7 @@ import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { FormSubmitControls } from "../common/FormSubmit.tsx";
 import { Integration } from "../toolsets/index.tsx";
+import { ModelSelector } from "../chat/ModelSelector.tsx";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -117,6 +118,22 @@ function SettingsTab({ formId }: SettingsTabProps) {
                     className="rounded-md"
                     placeholder="Enter agent name"
                     {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            name="model"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Default Model</FormLabel>
+                <FormControl>
+                  <ModelSelector
+                    model={field.value}
+                    onModelChange={(newValue) => field.onChange(newValue)}
                   />
                 </FormControl>
                 <FormMessage />

@@ -2,27 +2,12 @@ import { SDKProvider, Workspace } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
-import { lazy, PropsWithChildren, ReactNode, Suspense } from "react";
-import { createPortal } from "react-dom";
+import { ReactNode } from "react";
 import { Outlet, useNavigate, useParams } from "react-router";
 import { useUser } from "../hooks/data/useUser.ts";
+import RegisterActivity from "./common/RegisterActivity.tsx";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
-
-const RegisterActivity = lazy(() => import("./common/RegisterActivity.tsx"));
-
-export function HeaderSlot({
-  position,
-  children,
-}: PropsWithChildren<{ position: "start" | "end" }>) {
-  const targetElement = document.getElementById(`chat-header-${position}-slot`);
-
-  if (!targetElement) {
-    return null;
-  }
-
-  return createPortal(children, targetElement);
-}
 
 export function RouteLayout() {
   const { teamSlug } = useParams();
@@ -45,9 +30,7 @@ export function RouteLayout() {
         <SidebarInset className="h-full flex-col p-2 bg-slate-50">
           <Outlet />
         </SidebarInset>
-        <Suspense fallback={null}>
-          <RegisterActivity teamSlug={teamSlug} />
-        </Suspense>
+        <RegisterActivity teamSlug={teamSlug} />
       </SDKProvider>
     </SidebarProvider>
   );
@@ -108,7 +91,7 @@ export function DefaultBreadcrumb({ icon, list, item }: {
           <Icon name="arrow_back" />
         </Button>
       )}
-      <Icon name={icon} size={16} className="text-slate-700" />
+      <Icon name={icon} size={16} className="text-slate-700" filled />
       <span className="text-slate-700 text-nowrap">{list}</span>
       {item && <span className="text-sm text-slate-500">/</span>}
       {item && (

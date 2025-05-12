@@ -191,8 +191,11 @@ Deno.test("generateDefaultValues - nested objects with formData", () => {
     },
   };
 
-  // deno-lint-ignore no-explicit-any
-  const result = generateDefaultValues(nestedSchema, formData) as Record<string, any>;
+  const result = generateDefaultValues(nestedSchema, formData) as Record<
+    string,
+    // deno-lint-ignore no-explicit-any
+    any
+  >;
 
   // Check that nested structure preserves formData values
   assertExists(result.user);

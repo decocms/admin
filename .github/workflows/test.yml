@@ -32,3 +32,6 @@ jobs:
 
       - name: Run check
         run: deno run check
+
+      - name: Run test
+        run: deno test --no-check

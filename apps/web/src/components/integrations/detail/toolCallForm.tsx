@@ -41,6 +41,7 @@ export function ToolCallForm(
   useEffect(() => {
     if (rawMode) {
       try {
+        console.log(form.getValues());
         // Convert form data to JSON string when switching to raw mode
         setPayload(JSON.stringify(form.getValues(), null, 2));
       } catch (_err) {
@@ -60,6 +61,10 @@ export function ToolCallForm(
       }
     }
   }, [rawMode]);
+
+  useEffect(function handleResetForm() {
+    form.reset(generateDefaultValues(tool.inputSchema as JSONSchema7));
+  }, [tool.name]);
 
   const handleRawSubmit = async () => {
     try {

@@ -1,8 +1,6 @@
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
-import { FormEvent, useState } from "react";
+import { FormEvent, type ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { BooleanField } from "./components/BooleanField.tsx";
 import { JsonTextField } from "./components/JsonTextField.tsx";
 import { NumberField } from "./components/NumberField.tsx";
@@ -22,12 +20,13 @@ export interface JsonSchemaFormProps<
   onSubmit: (e: FormEvent) => Promise<void> | void;
   // deno-lint-ignore no-explicit-any
   error?: any;
+  submitButton: ReactNode;
 }
 
 export function Form<T extends FieldValues = Record<string, unknown>>(
-  { schema, form, disabled = false, onSubmit, error }: JsonSchemaFormProps<T>,
+  { schema, form, disabled = false, onSubmit, error, submitButton }:
+    JsonSchemaFormProps<T>,
 ) {
-  const [loading, setLoading] = useState(false);
   if (!schema || typeof schema !== "object") {
     return <div className="text-sm text-destructive">Invalid schema</div>;
   }
@@ -37,14 +36,7 @@ export function Form<T extends FieldValues = Record<string, unknown>>(
     return (
       <form
         className="space-y-4"
-        onSubmit={async (e) => {
-          setLoading(true);
-          try {
-            await onSubmit(e);
-          } finally {
-            setLoading(false);
-          }
-        }}
+        onSubmit={onSubmit}
       >
         {renderObjectProperties<T>(
           schema.properties,
@@ -60,20 +52,7 @@ export function Form<T extends FieldValues = Record<string, unknown>>(
         )}
 
         <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="flex-1 gap-2"
-            disabled={loading}
-          >
-            {loading
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  Processing...
-                </>
-              )
-              : "Execute Tool Call"}
-          </Button>
+          {submitButton}
         </div>
       </form>
     );

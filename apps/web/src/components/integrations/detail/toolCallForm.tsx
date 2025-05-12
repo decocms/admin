@@ -180,6 +180,22 @@ export function ToolCallForm(
                 disabled={isLoading}
                 onSubmit={handleFormSubmit}
                 error={error}
+                submitButton={
+                  <Button
+                    type="submit"
+                    className="flex-1 gap-2"
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? (
+                        <>
+                          <Spinner size="xs" />
+                          Processing...
+                        </>
+                      )
+                      : "Execute Tool Call"}
+                  </Button>
+                }
               />
             </Form>
           </div>

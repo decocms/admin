@@ -101,8 +101,13 @@ function renderField<T extends FieldValues = Record<string, unknown>>(
   // Handle anyOf schema
   if (schema.anyOf && Array.isArray(schema.anyOf) && schema.anyOf.length > 0) {
     // Use the unified schema selection utility from schema.ts
-    const representativeSchema = selectAnyOfSchema(schema, undefined, form, name);
-    
+    const representativeSchema = selectAnyOfSchema(
+      schema,
+      undefined,
+      form,
+      name,
+    );
+
     return renderField<T>(
       name,
       representativeSchema,
@@ -183,18 +188,22 @@ function renderField<T extends FieldValues = Record<string, unknown>>(
               </p>
             )}
             <div className="space-y-4">
-              {Object.entries(schema.properties).map(([propName, propSchema]) => {
-                const isPropertyRequired = schema.required?.includes(propName);
-                const fullName = `${name}.${propName}`;
-                
-                return renderField<T>(
-                  fullName,
-                  propSchema as JSONSchema7,
-                  form,
-                  isPropertyRequired,
-                  disabled,
-                );
-              })}
+              {Object.entries(schema.properties).map(
+                ([propName, propSchema]) => {
+                  const isPropertyRequired = schema.required?.includes(
+                    propName,
+                  );
+                  const fullName = `${name}.${propName}`;
+
+                  return renderField<T>(
+                    fullName,
+                    propSchema as JSONSchema7,
+                    form,
+                    isPropertyRequired,
+                    disabled,
+                  );
+                },
+              )}
             </div>
           </div>
         );

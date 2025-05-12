@@ -7,7 +7,7 @@ import { selectAnyOfSchema } from "./schema.ts";
 export function generateDefaultValues(
   schema: JSONSchema7,
   formData?: Record<string, SchemaType>,
-  fieldPath?: string
+  fieldPath?: string,
 ): Record<string, SchemaType> {
   if (!schema || typeof schema !== "object") {
     return {};
@@ -29,10 +29,14 @@ export function generateDefaultValues(
       const isRequired = schema.required?.includes(name);
       const propPath = fieldPath ? `${fieldPath}.${name}` : name;
       const fieldFormData = formData?.[name];
-      
+
       if (isRequired || fieldFormData !== undefined) {
         // Use generateDefaultValue which now handles type checking
-        result[name] = generateDefaultValue(propSchema as JSONSchema7, fieldFormData, propPath);
+        result[name] = generateDefaultValue(
+          propSchema as JSONSchema7,
+          fieldFormData,
+          propPath,
+        );
       }
     }
     return result;

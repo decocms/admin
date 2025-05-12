@@ -1,5 +1,5 @@
+import { Database } from "@deco/sdk/storage";
 import { z } from "zod";
-import { Database } from "../../db/schema.ts";
 import { AppContext, createApiHandler, getEnv } from "../../utils/context.ts";
 import { bundler } from "./bundler.ts";
 
@@ -189,7 +189,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => {});
+  }).catch(() => { });
 };
 
 const ENTRYPOINT = "main.ts";

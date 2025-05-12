@@ -3,8 +3,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
+import { WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { isUserAdmin, SUPABASE_URL } from "@deco/sdk/auth";
+import { SUPABASE_URL } from "@deco/sdk/auth";
 import { trace } from "@deco/sdk/observability";
 import {
   getTwoFirstSegments as getWorkspace,
@@ -15,6 +16,7 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
+import { createWalletClient } from "@deco/sdk/wallet";
 import type { StorageThreadType } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
@@ -22,11 +24,6 @@ import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { join } from "@std/path/posix";
 import { createServerClient } from "@supabase/ssr";
-import type { AuthUser } from "@supabase/supabase-js";
-import { createWalletClient } from "@webdraw/common/wallet";
-import * as fs from "@webdraw/fs";
-import { mountFsOnce, type MountFsParams } from "@webdraw/fs/mount";
-import { userIdToCredentials } from "@webdraw/fs/utils";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
@@ -47,7 +44,6 @@ import type { DecoChatStorage } from "./storage/index.ts";
 import {
   AgentNotFoundError,
   type Agent as Configuration,
-  WELL_KNOWN_AGENTS,
 } from "./storage/index.ts";
 import { createSupabaseStorage } from "./storage/options/supabaseStorage.ts";
 import type {
@@ -95,7 +91,6 @@ interface StreamOptions extends AgentOverrides {
 export interface AgentMetadata extends AuthMetadata {
   threadId?: string;
   resourceId?: string;
-  principalFs?: fs.FS;
   wallet?: Promise<AgentWallet>;
   principalCookie?: string | null;
   timings?: ServerTimingsBuilder;
@@ -131,7 +126,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   protected callableToolSet: ToolsetsInput = {};
 
   public workspace: Workspace;
-  public fs: fs.FS;
   private id: string;
   public _configuration?: Configuration;
   private memoryId?: string;
@@ -158,9 +152,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       workspace: this.workspace,
       wallet: createWalletClient(this.env.WALLET_API_KEY, env?.WALLET),
     });
-    // will be initialized in init()
-    // @ts-ignore: "ignore this for now"
-    this.fs = null as unknown as fs.FS;
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
     this.storage = createSupabaseStorage(
@@ -172,17 +163,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
 
     this.state.blockConcurrencyWhile(async () => {
-      await mountFsOnce(
-        { ...this.env, disableInMemoryCache: true } as MountFsParams,
-      );
-
-      this.fs = fs.bindContext(this.state.id).fs.promises;
       await this.init();
     });
-  }
-
-  get principalFs(): fs.FS {
-    return this.metadata?.principalFs ?? this.fs;
   }
 
   public resolvePath(path: string): string {
@@ -194,17 +176,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     return path;
-  }
-
-  initializeUserFs(user: AuthUser): fs.FS {
-    // todo(camudo): do this better later, having only one fs instance,
-    // and changing every usage of the agent FS that assumes agent.root as the root
-    // to use an expandable path (~)
-    const isAdmin = isUserAdmin(user);
-    const credentials = isAdmin
-      ? { uid: 0, gid: 0 }
-      : userIdToCredentials(user.id);
-    return fs.bindContext("/", credentials).fs.promises;
   }
 
   override async enrichMetadata(
@@ -221,15 +192,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     // Propagate supabase token from request to integration token
     this.metadata.principalCookie = req.headers.get("cookie");
-
-    const user = this.metadata?.principal;
-    if (user) {
-      this.metadata.principalFs = this.initializeUserFs(user);
-    } else {
-      this.metadata.principalFs = this.fs;
-    }
     enrichMetadata?.end();
-
     return this.metadata;
   }
 
@@ -568,7 +531,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         });
 
     const merged: Configuration = {
-      ...WELL_KNOWN_AGENTS.anonymousAgent,
+      name: ANONYMOUS_NAME,
+      instructions: ANONYMOUS_INSTRUCTIONS,
+      tools_set: {},
+      avatar: WELL_KNOWN_AGENTS.teamAgent.avatar,
+      id: crypto.randomUUID(),
+      model: DEFAULT_MODEL,
+      views: [],
       ...manifest,
     };
 

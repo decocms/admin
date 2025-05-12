@@ -7,6 +7,8 @@
     "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.5",
     "@ai-sdk/provider": "^1.0.11",
+    "@ai-sdk/deepseek": "^0.2.14",
+    "@ai-sdk/xai": "^1.2.16",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.0",
     "@openrouter/ai-sdk-provider": "0.4.5",

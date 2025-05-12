@@ -1,6 +1,7 @@
-import type { Workspace } from "@deco/sdk/path";
-import type { Agent, Integration } from "../schemas.ts";
-import type { TriggerData, TriggerRun } from "../triggers/services.ts";
+import { Agent } from "../models/agent.ts";
+import { Integration } from "../models/mcp.ts";
+import { TriggerData, TriggerRun } from "../models/trigger.ts";
+import { Workspace } from "../path.ts";
 
 export interface WorkspaceScopedAgentStorage {
   list(): Promise<Agent[]>;
@@ -49,6 +50,5 @@ export interface DecoChatStorage {
   triggers?: TriggersStorage;
 }
 
-export { AgentNotFoundError, IntegrationNotFoundError } from "./error.ts";
-
-export * from "../schemas.ts";
+export * from "./supabase/schema.ts";
+export * from "./supabase/client.ts";

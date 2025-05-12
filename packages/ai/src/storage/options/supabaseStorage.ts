@@ -1,7 +1,9 @@
+import type { Workspace } from "@deco/sdk/path";
+import type { Database, Json } from "@deco/sdk/storage";
 import type { AuthUser } from "@supabase/supabase-js";
 import type { WebdrawSupabase } from "@webdraw/auth";
 import { hasAccessToPath } from "@webdraw/auth/user";
-import type { Workspace } from "@deco/sdk/path";
+import type z from "zod";
 import { pickCapybaraAvatar } from "../../capybaras.ts";
 import {
   type Agent,
@@ -9,7 +11,7 @@ import {
   type Integration,
   IntegrationSchema,
 } from "../../schemas.ts";
-import type { PromptSchema } from "../../triggers/services.ts";
+import type { PromptSchema, TriggerData, TriggerRun } from "../../triggers/services.ts";
 import {
   INNATE_INTEGRATIONS,
   NEW_AGENT_TEMPLATE,
@@ -28,10 +30,6 @@ import type {
   TriggersStorage,
 } from "../index.ts";
 import { agentToIntegration } from "./common.ts";
-import type z from "zod";
-import type { Json } from "@webdraw/auth";
-import type { Database } from "@webdraw/auth";
-import type { TriggerData, TriggerRun } from "../../triggers/services.ts";
 
 type UserMetadata = {
   iss?: string;

@@ -23,7 +23,7 @@ export const saveIntegration = async (
     integration,
   });
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as { error: Error, data: Integration };
 
   if (error) {
     throw new Error(error.message || "Failed to save integration");
@@ -55,7 +55,7 @@ export const createIntegration = async (
     integration,
   );
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as { error: Error, data: Integration };
 
   if (error) {
     throw new Error(error.message || "Failed to save integration");
@@ -82,7 +82,7 @@ export const loadIntegration = async (
     throw new IntegrationNotFoundError(mcpId);
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as { error: Error, data: Integration };
 
   if (error) {
     throw new Error(error.message || "Failed to load integration");
@@ -99,7 +99,7 @@ export const listIntegrations = async (
     signal,
   });
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as { error: Error, data: Integration[] };
 
   if (error) {
     throw new Error(error.message || "Failed to list integrations");
@@ -117,7 +117,7 @@ export const deleteIntegration = async (workspace: string, mcpId: string) => {
     id: mcpId,
   });
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as { error: Error, data: Integration };
 
   if (error) {
     throw new Error(error.message || "Failed to delete integration");

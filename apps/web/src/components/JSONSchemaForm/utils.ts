@@ -24,7 +24,10 @@ export function generateDefaultValues(
   if (schema.type === "object" && schema.properties) {
     const result: Record<string, SchemaType> = {};
     for (const [name, propSchema] of Object.entries(schema.properties)) {
-      result[name] = generateDefaultValue(propSchema as JSONSchema7);
+      const isRequired = schema.required?.includes(name);
+      if (isRequired) {
+        result[name] = generateDefaultValue(propSchema as JSONSchema7);
+      }
     }
     return result;
   }

@@ -31,6 +31,7 @@ export function generateDefaultValues(
       const fieldFormData = formData?.[name];
       
       if (isRequired || fieldFormData !== undefined) {
+        // Use generateDefaultValue which now handles type checking
         result[name] = generateDefaultValue(propSchema as JSONSchema7, fieldFormData, propPath);
       }
     }

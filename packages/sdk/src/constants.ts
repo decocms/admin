@@ -18,8 +18,8 @@ const isLocalhost = globalThis.location?.hostname === "localhost";
 if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   console.warn(
     "VITE_USE_LOCAL_BACKEND environment variable is not set. " +
-    "To use local backend services, create a .env file in apps/web/ " +
-    "and add VITE_USE_LOCAL_BACKEND=true",
+      "To use local backend services, create a .env file in apps/web/ " +
+      "and add VITE_USE_LOCAL_BACKEND=true",
   );
 }
 
@@ -135,7 +135,6 @@ export function getTraceDebugId(): string {
     crypto.randomUUID();
 }
 
-
 export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
   name: "New Integration",
   description: "A new multi-channel platform integration",
@@ -187,7 +186,6 @@ export const INNATE_INTEGRATIONS = {
     connection: { type: "INNATE", name: "DECO_UTILS" },
   },
 } satisfies Record<string, Integration>;
-
 
 /**
  * TODO: something is weird with the tools set here.

@@ -35,7 +35,7 @@ export class AgentWallet {
     WebCache.MAX_SAFE_TTL,
   );
   private rewardPromise: Map<string, Promise<void>> = new Map();
-  constructor(private config: AgentWalletConfig) { }
+  constructor(private config: AgentWalletConfig) {}
 
   async updateBalanceCache(userId: string) {
     const hasBalance = await this.hasBalance(userId);

@@ -42,13 +42,13 @@ import { AgentMemory, buildMemoryId } from "./memory/memory.ts";
 import { createLLM } from "./models.ts";
 import type { DecoChatStorage } from "./storage/index.ts";
 import {
-  AgentNotFoundError,
   type Agent as Configuration,
+  AgentNotFoundError,
 } from "./storage/index.ts";
 import { createSupabaseStorage } from "./storage/options/supabaseStorage.ts";
 import type {
-  Message as AIMessage,
   AIAgent as IIAgent,
+  Message as AIMessage,
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
@@ -451,7 +451,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           lastMessages: Math.min(
             DEFAULT_MEMORY_LAST_MESSAGES,
             this._configuration?.memory?.last_messages ??
-            DEFAULT_MEMORY_LAST_MESSAGES,
+              DEFAULT_MEMORY_LAST_MESSAGES,
           ),
         },
       });

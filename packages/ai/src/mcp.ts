@@ -6,7 +6,6 @@ import {
   type SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import { HttpClientTransport } from "@webdraw/common/mcp/http";
 import type { Workspace } from "@deco/sdk/path";
 import type { AIAgent } from "./agent.ts";
 import { getTools } from "./deco.ts";
@@ -22,6 +21,7 @@ import { createTool } from "./utils/createTool.ts";
 import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
 import { slugify } from "./utils/slugify.ts";
 import { mapToolEntries } from "./utils/toolEntries.ts";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const ApiDecoChatURLs = ["https://api.deco.chat", "http://localhost:3001"];
 export const isApiDecoChatMCPConnection = (
@@ -177,8 +177,8 @@ export const mcpServerTools = async (
   const response = mcpServer.connection.type === "Deco"
     ? await getDecoSiteTools(mcpServer.connection)
     : mcpServer.connection.type === "INNATE"
-      ? getToolsForInnateIntegration(mcpServer, agent)
-      : await getMCPServerTools(mcpServer, agent);
+    ? getToolsForInnateIntegration(mcpServer, agent)
+    : await getMCPServerTools(mcpServer, agent);
 
   return response;
 };
@@ -242,7 +242,7 @@ export const createTransport = (connection: MCPConnection) => {
 
     return new SSEClientTransport(new URL(connection.url), config);
   }
-  return new HttpClientTransport(new URL(connection.url), {
+  return new StreamableHTTPClientTransport(new URL(connection.url), {
     requestInit: { headers },
   });
 };

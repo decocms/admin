@@ -46,7 +46,10 @@ export const getAgent = createApiHandler({
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(root, slug, c),
       id in WELL_KNOWN_AGENTS
-        ? { data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS], error: null }
+        ? {
+          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          error: null,
+        }
         : c.get("db")
           .from("deco_chat_agents")
           .select("*")

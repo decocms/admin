@@ -3,11 +3,7 @@ import { timing } from "hono/timing";
 import api from "./api.ts";
 import apps from "./apps.ts";
 import { AppEnv } from "./utils/context.ts";
-
-export const Hosts = {
-  API: "api.deco.chat",
-  APPS: "deco.page",
-} as const;
+import { Hosts } from "@deco/sdk/hosts";
 
 export const APPS_DOMAIN_QS = "app_host";
 

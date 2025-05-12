@@ -67,7 +67,7 @@ const processSpan = (span: ReadableSpan): ReadableSpan => {
 };
 
 export const config: ResolveConfigFn = (_env, _trigger) => {
-  const env = {..._env, ...process.env };
+  const env = { ..._env, ...process.env };
   const headers = headersStringToObject(
     env.OTEL_EXPORTER_OTLP_HEADERS as string,
   );

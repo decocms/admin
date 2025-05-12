@@ -1,8 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-  assertNotEquals,
-} from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { generateDefaultValue } from "./generateDefaultValue.ts";
 import { JSONSchema7 } from "json-schema";
 

@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertExists,
-} from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals, assertExists } from "@std/assert";
 import {
   doesChildFieldMatchSchema,
   doesSchemaTypeMatchValue,

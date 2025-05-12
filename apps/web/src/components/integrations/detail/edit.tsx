@@ -34,11 +34,6 @@ function MainChat() {
 }
 
 const TABS = {
-  form: {
-    Component: DetailForm,
-    title: "Setup",
-    initialOpen: true,
-  },
   main: {
     Component: MainChat,
     title: "Chat setup",
@@ -47,6 +42,11 @@ const TABS = {
   inspector: {
     Component: Inspector,
     title: "Test integration",
+    initialOpen: true,
+  },
+  form: {
+    Component: DetailForm,
+    title: "Setup",
     initialOpen: true,
   },
   tools: {

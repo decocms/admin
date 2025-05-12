@@ -2,11 +2,9 @@ import { useThread } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { format } from "date-fns";
 import { useNavigate, useParams } from "react-router";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
-import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 import { Tab } from "../dock/index.tsx";
 import { PageLayout } from "../layout.tsx";
 

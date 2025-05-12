@@ -1,4 +1,6 @@
-import { useState } from "react";
+import type { Agent } from "@deco/sdk";
+import { useAgents } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
@@ -6,18 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import { WebhookTriggerForm } from "./webhookTriggerForm.tsx";
-import { CronTriggerForm } from "./cronTriggerForm.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useAgents } from "@deco/sdk";
-import { AgentAvatar } from "../common/Avatar.tsx";
 import {
   Select,
   SelectContent,
@@ -25,9 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
+import { useState } from "react";
+import { AgentAvatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
-import type { Agent } from "@deco/sdk";
-import { HeaderSlot } from "../layout.tsx";
+import { CronTriggerForm } from "./cronTriggerForm.tsx";
+import { WebhookTriggerForm } from "./webhookTriggerForm.tsx";
 
 function AgentSelect({
   agents,

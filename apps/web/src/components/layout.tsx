@@ -4,8 +4,7 @@ import { lazy, PropsWithChildren, ReactNode, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Outlet, useParams } from "react-router";
 import { useUser } from "../hooks/data/useUser.ts";
-import Docked from "./dock/index.tsx";
-import { DockedPageProps } from "./pageLayout.tsx";
+import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
 
 const RegisterActivity = lazy(() => import("./common/RegisterActivity.tsx"));
@@ -55,7 +54,7 @@ export function RouteLayout() {
 export interface PageLayoutProps {
   breadcrumb?: ReactNode;
   actionButtons?: ReactNode;
-  tabs: DockedPageProps["tabs"];
+  tabs: Record<string, Tab>;
   displayViewsTrigger?: boolean;
 }
 

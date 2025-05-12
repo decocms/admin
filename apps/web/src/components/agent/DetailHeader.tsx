@@ -47,7 +47,11 @@ AgentHeader.UI = ({ agentId }: Props) => {
       <Button onClick={() => navigate(-1)} variant="ghost" size="icon">
         <Icon name="arrow_back" />
       </Button>
-      <AgentAvatar name={agent.name} avatar={agent.avatar} className="w-6 h-6" />
+      <AgentAvatar
+        name={agent.name}
+        avatar={agent.avatar}
+        className="w-6 h-6"
+      />
       <h1 className="text-sm font-medium tracking-tight text-slate-700">
         {agent.name}
       </h1>

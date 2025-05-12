@@ -1,7 +1,6 @@
 import { Tab } from "../dock/index.tsx";
 
 import { Icon } from "@deco/ui/components/icon.tsx";
-import AuditList from "../audit/list.tsx";
 import { PageLayout } from "../layout.tsx";
 import BillingSettings from "./billing.tsx";
 import GeneralSettings from "./general.tsx";
@@ -19,7 +18,7 @@ const TABS: Record<string, Tab> = {
     Component: MembersSettings,
     initialOpen: true,
   },
-  
+
   billing: {
     title: "Billing",
     Component: BillingSettings,

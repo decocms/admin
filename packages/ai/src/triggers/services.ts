@@ -64,8 +64,8 @@ export const WebhookTriggerSchema = z.object({
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
-    "By default this webhook returns the LLM generate text response.\n\n" +
-    "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+      "By default this webhook returns the LLM generate text response.\n\n" +
+      "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
   ),
 });
 

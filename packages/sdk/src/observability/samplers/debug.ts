@@ -27,7 +27,7 @@ export const setCorrelationId = (headers: Headers, correlationId: string) => {
 };
 
 export class DebugSampler implements Sampler {
-  constructor(protected inner?: Sampler) { }
+  constructor(protected inner?: Sampler) {}
   shouldSample(
     context: Context,
     traceId: string,

@@ -7,8 +7,10 @@ import type { ToolExecutionOptions } from "ai";
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 
-export interface ToolOptions<TSchemaIn extends z.ZodSchema | undefined = undefined,
-  TSchemaOut extends z.ZodSchema | undefined = undefined,> {
+export interface ToolOptions<
+  TSchemaIn extends z.ZodSchema | undefined = undefined,
+  TSchemaOut extends z.ZodSchema | undefined = undefined,
+> {
   id: string;
   description?: string;
   inputSchema?: TSchemaIn;
@@ -21,7 +23,9 @@ export interface ToolOptions<TSchemaIn extends z.ZodSchema | undefined = undefin
 export const createInnateTool: <
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
->(opts: ToolOptions<TSchemaIn, TSchemaOut>) => ToolOptions<TSchemaIn, TSchemaOut> = <
+>(
+  opts: ToolOptions<TSchemaIn, TSchemaOut>,
+) => ToolOptions<TSchemaIn, TSchemaOut> = <
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,
 >(opts: ToolOptions<TSchemaIn, TSchemaOut>) => opts;
@@ -70,8 +74,9 @@ export const createTool = ({
             err = error;
             return {
               success: false,
-              message: `Failed to execute tool with the following error: ${String(error)
-                }`,
+              message: `Failed to execute tool with the following error: ${
+                String(error)
+              }`,
               data: null,
             };
           } finally {

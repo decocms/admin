@@ -166,7 +166,6 @@ export interface GeneratedFact {
   timestamp: Date;
 }
 
-
 export interface WalletAPI {
   "GET /accounts/:id": {
     response: {

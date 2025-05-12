@@ -1,4 +1,11 @@
-import { Agent, AgentSchema, INNATE_INTEGRATIONS, Integration, IntegrationSchema, NEW_INTEGRATION_TEMPLATE } from "@deco/sdk";
+import {
+  Agent,
+  AgentSchema,
+  INNATE_INTEGRATIONS,
+  Integration,
+  IntegrationSchema,
+  NEW_INTEGRATION_TEMPLATE,
+} from "@deco/sdk";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
@@ -130,7 +137,10 @@ export const getIntegration = createApiHandler({
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(root, slug, c),
       uuid in INNATE_INTEGRATIONS
-        ? { data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS], error: null }
+        ? {
+          data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS],
+          error: null,
+        }
         : c.get("db")
           .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
           .select("*")

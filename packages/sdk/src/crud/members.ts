@@ -106,7 +106,10 @@ export const getTeamMembers = async (
     throw new Error("Failed to fetch team members");
   }
 
-  const { data, error } = await response.json() as { data: Member[], error: Error };
+  const { data, error } = await response.json() as {
+    data: Member[];
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch team members");
@@ -132,7 +135,10 @@ export const getTeamRoles = async (
     throw new Error("Failed to fetch team roles");
   }
 
-  const { data, error } = await response.json() as { data: Member, error: Error };
+  const { data, error } = await response.json() as {
+    data: Member;
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch team roles");
@@ -191,7 +197,10 @@ export const removeTeamMember = async (
     throw new Error("Failed to remove team member");
   }
 
-  const { data, error } = await response.json() as { data: { success: boolean }, error: Error };
+  const { data, error } = await response.json() as {
+    data: { success: boolean };
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to remove team member");

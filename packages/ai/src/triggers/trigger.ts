@@ -4,7 +4,6 @@ import { Actor } from "@deco/actors";
 
 import { dirname } from "@std/path/posix";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
-import * as fs from "@webdraw/fs";
 import process from "node:process";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData } from "./services.ts";
@@ -42,7 +41,6 @@ export interface TriggerMetadata {
 export class Trigger {
   public metadata?: TriggerMetadata;
   protected data: TriggerData | null = null;
-  protected fs: fs.FS;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected storage?: DecoChatStorage;

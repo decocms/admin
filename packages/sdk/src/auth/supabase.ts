@@ -21,7 +21,6 @@ export function getCookies(headers: Headers): Record<string, string> {
   return {};
 }
 
-
 export const SB_TOKEN_COOKIE_NAME = "sb-auth-auth-token";
 
 interface CreateSupabaseSessionClientResult {

@@ -1,4 +1,4 @@
-import type { ServerTimingsBuilder } from "@webdraw/common/timings";
+import type { ServerTimingsBuilder } from "@deco/sdk/timings";
 
 export interface Context {
   timings: ServerTimingsBuilder;

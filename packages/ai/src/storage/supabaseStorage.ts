@@ -1,35 +1,38 @@
 import type { Workspace } from "@deco/sdk/path";
-import type { Database, Json } from "@deco/sdk/storage";
+import type { Client, Database, Json } from "@deco/sdk/storage";
 import type { AuthUser } from "@supabase/supabase-js";
-import type { WebdrawSupabase } from "@webdraw/auth";
-import { hasAccessToPath } from "@webdraw/auth/user";
+import { hasAccessToPath } from "@deco/sdk/auth";
 import type z from "zod";
-import { pickCapybaraAvatar } from "../../capybaras.ts";
+import { pickCapybaraAvatar } from "../capybaras.ts";
 import {
   type Agent,
   AgentSchema,
   type Integration,
   IntegrationSchema,
-} from "../../schemas.ts";
-import type { PromptSchema, TriggerData, TriggerRun } from "../../triggers/services.ts";
-import {
-  INNATE_INTEGRATIONS,
-  NEW_AGENT_TEMPLATE,
-  NEW_INTEGRATION_TEMPLATE,
-  WELL_KNOWN_AGENTS,
-} from "../constants.ts";
+} from "../schemas.ts";
+import type {
+  PromptSchema,
+  TriggerData,
+  TriggerRun,
+} from "../triggers/services.ts";
 import {
   AgentNotFoundError,
   IntegrationNotFoundError,
   TriggerNotFoundError,
-} from "../error.ts";
+} from "./error.ts";
 import type {
   AgentStorage,
   DecoChatStorage,
   IntegrationsStorage,
   TriggersStorage,
-} from "../index.ts";
-import { agentToIntegration } from "./common.ts";
+} from "./index.ts";
+import { agentToIntegration } from "./options/common.ts";
+import {
+  INNATE_INTEGRATIONS,
+  NEW_AGENT_TEMPLATE,
+  NEW_INTEGRATION_TEMPLATE,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 
 type UserMetadata = {
   iss?: string;
@@ -52,11 +55,13 @@ const readAgent = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Agent> => {
   try {
     if (id in WELL_KNOWN_AGENTS) {
-      return AgentSchema.parse(WELL_KNOWN_AGENTS[id]);
+      return AgentSchema.parse(
+        WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+      );
     }
 
     const { data, error } = await supabase
@@ -85,7 +90,7 @@ const listAgents = async ({
   supabase,
 }: {
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Agent[]> => {
   const { data, error } = await supabase
     .from("deco_chat_agents")
@@ -106,7 +111,7 @@ const getAgentsByIds = async ({
 }: {
   ids: string[];
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Agent[]> => {
   if (ids.length === 0) return [];
 
@@ -130,7 +135,9 @@ const getAgentsByIds = async ({
   return ids
     .map((id) => {
       if (id in WELL_KNOWN_AGENTS) {
-        return AgentSchema.parse(WELL_KNOWN_AGENTS[id]);
+        return AgentSchema.parse(
+          WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+        );
       }
       return dbAgents.find((agent) => agent.id === id);
     })
@@ -144,7 +151,7 @@ const createAgent = async ({
 }: {
   agent: Partial<Agent>;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Agent> => {
   try {
     const data = AgentSchema.parse({
@@ -176,7 +183,7 @@ const updateAgent = async ({
   id: string;
   agent: Agent;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Agent> => {
   try {
     const data = AgentSchema.parse(agent);
@@ -204,7 +211,7 @@ const deleteAgent = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<void> => {
   try {
     const { error } = await supabase
@@ -256,7 +263,7 @@ const readIntegration = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Integration> => {
   if (id in INNATE_INTEGRATIONS) {
     return INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
@@ -289,7 +296,7 @@ const listIntegrations = async ({
   supabase,
 }: {
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Integration[]> => {
   const [integrationsResult, agentsResult] = await Promise.all([
     supabase
@@ -326,7 +333,7 @@ const createIntegration = async ({
 }: {
   integration: Integration;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Integration> => {
   try {
     const { success, data, error: validationError } = IntegrationSchema
@@ -362,7 +369,7 @@ const updateIntegration = async ({
   id: string;
   integration: Integration;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<Integration> => {
   try {
     const { success, data, error: validationError } = IntegrationSchema
@@ -403,7 +410,7 @@ const deleteIntegration = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<void> => {
   try {
     const { type, uuid } = parseIntegrationId(id);
@@ -477,7 +484,7 @@ const listTriggers = async ({
   agentId,
 }: {
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
   agentId?: string;
 }): Promise<TriggerData[]> => {
   const query = supabase
@@ -518,7 +525,7 @@ const readTrigger = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<TriggerData> => {
   const { data, error } = await supabase
     .from("deco_chat_triggers")
@@ -549,7 +556,7 @@ const createTrigger = async ({
   trigger: TriggerData & { url?: string };
   agentId: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
   userId: string;
 }): Promise<TriggerData> => {
   const isWebhook = trigger.type === "webhook";
@@ -589,7 +596,7 @@ const deleteTrigger = async ({
 }: {
   id: string;
   workspace: Workspace;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<void> => {
   try {
     const { error } = await supabase
@@ -611,7 +618,7 @@ const listTriggerRuns = async ({
   supabase,
 }: {
   id: string;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<TriggerRun[]> => {
   const { data, error } = await supabase
     .from("deco_chat_trigger_runs")
@@ -637,7 +644,7 @@ const createTriggerRun = async ({
   supabase,
 }: {
   run: Omit<TriggerRun, "id" | "timestamp">;
-  supabase: WebdrawSupabase;
+  supabase: Client;
 }): Promise<TriggerRun> => {
   const { data, error } = await supabase
     .from("deco_chat_trigger_runs")
@@ -665,7 +672,7 @@ const createTriggerRun = async ({
 };
 
 export const createSupabaseStorage = (
-  supabase: WebdrawSupabase,
+  supabase: Client,
   user?: AuthUser,
 ): DecoChatStorage => {
   const auth = (workspace: Workspace, user: AuthUser) => {

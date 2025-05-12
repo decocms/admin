@@ -42,7 +42,12 @@ export function NumberField<T extends FieldValues = FieldValues>({
             <Input
               {...field}
               type="number"
-              onChange={(e) => field.onChange(e.target.valueAsNumber ?? "")}
+              onChange={(e) => {
+                const val = Number.isNaN(e.target.valueAsNumber)
+                  ? ""
+                  : e.target.valueAsNumber;
+                field.onChange(val);
+              }}
               disabled={disabled}
             />
           </FormControl>

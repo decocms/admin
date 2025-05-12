@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { Form } from "@deco/ui/components/form.tsx";
 import { useForm } from "react-hook-form";
+import { ajvResolver } from "@hookform/resolvers/ajv";
 import type { JSONSchema7 } from "json-schema";
 import {
   Form as JSONSchemaForm,
@@ -31,8 +32,9 @@ export function ToolCallForm(
   // Initialize form with default values based on the schema
   const form = useForm<Record<string, SchemaType>>({
     defaultValues: generateDefaultValues(tool.inputSchema as JSONSchema7),
-    // TODO: implement the ajvResolver
-    // resolver: ajvResolver(tool.inputSchema as JSONSchemaType<any>),
+    // The type is correct, somehow it fails on ajv
+    // deno-lint-ignore no-explicit-any
+    resolver: ajvResolver(tool.inputSchema as any),
   });
 
   // Sync form values with raw JSON when toggling modes

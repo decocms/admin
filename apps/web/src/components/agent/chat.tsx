@@ -1,36 +1,24 @@
 import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { cn } from "@deco/ui/lib/utils.ts";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
-import { ChatProvider } from "../chat/context.tsx";
-import { DockedPageLayout } from "../pageLayout.tsx";
+import { ChatProvider, useChatContext } from "../chat/context.tsx";
+import { PageLayout } from "../layout.tsx";
 import ThreadSettingsTab from "../settings/chat.tsx";
-import { ChatHeader } from "./ChatHeader.tsx";
+import { AgentHeader } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-
-// Custom CSS to override shadow styles
-const tabStyles = `
-.custom-tabs [data-state] {
-  box-shadow: none !important;
-  outline: none !important;
-}
-.custom-tabs [role="tablist"] {
-  box-shadow: none !important;
-}
-.custom-tabs [role="tab"]:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-`;
+import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 
 interface Props {
   agentId?: string;
@@ -39,39 +27,96 @@ interface Props {
   includeThreadTools?: boolean;
 }
 
-const MainHeader = () => <ChatHeader />;
-const MainContent = () => <ChatMessages />;
-const MainFooter = () => (
-  <div className="h-full w-full pb-4">
-    <ChatInput />
-  </div>
-);
+const MainChat = () => {
+  return (
+    <div className="h-full w-full flex flex-col">
+      <ScrollArea className="flex-1 min-h-0">
+        <ChatMessages />
+      </ScrollArea>
+      <div className="pb-4">
+        <ChatInput />
+      </div>
+    </div>
+  );
+};
 
-const COMPONENTS = {
+const TABS = {
+  chat: {
+    Component: MainChat,
+    title: "Chat",
+    initialOpen: true,
+  },
   chatView: {
     Component: ThreadView,
     title: "Thread",
+    hideFromViews: true,
   },
   preview: {
     Component: AgentPreview,
     title: "Preview",
+    hideFromViews: true,
   },
   tools: {
     Component: ThreadSettingsTab,
-    title: "Thread Tools",
+    title: "Chat settings",
+    hideFromViews: true,
   },
 };
 
-function MobileChat() {
+function ActionsButtons() {
+  const { agentId, chat } = useChatContext();
+  const focusChat = useFocusChat();
+  const focusAgent = useEditAgent();
+
+  const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
+  const displayNewChat = displaySettings && chat.messages.length !== 0;
+
+  if (!displayNewChat && !displaySettings) {
+    return null;
+  }
+
   return (
-    <>
-      <div className="flex-1 overflow-y-auto">
-        <ChatMessages />
-      </div>
-      <div className="pb-4 p-2">
-        <ChatInput withoutTools />
-      </div>
-    </>
+    <div className="flex items-center gap-2">
+      {displayNewChat && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                focusChat(agentId, crypto.randomUUID(), {
+                  history: false,
+                })}
+            >
+              <Icon name="edit_square" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            New chat
+          </TooltipContent>
+        </Tooltip>
+      )}
+
+      {displaySettings && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                focusAgent(agentId, crypto.randomUUID(), {
+                  history: false,
+                })}
+            >
+              <Icon name="tune" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Agent Settings
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </div>
   );
 }
 
@@ -92,22 +137,17 @@ function Agent(props: Props) {
     [propThreadId, agentId],
   );
 
-  const isMobile = useIsMobile();
-  const { toggleSidebar } = useSidebar();
-
-  const focusChat = useFocusChat();
-
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
   return (
     <Suspense
+      // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
+      key={chatKey}
       fallback={
         <div className="h-full w-full flex items-center justify-center">
           <Spinner />
         </div>
       }
-      // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
-      key={chatKey}
     >
       <ChatProvider
         agentId={agentId}
@@ -115,61 +155,15 @@ function Agent(props: Props) {
         uiOptions={{ showThreadTools: props.includeThreadTools || false }}
         disableThreadMessages={props.disableThreadMessages}
       >
-        <div className="h-full flex flex-col">
-          <style>{tabStyles}</style>
-
-          <div
-            className={cn(
-              "px-4 flex justify-between items-center bg-slate-50 h-px overflow-hidden transition-all duration-300",
-              isMobile && "h-auto py-2",
-            )}
-          >
-            <div className="flex justify-between gap-2 w-full">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="mr-2 md:invisible"
-              >
-                <Icon name="menu" size={20} />
-              </Button>
-              <Button
-                variant="outline"
-                title="New Chat"
-                className={cn(
-                  !isMobile && "hidden",
-                )}
-                onClick={() =>
-                  focusChat(agentId, crypto.randomUUID(), { history: false })}
-              >
-                New chat
-              </Button>
-            </div>
-            <div className="flex gap-2">
-            </div>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            {isMobile
-              ? (
-                <div className="flex-1 overflow-hidden flex h-full justify-center flex-col m-0 p-0 border-0 shadow-none">
-                  <MobileChat />
-                </div>
-              )
-              : (
-                <DockedPageLayout
-                  main={{
-                    header: agentId !== WELL_KNOWN_AGENT_IDS.teamAgent
-                      ? MainHeader
-                      : undefined,
-                    main: MainContent,
-                    footer: MainFooter,
-                  }}
-                  tabs={COMPONENTS}
-                  key={agentId}
-                />
-              )}
-          </div>
-        </div>
+        <PageLayout
+          tabs={TABS}
+          key={agentId}
+          displayViewsTrigger={false}
+          actionButtons={<ActionsButtons />}
+          breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
+            <AgentHeader agentId={agentId} />
+          )}
+        />
       </ChatProvider>
     </Suspense>
   );

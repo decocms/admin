@@ -1,12 +1,13 @@
 import { type Trigger, useListTriggersByAgentId } from "@deco/sdk";
-import { useChatContext } from "../chat/context.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { TriggerDetails } from "./triggerDetails.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
+import { useChatContext } from "../chat/context.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
 import { TriggerCardList } from "./TriggerCardList.tsx";
+import { TriggerDetails } from "./triggerDetails.tsx";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();
@@ -38,8 +39,8 @@ export function AgentTriggers() {
   );
 
   return (
-    <div className="mx-2 mt-8">
-      <div className="flex items-center gap-4 mb-4">
+    <div className="py-8 flex flex-col gap-4 h-full">
+      <div className="flex items-center gap-4 px-2">
         <div className="relative flex-1">
           <Input
             type="text"
@@ -49,12 +50,14 @@ export function AgentTriggers() {
             className="w-full py-2 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
           />
         </div>
-        <AddTriggerModalButton agentId={agentId} variant="standalone" />
+        <AddTriggerModalButton agentId={agentId} />
       </div>
-      <TriggerCardList
-        triggers={filteredTriggers}
-        onTriggerClick={(trigger) => setSelectedTrigger(trigger)}
-      />
+      <ScrollArea className="flex-1 min-h-0 px-2">
+        <TriggerCardList
+          triggers={filteredTriggers}
+          onTriggerClick={(trigger) => setSelectedTrigger(trigger)}
+        />
+      </ScrollArea>
     </div>
   );
 }
@@ -84,7 +87,7 @@ export function ListTriggersEmpty() {
         Triggers allow you to trigger your agent on a schedule or from external
         systems.
       </p>
-      <AddTriggerModalButton agentId={agentId} variant="standalone" />
+      <AddTriggerModalButton agentId={agentId} />
     </div>
   );
 }

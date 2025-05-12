@@ -1,25 +1,11 @@
 import {
-  PropsWithChildren,
-  Suspense,
-  useDeferredValue,
-  useMemo,
-  useState,
-} from "react";
-import {
   type Member,
   useAddTeamMember,
   useRemoveTeamMember,
   useTeam,
   useTeamMembers,
 } from "@deco/sdk";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@deco/ui/components/table.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
@@ -28,18 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -49,13 +29,33 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@deco/ui/components/table.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-
-import { Avatar } from "../common/Avatar.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  PropsWithChildren,
+  Suspense,
+  useDeferredValue,
+  useMemo,
+  useState,
+} from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { timeAgo } from "../../utils/timeAgo.ts";
+import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { cn } from "../../../../../packages/ui/src/lib/utils.ts";
 
 // Form validation schema
 const addMemberSchema = z.object({
@@ -453,11 +453,11 @@ function MembersViewContent() {
 
 export default function MembersSettings() {
   return (
-    <div className="h-full text-slate-700">
+    <ScrollArea className="h-full text-slate-700">
       <SettingsMobileHeader currentPage="members" />
       <Suspense fallback={<MembersViewLoading />}>
         <MembersViewContent />
       </Suspense>
-    </div>
+    </ScrollArea>
   );
 }

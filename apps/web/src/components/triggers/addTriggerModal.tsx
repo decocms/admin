@@ -84,12 +84,9 @@ function AgentSelect({
   );
 }
 
-export function AddTriggerModal(
-  { agentId, variant = "layout" }: {
-    agentId?: string;
-    variant?: "layout" | "standalone";
-  },
-) {
+export function AddTriggerModal({ agentId }: {
+  agentId?: string;
+}) {
   const { data: agents = [] } = useAgents();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
@@ -99,7 +96,7 @@ export function AddTriggerModal(
 
   const hasAgents = agents.length > 0;
 
-  const standalone = (
+  return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
@@ -187,23 +184,5 @@ export function AddTriggerModal(
           )}
       </DialogContent>
     </Dialog>
-  );
-
-  if (variant === "standalone") {
-    return standalone;
-  }
-
-  return (
-    <>
-      <HeaderSlot position="start">
-        <div className="flex items-center gap-3">
-          <Icon name="conversion_path" />
-          Triggers
-        </div>
-      </HeaderSlot>
-      <HeaderSlot position="end">
-        {standalone}
-      </HeaderSlot>
-    </>
   );
 }

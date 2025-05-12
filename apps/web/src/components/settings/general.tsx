@@ -21,7 +21,9 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -30,7 +32,6 @@ import { z } from "zod";
 import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -174,179 +175,182 @@ export function GeneralSettings() {
   const isReadOnly = isPersonalTeam;
 
   return (
-    <div className="container h-full max-w-7xl text-slate-700">
-      <SettingsMobileHeader currentPage="general" />
-      <div className="h-full overflow-auto py-20 md:px-[120px]">
-        <div className="flex flex-col gap-6 w-full">
-          <div className="w-full hidden md:block">
-            <h2 className="text-2xl">General</h2>
-          </div>
-          <div className="max-w-[500px] mx-auto space-y-8">
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mb-4">
-                <Avatar
-                  fallback={currentTeamName}
-                  url={avatarUrl}
-                  className="w-[120px] h-[120px]"
-                />
-              </div>
+    <ScrollArea className="h-full text-slate-700">
+      <div className="container h-full max-w-7xl text-slate-700">
+        <SettingsMobileHeader currentPage="general" />
+        <div className="h-full overflow-auto py-20 md:px-[120px]">
+          <div className="flex flex-col gap-6 w-full">
+            <div className="w-full hidden md:block">
+              <h2 className="text-2xl">General</h2>
             </div>
-            <Form {...form}>
-              <form
-                className="space-y-8"
-                onSubmit={form.handleSubmit(onSubmit)}
-              >
-                <FormField
-                  control={form.control}
-                  name="teamName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="The name of your company or organization"
-                          readOnly={isReadOnly}
-                          disabled={isReadOnly}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        The name of your company or organization
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="teamSlug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team Slug</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="your-team"
-                          readOnly={isReadOnly}
-                          disabled={isReadOnly}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Changing the team slug will redirect you to the new
-                        address
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="teamSystemPrompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team System Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="This prompt is added at the start of all agent messages for your team. Use it to set tone, context, or rules."
-                          rows={6}
-                          disabled
-                          readOnly={isReadOnly}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This prompt is added at the start of all agent messages
-                        for your team. Use it to set tone, context, or rules.
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-                <Separator />
-                <FormField
-                  control={form.control}
-                  name="personalSystemPrompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Personal System Prompt</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="This prompt is added at the end of agent messages just for you. Use it to personalize style or add your own context."
-                          rows={6}
-                          disabled
-                          readOnly={isReadOnly}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This prompt is added at the end of agent messages just
-                        for you. Use it to personalize style or add your own
-                        context.
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-                <div className="p-6 bg-slate-50 rounded-lg">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="font-semibold">Delete Team</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Permanently remove this team, all its connected
-                      integrations and uploaded data
-                    </p>
-                    <DeleteTeamDialog
-                      isOpen={isDeleteDialogOpen}
-                      onOpenChange={(open) => {
-                        setIsDeleteDialogOpen(open);
-                        if (!open) setDeleteError(null);
-                      }}
-                      isReadOnly={isReadOnly}
-                      isPending={deleteTeam.isPending}
-                      error={deleteError}
-                      onDelete={async () => {
-                        setDeleteError(null);
-                        if (!currentTeamId) return;
-                        try {
-                          await deleteTeam.mutateAsync(
-                            typeof currentTeamId === "number"
-                              ? currentTeamId
-                              : Number(currentTeamId) || 0,
-                          );
-                          // Do not close the dialog automatically
-                          globalThis.location.href = "/";
-                        } catch (err) {
-                          setDeleteError(
-                            err instanceof Error
-                              ? err.message
-                              : "Failed to delete team.",
-                          );
-                        }
-                      }}
-                    />
+            <div className="max-w-[500px] mx-auto space-y-8">
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mb-4">
+                  <Avatar
+                    fallback={currentTeamName}
+                    url={avatarUrl}
+                    className="w-[120px] h-[120px]"
+                  />
+                </div>
+              </div>
+              <Form {...form}>
+                <form
+                  className="space-y-8"
+                  onSubmit={form.handleSubmit(onSubmit)}
+                >
+                  <FormField
+                    control={form.control}
+                    name="teamName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Team Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="The name of your company or organization"
+                            readOnly={isReadOnly}
+                            disabled={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The name of your company or organization
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="teamSlug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Team Slug</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="your-team"
+                            readOnly={isReadOnly}
+                            disabled={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Changing the team slug will redirect you to the new
+                          address
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="teamSystemPrompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Team System Prompt</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="This prompt is added at the start of all agent messages for your team. Use it to set tone, context, or rules."
+                            rows={6}
+                            disabled
+                            readOnly={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This prompt is added at the start of all agent
+                          messages for your team. Use it to set tone, context,
+                          or rules.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                  <Separator />
+                  <FormField
+                    control={form.control}
+                    name="personalSystemPrompt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Personal System Prompt</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="This prompt is added at the end of agent messages just for you. Use it to personalize style or add your own context."
+                            rows={6}
+                            disabled
+                            readOnly={isReadOnly}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This prompt is added at the end of agent messages just
+                          for you. Use it to personalize style or add your own
+                          context.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="p-6 bg-slate-50 rounded-lg">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="font-semibold">Delete Team</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Permanently remove this team, all its connected
+                        integrations and uploaded data
+                      </p>
+                      <DeleteTeamDialog
+                        isOpen={isDeleteDialogOpen}
+                        onOpenChange={(open) => {
+                          setIsDeleteDialogOpen(open);
+                          if (!open) setDeleteError(null);
+                        }}
+                        isReadOnly={isReadOnly}
+                        isPending={deleteTeam.isPending}
+                        error={deleteError}
+                        onDelete={async () => {
+                          setDeleteError(null);
+                          if (!currentTeamId) return;
+                          try {
+                            await deleteTeam.mutateAsync(
+                              typeof currentTeamId === "number"
+                                ? currentTeamId
+                                : Number(currentTeamId) || 0,
+                            );
+                            // Do not close the dialog automatically
+                            globalThis.location.href = "/";
+                          } catch (err) {
+                            setDeleteError(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to delete team.",
+                            );
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => form.reset()}
-                    disabled={isReadOnly || !form.formState.isDirty ||
-                      form.formState.isSubmitting}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="default"
-                    disabled={isReadOnly || !form.formState.isDirty ||
-                      form.formState.isSubmitting || updateTeam.isPending}
-                  >
-                    {updateTeam.isPending ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                  <div className="flex justify-end gap-2 pt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => form.reset()}
+                      disabled={isReadOnly || !form.formState.isDirty ||
+                        form.formState.isSubmitting}
+                    >
+                      Discard
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="default"
+                      disabled={isReadOnly || !form.formState.isDirty ||
+                        form.formState.isSubmitting || updateTeam.isPending}
+                    >
+                      {updateTeam.isPending ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 }
 

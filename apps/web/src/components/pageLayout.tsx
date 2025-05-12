@@ -3,13 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  ComponentProps,
-  ComponentType,
-  createContext,
-  ReactNode,
-  use,
-} from "react";
+import { ComponentProps, ReactNode } from "react";
 import Docked, { Tab, togglePanel, useDock } from "./dock/index.tsx";
 
 export interface PageProps {
@@ -71,43 +65,12 @@ export function PageLayout({ header, main, footer }: PageProps) {
   );
 }
 
-interface MainViewProps {
-  header?: ComponentType;
-  main: ComponentType;
-  footer?: ComponentType;
-}
-
 export interface DockedPageProps {
-  main: MainViewProps;
   tabs: Record<string, Tab>;
 }
 
-const Context = createContext<MainViewProps | null>(null);
-
-function MainView() {
-  const mainView = use(Context);
-
-  if (!mainView) {
-    return null;
-  }
-
-  const { header: Header, main: Main, footer: Footer } = mainView;
-
-  return (
-    <PageLayout
-      header={Header && <Header />}
-      main={<Main />}
-      footer={Footer && <Footer />}
-    />
-  );
-}
-
-export function DockedPageLayout({ main, tabs }: DockedPageProps) {
-  return (
-    <Context.Provider value={main}>
-      <Docked mainView={MainView} components={tabs} />
-    </Context.Provider>
-  );
+export function DockedPageLayout({ tabs }: DockedPageProps) {
+  return <Docked tabs={tabs} />;
 }
 
 export const TabScrollArea = (
@@ -117,7 +80,7 @@ export const TabScrollArea = (
 ) => (
   <ScrollArea
     className={cn(
-      "h-full w-full bg-gradient-to-b from-white to-slate-50 p-6 text-slate-700",
+      "h-full w-full p-6 text-slate-700",
       className,
     )}
     {...props}
@@ -133,14 +96,21 @@ export function DockedToggleButton(
     children: ReactNode;
   } & ComponentProps<typeof Button>,
 ) {
-  const { openPanels, availablePanels } = useDock();
+  const { openPanels, tabs } = useDock();
 
   return (
     <Button
       {...btnProps}
       type="button"
-      disabled={disabled || !availablePanels.has(id)}
-      onClick={() => togglePanel({ id, component: id, title })}
+      disabled={disabled || !tabs[id]}
+      onClick={() =>
+        togglePanel({
+          id,
+          component: id,
+          title,
+          initialWidth: 420,
+          position: { direction: "right" },
+        })}
       className={cn(className, openPanels.has(id) ? "bg-accent" : "")}
     >
       {children}

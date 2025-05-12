@@ -1,45 +1,29 @@
 import { SDKProvider, Workspace } from "@deco/sdk";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
-import { PropsWithChildren, ReactNode } from "react";
+import { lazy, PropsWithChildren, ReactNode, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { Outlet, useParams } from "react-router";
-import { lazy, Suspense } from "react";
 import { useUser } from "../hooks/data/useUser.ts";
+import Docked from "./dock/index.tsx";
+import { DockedPageProps } from "./pageLayout.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
-import { SettingsSidebar } from "./sidebar/settings.tsx";
+
 const RegisterActivity = lazy(() => import("./common/RegisterActivity.tsx"));
 
-export const WorkspaceSettingsLayout = () => (
-  <Layout sidebar={<SettingsSidebar />} />
-);
-
-export function HeaderSlot(
-  { position, children }: PropsWithChildren<{ position: "start" | "end" }>,
-) {
+export function HeaderSlot({
+  position,
+  children,
+}: PropsWithChildren<{ position: "start" | "end" }>) {
   const targetElement = document.getElementById(`chat-header-${position}-slot`);
 
   if (!targetElement) {
     return null;
   }
 
-  return createPortal(
-    children,
-    targetElement,
-  );
+  return createPortal(children, targetElement);
 }
 
-export function Header() {
-  return (
-    <div className="bg-slate-50 flex items-center justify-between">
-      <div id="chat-header-start-slot" className="pt-1 pb-3 empty:p-0" />
-      <div id="chat-header-end-slot" className="pt-1 pb-3 empty:p-0" />
-    </div>
-  );
-}
-
-export function Layout(
-  { sidebar, header }: { sidebar?: ReactNode; header?: ReactNode },
-) {
+export function RouteLayout() {
   const { teamSlug } = useParams();
   const user = useUser();
 
@@ -56,17 +40,51 @@ export function Layout(
       } as Record<string, string>}
     >
       <SDKProvider workspace={rootContext}>
-        {sidebar ?? <AppSidebar />}
+        <AppSidebar />
         <SidebarInset className="h-full flex-col p-2 bg-slate-50">
-          {header ?? <Header />}
-          <div className="h-full bg-background rounded-xl shadow-md overflow-hidden">
-            <Outlet />
-          </div>
+          <Outlet />
         </SidebarInset>
         <Suspense fallback={null}>
           <RegisterActivity teamSlug={teamSlug} />
         </Suspense>
       </SDKProvider>
     </SidebarProvider>
+  );
+}
+
+export interface PageLayoutProps {
+  breadcrumb?: ReactNode;
+  actionButtons?: ReactNode;
+  tabs: DockedPageProps["tabs"];
+  displayViewsTrigger?: boolean;
+}
+
+export function PageLayout({
+  breadcrumb,
+  actionButtons,
+  tabs,
+  displayViewsTrigger = true,
+}: PageLayoutProps) {
+  return (
+    <Docked.Provider tabs={tabs}>
+      <div className="bg-slate-50 flex items-center justify-between">
+        <div
+          id="chat-header-start-slot"
+          className="px-1 pt-1 pb-3 min-h-14 empty:min-h-0 empty:p-0 flex items-center gap-2"
+        >
+          {breadcrumb}
+        </div>
+        <div
+          id="chat-header-end-slot"
+          className="px-1 pt-1 pb-3 min-h-14 empty:min-h-0 empty:p-0 flex items-center gap-2"
+        >
+          {actionButtons}
+          {displayViewsTrigger && <Docked.ViewsTrigger />}
+        </div>
+      </div>
+      <div className="h-full">
+        <Docked tabs={tabs} />
+      </div>
+    </Docked.Provider>
   );
 }

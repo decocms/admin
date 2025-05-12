@@ -1,10 +1,11 @@
-import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
 import type { Options } from "@deco/sdk";
+import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -14,12 +15,14 @@ import {
 } from "@deco/ui/components/pagination.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState } from "react";
+import { useParams } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
-import { useParams } from "react-router";
-import { SettingsMobileHeader } from "../settings/SettingsMobileHeader.tsx";
+import { Tab } from "../dock/index.tsx";
+import { PageLayout } from "../layout.tsx";
 import { AuditFilters } from "./AuditFilters.tsx";
 import { AuditTable } from "./AuditTable.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -149,7 +152,7 @@ export function AuditListContent(
               threads={threads}
               sort={sort}
               onSortChange={handleSortChange}
-              onRowClick={(threadId) => navigate(`/settings/audit/${threadId}`)}
+              onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
             />
             {/* Pagination */}
             <div className="flex justify-center mt-4">
@@ -199,26 +202,43 @@ export function AuditListContent(
 
 function AuditList() {
   return (
-    <div className="h-full text-slate-700">
-      <SettingsMobileHeader currentPage="chat logs" />
-      <div className="flex flex-col gap-6 w-full px-6 py-10 h-full">
-        <div className="text-slate-700 text-2xl hidden md:block">
-          Chat logs
-        </div>
-        <ErrorBoundary fallback={<AuditListErrorFallback />}>
-          <Suspense
-            fallback={
-              <div className="flex justify-center items-center h-64">
-                <Spinner />
-              </div>
-            }
-          >
-            <AuditListContent />
-          </Suspense>
-        </ErrorBoundary>
-      </div>
-    </div>
+    <ScrollArea className="h-full text-slate-700 px-6 py-6">
+      <ErrorBoundary fallback={<AuditListErrorFallback />}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center items-center h-64">
+              <Spinner />
+            </div>
+          }
+        >
+          <AuditListContent />
+        </Suspense>
+      </ErrorBoundary>
+    </ScrollArea>
   );
 }
 
-export default AuditList;
+const TABS: Record<string, Tab> = {
+  main: {
+    title: "Chat Logs",
+    Component: AuditList,
+    initialOpen: true,
+  },
+};
+
+function Page() {
+  return (
+    <PageLayout
+      displayViewsTrigger={false}
+      tabs={TABS}
+      breadcrumb={
+        <div className="flex items-center gap-3">
+          <Icon name="manage_search" />
+          Chat logs
+        </div>
+      }
+    />
+  );
+}
+
+export default Page;

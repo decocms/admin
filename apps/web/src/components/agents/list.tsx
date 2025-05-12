@@ -33,16 +33,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Suspense, useReducer, useState } from "react";
+import {
+  createContext,
+  Suspense,
+  useContext,
+  useReducer,
+  useState,
+} from "react";
 import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
-import { PageLayout } from "../pageLayout.tsx";
+import { PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
-import { HeaderSlot } from "../layout.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -360,19 +365,89 @@ function listReducer(state: ListState, action: ListAction): ListState {
   }
 }
 
-export default function List() {
+function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
+  const { creating, handleCreate } = useContext(Context)!;
   const { filter } = state;
-  const focusEditAgent = useEditAgent();
-  const [creating, setCreating] = useState(false);
-  const createAgent = useCreateAgent();
-  const updateThreadMessages = useUpdateThreadMessages();
   const { data: agents } = useAgents();
 
   // Filter agents based on the filter string
   const filteredAgents = agents?.filter((agent) =>
     agent.name.toLowerCase().includes(filter.toLowerCase())
   );
+
+  return (
+    <div className="flex flex-col h-full gap-4 p-4">
+      <div className="flex items-center justify-end gap-2">
+        <Input
+          className="rounded-xl w-full max-w-72"
+          placeholder="Filter agents..."
+          value={filter}
+          onChange={(e) =>
+            dispatch({ type: "SET_FILTER", payload: e.target.value })}
+        />
+      </div>
+      {!agents
+        ? (
+          <div className="flex h-48 items-center justify-center">
+            <Spinner size="lg" />
+          </div>
+        )
+        : agents.length > 0
+        ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
+              {filteredAgents?.map((agent) => (
+                <AgentCard key={agent.id} agent={agent} />
+              ))}
+            </div>
+            <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
+              <Icon
+                name="search_off"
+                className="mb-2 text-4xl text-muted-foreground"
+              />
+              <p className="text-muted-foreground">
+                No agents match your filter. Try adjusting your search.
+              </p>
+            </div>
+          </>
+        )
+        : (
+          <EmptyState
+            icon="groups"
+            title="No agents yet"
+            description="Create an agent to automate tasks and improve your workflow."
+            buttonProps={{
+              disabled: creating,
+              children: creating ? "Creating..." : "Create Agent",
+              onClick: handleCreate,
+            }}
+          />
+        )}
+    </div>
+  );
+}
+
+const TABS = {
+  list: {
+    Component: List,
+    title: "Agents",
+    initialOpen: true,
+  },
+};
+
+const Context = createContext<
+  {
+    creating: boolean;
+    handleCreate: () => void;
+  } | null
+>(null);
+
+export default function Page() {
+  const focusEditAgent = useEditAgent();
+  const [creating, setCreating] = useState(false);
+  const createAgent = useCreateAgent();
+  const updateThreadMessages = useUpdateThreadMessages();
 
   // Function to handle creating a new Agent
   const handleCreate = async () => {
@@ -399,90 +474,39 @@ export default function List() {
   };
 
   return (
-    <>
-      <HeaderSlot position="start">
-        <div className="flex items-center gap-3">
-          <Icon name="groups" />
-          Agents
-        </div>
-      </HeaderSlot>
-      <HeaderSlot position="end">
-        <Button
-          onClick={handleCreate}
-          disabled={creating}
-          variant="special"
-          className="gap-2"
-        >
-          {creating
-            ? (
-              <>
-                <Spinner size="xs" />
-                Creating...
-              </>
-            )
-            : (
-              <>
-                <Icon name="add" />
-                Create Agent
-              </>
-            )}
-        </Button>
-      </HeaderSlot>
-
+    <Context.Provider value={{ creating, handleCreate }}>
       <PageLayout
-        header={
-          <div className="justify-self-start py-4">
-            <Input
-              placeholder="Filter agents..."
-              value={filter}
-              onChange={(e) =>
-                dispatch({ type: "SET_FILTER", payload: e.target.value })}
-              className="w-full md:w-64 border-slate-200 placeholder:text-slate-400 text-slate-500 focus-visible:ring-slate-200"
-            />
+        displayViewsTrigger={false}
+        tabs={TABS}
+        breadcrumb={
+          <div className="flex items-center gap-3">
+            <Icon name="groups" />
+            Agents
           </div>
         }
-        main={
-          <>
-            {!agents
-              ? (
-                <div className="flex h-48 items-center justify-center">
-                  <Spinner size="lg" />
-                </div>
-              )
-              : agents.length > 0
+        actionButtons={
+          <Button
+            onClick={handleCreate}
+            disabled={creating}
+            variant="special"
+            className="gap-2"
+          >
+            {creating
               ? (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
-                    {filteredAgents?.map((agent) => (
-                      <AgentCard key={agent.id} agent={agent} />
-                    ))}
-                  </div>
-                  <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-                    <Icon
-                      name="search_off"
-                      className="mb-2 text-4xl text-muted-foreground"
-                    />
-                    <p className="text-muted-foreground">
-                      No agents match your filter. Try adjusting your search.
-                    </p>
-                  </div>
+                  <Spinner size="xs" />
+                  Creating...
                 </>
               )
               : (
-                <EmptyState
-                  icon="groups"
-                  title="No agents yet"
-                  description="Create an agent to automate tasks and improve your workflow."
-                  buttonProps={{
-                    disabled: creating,
-                    children: creating ? "Creating..." : "Create Agent",
-                    onClick: handleCreate,
-                  }}
-                />
+                <>
+                  <Icon name="add" />
+                  Create Agent
+                </>
               )}
-          </>
+          </Button>
         }
       />
-    </>
+    </Context.Provider>
   );
 }

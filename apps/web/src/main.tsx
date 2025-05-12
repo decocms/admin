@@ -15,12 +15,11 @@ import {
 import { About } from "./components/about/index.tsx";
 import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
-import { Layout, WorkspaceSettingsLayout } from "./components/layout.tsx";
+import { RouteLayout } from "./components/layout.tsx";
 import Login from "./components/login/index.tsx";
+
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
-import { ListTriggers } from "./components/triggers/listTriggers.tsx";
-import { TriggerDetails } from "./components/triggers/triggerDetails.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -90,20 +89,16 @@ const MagicLink = lazy(() =>
   wrapWithUILoadingFallback(import("./components/login/magicLink.tsx"))
 );
 
-const GeneralSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/general.tsx"))
+const Settings = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/settings/page.tsx"))
 );
 
-const MembersSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/members.tsx"))
+const ListTriggersLayout = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/triggers/listTriggers.tsx"))
 );
 
-const BillingSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/billing.tsx"))
-);
-
-const UsageSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/settings/usage.tsx"))
+const TriggerDetails = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/triggers/triggerDetails.tsx"))
 );
 
 function NotFound() {
@@ -171,16 +166,7 @@ function Router() {
 
       <Route path="about" element={<About />} />
 
-      <Route path="/:teamSlug?/settings" element={<WorkspaceSettingsLayout />}>
-        <Route index element={<GeneralSettings />} />
-        <Route path="members" element={<MembersSettings />} />
-        <Route path="billing" element={<BillingSettings />} />
-        <Route path="usage" element={<UsageSettings />} />
-        <Route path="audit" element={<AuditList />} />
-        <Route path="audit/:id" element={<AuditDetail />} />
-      </Route>
-
-      <Route path="/:teamSlug?" element={<Layout />}>
+      <Route path="/:teamSlug?" element={<RouteLayout />}>
         <Route
           index
           element={
@@ -223,11 +209,23 @@ function Router() {
         />
         <Route
           path="triggers"
-          element={<ListTriggers />}
+          element={<ListTriggersLayout />}
         />
         <Route
           path="trigger/:agentId/:triggerId"
           element={<TriggerDetails />}
+        />
+        <Route
+          path="settings"
+          element={<Settings />}
+        />
+        <Route
+          path="audits"
+          element={<AuditList />}
+        />
+        <Route
+          path="audit/:id"
+          element={<AuditDetail />}
         />
       </Route>
 

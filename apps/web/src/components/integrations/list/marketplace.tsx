@@ -15,10 +15,11 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { type ChangeEvent, useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
-import { IntegrationPage } from "./breadcrumb.tsx";
+import { Breadcrumb, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 
 // Marketplace Integration type that matches the structure from the API
@@ -170,7 +171,7 @@ function AvailableIntegrationCard({
   );
 }
 
-export default function Marketplace() {
+function MarketplaceTab() {
   const [registryFilter, setRegistryFilter] = useState("");
 
   // Use the marketplace integrations hook instead of static registry
@@ -190,19 +191,16 @@ export default function Marketplace() {
   }, [marketplace, registryFilter]);
 
   return (
-    <IntegrationPage>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4">
-          <Input
-            placeholder="Filter integrations..."
-            className="max-w-[373px] rounded-[46px]"
-            value={registryFilter}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setRegistryFilter(e.target.value)}
-          />
-        </div>
+    <div className="flex flex-col gap-4 h-full py-4">
+      <div className="px-4">
+        <Breadcrumb
+          value={registryFilter}
+          setValue={(value) => setRegistryFilter(value)}
+        />
+      </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mt-4">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 px-4">
           {filteredRegistryIntegrations.map((
             integration: MarketplaceIntegration,
           ) => (
@@ -212,7 +210,21 @@ export default function Marketplace() {
             />
           ))}
         </div>
-      </div>
-    </IntegrationPage>
+      </ScrollArea>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <IntegrationPageLayout
+      tabs={{
+        marketplace: {
+          title: "Marketplace",
+          Component: MarketplaceTab,
+          initialOpen: true,
+        },
+      }}
+    />
   );
 }

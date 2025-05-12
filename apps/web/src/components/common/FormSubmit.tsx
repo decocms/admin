@@ -20,7 +20,7 @@ export function FormSubmitControls({
     <div
       className={cn(
         "fixed bottom-0 left-1/2 -translate-x-1/2 bg-background",
-        "shadow border boder-input rounded-lg p-2",
+        "shadow border boder-input rounded-xl p-2",
         "flex items-center justify-center gap-2",
         "transition-transform",
         numberOfChanges > 0 ? "-translate-y-4" : "translate-y-full",

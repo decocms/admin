@@ -1,16 +1,6 @@
-import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@deco/ui/components/tabs.tsx";
-import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAgent } from "../../../../../packages/sdk/src/index.ts";
@@ -18,28 +8,12 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { DockedPageLayout } from "../pageLayout.tsx";
+import { PageLayout } from "../layout.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
 import { AgentHeader, Container } from "./DetailHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-
-// Custom CSS to override shadow styles
-const tabStyles = `
-.custom-tabs [data-state] {
-  box-shadow: none !important;
-  outline: none !important;
-}
-.custom-tabs [role="tablist"] {
-  box-shadow: none !important;
-}
-.custom-tabs [role="tab"]:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-`;
 
 interface Props {
   agentId?: string;
@@ -80,49 +54,36 @@ const Chat = () => {
   );
 };
 
-const MAIN = {
-  header: AgentHeader,
-  main: () => (
-    <div className="h-full w-full max-w-[640px] mx-auto">
-      <AgentSettings formId="agent-settings-form" />
-    </div>
-  ),
-};
-
 const TABS = {
   chatView: {
     Component: ThreadView,
     title: "Thread",
-  },
-  chat: {
-    Component: Chat,
-    initialOpen: true,
-    title: "Test agent",
+    hideFromViews: true,
   },
   preview: {
     Component: AgentPreview,
     title: "Preview",
+    hideFromViews: true,
   },
   triggers: {
     Component: AgentTriggers,
-    title: "Triggers",
+    title: "Agent Triggers",
+    initialOpen: true,
+  },
+
+  chat: {
+    Component: Chat,
+    title: "Chat preview",
+    initialOpen: true,
+  },
+  setup: {
+    Component: AgentSettings,
+    title: "Setup",
+    initialOpen: true,
   },
 };
 
-function MobileChat() {
-  return (
-    <>
-      <div className="flex-1 overflow-y-auto">
-        <ChatMessages />
-      </div>
-      <div className="pb-2 px-2">
-        <ChatInput />
-      </div>
-    </>
-  );
-}
-
-function Agent(props: Props) {
+export default function Page(props: Props) {
   const params = useParams();
   const agentId = useMemo(
     () => props.agentId || params.id,
@@ -138,19 +99,19 @@ function Agent(props: Props) {
     [props.threadId, params.threadId, agentId],
   );
 
-  const isMobile = useIsMobile();
-  const { toggleSidebar } = useSidebar();
-
-  const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
+  const chatKey = useMemo(
+    () => `${agentId}-${threadId}`,
+    [agentId, threadId],
+  );
 
   return (
     <Suspense
+      key={chatKey}
       fallback={
         <div className="h-full w-full flex items-center justify-center">
           <Spinner />
         </div>
       }
-      key={chatKey}
     >
       <ChatProvider
         agentId={agentId}
@@ -159,87 +120,21 @@ function Agent(props: Props) {
           showThreadTools: false,
         }}
       >
-        <div className="h-full flex flex-col">
-          <style>{tabStyles}</style>
-
-          <div
-            className={cn(
-              "px-4 flex justify-between items-center bg-slate-50 h-px overflow-hidden transition-all duration-300",
-              isMobile && "h-auto py-2",
-            )}
-          >
-            <div className="flex justify-between gap-2 w-full">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="mr-2 md:invisible"
-              >
-                <Icon name="menu" size={20} />
-              </Button>
+        <PageLayout
+          tabs={TABS}
+          key={agentId}
+          breadcrumb={
+            <div className="flex items-center gap-2">
+              <AgentHeader agentId={agentId} />
+              <span className="text-sm text-slate-500">/</span>
+              <Icon name="tune" size={16} className="text-slate-500" />
+              <span className="text-sm text-slate-500">
+                Editing
+              </span>
             </div>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            {isMobile
-              ? (
-                <Tabs
-                  defaultValue="settings"
-                  className="w-full h-full flex flex-col custom-tabs"
-                >
-                  <TabsList className="w-full border-b bg-slate-50 p-0 shadow-none h-12 border-none relative">
-                    <TabsTrigger
-                      value="settings"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
-                    >
-                      Edit Agent
-                    </TabsTrigger>
-                    <div className="h-full w-[1px] bg-slate-200" />
-                    <TabsTrigger
-                      value="chat"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
-                    >
-                      Test Agent
-                    </TabsTrigger>
-                    <div className="h-full w-[1px] bg-slate-200" />
-                    <TabsTrigger
-                      value="triggers"
-                      className="flex-1 rounded-none py-2 px-0 data-[state=active]:bg-white focus:shadow-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 border-r-0"
-                    >
-                      Triggers
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent
-                    value="chat"
-                    className="flex-1 overflow-hidden flex flex-col m-0 p-0 border-0 shadow-none"
-                  >
-                    <MobileChat />
-                  </TabsContent>
-                  <TabsContent
-                    value="settings"
-                    className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
-                  >
-                    <AgentSettings formId="agent-settings-form" />
-                  </TabsContent>
-                  <TabsContent
-                    value="triggers"
-                    className="flex-1 overflow-auto m-0 p-0 border-0 shadow-none px-4"
-                  >
-                    <AgentTriggers />
-                  </TabsContent>
-                </Tabs>
-              )
-              : (
-                <DockedPageLayout
-                  main={MAIN}
-                  tabs={TABS}
-                  key={agentId}
-                />
-              )}
-          </div>
-        </div>
+          }
+        />
       </ChatProvider>
     </Suspense>
   );
 }
-
-export default Agent;

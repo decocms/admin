@@ -1,12 +1,21 @@
 import { type Trigger, useListTriggersByAgentId } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { WebhookDetails } from "./webhookDetails.tsx";
-import { CronDetails } from "./cronDetails.tsx";
-import { useParams } from "react-router";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { useNavigate, useParams } from "react-router";
 import { AuditListContent } from "../audit/list.tsx";
+import { PageLayout } from "../layout.tsx";
+import { CronDetails } from "./cronDetails.tsx";
+import { WebhookDetails } from "./webhookDetails.tsx";
+
+const useTrigger = (agentId: string, triggerId: string) => {
+  const { data: triggers, isLoading } = useListTriggersByAgentId(agentId);
+  const trigger = triggers?.actions?.find((t) => t.id === triggerId);
+
+  return { trigger, isLoading };
+};
 
 export function TriggerDetails(
   { triggerId: _triggerId, onBack, agentId: _agentId }: {
@@ -23,60 +32,102 @@ export function TriggerDetails(
     return <div>No agent or trigger ID</div>;
   }
 
-  const { data: triggers, isLoading } = useListTriggersByAgentId(agentId);
-  const trigger = triggers?.actions?.find((t) => t.id === triggerId);
+  const { trigger, isLoading } = useTrigger(agentId, triggerId);
 
   if (!trigger || isLoading) {
     return <TriggerDetailsSkeleton />;
   }
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      globalThis.history.back();
-    }
-  };
-
   return (
-    <div className="mx-2 space-y-6 max-w-full py-8">
-      <Button
-        variant="ghost"
-        className="flex items-center gap-1 text-sm mb-2"
-        onClick={handleBack}
-      >
-        <Icon name="arrow_back" className="h-4 w-4" />
-        Back to triggers
-      </Button>
-
-      <div className="flex items-center gap-2">
-        <TriggerIcon type={trigger.type} />
-        <h2 className="text-xl font-semibold">{trigger.title}</h2>
-        <Badge variant="outline" className="ml-2">
-          {trigger.type}
-        </Badge>
-      </div>
-
-      {trigger.description && (
-        <div>
-          <h4 className="text-sm font-medium mb-1">Description</h4>
-          <p className="text-sm text-muted-foreground">
-            {trigger.description}
-          </p>
-        </div>
+    <div className="flex flex-col gap-4 max-w-full py-8 h-full">
+      {onBack && (
+        <Button
+          variant="ghost"
+          className="flex items-center gap-1 text-sm justify-start w-min px-4"
+          onClick={onBack}
+        >
+          <Icon name="arrow_back" className="h-4 w-4" />
+          Back to triggers
+        </Button>
       )}
 
-      {trigger.type === "webhook" && <WebhookDetails trigger={trigger} />}
-      {trigger.type === "cron" && <CronDetails trigger={trigger} />}
+      <ScrollArea className="min-h-0">
+        <div className="flex flex-col gap-4 px-4">
+          <div className="flex items-center gap-2">
+            <TriggerIcon type={trigger.type} />
+            <h2 className="text-xl font-semibold">{trigger.title}</h2>
+            <Badge variant="outline" className="ml-2">
+              {trigger.type}
+            </Badge>
+          </div>
 
-      <div className="mt-10">
-        <h3 className="text-lg font-semibold mb-2">Logs</h3>
-        <AuditListContent
-          showFilters={false}
-          options={{ resourceId: trigger.id, agentId }}
-        />
-      </div>
+          {trigger.description && (
+            <div className="px-2">
+              <h4 className="text-sm font-medium mb-1">Description</h4>
+              <p className="text-sm text-muted-foreground">
+                {trigger.description}
+              </p>
+            </div>
+          )}
+
+          {trigger.type === "webhook" && <WebhookDetails trigger={trigger} />}
+          {trigger.type === "cron" && <CronDetails trigger={trigger} />}
+
+          <div className="mt-10">
+            <h3 className="text-lg font-semibold mb-2">Logs</h3>
+            <AuditListContent
+              showFilters={false}
+              options={{ resourceId: trigger.id, agentId }}
+            />
+          </div>
+        </div>
+      </ScrollArea>
     </div>
+  );
+}
+
+function TriggerDetailsBreadcrumb() {
+  const navigate = useNavigate();
+  const params = useParams();
+  const agentId = params.agentId;
+  const triggerId = params.triggerId;
+
+  if (!agentId || !triggerId) {
+    return null;
+  }
+
+  const { trigger } = useTrigger(agentId, triggerId);
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(-1)}
+      >
+        <Icon name="arrow_back" size={16} />
+      </Button>
+      <Icon name="conversion_path" />
+      <span>Triggers</span>
+      <span className="text-sm text-slate-500">/</span>
+      <span className="text-sm text-slate-500">{trigger?.title}</span>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <PageLayout
+      displayViewsTrigger={false}
+      breadcrumb={<TriggerDetailsBreadcrumb />}
+      tabs={{
+        main: {
+          Component: TriggerDetails,
+          title: "Trigger Details",
+          initialOpen: true,
+        },
+      }}
+    />
   );
 }
 

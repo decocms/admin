@@ -21,13 +21,13 @@
     --dv-drag-over-background-color: var(--color-accent);
     --dv-drag-over-border-color: var(--color-border);
     --dv-tabs-container-scrollbar-color: var(--color-muted);
-    --dv-group-view-background-color: var(--color-background);
+    --dv-group-view-background-color: var(--color-slate-50);
     --dv-tabs-and-actions-container-background-color: var(--color-background);
-    --dv-activegroup-visiblepanel-tab-background-color: var(--color-background);
-    --dv-activegroup-hiddenpanel-tab-background-color: var(--color-slate-50);
-    --dv-inactivegroup-visiblepanel-tab-background-color: var(--color-slate-50);
-    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--color-slate-50);
-    --dv-tab-divider-color: var(--color-border);
+    --dv-activegroup-visiblepanel-tab-background-color: transparent;
+    --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+    --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
+    --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+    --dv-tab-divider-color: transparent;
     --dv-activegroup-visiblepanel-tab-color: var(--color-accent-foreground);
     --dv-activegroup-hiddenpanel-tab-color: var(--color-muted-foreground);
     --dv-inactivegroup-visiblepanel-tab-color: var(--color-muted-foreground);
@@ -37,11 +37,10 @@
     --dv-icon-hover-background-color: var(--color-accent);
     --dv-floating-box-shadow:
       0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --dv-active-sash-color: var(--color-ring);
+    --dv-active-sash-color: var(--color-slate-50);
     --dv-background-color: var(--color-background);
 
     :not(:first-child).dv-view {
-      @apply border-x border-slate-200;
       overflow-y: hidden !important;
     }
 
@@ -49,16 +48,24 @@
       @apply bg-slate-50;
     }
 
-    .dv-groupview.dv-active-group {
-      overflow: auto !important;
+    .dv-view.visible {
+      @apply p-1;
+    }
+
+    .dv-groupview {
+      @apply rounded-xl shadow-md;
+    }
+
+    .dv-content-container {
+      @apply bg-background;
     }
 
     .dv-tab {
-      @apply last:border-r border-slate-200 p-0!;
+      @apply p-0 !;
     }
 
-    .dv-tab.dv-active-tab {
-      @apply bg-white;
+    .dv-active-tab [data-active="true"] {
+      @apply bg-slate-50;
     }
 
     .dv-tab:focus-within::after,

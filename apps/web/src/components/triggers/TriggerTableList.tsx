@@ -1,4 +1,12 @@
 import type { Trigger } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Table,
   TableBody,
@@ -7,19 +15,11 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useState } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
 import cronstrue from "cronstrue";
-import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
 import { format } from "date-fns";
+import { useState } from "react";
+import { AgentInfo, UserInfo } from "../common/TableCells.tsx";
+import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
 
 interface TriggerTableListProps {
   triggers: Trigger[];
@@ -27,7 +27,6 @@ interface TriggerTableListProps {
   sortDirection: "asc" | "desc";
   onSort: (key: "title" | "type" | "agent" | "author") => void;
   onTriggerClick?: (trigger: Trigger) => void;
-  className?: string;
 }
 
 function TriggersTableHeader(
@@ -193,26 +192,23 @@ export function TriggerTableList({
   sortDirection,
   onSort,
   onTriggerClick,
-  className,
 }: TriggerTableListProps) {
   return (
-    <div className={className}>
-      <Table>
-        <TriggersTableHeader
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onSort={onSort}
-        />
-        <TableBody className="[&>*:first-child]:border-t-0">
-          {triggers.map((trigger) => (
-            <TriggerTableRow
-              key={trigger.id}
-              trigger={trigger}
-              onTriggerClick={onTriggerClick}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <Table>
+      <TriggersTableHeader
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSort={onSort}
+      />
+      <TableBody className="[&>*:first-child]:border-t-0">
+        {triggers.map((trigger) => (
+          <TriggerTableRow
+            key={trigger.id}
+            trigger={trigger}
+            onTriggerClick={onTriggerClick}
+          />
+        ))}
+      </TableBody>
+    </Table>
   );
 }

@@ -3,14 +3,17 @@ import { useListTriggers } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { PageLayout } from "../layout.tsx";
 import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
-import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
+import { AddTriggerModal } from "./addTriggerModal.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
+
 type SortKey = typeof SORTABLE_KEYS[number];
 type SortDirection = "asc" | "desc";
 type ViewMode = "table" | "cards";
@@ -43,6 +46,30 @@ function ListTriggersSkeleton() {
         </div>
       </div>
     </div>
+  );
+}
+
+const TABS = {
+  list: {
+    Component: ListTriggers,
+    title: "Triggers",
+    initialOpen: true,
+  },
+};
+
+export default function ListTriggersLayout() {
+  return (
+    <PageLayout
+      displayViewsTrigger={false}
+      tabs={TABS}
+      breadcrumb={
+        <div className="flex items-center gap-3">
+          <Icon name="conversion_path" />
+          Triggers
+        </div>
+      }
+      actionButtons={<AddTriggerModal />}
+    />
   );
 }
 
@@ -104,8 +131,8 @@ function ListTriggersSuspended() {
   }
 
   return (
-    <div className="mx-8 my-6">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="py-6 flex flex-col gap-4 h-full">
+      <div className="px-8 flex items-center justify-between">
         <Input
           type="text"
           placeholder="Search"
@@ -144,12 +171,12 @@ function ListTriggersSuspended() {
                 : "text-slate-500"}
             />
           </Button>
-          <AddTriggerModalButton />
         </div>
       </div>
-      {viewMode === "table"
-        ? (
-          <div className="overflow-x-auto">
+
+      <ScrollArea className="flex-1 min-h-0 px-8">
+        {viewMode === "table"
+          ? (
             <TriggerTableList
               triggers={sortedTriggers}
               sortKey={sortKey}
@@ -157,15 +184,15 @@ function ListTriggersSuspended() {
               onSort={handleSort}
               onTriggerClick={handleTriggerClick}
             />
-          </div>
-        )
-        : (
-          <TriggerCardList
-            triggers={sortedTriggers}
-            onTriggerClick={handleTriggerClick}
-            className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-          />
-        )}
+          )
+          : (
+            <TriggerCardList
+              triggers={sortedTriggers}
+              onTriggerClick={handleTriggerClick}
+              className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            />
+          )}
+      </ScrollArea>
     </div>
   );
 }

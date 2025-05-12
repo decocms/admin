@@ -104,24 +104,24 @@ export const AUTH_URL = (ctx: AppContext) =>
 export const createAIHandler =
   // deno-lint-ignore no-explicit-any
   (cb: (...args: any[]) => Promise<any> | any) =>
-  // deno-lint-ignore no-explicit-any
-  async (...args: any[]): Promise<CallToolResult> => {
-    try {
-      const response = await cb(...args);
+    // deno-lint-ignore no-explicit-any
+    async (...args: any[]): Promise<CallToolResult> => {
+      try {
+        const response = await cb(...args);
 
-      return {
-        isError: false,
-        content: [{ type: "text", text: JSON.stringify(response) }],
-      };
-    } catch (error) {
-      console.error(error);
+        return {
+          isError: false,
+          content: [{ type: "text", text: JSON.stringify(response) }],
+        };
+      } catch (error) {
+        console.error(error);
 
-      return {
-        isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
-      };
-    }
-  };
+        return {
+          isError: true,
+          content: [{ type: "text", text: serializeError(error) }],
+        };
+      }
+    };
 
 export const createApiHandler = <
   T extends z.ZodType = z.ZodType,

@@ -189,7 +189,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => {});
+  }).catch(() => { });
 };
 
 const ENTRYPOINT = "main.ts";

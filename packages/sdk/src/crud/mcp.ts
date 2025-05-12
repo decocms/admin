@@ -64,7 +64,7 @@ export const createIntegration = async (
   };
 
   if (error) {
-    throw new Error(error.message || "Failed to save integration");
+    throw new Error(error.message || "Failed to create integration");
   }
 
   return data;

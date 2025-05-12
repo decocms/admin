@@ -169,7 +169,7 @@ export const inviteTeamMembers = async (
     throw new Error("Failed to invite team members");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as { data: Member, error: Error };
 
   if (error) {
     throw new Error(error.message || "Failed to invite team members");

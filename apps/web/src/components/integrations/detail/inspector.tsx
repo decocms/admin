@@ -6,11 +6,11 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, useError } from "../../../ErrorBoundary.tsx";
 import { EmptyState } from "../../common/EmptyState.tsx";
-import { TabScrollArea } from "../../pageLayout.tsx";
 import { ConnStatus } from "./connStatus.tsx";
 import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
@@ -28,9 +28,9 @@ export function Inspector() {
   return (
     <ErrorBoundary fallback={<Inspector.ErrorFallback />}>
       <Suspense fallback={<Inspector.Skeleton />}>
-        <TabScrollArea>
+        <ScrollArea className="h-full w-full p-6 text-slate-700">
           <Inspector.UI connection={connection} />
-        </TabScrollArea>
+        </ScrollArea>
       </Suspense>
     </ErrorBoundary>
   );

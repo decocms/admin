@@ -26,6 +26,7 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tooltip,
@@ -46,7 +47,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
-import { PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
@@ -395,7 +396,7 @@ function List() {
         )
         : agents.length > 0
         ? (
-          <>
+          <ScrollArea className="flex-1 min-h-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
               {filteredAgents?.map((agent) => (
                 <AgentCard key={agent.id} agent={agent} />
@@ -410,7 +411,7 @@ function List() {
                 No agents match your filter. Try adjusting your search.
               </p>
             </div>
-          </>
+          </ScrollArea>
         )
         : (
           <EmptyState
@@ -478,12 +479,7 @@ export default function Page() {
       <PageLayout
         displayViewsTrigger={false}
         tabs={TABS}
-        breadcrumb={
-          <div className="flex items-center gap-3">
-            <Icon name="groups" />
-            Agents
-          </div>
-        }
+        breadcrumb={<DefaultBreadcrumb icon="groups" list="Agents" />}
         actionButtons={
           <Button
             onClick={handleCreate}

@@ -24,7 +24,7 @@ import {
   useWorkspaceLink,
 } from "../../../hooks/useNavigateWorkspace.ts";
 import { Tab } from "../../dock/index.tsx";
-import { PageLayout } from "../../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 
 function BreadcrumbItem({
   active,
@@ -77,10 +77,10 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
       <PageLayout
         displayViewsTrigger={false}
         breadcrumb={
-          <div className="flex items-center gap-3">
-            <Icon name="widgets" />
-            Integrations
-          </div>
+          <DefaultBreadcrumb
+            icon="widgets"
+            list="Integrations"
+          />
         }
         actionButtons={
           <Button

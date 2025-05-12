@@ -2,13 +2,13 @@ import { AgentSchema, useIntegrations, useUpdateThreadTools } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Form, FormDescription, FormLabel } from "@deco/ui/components/form.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { useTools } from "../../hooks/useTools.ts";
 import { useChatContext } from "../chat/context.tsx";
-import { TabScrollArea } from "../pageLayout.tsx";
 import { getDiffCount, Integration } from "../toolsets/index.tsx";
 
 const ChatSchema = z.object({
@@ -60,7 +60,7 @@ function ThreadSettingsTab() {
   };
 
   return (
-    <TabScrollArea>
+    <ScrollArea className="h-full w-full p-6 text-slate-700">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -124,7 +124,7 @@ function ThreadSettingsTab() {
           )}
         </form>
       </Form>
-    </TabScrollArea>
+    </ScrollArea>
   );
 }
 

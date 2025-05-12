@@ -16,6 +16,7 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type MouseEvent, useReducer } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
@@ -193,50 +194,54 @@ function InstalledIntegrationsTab() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <Breadcrumb
-        value={filter}
-        setValue={(value) => dispatch({ type: "SET_FILTER", payload: value })}
-      />
+    <div className="flex flex-col gap-4 h-full py-4">
+      <div className="px-4">
+        <Breadcrumb
+          value={filter}
+          setValue={(value) => dispatch({ type: "SET_FILTER", payload: value })}
+        />
+      </div>
 
-      {!installedIntegrations
-        ? (
-          <div className="flex h-48 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        )
-        : installedIntegrations.length === 0
-        ? (
-          <EmptyState
-            icon="conversion_path"
-            title="No connected integrations yet"
-            description="Connect services to expand what your agents can do."
-            buttonProps={{
-              children: "Connect an integration",
-              onClick: () => navigateWorkspace("/integrations/marketplace"),
-            }}
-          />
-        )
-        : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 peer">
-              {filteredIntegrations.map((integration) => (
-                <IntegrationCard
-                  key={integration.id}
-                  integration={integration}
-                  onConfigure={handleConfigure}
-                  onDelete={handleDeleteConfirm}
-                />
-              ))}
+      <ScrollArea className="flex-1 min-h-0">
+        {!installedIntegrations
+          ? (
+            <div className="flex h-48 items-center justify-center">
+              <Spinner size="lg" />
             </div>
-            <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-              <Icon name="search_off" />
-              <p className="text-muted-foreground">
-                No integrations match your filter. Try adjusting your search.
-              </p>
-            </div>
-          </>
-        )}
+          )
+          : installedIntegrations.length === 0
+          ? (
+            <EmptyState
+              icon="conversion_path"
+              title="No connected integrations yet"
+              description="Connect services to expand what your agents can do."
+              buttonProps={{
+                children: "Connect an integration",
+                onClick: () => navigateWorkspace("/integrations/marketplace"),
+              }}
+            />
+          )
+          : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 px-4 peer">
+                {filteredIntegrations.map((integration) => (
+                  <IntegrationCard
+                    key={integration.id}
+                    integration={integration}
+                    onConfigure={handleConfigure}
+                    onDelete={handleDeleteConfirm}
+                  />
+                ))}
+              </div>
+              <div className="flex-col items-center justify-center h-48 peer-empty:flex px-4 hidden">
+                <Icon name="search_off" />
+                <p className="text-muted-foreground">
+                  No integrations match your filter. Try adjusting your search.
+                </p>
+              </div>
+            </>
+          )}
+      </ScrollArea>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

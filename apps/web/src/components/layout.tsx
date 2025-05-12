@@ -1,8 +1,10 @@
 import { SDKProvider, Workspace } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { lazy, PropsWithChildren, ReactNode, Suspense } from "react";
 import { createPortal } from "react-dom";
-import { Outlet, useParams } from "react-router";
+import { Outlet, useNavigate, useParams } from "react-router";
 import { useUser } from "../hooks/data/useUser.ts";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
@@ -85,5 +87,31 @@ export function PageLayout({
         <Docked tabs={tabs} />
       </div>
     </Docked.Provider>
+  );
+}
+
+export function DefaultBreadcrumb({ icon, list, item }: {
+  icon: string;
+  list: string;
+  item?: string;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex items-center gap-3">
+      {item && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+        >
+          <Icon name="arrow_back" />
+        </Button>
+      )}
+      <Icon name={icon} size={16} className="text-slate-700" />
+      <span className="text-slate-700">{list}</span>
+      {item && <span className="text-sm text-slate-500">/</span>}
+      {item && <span className="text-sm text-slate-500">{item}</span>}
+    </div>
   );
 }

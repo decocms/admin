@@ -106,11 +106,15 @@ function ToolStatus({
       openPanel({
         id: panelId,
         component: "chatView",
-        title: parseHandoffTool(tool.toolName),
+        title: "Agent chat",
         params: {
           threadId,
           agentId,
           key: `${panelId}-${Date.now()}`,
+        },
+        initialWidth: 420,
+        position: {
+          direction: "right",
         },
       });
     }

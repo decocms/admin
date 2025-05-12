@@ -4,17 +4,15 @@ import {
   useIntegration,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
-import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
-import { PageLayout } from "../../layout.tsx";
+import { Tab } from "../../dock/index.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
@@ -33,7 +31,7 @@ function MainChat() {
   );
 }
 
-const TABS = {
+const TABS: Record<string, Tab> = {
   main: {
     Component: MainChat,
     title: "Chat setup",
@@ -52,6 +50,7 @@ const TABS = {
   tools: {
     Component: ThreadSettingsTab,
     title: "Tools",
+    hideFromViews: true,
   },
 };
 
@@ -59,7 +58,6 @@ export default function Edit() {
   const { id } = useParams();
   const integrationId = id!;
   const { data: integration } = useIntegration(integrationId);
-  const navigateWorkspace = useNavigateWorkspace();
 
   const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
   const threadId = integrationId;
@@ -93,13 +91,11 @@ export default function Edit() {
         <PageLayout
           tabs={TABS}
           breadcrumb={
-            <Button
-              variant="ghost"
-              onClick={() => navigateWorkspace("/integrations")}
-            >
-              <Icon name="arrow_back" />
-              Back
-            </Button>
+            <DefaultBreadcrumb
+              icon="widgets"
+              list="Integrations"
+              item={integration?.name}
+            />
           }
         />
       </Context.Provider>

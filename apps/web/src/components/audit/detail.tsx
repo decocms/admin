@@ -1,12 +1,10 @@
 import { useThread } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { Tab } from "../dock/index.tsx";
-import { PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 
 const useThreadId = () => {
   const { id } = useParams();
@@ -17,24 +15,6 @@ const useThreadId = () => {
 
   return id;
 };
-
-function Header() {
-  const id = useThreadId();
-  const navigate = useNavigate();
-  const { data: { title } = {} } = useThread(id);
-
-  return (
-    <div className="flex items-center gap-3">
-      <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-        <Icon name="arrow_back" />
-      </Button>
-      <Icon name="manage_search" />
-      <span className="text-nowrap">Chat logs</span>
-      <span className="text-sm text-slate-500">/</span>
-      <span className="text-sm text-slate-500">{title}</span>
-    </div>
-  );
-}
 
 const TABS: Record<string, Tab> = {
   main: {
@@ -51,6 +31,7 @@ const TABS: Record<string, Tab> = {
 function Page() {
   const id = useThreadId();
   const { data: thread } = useThread(id);
+  const { data: { title } = {} } = useThread(id);
 
   return (
     <ChatProvider
@@ -59,7 +40,13 @@ function Page() {
     >
       <PageLayout
         tabs={TABS}
-        breadcrumb={<Header />}
+        breadcrumb={
+          <DefaultBreadcrumb
+            icon="manage_search"
+            list="Chat logs"
+            item={title}
+          />
+        }
         displayViewsTrigger={false}
       />
     </ChatProvider>

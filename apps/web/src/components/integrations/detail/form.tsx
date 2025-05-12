@@ -21,10 +21,10 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useRef } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { FormSubmitControls } from "../../common/FormSubmit.tsx";
-import { TabScrollArea } from "../../pageLayout.tsx";
 import { useFormContext } from "./context.ts";
 
 export function DetailForm() {
@@ -120,7 +120,7 @@ export function DetailForm() {
   };
 
   return (
-    <TabScrollArea>
+    <ScrollArea className="h-full w-full p-6 text-slate-700">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -357,6 +357,6 @@ export function DetailForm() {
           />
         </form>
       </Form>
-    </TabScrollArea>
+    </ScrollArea>
   );
 }

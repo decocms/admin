@@ -5,7 +5,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@deco/ui/components/alert.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -13,16 +12,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@deco/ui/components/pagination.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState } from "react";
 import { useParams } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { Tab } from "../dock/index.tsx";
-import { PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AuditFilters } from "./AuditFilters.tsx";
 import { AuditTable } from "./AuditTable.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -232,10 +231,10 @@ function Page() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <div className="flex items-center gap-3">
-          <Icon name="manage_search" />
-          Chat logs
-        </div>
+        <DefaultBreadcrumb
+          list="Chat logs"
+          icon="manage_search"
+        />
       }
     />
   );

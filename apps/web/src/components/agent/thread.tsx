@@ -1,6 +1,6 @@
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
-import { TabScrollArea } from "../pageLayout.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 
 interface Props {
@@ -18,9 +18,9 @@ function ThreadView({ agentId, threadId }: Props) {
       <div className="flex items-center justify-between p-4">
         <ChatHeader mode="read-only" />
       </div>
-      <TabScrollArea>
+      <ScrollArea className="h-full w-full p-6 text-slate-700">
         <ChatMessages />
-      </TabScrollArea>
+      </ScrollArea>
     </ChatProvider>
   );
 }

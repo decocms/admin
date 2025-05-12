@@ -7,7 +7,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
-import { PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerTableList } from "./TriggerTableList.tsx";
 import { AddTriggerModal } from "./addTriggerModal.tsx";
@@ -63,10 +63,10 @@ export default function ListTriggersLayout() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <div className="flex items-center gap-3">
-          <Icon name="conversion_path" />
-          Triggers
-        </div>
+        <DefaultBreadcrumb
+          icon="conversion_path"
+          list="Triggers"
+        />
       }
       actionButtons={<AddTriggerModal />}
     />

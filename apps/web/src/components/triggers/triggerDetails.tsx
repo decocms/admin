@@ -4,9 +4,9 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import { AuditListContent } from "../audit/list.tsx";
-import { PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { WebhookDetails } from "./webhookDetails.tsx";
 
@@ -86,8 +86,7 @@ export function TriggerDetails(
   );
 }
 
-function TriggerDetailsBreadcrumb() {
-  const navigate = useNavigate();
+export default function Page() {
   const params = useParams();
   const agentId = params.agentId;
   const triggerId = params.triggerId;
@@ -99,27 +98,15 @@ function TriggerDetailsBreadcrumb() {
   const { trigger } = useTrigger(agentId, triggerId);
 
   return (
-    <div className="flex items-center gap-3">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate(-1)}
-      >
-        <Icon name="arrow_back" size={16} />
-      </Button>
-      <Icon name="conversion_path" />
-      <span>Triggers</span>
-      <span className="text-sm text-slate-500">/</span>
-      <span className="text-sm text-slate-500">{trigger?.title}</span>
-    </div>
-  );
-}
-
-export default function Page() {
-  return (
     <PageLayout
       displayViewsTrigger={false}
-      breadcrumb={<TriggerDetailsBreadcrumb />}
+      breadcrumb={
+        <DefaultBreadcrumb
+          icon="conversion_path"
+          list="Triggers"
+          item={trigger?.title}
+        />
+      }
       tabs={{
         main: {
           Component: TriggerDetails,

@@ -45,8 +45,14 @@ const wrapWithUILoadingFallback = <P,>(
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
  * want custom Suspense behavior.
  */
-const IntegrationEdit = lazy(() =>
+const IntegrationDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/integrations/detail/edit.tsx"))
+);
+
+const IntegrationList = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/integrations/list/installed.tsx"),
+  )
 );
 
 const IntegrationMarketplace = lazy(() =>
@@ -55,22 +61,16 @@ const IntegrationMarketplace = lazy(() =>
   )
 );
 
-const MyIntegrations = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/list/installed.tsx"),
-  )
+const AgentList = lazy(
+  () => wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
 );
 
-const AgentsList = lazy(
-  () => wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
+const AgentDetail = lazy(
+  () => wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
 );
 
 const Chat = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
-);
-
-const EditAgent = lazy(
-  () => wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
 );
 
 const Wallet = lazy(
@@ -93,7 +93,7 @@ const Settings = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/page.tsx"))
 );
 
-const ListTriggersLayout = lazy(() =>
+const TriggerList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/triggers/listTriggers.tsx"))
 );
 
@@ -185,11 +185,11 @@ function Router() {
         />
         <Route
           path="agents"
-          element={<AgentsList />}
+          element={<AgentList />}
         />
         <Route
           path="agent/:id/:threadId"
-          element={<EditAgent />}
+          element={<AgentDetail />}
         />
         <Route
           path="chat/:id/:threadId"
@@ -201,15 +201,15 @@ function Router() {
         />
         <Route
           path="integrations"
-          element={<MyIntegrations />}
+          element={<IntegrationList />}
         />
         <Route
           path="integration/:id"
-          element={<IntegrationEdit />}
+          element={<IntegrationDetail />}
         />
         <Route
           path="triggers"
-          element={<ListTriggersLayout />}
+          element={<TriggerList />}
         />
         <Route
           path="trigger/:agentId/:triggerId"

@@ -61,7 +61,7 @@
     }
 
     .dv-tab {
-      @apply p-0 !;
+      @apply p-0!;
     }
 
     .dv-active-tab [data-active="true"] {

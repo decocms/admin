@@ -98,7 +98,9 @@ function renderField<T extends FieldValues = Record<string, unknown>>(
   isRequired: boolean = false,
   disabled: boolean = false,
 ) {
-  const type = schema.type as string | undefined;
+  const type = Array.isArray(schema.type)
+    ? schema.type.find((prop) => prop !== "null") ?? "null"
+    : schema.type;
   const description = schema.description as string | undefined;
   const title = (schema.title as string | undefined) ||
     formatPropertyName(name);

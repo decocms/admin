@@ -109,9 +109,11 @@ export function DefaultBreadcrumb({ icon, list, item }: {
         </Button>
       )}
       <Icon name={icon} size={16} className="text-slate-700" />
-      <span className="text-slate-700">{list}</span>
+      <span className="text-slate-700 text-nowrap">{list}</span>
       {item && <span className="text-sm text-slate-500">/</span>}
-      {item && <span className="text-sm text-slate-500">{item}</span>}
+      {item && (
+        <span className="text-sm text-slate-500 truncate max-w-50">{item}</span>
+      )}
     </div>
   );
 }

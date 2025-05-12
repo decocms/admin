@@ -13,7 +13,6 @@ import {
 import { createOpenAI as openai, type OpenAIProvider } from "@ai-sdk/openai";
 import { createXai as xai, type XaiProvider } from "@ai-sdk/xai";
 import { createOpenRouter as openrouter } from "@openrouter/ai-sdk-provider";
-import { imageModels } from "@webdraw/ai-gateway";
 import type { LanguageModelV1 } from "ai";
 
 interface AIGatewayOptions {
@@ -111,11 +110,6 @@ const providers: Record<
     } satisfies Partial<
       Record<ModelsOf<XaiProvider> | "default", number>
     >,
-  },
-  stability: {
-    creator: imageModels["stability:core"].create as NativeLLMCreator,
-    envVarName: "STABILITY_API_KEY",
-    supportsOpenRouter: false,
   },
 } as const;
 

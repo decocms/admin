@@ -13,7 +13,7 @@
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked",
     "npm:build": "npm run build --workspace=apps/web",
-    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > apps/api/src/db/schema.ts"
+    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts"
   },
   "workspaces": [
     "apps/*",

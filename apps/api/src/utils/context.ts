@@ -5,6 +5,7 @@ import { Context } from "hono";
 import { env as honoEnv } from "hono/adapter";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
+import { Client } from "@deco/sdk/storage";
 import type { TimingVariables } from "hono/timing";
 import type { Client } from "../db/client.ts";
 
@@ -93,24 +94,24 @@ export const AUTH_URL = (ctx: AppContext) =>
 export const createAIHandler =
   // deno-lint-ignore no-explicit-any
   (cb: (...args: any[]) => Promise<any> | any) =>
-  // deno-lint-ignore no-explicit-any
-  async (...args: any[]): Promise<CallToolResult> => {
-    try {
-      const response = await cb(...args);
+    // deno-lint-ignore no-explicit-any
+    async (...args: any[]): Promise<CallToolResult> => {
+      try {
+        const response = await cb(...args);
 
-      return {
-        isError: false,
-        content: [{ type: "text", text: JSON.stringify(response) }],
-      };
-    } catch (error) {
-      console.error(error);
+        return {
+          isError: false,
+          content: [{ type: "text", text: JSON.stringify(response) }],
+        };
+      } catch (error) {
+        console.error(error);
 
-      return {
-        isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
-      };
-    }
-  };
+        return {
+          isError: true,
+          content: [{ type: "text", text: serializeError(error) }],
+        };
+      }
+    };
 
 export const createApiHandler = <
   T extends z.ZodType = z.ZodType,

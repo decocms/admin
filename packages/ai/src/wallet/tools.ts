@@ -1,4 +1,4 @@
-import { MicroDollar } from "@webdraw/common/wallet";
+import { MicroDollar } from "@deco/sdk/wallet";
 import { z } from "zod";
 import { createInnateTool } from "../utils/createTool.ts";
 

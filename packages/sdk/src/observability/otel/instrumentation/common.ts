@@ -1,6 +1,9 @@
+/// <reference types="@cloudflare/workers-types" />
+
 import { trace } from "@opentelemetry/api";
 import { WorkerTracer } from "../tracer.ts";
 import { passthroughGet, wrap } from "../wrap.ts";
+
 
 type ContextAndTracker = { ctx: ExecutionContext; tracker: PromiseTracker };
 type WaitUntilFn = ExecutionContext["waitUntil"];
@@ -90,8 +93,8 @@ export type Overloads<T> = T extends {
   (...args: infer P3): infer R3;
   (...args: infer P4): infer R4;
 } ?
-    | ((...args: P1) => R1)
-    | ((...args: P2) => R2)
-    | ((...args: P3) => R3)
-    | ((...args: P4) => R4)
+  | ((...args: P1) => R1)
+  | ((...args: P2) => R2)
+  | ((...args: P3) => R3)
+  | ((...args: P4) => R4)
   : never;

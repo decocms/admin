@@ -28,6 +28,7 @@
     "@opentelemetry/otlp-transformer": "^0.53.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250510.0",
     "@types/react": "^19.1.0"
   },
   "exports": {
@@ -39,6 +40,9 @@
     "./hosts": "./src/hosts.ts",
     "./path": "./src/path.ts",
     "./auth": "./src/auth/index.ts",
-    "./timings": "./src/timings.ts"
+    "./timings": "./src/timings.ts",
+    "./http": "./src/http.ts",
+    "./wallet": "./src/wallets/index.ts",
+    "./storage": "./src/storage/index.ts"
   }
 }

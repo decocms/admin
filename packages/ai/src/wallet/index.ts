@@ -1,12 +1,11 @@
-import type { ClientOf } from "@webdraw/common";
+import type { ClientOf } from "@deco/sdk/http";
 import type { Workspace } from "@deco/sdk/path";
-import { trackServerEvent } from "@webdraw/common/posthog/server";
 import {
   MicroDollar,
   type WalletAPI,
   WellKnownTransactions,
   WellKnownWallets,
-} from "@webdraw/common/wallet";
+} from "@deco/sdk/wallet";
 import type { LanguageModelUsage } from "ai";
 import { WebCache } from "@deco/sdk/cache";
 
@@ -130,39 +129,7 @@ export class AgentWallet {
     });
 
     if (!response.ok) {
-      const textResponse = await response.text();
-
-      if (textResponse.includes("InsufficientFundsError")) {
-        trackServerEvent({
-          event: "ai_agent_insufficient_balance",
-          distinctId: userId,
-          properties: {
-            agent_name: agentName,
-            user_id: generatedBy.id,
-            agent_id: usageData.agentId,
-            agent_path: usageData.agentPath,
-          },
-        });
-      } else {
-        trackServerEvent({
-          event: "ai_agent_wallet_error",
-          distinctId: userId,
-          properties: {
-            agent_name: agentName,
-            usage,
-            vendor_id: vendor.id,
-            payer_id: userId,
-            user_id: generatedBy.id,
-            model,
-            agent_id: usageData.agentId,
-            thread_id: usageData.threadId,
-            workspace: usageData.workspace,
-            agent_path: usageData.agentPath,
-            response: textResponse,
-            is_free_generation: false,
-          },
-        });
-      }
+      // TODO(@mcandeia): add error tracking with posthog
     }
 
     this.updateBalanceCache(userId);

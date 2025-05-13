@@ -1,0 +1,43 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+
+export interface ViewModeSwitcherProps {
+  viewMode: "cards" | "table";
+  onChange: (mode: "cards" | "table") => void;
+}
+
+export function ViewModeSwitcher({
+  viewMode,
+  onChange,
+}: ViewModeSwitcherProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant={viewMode === "cards" ? "secondary" : "ghost"}
+        size="icon"
+        aria-label="Card view"
+        onClick={() => onChange("cards")}
+        className={viewMode === "cards" ? "bg-slate-100" : ""}
+      >
+        <Icon
+          name="grid_view"
+          size={24}
+          className={viewMode === "cards" ? "text-primary" : "text-slate-500"}
+        />
+      </Button>
+      <Button
+        variant={viewMode === "table" ? "secondary" : "ghost"}
+        size="icon"
+        aria-label="Table view"
+        onClick={() => onChange("table")}
+        className={viewMode === "table" ? "bg-slate-100" : ""}
+      >
+        <Icon
+          name="menu"
+          size={24}
+          className={viewMode === "table" ? "text-primary" : "text-slate-500"}
+        />
+      </Button>
+    </div>
+  );
+}

@@ -13,6 +13,8 @@ import { useMemo } from "react";
 import { useParams } from "react-router";
 import { AgentAvatar } from "./Avatar.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
+import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { format } from "date-fns";
 
 interface AgentInfoProps {
   agentId?: string;
@@ -130,4 +132,79 @@ function UserInfo({
   );
 }
 
-export { AgentInfo, UserInfo };
+// DateTimeCell
+interface DateTimeCellProps {
+  value: string | Date | undefined | null;
+  dateFormat?: string;
+  timeFormat?: string;
+  className?: string;
+}
+
+export function DateTimeCell({
+  value,
+  dateFormat = "MMM dd, yyyy",
+  timeFormat = "HH:mm:ss",
+  className = "",
+}: DateTimeCellProps) {
+  if (!value) {
+    return <span className={className}>-</span>;
+  }
+  const dateObj = typeof value === "string" ? new Date(value) : value;
+  return (
+    <div
+      className={`flex flex-col items-start text-left leading-tight ${className}`}
+    >
+      <span className="font-medium text-slate-800">
+        {format(dateObj, dateFormat)}
+      </span>
+      <span className="font-normal text-slate-500">
+        {format(dateObj, timeFormat)}
+      </span>
+    </div>
+  );
+}
+
+// IntegrationInfo
+interface IntegrationInfoProps {
+  integration?: { icon?: string; name: string };
+  integrationId?: string;
+  className?: string;
+}
+
+function IntegrationInfo(
+  { integration, integrationId, className }: IntegrationInfoProps,
+) {
+  // If integration object is provided, use its icon and name
+  if (integration) {
+    return (
+      <div
+        className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+      >
+        <div className="w-8 h-8">
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            className="rounded-sm h-8 w-8"
+          />
+        </div>
+        <span className="truncate hidden md:inline">{integration.name}</span>
+      </div>
+    );
+  }
+  // Fallback: just show the id
+  return (
+    <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
+      <div className="w-8 h-8">
+        <IntegrationIcon
+          name={integrationId || "Unknown"}
+          className="rounded-sm h-8 w-8"
+        />
+      </div>
+      <span className="truncate hidden md:inline">
+        {integrationId || "Unknown"}
+      </span>
+    </div>
+  );
+}
+
+export { AgentInfo, IntegrationInfo, UserInfo };

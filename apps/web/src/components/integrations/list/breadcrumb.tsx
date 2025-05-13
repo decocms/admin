@@ -25,6 +25,10 @@ import {
 } from "../../../hooks/useNavigateWorkspace.ts";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
+import {
+  ViewModeSwitcher,
+  ViewModeSwitcherProps,
+} from "../../common/ViewModelSwitcher.tsx";
 
 function BreadcrumbItem({
   active,
@@ -126,7 +130,17 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
 }
 
 export const Breadcrumb = (
-  { value, setValue }: { value: string; setValue: (value: string) => void },
+  {
+    value,
+    setValue,
+    viewMode,
+    setViewMode,
+  }: {
+    value: string;
+    setValue: (value: string) => void;
+    viewMode: ViewModeSwitcherProps["viewMode"];
+    setViewMode: (viewMode: ViewModeSwitcherProps["viewMode"]) => void;
+  },
 ) => {
   const workspaceLink = useWorkspaceLink();
   const connected = useMatch({ path: `:teamSlug?/integrations` });
@@ -135,7 +149,7 @@ export const Breadcrumb = (
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   return (
-    <div className="flex items-center justify-between flex-wrap">
+    <div className="flex items-center justify-between w-full">
       <div className="flex gap-2">
         <BreadcrumbItem
           active={!!connected}
@@ -153,10 +167,11 @@ export const Breadcrumb = (
           to={workspaceLink("/integrations/marketplace")}
         />
       </div>
-      <div className="max-w-72 w-full">
+      <div className="flex items-center gap-2">
+        <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
         <Input
-          className="rounded-xl w-full"
-          placeholder="Filter integrations..."
+          className="w-80 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+          placeholder="Search integration"
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />

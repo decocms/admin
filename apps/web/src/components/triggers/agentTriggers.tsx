@@ -6,8 +6,8 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { useChatContext } from "../chat/context.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
-import { TriggerCardList } from "./TriggerCardList.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
+import { TriggerCard } from "./triggerCard.tsx";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();
@@ -53,10 +53,15 @@ export function AgentTriggers() {
         <AddTriggerModalButton agentId={agentId} />
       </div>
       <ScrollArea className="flex-1 min-h-0 px-2">
-        <TriggerCardList
-          triggers={filteredTriggers}
-          onTriggerClick={(trigger) => setSelectedTrigger(trigger)}
-        />
+        <div className="grid grid-cols-1 gap-4">
+          {filteredTriggers.map((trigger, index) => (
+            <TriggerCard
+              key={`trigger-card-${trigger.id}-${index}`}
+              trigger={trigger}
+              onClick={() => setSelectedTrigger(trigger)}
+            />
+          ))}
+        </div>
       </ScrollArea>
     </div>
   );

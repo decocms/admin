@@ -1,23 +1,15 @@
 import { type Trigger } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import cronstrue from "cronstrue";
 import { timeAgo } from "../../utils/timeAgo.ts";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import { useState } from "react";
-import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
+import { TriggerActions } from "./triggerActions.tsx";
+import { TriggerType } from "./triggerType.tsx";
 
-export function TriggerCard({ trigger, onClick, agentId }: {
+export function TriggerCard({ trigger, onClick }: {
   trigger: Trigger;
   onClick: (trigger: Trigger) => void;
-  agentId: string;
 }) {
+  const [open, setOpen] = useState(false);
   return (
     <Card className="overflow-hidden border border-slate-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer relative">
       <CardContent
@@ -32,7 +24,6 @@ export function TriggerCard({ trigger, onClick, agentId }: {
 
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <div className="flex items-center gap-1.5">
-            <TriggerIcon type={trigger.type} />
             <TriggerType trigger={trigger} />
           </div>
         </div>
@@ -54,64 +45,13 @@ export function TriggerCard({ trigger, onClick, agentId }: {
           </span>
         </div>
       </CardContent>
-      <TriggerActions trigger={trigger} agentId={agentId} />
+      <div className="absolute top-6 right-6">
+        <TriggerActions
+          trigger={trigger}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      </div>
     </Card>
-  );
-}
-
-function TriggerIcon({ type }: { type: Trigger["type"] }) {
-  return (
-    <div className="flex items-center justify-center">
-      {type === "cron" && (
-        <Icon name="schedule" className="text-muted-foreground" />
-      )}
-      {type === "webhook" && (
-        <Icon name="webhook" className="text-muted-foreground" />
-      )}
-    </div>
-  );
-}
-
-function TriggerType({ trigger }: { trigger: Trigger }) {
-  return (
-    <span>
-      {trigger.cronExp ? cronstrue.toString(trigger.cronExp) : trigger.type}
-    </span>
-  );
-}
-
-function TriggerActions({ trigger, agentId }: {
-  trigger: Trigger;
-  agentId: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-6 right-6"
-          >
-            <Icon name="more_vert" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem
-            className="text-red-500"
-            onClick={() => setOpen(true)}
-          >
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DeleteTriggerModal
-        trigger={trigger}
-        agentId={agentId}
-        open={open}
-        onOpenChange={setOpen}
-      />
-    </>
   );
 }

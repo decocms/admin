@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +49,8 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
+import { ViewModeSwitcher } from "../common/ViewModelSwitcher.tsx";
+import { Table } from "../common/Table.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -141,170 +143,94 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   );
 }
 
-// Agent Card Component
-function AgentCard({ agent }: { agent: Agent }) {
+function IntegrationBadges({ agent }: { agent: Agent }) {
+  const { hasChanges } = useAgentHasChanges(agent.id);
+  return (
+    <>
+      {hasChanges
+        ? (
+          <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            Unsaved Changes
+          </div>
+        )
+        : (
+          <div className="flex gap-2 flex-wrap">
+            {Object
+              .entries(agent.tools_set ?? {})
+              .filter(([_, tools]) => tools.length > 0)
+              .map(([toolSetId]) => (
+                <ErrorBoundary key={toolSetId} fallback={null}>
+                  <Suspense fallback={null}>
+                    <IntegrationMiniature toolSetId={toolSetId} />
+                  </Suspense>
+                </ErrorBoundary>
+              ))}
+          </div>
+        )}
+    </>
+  );
+}
+
+function Actions({ agent }: { agent: Agent }) {
+  const focusEditAgent = useEditAgent();
+  const { duplicate, duplicating } = useDuplicateAgent(agent);
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const focusEditAgent = useEditAgent();
-  const focusChat = useFocusChat();
-  const { duplicate, duplicating } = useDuplicateAgent(agent);
-  const { hasChanges } = useAgentHasChanges(agent.id);
 
-  // Return loading state while fetching agent data
-  if (!agent) {
-    return (
-      <Card className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
-        <CardContent className="p-4 flex items-center justify-center h-[166px]">
-          <Spinner />
-        </CardContent>
-      </Card>
-    );
+  async function handleDelete() {
+    await removeAgent.mutateAsync(agent.id);
+    setDeleteDialogOpen(false);
   }
-
-  // Get display text - prefer description over system prompt
-  const displayText = agent.description ||
-    (agent.instructions
-      ? agent.instructions.substring(0, 100) +
-        (agent.instructions.length > 100 ? "..." : "")
-      : "");
-
-  // Function to handle actual deletion
-  const handleDelete = async () => {
-    try {
-      await removeAgent.mutateAsync(agent.id);
-      setDeleteDialogOpen(false);
-
-      trackEvent("agent_delete", {
-        success: true,
-        data: agent,
-      });
-    } catch (error) {
-      console.error("Error deleting Agent:", error);
-
-      trackEvent("agent_delete", {
-        success: false,
-        error,
-      });
-    }
-  };
-
-  const UnsavedChangesBadge = () => {
-    return (
-      <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
-        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-        Unsaved Changes
-      </div>
-    );
-  };
 
   return (
     <>
-      <Card
-        className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
-        onClick={() => {
-          focusChat(agent.id, crypto.randomUUID(), {
-            history: false,
-          });
-        }}
-      >
-        <CardContent className="gap-4 flex flex-col flex-grow">
-          <div className="flex flex-col gap-3 w-full">
-            <div className="relative w-full">
-              <div className="h-12 w-12 flex justify-center overflow-hidden rounded-lg shadow-sm">
-                <Avatar
-                  url={agent.avatar && /^(data:)|(https?:)/.test(agent.avatar)
-                    ? agent.avatar
-                    : undefined}
-                  fallback={agent.avatar &&
-                      !/^(data:)|(https?:)/.test(agent.avatar)
-                    ? agent.avatar
-                    : agent.name.substring(0, 2)}
-                  className="h-full w-full rounded-lg"
-                />
-              </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute top-0 right-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
-                  >
-                    <Icon name="more_horiz" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    disabled={duplicating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      focusEditAgent(agent.id, crypto.randomUUID(), {
-                        history: false,
-                      });
-                    }}
-                  >
-                    <Icon name="edit" className="mr-2" />
-                    Edit agent
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={duplicating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      duplicate();
-                    }}
-                  >
-                    <Icon name="content_copy" className="mr-2" />
-                    {duplicating ? "Duplicating..." : "Duplicate"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Icon name="delete" className="mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <div className="text-slate-800 font-semibold truncate">
-                {agent.name}
-              </div>
-              <div className="text-sm text-slate-500 line-clamp-2 min-h-[2.5rem]">
-                {displayText || "No description"}
-              </div>
-            </div>
-
-            {hasChanges
-              ? <UnsavedChangesBadge />
-              : (
-                <div className="flex gap-2 flex-wrap">
-                  {Object
-                    .entries(agent.tools_set ?? {})
-                    .filter(([_, tools]) => tools.length > 0)
-                    .map(([toolSetId]) => (
-                      <ErrorBoundary key={toolSetId} fallback={null}>
-                        <Suspense fallback={null}>
-                          <IntegrationMiniature toolSetId={toolSetId} />
-                        </Suspense>
-                      </ErrorBoundary>
-                    ))}
-                </div>
-              )}
-          </div>
-        </CardContent>
-      </Card>
-
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icon name="more_horiz" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            disabled={duplicating}
+            onClick={(e) => {
+              e.stopPropagation();
+              focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
+            }}
+          >
+            <Icon name="edit" className="mr-2" />
+            Edit agent
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={duplicating}
+            onClick={(e) => {
+              e.stopPropagation();
+              duplicate();
+            }}
+          >
+            <Icon name="content_copy" className="mr-2" />
+            {duplicating ? "Duplicating..." : "Duplicate"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Icon name="delete" className="mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <AlertDialog
         open={deleteDialogOpen}
-        onOpenChange={(open) => setDeleteDialogOpen(open)}
+        onOpenChange={setDeleteDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -317,10 +243,10 @@ function AgentCard({ agent }: { agent: Agent }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handleDelete();
+                await handleDelete();
               }}
               disabled={removeAgent.isPending}
               className="bg-destructive hover:bg-destructive/90"
@@ -340,6 +266,63 @@ function AgentCard({ agent }: { agent: Agent }) {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function Card({ agent }: { agent: Agent }) {
+  const focusChat = useFocusChat();
+  if (!agent) {
+    return (
+      <UICard className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+        <CardContent className="p-4 flex items-center justify-center h-[166px]">
+          <Spinner />
+        </CardContent>
+      </UICard>
+    );
+  }
+  return (
+    <UICard
+      className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200 h-full"
+      onClick={() => {
+        focusChat(agent.id, crypto.randomUUID(), {
+          history: false,
+        });
+      }}
+    >
+      <CardContent className="gap-4 flex flex-col flex-grow">
+        <div className="flex flex-col gap-3 w-full">
+          <div className="relative w-full">
+            <div className="h-12 w-12 flex justify-center overflow-hidden rounded-lg shadow-sm">
+              <Avatar
+                url={agent.avatar && /^(data:)|(https?:)/.test(agent.avatar)
+                  ? agent.avatar
+                  : undefined}
+                fallback={agent.avatar &&
+                    !/^(data:)|(https?:)/.test(agent.avatar)
+                  ? agent.avatar
+                  : agent.name.substring(0, 2)}
+                className="h-full w-full rounded-lg"
+              />
+            </div>
+            <div
+              className="absolute top-0 right-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Actions agent={agent} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="text-slate-800 font-semibold truncate">
+              {agent.name}
+            </div>
+            <div className="text-sm text-slate-500 line-clamp-2 min-h-[2.5rem]">
+              {agent.description || "No description"}
+            </div>
+          </div>
+          <IntegrationBadges agent={agent} />
+        </div>
+      </CardContent>
+    </UICard>
   );
 }
 
@@ -366,23 +349,120 @@ function listReducer(state: ListState, action: ListAction): ListState {
   }
 }
 
+function TableView({ agents }: {
+  agents: Agent[];
+}) {
+  const focusChat = useFocusChat();
+  const [sortKey, setSortKey] = useState<"name" | "description">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  function getSortValue(agent: Agent, key: "name" | "description"): string {
+    if (key === "description") return agent.description?.toLowerCase() || "";
+    return agent.name?.toLowerCase() || "";
+  }
+  const sortedAgents = [...agents].sort((a, b) => {
+    const aVal = getSortValue(a, sortKey);
+    const bVal = getSortValue(b, sortKey);
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const columns = [
+    {
+      id: "name",
+      header: "Name",
+      render: (agent: Agent) => (
+        <div className="flex items-center gap-2">
+          <Avatar
+            url={agent.avatar}
+            fallback={agent.name.substring(0, 2)}
+            className="h-8 w-8 rounded-lg"
+          />
+          <span className="font-medium">{agent.name}</span>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      id: "description",
+      header: "Description",
+      accessor: (agent: Agent) => agent.description,
+      sortable: true,
+    },
+    {
+      id: "integrations",
+      header: "Integrations",
+      render: (agent: Agent) => <IntegrationBadges agent={agent} />,
+    },
+    {
+      id: "actions",
+      header: "",
+      render: (agent: Agent) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Actions agent={agent} />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <Table
+      columns={columns}
+      data={sortedAgents}
+      sortKey={sortKey}
+      sortDirection={sortDirection}
+      onSort={(key) => {
+        if (sortKey === key) {
+          setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+        } else {
+          setSortKey(key as "name" | "description");
+          setSortDirection("asc");
+        }
+      }}
+      onRowClick={(agent) => {
+        focusChat(agent.id, crypto.randomUUID(), {
+          history: false,
+        });
+      }}
+    />
+  );
+}
+
+// CardsView para agentes
+function CardsView({ agents }: {
+  agents: Agent[];
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
+      {agents.map((agent) => (
+        <div key={agent.id} className="relative group">
+          <Card agent={agent} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { creating, handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
-  // Filter agents based on the filter string
-  const filteredAgents = agents?.filter((agent) =>
-    agent.name.toLowerCase().includes(filter.toLowerCase())
-  );
-
+  // Filtrar agentes
+  const filteredAgents =
+    agents?.filter((agent) =>
+      agent.name.toLowerCase().includes(filter.toLowerCase())
+    ) ?? [];
   return (
     <div className="flex flex-col h-full gap-4 p-4">
       <div className="flex items-center justify-end gap-2">
+        <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
         <Input
-          className="rounded-xl w-full max-w-72"
-          placeholder="Filter agents..."
+          className="w-80 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+          placeholder="Search agent"
           value={filter}
           onChange={(e) =>
             dispatch({ type: "SET_FILTER", payload: e.target.value })}
@@ -397,11 +477,17 @@ function List() {
         : agents.length > 0
         ? (
           <ScrollArea className="flex-1 min-h-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
-              {filteredAgents?.map((agent) => (
-                <AgentCard key={agent.id} agent={agent} />
-              ))}
-            </div>
+            {viewMode === "table"
+              ? (
+                <TableView
+                  agents={filteredAgents}
+                />
+              )
+              : (
+                <CardsView
+                  agents={filteredAgents}
+                />
+              )}
             <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
               <Icon
                 name="search_off"

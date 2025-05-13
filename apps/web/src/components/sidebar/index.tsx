@@ -181,7 +181,6 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader />
 
-      {/* Since the sidebar is rendered in the root layout, we prefetch common data here */}
       <Suspense fallback={null}>
         <PrefetchIntegrations />
         <PrefetchAgents />
@@ -189,7 +188,6 @@ export function AppSidebar() {
 
       <SidebarContent className="flex flex-col h-full overflow-x-hidden">
         <div className="flex flex-col h-full">
-          {/* Fixed section with static items */}
           <div className="flex-none">
             <SidebarGroup>
               <SidebarGroupContent>
@@ -226,7 +224,6 @@ export function AppSidebar() {
             </SidebarGroup>
           </div>
 
-          {/* Scrollable section with threads */}
           {!isCollapsed && (
             <>
               <SidebarSeparator />
@@ -237,11 +234,8 @@ export function AppSidebar() {
               </div>
             </>
           )}
-
-          {/* Footer with user info */}
-          <div className="flex mt-auto items-start justify-start">
-            <SidebarFooter />
-          </div>
+         
+          <SidebarFooter />
         </div>
       </SidebarContent>
     </Sidebar>

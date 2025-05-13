@@ -80,7 +80,7 @@ function CurrentTeamDropdownTrigger() {
 
   return (
     <ResponsiveDropdownTrigger asChild>
-      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1!">
+      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! pr-2">
         <Avatar
           url={avatarUrl}
           fallback={label}
@@ -89,7 +89,7 @@ function CurrentTeamDropdownTrigger() {
         <span className="text-xs truncate">
           {label}
         </span>
-        <Icon name="unfold_more" className="text-xs ml-1" size={16} />
+        <Icon name="unfold_more" className="text-xs ml-auto" size={16} />
       </SidebarMenuButton>
     </ResponsiveDropdownTrigger>
   );

@@ -19,7 +19,7 @@ import {
   listTriggers,
 } from "./services.ts";
 import { Path } from "@deco/sdk/path";
-import { join } from "@std/path/posix";
+import { join } from "node:path/posix";
 
 /**
  * Creates a new trigger tool

@@ -1,7 +1,7 @@
 import type { ActorState } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
 import { Hosts } from "@deco/sdk/hosts";
-import { join } from "@std/path/posix";
+import { join } from "node:path/posix";
 import type { Workspace } from "@deco/sdk/path";
 import { Path } from "@deco/sdk/path";
 import { z } from "zod";

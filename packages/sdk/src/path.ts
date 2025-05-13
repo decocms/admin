@@ -1,4 +1,4 @@
-import { join } from "@std/path/posix";
+import { join } from "node:path/posix";
 
 export type Workspace =
   | `/users/${string}`

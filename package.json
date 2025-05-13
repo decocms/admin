@@ -27,6 +27,7 @@
     "./packages/ai"
   ],
   "compilerOptions": {
+    "experimentalDecorators": true,
     "lib": [
       "deno.window",
       "dom",

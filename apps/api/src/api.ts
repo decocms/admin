@@ -16,6 +16,8 @@ import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
+import { getRuntimeKey } from "hono/adapter";
+import { withActorsMiddleware } from "./middlewares/actors.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -148,6 +150,7 @@ app.use(cors({
     "cache-control",
     "pragma",
     "x-trace-debug-id",
+    "x-deno-isolate-instance-id",
   ],
   exposeHeaders: [
     "Content-Type",
@@ -160,6 +163,16 @@ app.use(cors({
 
 app.use(withContextMiddleware);
 app.use(setUserMiddleware);
+// copy immutable responses to allow workerd to change its headers.
+app.use(async (c, next) => {
+  await next();
+
+  if (c.var.immutableRes && getRuntimeKey() === "workerd") {
+    c.res = new Response(c.res.body, c.res);
+  }
+});
+
+app.use(withActorsMiddleware);
 
 // MCP endpoint handlers
 app.all(

@@ -14,6 +14,7 @@ export type AppEnv = {
     db: Client;
     user: SupaUser;
     cf: Cloudflare;
+    immutableRes?: boolean;
   } & TimingVariables;
   Bindings: {
     SUPABASE_URL: string;

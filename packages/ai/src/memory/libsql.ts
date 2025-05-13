@@ -170,7 +170,6 @@ export class LibSQLFactory {
     // On turso create, the database is not ready to be used.
     // So we need to wait for it to be ready.
     const promise = storage.init()
-      .then(() => console.log("MASTRA tables created"))
       .catch((e) =>
         console.error("MASTRA tables creation failed with error", e)
       );

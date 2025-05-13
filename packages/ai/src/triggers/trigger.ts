@@ -2,7 +2,7 @@
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
 
-import { dirname } from "@std/path/posix";
+import { dirname } from "node:path/posix";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import process from "node:process";
 import { hooks as cron } from "./cron.ts";
@@ -11,7 +11,7 @@ import { hooks as webhook } from "./webhook.ts";
 import { getRuntimeKey } from "hono/adapter";
 import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_URL } from "@deco/sdk/auth";
-import { createSupabaseStorage } from "../storage/options/supabaseStorage.ts";
+import { createSupabaseStorage } from "../storage/supabaseStorage.ts";
 import type { DecoChatStorage } from "../storage/index.ts";
 
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {

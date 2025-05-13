@@ -22,7 +22,7 @@ import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
-import { join } from "@std/path/posix";
+import { join } from "node:path/posix";
 import { createServerClient } from "@supabase/ssr";
 import {
   type GenerateObjectResult,
@@ -45,7 +45,7 @@ import {
   type Agent as Configuration,
   AgentNotFoundError,
 } from "./storage/index.ts";
-import { createSupabaseStorage } from "./storage/options/supabaseStorage.ts";
+import { createSupabaseStorage } from "./storage/supabaseStorage.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
@@ -361,15 +361,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const tools: ToolsetsInput = {};
 
     for (const [mcpId, filterList] of Object.entries(tool_set)) {
-      console.log(`[Agent Debug] Processing tools for server: ${mcpId}`, {
-        filterList,
-      });
       const allToolsFor = await this.getOrCreateCallableToolSet(mcpId)
-        .catch((error) => {
-          console.error(
-            `[Agent Debug] Error getting callable tool set for ${mcpId}`,
-            error,
-          );
+        .catch(() => {
           return null;
         });
 
@@ -378,25 +371,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         continue;
       }
 
-      console.log(
-        `[Agent Debug] All tools for ${mcpId}:`,
-        Object.keys(allToolsFor),
-      );
-
       if (filterList.length === 0) {
-        console.log(
-          `[Agent Debug] No filter list for ${mcpId}, using all tools`,
-        );
         tools[mcpId] = allToolsFor;
         continue;
       }
       const toolsInput: ToolsInput = {};
       for (const item of filterList) {
         const slug = slugify(item);
-        console.log(`[Agent Debug] Processing tool: ${item}, slug: ${slug}`);
         if (slug in allToolsFor) {
           toolsInput[slug] = allToolsFor[slug];
-          console.log(`[Agent Debug] Added tool ${slug} for ${mcpId}`);
           continue;
         }
 
@@ -404,10 +387,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       }
 
       tools[mcpId] = toolsInput;
-      console.log(
-        `[Agent Debug] Tools for ${mcpId} after processing:`,
-        Object.keys(toolsInput),
-      );
     }
 
     return tools;
@@ -638,9 +617,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     options?: AgentOverrides,
   ): Promise<GenerateTextResult<any, any>> {
-    console.log("[Agent Debug] generate options.tools", {
-      tools: options?.tools,
-    });
     const toolsets = await this.withToolOverrides(options?.tools);
 
     const agent = this.withAgentOverrides(options);
@@ -673,23 +649,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ): Promise<ToolsetsInput> {
     const getThreadToolsTiming = timings?.start("get-thread-tools");
     const tool_set = await this.getThreadTools();
-    console.log("[Agent Debug] withToolOverrides tool_set", {
-      tool_set,
-    });
     getThreadToolsTiming?.end();
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
     const toolsets = await this.pickCallableTools(tool_set);
-    console.log(
-      "[Agent Debug] withToolOverrides toolsets after pickCallableTools",
-      {
-        toolsets,
-      },
-    );
     pickCallableToolsTiming?.end();
     const filtered = this.filterToolsets(toolsets, restrictedTools);
-    console.log("[Agent Debug] withToolOverrides toolsets after filtering", {
-      filtered,
-    });
     return filtered;
   }
 

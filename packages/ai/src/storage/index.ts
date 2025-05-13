@@ -52,3 +52,5 @@ export interface DecoChatStorage {
 export { AgentNotFoundError, IntegrationNotFoundError } from "./error.ts";
 
 export * from "../schemas.ts";
+
+export { createSupabaseStorage } from "./supabaseStorage.ts";

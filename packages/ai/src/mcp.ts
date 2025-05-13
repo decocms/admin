@@ -257,7 +257,7 @@ const handleMCPResponse = async (client: Client) => {
   return { tools: result.tools, instructions, capabilities, version };
 };
 
-async function listToolsByConnectionType(
+export async function listToolsByConnectionType(
   connection: MCPConnection,
   storage: DecoChatStorage,
 ) {

@@ -52,6 +52,8 @@ const WORKSPACE_TOOLS = [
   integrationsAPI.updateIntegration,
   integrationsAPI.deleteIntegration,
   integrationsAPI.listIntegrations,
+  integrationsAPI.callTool,
+  integrationsAPI.listTools,
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,

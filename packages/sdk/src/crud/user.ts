@@ -3,6 +3,7 @@ import { callToolFor } from "../fetcher.ts";
 export interface User {
   id: string;
   email: string;
+  is_anonymous: boolean;
   metadata: {
     avatar_url: string;
     full_name?: string;

@@ -176,6 +176,7 @@ function TableView(
       header: "Description",
       accessor: (integration) => integration.description,
       sortable: true,
+      cellClassName: "max-w-md",
     },
     {
       id: "provider",
@@ -283,7 +284,7 @@ function MarketplaceTab() {
 
   return (
     <div className="flex flex-col gap-4 h-full py-4">
-      <div className="px-4">
+      <div className="px-4 overflow-x-auto">
         <Breadcrumb
           value={registryFilter}
           setValue={(value) => setRegistryFilter(value)}
@@ -292,7 +293,7 @@ function MarketplaceTab() {
         />
       </div>
 
-      <ScrollArea className="flex-1 min-h-0 px-4">
+      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
         {viewMode === "table"
           ? (
             <TableView
@@ -306,7 +307,7 @@ function MarketplaceTab() {
               onRowClick={handleOpenModal}
             />
           )}
-      </ScrollArea>
+      </div>
       <ConnectIntegrationModal
         open={showModal}
         integration={selectedIntegration}

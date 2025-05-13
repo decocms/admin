@@ -15,6 +15,7 @@ export interface TableColumn<T> {
   accessor?: (row: T) => ReactNode;
   render?: (row: T) => ReactNode;
   sortable?: boolean;
+  cellClassName?: string;
 }
 
 export interface TableProps<T> {
@@ -56,48 +57,55 @@ export function Table<T>({
   }
 
   return (
-    <UITable>
-      <TableHeader className="border-b-0 [&>*:first-child]:border-b-0">
-        <TableRow className="hover:bg-transparent h-14">
-          {columns.map((col, idx) => (
-            <TableHead
-              key={col.id}
-              className={getHeaderClass(idx, columns.length)}
-              style={{ cursor: col.sortable ? "pointer" : undefined }}
-              onClick={col.sortable && onSort
-                ? () => onSort(col.id)
-                : undefined}
-            >
-              <span className="flex items-center gap-1">
-                {col.header}
-                {col.sortable && renderSortIcon(col.id)}
-              </span>
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((row, i) => (
-          <TableRow
-            key={i}
-            className={onRowClick ? "cursor-pointer hover:bg-slate-50" : ""}
-            onClick={onRowClick ? () => onRowClick(row) : undefined}
-          >
+    <div className="max-h-[calc(100vh-160px)] overflow-y-auto overflow-x-auto w-full">
+      <UITable className="w-full min-w-max">
+        <TableHeader className="sticky top-0 z-10 bg-[#F8FAFC] border-b-0 [&>*:first-child]:border-b-0">
+          <TableRow className="hover:bg-transparent h-14">
             {columns.map((col, idx) => (
-              <TableCell
+              <TableHead
                 key={col.id}
-                className={idx === 0 ? "px-4" : undefined}
+                className={getHeaderClass(idx, columns.length) +
+                  " sticky top-0 z-10 bg-[#F8FAFC]"}
+                style={{ cursor: col.sortable ? "pointer" : undefined }}
+                onClick={col.sortable && onSort
+                  ? () => onSort(col.id)
+                  : undefined}
               >
-                {col.render
-                  ? col.render(row)
-                  : col.accessor
-                  ? col.accessor(row)
-                  : null}
-              </TableCell>
+                <span className="flex items-center gap-1">
+                  {col.header}
+                  {col.sortable && renderSortIcon(col.id)}
+                </span>
+              </TableHead>
             ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </UITable>
+        </TableHeader>
+        <TableBody>
+          {data.map((row, i) => (
+            <TableRow
+              key={i}
+              className={onRowClick ? "cursor-pointer hover:bg-slate-50" : ""}
+              onClick={onRowClick
+                ? () => onRowClick(row)
+                : undefined}
+            >
+              {columns.map((col, idx) => (
+                <TableCell
+                  key={col.id}
+                  className={(idx === 0 ? "px-4 " : "") +
+                    (col.cellClassName ? col.cellClassName + " " : "") +
+                    "truncate overflow-hidden whitespace-nowrap"}
+                >
+                  {col.render
+                    ? col.render(row)
+                    : col.accessor
+                    ? col.accessor(row)
+                    : null}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </UITable>
+    </div>
   );
 }

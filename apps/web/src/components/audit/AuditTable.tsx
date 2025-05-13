@@ -88,13 +88,15 @@ export function AuditTable(
   }
 
   return (
-    <Table
-      columns={columns}
-      data={threads}
-      sortKey={sortKey}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onRowClick={onRowClick ? (row) => onRowClick(row.id) : undefined}
-    />
+    <div className="flex-1 min-h-0 overflow-x-auto">
+      <Table
+        columns={columns}
+        data={threads}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        onRowClick={onRowClick ? (row) => onRowClick(row.id) : undefined}
+      />
+    </div>
   );
 }

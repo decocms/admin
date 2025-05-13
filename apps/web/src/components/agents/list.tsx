@@ -141,8 +141,12 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   );
 }
 
-function IntegrationBadges({ agent }: { agent: Agent }) {
+function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
   const { hasChanges } = useAgentHasChanges(agent.id);
+  const integrations = Object
+    .entries(agent.tools_set ?? {})
+    .filter(([_, tools]) => tools.length > 0)
+    .slice(0, max ?? Infinity);
   return (
     <>
       {hasChanges
@@ -154,16 +158,13 @@ function IntegrationBadges({ agent }: { agent: Agent }) {
         )
         : (
           <div className="flex gap-2 flex-wrap">
-            {Object
-              .entries(agent.tools_set ?? {})
-              .filter(([_, tools]) => tools.length > 0)
-              .map(([toolSetId]) => (
-                <ErrorBoundary key={toolSetId} fallback={null}>
-                  <Suspense fallback={null}>
-                    <IntegrationMiniature toolSetId={toolSetId} />
-                  </Suspense>
-                </ErrorBoundary>
-              ))}
+            {integrations.map(([toolSetId]) => (
+              <ErrorBoundary key={toolSetId} fallback={null}>
+                <Suspense fallback={null}>
+                  <IntegrationMiniature toolSetId={toolSetId} />
+                </Suspense>
+              </ErrorBoundary>
+            ))}
           </div>
         )}
     </>
@@ -383,11 +384,12 @@ function TableView({ agents }: {
       header: "Description",
       accessor: (agent: Agent) => agent.description,
       sortable: true,
+      cellClassName: "max-w-xl",
     },
     {
       id: "integrations",
       header: "Integrations",
-      render: (agent: Agent) => <IntegrationBadges agent={agent} />,
+      render: (agent: Agent) => <IntegrationBadges agent={agent} max={5} />,
     },
     {
       id: "actions",
@@ -468,7 +470,7 @@ function List() {
         )
         : agents.length > 0
         ? (
-          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-x-auto">
             {viewMode === "table"
               ? (
                 <TableView
@@ -489,7 +491,7 @@ function List() {
                 No agents match your filter. Try adjusting your search.
               </p>
             </div>
-          </ScrollArea>
+          </div>
         )
         : (
           <EmptyState

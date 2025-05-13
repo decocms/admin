@@ -34,7 +34,7 @@ export function AuditFilters({
     return nameA.localeCompare(nameB);
   });
   return (
-    <div className="flex flex-wrap gap-4 items-end">
+    <div className="flex gap-4 items-end overflow-x-auto">
       <div className="flex flex-col gap-2 min-w-[180px]">
         <Label htmlFor="agent-select">Agent</Label>
         <Select

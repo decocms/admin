@@ -116,11 +116,11 @@ function ListTriggersSuspended() {
         />
       </div>
 
-      <ScrollArea className="flex-1 min-h-0 px-4">
+      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
         {viewMode === "table"
           ? <TableView triggers={filteredTriggers} />
           : <CardsView triggers={filteredTriggers} />}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

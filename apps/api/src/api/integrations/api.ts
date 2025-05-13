@@ -70,7 +70,7 @@ export const callTool = createApiHandler({
     });
 
     if (!client) {
-      return c.json({ error: "Failed to create client" }, 500);
+      return { error: "Failed to create client" };
     }
 
     try {
@@ -81,16 +81,16 @@ export const callTool = createApiHandler({
 
       await client.close();
 
-      return c.json(result);
+      return result;
     } catch (error) {
       console.error(
         "Failed to call tool:",
         error instanceof Error ? error.message : "Unknown error",
       );
       await client.close();
-      return c.json({
+      return {
         error: error instanceof Error ? error.message : "Unknown error",
-      }, 500);
+      };
     }
   },
 });

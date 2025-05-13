@@ -19,6 +19,8 @@ import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
+import { getRuntimeKey } from "hono/adapter";
+import { withActorsMiddleware } from "./middlewares/actors.ts";
 
 export const app = new Hono<AppEnv>();
 

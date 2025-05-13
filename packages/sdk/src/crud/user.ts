@@ -6,7 +6,7 @@ export interface User {
   is_anonymous: boolean;
   metadata: {
     avatar_url: string;
-    full_name?: string;
+    full_name: string;
     username: string;
   };
 }

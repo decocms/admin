@@ -18,6 +18,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { getTraceDebugId } from "@deco/sdk";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -50,6 +51,7 @@ type IContext = {
   isAutoScrollEnabled: (e: HTMLDivElement | null) => boolean;
   retry: (context?: string[]) => void;
   select: (toolCallId: string, selectedValue: string) => Promise<void>;
+  correlationIdRef: RefObject<string | null>;
 };
 
 const Context = createContext<IContext | null>(null);
@@ -95,10 +97,15 @@ export function ChatProvider({
 
   const { preferences } = useUserPreferences();
 
+  const correlationIdRef = useRef<string | null>(null);
+
   const chat = useChat({
     initialMessages: initialMessages || [],
     credentials: "include",
-    headers: { "x-deno-isolate-instance-id": agentRoot },
+    headers: {
+      "x-deno-isolate-instance-id": agentRoot,
+      "x-trace-debug-id": getTraceDebugId(),
+    },
     api: new URL("/actors/AIAgent/invoke/stream", LEGACY_API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
       if (messages.length === 1 && messages[0].role === "user") {
@@ -167,6 +174,9 @@ export function ChatProvider({
           success: true,
         };
       }
+    },
+    onResponse: (response) => {
+      correlationIdRef.current = response.headers.get("x-trace-debug-id");
     },
     onFinish: (message) => {
       const shouldInvalidate = message.toolInvocations?.some((tool) =>
@@ -258,6 +268,7 @@ export function ChatProvider({
         isAutoScrollEnabled,
         retry: handleRetry,
         select: handlePickerSelect,
+        correlationIdRef,
       }}
     >
       {children}

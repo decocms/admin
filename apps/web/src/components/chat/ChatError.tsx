@@ -4,13 +4,19 @@ import { useEffect } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useChatContext } from "./context.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { useState } from "react";
 
 const WELL_KNOWN_ERROR_MESSAGES = {
   InsufficientFunds: "Insufficient funds",
 };
 
 export function ChatError() {
-  const { chat: { error }, retry } = useChatContext();
+  const { chat: { error }, retry, correlationIdRef } = useChatContext();
   const insufficientFunds = error?.message.includes(
     WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds,
   );
@@ -22,6 +28,8 @@ export function ChatError() {
       });
     }
   }, [insufficientFunds, error]);
+
+  const [copied, setCopied] = useState(false);
 
   if (!error) {
     return null;
@@ -56,8 +64,38 @@ export function ChatError() {
   return (
     <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
       <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
-        <Icon name="info" />
-        <p>An error occurred while generating the response.</p>
+        <Icon name="info" size={20} />
+        <div className="flex flex-col">
+          <p>An error occurred while generating the response.</p>
+          {correlationIdRef?.current && (
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+              <span className="select-none">
+                Error Id:
+              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="font-mono select-all cursor-pointer hover:underline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(correlationIdRef.current!);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1200);
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    tabIndex={0}
+                    role="button"
+                    aria-label="Copy Error Id"
+                  >
+                    {correlationIdRef.current}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center">
+                  {copied ? "Copied!" : "Copy"}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"

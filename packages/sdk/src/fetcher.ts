@@ -60,6 +60,10 @@ export const callToolFor = (
       method: "POST",
       credentials: "include",
       ...init,
+      headers: {
+        ...init.headers,
+        "x-trace-debug-id": getTraceDebugId(),
+      },
     },
   );
 

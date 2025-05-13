@@ -144,8 +144,14 @@ app.use(cors({
     "Accept",
     "cache-control",
     "pragma",
+    "x-trace-debug-id",
   ],
-  exposeHeaders: ["Content-Type", "Authorization", "Set-Cookie"],
+  exposeHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Set-Cookie",
+    "x-trace-debug-id",
+  ],
   credentials: true,
 }));
 

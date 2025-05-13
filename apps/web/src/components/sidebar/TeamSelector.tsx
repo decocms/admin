@@ -9,8 +9,7 @@ import {
   ResponsiveDropdownSeparator,
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
-import { useSidebar } from "@deco/ui/components/sidebar.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
+import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -77,30 +76,21 @@ function useUserTeams() {
 }
 
 function CurrentTeamDropdownTrigger() {
-  const { open } = useSidebar();
   const { avatarUrl, label } = useCurrentTeam();
 
   return (
     <ResponsiveDropdownTrigger asChild>
-      <Button
-        className={cn(
-          "flex-grow justify-start rounded-lg",
-          "px-1.5 py-1 gap-0",
-          "transition-[width,padding] overflow-hidden",
-          open ? "" : "w-0 p-0",
-        )}
-        variant="ghost"
-      >
+      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1!">
         <Avatar
           url={avatarUrl}
           fallback={label}
-          className="w-6 h-6"
+          className="size-6"
         />
-        <span className="text-xs truncate ml-2">
+        <span className="text-xs truncate">
           {label}
         </span>
         <Icon name="unfold_more" className="text-xs ml-1" size={16} />
-      </Button>
+      </SidebarMenuButton>
     </ResponsiveDropdownTrigger>
   );
 }

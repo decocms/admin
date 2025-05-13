@@ -21,13 +21,9 @@ import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { TeamSelector } from "./TeamSelector.tsx";
 
 const STATIC_ITEMS = [
-  {
-    url: "/",
-    title: "New chat",
-    icon: "forum",
-  },
   {
     url: "/integrations",
     title: "Integrations",
@@ -198,6 +194,7 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
+                  <TeamSelector />
                   {STATIC_ITEMS.map((item) => {
                     const href = workspaceLink(item.url);
 
@@ -209,7 +206,6 @@ export function AppSidebar() {
                               asChild
                               isActive={isActive}
                               tooltip={item.title}
-                              className="h-9"
                             >
                               <Link
                                 to={href}

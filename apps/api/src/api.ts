@@ -38,6 +38,8 @@ const GLOBAL_TOOLS = [
   membersAPI.teamRolesList,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
+  integrationsAPI.callTool,
+  integrationsAPI.listTools,
 ];
 
 // Tools tied to an specific workspace
@@ -52,8 +54,6 @@ const WORKSPACE_TOOLS = [
   integrationsAPI.updateIntegration,
   integrationsAPI.deleteIntegration,
   integrationsAPI.listIntegrations,
-  integrationsAPI.callTool,
-  integrationsAPI.listTools,
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,

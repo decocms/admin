@@ -173,11 +173,6 @@ function PrefetchAgents() {
   return null;
 }
 
-function _InvitesLinkErrorFallback() {
-  // Return null on error to ensure the sidebar doesn't break
-  return null;
-}
-
 function InvitesLink() {
   const { data: invites = [] } = useInvites();
   const href = "/invites";
@@ -282,7 +277,9 @@ export function AppSidebar() {
                       </SidebarMenuItem>
                     );
                   })}
-                  <InvitesLink />
+                  <Suspense fallback={null}>
+                    <InvitesLink />
+                  </Suspense>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

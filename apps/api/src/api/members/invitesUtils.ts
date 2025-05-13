@@ -219,7 +219,7 @@ export async function getTeamById(teamId: string, db: Client) {
 }
 
 export function userBelongsToTeam(
-  team: { members: Array<{ user_id: string }> },
+  team: { members: Array<{ user_id: string | null }> },
   userId?: string,
 ) {
   if (!userId) return false;

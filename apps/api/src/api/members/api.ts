@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { assertUserHasAccessToTeamById } from "../../auth/assertions.ts";
+import {
+  assertUserHasAccessToTeamById,
+  assertUserIsTeamAdmin,
+} from "../../auth/assertions.ts";
 import { type AppContext, createApiHandler } from "../../utils/context.ts";
 import { userFromDatabase } from "../../utils/user.ts";
 import {
@@ -12,31 +15,84 @@ import {
   userBelongsToTeam,
 } from "./invitesUtils.ts";
 
-// Helper function to check if user is admin of a team
-async function verifyTeamAdmin(c: AppContext, teamId: number, userId: string) {
-  const { data: teamMember, error } = await c
+const getTeamAdmin = async (c: AppContext, teamId: number) =>
+  await c
     .get("db")
     .from("members")
     .select("*")
     .eq("team_id", teamId)
-    .eq("user_id", userId)
-    .eq("admin", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .single();
 
-  if (error) throw error;
-  if (!teamMember) {
-    throw new Error("User does not have admin access to this team");
-  }
-  return teamMember;
+export const updateActivityLog = async (c: AppContext, {
+  teamId,
+  userId,
+  action,
+}: {
+  teamId: number;
+  userId: string;
+  action: "add_member" | "remove_member";
+}) => {
+  const currentTimestamp = new Date().toISOString();
+  const { data } = await c.get("db")
+    .from("members")
+    .select("activity")
+    .eq("user_id", userId)
+    .eq("team_id", teamId)
+    .single();
+
+  const activityLog = data?.activity || [];
+
+  return await c.get("db")
+    .from("members")
+    .update({
+      activity: [...activityLog, {
+        action,
+        timestamp: currentTimestamp,
+      }],
+    })
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+};
+
+interface DbMember {
+  id: number;
+  user_id: string | null;
+  admin: boolean | null;
+  created_at: string | null;
+  profiles: {
+    /** @description is user id */
+    id: string;
+    name: string | null;
+    email: string;
+    metadata: {
+      id: string | null;
+      // deno-lint-ignore no-explicit-any
+      raw_user_meta_data: any;
+    };
+  };
 }
 
-// New API handlers
+const mapMember = (
+  member: DbMember,
+  admin?: Pick<DbMember, "user_id"> | null,
+) => ({
+  ...member,
+  // @ts-expect-error - Supabase user metadata is not typed
+  profiles: userFromDatabase(member.profiles),
+  admin: member.user_id === admin?.user_id,
+});
+
 export const getTeamMembers = createApiHandler({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  schema: z.object({ teamId: z.number() }),
+  schema: z.object({
+    teamId: z.number(),
+    withActivity: z.boolean().optional(),
+  }),
   handler: async (props, c) => {
-    const { teamId } = props;
+    const { teamId, withActivity } = props;
     const user = c.get("user");
 
     // First verify the user has access to the team
@@ -46,10 +102,11 @@ export const getTeamMembers = createApiHandler({
     );
 
     // Get all members of the team
-    const { data, error } = await c
-      .get("db")
-      .from("members")
-      .select(`
+    const [{ data, error }, { data: teamAdminMember }] = await Promise.all([
+      c
+        .get("db")
+        .from("members")
+        .select(`
         id,
         user_id,
         admin,
@@ -61,16 +118,181 @@ export const getTeamMembers = createApiHandler({
           metadata:users_meta_data_view(id, raw_user_meta_data)
         )
       `)
-      .eq("team_id", teamId)
-      .is("deleted_at", null);
+        .eq("team_id", teamId)
+        .is("deleted_at", null),
+      getTeamAdmin(c, teamId),
+    ]);
 
     if (error) throw error;
 
-    return data.map((member) => ({
-      ...member,
-      // @ts-expect-error - Supabase user metadata is not typed
-      profiles: userFromDatabase(member.profiles),
-    }));
+    const members = data.map((member) => mapMember(member, teamAdminMember));
+
+    let activityByUserId: Record<string, string> = {};
+
+    if (withActivity) {
+      const { data: activityData } = await c.get("db").rpc(
+        "get_latest_user_activity",
+        {
+          p_resource: "team",
+          p_key: "id",
+          p_value: `${teamId}`,
+        },
+      ).select("user_id, created_at");
+
+      if (activityData) {
+        activityByUserId = activityData.reduce((res, activity) => {
+          res[activity.user_id] = activity.created_at;
+          return res;
+        }, {} as Record<string, string>);
+      }
+
+      return members.map((member) => ({
+        ...member,
+        lastActivity: activityByUserId[member.user_id ?? ""],
+      }));
+    }
+
+    return members;
+  },
+});
+
+export const updateTeamMember = createApiHandler({
+  name: "TEAM_MEMBERS_UPDATE",
+  description: "Update a team member. Usefull for updating admin status.",
+  schema: z.object({
+    teamId: z.number(),
+    memberId: z.number(),
+    data: z.object({
+      admin: z.boolean().optional(),
+    }),
+  }),
+  handler: async (props, c) => {
+    const { teamId, memberId, data } = props;
+    const user = c.get("user");
+
+    // Verify the user has admin access to the team
+    await assertUserIsTeamAdmin(c, teamId, user.id);
+
+    // Verify the member exists in the team
+    const { data: member, error: memberError } = await c
+      .get("db")
+      .from("members")
+      .select("id")
+      .eq("id", memberId)
+      .eq("team_id", teamId)
+      .is("deleted_at", null)
+      .single();
+
+    if (memberError) throw memberError;
+    if (!member) {
+      throw new Error("Member not found in this team");
+    }
+
+    // Update the member
+    const { data: updatedMember, error: updateError } = await c
+      .get("db")
+      .from("members")
+      .update(data)
+      .eq("id", memberId)
+      .eq("team_id", teamId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    return updatedMember;
+  },
+});
+
+export const removeTeamMember = createApiHandler({
+  name: "TEAM_MEMBERS_REMOVE",
+  description: "Remove a member from a team",
+  schema: z.object({
+    teamId: z.number(),
+    memberId: z.number(),
+  }),
+  handler: async (props, c) => {
+    const { teamId, memberId } = props;
+    const user = c.get("user");
+
+    // Verify the user has admin access to the team
+    await assertUserIsTeamAdmin(c, teamId, user.id);
+
+    // Verify the member exists in the team
+    const { data: member, error: memberError } = await c
+      .get("db")
+      .from("members")
+      .select("id, admin, user_id")
+      .eq("id", memberId)
+      .eq("team_id", teamId)
+      .is("deleted_at", null)
+      .single();
+
+    if (memberError) throw memberError;
+    if (!member) {
+      throw new Error("Member not found in this team");
+    }
+
+    // Don't allow removing the last admin
+    if (member.admin) {
+      const { data: adminCount, error: countError } = await c
+        .get("db")
+        .from("members")
+        .select("*", { count: "exact" })
+        .eq("team_id", teamId)
+        .eq("admin", true)
+        .is("deleted_at", null);
+
+      if (countError) throw countError;
+      if (adminCount.length <= 1) {
+        throw new Error("Cannot remove the last admin of the team");
+      }
+    }
+
+    const currentTimestamp = new Date();
+    const { error } = await c
+      .get("db")
+      .from("members")
+      .update({
+        deleted_at: currentTimestamp.toISOString(),
+      })
+      .eq("team_id", teamId)
+      .eq("user_id", member.user_id!);
+
+    await updateActivityLog(c, {
+      teamId,
+      userId: member.user_id!,
+      action: "remove_member",
+    });
+
+    if (error) throw error;
+    return { success: true };
+  },
+});
+
+export const registerMemberActivity = createApiHandler({
+  name: "TEAM_MEMBER_ACTIVITY_REGISTER",
+  description: "Register that the user accessed a team",
+  schema: z.object({
+    teamId: z.number(),
+  }),
+  handler: async (props, c) => {
+    const { teamId } = props;
+    const user = c.get("user");
+
+    // Verify the user has admin access to the team
+    await assertUserHasAccessToTeamById({
+      teamId,
+      userId: user.id,
+    }, c);
+
+    await c.get("db").from("user_activity").insert({
+      user_id: user.id,
+      resource: "team",
+      key: "id",
+      value: `${teamId}`,
+    });
+
+    return { success: true };
   },
 });
 
@@ -151,6 +373,8 @@ export const inviteTeamMembers = createApiHandler({
     const user = c.get("user");
     const teamIdAsNum = Number(teamId);
 
+    await assertUserIsTeamAdmin(c, Number(teamId), user.id);
+
     // Check for valid inputs
     if (!invitees || !teamId || Number.isNaN(teamIdAsNum)) {
       throw new Error("Missing or invalid information");
@@ -225,18 +449,16 @@ export const inviteTeamMembers = createApiHandler({
 
     const inviteResult = await insertInvites(invites, db);
 
-    if (inviteResult.error) {
+    if (!inviteResult.data || inviteResult.error) {
       throw new Error("Failed to create invites");
     }
 
     // Send emails
-    const requestPromises = inviteResult.data?.map(async (invite: {
-      id: string;
-      invited_email: string;
-      team_name: string;
-      invited_roles: Array<{ name: string; id: number }>;
-    }) => {
-      const rolesNames = invite.invited_roles.map(({ name }) => name);
+    const requestPromises = inviteResult.data?.map(async (invite) => {
+      const invited_roles = invite.invited_roles as {
+        name: string;
+      }[];
+      const rolesNames = invited_roles.map(({ name }) => name);
 
       await sendInviteEmail({
         ...invite,
@@ -394,136 +616,6 @@ export const deleteInvite = createApiHandler({
   },
 });
 
-export const updateTeamMember = createApiHandler({
-  name: "TEAM_MEMBERS_UPDATE",
-  description: "Update a team member. Useful for updating admin status.",
-  schema: z.object({
-    teamId: z.number(),
-    memberId: z.number(),
-    data: z.object({
-      admin: z.boolean().optional(),
-      activity: z.array(z.any()).optional(),
-    }),
-  }),
-  handler: async (props, c) => {
-    const { teamId, memberId, data } = props;
-    const user = c.get("user");
-
-    // Verify the user has admin access to the team
-    await verifyTeamAdmin(c, teamId, user.id);
-
-    // Verify the member exists in the team
-    const { data: member, error: memberError } = await c
-      .get("db")
-      .from("members")
-      .select("*")
-      .eq("id", memberId)
-      .eq("team_id", teamId)
-      .single();
-
-    if (memberError) throw memberError;
-    if (!member) {
-      throw new Error("Member not found in this team");
-    }
-
-    // Update the member
-    const { data: updatedMember, error: updateError } = await c
-      .get("db")
-      .from("members")
-      .update(data)
-      .eq("id", memberId)
-      .eq("team_id", teamId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-    return updatedMember;
-  },
-});
-
-export const removeTeamMember = createApiHandler({
-  name: "TEAM_MEMBERS_REMOVE",
-  description: "Remove a member from a team",
-  schema: z.object({
-    teamId: z.number(),
-    memberId: z.number(),
-  }),
-  handler: async (props, c) => {
-    const { teamId, memberId } = props;
-    const user = c.get("user");
-
-    // Verify the user has admin access to the team
-    await verifyTeamAdmin(c, teamId, user.id);
-
-    // Verify the member exists in the team
-    const { data: member, error: memberError } = await c
-      .get("db")
-      .from("members")
-      .select("*")
-      .eq("id", memberId)
-      .eq("team_id", teamId)
-      .single();
-
-    if (memberError) throw memberError;
-    if (!member) {
-      throw new Error("Member not found in this team");
-    }
-
-    // Don't allow removing the last admin
-    if (member.admin) {
-      const { data: adminCount, error: countError } = await c
-        .get("db")
-        .from("members")
-        .select("*", { count: "exact" })
-        .eq("team_id", teamId)
-        .eq("admin", true)
-        .is("deleted_at", null);
-
-      if (countError) throw countError;
-      if (adminCount.length <= 1) {
-        throw new Error("Cannot remove the last admin of the team");
-      }
-    }
-
-    const { error } = await c
-      .get("db")
-      .from("members")
-      .delete()
-      .eq("id", memberId)
-      .eq("team_id", teamId);
-
-    if (error) throw error;
-    return { success: true };
-  },
-});
-
-export const registerMemberActivity = createApiHandler({
-  name: "TEAM_MEMBER_ACTIVITY_REGISTER",
-  description: "Register that the user accessed a team",
-  schema: z.object({
-    teamId: z.number(),
-  }),
-  handler: async (props, c) => {
-    const { teamId } = props;
-    const user = c.get("user");
-
-    // Verify the user has admin access to the team
-    await assertUserHasAccessToTeamById({
-      teamId,
-      userId: user.id,
-    }, c);
-
-    await c.get("db").from("user_activity").insert({
-      user_id: user.id,
-      resource: "team",
-      key: "id",
-      value: `${teamId}`,
-    });
-    return { success: true };
-  },
-});
-
-// Get team roles list
 export const teamRolesList = createApiHandler({
   name: "TEAM_ROLES_LIST",
   description: "Get all roles available for a team, including basic deco roles",

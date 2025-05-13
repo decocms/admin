@@ -1,11 +1,4 @@
 import {
-  PropsWithChildren,
-  Suspense,
-  useDeferredValue,
-  useMemo,
-  useState,
-} from "react";
-import {
   type Member,
   useRemoveTeamMember,
   useTeam,
@@ -18,11 +11,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { z } from "zod";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Table,
   TableBody,
@@ -33,25 +25,18 @@ import {
 } from "@deco/ui/components/table.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
+import {
+  PropsWithChildren,
+  Suspense,
+  useDeferredValue,
+  useMemo,
+  useState,
+} from "react";
 import { timeAgo } from "../../utils/timeAgo.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
-
-// Form validation schema
-const inviteMemberSchema = z.object({
-  invitees: z.array(
-    z.object({
-      email: z.string().email({
-        message: "Please enter a valid email address",
-      }),
-      roleId: z.string().min(1, { message: "Please select a role" }),
-    }),
-  ).min(1),
-});
-
-type InviteMemberFormData = z.infer<typeof inviteMemberSchema>;
 
 function MemberTitle() {
   return (

@@ -1,13 +1,18 @@
 import { callToolFor } from "../fetcher.ts";
 import { User } from "./user.ts";
 
+interface Roles {
+  name: string;
+  id: number;
+}
+
 export interface Member {
   id: number;
   user_id: string;
-  admin: boolean | null;
   created_at: string;
   profiles: User;
   lastActivity?: string;
+  roles: Roles[];
 }
 
 export interface Role {

@@ -15,16 +15,6 @@ import {
   userBelongsToTeam,
 } from "./invitesUtils.ts";
 
-const getTeamAdmin = async (c: AppContext, teamId: number) =>
-  await c
-    .get("db")
-    .from("members")
-    .select("*")
-    .eq("team_id", teamId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
-
 export const updateActivityLog = async (c: AppContext, {
   teamId,
   userId,
@@ -56,10 +46,19 @@ export const updateActivityLog = async (c: AppContext, {
     .eq("user_id", userId);
 };
 
+interface Role {
+  id: number;
+  name: string;
+}
+
+const isRole = (
+  // deno-lint-ignore no-explicit-any
+  r: any,
+): r is Role => Boolean(r);
+
 interface DbMember {
   id: number;
   user_id: string | null;
-  admin: boolean | null;
   created_at: string | null;
   profiles: {
     /** @description is user id */
@@ -72,16 +71,18 @@ interface DbMember {
       raw_user_meta_data: any;
     };
   };
+  member_roles: {
+    roles: { id: number; name: string };
+  }[];
 }
 
 const mapMember = (
-  member: DbMember,
-  admin?: Pick<DbMember, "user_id"> | null,
+  { member_roles, ...member }: DbMember,
 ) => ({
   ...member,
   // @ts-expect-error - Supabase user metadata is not typed
   profiles: userFromDatabase(member.profiles),
-  admin: member.user_id === admin?.user_id,
+  roles: member_roles.map((memberRole) => memberRole.roles).filter(isRole),
 });
 
 export const getTeamMembers = createApiHandler({
@@ -102,7 +103,7 @@ export const getTeamMembers = createApiHandler({
     );
 
     // Get all members of the team
-    const [{ data, error }, { data: teamAdminMember }] = await Promise.all([
+    const [{ data, error }] = await Promise.all([
       c
         .get("db")
         .from("members")
@@ -116,16 +117,16 @@ export const getTeamMembers = createApiHandler({
           name,
           email,
           metadata:users_meta_data_view(id, raw_user_meta_data)
-        )
+        ), 
+        member_roles(roles(id, name))
       `)
         .eq("team_id", teamId)
         .is("deleted_at", null),
-      getTeamAdmin(c, teamId),
     ]);
 
     if (error) throw error;
 
-    const members = data.map((member) => mapMember(member, teamAdminMember));
+    const members = data.map((member) => mapMember(member));
 
     let activityByUserId: Record<string, string> = {};
 

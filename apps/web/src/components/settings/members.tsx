@@ -37,6 +37,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
+import { Badge } from "../../../../../packages/ui/src/components/badge.tsx";
 
 function MemberTitle() {
   return (
@@ -106,8 +107,12 @@ const compareMemberActivity = (a: Member, b: Member) => {
   return aD - bD;
 };
 
+const getMemberRoleName = (a: Member) =>
+  a.roles.map((r) => r.name).sort().join(",");
 const compareMemberRole = (a: Member, b: Member) =>
-  (a.admin ? 0 : 1) - (b.admin ? 0 : 1);
+  getMemberRoleName(a).localeCompare(
+    getMemberRoleName(b),
+  );
 
 const sortFnS: Record<
   Columns,
@@ -302,7 +307,13 @@ function MembersViewContent() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {member.admin ? "Admin" : "Member"}
+                      <span className="inline-flex gap-2">
+                        {member.roles.map((role) => (
+                          <Badge variant="outline" key={role.id}>
+                            {role.name}
+                          </Badge>
+                        ))}
+                      </span>
                     </TableCell>
                     {!isMobile && (
                       <TableCell>

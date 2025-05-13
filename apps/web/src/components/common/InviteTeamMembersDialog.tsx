@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  cloneElement,
+  type MouseEventHandler,
+  type ReactElement,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useInviteTeamMember, useTeamRoles } from "@deco/sdk";
 import {
@@ -29,7 +36,6 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import React from "react";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -148,9 +154,12 @@ export function InviteTeamMembersDialog({
   };
 
   // Create a cloned trigger with an onClick handler
-  const wrappedTrigger = React.cloneElement(trigger as React.ReactElement, {
-    onClick: openDialog,
-  });
+  const wrappedTrigger = cloneElement(
+    trigger as ReactElement<{ onClick?: MouseEventHandler }>,
+    {
+      onClick: openDialog,
+    },
+  );
 
   return (
     <>

@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { createInnateTool } from "./utils/createTool.ts";
 import type { Agent } from "./storage/index.ts";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export type Tool = ReturnType<typeof createInnateTool>;
@@ -342,34 +346,34 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
       throw new Error("Env is required");
     }
 
-    const  {workspace}  = agent;
+    const { workspace } = agent;
     const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
     const region = env.AWS_REGION ?? "us-east-2";
 
     const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-    
+
     const s3Client = new S3Client({
       region,
       credentials: {
         accessKeyId: env.AWS_ACCESS_KEY_ID!,
         secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
-      }
+      },
     });
 
     const s3Key = `${workspace}/${filePath}`;
-    
-    const extension = filePath.split('.').pop()?.toLowerCase();
-    const contentType = getContentType(extension || '');
-    
+
+    const extension = filePath.split(".").pop()?.toLowerCase();
+    const contentType = getContentType(extension || "");
+
     const putCommand = new PutObjectCommand({
       Bucket: bucketName,
       Key: s3Key,
-      ContentType: contentType
+      ContentType: contentType,
     });
 
-    const putUrl = await getSignedUrl(s3Client, putCommand, { 
+    const putUrl = await getSignedUrl(s3Client, putCommand, {
       expiresIn,
-      signableHeaders: new Set(["content-type"])
+      signableHeaders: new Set(["content-type"]),
     });
 
     const getCommand = new GetObjectCommand({
@@ -391,34 +395,36 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
 
 function getContentType(extension: string): string {
   const contentTypes: Record<string, string> = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp',
-    'svg': 'image/svg+xml',
-    'pdf': 'application/pdf',
-    'doc': 'application/msword',
-    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'xls': 'application/vnd.ms-excel',
-    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'ppt': 'application/vnd.ms-powerpoint',
-    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'txt': 'text/plain',
-    'csv': 'text/csv',
-    'html': 'text/html',
-    'htm': 'text/html',
-    'json': 'application/json',
-    'mp4': 'video/mp4',
-    'mp3': 'audio/mpeg',
-    'wav': 'audio/wav',
-    'zip': 'application/zip',
-    'rar': 'application/x-rar-compressed',
-    'tar': 'application/x-tar',
-    'gz': 'application/gzip'
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "gif": "image/gif",
+    "webp": "image/webp",
+    "svg": "image/svg+xml",
+    "pdf": "application/pdf",
+    "doc": "application/msword",
+    "docx":
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xls": "application/vnd.ms-excel",
+    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx":
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "txt": "text/plain",
+    "csv": "text/csv",
+    "html": "text/html",
+    "htm": "text/html",
+    "json": "application/json",
+    "mp4": "video/mp4",
+    "mp3": "audio/mpeg",
+    "wav": "audio/wav",
+    "zip": "application/zip",
+    "rar": "application/x-rar-compressed",
+    "tar": "application/x-tar",
+    "gz": "application/gzip",
   };
-  
-  return contentTypes[extension] || 'application/octet-stream';
+
+  return contentTypes[extension] || "application/octet-stream";
 }
 
 export const tools = {
@@ -431,4 +437,3 @@ export const tools = {
   CONFIRM,
   CREATE_PRESIGNED_URL,
 };
-

@@ -1,7 +1,6 @@
 import type { Trigger } from "@deco/sdk";
 import { useListTriggers } from "@deco/sdk";
 import { Input } from "@deco/ui/components/input.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";

@@ -16,7 +16,6 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type MouseEvent, useReducer, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";

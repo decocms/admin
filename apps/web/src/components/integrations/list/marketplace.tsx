@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";

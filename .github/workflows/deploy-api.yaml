@@ -36,6 +36,10 @@ jobs:
             RESEND_API_KEY 
             OPENROUTER_API_KEY
             WALLET_API_KEY
+            ANTHROPIC_API_KEY
+            OPENAI_API_KEY
+            DEEPSEEK_API_KEY
+            GOOGLE_API_KEY
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
@@ -48,3 +52,7 @@ jobs:
           CF_DISPATCH_NAMESPACE: "deco-chat-prod"
           WALLET_API_KEY: ${{ secrets.WALLET_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}

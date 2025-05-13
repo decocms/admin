@@ -28,6 +28,7 @@ export const getProfile = createApiHandler({
       throw new Error(error.message);
     }
 
+    console.log(data);
     // @ts-expect-error - Supabase user metadata is not typed
     return userFromDatabase(data);
   },

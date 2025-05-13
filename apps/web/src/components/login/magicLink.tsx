@@ -50,13 +50,9 @@ function MagicLink() {
             to={`/login?next=${next}`}
             className="text-sm flex items-center gap-1 hover:underline"
           >
-            Back to Login
+            Back to login options
           </Link>
         </span>
-        <img
-          src="https://assets.decocache.com/decochat/e0d43f1b-8193-4e1f-9992-c94a28342cce/deochatlogo.svg"
-          className="mb-10 w-28 rounded-lg"
-        />
         {fetcher.data === undefined && !setOnce.current
           ? (
             <form method="post" onSubmit={handleSubmit}>
@@ -75,6 +71,7 @@ function MagicLink() {
                     type="email"
                     required
                     placeholder="Your email address"
+                    className="min-w-80"
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>

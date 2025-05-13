@@ -35,7 +35,7 @@ function Login() {
               <Button
                 key={provider.name}
                 variant="outline"
-                className="rounded-3xl p-5 min-w-80"
+                className="p-5 min-w-80 hover:text-foreground"
                 asChild
               >
                 <Link

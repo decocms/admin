@@ -11,7 +11,7 @@ export function SplitScreenLayout(
         )}
       >
         <div className="p-6 h-full">
-          <div className="flex flex-col gap-10 bg-primary-light items-center justify-center h-full rounded-[64px]">
+          <div className="flex flex-col gap-10 bg-primary-light items-center justify-center h-full rounded-lg">
             <p className="text-primary-dark text-6xl text-center">
               Your <span className="text-7xl font-crimson-pro italic">new</span>
               <br />

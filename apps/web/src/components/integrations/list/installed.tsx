@@ -62,7 +62,6 @@ function IntegrationActions({ onDelete, disabled }: IntegrationActionsProps) {
   );
 }
 
-// Integration Card Component
 function IntegrationCard({
   integration,
   onConfigure,
@@ -103,7 +102,6 @@ function IntegrationCard({
   );
 }
 
-// Define the state interface
 interface ListState {
   filter: string;
   deleteDialogOpen: boolean;
@@ -111,7 +109,6 @@ interface ListState {
   deleting: boolean;
 }
 
-// Define action types
 type ListAction =
   | { type: "SET_FILTER"; payload: string }
   | { type: "CONFIRM_DELETE"; payload: string }
@@ -119,7 +116,6 @@ type ListAction =
   | { type: "DELETE_START" }
   | { type: "DELETE_END" };
 
-// Initial state
 const initialState: ListState = {
   filter: "",
   deleteDialogOpen: false,
@@ -127,7 +123,6 @@ const initialState: ListState = {
   deleting: false,
 };
 
-// Reducer function
 function listReducer(state: ListState, action: ListAction): ListState {
   switch (action.type) {
     case "SET_FILTER": {
@@ -255,27 +250,22 @@ function InstalledIntegrationsTab() {
   const { mutateAsync: removeIntegration } = useRemoveIntegration();
   const { filter, deleteDialogOpen, integrationToDelete, deleting } = state;
 
-  // Use SDK's useIntegrations hook to get all integrations
   const { data: installedIntegrations } = useIntegrations();
 
-  // Filter installed integrations based on the filter text
   const filteredIntegrations =
     installedIntegrations?.filter((integration) =>
       integration.name.toLowerCase().includes(filter.toLowerCase()) &&
       integration.connection.type !== "INNATE"
     ) ?? [];
 
-  // Function to handle configuring/editing an existing integration
   const handleConfigure = (integration: Integration) => {
     navigateWorkspace(`/integration/${integration.id}`);
   };
 
-  // Function to handle delete confirmation
   const handleDeleteConfirm = (integrationId: string) => {
     dispatch({ type: "CONFIRM_DELETE", payload: integrationId });
   };
 
-  // Function to handle actual deletion
   const handleDelete = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
@@ -284,7 +274,6 @@ function InstalledIntegrationsTab() {
     try {
       dispatch({ type: "DELETE_START" });
 
-      // Use the removeIntegration mutation from the hook
       await removeIntegration(integrationToDelete);
 
       trackEvent("integration_delete", {
@@ -304,7 +293,6 @@ function InstalledIntegrationsTab() {
     }
   };
 
-  // Handle delete dialog close
   const handleDeleteDialogOpenChange = (open: boolean) => {
     if (!open && !deleting) {
       dispatch({ type: "CANCEL_DELETE" });
@@ -360,7 +348,6 @@ function InstalledIntegrationsTab() {
           )}
       </ScrollArea>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteDialogOpen}
         onOpenChange={handleDeleteDialogOpenChange}

@@ -22,12 +22,11 @@ import { Breadcrumb, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { Table, TableColumn } from "../../common/Table.tsx";
 import { IntegrationInfo } from "../../common/TableCells.tsx";
-// Marketplace Integration type that matches the structure from the API
+
 interface MarketplaceIntegration extends Integration {
   provider: string;
 }
 
-// Connection Modal Component
 interface ConnectIntegrationModalProps {
   open: boolean;
   integration: MarketplaceIntegration | null;
@@ -222,10 +221,8 @@ function MarketplaceTab() {
   const navigateWorkspace = useNavigateWorkspace();
   const updateThreadMessages = useUpdateThreadMessages();
 
-  // Use the marketplace integrations hook instead of static registry
   const { data: marketplace } = useMarketplaceIntegrations();
 
-  // Filter marketplace integrations by name, description, and provider
   const filteredRegistryIntegrations = useMemo(() => {
     const searchTerm = registryFilter.toLowerCase();
     const integrations = marketplace?.integrations ?? [];

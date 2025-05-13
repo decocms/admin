@@ -57,7 +57,6 @@ export const useDuplicateAgent = (agent: Agent | null) => {
   const focusEditAgent = useEditAgent();
   const createAgent = useCreateAgent();
 
-  // Function to handle duplicating the agent
   const duplicate = async () => {
     if (!agent) return;
 
@@ -96,7 +95,6 @@ export const useDuplicateAgent = (agent: Agent | null) => {
   return { duplicate, duplicating };
 };
 
-// Add this component before AgentCard
 function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   const { data: integration } = useIntegration(toolSetId);
   const navigate = useNavigate();
@@ -326,20 +324,16 @@ function Card({ agent }: { agent: Agent }) {
   );
 }
 
-// Define simplified state interface
 interface ListState {
   filter: string;
 }
 
-// Define action types
 type ListAction = { type: "SET_FILTER"; payload: string };
 
-// Initial state
 const initialState: ListState = {
   filter: "",
 };
 
-// Reducer function
 function listReducer(state: ListState, action: ListAction): ListState {
   switch (action.type) {
     case "SET_FILTER":
@@ -429,7 +423,6 @@ function TableView({ agents }: {
   );
 }
 
-// CardsView para agentes
 function CardsView({ agents }: {
   agents: Agent[];
 }) {
@@ -451,7 +444,6 @@ function List() {
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
-  // Filtrar agentes
   const filteredAgents =
     agents?.filter((agent) =>
       agent.name.toLowerCase().includes(filter.toLowerCase())
@@ -536,7 +528,6 @@ export default function Page() {
   const createAgent = useCreateAgent();
   const updateThreadMessages = useUpdateThreadMessages();
 
-  // Function to handle creating a new Agent
   const handleCreate = async () => {
     try {
       setCreating(true);

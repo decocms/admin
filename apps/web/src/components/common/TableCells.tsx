@@ -132,7 +132,6 @@ function UserInfo({
   );
 }
 
-// DateTimeCell
 interface DateTimeCellProps {
   value: string | Date | undefined | null;
   dateFormat?: string;
@@ -164,7 +163,6 @@ export function DateTimeCell({
   );
 }
 
-// IntegrationInfo
 interface IntegrationInfoProps {
   integration?: { icon?: string; name: string };
   integrationId?: string;
@@ -174,7 +172,6 @@ interface IntegrationInfoProps {
 function IntegrationInfo(
   { integration, integrationId, className }: IntegrationInfoProps,
 ) {
-  // If integration object is provided, use its icon and name
   if (integration) {
     return (
       <div
@@ -191,7 +188,7 @@ function IntegrationInfo(
       </div>
     );
   }
-  // Fallback: just show the id
+
   return (
     <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
       <div className="w-8 h-8">

@@ -1,14 +1,17 @@
 import { INNATE_INTEGRATIONS } from "@deco/sdk";
-import type { AIAgent } from "../agent.ts";
+import type { AIAgent, Env } from "../agent.ts";
 import { createHandoffToolsFor } from "../agents/handoff.ts";
 import type { Integration } from "../schemas.ts";
 import { createTool } from "../utils/createTool.ts";
 import { INNATE_TOOLS } from "./constants.ts";
+
+
 export { INNATE_TOOLS } from "./constants.ts";
 
 export const getToolsForInnateIntegration = (
   integration: Integration,
   agent: AIAgent,
+  env?: Env,
 ) => {
   const tools = integration.id in INNATE_INTEGRATIONS
     ? INNATE_TOOLS[integration.id as keyof typeof INNATE_INTEGRATIONS]
@@ -23,8 +26,9 @@ export const getToolsForInnateIntegration = (
           console.log({ tool });
         }
 
-        return [key, createTool({ ...tool, execute: tool.execute(agent) })];
+        return [key, createTool({ ...tool, execute: tool.execute(agent, env) })];
       },
     ),
   );
 };
+

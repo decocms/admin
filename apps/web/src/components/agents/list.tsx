@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +49,9 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
+import { ViewModeSwitcherProps } from "../common/ViewModeSwitcher.tsx";
+import { Table, TableColumn } from "../common/Table.tsx";
+import { AgentInfo } from "../common/TableCells.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -141,23 +144,51 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   );
 }
 
+function IntegrationBadges({ agent }: { agent: Agent }) {
+  const { hasChanges } = useAgentHasChanges(agent.id);
+  return (
+    <>
+      {hasChanges
+        ? (
+          <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            Unsaved Changes
+          </div>
+        )
+        : (
+          <div className="flex gap-2 flex-wrap">
+            {Object
+              .entries(agent.tools_set ?? {})
+              .filter(([_, tools]) => tools.length > 0)
+              .map(([toolSetId]) => (
+                <ErrorBoundary key={toolSetId} fallback={null}>
+                  <Suspense fallback={null}>
+                    <IntegrationMiniature toolSetId={toolSetId} />
+                  </Suspense>
+                </ErrorBoundary>
+              ))}
+          </div>
+        )}
+    </>
+  );
+}
+
 // Agent Card Component
-function AgentCard({ agent }: { agent: Agent }) {
+function Card(
+  { agent }: { agent: Agent },
+) {
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const focusEditAgent = useEditAgent();
   const focusChat = useFocusChat();
-  const { duplicate, duplicating } = useDuplicateAgent(agent);
-  const { hasChanges } = useAgentHasChanges(agent.id);
 
   // Return loading state while fetching agent data
   if (!agent) {
     return (
-      <Card className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
+      <UICard className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
         <CardContent className="p-4 flex items-center justify-center h-[166px]">
           <Spinner />
         </CardContent>
-      </Card>
+      </UICard>
     );
   }
 
@@ -188,18 +219,9 @@ function AgentCard({ agent }: { agent: Agent }) {
     }
   };
 
-  const UnsavedChangesBadge = () => {
-    return (
-      <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
-        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-        Unsaved Changes
-      </div>
-    );
-  };
-
   return (
     <>
-      <Card
+      <UICard
         className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200"
         onClick={() => {
           focusChat(agent.id, crypto.randomUUID(), {
@@ -222,55 +244,9 @@ function AgentCard({ agent }: { agent: Agent }) {
                   className="h-full w-full rounded-lg"
                 />
               </div>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute top-0 right-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
-                  >
-                    <Icon name="more_horiz" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    disabled={duplicating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      focusEditAgent(agent.id, crypto.randomUUID(), {
-                        history: false,
-                      });
-                    }}
-                  >
-                    <Icon name="edit" className="mr-2" />
-                    Edit agent
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={duplicating}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      duplicate();
-                    }}
-                  >
-                    <Icon name="content_copy" className="mr-2" />
-                    {duplicating ? "Duplicating..." : "Duplicate"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Icon name="delete" className="mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="absolute top-0 right-0">
+                <Actions agent={agent} />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -282,25 +258,10 @@ function AgentCard({ agent }: { agent: Agent }) {
               </div>
             </div>
 
-            {hasChanges
-              ? <UnsavedChangesBadge />
-              : (
-                <div className="flex gap-2 flex-wrap">
-                  {Object
-                    .entries(agent.tools_set ?? {})
-                    .filter(([_, tools]) => tools.length > 0)
-                    .map(([toolSetId]) => (
-                      <ErrorBoundary key={toolSetId} fallback={null}>
-                        <Suspense fallback={null}>
-                          <IntegrationMiniature toolSetId={toolSetId} />
-                        </Suspense>
-                      </ErrorBoundary>
-                    ))}
-                </div>
-              )}
+            <IntegrationBadges agent={agent} />
           </div>
         </CardContent>
-      </Card>
+      </UICard>
 
       <AlertDialog
         open={deleteDialogOpen}
@@ -371,6 +332,9 @@ function List() {
   const { creating, handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
+  const [viewMode, setViewMode] = useState<ViewModeSwitcherProps["viewMode"]>(
+    "cards",
+  );
 
   // Filter agents based on the filter string
   const filteredAgents = agents?.filter((agent) =>
@@ -504,5 +468,196 @@ export default function Page() {
         }
       />
     </Context.Provider>
+  );
+}
+
+function CardsView({ agents }: { agents: Agent[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
+      {agents?.map((agent) => (
+        <Card
+          key={agent.id}
+          agent={agent}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TableView(
+  { agents }: {
+    agents: Agent[];
+  },
+) {
+  const [sortKey, setSortKey] = useState<"name" | "model" | "description">(
+    "name",
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const navigate = useNavigate();
+
+  function handleSort(key: string) {
+    const k = key as "name" | "model" | "description";
+    if (sortKey === k) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      setSortDirection("asc");
+    }
+  }
+
+  function getSortValue(
+    agent: Agent,
+    key: "name" | "model" | "description",
+  ): string {
+    if (key === "model") return agent.model?.toLowerCase() || "";
+    if (key === "description") return agent.description?.toLowerCase() || "";
+    return (agent[key] as string)?.toLowerCase?.() || "";
+  }
+
+  const sortedAgents = [...agents].sort((a, b) => {
+    const aVal = getSortValue(a, sortKey);
+    const bVal = getSortValue(b, sortKey);
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const columns: TableColumn<Agent>[] = [
+    {
+      id: "name",
+      header: "Name",
+      render: (a) => <AgentInfo agentId={a.id} />,
+      sortable: true,
+    },
+    {
+      id: "description",
+      header: "Description",
+      accessor: (a) => a.description || "-",
+      sortable: true,
+    },
+    {
+      id: "integrations",
+      header: "Integrations",
+      render: (a) => <IntegrationBadges agent={a} />,
+    },
+    {
+      id: "actions",
+      header: "",
+      render: (a) => <Actions agent={a} />,
+    },
+  ];
+
+  function handleRowClick(agent: Agent) {
+    navigate(`/agent/${agent.id}`);
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table
+        columns={columns}
+        data={sortedAgents}
+        sortKey={sortKey}
+        sortDirection={sortDirection}
+        onSort={handleSort}
+        onRowClick={handleRowClick}
+      />
+    </div>
+  );
+}
+
+function Actions({ agent }: { agent: Agent }) {
+  const focusEditAgent = useEditAgent();
+  const { duplicate, duplicating } = useDuplicateAgent(agent);
+  const removeAgent = useRemoveAgent();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  async function handleDelete() {
+    await removeAgent.mutateAsync(agent.id);
+    setDeleteDialogOpen(false);
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Icon name="more_horiz" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            disabled={duplicating}
+            onClick={(e) => {
+              e.stopPropagation();
+              focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
+            }}
+          >
+            <Icon name="edit" className="mr-2" />
+            Edit agent
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={duplicating}
+            onClick={(e) => {
+              e.stopPropagation();
+              duplicate();
+            }}
+          >
+            <Icon name="content_copy" className="mr-2" />
+            {duplicating ? "Duplicating..." : "Duplicate"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <Icon name="delete" className="mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the {agent.name}{" "}
+              agent. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await handleDelete();
+              }}
+              disabled={removeAgent.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {removeAgent.isPending
+                ? (
+                  <>
+                    <Spinner size="xs" />
+                    <span className="ml-2">Deleting...</span>
+                  </>
+                )
+                : (
+                  "Delete"
+                )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -16,7 +16,6 @@ export function TriggerCardList(
         <TriggerCard
           key={`trigger-card-${trigger.id}-${index}`}
           trigger={trigger}
-          agentId={trigger.agent?.id || ""}
           onClick={onTriggerClick ?? (() => {})}
         />
       ))}

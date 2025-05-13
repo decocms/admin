@@ -11,9 +11,7 @@ export function IntegrationIcon({ icon, name, className }: Props) {
   return (
     <div
       className={cn(
-        "rounded-2xl flex items-center justify-center relative p-2",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
-        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+        "rounded-lg flex items-center justify-center relative bg-white border border-slate-200 overflow-hidden",
         className,
       )}
     >

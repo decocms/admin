@@ -18,12 +18,18 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type MouseEvent, useReducer } from "react";
+import { type MouseEvent, useReducer, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { Breadcrumb, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
+import {
+  ViewModeSwitcher,
+  ViewModeSwitcherProps,
+} from "../../common/ViewModeSwitcher.tsx";
+import { IntegrationInfo } from "../../common/TableCells.tsx";
+import { Table, TableColumn } from "../../common/Table.tsx";
 
 // Integration Card Component
 function IntegrationCard({
@@ -133,6 +139,9 @@ function listReducer(state: ListState, action: ListAction): ListState {
 
 function InstalledIntegrationsTab() {
   const [state, dispatch] = useReducer(listReducer, initialState);
+  const [viewMode, setViewMode] = useState<ViewModeSwitcherProps["viewMode"]>(
+    "cards",
+  );
   const navigateWorkspace = useNavigateWorkspace();
   const { mutateAsync: removeIntegration } = useRemoveIntegration();
   const { filter, deleteDialogOpen, integrationToDelete, deleting } = state;
@@ -192,6 +201,22 @@ function InstalledIntegrationsTab() {
       dispatch({ type: "CANCEL_DELETE" });
     }
   };
+
+  // Table columns definition
+  const columns: TableColumn<Integration>[] = [
+    {
+      id: "name",
+      header: "Name",
+      render: (integration) => <IntegrationInfo integration={integration} />,
+      sortable: true,
+    },
+    {
+      id: "description",
+      header: "Description",
+      accessor: (integration) => integration.description,
+      sortable: true,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4 h-full py-4">

@@ -56,50 +56,48 @@ export function Table<T>({
   }
 
   return (
-    <div>
-      <UITable>
-        <TableHeader className="border-b-0 [&>*:first-child]:border-b-0">
-          <TableRow className="hover:bg-transparent h-14">
+    <UITable>
+      <TableHeader className="border-b-0 [&>*:first-child]:border-b-0">
+        <TableRow className="hover:bg-transparent h-14">
+          {columns.map((col, idx) => (
+            <TableHead
+              key={col.id}
+              className={getHeaderClass(idx, columns.length)}
+              style={{ cursor: col.sortable ? "pointer" : undefined }}
+              onClick={col.sortable && onSort
+                ? () => onSort(col.id)
+                : undefined}
+            >
+              <span className="flex items-center gap-1">
+                {col.header}
+                {col.sortable && renderSortIcon(col.id)}
+              </span>
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((row, i) => (
+          <TableRow
+            key={i}
+            className={onRowClick ? "cursor-pointer hover:bg-slate-50" : ""}
+            onClick={onRowClick ? () => onRowClick(row) : undefined}
+          >
             {columns.map((col, idx) => (
-              <TableHead
+              <TableCell
                 key={col.id}
-                className={getHeaderClass(idx, columns.length)}
-                style={{ cursor: col.sortable ? "pointer" : undefined }}
-                onClick={col.sortable && onSort
-                  ? () => onSort(col.id)
-                  : undefined}
+                className={idx === 0 ? "px-4" : undefined}
               >
-                <span className="flex items-center gap-1">
-                  {col.header}
-                  {col.sortable && renderSortIcon(col.id)}
-                </span>
-              </TableHead>
+                {col.render
+                  ? col.render(row)
+                  : col.accessor
+                  ? col.accessor(row)
+                  : null}
+              </TableCell>
             ))}
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((row, i) => (
-            <TableRow
-              key={i}
-              className={onRowClick ? "cursor-pointer hover:bg-slate-50" : ""}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-            >
-              {columns.map((col, idx) => (
-                <TableCell
-                  key={col.id}
-                  className={idx === 0 ? "px-4" : undefined}
-                >
-                  {col.render
-                    ? col.render(row)
-                    : col.accessor
-                    ? col.accessor(row)
-                    : null}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </UITable>
-    </div>
+        ))}
+      </TableBody>
+    </UITable>
   );
 }

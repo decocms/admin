@@ -5,7 +5,7 @@ import {
 } from "@mastra/core";
 import type { ToolExecutionOptions } from "ai";
 import { z } from "zod";
-import type { AIAgent } from "../agent.ts";
+import type { AIAgent, Env } from "../agent.ts";
 
 export interface ToolOptions<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
@@ -15,7 +15,7 @@ export interface ToolOptions<
   description?: string;
   inputSchema?: TSchemaIn;
   outputSchema?: TSchemaOut;
-  execute?: (agent: AIAgent) => (
+  execute?: (agent: AIAgent, env?: Env) => (
     context: ToolExecutionContext<TSchemaIn>,
     options?: ToolExecutionOptions,
   ) => Promise<TSchemaOut extends z.ZodSchema ? z.infer<TSchemaOut> : unknown>;

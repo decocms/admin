@@ -7,7 +7,7 @@ import {
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import type { Workspace } from "@deco/sdk/path";
-import type { AIAgent } from "./agent.ts";
+import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import type {
   DecoChatStorage,
@@ -161,6 +161,7 @@ export const getDecoSiteTools = async (
 export const mcpServerTools = async (
   mcpServer: Integration,
   agent: AIAgent,
+  env?: Env,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
   if (!mcpServer.connection) {
     return {};
@@ -177,7 +178,7 @@ export const mcpServerTools = async (
   const response = mcpServer.connection.type === "Deco"
     ? await getDecoSiteTools(mcpServer.connection)
     : mcpServer.connection.type === "INNATE"
-    ? getToolsForInnateIntegration(mcpServer, agent)
+    ? getToolsForInnateIntegration(mcpServer, agent, env)
     : await getMCPServerTools(mcpServer, agent);
 
   return response;

@@ -70,6 +70,10 @@ export interface Env {
   CF_ACCOUNT_ID: string;
   TURSO_ORGANIZATION: string;
   TURSO_ADMIN_TOKEN: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
+  AWS_REGION: string;
+  DECO_CHAT_DATA_BUCKET_NAME: string;
 }
 
 interface AgentOverrides {
@@ -344,7 +348,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       return null;
     }
 
-    const serverTools = await mcpServerTools(integration, this);
+    const serverTools = await mcpServerTools(integration, this, this.env);
 
     if (Object.keys(serverTools ?? {}).length === 0) {
       return null;

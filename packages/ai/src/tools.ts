@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createInnateTool } from "./utils/createTool.ts";
 import type { Agent } from "./storage/index.ts";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
@@ -311,6 +313,114 @@ export const CONFIRM = createInnateTool({
   },
 });
 
+const CreatePresignedUrlInputSchema = z.object({
+  filePath: z.string().describe(
+    `The path to the file to generate a presigned URL for. 
+    You must choose the directory from Pictures, Documents, or Videos, depending on what will be uploaded.
+    Examples: Pictures/image.jpg, Documents/report.pdf, Videos/video.mp4
+    Remember to add the file extension to the end of the path.`,
+  ),
+  expiresIn: z.number().optional().describe(
+    "Number of seconds until the URL expires (default: 3600)",
+  ),
+});
+
+const CreatePresignedUrlOutputSchema = z.object({
+  putUrl: z.string().describe("The presigned URL for uploading a file"),
+  getUrl: z.string().describe("The presigned URL for downloading a file"),
+  expiresAt: z.number().describe("Unix timestamp when the URL expires"),
+});
+
+export const CREATE_PRESIGNED_URL = createInnateTool({
+  id: "CREATE_PRESIGNED_URL",
+  description: "Create a presigned URL for a file in the Deco Chat file system",
+  inputSchema: CreatePresignedUrlInputSchema,
+  outputSchema: CreatePresignedUrlOutputSchema,
+  execute: (agent, env) => async ({ context }) => {
+    const { filePath, expiresIn = 3600 } = context;
+    if (!env) {
+      throw new Error("Env is required");
+    }
+
+    const  {workspace}  = agent;
+    const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
+    const region = env.AWS_REGION ?? "us-east-2";
+
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+    
+    const s3Client = new S3Client({
+      region,
+      credentials: {
+        accessKeyId: env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+      }
+    });
+
+    const s3Key = `${workspace}/${filePath}`;
+    
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    const contentType = getContentType(extension || '');
+    
+    const putCommand = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+      ContentType: contentType
+    });
+
+    const putUrl = await getSignedUrl(s3Client, putCommand, { 
+      expiresIn,
+      signableHeaders: new Set(["content-type"])
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+    });
+
+    const getUrl = await getSignedUrl(s3Client, getCommand, {
+      expiresIn,
+    });
+
+    return {
+      putUrl,
+      getUrl,
+      expiresAt,
+    };
+  },
+});
+
+function getContentType(extension: string): string {
+  const contentTypes: Record<string, string> = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'svg': 'image/svg+xml',
+    'pdf': 'application/pdf',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xls': 'application/vnd.ms-excel',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'ppt': 'application/vnd.ms-powerpoint',
+    'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'txt': 'text/plain',
+    'csv': 'text/csv',
+    'html': 'text/html',
+    'htm': 'text/html',
+    'json': 'application/json',
+    'mp4': 'video/mp4',
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'zip': 'application/zip',
+    'rar': 'application/x-rar-compressed',
+    'tar': 'application/x-tar',
+    'gz': 'application/gzip'
+  };
+  
+  return contentTypes[extension] || 'application/octet-stream';
+}
+
 export const tools = {
   FETCH,
   GENERATE,
@@ -319,4 +429,6 @@ export const tools = {
   RENDER,
   SHOW_PICKER,
   CONFIRM,
+  CREATE_PRESIGNED_URL,
 };
+

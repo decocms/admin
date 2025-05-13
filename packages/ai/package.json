@@ -29,7 +29,6 @@
     "@libsql/client": "^0.15.0",
     "uuid": "^11.1.0",
     "croner": "^9.0.0",
-    "diff": "7.0.0",
     "hono": "^4.7.9"
   },
   "devDependencies": {

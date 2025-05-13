@@ -1,6 +1,7 @@
 {
   "name": "@deco/ai",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@ai-sdk/anthropic": "^1.1.17",

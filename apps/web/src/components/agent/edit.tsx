@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
+import { useAgent } from "@deco/sdk";
 import {
   getAgentOverrides,
   useAgentHasChanges,

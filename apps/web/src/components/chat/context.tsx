@@ -1,6 +1,6 @@
 import { CreateMessage, useChat } from "@ai-sdk/react";
 import {
-  LEGACY_API_SERVER_URL,
+  API_SERVER_URL,
   useAddOptimisticThread,
   useAgentRoot,
   useInvalidateAll,
@@ -106,7 +106,7 @@ export function ChatProvider({
       "x-deno-isolate-instance-id": agentRoot,
       "x-trace-debug-id": getTraceDebugId(),
     },
-    api: new URL("/actors/AIAgent/invoke/stream", LEGACY_API_SERVER_URL).href,
+    api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
       if (messages.length === 1 && messages[0].role === "user") {
         addOptimisticThread(threadId, agentId);

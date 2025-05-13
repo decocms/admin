@@ -5,7 +5,6 @@ import type { Integration } from "../schemas.ts";
 import { createTool } from "../utils/createTool.ts";
 import { INNATE_TOOLS } from "./constants.ts";
 
-
 export { INNATE_TOOLS } from "./constants.ts";
 
 export const getToolsForInnateIntegration = (
@@ -26,9 +25,11 @@ export const getToolsForInnateIntegration = (
           console.log({ tool });
         }
 
-        return [key, createTool({ ...tool, execute: tool.execute(agent, env) })];
+        return [
+          key,
+          createTool({ ...tool, execute: tool.execute(agent, env) }),
+        ];
       },
     ),
   );
 };
-

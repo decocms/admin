@@ -84,7 +84,7 @@ export default function Edit() {
       initialMessage={{
         role: "user",
         content:
-          `Please help me setting up a new integration. Enable integration with installation id of ${integrationId} and help me exploring its tools`,
+          `Please help me set up this new integration. Enable integration with installation ID: ${integrationId} and help me explore its tools`,
       }}
     >
       <Context.Provider value={{ form, integration }}>

@@ -93,7 +93,7 @@ const Settings = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/page.tsx"))
 );
 
-const ListTriggersLayout = lazy(() =>
+const ListTriggers = lazy(() =>
   wrapWithUILoadingFallback(import("./components/triggers/list.tsx"))
 );
 
@@ -209,7 +209,7 @@ function Router() {
         />
         <Route
           path="triggers"
-          element={<ListTriggersLayout />}
+          element={<ListTriggers />}
         />
         <Route
           path="trigger/:agentId/:triggerId"

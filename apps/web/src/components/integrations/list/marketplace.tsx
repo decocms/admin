@@ -107,7 +107,7 @@ function CardsView(
   },
 ) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 px-4">
+    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {integrations.map((integration) => (
         <Card
           key={integration.id}
@@ -292,7 +292,7 @@ function MarketplaceTab() {
         />
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0 px-4">
         {viewMode === "table"
           ? (
             <TableView

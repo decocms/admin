@@ -50,8 +50,8 @@ export function Table<T>({
   function getHeaderClass(idx: number, total: number) {
     let base =
       "px-4 text-left bg-[#F8FAFC] font-semibold text-[#374151] text-sm h-10";
-    if (idx === 0) base += " rounded-l-full";
-    if (idx === total - 1) base += " rounded-r-full w-8";
+    if (idx === 0) base += " rounded-l-md";
+    if (idx === total - 1) base += " rounded-r-md w-8";
     return base;
   }
 

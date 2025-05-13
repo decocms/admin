@@ -99,7 +99,7 @@ function InviteItem(
           size="sm"
         >
           {isLoading
-            ? <Spinner size="xs" className="mr-2" />
+            ? <Spinner size="xs" />
             : <Icon name="check" className="mr-2" />}
           Accept Invitation
         </Button>

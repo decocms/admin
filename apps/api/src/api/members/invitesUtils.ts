@@ -147,7 +147,7 @@ export async function getInviteIdByEmailAndTeam({ email, teamId }: {
   const { data } = await db.from("invites").select("id").eq(
     "invited_email",
     email,
-  ).eq("team_id", teamId);
+  ).eq("team_id", Number(teamId));
   return data;
 }
 

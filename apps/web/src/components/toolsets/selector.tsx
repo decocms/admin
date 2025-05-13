@@ -8,6 +8,12 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
 
 // Types
 type ToolsMap = Record<string, string[]>;
@@ -119,6 +125,138 @@ function IntegrationItem({
   );
 }
 
+function MobileIntegrationItem({
+  integration,
+  toolsSet,
+  selectedTools,
+  onToolToggle,
+}: {
+  integration: Integration;
+  toolsSet: ToolsMap;
+  selectedTools: SelectedToolsMap;
+  onToolToggle: (
+    integrationId: string,
+    toolName: string,
+    checked: boolean,
+  ) => void;
+}) {
+  const { data: toolsData, isLoading } = useTools(integration.connection);
+
+  const toolsCount = useMemo(() => toolsData?.tools?.length ?? 0, [toolsData]);
+
+  const enabledToolsCount = useMemo(() => {
+    const enabledTools = toolsSet[integration.id] || [];
+    const selectedToolsForIntegration = selectedTools[integration.id]
+      ? Array.from(selectedTools[integration.id])
+      : [];
+    return new Set([...enabledTools, ...selectedToolsForIntegration]).size;
+  }, [integration.id, toolsSet, selectedTools]);
+
+  const handleSelectAll = (checked: boolean) => {
+    toolsData?.tools?.forEach((tool) => {
+      onToolToggle(integration.id, tool.name, checked);
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-6 bg-slate-100 animate-pulse rounded" />
+        ))}
+      </div>
+    );
+  }
+
+  const allTools = toolsData?.tools || [];
+  const isAllSelected = enabledToolsCount === allTools.length &&
+    allTools.length > 0;
+  const isPartiallySelected = enabledToolsCount > 0 && !isAllSelected;
+
+  return (
+    <Accordion type="single" collapsible className="w-full border rounded-xl">
+      <AccordionItem value={integration.id}>
+        <AccordionTrigger className="px-2 py-3">
+          <div className="flex items-center gap-3 flex-1">
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              className="h-10 w-10"
+            />
+            <div className="flex flex-col items-start gap-1 min-w-0">
+              <span className="font-medium text-left truncate">
+                {integration.name}
+              </span>
+              <span className="text-slate-500 text-sm">
+                {`${enabledToolsCount} of ${toolsCount} tools enabled`}
+              </span>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-4 px-4 pt-2">
+            {allTools.length > 0 && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`select-all-${integration.id}`}
+                    checked={isAllSelected}
+                    data-state={isPartiallySelected
+                      ? "indeterminate"
+                      : undefined}
+                    onCheckedChange={handleSelectAll}
+                  />
+                  <label
+                    htmlFor={`select-all-${integration.id}`}
+                    className="text-sm font-medium cursor-pointer text-slate-700"
+                  >
+                    {isAllSelected ? "Deselect all" : "Select all"}
+                  </label>
+                </div>
+                <span className="text-sm text-slate-500">
+                  {enabledToolsCount} of {allTools.length} tools selected
+                </span>
+              </div>
+            )}
+            <div className="space-y-2">
+              {allTools.map((tool) => (
+                <div
+                  key={tool.name}
+                  className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 border border-slate-200 rounded-lg"
+                >
+                  <Checkbox
+                    id={`${integration.id}-${tool.name}`}
+                    checked={selectedTools[integration.id]?.has(tool.name)}
+                    onCheckedChange={(checked) =>
+                      onToolToggle(integration.id, tool.name, !!checked)}
+                    className="mt-1"
+                  />
+                  <div className="flex flex-col min-w-0">
+                    <label
+                      htmlFor={`${integration.id}-${tool.name}`}
+                      className={cn(
+                        "text-sm truncate cursor-pointer text-slate-700",
+                        toolsSet[integration.id]?.includes(tool.name) &&
+                          !selectedTools[integration.id]?.has(tool.name) &&
+                          "text-slate-400",
+                      )}
+                    >
+                      {tool.name}
+                    </label>
+                    {tool.description && (
+                      <ExpandableDescription description={tool.description} />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
 function ToolsList({
   integration,
   selectedTools,
@@ -159,10 +297,11 @@ function ToolsList({
   }
 
   const allTools = toolsData?.tools || [];
-  const enabledCount =
+  const enabledToolsCount =
     allTools.filter((tool) => isToolSelected(tool.name)).length;
-  const isAllSelected = enabledCount === allTools.length && allTools.length > 0;
-  const isPartiallySelected = enabledCount > 0 && !isAllSelected;
+  const isAllSelected = enabledToolsCount === allTools.length &&
+    allTools.length > 0;
+  const isPartiallySelected = enabledToolsCount > 0 && !isAllSelected;
 
   return (
     <div className="space-y-4">
@@ -183,7 +322,7 @@ function ToolsList({
             </label>
           </div>
           <span className="text-sm text-slate-500">
-            {enabledCount} of {allTools.length} tools selected
+            {enabledToolsCount} of {allTools.length} tools selected
           </span>
         </div>
       )}
@@ -299,7 +438,25 @@ export function ToolsetSelector({
             />
           </div>
 
-          <div className="flex gap-6 p-4 h-[400px] overflow-hidden">
+          {/* Mobile View */}
+          <div className="flex flex-col md:hidden">
+            <ScrollArea className="h-[calc(100vh-10rem)]">
+              <div className="p-4 space-y-2">
+                {filteredIntegrations.map((integration) => (
+                  <MobileIntegrationItem
+                    key={integration.id}
+                    integration={integration}
+                    toolsSet={toolsSet}
+                    selectedTools={selectedTools}
+                    onToolToggle={handleToolToggle}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:flex gap-6 p-4 h-[400px] overflow-hidden">
             <div className="w-[280px] flex-shrink-0 truncate">
               <ScrollArea>
                 <div className="space-y-1">

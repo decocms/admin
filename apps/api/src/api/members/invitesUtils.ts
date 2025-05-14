@@ -1,7 +1,7 @@
 import type { Client } from "../../db/client.ts";
+import { type AppContext, getEnv } from "../../utils/context.ts";
 
 // Email sending functionality
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 export function sanitizeTeamName(name: string): string {
   return name.replace(/[<>&'"]/g, "");
@@ -85,6 +85,7 @@ export async function sendInviteEmail(
     inviter: string;
     roles: Array<string>;
   },
+  c: AppContext,
 ) {
   const htmlProps: EmailBodyProps = {
     inviteId: id,
@@ -92,6 +93,7 @@ export async function sendInviteEmail(
     inviter,
     roles,
   };
+  const { RESEND_API_KEY } = getEnv(c);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

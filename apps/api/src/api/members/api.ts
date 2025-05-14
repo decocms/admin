@@ -468,7 +468,7 @@ export const inviteTeamMembers = createApiHandler({
         ...invite,
         inviter: user.email || "Unknown",
         roles: rolesNames,
-      });
+      }, c);
     });
 
     await Promise.all(requestPromises || []);

@@ -57,6 +57,7 @@ export const getEnv = (ctx: AppContext) => {
     SUPABASE_SERVER_TOKEN,
     TURSO_GROUP_DATABASE_TOKEN,
     TURSO_ORGANIZATION,
+    RESEND_API_KEY,
   } = honoEnv(ctx);
 
   if (
@@ -80,6 +81,7 @@ export const getEnv = (ctx: AppContext) => {
     SUPABASE_SERVER_TOKEN,
     TURSO_GROUP_DATABASE_TOKEN,
     TURSO_ORGANIZATION,
+    RESEND_API_KEY,
   };
 };
 

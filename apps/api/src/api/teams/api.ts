@@ -245,7 +245,8 @@ export const listTeams = createApiHandler({
           admin
         )
       `)
-      .eq("members.user_id", user.id);
+      .eq("members.user_id", user.id)
+      .is("members.deleted_at", null);
 
     if (error) {
       console.error(error);

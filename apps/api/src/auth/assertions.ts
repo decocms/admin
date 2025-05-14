@@ -16,6 +16,7 @@ export const assertUserHasAccessToTeamById = async (
     .select("id")
     .eq("team_id", teamId)
     .eq("user_id", userId)
+    .is("deleted_at", null)
     .single();
 
   if (data) {

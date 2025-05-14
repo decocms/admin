@@ -31,14 +31,14 @@ import { Header as SidebarHeader } from "./header.tsx";
 
 const STATIC_ITEMS = [
   {
-    url: "/integrations",
-    title: "Integrations",
-    icon: "widgets",
-  },
-  {
     url: "/agents",
     title: "Agents",
     icon: "groups",
+  },
+  {
+    url: "/integrations",
+    title: "Integrations",
+    icon: "widgets",
   },
   {
     url: "/triggers",

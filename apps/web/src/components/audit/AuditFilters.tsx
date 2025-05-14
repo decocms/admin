@@ -1,4 +1,4 @@
-import { Label } from "@deco/ui/components/label.tsx";
+import type { Agent, Member } from "@deco/sdk";
 import {
   Select,
   SelectContent,
@@ -6,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import type { Agent, Member } from "@deco/sdk";
 
 interface AuditFiltersProps {
   agents: Agent[];

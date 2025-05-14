@@ -1,4 +1,166 @@
+import { z } from "zod";
+import { AgentSchema } from "./agent.ts";
+
 // deno-lint-ignore-file no-explicit-any
 // TODO(@mcandeia) move from actors types
 export type TriggerData = any;
 export type TriggerRun = any;
+
+/**
+ * Schema for tool call validation
+ */
+export const PromptSchema = z.object({
+    threadId: z.string().optional().describe(
+      "if not provided, the same conversation thread will be used, you can pass any string you want to use",
+    ),
+    resourceId: z.string().optional().describe(
+      "if not provided, the same resource will be used, you can pass any string you want to use",
+    ),
+    messages: z.array(z.object({
+      role: z.enum(["user", "assistant", "system"]),
+      content: z.string(),
+    })).describe("The messages to send to the LLM"),
+  });
+  
+  /**
+   * Schema for cron trigger validation
+   */
+  export const CronTriggerSchema = z.object({
+    title: z.string().describe("The title of the trigger"),
+    description: z.string().optional().describe(
+      "The description of the trigger",
+    ),
+    cron_exp: z.string(),
+    prompt: PromptSchema,
+    type: z.literal("cron"),
+  });
+  
+  /**
+   * Schema for webhook trigger validation
+   */
+  export const WebhookTriggerSchema = z.object({
+    title: z.string().describe("The title of the trigger"),
+    description: z.string().optional().describe(
+      "The description of the trigger",
+    ),
+    type: z.literal("webhook"),
+    passphrase: z.string().optional().describe("The passphrase for the webhook"),
+    schema: z.record(z.string(), z.unknown()).optional().describe(
+      "The JSONSchema of the returning of the webhook.\n\n" +
+        "By default this webhook returns the LLM generate text response.\n\n" +
+        "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+    ),
+  });
+
+  export const WebhookTriggerOutputSchema = z.object({
+    title: z.string().describe("The title of the trigger"),
+    description: z.string().optional().describe(
+      "The description of the trigger",
+    ),
+    type: z.literal("webhook"),
+    passphrase: z.string().optional().describe("The passphrase for the webhook"),
+    schema: z.record(z.string(), z.unknown()).optional().describe(
+      "The JSONSchema of the returning of the webhook.\n\n" +
+        "By default this webhook returns the LLM generate text response.\n\n" +
+        "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+    ),
+    url: z.string().describe("The URL of the webhook"),
+  });
+  
+  /**
+   * Input schema for creating new triggers
+   */
+  export const CreateCronTriggerInputSchema = CronTriggerSchema;
+  
+  export const CreateWebhookTriggerInputSchema = WebhookTriggerSchema;
+  
+  export type CreateTriggerInput =
+    | z.infer<typeof CreateCronTriggerInputSchema>
+    | z.infer<typeof CreateWebhookTriggerInputSchema>;
+
+  /**
+   * Output schema for the trigger creation operation
+   */
+  export const CreateCronTriggerOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    id: z.string(),
+  });
+  
+  /**
+   * Input schema for deleting a trigger
+   */
+  export const DeleteTriggerInputSchema = z.object({
+    id: z.string().describe("The trigger ID"),
+  });
+  
+  /**
+   * Output schema for trigger deletion results
+   */
+  export const DeleteTriggerOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+  });
+  
+  export const TriggerSchema = z.union([
+    CreateCronTriggerInputSchema,
+    CreateWebhookTriggerInputSchema,
+  ]);
+
+  /**
+   * Input schema for getting webhook trigger URL
+   */
+  export const GetWebhookTriggerUrlInputSchema = z.object({
+    id: z.string().describe("The trigger ID"),
+  });
+  
+  /**
+   * Output schema for webhook trigger URL results
+   */
+  export const GetWebhookTriggerUrlOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    url: z.string().optional().describe("The URL of the webhook trigger"),
+  });
+
+  /**
+   * Output schema for trigger results
+   */
+  export const TriggerOutputSchema = z.object({
+    id: z.string().describe("The trigger ID"),
+    agent: AgentSchema,
+    created_at: z.string().describe("The creation date"),
+    updated_at: z.string().describe("The update date"),
+    user: z.object({
+      id: z.string().describe("The user ID"),
+      metadata: z.object({
+        full_name: z.string().describe("The user name"),
+        email: z.string().describe("The user email"),
+        avatar_url: z.string().describe("The user avatar"),
+      }),
+    }),
+    workspace: z.string().describe("The workspace ID"),
+    data: TriggerSchema,
+  });
+
+  export const CreateTriggerOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    trigger: TriggerOutputSchema.nullable().describe("The created trigger"),
+  });
+
+  /**
+   * Output schema for trigger listing results
+   */
+  export const ListTriggersOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    triggers: z.array(TriggerOutputSchema),
+  });
+  
+  export const CreateWebhookTriggerOutputSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    id: z.string(),
+    url: z.string().optional().describe("The URL of the webhook"),
+  });

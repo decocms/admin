@@ -1,7 +1,37 @@
 import { AgentSchema, NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
-import { createApiHandler } from "../../utils/context.ts";
+import { AppContext, createApiHandler } from "../../utils/context.ts";
+
+export const getAgentsByIds = async (ids: string[], workspace: string, c: AppContext) => {
+  if (ids.length === 0) return [];
+
+  const dbIds = ids.filter((id) => !(id in WELL_KNOWN_AGENTS));
+
+  let dbAgents: z.infer<typeof AgentSchema>[] = [];
+  if (dbIds.length > 0) {
+    const { data, error } = await c.get("db")
+      .from("deco_chat_agents")
+      .select("*")
+      .in("id", dbIds)
+      .eq("workspace", workspace);
+
+    if (error) {
+      throw error;
+    }
+
+    dbAgents = data.map((item) => AgentSchema.parse(item));
+  }
+
+  return ids
+    .map((id) => {
+      if (id in WELL_KNOWN_AGENTS) {
+        return AgentSchema.parse(WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS]);
+      }
+      return dbAgents.find((agent) => agent.id === id);
+    })
+    .filter((a): a is z.infer<typeof AgentSchema> => !!a);
+};
 
 export const listAgents = createApiHandler({
   name: "AGENTS_LIST",

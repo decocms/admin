@@ -1,4 +1,3 @@
-import type { Trigger } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -8,9 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
+import { TriggerOutputSchema } from "@deco/sdk";
+import { z } from "zod";
 
 interface TriggerActionsProps {
-  trigger: Trigger;
+  trigger: z.infer<typeof TriggerOutputSchema>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

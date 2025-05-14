@@ -47,7 +47,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cronExp: z.string(),
+  cron_exp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });
@@ -123,6 +123,12 @@ export const GetWebhookTriggerUrlOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
   url: z.string().optional().describe("The URL of the webhook trigger"),
+});
+
+export const CreateTriggerOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  trigger: TriggerSchema.optional().describe("The created trigger"),
 });
 
 /**
@@ -354,7 +360,7 @@ export const createCronTrigger = async ({
       type: "cron",
       title: trigger.title,
       description: trigger.description,
-      cronExp: trigger.cronExp,
+      cron_exp: trigger.cron_exp,
       prompt: {
         ...trigger.prompt,
         resourceId: trigger.prompt.resourceId ?? resourceId,

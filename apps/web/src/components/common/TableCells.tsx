@@ -62,6 +62,7 @@ function UserInfo({
   className,
   showDetails = false,
 }: UserInfoProps) {
+  console.log("userId", userId);
   const user = useUser();
   const params = useParams();
   const resolvedTeamSlug = params.teamSlug;

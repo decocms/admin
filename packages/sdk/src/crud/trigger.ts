@@ -1,6 +1,8 @@
-import { API_HEADERS, LEGACY_API_SERVER_URL } from "../constants.ts";
+import { API_HEADERS, API_SERVER_URL } from "../constants.ts";
 import { z } from "zod";
 import { Agent } from "../models/agent.ts";
+import { callToolFor } from "../fetcher.ts";
+import { ListTriggersOutputSchema } from "../models/trigger.ts";
 
 export interface Trigger {
   id: string;
@@ -25,43 +27,45 @@ export interface Trigger {
   };
 }
 
-export interface ListTriggersResult {
-  success: boolean;
-  message: string;
-  actions?: Trigger[];
-}
-
 const toPath = (segments: string[]) => segments.join("/");
 
 const fetchAPI = (path: string, init?: RequestInit) =>
-  fetch(new URL(path, LEGACY_API_SERVER_URL), {
+  fetch(new URL(path, API_SERVER_URL), {
     ...init,
     credentials: "include",
     headers: { ...API_HEADERS, ...init?.headers },
   });
 
 export const listTriggers = async (context: string, agentId: string) => {
-  const response = await fetchAPI(
-    toPath([context, "agent", agentId, "actions"]),
+  const response = await callToolFor(
+    context,
+    "TRIGGERS_LIST",
+    { agentId },
   );
 
   if (response.ok) {
-    return response.json() as Promise<ListTriggersResult>;
+    return (await response.json()) as {
+      data: z.infer<typeof ListTriggersOutputSchema>;
+    };
   }
 
-  throw new Error("Failed to list actions");
+  throw new Error("Failed to list triggers");
 };
 
 export const listAllTriggers = async (context: string) => {
-  const response = await fetchAPI(
-    toPath([context, "actions"]),
+  const response = await callToolFor(
+    context,
+    "TRIGGERS_LIST",
+    {},
   );
 
   if (response.ok) {
-    return response.json() as Promise<ListTriggersResult>;
+    return (await response.json()) as {
+      data: z.infer<typeof ListTriggersOutputSchema>;
+    };
   }
 
-  throw new Error("Failed to list actions");
+  throw new Error("Failed to list triggers");
 };
 
 export const createTrigger = async (
@@ -69,12 +73,10 @@ export const createTrigger = async (
   agentId: string,
   trigger: CreateTriggerInput,
 ) => {
-  const response = await fetchAPI(
-    toPath([context, "agent", agentId, "action"]),
-    {
-      method: "POST",
-      body: JSON.stringify({ trigger }),
-    },
+  const response = await callToolFor(
+    context,
+    "TRIGGERS_CREATE",
+    { agentId, data: trigger },
   );
 
   if (response.ok) {

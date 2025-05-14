@@ -14,8 +14,9 @@ const getUserMetadata = (user: SupaUser): User["metadata"] => {
   const full_name = metadata?.full_name;
   const avatar_url = metadata?.avatar_url;
   const username = full_name ? generateUsername(full_name) : user?.email ?? "";
+  const email = metadata?.email ?? "";
 
-  return { full_name, avatar_url, username };
+  return { email, full_name, avatar_url, username };
 };
 
 const generateUsername = (fullName: string) => {

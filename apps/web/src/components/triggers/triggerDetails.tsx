@@ -1,4 +1,4 @@
-import { type Trigger, useListTriggersByAgentId } from "@deco/sdk";
+import { TriggerSchema, useListTriggersByAgentId } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -9,10 +9,11 @@ import { AuditListContent } from "../audit/list.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { WebhookDetails } from "./webhookDetails.tsx";
+import { z } from "zod";
 
 const useTrigger = (agentId: string, triggerId: string) => {
   const { data: triggers, isLoading } = useListTriggersByAgentId(agentId);
-  const trigger = triggers?.actions?.find((t) => t.id === triggerId);
+  const trigger = triggers?.triggers?.find((t) => t.id === triggerId);
 
   return { trigger, isLoading };
 };
@@ -54,24 +55,26 @@ export function TriggerDetails(
       <ScrollArea className="min-h-0">
         <div className="flex flex-col gap-4 px-4">
           <div className="flex items-center gap-2">
-            <TriggerIcon type={trigger.type} />
-            <h2 className="text-xl font-semibold">{trigger.title}</h2>
+            <TriggerIcon type={trigger.data.type} />
+            <h2 className="text-xl font-semibold">{trigger.data.title}</h2>
             <Badge variant="outline" className="ml-2">
-              {trigger.type}
+              {trigger.data.type}
             </Badge>
           </div>
 
-          {trigger.description && (
+          {trigger.data.description && (
             <div className="px-2">
               <h4 className="text-sm font-medium mb-1">Description</h4>
               <p className="text-sm text-muted-foreground">
-                {trigger.description}
+                {trigger.data.description}
               </p>
             </div>
           )}
 
-          {trigger.type === "webhook" && <WebhookDetails trigger={trigger} />}
-          {trigger.type === "cron" && <CronDetails trigger={trigger} />}
+          {trigger.data.type === "webhook" && (
+            <WebhookDetails trigger={trigger} />
+          )}
+          {trigger.data.type === "cron" && <CronDetails trigger={trigger} />}
 
           <div className="mt-10">
             <h3 className="text-lg font-semibold mb-2">Logs</h3>
@@ -104,7 +107,7 @@ export default function Page() {
         <DefaultBreadcrumb
           items={[
             { label: "Triggers", link: "/triggers" },
-            ...(trigger?.title ? [{ label: trigger.title }] : []),
+            ...(trigger?.data.title ? [{ label: trigger.data.title }] : []),
           ]}
         />
       }
@@ -119,7 +122,9 @@ export default function Page() {
   );
 }
 
-function TriggerIcon({ type }: { type: Trigger["type"] }) {
+function TriggerIcon(
+  { type }: { type: z.infer<typeof TriggerSchema>["type"] },
+) {
   return (
     <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md">
       {type === "cron" && (

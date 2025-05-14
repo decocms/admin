@@ -1,12 +1,14 @@
+import { ActorConstructor, StubFactory } from "@deco/actors";
+import { AIAgent, Trigger } from "@deco/ai/actors";
+import { Client } from "@deco/sdk/storage";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
 import { type User as SupaUser } from "@supabase/supabase-js";
 import Cloudflare from "cloudflare";
 import { Context } from "hono";
 import { env as honoEnv } from "hono/adapter";
+import type { TimingVariables } from "hono/timing";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { Client } from "@deco/sdk/storage";
-import type { TimingVariables } from "hono/timing";
 import type { Client } from "../db/client.ts";
 
 export type AppEnv = {
@@ -15,6 +17,13 @@ export type AppEnv = {
     user: SupaUser;
     cf: Cloudflare;
     immutableRes?: boolean;
+    stub: <
+      Constructor extends
+        | ActorConstructor<Trigger>
+        | ActorConstructor<AIAgent>,
+    >(
+      c: Constructor,
+    ) => StubFactory<InstanceType<Constructor>>;
   } & TimingVariables;
   Bindings: {
     SUPABASE_URL: string;

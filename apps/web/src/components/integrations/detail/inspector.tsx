@@ -173,7 +173,7 @@ Inspector.UI = ({ connection }: InspectorProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-3xl mx-auto">
       <div className="flex items-center justify-between gap-2">
         <div className="text-2xl font-bold">
           Inspector

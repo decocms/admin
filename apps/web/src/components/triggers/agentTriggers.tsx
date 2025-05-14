@@ -39,7 +39,7 @@ export function AgentTriggers() {
   );
 
   return (
-    <div className="py-8 flex flex-col gap-4 h-full">
+    <div className="py-8 flex flex-col gap-4 h-full max-w-3xl mx-auto">
       <div className="flex items-center gap-4 px-2">
         <div className="relative flex-1">
           <Input

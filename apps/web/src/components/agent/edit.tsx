@@ -69,7 +69,6 @@ const TABS = {
     title: "Agent Triggers",
     initialOpen: true,
   },
-
   chat: {
     Component: Chat,
     title: "Chat preview",

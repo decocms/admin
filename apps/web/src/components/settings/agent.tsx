@@ -91,36 +91,36 @@ function SettingsTab({ formId }: SettingsTabProps) {
 
   return (
     <Form {...form}>
-      <div className="h-full overflow-y-auto w-full p-4">
+      <div className="h-full overflow-y-auto w-full p-4 max-w-3xl mx-auto">
         <form
           id={formId}
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4 py-2 pb-16"
+          className="space-y-6 py-2 pb-16"
         >
-          {/* Avatar Section */}
-          <div className="flex justify-center">
-            <div className="h-40 w-40">
-              <AgentAvatar
-                name={agent.name}
-                avatar={agent.avatar}
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-
           <FormField
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input
-                    className="rounded-md"
-                    placeholder="Enter agent name"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16">
+                    <AgentAvatar
+                      name={agent.name}
+                      avatar={agent.avatar}
+                      className="rounded-lg"
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        className="rounded-md"
+                        placeholder="Enter agent name"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </div>
               </FormItem>
             )}
           />
@@ -134,6 +134,7 @@ function SettingsTab({ formId }: SettingsTabProps) {
                   <ModelSelector
                     model={field.value}
                     onModelChange={(newValue) => field.onChange(newValue)}
+                    variant="bordered"
                   />
                 </FormControl>
                 <FormMessage />

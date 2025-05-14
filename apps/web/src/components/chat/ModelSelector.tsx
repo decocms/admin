@@ -101,11 +101,13 @@ function SelectedModelDisplay({ model }: { model: typeof MODELS[0] }) {
 interface ModelSelectorProps {
   model?: string;
   onModelChange?: (model: string) => void;
+  variant?: "borderless" | "bordered";
 }
 
 export function ModelSelector({
   model = DEFAULT_REASONING_MODEL,
   onModelChange,
+  variant = "borderless",
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
@@ -124,7 +126,12 @@ export function ModelSelector({
       value={mapLegacyModelId(model)}
       onValueChange={(value) => handleModelChange(value)}
     >
-      <ResponsiveSelectTrigger className="!h-8 text-xs hover:bg-slate-100 py-0 px-2 shadow-none md:border-none">
+      <ResponsiveSelectTrigger
+        className={cn(
+          "!h-8 text-xs hover:bg-slate-100 py-0 px-2 shadow-none",
+          variant === "borderless" && "md:border-none",
+        )}
+      >
         <ResponsiveSelectValue placeholder="Select model">
           <SelectedModelDisplay model={selectedModel} />
         </ResponsiveSelectValue>

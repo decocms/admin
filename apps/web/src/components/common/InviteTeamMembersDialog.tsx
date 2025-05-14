@@ -64,10 +64,7 @@ export function InviteTeamMembersDialog({
 }: InviteTeamMembersDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  console.log("Dialog state:", { isOpen, teamId });
-
   const handleOpenChange = (open: boolean) => {
-    console.log("Dialog open change:", { current: isOpen, new: open });
     setIsOpen(open);
   };
 

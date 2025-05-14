@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
@@ -37,7 +38,6 @@ import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
-import { Badge } from "../../../../../packages/ui/src/components/badge.tsx";
 
 function MemberTitle() {
   return (

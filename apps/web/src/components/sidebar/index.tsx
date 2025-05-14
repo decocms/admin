@@ -178,7 +178,6 @@ function InvitesLink() {
   const href = "/invites";
   const match = useMatch(href);
 
-  console.log({ invites });
   // If no invites, don't show the link
   if (!invites.length) {
     return null;

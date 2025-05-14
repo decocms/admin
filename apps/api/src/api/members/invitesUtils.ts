@@ -108,7 +108,7 @@ export async function sendInviteEmail(
   });
 
   if (res.status >= 400) {
-    console.log(await res.json());
+    console.error("[Resend Error] error sending email", await res.text());
     throw new Error(res.statusText);
   }
 

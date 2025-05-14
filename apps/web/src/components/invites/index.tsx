@@ -113,7 +113,6 @@ function InvitesViewContent() {
   const acceptInviteMutation = useAcceptInvite();
   const navigate = useNavigate();
 
-  console.log({ invites });
   if (!invites.length) {
     return <InvitesViewEmpty />;
   }

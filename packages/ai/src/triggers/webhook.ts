@@ -22,6 +22,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       ? new URL(trigger.metadata.reqUrl)
       : undefined;
 
+    const useStream = url?.searchParams.get("stream") === "true";
     const { threadId, resourceId } = threadOf(data, url);
 
     const agent = trigger.state.stub(AIAgent).new(trigger.agentId)
@@ -53,6 +54,9 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       const schema = data.schema || (args as { schema: any }).schema;
       return await agent.generateObject(messages, schema).then((r) => r.object);
     }
-    return await agent.generate(messages);
+
+    return useStream
+      ? await agent.stream(messages)
+      : await agent.generate(messages);
   },
 };

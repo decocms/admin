@@ -155,7 +155,7 @@ export const useAgentRoot = (agentId: string) => {
 
 // TODO: I guess we can improve this and have proper typings
 export const useAgentStub = (
-  agentId = WELL_KNOWN_AGENT_IDS.teamAgent,
+  agentId: string = WELL_KNOWN_AGENT_IDS.teamAgent,
   threadId?: string,
 ) => {
   const agentRoot = useAgentRoot(agentId);

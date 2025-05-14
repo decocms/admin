@@ -1,6 +1,5 @@
 import "./polyfills.ts";
 
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
@@ -12,11 +11,9 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
-import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
-import { EmptyState } from "./components/common/EmptyState.tsx";
 
+import { EmptyState } from "./components/common/EmptyState.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
-import { trackException } from "./hooks/analytics.ts";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -43,9 +40,13 @@ const RouteLayout = lazy(() =>
     default: mod.RouteLayout,
   }))
 );
-
 const Login = lazy(() => import("./components/login/index.tsx"));
 const About = lazy(() => import("./components/about/index.tsx"));
+const PageviewTracker = lazy(() =>
+  import("./components/analytics/PageviewTracker.tsx").then((mod) => ({
+    default: mod.PageviewTracker,
+  }))
+);
 
 /**
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
@@ -187,12 +188,13 @@ function Router() {
             <Chat
               includeThreadTools
               disableThreadMessages
-              agentId={WELL_KNOWN_AGENT_IDS.teamAgent}
+              agentId="teamAgent"
               threadId={crypto.randomUUID()}
               key="disabled-messages"
             />
           }
         />
+
         <Route
           path="wallet"
           element={<Wallet />}
@@ -254,11 +256,16 @@ createRoot(document.getElementById("root")!).render(
       <ErrorBoundary
         fallback={<ErrorFallback />}
         shouldCatch={(error) => {
-          trackException(error);
+          import("./hooks/analytics.ts").then((mod) =>
+            mod.trackException(error)
+          );
+
           return true;
         }}
       >
-        <PageviewTracker />
+        <Suspense fallback={null}>
+          <PageviewTracker />
+        </Suspense>
         <Suspense
           fallback={
             <div className="h-full w-full flex items-center justify-center">

@@ -39,7 +39,7 @@ export const API_HEADERS = {
 export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
   setupAgent: "setupAgent",
-};
+} as const;
 
 export interface Model {
   id: string;

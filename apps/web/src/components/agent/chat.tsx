@@ -26,8 +26,11 @@ import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 
+export type WellKnownAgents =
+  typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
+
 interface Props {
-  agentId?: string;
+  agentId?: WellKnownAgents;
   threadId?: string;
   disableThreadMessages?: boolean;
   includeThreadTools?: boolean;

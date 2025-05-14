@@ -409,6 +409,7 @@ Inspector.UI = ({ connection }: InspectorProps) => {
                         <Separator />
                       </div>
                       <ToolCallForm
+                        key={selectedToolObject.name}
                         tool={selectedToolObject}
                         onSubmit={handleToolCall}
                         onCancel={handleCancelToolCall}

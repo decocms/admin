@@ -49,7 +49,7 @@ export function generateEmailBody(
   <!-- Logo Row -->
   <tr>
     <td style="padding: 24px;">
-      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/f57315b2-b88e-4977-9178-40c105af44cb" alt="Logo"/>
+      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://drive.google.com/uc?export=view&id=1s9sphIlB7ZyKzlFtYAw9Karhh0ARIgFh" alt="Logo"/>
     </td>
   </tr>
 

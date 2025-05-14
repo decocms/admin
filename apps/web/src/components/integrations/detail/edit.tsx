@@ -21,6 +21,7 @@ import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import { Inspector } from "./inspector.tsx";
+import { trackEvent } from "../../../hooks/analytics.ts";
 
 function MainChat() {
   return (
@@ -88,6 +89,31 @@ export default function Page() {
 
   const handleDiscard = () => form.reset(integration);
 
+  const onSubmit = async (data: Integration) => {
+    try {
+      // Update the existing integration
+      await updateIntegration.mutateAsync(data);
+
+      trackEvent("integration_update", {
+        success: true,
+        data,
+      });
+
+      form.reset(data);
+    } catch (error) {
+      console.error(
+        `Error updating integration:`,
+        error,
+      );
+
+      trackEvent("integration_create", {
+        success: false,
+        error,
+        data,
+      });
+    }
+  };
+
   return (
     <ChatProvider
       agentId={agentId}
@@ -99,7 +125,7 @@ export default function Page() {
       }}
     >
       <Context.Provider
-        value={{ form, integration, updateIntegration }}
+        value={{ form, integration, onSubmit }}
       >
         <PageLayout
           tabs={TABS}
@@ -122,6 +148,9 @@ export default function Page() {
               <Button
                 className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
                 disabled={!numberOfChanges}
+                onClick={() => {
+                  onSubmit(form.getValues());
+                }}
               >
                 {isMutating
                   ? (

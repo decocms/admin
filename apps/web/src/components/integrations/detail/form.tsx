@@ -1,4 +1,4 @@
-import { type Integration, type MCPConnection } from "@deco/sdk";
+import { type MCPConnection } from "@deco/sdk";
 import {
   Form,
   FormControl,
@@ -19,14 +19,13 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef } from "react";
-import { trackEvent } from "../../../hooks/analytics.ts";
 import { useFormContext } from "./context.ts";
 
 export function DetailForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     integration: editIntegration,
-    updateIntegration,
+    onSubmit,
     form,
   } = useFormContext();
 
@@ -81,31 +80,6 @@ export function DetailForm() {
   // Function to trigger file input click
   const triggerFileInput = () => {
     fileInputRef.current?.click();
-  };
-
-  const onSubmit = async (data: Integration) => {
-    try {
-      // Update the existing integration
-      await updateIntegration.mutateAsync(data);
-
-      trackEvent("integration_update", {
-        success: true,
-        data,
-      });
-
-      form.reset(data);
-    } catch (error) {
-      console.error(
-        `Error updating integration:`,
-        error,
-      );
-
-      trackEvent("integration_create", {
-        success: false,
-        error,
-        data,
-      });
-    }
   };
 
   return (

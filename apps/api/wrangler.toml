@@ -17,3 +17,25 @@ enabled = true
 [[dispatch_namespaces]]
 binding = "PROD_DISPATCHER"
 namespace = "deco-chat-prod"
+
+services = [{ binding = "WALLET", service = "wallet" }]
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[[durable_objects.bindings]]
+name = "AIAGENT"
+class_name = "AIAgent"
+
+[[durable_objects.bindings]]
+name = "TRIGGER"
+class_name = "Trigger"
+
+# Durable Object migrations.
+# Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["Trigger", "AIAgent"]
+
+[[tail_consumers]]
+service = "hyperdx-tail"

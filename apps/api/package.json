@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno serve -A --port 3001 --unstable-hmr --env-file=../web/.env main.ts",
+    "dev": "deno serve -A --port 3001 --unstable-hmr --unstable-kv --env-file=../web/.env main.ts",
     "dev:wrangler": "wrangler dev --port 3001"
   },
   "dependencies": {
+    "@deco/actors": "npm:@jsr/deco__actors@0.33.0",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.3.7",
     "@deco/sdk": "^0.1.1",
+    "@deco/ai": "^1.0.0",
     "@libsql/client": "^0.15.4",
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "ai": "^4.3.13",

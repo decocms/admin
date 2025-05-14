@@ -52,7 +52,10 @@ export const getMyInvites = async (
     throw new Error("Failed to fetch invites");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as {
+    data: Invite[];
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch invites");
@@ -79,13 +82,16 @@ export const acceptInvite = async (
     throw new Error("Failed to accept invite");
   }
 
-  const data = await response.json();
+  const data = await response.json() as {
+    data: { ok: boolean; teamId: number; teamName: string; teamSlug: string };
+    error: Error;
+  };
 
   if (data.error) {
     throw new Error(data.error.message || "Failed to accept invite");
   }
 
-  return data;
+  return data.data;
 };
 
 /**
@@ -106,7 +112,10 @@ export const getTeamMembers = async (
     throw new Error("Failed to fetch team members");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as {
+    data: Member[];
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch team members");
@@ -132,7 +141,10 @@ export const getTeamRoles = async (
     throw new Error("Failed to fetch team roles");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as {
+    data: Role[];
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch team roles");
@@ -163,7 +175,10 @@ export const inviteTeamMembers = async (
     throw new Error("Failed to invite team members");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as {
+    data: { message: string };
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to invite team members");
@@ -191,7 +206,10 @@ export const removeTeamMember = async (
     throw new Error("Failed to remove team member");
   }
 
-  const { data, error } = await response.json();
+  const { data, error } = await response.json() as {
+    data: { success: boolean };
+    error: Error;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to remove team member");

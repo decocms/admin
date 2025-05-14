@@ -35,3 +35,7 @@ dist-ssr
 .wrangler
 dist
 .dev.vars
+
+kv
+kv-shm
+kv-wal

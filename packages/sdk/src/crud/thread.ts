@@ -52,7 +52,10 @@ export const listThreads = async (
     throw new Error(reason ?? "Failed to list threads");
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as {
+    error: string;
+    data: ThreadList;
+  };
 
   if (error) {
     throw new Error(error);
@@ -88,7 +91,10 @@ export async function getThread(
     );
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as {
+    error: string;
+    data: ThreadDetails;
+  };
 
   if (error) {
     throw new Error(error);
@@ -124,7 +130,10 @@ export async function getThreadMessages(
     );
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as {
+    error: string;
+    data: ThreadMessage[];
+  };
 
   if (error) {
     throw new Error(error);
@@ -155,7 +164,10 @@ export async function getThreadTools(
     );
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as {
+    error: string;
+    data: ThreadTools;
+  };
 
   if (error) {
     throw new Error(error);

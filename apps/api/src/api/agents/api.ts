@@ -1,8 +1,7 @@
-import { AgentSchema } from "@deco/sdk";
+import { AgentSchema, NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { createApiHandler } from "../../utils/context.ts";
-import { NEW_AGENT_TEMPLATE, WELL_KNOWN_AGENTS } from "./well-known.ts";
 
 export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
@@ -47,7 +46,10 @@ export const getAgent = createApiHandler({
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(root, slug, c),
       id in WELL_KNOWN_AGENTS
-        ? { data: WELL_KNOWN_AGENTS[id], error: null }
+        ? {
+          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          error: null,
+        }
         : c.get("db")
           .from("deco_chat_agents")
           .select("*")

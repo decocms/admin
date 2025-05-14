@@ -3,6 +3,7 @@ import { callToolFor } from "../fetcher.ts";
 export interface User {
   id: string;
   email: string;
+  is_anonymous: boolean;
   metadata: {
     avatar_url: string;
     full_name?: string;
@@ -28,7 +29,10 @@ export const fetchUser = async () => {
     throw new Error("Failed to fetch user");
   }
 
-  const { error, data } = await response.json();
+  const { error, data } = await response.json() as {
+    error: Error;
+    data: User;
+  };
 
   if (error) {
     throw new Error(error.message || "Failed to fetch user");

@@ -45,6 +45,12 @@ const CAPABILITY_CONFIGS = {
     text: "text-amber-700",
     label: "Can search the web to answer questions",
   },
+  "mixed": {
+    icon: "cyclone",
+    bg: "bg-slate-100",
+    text: "text-slate-700",
+    label: "Mixed capabilities",
+  }
 } as const;
 
 function CapabilityBadge(
@@ -74,6 +80,22 @@ function CapabilityBadge(
 }
 
 function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
+  if (model.id === "auto") {
+    return (
+      <div className="p-2 md:w-[400px] flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-normal font-medium">Auto</span>
+          <div className="flex items-center gap-2 ml-auto">
+            <CapabilityBadge capability="mixed" />
+          </div>
+        </div>
+        {model.description && (
+          <p className="text-[10px] max-w-[250px] text-gray-500">{model.description}</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="p-2 md:w-[400px] flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">

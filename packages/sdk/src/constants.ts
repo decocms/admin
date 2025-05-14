@@ -51,6 +51,7 @@ export interface Model {
   logo: string;
   capabilities: Capability[];
   legacyId?: string;
+  description?: string;
 }
 
 const LOGOS = {
@@ -64,7 +65,8 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
-export const DEFAULT_REASONING_MODEL = "anthropic:claude-3.7-sonnet:thinking";
+export const DEFAULT_REASONING_MODEL = "auto";
+export const CURRENT_AUTO_MODEL = "openai:gpt-4.1-mini";
 
 type Capability =
   | "reasoning"
@@ -73,6 +75,13 @@ type Capability =
   | "web-search";
 
 export const MODELS: Model[] = [
+  {
+    id: "auto",
+    name: "Auto",
+    description: "deco.chat will automatically choose the best model for you, based on performance and speed.",
+    logo: "",
+    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
+  },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude 3.7 Sonnet",

@@ -102,7 +102,6 @@ export function PageLayout({
             "mb-0 md:-mb-2 empty:mb-0",
             "min-h-14 empty:min-h-0",
             "justify-self-end",
-            "[&_:is(span,svg)]:hidden! [&_:is(span,svg):first-child]:inline-flex! md:[&_:is(span,svg)]:inline!",
           )}
         >
           {actionButtons}

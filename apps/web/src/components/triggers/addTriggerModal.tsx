@@ -103,7 +103,7 @@ export function AddTriggerModal({ agentId }: {
           title="Add Trigger"
         >
           <Icon name="add" />
-          <span>Create trigger</span>
+          <span className="hidden md:inline">Create trigger</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

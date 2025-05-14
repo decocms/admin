@@ -2,9 +2,13 @@ import {
   type Integration,
   IntegrationSchema,
   useIntegration,
+  useUpdateIntegration,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
@@ -54,7 +58,7 @@ const TABS: Record<string, Tab> = {
   },
 };
 
-export default function Edit() {
+export default function Page() {
   const { id } = useParams();
   const integrationId = id!;
   const { data: integration } = useIntegration(integrationId);
@@ -77,6 +81,13 @@ export default function Edit() {
     },
   });
 
+  const updateIntegration = useUpdateIntegration();
+  const isMutating = updateIntegration.isPending;
+
+  const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
+
+  const handleDiscard = () => form.reset(integration);
+
   return (
     <ChatProvider
       agentId={agentId}
@@ -87,9 +98,47 @@ export default function Edit() {
           `Please help me set up this new integration. Enable integration with installation ID: ${integrationId} and help me explore its tools`,
       }}
     >
-      <Context.Provider value={{ form, integration }}>
+      <Context.Provider
+        value={{ form, integration, updateIntegration }}
+      >
         <PageLayout
           tabs={TABS}
+          actionButtons={
+            <div
+              className={cn(
+                "flex items-center gap-2",
+                "transition-opacity",
+                numberOfChanges > 0 ? "opacity-100" : "opacity-0",
+              )}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                className="text-slate-700"
+                onClick={handleDiscard}
+              >
+                Discard
+              </Button>
+              <Button
+                className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
+                disabled={!numberOfChanges}
+              >
+                {isMutating
+                  ? (
+                    <>
+                      <Spinner size="xs" />
+                      <span>Saving...</span>
+                    </>
+                  )
+                  : (
+                    <span>
+                      Save {numberOfChanges}{" "}
+                      change{numberOfChanges > 1 ? "s" : ""}
+                    </span>
+                  )}
+              </Button>
+            </div>
+          }
           breadcrumb={
             <DefaultBreadcrumb
               items={[

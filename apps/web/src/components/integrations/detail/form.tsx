@@ -1,8 +1,4 @@
-import {
-  type Integration,
-  type MCPConnection,
-  useUpdateIntegration,
-} from "@deco/sdk";
+import { type Integration, type MCPConnection } from "@deco/sdk";
 import {
   Form,
   FormControl,
@@ -13,6 +9,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import {
   Select,
   SelectContent,
@@ -21,24 +18,20 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useRef } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { FormSubmitControls } from "../../common/FormSubmit.tsx";
 import { useFormContext } from "./context.ts";
 
 export function DetailForm() {
-  const { integration: editIntegration, form } = useFormContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const updateIntegration = useUpdateIntegration();
-
-  const isMutating = updateIntegration.isPending;
+  const {
+    integration: editIntegration,
+    updateIntegration,
+    form,
+  } = useFormContext();
 
   const iconValue = form.watch("icon");
   const connection = form.watch("connection");
-
-  const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
 
   // Handle connection type change
   const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
@@ -88,10 +81,6 @@ export function DetailForm() {
   // Function to trigger file input click
   const triggerFileInput = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleDiscard = () => {
-    form.reset(editIntegration);
   };
 
   const onSubmit = async (data: Integration) => {
@@ -343,12 +332,6 @@ export function DetailForm() {
               )}
             </div>
           </div>
-
-          <FormSubmitControls
-            numberOfChanges={numberOfChanges}
-            submitting={isMutating}
-            onDiscard={handleDiscard}
-          />
         </form>
       </Form>
     </ScrollArea>

@@ -577,7 +577,7 @@ export default function Page() {
               : (
                 <>
                   <Icon name="add" />
-                  <span>Create Agent</span>
+                  <span className="hidden md:inline">Create Agent</span>
                 </>
               )}
           </Button>

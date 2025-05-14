@@ -33,7 +33,7 @@ jobs:
             CF_ACCOUNT_ID
             CF_API_TOKEN
             CF_DISPATCH_NAMESPACE
-            RESEND_API_KEY 
+            RESEND_API_KEY
             OPENROUTER_API_KEY
             WALLET_API_KEY
             ANTHROPIC_API_KEY

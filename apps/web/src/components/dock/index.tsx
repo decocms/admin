@@ -1,6 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
   AddPanelOptions,
@@ -370,19 +371,26 @@ Docked.ViewsTrigger = () => {
   const { openPanels } = useDock();
 
   return (
-    <Button
-      onClick={() =>
-        togglePanel({
-          id: DOCKED_VIEWS_TAB.id,
-          component: DOCKED_VIEWS_TAB.id,
-          title: DOCKED_VIEWS_TAB.title,
-        })}
-      variant="ghost"
-      size="icon"
-      className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "bg-accent" : ""}
-    >
-      <Icon name="layers" />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={() =>
+            togglePanel({
+              id: DOCKED_VIEWS_TAB.id,
+              component: DOCKED_VIEWS_TAB.id,
+              title: DOCKED_VIEWS_TAB.title,
+            })}
+          variant="ghost"
+          size="icon"
+          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "bg-accent" : ""}
+        >
+          <Icon name="layers" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        Views
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

@@ -103,16 +103,23 @@ function ActionsButtons() {
         </Tooltip>
       )}
       {displaySettings && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            focusAgent(agentId, crypto.randomUUID(), {
-              history: false,
-            })}
-        >
-          <Icon name="tune" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                focusAgent(agentId, crypto.randomUUID(), {
+                  history: false,
+                })}
+            >
+              <Icon name="tune" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Edit agent
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

@@ -233,18 +233,17 @@ function ToolList({
           return (
             <div
               key={tool.name}
-              className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 border border-slate-200 rounded-lg"
+              role="button"
+              className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 border border-slate-200 rounded-lg cursor-pointer"
+              onClick={() => onToggle(integration.id, tool.name, !selected)}
             >
               <Checkbox
                 id={`${integration.id}-${tool.name}`}
                 checked={selected}
-                onCheckedChange={(checked) =>
-                  onToggle(integration.id, tool.name, !!checked)}
                 className="mt-1"
               />
               <div className="flex flex-col min-w-0">
                 <label
-                  htmlFor={`${integration.id}-${tool.name}`}
                   className={cn(
                     "text-sm truncate cursor-pointer text-slate-700",
                     enabled && !selected && "text-slate-400",
@@ -316,8 +315,8 @@ export function ToolsetSelector({
   );
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="h-full max-w-full md:h-auto md:max-w-[800px] w-full p-0 gap-0 flex flex-col border-none rounded-none md:rounded-lg [&>button]:hidden">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="h-full max-w-full md:h-auto md:max-w-[900px] w-full p-0 gap-0 flex flex-col border-none rounded-none md:rounded-lg [&>button]:hidden">
         <div className="flex flex-col">
           <DialogHeader>
             <div className="md:hidden relative flex items-center justify-between p-4 border-slate-200 text-base text-slate-700">
@@ -410,7 +409,7 @@ export function ToolsetSelector({
             />
           </div>
           <div className="hidden md:flex gap-6 p-4 h-[400px] overflow-hidden">
-            <div className="w-[280px] flex-shrink-0 truncate h-full">
+            <div className="w-[365px] flex-shrink-0 truncate h-full">
               <ScrollArea className="h-full">
                 <IntegrationList
                   integrations={filtered}

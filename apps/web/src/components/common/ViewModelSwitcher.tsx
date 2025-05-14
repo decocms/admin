@@ -11,7 +11,7 @@ export function ViewModeSwitcher({
   onChange,
 }: ViewModeSwitcherProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Button
         variant={viewMode === "cards" ? "secondary" : "ghost"}
         size="icon"
@@ -21,7 +21,7 @@ export function ViewModeSwitcher({
       >
         <Icon
           name="grid_view"
-          size={24}
+          size={16}
           className={viewMode === "cards" ? "text-primary" : "text-slate-500"}
         />
       </Button>
@@ -34,7 +34,7 @@ export function ViewModeSwitcher({
       >
         <Icon
           name="menu"
-          size={24}
+          size={16}
           className={viewMode === "table" ? "text-primary" : "text-slate-500"}
         />
       </Button>

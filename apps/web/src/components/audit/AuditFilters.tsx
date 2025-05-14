@@ -36,7 +36,6 @@ export function AuditFilters({
   return (
     <div className="flex gap-4 items-end overflow-x-auto">
       <div className="flex flex-col gap-2 min-w-[180px]">
-        <Label htmlFor="agent-select">Agent</Label>
         <Select
           value={selectedAgent ?? "all"}
           onValueChange={onAgentChange}

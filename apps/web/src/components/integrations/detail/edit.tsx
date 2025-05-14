@@ -24,7 +24,7 @@ function MainChat() {
       <ScrollArea className="flex-1 min-h-0">
         <ChatMessages />
       </ScrollArea>
-      <div className="pb-4">
+      <div className="p-2">
         <ChatInput />
       </div>
     </div>
@@ -92,9 +92,10 @@ export default function Edit() {
           tabs={TABS}
           breadcrumb={
             <DefaultBreadcrumb
-              icon="widgets"
-              list="Integrations"
-              item={integration?.name}
+              items={[
+                { label: "Integrations", link: "/integrations" },
+                ...(integration?.name ? [{ label: integration.name }] : []),
+              ]}
             />
           }
         />

@@ -1,4 +1,10 @@
-import { Thread, useAgents, useIntegrations, useThreads } from "@deco/sdk";
+import {
+  Thread,
+  useAgents,
+  useIntegrations,
+  useThreads,
+  WELL_KNOWN_AGENT_IDS,
+} from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Sidebar,
@@ -18,10 +24,10 @@ import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import { TeamSelector } from "./TeamSelector.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -170,6 +176,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
+  const focusChat = useFocusChat();
 
   const handleStaticItemClick = (title: string) => {
     trackEvent("sidebar_navigation_click", {
@@ -178,7 +185,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
+    <Sidebar variant="sidebar">
       <SidebarHeader />
 
       <Suspense fallback={null}>
@@ -192,7 +199,20 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
-                  <TeamSelector />
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() =>
+                        focusChat(
+                          WELL_KNOWN_AGENT_IDS.teamAgent,
+                          crypto.randomUUID(),
+                          { history: false },
+                        )}
+                    >
+                      <Icon name="edit_square" size={16} />
+                      <span className="truncate">New chat</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
                   {STATIC_ITEMS.map((item) => {
                     const href = workspaceLink(item.url);
 

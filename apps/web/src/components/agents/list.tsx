@@ -201,7 +201,7 @@ function Actions({ agent }: { agent: Agent }) {
               focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
             }}
           >
-            <Icon name="edit" className="mr-2" />
+            <Icon name="tune" className="mr-2" />
             Edit agent
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -280,7 +280,7 @@ function Card({ agent }: { agent: Agent }) {
   }
   return (
     <UICard
-      className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-2xl p-4 border-slate-200 h-full"
+      className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
       onClick={() => {
         focusChat(agent.id, crypto.randomUUID(), {
           history: false,
@@ -310,10 +310,10 @@ function Card({ agent }: { agent: Agent }) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="text-slate-800 font-semibold truncate">
+            <div className="font-semibold truncate">
               {agent.name}
             </div>
-            <div className="text-sm text-slate-500 line-clamp-2 min-h-[2.5rem]">
+            <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
               {agent.description || "No description"}
             </div>
           </div>
@@ -451,10 +451,10 @@ function List() {
     ) ?? [];
   return (
     <div className="flex flex-col h-full gap-4 p-4">
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 p-1">
         <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
         <Input
-          className="w-80 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+          className="w-80 border text-sm"
           placeholder="Search agent"
           value={filter}
           onChange={(e) =>
@@ -557,7 +557,9 @@ export default function Page() {
       <PageLayout
         displayViewsTrigger={false}
         tabs={TABS}
-        breadcrumb={<DefaultBreadcrumb icon="groups" list="Agents" />}
+        breadcrumb={
+          <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
+        }
         actionButtons={
           <Button
             onClick={handleCreate}
@@ -569,13 +571,13 @@ export default function Page() {
               ? (
                 <>
                   <Spinner size="xs" />
-                  Creating...
+                  <span>Creating...</span>
                 </>
               )
               : (
                 <>
                   <Icon name="add" />
-                  Create Agent
+                  <span>Create Agent</span>
                 </>
               )}
           </Button>

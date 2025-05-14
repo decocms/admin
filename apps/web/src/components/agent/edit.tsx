@@ -1,8 +1,8 @@
+import { useAgent } from "@deco/sdk";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useAgent } from "../../../../../packages/sdk/src/index.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -10,7 +10,7 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
-import { Container } from "./DetailHeader.tsx";
+import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 
@@ -26,7 +26,7 @@ const Chat = () => {
   return (
     <div className="flex flex-col h-full min-w-[320px]">
       <div className="flex-none p-4">
-        <Container>
+        <div className="justify-self-start flex items-center gap-3 text-slate-700 py-1">
           {chat.messages.length > 0 && (
             <>
               <div className="w-8 h-8 rounded-[10px] overflow-hidden flex items-center justify-center">
@@ -41,7 +41,7 @@ const Chat = () => {
               </h1>
             </>
           )}
-        </Container>
+        </div>
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <ChatMessages />
@@ -81,18 +81,6 @@ const TABS = {
     initialOpen: true,
   },
 };
-
-function Breadcrumb({ agentId }: { agentId: string }) {
-  const { data: agent } = useAgent(agentId);
-
-  return (
-    <DefaultBreadcrumb
-      icon="groups"
-      list="Agents"
-      item={agent?.name}
-    />
-  );
-}
 
 export default function Page(props: Props) {
   const params = useParams();
@@ -135,11 +123,19 @@ export default function Page(props: Props) {
           tabs={TABS}
           key={agentId}
           breadcrumb={
-            <Suspense
-              fallback={<DefaultBreadcrumb icon="groups" list="Agents" />}
-            >
-              <Breadcrumb agentId={agentId} />
-            </Suspense>
+            <DefaultBreadcrumb
+              items={[
+                { link: "/agents", label: "Agents" },
+                {
+                  label: (
+                    <AgentBreadcrumbSegment
+                      agentId={agentId}
+                      variant="summary"
+                    />
+                  ),
+                },
+              ]}
+            />
           }
         />
       </ChatProvider>

@@ -80,16 +80,18 @@ function CurrentTeamDropdownTrigger() {
 
   return (
     <ResponsiveDropdownTrigger asChild>
-      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! pr-2">
+      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! gap-3">
         <Avatar
           url={avatarUrl}
           fallback={label}
           className="size-6"
         />
-        <span className="text-xs truncate">
-          {label}
-        </span>
-        <Icon name="unfold_more" className="text-xs ml-auto" size={16} />
+        <div className="flex items-center justify-start flex-1 min-w-0 gap-1">
+          <span className="text-sm font-medium truncate min-w-0">
+            {label}
+          </span>
+          <Icon name="unfold_more" className="text-xs" size={16} />
+        </div>
       </SidebarMenuButton>
     </ResponsiveDropdownTrigger>
   );

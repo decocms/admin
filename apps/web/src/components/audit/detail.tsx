@@ -42,9 +42,10 @@ function Page() {
         tabs={TABS}
         breadcrumb={
           <DefaultBreadcrumb
-            icon="manage_search"
-            list="Chat logs"
-            item={title}
+            items={[
+              { label: "Chat logs", link: "/audits" },
+              ...(title ? [{ label: title, link: "" }] : []),
+            ]}
           />
         }
         displayViewsTrigger={false}

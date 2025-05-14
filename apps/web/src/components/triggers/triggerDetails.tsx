@@ -102,9 +102,10 @@ export default function Page() {
       displayViewsTrigger={false}
       breadcrumb={
         <DefaultBreadcrumb
-          icon="conversion_path"
-          list="Triggers"
-          item={trigger?.title}
+          items={[
+            { label: "Triggers", link: "/triggers" },
+            ...(trigger?.title ? [{ label: trigger.title }] : []),
+          ]}
         />
       }
       tabs={{

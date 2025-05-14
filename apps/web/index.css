@@ -40,20 +40,12 @@
     --dv-active-sash-color: var(--color-slate-50);
     --dv-background-color: var(--color-background);
 
-    :not(:first-child).dv-view {
-      overflow-y: hidden !important;
-    }
-
-    :not(:first-child).dv-view .dv-tabs-and-actions-container {
-      @apply bg-slate-50;
-    }
-
-    .dv-view.visible {
-      @apply p-1;
+    .dv-view.visible:not(:has(.dv-view.visible)) {
+      @apply p-0 md:p-1;
     }
 
     .dv-groupview {
-      @apply rounded-xl shadow-md;
+      @apply md:rounded-xl md:shadow-md;
     }
 
     .dv-content-container {
@@ -62,15 +54,6 @@
 
     .dv-tab {
       @apply p-0!;
-    }
-
-    .dv-active-tab [data-active="true"] {
-      @apply bg-slate-50;
-    }
-
-    .dv-tab:focus-within::after,
-    .dv-tab:focus::after {
-      outline: none !important;
     }
   }
 }

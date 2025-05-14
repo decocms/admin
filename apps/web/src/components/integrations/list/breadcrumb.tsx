@@ -23,12 +23,12 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../../hooks/useNavigateWorkspace.ts";
-import { Tab } from "../../dock/index.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import {
   ViewModeSwitcher,
   ViewModeSwitcherProps,
 } from "../../common/ViewModelSwitcher.tsx";
+import { Tab } from "../../dock/index.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 
 function BreadcrumbItem({
   active,
@@ -82,8 +82,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         displayViewsTrigger={false}
         breadcrumb={
           <DefaultBreadcrumb
-            icon="widgets"
-            list="Integrations"
+            items={[{ label: "Integrations", link: "/integrations" }]}
           />
         }
         actionButtons={
@@ -97,13 +96,13 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
               ? (
                 <>
                   <Spinner size="xs" />
-                  Creating...
+                  <span>Creating...</span>
                 </>
               )
               : (
                 <>
                   <Icon name="add" />
-                  Create Integration
+                  <span>Create Integration</span>
                 </>
               )}
           </Button>
@@ -149,8 +148,8 @@ export const Breadcrumb = (
   const { data: marketplaceIntegrations } = useMarketplaceIntegrations();
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex gap-2">
+    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-[min-content_min-content] gap-2">
         <BreadcrumbItem
           active={!!connected}
           label="Connected"
@@ -167,10 +166,10 @@ export const Breadcrumb = (
           to={workspaceLink("/integrations/marketplace")}
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1">
         <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
         <Input
-          className="w-80 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+          className="w-80 text-sm"
           placeholder="Search integration"
           value={value}
           onChange={(e) => setValue(e.target.value)}

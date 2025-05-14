@@ -64,10 +64,7 @@ export default function ListTriggersLayout() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <DefaultBreadcrumb
-          icon="conversion_path"
-          list="Triggers"
-        />
+        <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />
       }
       actionButtons={<AddTriggerModal />}
     />
@@ -100,8 +97,8 @@ function ListTriggersSuspended() {
   }
 
   return (
-    <div className="py-4 flex flex-col gap-4 h-full">
-      <div className="px-4 flex items-center justify-end gap-2">
+    <div className="p-4 flex flex-col gap-4 h-full">
+      <div className="flex items-center justify-end gap-2 p-1">
         <ViewModeSwitcher
           viewMode={viewMode}
           onChange={(mode) => setViewMode(mode)}
@@ -111,11 +108,11 @@ function ListTriggersSuspended() {
           placeholder="Search trigger"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-80 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+          className="w-80 border text-sm"
         />
       </div>
 
-      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+      <div className="flex-1 min-h-0 overflow-x-auto">
         {viewMode === "table"
           ? <TableView triggers={filteredTriggers} />
           : <CardsView triggers={filteredTriggers} />}

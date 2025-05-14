@@ -230,10 +230,7 @@ function Page() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <DefaultBreadcrumb
-          list="Chat logs"
-          icon="manage_search"
-        />
+        <DefaultBreadcrumb items={[{ label: "Chat logs", link: "/audits" }]} />
       }
     />
   );

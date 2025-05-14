@@ -72,7 +72,7 @@ function IntegrationCard({
 }) {
   return (
     <Card
-      className="group cursor-pointer hover:shadow-md transition-shadow rounded-2xl relative border-slate-200"
+      className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-slate-200"
       onClick={() => onConfigure(integration)}
     >
       <CardContent className="p-4">
@@ -83,7 +83,7 @@ function IntegrationCard({
             className="h-16 w-16"
           />
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
             <div className="text-base font-semibold truncate">
               {integration.name}
             </div>

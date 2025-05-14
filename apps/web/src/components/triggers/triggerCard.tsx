@@ -11,7 +11,7 @@ export function TriggerCard({ trigger, onClick }: {
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card className="overflow-hidden border border-slate-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer relative">
+    <Card className="overflow-hidden border rounded-xl hover:shadow-md transition-shadow cursor-pointer relative">
       <CardContent
         className="p-6 flex flex-col gap-4"
         onClick={() => onClick(trigger)}

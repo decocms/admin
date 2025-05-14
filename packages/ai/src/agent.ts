@@ -22,7 +22,6 @@ import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
-import { join } from "node:path/posix";
 import { createServerClient } from "@supabase/ssr";
 import {
   type GenerateObjectResult,
@@ -34,6 +33,7 @@ import {
   type TextStreamPart,
 } from "ai";
 import { getRuntimeKey } from "hono/adapter";
+import { join } from "node:path/posix";
 import process from "node:process";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
@@ -49,9 +49,11 @@ import { createSupabaseStorage } from "./storage/supabaseStorage.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
+  StreamOptions,
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
+import { GenerateOptions } from "./types.ts";
 import { slugify, toAlphanumericId } from "./utils/slugify.ts";
 import { AgentWallet } from "./wallet/index.ts";
 
@@ -76,22 +78,6 @@ export interface Env {
   DECO_CHAT_DATA_BUCKET_NAME: string;
 }
 
-interface AgentOverrides {
-  instructions?: string;
-  model?: string;
-  tools?: Record<string, string[]>;
-  lastMessages?: number;
-  bypassOpenRouter?: boolean;
-}
-
-interface StreamOptions extends AgentOverrides {
-  sendReasoning?: boolean;
-  smoothStream?: {
-    delayInMs: number;
-    chunking: "word" | "line";
-  };
-}
-
 export interface AgentMetadata extends AuthMetadata {
   threadId?: string;
   resourceId?: string;
@@ -107,6 +93,7 @@ const MAX_STEPS = 25;
 const DEFAULT_MAX_TOKENS = 8192;
 const MAX_TOKENS = 64000;
 const MAX_THINKING_TOKENS = 12000;
+const MIN_THINKING_TOKENS = 1024;
 
 const NON_SERIALIZABLE_FIELDS = ["WALLET"];
 
@@ -435,7 +422,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           lastMessages: Math.min(
             DEFAULT_MEMORY_LAST_MESSAGES,
             this._configuration?.memory?.last_messages ??
-            DEFAULT_MEMORY_LAST_MESSAGES,
+              DEFAULT_MEMORY_LAST_MESSAGES,
           ),
         },
       });
@@ -620,7 +607,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   async generate(
     payload: AIMessage[],
-    options?: AgentOverrides,
+    options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>> {
     const toolsets = await this.withToolOverrides(options?.tools);
 
@@ -662,7 +649,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return filtered;
   }
 
-  private withAgentOverrides(options?: AgentOverrides): Agent {
+  private withAgentOverrides(options?: GenerateOptions): Agent {
     let agent = this.agent;
 
     if (!options) {
@@ -778,7 +765,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       })
       : undefined;
 
-
     const maxLimit = Math.max(MAX_TOKENS, this.maxTokens());
     const budgetTokens = Math.min(
       MAX_THINKING_TOKENS,
@@ -792,14 +778,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
       experimental_transform: experimentalTransform,
-      providerOptions: {
-        anthropic: {
-          thinking: {
-            type: "enabled",
-            budgetTokens,
+      providerOptions: budgetTokens > MIN_THINKING_TOKENS
+        ? {
+          anthropic: {
+            thinking: {
+              type: "enabled",
+              budgetTokens,
+            },
           },
-        },
-      },
+        }
+        : {},
       ...(typeof options?.lastMessages === "number"
         ? {
           memoryOptions: {

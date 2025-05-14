@@ -43,6 +43,22 @@ export interface ThreadQueryOptions {
  */
 export type Thread = StorageThreadType;
 
+export interface GenerateOptions {
+  instructions?: string;
+  model?: string;
+  tools?: Record<string, string[]>;
+  lastMessages?: number;
+  bypassOpenRouter?: boolean;
+}
+
+export interface StreamOptions extends GenerateOptions {
+  sendReasoning?: boolean;
+  smoothStream?: {
+    delayInMs: number;
+    chunking: "word" | "line";
+  };
+}
+
 /**
  * Interface for an AI agent that can generate responses and use tools
  * Extends the base Actor interface
@@ -57,6 +73,7 @@ export interface AIAgent extends Actor {
    */
   generate(
     payload: Message[],
+    options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>>;
 
   /**
@@ -99,6 +116,7 @@ export interface AIAgent extends Actor {
    */
   stream(
     payload: Message[],
+    options?: StreamOptions,
   ): Promise<Response>;
 
   /**

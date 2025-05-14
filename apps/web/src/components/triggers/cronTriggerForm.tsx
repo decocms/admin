@@ -154,7 +154,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
     defaultValues: {
       title: "",
       description: "",
-      cronExp: cronPresets[0].value,
+      cron_exp: cronPresets[0].value,
       prompt: { messages: [{ role: "user", content: "" }] },
       type: "cron",
     },
@@ -165,8 +165,8 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       form.setError("prompt", { message: "Prompt is required" });
       return;
     }
-    if (!data.cronExp || !isValidCron(data.cronExp)) {
-      form.setError("cronExp", {
+    if (!data.cron_exp || !isValidCron(data.cron_exp)) {
+      form.setError("cron_exp", {
         message: "Frequency is required and must be valid",
       });
       return;
@@ -175,7 +175,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       {
         title: data.title,
         description: data.description || undefined,
-        cronExp: data.cronExp,
+        cron_exp: data.cron_exp,
         prompt: {
           messages: [{
             role: "user",
@@ -241,19 +241,19 @@ export function CronTriggerForm({ agentId, onSuccess }: {
         />
         <FormField
           control={form.control}
-          name="cronExp"
+          name="cron_exp"
           render={() => (
             <FormItem>
               <FormControl>
                 <Controller
                   control={form.control}
-                  name="cronExp"
+                  name="cron_exp"
                   render={({ field: ctrlField }) => (
                     <CronSelectInput
                       value={ctrlField.value}
                       onChange={ctrlField.onChange}
                       required
-                      error={form.formState.errors.cronExp?.message}
+                      error={form.formState.errors.cron_exp?.message}
                     />
                   )}
                 />

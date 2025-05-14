@@ -2,12 +2,13 @@ import { createApiHandler } from "../../utils/context.ts";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
 import { getAgentsByIds } from "../agents/api.ts";
-import { AgentSchema, CreateCronTriggerInputSchema, CreateTriggerOutputSchema, CreateWebhookTriggerInputSchema, ListTriggersOutputSchema, TriggerSchema } from "@deco/sdk";
+import { AgentSchema, CreateCronTriggerInputSchema, CreateTriggerOutputSchema, CreateWebhookTriggerInputSchema, DeleteTriggerOutputSchema, GetWebhookTriggerUrlOutputSchema, ListTriggersOutputSchema, TriggerSchema } from "@deco/sdk";
 import { userFromDatabase } from "../../utils/user.ts";
 import { Database, Json } from "@deco/sdk/storage";
 import { Trigger } from "@deco/ai/actors";
 import { Path } from "@deco/sdk/path";
 import { join } from "node:path";
+import { Hosts } from "@deco/sdk/hosts";
 
 const SELECT_TRIGGER_QUERY = `
   *, 
@@ -30,6 +31,13 @@ function mapTrigger(trigger: Database["public"]["Tables"]["deco_chat_triggers"][
     data: trigger.metadata as z.infer<typeof TriggerSchema>,
   };
 }
+
+export const buildWebhookUrl = (
+  triggerId: string,
+  passphrase: string | undefined,
+) => {
+  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}`;
+};
 
 export const listTriggers = createApiHandler({
   name: "TRIGGERS_LIST",
@@ -95,6 +103,13 @@ export const createTrigger = createApiHandler({
 
     await assertUserHasAccessToWorkspace(root, slug, c);
 
+    const id = crypto.randomUUID();
+
+    const triggerId = Path.resolveHome(
+      join(Path.folders.Agent.root(agentId), Path.folders.trigger(id)),
+      workspace,
+    ).path;
+
     if (data.type === "cron") {
       const parse = CreateCronTriggerInputSchema.safeParse(data);
       if (!parse.success) {
@@ -115,27 +130,18 @@ export const createTrigger = createApiHandler({
           trigger: null,
         };
       }
+      (data as z.infer<typeof TriggerSchema> & { url: string }).url = buildWebhookUrl(triggerId, data.passphrase);
     }
 
     try {
-
-      const id = crypto.randomUUID();
-
-      const triggerId = Path.resolveHome(
-        join(Path.folders.Agent.root(agentId), Path.folders.trigger(id)),
-        workspace,
-      ).path;
-      console.log("triggerId", triggerId);
       await stub(Trigger).new(triggerId).create(
         {
           ...data,
           id, 
           resourceId: user.id,
         },
-        agentId,
-        user.id,
       );
-      console.log("stub passed");
+
       const { data: trigger, error } = await db.from("deco_chat_triggers")
         .insert({
           id,
@@ -163,7 +169,6 @@ export const createTrigger = createApiHandler({
         trigger: mapTrigger(trigger, agentsById),
       };
     } catch (_) {
-      console.log("ERROR", _);
       return {
         success: false,
         message: "Failed to create trigger",
@@ -173,3 +178,221 @@ export const createTrigger = createApiHandler({
   },
 });
 
+export const createCronTrigger = createApiHandler({
+  name: "TRIGGERS_CREATE_CRON",
+  description: "Create a cron trigger",
+  schema: z.object({ agentId: z.string(), data: CreateCronTriggerInputSchema }),
+  handler: async ({ agentId, data }, c): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    const db = c.get("db");
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+    const user = c.get("user");
+    const stub = c.get("stub");
+
+    await assertUserHasAccessToWorkspace(root, slug, c);
+
+    const id = crypto.randomUUID();
+
+    const triggerId = Path.resolveHome(
+      join(Path.folders.Agent.root(agentId), Path.folders.trigger(id)),
+      workspace,
+    ).path;
+
+    try {
+      await stub(Trigger).new(triggerId).create(
+        {
+          ...data,
+          id,
+          resourceId: user.id,
+        },
+      );
+
+      const { data: trigger, error } = await db.from("deco_chat_triggers")
+        .insert({
+          id,
+          agent_id: agentId,
+          user_id: user.id,
+          workspace,
+          metadata: data as Json,
+        })
+        .select(SELECT_TRIGGER_QUERY)
+        .single();
+        
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const agents = await getAgentsByIds([agentId], workspace, c);
+      const agentsById = agents.reduce((acc, agent) => {
+        acc[agent.id] = agent;
+        return acc;
+      }, {} as Record<string, z.infer<typeof AgentSchema>>);
+      
+      return {
+        success: true,
+        message: "Trigger created successfully",
+        trigger: mapTrigger(trigger, agentsById),
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to create trigger",
+        trigger: null,
+      };
+    }
+  },
+});
+
+export const createWebhookTrigger = createApiHandler({
+  name: "TRIGGERS_CREATE_WEBHOOK",
+  description: "Create a webhook trigger",
+  schema: z.object({ agentId: z.string(), data: CreateWebhookTriggerInputSchema }),
+  handler: async ({ agentId, data }, c): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    const db = c.get("db");
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+    const user = c.get("user");
+    const stub = c.get("stub");
+
+    await assertUserHasAccessToWorkspace(root, slug, c);
+
+    const id = crypto.randomUUID();
+
+    const triggerId = Path.resolveHome(
+      join(Path.folders.Agent.root(agentId), Path.folders.trigger(id)),
+      workspace,
+    ).path;
+
+    (data as z.infer<typeof TriggerSchema> & { url: string }).url = buildWebhookUrl(triggerId, data.passphrase);
+
+    try {
+      await stub(Trigger).new(triggerId).create(
+        {
+          ...data,
+          id,
+          resourceId: user.id,
+        },
+      );
+
+      const { data: trigger, error } = await db.from("deco_chat_triggers")
+        .insert({
+          id,
+          agent_id: agentId,
+          user_id: user.id,
+          workspace,
+          metadata: data as Json,
+        })
+        .select(SELECT_TRIGGER_QUERY)
+        .single();
+        
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const agents = await getAgentsByIds([agentId], workspace, c);
+      const agentsById = agents.reduce((acc, agent) => {
+        acc[agent.id] = agent;
+        return acc;
+      }, {} as Record<string, z.infer<typeof AgentSchema>>);
+      
+      return {
+        success: true,
+        message: "Trigger created successfully",
+        trigger: mapTrigger(trigger, agentsById),
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to create trigger",
+        trigger: null,
+      };
+    }
+  },
+});
+export const deleteTrigger = createApiHandler({
+  name: "TRIGGERS_DELETE",
+  description: "Delete a trigger",
+  schema: z.object({ triggerId: z.string(), agentId: z.string() }),
+  handler: async ({ triggerId, agentId }, c): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
+    const db = c.get("db");
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+    const stub = c.get("stub");
+    
+    await assertUserHasAccessToWorkspace(root, slug, c);
+
+    const workspaceTrigger = Path.resolveHome(
+      join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
+      workspace,
+    ).path;
+
+    try {
+      await stub(Trigger).new(workspaceTrigger).delete();
+
+      const { error } = await db.from("deco_chat_triggers")
+        .delete()
+        .eq("id", triggerId)
+        .eq("workspace", workspace);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Failed to delete trigger",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Trigger deleted successfully",
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to delete trigger",
+      };
+    }
+  },
+});
+
+export const getWebhookTriggerUrl = createApiHandler({
+  name: "TRIGGERS_GET_WEBHOOK_URL",
+  description: "Get the webhook URL for a trigger",
+  schema: z.object({ triggerId: z.string() }),
+  handler: async ({ triggerId }, c): Promise<z.infer<typeof GetWebhookTriggerUrlOutputSchema>> => {
+    const db = c.get("db");
+    const root = c.req.param("root");
+    const slug = c.req.param("slug");
+    const workspace = `/${root}/${slug}`;
+    
+    await assertUserHasAccessToWorkspace(root, slug, c);
+
+    const { data, error } = await db.from("deco_chat_triggers")
+      .select("metadata")
+      .eq("id", triggerId)
+      .eq("workspace", workspace)
+      .single();
+
+    if (error) {
+      return {
+        success: false,
+        message: "Failed to get webhook trigger URL",
+      };
+    }
+
+    if (!data) {
+      return {
+        success: false,
+        message: "Trigger not found",
+      };
+    }
+    
+    return {
+      success: true,
+      message: "Webhook trigger URL retrieved successfully",
+      url: (data.metadata as { url?: string })?.url,
+    };
+  },
+});

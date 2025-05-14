@@ -91,11 +91,10 @@ export const deleteTrigger = async (
   agentId: string,
   triggerId: string,
 ) => {
-  const response = await fetchAPI(
-    toPath([context, "agent", agentId, "action", triggerId]),
-    {
-      method: "DELETE",
-    },
+  const response = await callToolFor(
+    context,
+    "TRIGGERS_DELETE",
+    { agentId, triggerId },
   );
 
   if (!response.ok) {
@@ -127,7 +126,7 @@ export const webhookTriggerSchema = z.object({
 export const cronTriggerSchema = z.object({
   title: z.string().min(2, "Name is required"),
   description: z.string().optional(),
-  cronExp: z.string().min(5, "Frequency is required"),
+  cron_exp: z.string().min(5, "Frequency is required"),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });

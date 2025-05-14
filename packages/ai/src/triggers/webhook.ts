@@ -3,7 +3,6 @@ import type { Message } from "../types.ts";
 import type { TriggerData } from "./services.ts";
 import { threadOf } from "./tools.ts";
 import type { TriggerHooks } from "./trigger.ts";
-import type { TriggerData } from "./services.ts";
 
 export interface WebhookArgs {
   threadId?: string;

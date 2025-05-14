@@ -1,16 +1,33 @@
 import {
   type Member,
+  useAddTeamMember,
   useRemoveTeamMember,
   useTeam,
   useTeamMembers,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -23,9 +40,9 @@ import {
   TableHeader,
   TableRow,
 } from "@deco/ui/components/table.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   PropsWithChildren,
   Suspense,
@@ -33,11 +50,19 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { timeAgo } from "../../utils/timeAgo.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
+
+// Form validation schema
+const addMemberSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+});
+
+type AddMemberFormData = z.infer<typeof addMemberSchema>;
 
 function MemberTitle() {
   return (
@@ -79,16 +104,92 @@ function MembersViewLoading() {
 }
 
 function AddTeamMemberButton({ teamId }: { teamId?: number }) {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const addMemberMutation = useAddTeamMember();
+
+  const form = useForm<AddMemberFormData>({
+    resolver: zodResolver(addMemberSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  // Add new member
+  const handleAddMember = async (data: AddMemberFormData) => {
+    if (!teamId) return;
+    try {
+      await addMemberMutation.mutateAsync({
+        teamId,
+        ...data,
+      });
+
+      // Reset form and close dialog
+      form.reset();
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to add team member:", error);
+    }
+  };
   return (
-    <InviteTeamMembersDialog
-      teamId={teamId}
-      trigger={
+    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
-          <span className="sr-only">Invite team members</span>
+          <span className="sr-only">close add member dialog</span>
           <Icon name="add" />
         </Button>
-      }
-    />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Team Member</DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleAddMember)}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter email address"
+                      {...field}
+                      autoComplete="email"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  setIsAddDialogOpen(false);
+                }}
+                type="button"
+                disabled={addMemberMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={addMemberMutation.isPending ||
+                  !form.formState.isValid}
+              >
+                {addMemberMutation.isPending ? "Adding..." : "Add Member"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -107,12 +208,8 @@ const compareMemberActivity = (a: Member, b: Member) => {
   return aD - bD;
 };
 
-const getMemberRoleName = (a: Member) =>
-  a.roles.map((r) => r.name).sort().join(",");
 const compareMemberRole = (a: Member, b: Member) =>
-  getMemberRoleName(a).localeCompare(
-    getMemberRoleName(b),
-  );
+  (a.admin ? 0 : 1) - (b.admin ? 0 : 1);
 
 const sortFnS: Record<
   Columns,
@@ -307,13 +404,7 @@ function MembersViewContent() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex gap-2">
-                        {member.roles.map((role) => (
-                          <Badge variant="outline" key={role.id}>
-                            {role.name}
-                          </Badge>
-                        ))}
-                      </span>
+                      {member.admin ? "Admin" : "Member"}
                     </TableCell>
                     {!isMobile && (
                       <TableCell>

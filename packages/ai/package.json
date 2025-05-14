@@ -22,7 +22,7 @@
     "ai": "^4.1.61",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.4",
-    "@deco/actors": "npm:@jsr/deco__actors@0.32.9",
+    "@deco/actors": "npm:@jsr/deco__actors@0.33.0",
     "@ai-sdk/provider-utils": "^2.0.5",
     "nanoid": "^5.1.4",
     "secure-json-parse": "^4.0.0",

@@ -132,10 +132,9 @@ export function ChatProvider({
       if (last) {
         last.annotations = annotations;
       }
-
       const bypassOpenRouter = !preferences.useOpenRouter;
-      const overrides = getAgentOverrides(agentId);
 
+      const overrides = getAgentOverrides(agentId);
       return {
         args: [allMessages, {
           model: preferences.defaultModel,

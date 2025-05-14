@@ -40,6 +40,8 @@ jobs:
             OPENAI_API_KEY
             DEEPSEEK_API_KEY
             GOOGLE_API_KEY
+            OTEL_EXPORTER_OTLP_ENDPOINT
+            OTEL_EXPORTER_OTLP_HEADERS
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
@@ -56,3 +58,5 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}

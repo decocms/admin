@@ -78,7 +78,8 @@ export const MODELS: Model[] = [
   {
     id: "auto",
     name: "Auto",
-    description: "deco.chat will automatically choose the best model for you, based on performance and speed.",
+    description:
+      "deco.chat will automatically choose the best model for you, based on performance and speed.",
     logo: "",
     capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
   },

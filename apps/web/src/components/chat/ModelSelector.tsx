@@ -50,7 +50,7 @@ const CAPABILITY_CONFIGS = {
     bg: "bg-slate-100",
     text: "text-slate-700",
     label: "Mixed capabilities",
-  }
+  },
 } as const;
 
 function CapabilityBadge(
@@ -90,7 +90,9 @@ function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
           </div>
         </div>
         {model.description && (
-          <p className="text-[10px] max-w-[250px] text-gray-500">{model.description}</p>
+          <p className="text-[10px] max-w-[250px] text-gray-500">
+            {model.description}
+          </p>
         )}
       </div>
     );

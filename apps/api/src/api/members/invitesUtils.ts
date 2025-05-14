@@ -49,7 +49,7 @@ export function generateEmailBody(
   <!-- Logo Row -->
   <tr>
     <td style="padding: 24px;">
-      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://drive.google.com/uc?export=view&id=1s9sphIlB7ZyKzlFtYAw9Karhh0ARIgFh" alt="Logo"/>
+      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://drive.google.com/uc?export=view&id=1s9sphIlB7ZyKzlFtYAw9Karhh0ARIgFh" alt="deco.chat logo"/>
     </td>
   </tr>
 
@@ -68,28 +68,7 @@ export function generateEmailBody(
     </td>
   </tr>
 
-  <!-- Divider Line -->
-  <tr>
-    <td>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td style="background: #C9CFCF; height: 1px; width: 100%;"></td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-
-  <!-- Icons Row -->
-  <tr>
-    <td style="padding: 24px;">
-      <a href="https://www.youtube.com/@deco-cx"><img style="padding-bottom: 8px; padding-right: 8px" src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/c1604884-bdc5-4d83-92c9-98576ed94c6c" alt="YouTube" /></a>
-      <a href="https://www.linkedin.com/company/deco-cx/mycompany/" ><img src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/fc248a9d-ae2b-4032-a389-84934bab54fc" alt="LinkedIn" /></a>
-      <a href="https://www.instagram.com/deco.cx/"><img src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/094f9577-a9b0-44c3-b65a-78062573f3c1" alt="Instagram" /></a>
-      <a href="https://github.com/deco-sites"><img src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/b061cd1f-99c9-4b97-83a7-95ef093d493b" alt="Github" /></a>
-      <a href="https://discord.gg/mC7X6YdarJ"><img src="https://admin.deco.cx/live/invoke/deco-sites/std/loaders/x/image.ts?src=https://ozksgdmyrqcxcwhnbepg.supabase.co/storage/v1/object/public/assets/1/c738cb90-11a1-4a93-a2fa-8a544fce6b0b" alt="Discord" /></a>
-    </td>
-  </tr>
-</table>
+ </table>
 <!-- End Main Table -->
 </body>
 </html>
@@ -121,7 +100,7 @@ export async function sendInviteEmail(
       "Authorization": `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Deco.cx <noreply@deco.cx>",
+      from: "deco.chat <noreply@deco.chat>",
       to: [invited_email],
       subject: "Team invitation",
       html: generateEmailBody(htmlProps),

@@ -5,7 +5,7 @@ import { Hero } from "./Hero.tsx";
 import Integrations from "./Integrations.tsx";
 import { DECO_CHAT_PAGE_CONTENT } from "./content.ts";
 
-export function About() {
+export default function About() {
   const {
     hero,
     features,

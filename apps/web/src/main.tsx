@@ -12,11 +12,8 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
-import { About } from "./components/about/index.tsx";
 import { PageviewTracker } from "./components/analytics/PageviewTracker.tsx";
 import { EmptyState } from "./components/common/EmptyState.tsx";
-import { RouteLayout } from "./components/layout.tsx";
-import Login from "./components/login/index.tsx";
 
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 import { trackException } from "./hooks/analytics.ts";
@@ -40,6 +37,15 @@ const wrapWithUILoadingFallback = <P,>(
       </Suspense>
     ),
   }));
+
+const RouteLayout = lazy(() =>
+  import("./components/layout.tsx").then((mod) => ({
+    default: mod.RouteLayout,
+  }))
+);
+
+const Login = lazy(() => import("./components/login/index.tsx"));
+const About = lazy(() => import("./components/about/index.tsx"));
 
 /**
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if

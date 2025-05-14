@@ -106,6 +106,7 @@ const DEFAULT_MAX_STEPS = 25;
 const MAX_STEPS = 25;
 const DEFAULT_MAX_TOKENS = 8192;
 const MAX_TOKENS = 64000;
+const MAX_THINKING_TOKENS = 12000;
 
 const NON_SERIALIZABLE_FIELDS = ["WALLET"];
 
@@ -434,7 +435,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           lastMessages: Math.min(
             DEFAULT_MEMORY_LAST_MESSAGES,
             this._configuration?.memory?.last_messages ??
-              DEFAULT_MEMORY_LAST_MESSAGES,
+            DEFAULT_MEMORY_LAST_MESSAGES,
           ),
         },
       });
@@ -777,6 +778,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       })
       : undefined;
 
+
+    const maxLimit = Math.max(MAX_TOKENS, this.maxTokens());
+    const budgetTokens = Math.min(
+      MAX_THINKING_TOKENS,
+      maxLimit - this.maxTokens(),
+    );
+
     const response = await agent.stream(payload, {
       ...this.thread,
       context,
@@ -788,7 +796,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         anthropic: {
           thinking: {
             type: "enabled",
-            budgetTokens: 12000,
+            budgetTokens,
           },
         },
       },

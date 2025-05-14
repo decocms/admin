@@ -66,7 +66,6 @@ const LOGOS = {
 };
 
 export const DEFAULT_REASONING_MODEL = "auto";
-export const CURRENT_AUTO_MODEL = "openai:gpt-4.1-mini";
 
 type Capability =
   | "reasoning"

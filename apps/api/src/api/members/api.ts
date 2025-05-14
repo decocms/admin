@@ -215,9 +215,6 @@ export const removeTeamMember = createApiHandler({
     const { teamId, memberId } = props;
     const user = c.get("user");
 
-    // Verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
-
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
       .get("db")
@@ -231,6 +228,12 @@ export const removeTeamMember = createApiHandler({
     if (memberError) throw memberError;
     if (!member) {
       throw new Error("Member not found in this team");
+    }
+
+    // Is not removing "my" membership from team
+    if (member.user_id !== user.id) {
+      // Verify the user has admin access to the team
+      await assertUserIsTeamAdmin(c, teamId, user.id);
     }
 
     // Don't allow removing the last admin
@@ -535,10 +538,15 @@ export const acceptInvite = createApiHandler({
     }
 
     // Check if user is already in the team
-    const alreadyExistsUserInTeam = await checkAlreadyExistUserIdInTeam({
-      userId: user.id,
-      teamId: invite.team_id.toString(),
-    }, db);
+    const { data: alreadyExistsAsDeletedMember } = await db.from("members")
+      .select(
+        "id",
+      ).eq(
+        "team_id",
+        invite.team_id,
+      ).eq("user_id", user.id).limit(1);
+    const alreadyExistsUserInTeam = alreadyExistsAsDeletedMember &&
+      alreadyExistsAsDeletedMember.length > 0;
 
     // Add user to team if not already a member
     if (!alreadyExistsUserInTeam) {
@@ -577,7 +585,26 @@ export const acceptInvite = createApiHandler({
           // We'll continue even if role assignment fails
         }
       }
+    } else {
+      const { error } = await db.from("members").update({ deleted_at: null })
+        .eq(
+          "team_id",
+          invite.team_id,
+        ).eq(
+          "user_id",
+          user.id,
+        );
+
+      if (error) {
+        throw error;
+      }
     }
+
+    updateActivityLog(c, {
+      action: "add_member",
+      userId: user.id,
+      teamId: invite.team_id,
+    });
 
     // Delete the invite
     await db.from("invites").delete().eq("id", id);

@@ -2,8 +2,6 @@ import type { Client } from "../../db/client.ts";
 
 // Email sending functionality
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ADMIN_CANONICAL_DOMAIN = Deno.env.get("ADMIN_CANONICAL_DOMAIN") ||
-  "https://deco.cx";
 
 export function sanitizeTeamName(name: string): string {
   return name.replace(/[<>&'"]/g, "");
@@ -17,10 +15,9 @@ export interface EmailBodyProps {
 }
 
 export function generateEmailBody(
-  { inviteId, teamName, inviter, roles }: EmailBodyProps,
+  { teamName, inviter, roles }: EmailBodyProps,
 ) {
   const cleanTeamName = sanitizeTeamName(teamName);
-  const cleanInviteId = encodeURI(inviteId);
   const cleanInviter = sanitizeTeamName(inviter);
 
   function formatRoles(roles: Array<string>) {
@@ -67,7 +64,7 @@ export function generateEmailBody(
   <tr>
     <td style="padding-bottom: 24px; padding-top: 12px;">
       <!-- Use a link instead of a button for better email client support -->
-      <a href="${ADMIN_CANONICAL_DOMAIN}/admin/invites/${cleanInviteId}/accept" target="_blank" style="display: inline;   color: #fff;   font-size: 18px;   font-weight: 700;   line-height: 24px;    text-decoration: none;    border-radius: 8px;   background: #0d1717; padding: 13px 32px;">Join team</a>
+      <a href="https://deco.chat/invites" target="_blank" style="display: inline;   color: #fff;   font-size: 18px;   font-weight: 700;   line-height: 24px;    text-decoration: none;    border-radius: 8px;   background: #0d1717; padding: 13px 32px;">Join team</a>
     </td>
   </tr>
 

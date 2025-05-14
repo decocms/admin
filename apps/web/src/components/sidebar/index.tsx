@@ -201,6 +201,7 @@ export function AppSidebar() {
                 <SidebarMenu className="gap-0.5">
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      className="cursor-pointer"
                       onClick={() =>
                         focusChat(
                           WELL_KNOWN_AGENT_IDS.teamAgent,

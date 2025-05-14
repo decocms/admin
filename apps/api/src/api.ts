@@ -1,7 +1,6 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
-import { getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
@@ -14,8 +13,6 @@ import * as profilesAPI from "./api/profiles/api.ts";
 import * as teamsAPI from "./api/teams/api.ts";
 import * as threadsAPI from "./api/threads/api.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
-import { withActorsMiddleware } from "./middlewares/actors.ts";
-import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
@@ -39,8 +36,6 @@ const GLOBAL_TOOLS = [
   membersAPI.teamRolesList,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
-  integrationsAPI.callTool,
-  integrationsAPI.listTools,
 ];
 
 // Tools tied to an specific workspace
@@ -153,7 +148,6 @@ app.use(cors({
     "cache-control",
     "pragma",
     "x-trace-debug-id",
-    "x-deno-isolate-instance-id",
   ],
   exposeHeaders: [
     "Content-Type",
@@ -166,18 +160,6 @@ app.use(cors({
 
 app.use(withContextMiddleware);
 app.use(setUserMiddleware);
-app.use(withActorsStubMiddleware);
-
-// copy immutable responses to allow workerd to change its headers.
-app.use(async (c, next) => {
-  await next();
-
-  if (c.var.immutableRes && getRuntimeKey() === "workerd") {
-    c.res = new Response(c.res.body, c.res);
-  }
-});
-
-app.use(withActorsMiddleware);
 
 // MCP endpoint handlers
 app.all(

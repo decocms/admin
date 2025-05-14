@@ -42,10 +42,7 @@ export const createAgent = async (
     ...template,
   });
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent;
-  };
+  const { error, data } = await response.json();
 
   if (error) {
     throw new Error(error.message);
@@ -75,10 +72,7 @@ export const loadAgent = async (
     throw new AgentNotFoundError(agentId);
   }
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent;
-  };
+  const { error, data } = await response.json();
 
   if (error) {
     throw new Error(error.message || "Failed to load agent");
@@ -97,10 +91,7 @@ export const listAgents = async (
     {},
     { signal },
   );
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent[];
-  };
+  const { error, data } = await response.json();
 
   if (error) {
     throw new Error(error.message || "Failed to list agents");
@@ -119,10 +110,7 @@ export const deleteAgent = async (workspace: string, agentId: string) => {
     id: agentId,
   });
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent[];
-  };
+  const { error, data } = await response.json();
 
   if (error) {
     throw new Error(error.message || "Failed to delete agent");

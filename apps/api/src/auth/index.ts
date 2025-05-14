@@ -4,7 +4,7 @@ import {
   type Provider,
   type User as SupaUser,
 } from "@supabase/supabase-js";
-import { createSupabaseClient } from "@deco/sdk/storage";
+import { createSupabaseClient } from "../db/client.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { AppContext, AUTH_URL, getEnv } from "../utils/context.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";

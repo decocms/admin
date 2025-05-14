@@ -11,10 +11,7 @@ export const listTeams = async (
   init?: RequestInit,
 ): Promise<Team[]> => {
   const response = await callToolFor("", "TEAMS_LIST", {}, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team[];
-  };
+  const { error, data } = await response.json();
   if (error) {
     throw error;
   }
@@ -26,10 +23,7 @@ export const getTeam = async (
   init?: RequestInit,
 ): Promise<Team> => {
   const response = await callToolFor("", "TEAMS_GET", { slug }, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
+  const { error, data } = await response.json();
   if (error) {
     throw error;
   }
@@ -48,10 +42,7 @@ export async function createTeam(
   init?: RequestInit,
 ): Promise<Team> {
   const response = await callToolFor("", "TEAMS_CREATE", input, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
+  const { error, data } = await response.json();
   if (error) throw error;
   return data as Team;
 }
@@ -69,10 +60,7 @@ export async function updateTeam(
   init?: RequestInit,
 ): Promise<Team> {
   const response = await callToolFor("", "TEAMS_UPDATE", input, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
+  const { error, data } = await response.json();
   if (error) throw error;
   return data as Team;
 }
@@ -82,10 +70,7 @@ export async function deleteTeam(
   init?: RequestInit,
 ): Promise<{ success: boolean }> {
   const response = await callToolFor("", "TEAMS_DELETE", { teamId }, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: { success: boolean };
-  };
+  const { error, data } = await response.json();
   if (error) throw error;
   return data as { success: boolean };
 }

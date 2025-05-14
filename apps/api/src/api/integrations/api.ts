@@ -1,23 +1,8 @@
-import {
-  createServerClient as createMcpServerClient,
-  isApiDecoChatMCPConnection,
-  listToolsByConnectionType,
-  patchApiDecoChatTokenHTTPConnection,
-} from "@deco/ai/mcp";
-import { createSupabaseStorage } from "@deco/ai/storage";
-import {
-  Agent,
-  AgentSchema,
-  INNATE_INTEGRATIONS,
-  Integration,
-  IntegrationSchema,
-  NEW_INTEGRATION_TEMPLATE,
-} from "@deco/sdk";
-import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createServerClient } from "@supabase/ssr";
+import { Agent, AgentSchema, Integration, IntegrationSchema } from "@deco/sdk";
 import { z } from "zod";
 import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
-import { createApiHandler, getEnv } from "../../utils/context.ts";
+import { createApiHandler } from "../../utils/context.ts";
+import { INNATE_INTEGRATIONS, NEW_INTEGRATION_TEMPLATE } from "./well-known.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -45,81 +30,6 @@ const agentAsIntegrationFor =
       workspace: ensureStartingSlash(workspace),
     },
   });
-
-export const callTool = createApiHandler({
-  name: "INTEGRATIONS_CALL_TOOL",
-  description: "Call a given tool",
-  schema: IntegrationSchema.pick({
-    connection: true,
-  }).merge(CallToolRequestSchema.pick({ params: true })),
-  handler: async ({ connection: reqConnection, params: toolCall }, c) => {
-    const connection = isApiDecoChatMCPConnection(reqConnection)
-      ? patchApiDecoChatTokenHTTPConnection(
-        reqConnection,
-        c.req.raw.headers.get("cookie") ?? undefined,
-      )
-      : reqConnection;
-
-    if (!connection || !toolCall) {
-      return { error: "Missing url parameter" };
-    }
-
-    const client = await createMcpServerClient({
-      name: "deco-chat-client",
-      connection,
-    });
-
-    if (!client) {
-      return { error: "Failed to create client" };
-    }
-
-    try {
-      const result = await client.callTool({
-        name: toolCall.name,
-        arguments: toolCall.arguments || {},
-      });
-
-      await client.close();
-
-      return result;
-    } catch (error) {
-      console.error(
-        "Failed to call tool:",
-        error instanceof Error ? error.message : "Unknown error",
-      );
-      await client.close();
-      return {
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  },
-});
-
-export const listTools = createApiHandler({
-  name: "INTEGRATIONS_LIST_TOOLS",
-  description: "List tools of a given integration",
-  schema: IntegrationSchema.pick({
-    connection: true,
-  }),
-  handler: async ({ connection }, c) => {
-    const env = getEnv(c);
-    const storage = createSupabaseStorage(
-      createServerClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVER_TOKEN,
-        { cookies: { getAll: () => [] } },
-      ),
-    );
-    const result = await listToolsByConnectionType(connection, storage);
-
-    // Sort tools by name for consistent UI
-    if (Array.isArray(result?.tools)) {
-      result.tools.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return result;
-  },
-});
 
 export const listIntegrations = createApiHandler({
   name: "INTEGRATIONS_LIST",
@@ -221,10 +131,7 @@ export const getIntegration = createApiHandler({
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(root, slug, c),
       uuid in INNATE_INTEGRATIONS
-        ? {
-          data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS],
-          error: null,
-        }
+        ? { data: INNATE_INTEGRATIONS[uuid], error: null }
         : c.get("db")
           .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
           .select("*")

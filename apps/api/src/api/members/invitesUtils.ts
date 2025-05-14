@@ -1,4 +1,4 @@
-import type { Client } from "@deco/sdk/storage";
+import type { Client } from "../../db/client.ts";
 import { type AppContext, getEnv } from "../../utils/context.ts";
 
 // Email sending functionality

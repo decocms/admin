@@ -1,11 +1,10 @@
-// deno-lint-ignore-file no-explicit-any
 import { fetchAPI } from "../fetcher.ts";
 
 export const getWalletAccount = async () => {
   const response = await fetchAPI({
     segments: ["wallet", "account"],
   });
-  return response.json<any>();
+  return response.json();
 };
 
 interface WalletStatement {

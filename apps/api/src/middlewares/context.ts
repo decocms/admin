@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { getServerClient } from "@deco/sdk/storage";
+import { getServerClient } from "../db/client.ts";
 import { AppEnv, getEnv } from "../utils/context.ts";
 import Cloudflare from "cloudflare";
 export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (

@@ -1,5 +1,5 @@
-import { Database } from "@deco/sdk/storage";
 import { z } from "zod";
+import { Database } from "../../db/schema.ts";
 import { AppContext, createApiHandler, getEnv } from "../../utils/context.ts";
 import { bundler } from "./bundler.ts";
 

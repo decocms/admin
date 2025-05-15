@@ -1,6 +1,5 @@
 import { ActorConstructor, StubFactory } from "@deco/actors";
 import { AIAgent, Trigger } from "@deco/ai/actors";
-import { WorkspaceMemory } from "@deco/ai/memory";
 import { API_SERVER_URL, getTraceDebugId } from "@deco/sdk";
 import { Client } from "@deco/sdk/storage";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
@@ -14,7 +13,6 @@ import { z } from "zod";
 export type AppEnv = {
   Variables: {
     db: Client;
-    memory: WorkspaceMemory;
     user: SupaUser;
     cf: Cloudflare;
     immutableRes?: boolean;

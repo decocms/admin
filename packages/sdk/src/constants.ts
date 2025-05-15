@@ -65,7 +65,7 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
-export const DEFAULT_REASONING_MODEL = "auto";
+export const DEFAULT_MODEL = "auto";
 
 type Capability =
   | "reasoning"
@@ -208,7 +208,7 @@ export const WELL_KNOWN_AGENTS = {
     avatar:
       "https://assets.decocache.com/webdraw/b010a0b9-d576-4d57-9c3a-b86aee1eca1f/explorer.jpeg",
     description: "I can help you with anything you need.",
-    model: DEFAULT_REASONING_MODEL,
+    model: DEFAULT_MODEL,
     tools_set: {
       DECO_AGENTS: [
         "DECO_AGENTS_CREATE",
@@ -264,7 +264,7 @@ export const WELL_KNOWN_AGENTS = {
     name: "Integration configurator",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you setting up this integration.",
-    model: DEFAULT_REASONING_MODEL,
+    model: DEFAULT_MODEL,
     tools_set: {
       DECO_INTEGRATIONS: [
         "DECO_INTEGRATIONS_SEARCH",
@@ -288,7 +288,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description:
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
-  model: DEFAULT_REASONING_MODEL,
+  model: DEFAULT_MODEL,
   tools_set: {
     DECO_AGENTS: [
       "DECO_AGENTS_CONFIGURATION",

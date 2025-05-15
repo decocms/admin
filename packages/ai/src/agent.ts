@@ -3,7 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { WELL_KNOWN_AGENTS } from "@deco/sdk";
+import { DEFAULT_MODEL, WELL_KNOWN_AGENTS } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
 import { trace } from "@deco/sdk/observability";
@@ -86,7 +86,6 @@ export interface AgentMetadata extends AuthMetadata {
   timings?: ServerTimingsBuilder;
 }
 
-const DEFAULT_MODEL = `anthropic:claude-3.7-sonnet:thinking`;
 const DEFAULT_MEMORY_LAST_MESSAGES = 8;
 const DEFAULT_MAX_STEPS = 25;
 const MAX_STEPS = 25;
@@ -457,6 +456,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       bypassOpenRouter?: boolean;
     },
   ): { llm: LanguageModelV1; tokenLimit: number } {
+    // todo(@camudo): change this to a nice algorithm someday
+    if (model === "auto") {
+      model = "openai:gpt-4.1-mini";
+    }
+
     const [provider, ...rest] = model.split(":");
     const providerModel = rest.join(":");
     const accountId = this.env?.ACCOUNT_ID ?? DEFAULT_ACCOUNT_ID;

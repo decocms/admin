@@ -12,7 +12,7 @@ import {
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { DEFAULT_REASONING_MODEL, MODELS } from "@deco/sdk";
+import { DEFAULT_MODEL, MODELS } from "@deco/sdk";
 import { useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {
@@ -129,7 +129,7 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({
-  model = DEFAULT_REASONING_MODEL,
+  model = DEFAULT_MODEL,
   onModelChange,
   variant = "borderless",
 }: ModelSelectorProps) {

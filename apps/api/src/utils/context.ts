@@ -10,6 +10,7 @@ import { env as honoEnv } from "hono/adapter";
 import type { TimingVariables } from "hono/timing";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
+
 export type AppEnv = {
   Variables: {
     db: Client;

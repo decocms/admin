@@ -23,7 +23,11 @@ import { slugify } from "./utils/slugify.ts";
 import { mapToolEntries } from "./utils/toolEntries.ts";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-const ApiDecoChatURLs = ["https://api.deco.chat", "http://localhost:3001", "https://admin.wppagent.com"];
+const ApiDecoChatURLs = [
+  "https://api.deco.chat",
+  "http://localhost:3001",
+  "https://admin.wppagent.com",
+];
 export const isApiDecoChatMCPConnection = (
   connection: MCPConnection,
 ): connection is HTTPConnection =>

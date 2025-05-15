@@ -7,6 +7,7 @@ import type { AIAgent } from "../agent.ts";
 import type { Message } from "../types.ts";
 import type { Trigger } from "./trigger.ts";
 import { mcpServerTools } from "../mcp.ts";
+import { slugify } from "../utils/slugify.ts";
 
 export interface RunOutputToolArgs {
   agent: ActorProxy<AIAgent>;
@@ -52,7 +53,7 @@ export async function getOutputTool(
   }
 
   const tools = await mcpServerTools(integration, agent as unknown as AIAgent);
-  const maybeTool = tools[toolId];
+  const maybeTool = tools[slugify(toolId)];
   if (!maybeTool || !maybeTool.execute) {
     return {
       error: "Tool not found",
@@ -97,10 +98,10 @@ export const handleOutputTool = async ({
 
     const { tool, schema } = getToolResult;
     // deno-lint-ignore no-explicit-any
-    const toolArgs = await agent.generateObject(messages, schema as any);
+    const toolArgs = (await agent.generateObject(messages, schema as any)).object;
 
     // deno-lint-ignore no-explicit-any
-    const result = await tool.execute!(toolArgs as any);
+    const result = await tool.execute!({ context: toolArgs } as any);
 
     return {
       args: toolArgs,

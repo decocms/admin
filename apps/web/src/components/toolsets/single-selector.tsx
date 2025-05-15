@@ -263,7 +263,7 @@ export function SingleToolSelector(
               <IntegrationIcon
                 icon={selected.integration.icon}
                 name={selected.integration.name}
-                className="h-5 w-5"
+                className="h-8 w-8"
               />
               <span className="truncate">
                 {selected.integration.name} / {selected.toolName}

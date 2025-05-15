@@ -254,7 +254,7 @@ export function SingleToolSelector(
       <Button
         type="button"
         variant="outline"
-        className="w-full justify-between"
+        className="w-full justify-between truncate"
         onClick={() => setOpen(true)}
       >
         {selected
@@ -265,7 +265,7 @@ export function SingleToolSelector(
                 name={selected.integration.name}
                 className="h-8 w-8"
               />
-              <span className="truncate">
+              <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
                 {selected.integration.name} / {selected.toolName}
               </span>
             </span>

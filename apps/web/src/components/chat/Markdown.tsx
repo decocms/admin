@@ -6,11 +6,6 @@ import remarkGfm from "remark-gfm";
 import { lazy, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 
 const LazyHighlighter = lazy(() => import("./LazyHighlighter.tsx"));
 

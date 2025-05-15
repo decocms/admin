@@ -1,5 +1,5 @@
+import type { Agent, Integration } from "@deco/sdk";
 import type { Workspace } from "@deco/sdk/path";
-import type { Agent, Integration } from "../../schemas.ts";
 
 export const agentToIntegration = (
   agent: Agent,

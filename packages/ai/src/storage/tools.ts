@@ -1,10 +1,9 @@
+import type { Integration } from "@deco/sdk";
 import { INNATE_INTEGRATIONS } from "@deco/sdk";
 import type { AIAgent, Env } from "../agent.ts";
 import { createHandoffToolsFor } from "../agents/handoff.ts";
-import type { Integration } from "../schemas.ts";
 import { createTool } from "../utils/createTool.ts";
 import { INNATE_TOOLS } from "./constants.ts";
-
 export { INNATE_TOOLS } from "./constants.ts";
 
 export const getToolsForInnateIntegration = (

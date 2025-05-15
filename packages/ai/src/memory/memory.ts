@@ -55,6 +55,7 @@ export class WorkspaceMemory extends MastraMemory {
   }
 
   async listThreads(agentId?: string) {
+    this.parseMessages;
     try {
       const sql = agentId
         ? `SELECT * FROM mastra_threads WHERE metadata->>'agentId' = ?`

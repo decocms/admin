@@ -1,11 +1,11 @@
 import type { ActorState } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
+import type { Agent } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
-import { join } from "node:path/posix";
 import type { Workspace } from "@deco/sdk/path";
 import { Path } from "@deco/sdk/path";
+import { join } from "node:path/posix";
 import { z } from "zod";
-import type { Agent } from "../schemas.ts";
 import type { DecoChatStorage } from "../storage/index.ts";
 import { Trigger } from "./trigger.ts";
 

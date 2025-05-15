@@ -9,10 +9,12 @@ import { env as honoEnv } from "hono/adapter";
 import type { TimingVariables } from "hono/timing";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
+import { WorkspaceMemory } from "@deco/ai/memory";
 
 export type AppEnv = {
   Variables: {
     db: Client;
+    memory: WorkspaceMemory;
     user: SupaUser;
     cf: Cloudflare;
     immutableRes?: boolean;

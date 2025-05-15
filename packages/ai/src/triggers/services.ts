@@ -309,8 +309,8 @@ export const createWebhookTrigger = async ({
     description: trigger.description,
     passphrase: trigger.passphrase,
     schema: trigger.schema,
-    url ,
-  } as CreateTriggerInput & { url?: string }
+    url,
+  } as CreateTriggerInput & { url?: string };
 
   try {
     const result = await createTrigger(
@@ -326,7 +326,7 @@ export const createWebhookTrigger = async ({
       .create(data, agentId, userId);
 
     return result;
-  } catch(error) {
+  } catch (error) {
     return {
       success: false,
       message: `Failed to create trigger: ${error}`,
@@ -370,7 +370,7 @@ export const createCronTrigger = async ({
       ...trigger.prompt,
       resourceId: trigger.prompt.resourceId ?? resourceId,
     },
-  } as CreateTriggerInput & { url?: string }
+  } as CreateTriggerInput & { url?: string };
   try {
     const result = await createTrigger(
       stub,
@@ -378,12 +378,12 @@ export const createCronTrigger = async ({
       agentId,
       data,
       resourceId,
-    id,
-  );
-  await storage?.triggers
-    ?.for(workspace)
-    .create(data, agentId, userId);
-  
+      id,
+    );
+    await storage?.triggers
+      ?.for(workspace)
+      .create(data, agentId, userId);
+
     return result;
   } catch (error) {
     return {

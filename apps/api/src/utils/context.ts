@@ -1,5 +1,7 @@
 import { ActorConstructor, StubFactory } from "@deco/actors";
 import { AIAgent, Trigger } from "@deco/ai/actors";
+import { WorkspaceMemory } from "@deco/ai/memory";
+import { API_SERVER_URL, getTraceDebugId } from "@deco/sdk";
 import { Client } from "@deco/sdk/storage";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
 import { type User as SupaUser } from "@supabase/supabase-js";
@@ -9,8 +11,6 @@ import { env as honoEnv } from "hono/adapter";
 import type { TimingVariables } from "hono/timing";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { WorkspaceMemory } from "@deco/ai/memory";
-
 export type AppEnv = {
   Variables: {
     db: Client;
@@ -124,21 +124,34 @@ export const createAIHandler =
     }
   };
 
-export const createApiHandler = <
+export interface ApiHandlerDefinition<
+  TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object,
->(definition: {
-  name: string;
+> {
+  name: TName;
   description: string;
   schema: T;
   handler: (props: z.infer<T>, c: AppContext) => Promise<R> | R;
-}) => ({
+}
+
+export const createApiHandler = <
+  TName extends string = string,
+  T extends z.ZodType = z.ZodType,
+  R extends object | boolean = object,
+>(definition: ApiHandlerDefinition<TName, T, R>) => ({
   ...definition,
   handler: (props: z.infer<T>): Promise<R> | R =>
     definition.handler(props, State.getStore()),
 });
 
-export type ApiHandler = ReturnType<typeof createApiHandler>;
+export type ApiHandler<
+  TName extends string = string,
+  T extends z.ZodType = z.ZodType,
+  R extends object | boolean = object | boolean,
+> = ReturnType<typeof createApiHandler<TName, T, R>>;
+
+export type MCPDefinition = ApiHandler[];
 
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 
@@ -157,4 +170,101 @@ export const State = {
     f: (...args: TArgs) => R,
     ...args: TArgs
   ): R => asyncLocalStorage.run(ctx, f, ...args),
+};
+
+export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
+  [K in TDefinition[number] as K["name"]]: (
+    params: Parameters<K["handler"]>[0],
+  ) => Promise<Awaited<ReturnType<K["handler"]>>>;
+};
+
+export type MCPClientFetchStub<TDefinition extends readonly ApiHandler[]> = {
+  [K in TDefinition[number] as K["name"]]: (
+    params: Parameters<K["handler"]>[0],
+    init?: RequestInit,
+  ) => Promise<Awaited<ReturnType<K["handler"]>>>;
+};
+
+export interface CreateStubHandlerOptions<
+  TDefinition extends readonly ApiHandler[],
+> {
+  tools: TDefinition;
+}
+
+export interface CreateStubAPIOptions {
+  workspace?: string;
+}
+
+export type CreateStubOptions<TDefinition extends readonly ApiHandler[]> =
+  | CreateStubHandlerOptions<TDefinition>
+  | CreateStubAPIOptions;
+
+/**
+ * @param fetcher the function that will be used to invoke the tool
+ * @returns a client that can be used to call the api
+ */
+export const createMCPStub = <
+  TDefinition extends readonly ApiHandler[] = readonly ApiHandler[],
+  TOptions extends CreateStubOptions<TDefinition> = CreateStubOptions<
+    TDefinition
+  >,
+>(
+  options?: TOptions,
+): TOptions extends CreateStubHandlerOptions<TDefinition>
+  ? MCPClientStub<TDefinition>
+  : MCPClientFetchStub<TDefinition> => {
+  if (options && "tools" in options) {
+    return new Proxy<MCPClientStub<TDefinition>>(
+      {} as MCPClientStub<TDefinition>,
+      {
+        get(_, name) {
+          if (typeof name !== "string") {
+            throw new Error("Name must be a string");
+          }
+          const toolMap = new Map<string, ApiHandler>(
+            options.tools.map((h) => [h.name, h]),
+          );
+          return (props: unknown) => {
+            const tool = toolMap.get(name);
+            if (!tool) {
+              throw new Error(`Tool ${name} not found`);
+            }
+            return tool.handler(props);
+          };
+        },
+      },
+    );
+  }
+  return new Proxy<MCPClientFetchStub<TDefinition>>(
+    {} as MCPClientFetchStub<TDefinition>,
+    {
+      get(_, name) {
+        if (typeof name !== "string") {
+          throw new Error("Name must be a string");
+        }
+
+        return (args: unknown, init?: RequestInit) => {
+          const workspace = options?.workspace ?? "";
+          return fetch(
+            new URL(
+              `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join(
+                "/",
+              ),
+              API_SERVER_URL,
+            ),
+            {
+              body: JSON.stringify(args),
+              method: "POST",
+              credentials: "include",
+              ...init,
+              headers: {
+                ...init?.headers,
+                "x-trace-debug-id": getTraceDebugId(),
+              },
+            },
+          );
+        };
+      },
+    },
+  );
 };

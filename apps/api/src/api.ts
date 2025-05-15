@@ -18,7 +18,13 @@ import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import { ApiHandler, AppEnv, createAIHandler, State } from "./utils/context.ts";
+import {
+  ApiHandler,
+  AppEnv,
+  createAIHandler,
+  createMCPStub,
+  State,
+} from "./utils/context.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -41,7 +47,7 @@ const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
-];
+] as const;
 
 // Tools tied to an specific workspace
 const WORKSPACE_TOOLS = [
@@ -63,7 +69,7 @@ const WORKSPACE_TOOLS = [
   hostingAPI.deployFiles,
   hostingAPI.deleteApp,
   hostingAPI.getAppInfo,
-];
+] as const;
 
 /**
  * Creates and sets up an MCP server for the given tools
@@ -109,19 +115,18 @@ const createMCPHandlerFor = (
  * UIs can call the tools without suffering the serialization
  * of the protocol.
  */
-const createToolCallHandlerFor = (tools: ApiHandler[]) => {
+const createToolCallHandlerFor = (tools: readonly ApiHandler[]) => {
   const toolMap = new Map(tools.map((t) => [t.name, t]));
 
   return async (c: Context) => {
+    const client = createMCPStub({ tools });
     const tool = c.req.param("tool");
     const args = await c.req.json();
 
     const t = toolMap.get(tool);
-
     if (!t) {
       throw new HTTPException(404, { message: "Tool not found" });
     }
-
     const { data, error } = t.schema.safeParse(args);
 
     if (error || !data) {
@@ -131,7 +136,7 @@ const createToolCallHandlerFor = (tools: ApiHandler[]) => {
     }
 
     startTime(c, tool);
-    const result = await State.run(c, t.handler, data);
+    const result = await State.run(c, client[tool], data);
     endTime(c, tool);
 
     return c.json({ data: result });

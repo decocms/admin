@@ -1,8 +1,8 @@
 import { AIAgent } from "../agent.ts";
-import type { Message } from "../types.ts";
+import type { Message, StreamOptions } from "../types.ts";
+import type { TriggerData } from "./services.ts";
 import { threadOf } from "./tools.ts";
 import type { TriggerHooks } from "./trigger.ts";
-import type { TriggerData } from "./services.ts";
 import { handleOutputTool } from "./outputTool.ts";
 import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
 
@@ -21,6 +21,16 @@ const isAIMessages = (m: unknown | Message[]): m is Message[] => {
   return Array.isArray(m) && m.every(isAIMessage);
 };
 
+const parseOptions: {
+  [key in keyof StreamOptions]?: (
+    val: string | null | undefined,
+  ) => StreamOptions[key];
+} = {
+  bypassOpenRouter: (val) => val === "true",
+  lastMessages: (val) => val ? parseInt(val) : undefined,
+  sendReasoning: (val) => val === "true",
+};
+
 export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
   type: "webhook",
   run: async (data, trigger, args) => {
@@ -35,7 +45,17 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       : undefined;
 
     const useStream = url?.searchParams.get("stream") === "true";
+    const options: StreamOptions = {};
 
+    for (const _key in parseOptions) {
+      const key = _key as keyof typeof parseOptions;
+      const val = url?.searchParams.get(key);
+      const parser = parseOptions[key];
+      if (val && key && parser) {
+        // deno-lint-ignore no-explicit-any
+        options[key] = parser(val) as any;
+      }
+    }
     const { threadId, resourceId } = threadOf(data, url);
 
     const agent = trigger.state

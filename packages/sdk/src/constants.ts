@@ -140,6 +140,10 @@ export const MODELS: Model[] = [
  * @returns The trace debug ID
  */
 export function getTraceDebugId(): string {
+  const href = globalThis?.location?.href;
+  if (!href) {
+    return crypto.randomUUID();
+  }
   return new URL(globalThis.location.href).searchParams.get("__d") ||
     crypto.randomUUID();
 }

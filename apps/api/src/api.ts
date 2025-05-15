@@ -46,7 +46,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   };
 };
 
-const mapErrorToHTTPException = (err: Error) => {
+const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
   if (!(err instanceof MCPError)) {
     throw err;
   }
@@ -90,7 +90,7 @@ const createMCPHandlerFor = (
       honoCtxToAppCtx(c),
       transport.handleMessage.bind(transport),
       c.req.raw,
-    ).catch(mapErrorToHTTPException);
+    ).catch(mapMCPErrorToHTTPExceptionOrThrow);
     endTime(c, "mcp-handle-message");
 
     return c.res;
@@ -127,7 +127,7 @@ const createToolCallHandlerFor = (tools: readonly ApiHandler[]) => {
       honoCtxToAppCtx(c),
       (args) => client[tool](args),
       data,
-    ).catch(mapErrorToHTTPException);
+    ).catch(mapMCPErrorToHTTPExceptionOrThrow);
     endTime(c, tool);
 
     return c.json({ data: result });

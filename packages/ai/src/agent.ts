@@ -176,9 +176,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const timings = m.timings;
     const enrichMetadata = timings?.start("enrichMetadata");
     this.metadata = await super.enrichMetadata(m, req);
+    this.metadata.hasAccess ||= this._configuration?.visibility === "PUBLIC";
+
+    const runtimeKey = getRuntimeKey();
+
     // this is a weak check, but it works for now
-    if (req.headers.get("host") !== null && getRuntimeKey() !== "deno") { // if host is set so its not an internal request so checks must be applied
+    if (req.headers.get("host") !== null && runtimeKey !== "deno") { // if host is set so its not an internal request so checks must be applied
       this.assertsPrincipalHasAccess();
+    } else if (runtimeKey === "deno") {
+      console.warn(
+        "Deno runtime detected, skipping access check. This might fail in production.",
+      );
     }
 
     // Propagate supabase token from request to integration token

@@ -44,14 +44,18 @@ type IContext = {
   threadId: string;
   scrollRef: RefObject<HTMLDivElement | null>;
   fileDataRef: RefObject<FileData[]>;
-  uiOptions?: {
-    showThreadTools?: boolean;
-  };
   setAutoScroll: (e: HTMLDivElement | null, enabled: boolean) => void;
   isAutoScrollEnabled: (e: HTMLDivElement | null) => boolean;
   retry: (context?: string[]) => void;
   select: (toolCallId: string, selectedValue: string) => Promise<void>;
   correlationIdRef: RefObject<string | null>;
+  uiOptions: {
+    showThreadTools: boolean;
+    showModelSelector: boolean;
+    showThreadMessages: boolean;
+    showAgentVisibility: boolean;
+    showEditAgent: boolean;
+  };
 };
 
 const Context = createContext<IContext | null>(null);
@@ -61,11 +65,7 @@ interface Props {
   threadId: string;
   /** Default initial thread message */
   initialMessage?: CreateMessage;
-  /** Disable thread messages */
-  disableThreadMessages?: boolean;
-  uiOptions?: {
-    showThreadTools?: boolean;
-  };
+  uiOptions?: Partial<IContext["uiOptions"]>;
 }
 
 const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
@@ -75,12 +75,19 @@ const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
   "DECO_AGENT_CONFIGURE",
 ]);
 
+const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
+  showModelSelector: true,
+  showThreadTools: true,
+  showThreadMessages: true,
+  showAgentVisibility: true,
+  showEditAgent: true,
+};
+
 export function ChatProvider({
   agentId,
   threadId,
   initialMessage,
   children,
-  disableThreadMessages,
   uiOptions,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
@@ -91,7 +98,8 @@ export function ChatProvider({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileDataRef = useRef<FileData[]>([]);
   const onceRef = useRef(false);
-  const { data: initialMessages } = disableThreadMessages
+  const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
+  const { data: initialMessages } = !options.showThreadMessages
     ? { data: undefined }
     : useThreadMessages(threadId);
 
@@ -137,7 +145,9 @@ export function ChatProvider({
       const overrides = getAgentOverrides(agentId);
       return {
         args: [allMessages, {
-          model: preferences.defaultModel,
+          model: options.showModelSelector // use the agent model if selector is not shown on the UI
+            ? preferences.defaultModel
+            : undefined,
           instructions: overrides?.instructions,
           bypassOpenRouter,
           lastMessages: 0,
@@ -263,7 +273,7 @@ export function ChatProvider({
         chat: { ...chat, handleSubmit: handleSubmit },
         scrollRef,
         fileDataRef,
-        uiOptions: uiOptions,
+        uiOptions: options,
         setAutoScroll,
         isAutoScrollEnabled,
         retry: handleRetry,

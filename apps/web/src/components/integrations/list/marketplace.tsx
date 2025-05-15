@@ -17,7 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
-import { Breadcrumb, IntegrationPageLayout } from "./breadcrumb.tsx";
+import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { Table, TableColumn } from "../../common/Table.tsx";
 import { IntegrationInfo } from "../../common/TableCells.tsx";
@@ -284,7 +284,7 @@ function MarketplaceTab() {
   return (
     <div className="flex flex-col gap-4 h-full py-4">
       <div className="px-4 overflow-x-auto">
-        <Breadcrumb
+        <Header
           value={registryFilter}
           setValue={(value) => setRegistryFilter(value)}
           viewMode={viewMode}

@@ -16,7 +16,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 relative">
-      <div className="flex items-center justify-center -mb-16">
+      <div className="absolute flex items-center justify-center mb-80">
         <div className="p-6 rounded-full border border-slate-50">
           <div className="p-4 rounded-full border border-slate-100">
             <div className="p-3.5 rounded-full border border-slate-100">
@@ -30,16 +30,16 @@ export function EmptyState({
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-2 w-72">
-        <h3 className="text-lg font-semibold text-gray-900 text-center">
+      <div className="flex flex-col items-center gap-2 max-w-md z-10">
+        <h3 className="text-2xl font-semibold text-foreground text-center">
           {title}
         </h3>
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-sm text-muted-foreground text-center">
           {description}
         </p>
       </div>
       <Button
-        variant="default"
+        variant="outline"
         size="default"
         className={cn("gap-2", buttonProps?.className)}
         {...buttonProps}

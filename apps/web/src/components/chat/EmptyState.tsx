@@ -1,9 +1,15 @@
 import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { useEditAgent } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import { useChatContext } from "./context.tsx";
 
-export function EmptyState({ agentId }: { agentId: string }) {
+export function EmptyState() {
+  const { agentId } = useChatContext();
+
   if (agentId === WELL_KNOWN_AGENT_IDS.teamAgent) {
     return (
       <div className="py-10">
@@ -29,7 +35,7 @@ export function EmptyState({ agentId }: { agentId: string }) {
       shouldCatch={(e) => e instanceof AgentNotFoundError}
     >
       <Suspense fallback={<EmptyState.Skeleton />}>
-        <EmptyState.UI agentId={agentId} />
+        <EmptyState.UI />
       </Suspense>
     </ErrorBoundary>
   );
@@ -40,11 +46,19 @@ EmptyState.Fallback = () => {
 };
 
 EmptyState.Skeleton = () => {
-  return <div>Loading...</div>;
+  return (
+    <div className="h-full flex flex-col items-center justify-center animate-pulse gap-4 py-10">
+      <div className="bg-slate-100 w-2/3 rounded-xl h-10 ml-auto" />
+      <div className="bg-slate-100 w-2/3 rounded-xl h-10 mr-auto" />
+      <div className="bg-slate-100 w-2/3 rounded-xl h-10 ml-auto" />
+    </div>
+  );
 };
 
-EmptyState.UI = ({ agentId }: { agentId: string }) => {
+EmptyState.UI = () => {
+  const { agentId, uiOptions } = useChatContext();
   const { data: agent } = useAgent(agentId);
+  const editAgent = useEditAgent();
 
   return (
     <div className="h-full flex flex-col justify-between py-12">
@@ -68,6 +82,15 @@ EmptyState.UI = ({ agentId }: { agentId: string }) => {
             <p className="text-slate-500 mx-6 text-center">
               {agent?.description ?? "The more you share, the better I get."}
             </p>
+            {uiOptions.showEditAgent && (
+              <Button
+                variant="outline"
+                onClick={() => editAgent(agentId)}
+              >
+                <Icon name="tune" size={16} />
+                Edit agent
+              </Button>
+            )}
           </div>
         </div>
       </div>

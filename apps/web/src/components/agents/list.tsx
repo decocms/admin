@@ -4,6 +4,7 @@ import {
   useCreateAgent,
   useIntegration,
   useRemoveAgent,
+  useSDK,
   useUpdateThreadMessages,
 } from "@deco/sdk";
 import {
@@ -25,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tooltip,
@@ -36,7 +36,9 @@ import {
 import {
   createContext,
   Suspense,
+  useCallback,
   useContext,
+  useMemo,
   useReducer,
   useState,
 } from "react";
@@ -44,12 +46,15 @@ import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
+import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
+import { getPublicChatLink } from "../agent/chats.tsx";
+import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
+import { ListPageHeader } from "../common/ListPageHeader.tsx";
+import { Table } from "../common/Table.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
-import { ViewModeSwitcher } from "../common/ViewModelSwitcher.tsx";
-import { Table } from "../common/Table.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -170,11 +175,23 @@ function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
   );
 }
 
+const useCopyLink = (agentId: string) => {
+  const { workspace } = useSDK();
+
+  const copyLink = useCallback(() => {
+    const link = getPublicChatLink(agentId, workspace);
+    navigator.clipboard.writeText(link);
+  }, [agentId, workspace]);
+
+  return copyLink;
+};
+
 function Actions({ agent }: { agent: Agent }) {
   const focusEditAgent = useEditAgent();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const copyLink = useCopyLink(agent.id);
 
   async function handleDelete() {
     await removeAgent.mutateAsync(agent.id);
@@ -214,6 +231,19 @@ function Actions({ agent }: { agent: Agent }) {
             <Icon name="content_copy" className="mr-2" />
             {duplicating ? "Duplicating..." : "Duplicate"}
           </DropdownMenuItem>
+          {agent.visibility === "PUBLIC" && (
+            <DropdownMenuItem
+              disabled={duplicating}
+              onClick={(e) => {
+                e.stopPropagation();
+
+                copyLink();
+              }}
+            >
+              <Icon name="link" className="mr-2" />
+              Copy link
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="text-destructive"
             onClick={(e) => {
@@ -269,15 +299,7 @@ function Actions({ agent }: { agent: Agent }) {
 
 function Card({ agent }: { agent: Agent }) {
   const focusChat = useFocusChat();
-  if (!agent) {
-    return (
-      <UICard className="shadow-sm hover:shadow-md transition-shadow rounded-2xl">
-        <CardContent className="p-4 flex items-center justify-center h-[166px]">
-          <Spinner />
-        </CardContent>
-      </UICard>
-    );
-  }
+
   return (
     <UICard
       className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
@@ -310,8 +332,9 @@ function Card({ agent }: { agent: Agent }) {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="font-semibold truncate">
+            <div className="flex items-center gap-2">
               {agent.name}
+              <AgentVisibility.Icon agent={agent} size={16} />
             </div>
             <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
               {agent.description || "No description"}
@@ -438,65 +461,107 @@ function CardsView({ agents }: {
   );
 }
 
+const VISIBILITIES = ["all", "public", "workspace"] as const;
+const VISIBILITY_LABELS = {
+  all: "All",
+  public: (
+    <>
+      <Icon name="public" /> Public
+    </>
+  ),
+  workspace: (
+    <>
+      <Icon name="groups" /> Team
+    </>
+  ),
+} as const;
+
+type Visibility = typeof VISIBILITIES[number];
+
 function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
   const { creating, handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const { value: visibility, update: setVisibility } = useLocalStorage<
+    Visibility
+  >({ key: "agents-visibility", defaultValue: "all" });
+
+  const agentsByVisibility = useMemo(() => {
+    const initial = Object.fromEntries(
+      VISIBILITIES.map((v) => [v, []] as [string, Agent[]]),
+    );
+
+    return agents?.reduce((acc, agent) => {
+      acc["all"].push(agent);
+      acc[agent.visibility.toLowerCase()]?.push(agent);
+
+      return acc;
+    }, initial);
+  }, [agents]);
 
   const filteredAgents =
-    agents?.filter((agent) =>
+    agentsByVisibility[visibility]?.filter((agent) =>
       agent.name.toLowerCase().includes(filter.toLowerCase())
     ) ?? [];
+
   return (
     <div className="flex flex-col h-full gap-4 p-4">
-      <div className="flex items-center justify-end gap-2 p-1">
-        <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
-        <Input
-          className="w-80 border text-sm"
-          placeholder="Search agent"
-          value={filter}
-          onChange={(e) =>
-            dispatch({ type: "SET_FILTER", payload: e.target.value })}
-        />
-      </div>
-      {!agents
-        ? (
-          <div className="flex h-48 items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        )
-        : agents.length > 0
+      <ListPageHeader
+        filter={{
+          items: VISIBILITIES.map((v) => ({
+            id: v,
+            active: visibility === v,
+            label: VISIBILITY_LABELS[v],
+            count: agentsByVisibility[v].length,
+          })),
+          onClick: (item) => setVisibility(item.id as Visibility),
+        }}
+        input={{
+          placeholder: "Search agent",
+          value: filter,
+          onChange: (e) =>
+            dispatch({ type: "SET_FILTER", payload: e.target.value }),
+        }}
+        view={{ viewMode, onChange: setViewMode }}
+      />
+
+      {filteredAgents.length > 0
         ? (
           <div className="flex-1 min-h-0 overflow-x-auto">
             {viewMode === "table"
-              ? (
-                <TableView
-                  agents={filteredAgents}
-                />
-              )
-              : (
-                <CardsView
-                  agents={filteredAgents}
-                />
-              )}
-            <div className="flex-col items-center justify-center h-48 peer-empty:flex hidden">
-              <Icon
-                name="search_off"
-                className="mb-2 text-4xl text-muted-foreground"
-              />
-              <p className="text-muted-foreground">
-                No agents match your filter. Try adjusting your search.
-              </p>
-            </div>
+              ? <TableView agents={filteredAgents} />
+              : <CardsView agents={filteredAgents} />}
           </div>
         )
         : (
           <EmptyState
-            icon="groups"
-            title="No agents yet"
-            description="Create an agent to automate tasks and improve your workflow."
+            icon={agents.length === 0 ? "robot_2" : visibility === "public" &&
+                agentsByVisibility["public"].length === 0
+              ? "public"
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "groups"
+              : "search_off"}
+            title={agents.length === 0
+              ? "No agents yet"
+              : visibility === "public" &&
+                  agentsByVisibility["public"].length === 0
+              ? "No public agents available"
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "No team agents yet"
+              : "No agents match your filter"}
+            description={agents.length === 0
+              ? "You haven’t created any agents yet. Create one to get started."
+              : visibility === "public" &&
+                  agentsByVisibility["public"].length === 0
+              ? "Once agents are shared publicly, they’ll appear here for anyone to explore and try out."
+              : visibility === "workspace" &&
+                  agentsByVisibility["workspace"].length === 0
+              ? "Agents shared with your team will show up here. Create one to start collaborating."
+              : "Try adjusting your search. If you still can’t find what you’re looking for, you can create a new agent."}
             buttonProps={{
               disabled: creating,
               children: creating ? "Creating..." : "Create Agent",

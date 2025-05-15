@@ -1,17 +1,16 @@
 import type { Trigger } from "@deco/sdk";
 import { useListTriggers } from "@deco/sdk";
-import { Input } from "@deco/ui/components/input.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { ListPageHeader } from "../common/ListPageHeader.tsx";
+import { Table, TableColumn } from "../common/Table.tsx";
+import { AgentInfo, DateTimeCell, UserInfo } from "../common/TableCells.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AddTriggerModal } from "./addTriggerModal.tsx";
-import { Table, TableColumn } from "../common/Table.tsx";
 import { TriggerActions } from "./triggerActions.tsx";
-import { AgentInfo, DateTimeCell, UserInfo } from "../common/TableCells.tsx";
-import { TriggerType } from "./triggerType.tsx";
-import { ViewModeSwitcher } from "../common/ViewModelSwitcher.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
+import { TriggerType } from "./triggerType.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 
@@ -98,19 +97,21 @@ function ListTriggersSuspended() {
 
   return (
     <div className="p-4 flex flex-col gap-4 h-full">
-      <div className="flex items-center justify-end gap-2 p-1">
-        <ViewModeSwitcher
-          viewMode={viewMode}
-          onChange={(mode) => setViewMode(mode)}
-        />
-        <Input
-          type="text"
-          placeholder="Search trigger"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-80 border text-sm"
-        />
-      </div>
+      <ListPageHeader
+        filter={{
+          items: [],
+          onClick: () => {},
+        }}
+        input={{
+          placeholder: "Search trigger",
+          value: search,
+          onChange: (e) => setSearch(e.target.value),
+        }}
+        view={{
+          viewMode,
+          onChange: setViewMode,
+        }}
+      />
 
       <div className="flex-1 min-h-0 overflow-x-auto">
         {viewMode === "table"

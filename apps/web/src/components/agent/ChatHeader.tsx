@@ -5,21 +5,14 @@ import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
-interface Props {
-  agentId: string;
-  mode?: "read-only";
-}
-
-export function ChatHeader({ mode }: { mode?: "read-only" }) {
-  const { agentId } = useChatContext();
-
+export function ChatHeader() {
   return (
     <ErrorBoundary
       fallback={<ChatHeader.Fallback />}
       shouldCatch={(e) => e instanceof AgentNotFoundError}
     >
       <Suspense fallback={<ChatHeader.Skeleton />}>
-        <ChatHeader.UI agentId={agentId} mode={mode} />
+        <ChatHeader.UI />
       </Suspense>
     </ErrorBoundary>
   );
@@ -40,8 +33,13 @@ ChatHeader.Skeleton = () => {
   return <div className="h-10 w-full" />;
 };
 
-ChatHeader.UI = ({ agentId }: Props) => {
+ChatHeader.UI = () => {
+  const { agentId, chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
+
+  if (chat.messages.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex items-center gap-3 h-10">

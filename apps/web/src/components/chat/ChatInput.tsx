@@ -11,40 +11,41 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { AudioButton } from "./AudioButton.tsx";
 import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./ModelSelector.tsx";
 import { RichTextArea } from "./RichText.tsx";
 import ToolsButton from "./ToolsButton.tsx";
-import { AudioButton } from "./AudioButton.tsx";
 
-export function ChatInput({ withoutTools }: { withoutTools?: boolean }) {
+export function ChatInput() {
   return (
     <ErrorBoundary
-      fallback={<ChatInput.UI disabled withoutTools={withoutTools} />}
+      fallback={<ChatInput.UI disabled />}
       shouldCatch={(e) => e instanceof AgentNotFoundError}
     >
       <Suspense
-        fallback={<ChatInput.UI disabled withoutTools={withoutTools} />}
+        fallback={<ChatInput.UI disabled />}
       >
-        <ChatInput.Suspense withoutTools={withoutTools} />
+        <ChatInput.Suspense />
       </Suspense>
     </ErrorBoundary>
   );
 }
 
-ChatInput.Suspense = ({ withoutTools }: { withoutTools?: boolean }) => {
+ChatInput.Suspense = () => {
   const { agentId } = useChatContext();
   const { data: _agent } = useAgent(agentId);
 
-  return <ChatInput.UI disabled={false} withoutTools={withoutTools} />;
+  return <ChatInput.UI disabled={false} />;
 };
 
 ChatInput.UI = (
-  { disabled, withoutTools }: { disabled?: boolean; withoutTools?: boolean },
+  { disabled }: { disabled?: boolean },
 ) => {
   const {
     agentRoot,
     chat: { stop, input, handleInputChange, handleSubmit, status },
+    uiOptions: { showModelSelector, showThreadTools },
   } = useChatContext();
   const [isUploading, setIsUploading] = useState(false);
   const [files, setFiles] = useState<FileList | undefined>(undefined);
@@ -243,15 +244,17 @@ ChatInput.UI = (
                     : null}
                 </div>
                 <div className="flex items-center gap-2">
-                  <ModelSelector
-                    model={model}
-                    onModelChange={(modelToSelect) =>
-                      setPreferences({
-                        ...preferences,
-                        defaultModel: modelToSelect,
-                      })}
-                  />
-                  {!withoutTools && <ToolsButton />}
+                  {showModelSelector && (
+                    <ModelSelector
+                      model={model}
+                      onModelChange={(modelToSelect) =>
+                        setPreferences({
+                          ...preferences,
+                          defaultModel: modelToSelect,
+                        })}
+                    />
+                  )}
+                  {showThreadTools && <ToolsButton />}
                   <AudioButton onMessage={handleRichTextChange} />
                   <Button
                     type={isLoadingOrUploading ? "button" : "submit"}

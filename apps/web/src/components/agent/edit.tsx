@@ -165,9 +165,9 @@ export default function Page(props: Props) {
   useOnAgentChangesDiscarded(agentId, discardChanges);
 
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
-  const handleSubmit = form.handleSubmit(async (data: Agent) => {
-    await updateAgent.mutateAsync(data, { onSuccess: onMutationSuccess });
-  });
+  const handleSubmit = form.handleSubmit((data: Agent) =>
+    updateAgent.mutateAsync(data, { onSuccess: onMutationSuccess })
+  );
 
   return (
     <Suspense
@@ -203,8 +203,7 @@ export default function Page(props: Props) {
             actionButtons={
               <div
                 className={cn(
-                  "flex items-center gap-2",
-                  "bg-slate-50",
+                  "flex items-center gap-2 bg-slate-50",
                   "transition-opacity",
                   numberOfChanges > 0 ? "opacity-100" : "opacity-0",
                 )}
@@ -212,14 +211,16 @@ export default function Page(props: Props) {
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={form.formState.isSubmitting}
                   onClick={discardCurrentChanges}
                 >
                   Discard
                 </Button>
                 <Button
                   variant="special"
-                  disabled={!numberOfChanges || form.formState.isSubmitting}
                   onClick={handleSubmit}
+                  disabled={!numberOfChanges ||
+                    form.formState.isSubmitting}
                 >
                   {form.formState.isSubmitting
                     ? (

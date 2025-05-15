@@ -312,7 +312,6 @@ export type Database = {
           avatar: string;
           created_at: string;
           description: string | null;
-          draft: boolean | null;
           id: string;
           instructions: string;
           max_steps: number | null;
@@ -322,13 +321,13 @@ export type Database = {
           name: string;
           tools_set: Json;
           views: Json;
+          visibility: Database["public"]["Enums"]["visibility_type"];
           workspace: string;
         };
         Insert: {
           avatar: string;
           created_at?: string;
           description?: string | null;
-          draft?: boolean | null;
           id?: string;
           instructions: string;
           max_steps?: number | null;
@@ -338,13 +337,13 @@ export type Database = {
           name: string;
           tools_set: Json;
           views: Json;
+          visibility?: Database["public"]["Enums"]["visibility_type"];
           workspace: string;
         };
         Update: {
           avatar?: string;
           created_at?: string;
           description?: string | null;
-          draft?: boolean | null;
           id?: string;
           instructions?: string;
           max_steps?: number | null;
@@ -354,6 +353,7 @@ export type Database = {
           name?: string;
           tools_set?: Json;
           views?: Json;
+          visibility?: Database["public"]["Enums"]["visibility_type"];
           workspace?: string;
         };
         Relationships: [];
@@ -3943,7 +3943,7 @@ export type Database = {
       };
     };
     Enums: {
-      [_ in never]: never;
+      visibility_type: "PUBLIC" | "WORKSPACE" | "PRIVATE";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -4062,6 +4062,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      visibility_type: ["PUBLIC", "WORKSPACE", "PRIVATE"],
+    },
   },
 } as const;

@@ -15,22 +15,22 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { type MouseEvent, useReducer, useState } from "react";
-import { trackEvent } from "../../../hooks/analytics.ts";
-import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
-import { EmptyState } from "../../common/EmptyState.tsx";
-import { Breadcrumb, IntegrationPageLayout } from "./breadcrumb.tsx";
-import { IntegrationIcon } from "./common.tsx";
-import { Table, TableColumn } from "../../common/Table.tsx";
-import { IntegrationInfo } from "../../common/TableCells.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { type MouseEvent, useReducer, useState } from "react";
+import { trackEvent } from "../../../hooks/analytics.ts";
+import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
+import { EmptyState } from "../../common/EmptyState.tsx";
+import { Table, TableColumn } from "../../common/Table.tsx";
+import { IntegrationInfo } from "../../common/TableCells.tsx";
+import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
+import { IntegrationIcon } from "./common.tsx";
 
 interface IntegrationActionsProps {
   onDelete: () => void;
@@ -302,7 +302,7 @@ function InstalledIntegrationsTab() {
   return (
     <div className="flex flex-col gap-4 h-full py-4">
       <div className="px-4 overflow-x-auto">
-        <Breadcrumb
+        <Header
           value={filter}
           setValue={(value) => dispatch({ type: "SET_FILTER", payload: value })}
           viewMode={viewMode}

@@ -1,8 +1,9 @@
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { callToolFor } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 
-export class AgentNotFoundError extends Error {
+export class AgentNotFoundError extends NotFoundError {
   agentId: string;
 
   constructor(agentId: string) {
@@ -73,6 +74,14 @@ export const loadAgent = async (
 
   if (response.status === 404) {
     throw new AgentNotFoundError(agentId);
+  }
+
+  if (response.status === 401) {
+    throw new UnauthorizedError();
+  }
+
+  if (response.status === 403) {
+    throw new ForbiddenError();
   }
 
   const { error, data } = await response.json() as {

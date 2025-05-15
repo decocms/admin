@@ -80,6 +80,10 @@ const Chat = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
 );
 
+const PublicChats = lazy(
+  () => wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
+);
+
 const Wallet = lazy(
   () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
 );
@@ -162,7 +166,7 @@ function ErrorFallback() {
       description={error?.message ??
         "Looks like we are facing some technical issues. Please try again."}
       buttonProps={{
-        onClick: () => reset(),
+        onClick: () => globalThis.location.reload(),
         children: "Retry",
       }}
     />
@@ -181,13 +185,17 @@ function Router() {
         <Route index element={<InvitesList />} />
       </Route>
 
+      <Route
+        path="chats"
+        element={<PublicChats />}
+      />
+
       <Route path="/:teamSlug?" element={<RouteLayout />}>
         <Route
           index
           element={
             <Chat
-              includeThreadTools
-              disableThreadMessages
+              showThreadMessages={false}
               agentId="teamAgent"
               threadId={crypto.randomUUID()}
               key="disabled-messages"

@@ -1,5 +1,6 @@
 import { useAgent } from "@deco/sdk";
 import { Suspense } from "react";
+import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
 interface Props {
@@ -30,7 +31,7 @@ AgentBreadcrumbSegment.UI = (
   const { data: agent } = useAgent(agentId);
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       {variant !== "summary" && (
         <AgentAvatar
           name={agent.name}
@@ -41,6 +42,7 @@ AgentBreadcrumbSegment.UI = (
       <h1 className="text-sm font-medium tracking-tight text-slate-700 text-nowrap">
         {agent.name}
       </h1>
-    </>
+      <AgentVisibility agent={agent} />
+    </div>
   );
 };

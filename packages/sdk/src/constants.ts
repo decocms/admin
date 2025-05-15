@@ -209,6 +209,7 @@ export const WELL_KNOWN_AGENTS = {
       "https://assets.decocache.com/webdraw/b010a0b9-d576-4d57-9c3a-b86aee1eca1f/explorer.jpeg",
     description: "I can help you with anything you need.",
     model: DEFAULT_MODEL,
+    visibility: "PUBLIC",
     tools_set: {
       DECO_AGENTS: [
         "DECO_AGENTS_CREATE",
@@ -265,6 +266,7 @@ export const WELL_KNOWN_AGENTS = {
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you setting up this integration.",
     model: DEFAULT_MODEL,
+    visibility: "PUBLIC",
     tools_set: {
       DECO_INTEGRATIONS: [
         "DECO_INTEGRATIONS_SEARCH",
@@ -289,6 +291,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   description:
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
   model: DEFAULT_MODEL,
+  visibility: "WORKSPACE",
   tools_set: {
     DECO_AGENTS: [
       "DECO_AGENTS_CONFIGURATION",

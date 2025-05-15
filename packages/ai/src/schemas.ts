@@ -14,7 +14,7 @@ export const AgentSchema = z.object({
   /** System prompt/instructions for the agent */
   instructions: z.string().describe("System prompt/instructions for the agent"),
   /** Brief description of the agent's purpose or capabilities */
-  description: z.string().nullish().describe(
+  description: z.string().optional().describe(
     "Brief description of the agent's purpose or capabilities",
   ),
   /** Tools available to the agent */
@@ -25,11 +25,11 @@ export const AgentSchema = z.object({
     ),
   ).describe("Tools available to the agent"),
   /** Maximum number of steps the agent can take */
-  max_steps: z.number().nullish().describe(
+  max_steps: z.number().optional().describe(
     "Maximum number of steps the agent can take, defaults to 7",
   ),
   /** Maximum number of tokens the agent can use */
-  max_tokens: z.number().nullish().describe(
+  max_tokens: z.number().nullable().optional().describe(
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */
@@ -37,13 +37,13 @@ export const AgentSchema = z.object({
     .describe("Model to use for the agent"),
   /** Memory to use for the agent */
   memory: z.object({
-    discriminator: z.string().nullish().describe(
+    discriminator: z.string().optional().describe(
       "A memory discriminator for the tenant",
     ),
-    last_messages: z.number().nullish().describe(
+    last_messages: z.number().optional().describe(
       "The number of messages to keep in memory",
     ),
-  }).nullish().describe("Memory to use for the agent"),
+  }).optional().describe("Memory to use for the agent"),
   /** Views where the agent can be used */
   views: z.array(
     z.object({
@@ -53,7 +53,9 @@ export const AgentSchema = z.object({
       name: z.string().describe("Name of the view"),
     }),
   ).describe("Views where the agent can be used"),
-  draft: z.boolean().nullish().describe("Whether the agent is in draft mode"),
+  /** Visibility of the agent */
+  visibility: z.enum(["PUBLIC", "WORKSPACE", "PRIVATE"])
+    .describe("Visibility of the agent"),
 });
 
 /**

@@ -32,8 +32,7 @@ export type WellKnownAgents =
 interface Props {
   agentId?: WellKnownAgents;
   threadId?: string;
-  disableThreadMessages?: boolean;
-  includeThreadTools?: boolean;
+  showThreadMessages?: boolean;
 }
 
 const MainChat = () => {
@@ -178,7 +177,7 @@ function Breadcrumb({ agentId }: { agentId: string }) {
   );
 }
 
-function Agent(props: Props) {
+function Page(props: Props) {
   const params = useParams();
   const agentId = useMemo(
     () => props.agentId || params.id,
@@ -210,8 +209,10 @@ function Agent(props: Props) {
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
-        uiOptions={{ showThreadTools: props.includeThreadTools || false }}
-        disableThreadMessages={props.disableThreadMessages}
+        uiOptions={{
+          showThreadTools: agentId === WELL_KNOWN_AGENT_IDS.teamAgent,
+          showThreadMessages: props.showThreadMessages ?? true,
+        }}
       >
         <PageLayout
           tabs={TABS}
@@ -227,4 +228,4 @@ function Agent(props: Props) {
   );
 }
 
-export default Agent;
+export default Page;

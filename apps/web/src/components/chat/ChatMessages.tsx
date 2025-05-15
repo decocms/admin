@@ -32,7 +32,6 @@ function Dots() {
 
 export function ChatMessages() {
   const {
-    agentId,
     scrollRef,
     chat,
     isAutoScrollEnabled,
@@ -84,22 +83,20 @@ export function ChatMessages() {
 
   return (
     <div className="w-full max-w-[640px] mx-auto">
-      {isEmpty
-        ? <EmptyState agentId={agentId} />
-        : (
-          <div className="flex flex-col gap-4">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                isStreaming={isStreaming}
-                isLastMessage={messages.length === index + 1}
-              />
-            ))}
-            <ChatError />
-            <Dots />
-          </div>
-        )}
+      {isEmpty ? <EmptyState /> : (
+        <div className="flex flex-col gap-4">
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              isStreaming={isStreaming}
+              isLastMessage={messages.length === index + 1}
+            />
+          ))}
+          <ChatError />
+          <Dots />
+        </div>
+      )}
 
       <div ref={scrollRef}>
         {messages.length > 0 && (

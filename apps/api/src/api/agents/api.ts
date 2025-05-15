@@ -41,10 +41,11 @@ export const getAgent = createApiHandler({
     const slug = c.req.param("slug");
 
     const [
-      _assertions,
+      hasAccessToWorkspace,
       { data, error },
     ] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(root, slug, c)
+        .then(() => true).catch((e) => e),
       id in WELL_KNOWN_AGENTS
         ? {
           data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
@@ -56,6 +57,10 @@ export const getAgent = createApiHandler({
           .eq("id", id)
           .single(),
     ]);
+
+    if (hasAccessToWorkspace !== true && data?.visibility !== "PUBLIC") {
+      throw hasAccessToWorkspace;
+    }
 
     if (error) {
       throw new Error(error.message);

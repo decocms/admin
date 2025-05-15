@@ -513,6 +513,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       id: crypto.randomUUID(),
       model: DEFAULT_MODEL,
       views: [],
+      visibility: "WORKSPACE",
       ...manifest,
     };
 
@@ -621,6 +622,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
+      instructions: options?.instructions,
       toolsets,
     }) as Promise<GenerateTextResult<any, any>>;
   }
@@ -673,10 +675,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           ANONYMOUS_INSTRUCTIONS,
         model: llm,
       });
-    }
-
-    if (options.instructions) {
-      agent.instructions = options.instructions;
     }
 
     return agent;
@@ -779,6 +777,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...this.thread,
       context,
       toolsets,
+      instructions: options?.instructions,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
       experimental_transform: experimentalTransform,

@@ -113,7 +113,7 @@ export function AddTriggerModal({ agentId }: {
         {!hasAgents
           ? (
             <EmptyState
-              icon="groups"
+              icon="robot_2"
               title="No agents yet"
               description="You need to create an agent before adding a trigger."
               buttonProps={{

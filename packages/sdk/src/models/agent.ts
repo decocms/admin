@@ -53,6 +53,9 @@ export const AgentSchema = z.object({
       name: z.string().describe("Name of the view"),
     }),
   ).describe("Views where the agent can be used"),
+  /** Visibility of the agent */
+  visibility: z.enum(["PUBLIC", "WORKSPACE", "PRIVATE"])
+    .describe("Visibility of the agent"),
 });
 
 /**

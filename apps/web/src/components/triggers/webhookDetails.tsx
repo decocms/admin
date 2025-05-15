@@ -1,6 +1,7 @@
 import { TriggerOutputSchema, WebhookTriggerOutputSchema } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { CodeBlock } from "./codeBlock.tsx";
+import { z } from "zod";
 
 export function WebhookDetails(
   { trigger }: { trigger: z.infer<typeof TriggerOutputSchema> },

@@ -107,9 +107,7 @@ export const handleOutputTool = async ({
       result,
     };
   } catch (err) {
-    console.log({
-      err,
-    });
+    console.error("Error calling output tool", err);
     return Response.json({
       message: "Error calling webhook with output tool",
       error: err instanceof Error ? err.message : err,

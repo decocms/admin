@@ -131,6 +131,7 @@ export function WebhookTriggerForm({
         passphrase: data.passphrase || undefined,
         // deno-lint-ignore no-explicit-any
         schema: schemaObj as unknown as any || undefined,
+        outputTool: data.outputTool || undefined,
       },
       {
         onSuccess: () => {

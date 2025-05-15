@@ -1,5 +1,5 @@
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 
@@ -38,15 +38,12 @@ export const createAgent = async (
   workspace: string,
   template: Partial<Agent> = {},
 ) => {
-  const response = await callToolFor(workspace, "AGENTS_CREATE", {
-    id: crypto.randomUUID(),
-    ...template,
-  });
-
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent;
-  };
+  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_CREATE(
+    {
+      id: crypto.randomUUID(),
+      ...template,
+    },
+  );
 
   if (error) {
     throw new Error(error.message);
@@ -65,14 +62,13 @@ export const loadAgent = async (
   agentId: string,
   signal?: AbortSignal,
 ): Promise<Agent> => {
-  const response = await callToolFor(
-    workspace,
-    "AGENTS_GET",
-    { id: agentId },
-    { signal },
-  );
+  const { error, data, status } = await MCPClient.forWorkspace(workspace)
+    .AGENTS_GET(
+      { id: agentId },
+      { signal },
+    );
 
-  if (response.status === 404) {
+  if (status === 404) {
     throw new AgentNotFoundError(agentId);
   }
 
@@ -83,11 +79,6 @@ export const loadAgent = async (
   if (response.status === 403) {
     throw new ForbiddenError();
   }
-
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent;
-  };
 
   if (error) {
     throw new Error(error.message || "Failed to load agent");
@@ -100,16 +91,10 @@ export const listAgents = async (
   workspace: string,
   signal?: AbortSignal,
 ): Promise<Agent[]> => {
-  const response = await callToolFor(
-    workspace,
-    "AGENTS_LIST",
+  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_LIST(
     {},
     { signal },
   );
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent[];
-  };
 
   if (error) {
     throw new Error(error.message || "Failed to list agents");
@@ -124,14 +109,9 @@ export const listAgents = async (
  * @param agentId - The id of the agent to delete
  */
 export const deleteAgent = async (workspace: string, agentId: string) => {
-  const response = await callToolFor(workspace, "AGENTS_DELETE", {
-    id: agentId,
-  });
-
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Agent[];
-  };
+  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_DELETE(
+    { id: agentId },
+  );
 
   if (error) {
     throw new Error(error.message || "Failed to delete agent");

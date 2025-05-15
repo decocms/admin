@@ -1,6 +1,7 @@
-import { Database } from "@deco/sdk/storage";
 import { z } from "zod";
-import { AppContext, createApiHandler, getEnv } from "../../utils/context.ts";
+import { Database } from "../../storage/index.ts";
+import { assertHasWorkspace } from "../assertions.ts";
+import { AppContext, createApiHandler, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
@@ -58,11 +59,9 @@ const Mappers = {
 };
 
 function getWorkspaceParams(c: AppContext, appSlug?: string) {
-  const root = c.req.param("root");
-  const wksSlug = c.req.param("slug");
-  const workspace = `${root}/${wksSlug}`;
-  const slug = appSlug ?? wksSlug;
-  return { root, wksSlug, workspace, slug };
+  assertHasWorkspace(c);
+  const slug = appSlug ?? c.workspace.slug;
+  return { workspace: c.workspace.value, slug };
 }
 
 // 1. List apps for a given workspace
@@ -73,7 +72,7 @@ export const listApps = createApiHandler({
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
 
-    const { data, error } = await c.var.db
+    const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .select("*")
       .eq("workspace", workspace);
@@ -110,7 +109,7 @@ async function deployToCloudflare(
     ...files,
   };
 
-  const result = await c.var.cf.workersForPlatforms.dispatch.namespaces
+  const result = await c.cf.workersForPlatforms.dispatch.namespaces
     .scripts.update(
       env.CF_DISPATCH_NAMESPACE,
       scriptSlug,
@@ -141,7 +140,7 @@ async function updateDatabase(
   files?: Record<string, string>,
 ) {
   // Try to update first
-  const { data: updated, error: updateError } = await c.var.db
+  const { data: updated, error: updateError } = await c.db
     .from(DECO_CHAT_HOSTING_APPS_TABLE)
     .update({
       updated_at: new Date().toISOString(),
@@ -162,7 +161,7 @@ async function updateDatabase(
   }
 
   // If not updated, insert
-  const { data: inserted, error: insertError } = await c.var.db
+  const { data: inserted, error: insertError } = await c.db
     .from(DECO_CHAT_HOSTING_APPS_TABLE)
     .insert({
       workspace,
@@ -184,7 +183,7 @@ let created = false;
 const createNamespaceOnce = async (c: AppContext) => {
   if (created) return;
   created = true;
-  const cf = c.var.cf;
+  const cf = c.cf;
   const env = getEnv(c);
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
@@ -223,6 +222,7 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "./deps.ts";
+import { assertHasWorkspace } from '../../auth/assertions';
       
       export default {
         async fetch(request: Request): Promise<Response> {
@@ -295,7 +295,7 @@ export const deleteApp = createApiHandler({
   description: "Delete an app and its worker",
   schema: AppInputSchema,
   handler: async ({ appSlug }, c) => {
-    const cf = c.var.cf;
+    const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
     const namespace = env.CF_DISPATCH_NAMESPACE;
@@ -315,7 +315,7 @@ export const deleteApp = createApiHandler({
     }
 
     // 2. Delete from DB
-    const { error: dbError } = await c.var.db
+    const { error: dbError } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .delete()
       .eq("workspace", workspace)
@@ -335,7 +335,7 @@ export const getAppInfo = createApiHandler({
   handler: async ({ appSlug }, c) => {
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
-    const { data, error } = await c.var.db
+    const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
       .select("*")
       .eq("workspace", workspace)

@@ -1,19 +1,19 @@
 import { z } from "zod";
-import { assertHasUser } from "../../auth/assertions.ts";
-import { createApiHandler } from "../../utils/context.ts";
-import { userFromDatabase } from "../../utils/user.ts";
+import { assertHasUser } from "../assertions.ts";
+import { createApiHandler } from "../context.ts";
+import { userFromDatabase } from "../user.ts";
 
 export const getProfile = createApiHandler({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
   schema: z.object({}),
   handler: async (_, c) => {
-    const user = c.get("user");
+    const user = c.user;
 
     assertHasUser(c);
 
     // TODO: change profile data to have necessary info
-    const { data, error } = await c.get("db")
+    const { data, error } = await c.db
       .from("profiles")
       .select(`
         id:user_id,
@@ -46,11 +46,11 @@ export const updateProfile = createApiHandler({
     { name, email, deco_user_id, is_new_user },
     c,
   ) => {
-    const user = c.get("user");
+    const user = c.user;
 
     assertHasUser(c);
 
-    const { data, error } = await c.get("db")
+    const { data, error } = await c.db
       .from("profiles")
       .update({
         name,

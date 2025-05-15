@@ -1,9 +1,14 @@
 import {
   API_HEADERS,
-  API_SERVER_URL,
   getTraceDebugId,
   LEGACY_API_SERVER_URL,
 } from "./constants.ts";
+import type {
+  GlobalTools,
+  MCPClientFetchStub,
+  WorkspaceTools,
+} from "./mcp/index.ts";
+import { createMCPFetchStub } from "./mcp/stub.ts";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -44,34 +49,20 @@ export function createFetcher(
   };
 }
 
-export const callToolFor = (
-  workspace: string,
-  name: string,
-  args: Record<string, unknown>,
-  init: RequestInit = {},
-) =>
-  fetch(
-    new URL(
-      `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join("/"),
-      API_SERVER_URL,
-    ),
-    {
-      body: JSON.stringify(args),
-      method: "POST",
-      credentials: "include",
-      ...init,
-      headers: {
-        ...init.headers,
-        "x-trace-debug-id": getTraceDebugId(),
-      },
-    },
-  );
-
-export const callTool = (
-  name: string,
-  args: Record<string, unknown>,
-  init: RequestInit = {},
-) => callToolFor("", name, args, init);
-
 // Default fetcher instance with API_SERVER_URL and API_HEADERS
 export const fetchAPI = createFetcher();
+const global = createMCPFetchStub<GlobalTools>({});
+export const MCPClient = new Proxy(
+  {} as typeof global & {
+    forWorkspace: (workspace: string) => MCPClientFetchStub<WorkspaceTools>;
+  },
+  {
+    get(_, name) {
+      if (name === "forWorkspace") {
+        return (workspace: string) =>
+          createMCPFetchStub<WorkspaceTools>({ workspace });
+      }
+      return global[name as keyof typeof global];
+    },
+  },
+);

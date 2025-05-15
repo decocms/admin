@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 import { User } from "./user.ts";
 
 interface Roles {
@@ -46,22 +46,13 @@ export interface MemberFormData {
 export const getMyInvites = async (
   signal?: AbortSignal,
 ): Promise<Invite[]> => {
-  const response = await callToolFor("", "MY_INVITES_LIST", {}, { signal });
+  const { data, error, ok } = await MCPClient.MY_INVITES_LIST({}, { signal });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch invites");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to fetch invites");
   }
 
-  const { data, error } = await response.json() as {
-    data: Invite[];
-    error: Error;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch invites");
-  }
-
-  return data;
+  return data as Invite[];
 };
 
 /**
@@ -74,24 +65,15 @@ export const acceptInvite = async (
 ): Promise<
   { ok: boolean; teamId: number; teamName: string; teamSlug: string }
 > => {
-  const response = await callToolFor("", "TEAM_INVITE_ACCEPT", {
+  const { data, error, ok } = await MCPClient.TEAM_INVITE_ACCEPT({
     id: inviteId,
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to accept invite");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to accept invite");
   }
 
-  const data = await response.json() as {
-    data: { ok: boolean; teamId: number; teamName: string; teamSlug: string };
-    error: Error;
-  };
-
-  if (data.error) {
-    throw new Error(data.error.message || "Failed to accept invite");
-  }
-
-  return data.data;
+  return data;
 };
 
 /**
@@ -103,25 +85,16 @@ export const getTeamMembers = async (
   { teamId, withActivity }: { teamId: number; withActivity?: boolean },
   signal?: AbortSignal,
 ): Promise<Member[]> => {
-  const response = await callToolFor("", "TEAM_MEMBERS_GET", {
+  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_GET({
     teamId,
     withActivity,
   }, { signal });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch team members");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to fetch team members");
   }
 
-  const { data, error } = await response.json() as {
-    data: Member[];
-    error: Error;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch team members");
-  }
-
-  return data;
+  return data as Member[];
 };
 
 /**
@@ -133,21 +106,12 @@ export const getTeamRoles = async (
   teamId: number,
   signal?: AbortSignal,
 ): Promise<Role[]> => {
-  const response = await callToolFor("", "TEAM_ROLES_LIST", {
-    teamId,
-  }, { signal });
+  const { data, error, ok } = await MCPClient.TEAM_ROLES_LIST({ teamId }, {
+    signal,
+  });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch team roles");
-  }
-
-  const { data, error } = await response.json() as {
-    data: Role[];
-    error: Error;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch team roles");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to fetch team roles");
   }
 
   return data;
@@ -166,22 +130,13 @@ export const inviteTeamMembers = async (
     roles: Array<{ id: number; name: string }>;
   }>,
 ): Promise<{ message: string }> => {
-  const response = await callToolFor("", "TEAM_MEMBERS_INVITE", {
+  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_INVITE({
     teamId: teamId.toString(),
     invitees,
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to invite team members");
-  }
-
-  const { data, error } = await response.json() as {
-    data: { message: string };
-    error: Error;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to invite team members");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to invite team members");
   }
 
   return data;
@@ -197,29 +152,18 @@ export const removeTeamMember = async (
   teamId: number,
   memberId: number,
 ): Promise<{ success: boolean }> => {
-  const response = await callToolFor("", "TEAM_MEMBERS_REMOVE", {
+  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_REMOVE({
     teamId,
     memberId,
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to remove team member");
-  }
-
-  const { data, error } = await response.json() as {
-    data: { success: boolean };
-    error: Error;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to remove team member");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to remove team member");
   }
 
   return data;
 };
 
 export const registerActivity = (teamId: number) => {
-  callToolFor("", "TEAM_MEMBER_ACTIVITY_REGISTER", {
-    teamId,
-  });
+  MCPClient.TEAM_MEMBER_ACTIVITY_REGISTER({ teamId });
 };

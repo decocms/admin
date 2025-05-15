@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { callTool as toolCall } from "../fetcher.ts";
 import type { MCPConnection } from "../models/mcp.ts";
-
+import { MCPClient } from "../fetcher.ts";
 export interface MCPTool {
   name: string;
   description?: string;
@@ -33,29 +32,28 @@ const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 export const listTools = async (
   connection: MCPConnection,
 ): Promise<ToolsData> => {
-  const response = await toolCall("INTEGRATIONS_LIST_TOOLS", { connection });
-
-  if (!response.ok) {
+  const { data, ok } = await MCPClient.INTEGRATIONS_LIST_TOOLS({ connection });
+  if (!ok) {
     throw new Error("Failed to list tools");
   }
 
-  return response.json<{ data: ToolsData }>().then((resp) => resp.data);
+  return data as ToolsData;
 };
 
 export const callTool = async (
   connection: MCPConnection,
   toolCallArgs: MCPToolCall,
 ) => {
-  const response = await toolCall("INTEGRATIONS_CALL_TOOL", {
+  const { data, ok } = await MCPClient.INTEGRATIONS_CALL_TOOL({
     connection,
-    params: toolCallArgs,
+    // deno-lint-ignore no-explicit-any
+    params: toolCallArgs as any,
   });
-
-  if (!response.ok) {
+  if (!ok) {
     throw new Error("Failed to call tool");
   }
 
-  return response.json<{ data: MCPToolCallResult }>().then((resp) => resp.data);
+  return data as MCPToolCallResult;
 };
 
 export function useTools(connection: MCPConnection) {

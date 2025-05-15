@@ -1,4 +1,4 @@
-import { AppContext } from "./context.ts";
+import { HonoAppContext } from "./context.ts";
 
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {
@@ -19,7 +19,7 @@ export function getCookies(headers: Headers): Record<string, string> {
   return {};
 }
 
-export function setHeaders(headers: Headers, ctx: AppContext) {
+export function setHeaders(headers: Headers, ctx: HonoAppContext) {
   headers.forEach((headerValue, headerName) => {
     ctx.res.headers.append(headerName, headerValue);
   });

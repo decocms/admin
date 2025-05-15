@@ -5,6 +5,9 @@ import {
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
 import { createSupabaseStorage } from "@deco/ai/storage";
+import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { createServerClient } from "@supabase/ssr";
+import { z } from "zod";
 import {
   Agent,
   AgentSchema,
@@ -12,12 +15,12 @@ import {
   Integration,
   IntegrationSchema,
   NEW_INTEGRATION_TEMPLATE,
-} from "@deco/sdk";
-import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createServerClient } from "@supabase/ssr";
-import { z } from "zod";
-import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
-import { createApiHandler, getEnv } from "../../utils/context.ts";
+} from "../../index.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
+import { createApiHandler, getEnv } from "../context.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -56,7 +59,7 @@ export const callTool = createApiHandler({
     const connection = isApiDecoChatMCPConnection(reqConnection)
       ? patchApiDecoChatTokenHTTPConnection(
         reqConnection,
-        c.req.raw.headers.get("cookie") ?? undefined,
+        c.cookie,
       )
       : reqConnection;
 
@@ -126,10 +129,9 @@ export const listIntegrations = createApiHandler({
   description: "List all integrations",
   schema: z.object({}),
   handler: async (_, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `${root}/${slug}`;
-    const host = c.req.raw.headers.get("host") || "deco.chat";
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
+    const host = c.host || "deco.chat";
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = `${protocol}://${host}`;
 
@@ -138,15 +140,15 @@ export const listIntegrations = createApiHandler({
       integrations,
       agents,
     ] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
-      c.get("db")
+      assertUserHasAccessToWorkspace(c),
+      c.db
         .from("deco_chat_integrations")
         .select("*")
-        .ilike("workspace", `%${workspace}`),
-      c.get("db")
+        .ilike("workspace", workspace),
+      c.db
         .from("deco_chat_agents")
         .select("*")
-        .ilike("workspace", `%${workspace}`),
+        .ilike("workspace", workspace),
     ]);
 
     const error = integrations.error || agents.error;
@@ -165,7 +167,7 @@ export const listIntegrations = createApiHandler({
         url: `${baseUrl}/mcp`,
       },
       icon: "https://i.imgur.com/GD4o7vx.png",
-      workspace: `${root}/${slug}`,
+      workspace,
       created_at: new Date().toISOString(),
     };
 
@@ -176,10 +178,10 @@ export const listIntegrations = createApiHandler({
       description: "Manage your agents, integrations and threads",
       connection: {
         type: "HTTP",
-        url: `${baseUrl}/${root}/${slug}/mcp`,
+        url: `${baseUrl}${workspace}}/mcp`,
       },
       icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-      workspace: `${root}/${slug}`,
+      workspace,
       created_at: new Date().toISOString(),
     };
 
@@ -195,7 +197,7 @@ export const listIntegrations = createApiHandler({
       ...agents.data
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
-        .map(agentAsIntegrationFor(`${root}/${slug}`)),
+        .map(agentAsIntegrationFor(workspace)),
       ...Object.values(INNATE_INTEGRATIONS),
     ]
       .map((i) => IntegrationSchema.safeParse(i)?.data)
@@ -210,8 +212,7 @@ export const getIntegration = createApiHandler({
     id: z.string(),
   }),
   handler: async ({ id }, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
+    assertHasWorkspace(c);
 
     const { uuid, type } = parseId(id);
 
@@ -219,13 +220,13 @@ export const getIntegration = createApiHandler({
       _assertions,
       { data, error },
     ] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(c),
       uuid in INNATE_INTEGRATIONS
         ? {
           data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS],
           error: null,
         }
-        : c.get("db")
+        : c.db
           .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
           .select("*")
           .eq("id", uuid)
@@ -252,17 +253,16 @@ export const createIntegration = createApiHandler({
   description: "Create a new integration",
   schema: IntegrationSchema.partial(),
   handler: async (integration, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
+    assertHasWorkspace(c);
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
-    const { data, error } = await c.get("db")
+    const { data, error } = await c.db
       .from("deco_chat_integrations")
       .insert({
         ...NEW_INTEGRATION_TEMPLATE,
         ...integration,
-        workspace: `/${root}/${slug}`,
+        workspace: c.workspace.value,
       })
       .select()
       .single();
@@ -286,10 +286,9 @@ export const updateIntegration = createApiHandler({
     integration: IntegrationSchema,
   }),
   handler: async ({ id, integration }, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
+    assertHasWorkspace(c);
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const { uuid, type } = parseId(id);
 
@@ -297,9 +296,9 @@ export const updateIntegration = createApiHandler({
       throw new Error("Cannot update an agent integration");
     }
 
-    const { data, error } = await c.get("db")
+    const { data, error } = await c.db
       .from("deco_chat_integrations")
-      .update({ ...integration, id: uuid, workspace: `/${root}/${slug}` })
+      .update({ ...integration, id: uuid, workspace: c.workspace.value })
       .eq("id", uuid)
       .select()
       .single();
@@ -326,10 +325,9 @@ export const deleteIntegration = createApiHandler({
     id: z.string(),
   }),
   handler: async ({ id }, c) => {
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
+    assertHasWorkspace(c);
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const { uuid, type } = parseId(id);
 
@@ -337,7 +335,7 @@ export const deleteIntegration = createApiHandler({
       throw new Error("Cannot delete an agent integration");
     }
 
-    const { error } = await c.get("db")
+    const { error } = await c.db
       .from("deco_chat_integrations")
       .delete()
       .eq("id", uuid);

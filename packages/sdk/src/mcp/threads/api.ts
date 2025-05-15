@@ -3,16 +3,15 @@ import {
   createClient,
   type InStatement,
 } from "@libsql/client/web";
-import { env } from "hono/adapter";
-import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
-import { createApiHandler } from "../../utils/context.ts";
 import {
-  convertToUIMessages,
-  MessageType,
-} from "../../utils/convertToUIMessages.ts";
-import { generateUUIDv5, toAlphanumericId } from "../../utils/slugify.ts";
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
+import { createApiHandler } from "../context.ts";
+import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
+import { ThreadNotFoundError } from "../errors.ts";
+import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
 
 const safeParse = (str: string) => {
   try {
@@ -76,7 +75,7 @@ export const listThreads = createApiHandler({
   description:
     "List all threads in a workspace with cursor-based pagination and filtering",
   schema: z.object({
-    limit: z.number().min(1).max(20).default(10),
+    limit: z.number().min(1).max(20).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
     orderBy: z.enum([
@@ -84,17 +83,16 @@ export const listThreads = createApiHandler({
       "createdAt_asc",
       "updatedAt_desc",
       "updatedAt_asc",
-    ]).default("createdAt_desc"),
+    ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
   handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
 
     const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(c),
       createSQLClientFor(
         workspace,
         TURSO_ORGANIZATION,
@@ -102,6 +100,7 @@ export const listThreads = createApiHandler({
       ),
     ]);
 
+    orderBy ??= "createdAt_desc";
     // Parse orderBy parameter
     const [field, direction] = orderBy.split("_");
     const isDesc = direction === "desc";
@@ -130,6 +129,7 @@ export const listThreads = createApiHandler({
       ? `WHERE ${whereClauses.join(" AND ")}`
       : "";
 
+    limit ??= 10;
     const { data: result, error } = await safeExecute(client, {
       sql:
         `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
@@ -172,13 +172,12 @@ export const getThreadMessages = createApiHandler({
   description: "Get only the messages for a thread by thread id",
   schema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
 
     const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(c),
       createSQLClientFor(
         workspace,
         TURSO_ORGANIZATION,
@@ -209,13 +208,12 @@ export const getThread = createApiHandler({
   description: "Get a thread by thread id (without messages)",
   schema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
 
     const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(c),
       createSQLClientFor(
         workspace,
         TURSO_ORGANIZATION,
@@ -229,7 +227,7 @@ export const getThread = createApiHandler({
     });
 
     if (!result?.rows.length || error) {
-      throw new HTTPException(404, { message: "Thread not found" });
+      throw new ThreadNotFoundError();
     }
 
     const thread = ThreadSchema.parse(result.rows[0]);
@@ -243,13 +241,12 @@ export const getThreadTools = createApiHandler({
   description: "Get the tools_set for a thread by thread id",
   schema: z.object({ id: z.string() }),
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = env(c);
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
 
     const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(root, slug, c),
+      assertUserHasAccessToWorkspace(c),
       createSQLClientFor(
         workspace,
         TURSO_ORGANIZATION,

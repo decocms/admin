@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
 
 export class IntegrationNotFoundError extends Error {
@@ -18,18 +18,14 @@ export const saveIntegration = async (
   workspace: string,
   integration: Integration,
 ) => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_UPDATE", {
-    id: integration.id,
-    integration,
-  });
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_UPDATE({
+      id: integration.id,
+      integration,
+    });
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Integration;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to save integration");
+  if (!ok) {
+    throw new Error(error?.message || "Failed to save integration");
   }
 
   return data;
@@ -52,19 +48,11 @@ export const createIntegration = async (
     ...template,
   };
 
-  const response = await callToolFor(
-    workspace,
-    "INTEGRATIONS_CREATE",
-    integration,
-  );
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_CREATE(integration);
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Integration;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to save integration");
+  if (!ok) {
+    throw new Error(error?.message || "Failed to save integration");
   }
 
   return data;
@@ -80,44 +68,34 @@ export const loadIntegration = async (
   mcpId: string,
   signal?: AbortSignal,
 ): Promise<Integration> => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_GET", {
-    id: mcpId,
-  }, { signal });
+  const { data, error, ok, status } = await MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_GET({
+      id: mcpId,
+    }, { signal });
 
-  if (response.status === 404) {
+  if (status === 404) {
     throw new IntegrationNotFoundError(mcpId);
   }
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Integration;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to load integration");
+  if (!ok) {
+    throw new Error(error?.message || "Failed to load integration");
   }
 
-  return data;
+  return data as Integration;
 };
 
 export const listIntegrations = async (
   workspace: string,
   signal?: AbortSignal,
 ): Promise<Integration[]> => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_LIST", {}, {
-    signal,
-  });
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_LIST({}, { signal });
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Integration[];
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to list integrations");
+  if (!ok) {
+    throw new Error(error?.message || "Failed to list integrations");
   }
 
-  return data;
+  return data as Integration[];
 };
 
 /**
@@ -125,17 +103,13 @@ export const listIntegrations = async (
  * @param mcpId - The id of the MCP to delete
  */
 export const deleteIntegration = async (workspace: string, mcpId: string) => {
-  const response = await callToolFor(workspace, "INTEGRATIONS_DELETE", {
-    id: mcpId,
-  });
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_DELETE({
+      id: mcpId,
+    });
 
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: Integration;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to delete integration");
+  if (!ok) {
+    throw new Error(error?.message || "Failed to delete integration");
   }
 
   return data;

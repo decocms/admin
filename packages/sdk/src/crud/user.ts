@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 
 export interface User {
   id: string;
@@ -19,23 +19,14 @@ export class NotLoggedInError extends Error {
 }
 
 export const fetchUser = async () => {
-  const response = await callToolFor("", "PROFILES_GET", {});
+  const { status, ok, data, error } = await MCPClient.PROFILES_GET({});
 
-  if (response.status === 401) {
+  if (status === 401) {
     throw new NotLoggedInError("User is not logged in");
   }
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch user");
-  }
-
-  const { error, data } = await response.json() as {
-    error: Error;
-    data: User;
-  };
-
-  if (error) {
-    throw new Error(error.message || "Failed to fetch user");
+  if (!ok || !data) {
+    throw new Error(error?.message ?? "Failed to fetch user");
   }
 
   return data;

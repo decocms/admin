@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createApiHandler } from "../../utils/context.ts";
 import {
   assertUserHasAccessToTeamBySlug,
   assertUserIsTeamAdmin,
-} from "../../auth/assertions.ts";
+} from "../assertions.ts";
+import { createApiHandler } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -28,7 +28,7 @@ export const getTeam = createApiHandler({
   }),
   handler: async (props, c) => {
     const { slug } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // check user belongs to team
     await assertUserHasAccessToTeamBySlug(
@@ -36,7 +36,7 @@ export const getTeam = createApiHandler({
       c,
     );
     const { data: teamData, error } = await c
-      .get("db")
+      .db
       .from("teams")
       .select("*")
       .eq("slug", slug)
@@ -68,12 +68,12 @@ export const createTeam = createApiHandler({
    */
   handler: async (props, c) => {
     const { name, slug, stripe_subscription_id } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // Enforce unique slug if provided
     if (slug) {
       const { data: existingTeam, error: slugError } = await c
-        .get("db")
+        .db
         .from("teams")
         .select("id")
         .eq("slug", slug)
@@ -86,7 +86,7 @@ export const createTeam = createApiHandler({
 
     // Create the team
     const { data: team, error: createError } = await c
-      .get("db")
+      .db
       .from("teams")
       .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
       .select()
@@ -96,7 +96,7 @@ export const createTeam = createApiHandler({
 
     // Add the creator as an admin member
     const { data: member, error: memberError } = await c
-      .get("db")
+      .db
       .from("members")
       .insert([
         {
@@ -112,13 +112,13 @@ export const createTeam = createApiHandler({
       .single();
 
     if (memberError) {
-      await c.get("db").from("teams").delete().eq("id", team.id);
+      await c.db.from("teams").delete().eq("id", team.id);
       throw memberError;
     }
 
     // Set the member's role_id to 1 in member_roles
     const { error: roleError } = await c
-      .get("db")
+      .db
       .from("member_roles")
       .insert([
         {
@@ -140,13 +140,13 @@ export const updateTeam = createApiHandler({
     id: z.number(),
     data: z.object({
       name: z.string().optional(),
-      slug: z.string(),
+      slug: z.string().optional(),
       stripe_subscription_id: z.string().optional(),
     }),
   }),
   handler: async (props, c) => {
     const { id, data } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // First verify the user has admin access to the team
     await assertUserIsTeamAdmin(c, id, user.id);
@@ -155,7 +155,7 @@ export const updateTeam = createApiHandler({
     // Enforce unique slug if being updated
     if (data.slug) {
       const { data: existingTeam, error: slugError } = await c
-        .get("db")
+        .db
         .from("teams")
         .select("id")
         .eq("slug", data.slug)
@@ -169,7 +169,7 @@ export const updateTeam = createApiHandler({
 
     // Update the team
     const { data: updatedTeam, error: updateError } = await c
-      .get("db")
+      .db
       .from("teams")
       .update({
         ...data,
@@ -193,12 +193,12 @@ export const deleteTeam = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // First verify the user has admin access to the team
     await assertUserIsTeamAdmin(c, teamId, user.id);
 
-    const members = await c.get("db")
+    const members = await c.db
       .from("members")
       .select("id")
       .eq("team_id", teamId);
@@ -210,10 +210,10 @@ export const deleteTeam = createApiHandler({
     }
 
     // TODO: delete roles, policies and role_policy
-    await c.get("db").from("member_roles").delete().in("member_id", memberIds);
-    await c.get("db").from("members").delete().eq("team_id", teamId);
+    await c.db.from("member_roles").delete().in("member_id", memberIds);
+    await c.db.from("members").delete().eq("team_id", teamId);
 
-    const { error } = await c.get("db").from("teams").delete().eq(
+    const { error } = await c.db.from("teams").delete().eq(
       "id",
       teamId,
     )
@@ -229,10 +229,10 @@ export const listTeams = createApiHandler({
   description: "List teams for the current user",
   schema: z.object({}),
   handler: async (_, c) => {
-    const user = c.get("user");
+    const user = c.user;
 
     const { data, error } = await c
-      .get("db")
+      .db
       .from("teams")
       .select(`
         id,

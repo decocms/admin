@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 
 export interface Team {
   id: number;
@@ -10,13 +10,9 @@ export interface Team {
 export const listTeams = async (
   init?: RequestInit,
 ): Promise<Team[]> => {
-  const response = await callToolFor("", "TEAMS_LIST", {}, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team[];
-  };
-  if (error) {
-    throw error;
+  const { data, error, ok } = await MCPClient.TEAMS_LIST({}, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to list teams");
   }
   return data as Team[];
 };
@@ -25,13 +21,9 @@ export const getTeam = async (
   slug: string,
   init?: RequestInit,
 ): Promise<Team> => {
-  const response = await callToolFor("", "TEAMS_GET", { slug }, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
-  if (error) {
-    throw error;
+  const { data, error, ok } = await MCPClient.TEAMS_GET({ slug }, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to get team");
   }
   return data as Team;
 };
@@ -47,12 +39,8 @@ export async function createTeam(
   input: CreateTeamInput,
   init?: RequestInit,
 ): Promise<Team> {
-  const response = await callToolFor("", "TEAMS_CREATE", input, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
-  if (error) throw error;
+  const { data, error, ok } = await MCPClient.TEAMS_CREATE(input, init);
+  if (!ok || !data) throw new Error(error?.message || "Failed to create team");
   return data as Team;
 }
 
@@ -68,12 +56,8 @@ export async function updateTeam(
   input: UpdateTeamInput,
   init?: RequestInit,
 ): Promise<Team> {
-  const response = await callToolFor("", "TEAMS_UPDATE", input, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: Team;
-  };
-  if (error) throw error;
+  const { data, error, ok } = await MCPClient.TEAMS_UPDATE(input, init);
+  if (!ok || !data) throw new Error(error?.message || "Failed to update team");
   return data as Team;
 }
 
@@ -81,11 +65,7 @@ export async function deleteTeam(
   teamId: number,
   init?: RequestInit,
 ): Promise<{ success: boolean }> {
-  const response = await callToolFor("", "TEAMS_DELETE", { teamId }, init);
-  const { error, data } = await response.json() as {
-    error: string;
-    data: { success: boolean };
-  };
-  if (error) throw error;
+  const { data, error, ok } = await MCPClient.TEAMS_DELETE({ teamId }, init);
+  if (!ok || !data) throw new Error(error?.message || "Failed to delete team");
   return data as { success: boolean };
 }

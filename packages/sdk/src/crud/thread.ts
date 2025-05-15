@@ -1,4 +1,4 @@
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 
 export interface Options {
   agentId?: string;
@@ -40,27 +40,11 @@ export const listThreads = async (
   options: Options,
   init?: RequestInit,
 ) => {
-  const response = await callToolFor(
-    workspace,
-    "THREADS_LIST",
-    { ...options },
-    init,
-  );
-
-  if (!response.ok) {
-    const reason = await response.text();
-    throw new Error(reason ?? "Failed to list threads");
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_LIST(options, init);
+  if (!ok) {
+    throw new Error(error?.message || "Failed to list threads");
   }
-
-  const { error, data } = await response.json() as {
-    error: string;
-    data: ThreadList;
-  };
-
-  if (error) {
-    throw new Error(error);
-  }
-
   return data as ThreadList;
 };
 
@@ -78,28 +62,11 @@ export async function getThread(
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadDetails> {
-  const response = await callToolFor(
-    workspace,
-    "THREADS_GET",
-    { id: threadId },
-    init,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      await response.text() ?? "Failed to get thread",
-    );
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_GET({ id: threadId }, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to get thread");
   }
-
-  const { error, data } = await response.json() as {
-    error: string;
-    data: ThreadDetails;
-  };
-
-  if (error) {
-    throw new Error(error);
-  }
-
   return data as ThreadDetails;
 }
 
@@ -117,28 +84,11 @@ export async function getThreadMessages(
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadMessage[]> {
-  const response = await callToolFor(
-    workspace,
-    "THREADS_GET_MESSAGES",
-    { id: threadId },
-    init,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      await response.text() ?? "Failed to get thread messages",
-    );
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_GET_MESSAGES({ id: threadId }, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to get thread messages");
   }
-
-  const { error, data } = await response.json() as {
-    error: string;
-    data: ThreadMessage[];
-  };
-
-  if (error) {
-    throw new Error(error);
-  }
-
   return data as ThreadMessage[];
 }
 
@@ -151,27 +101,10 @@ export async function getThreadTools(
   threadId: string,
   init: RequestInit = {},
 ): Promise<ThreadTools> {
-  const response = await callToolFor(
-    workspace,
-    "THREADS_GET_TOOLS",
-    { id: threadId },
-    init,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      await response.text() ?? "Failed to get thread tools",
-    );
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_GET_TOOLS({ id: threadId }, init);
+  if (!ok) {
+    throw new Error(error?.message || "Failed to get thread tools");
   }
-
-  const { error, data } = await response.json() as {
-    error: string;
-    data: ThreadTools;
-  };
-
-  if (error) {
-    throw new Error(error);
-  }
-
-  return data;
+  return data as ThreadTools;
 }

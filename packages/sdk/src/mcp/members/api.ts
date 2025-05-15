@@ -2,9 +2,9 @@ import { z } from "zod";
 import {
   assertUserHasAccessToTeamById,
   assertUserIsTeamAdmin,
-} from "../../auth/assertions.ts";
-import { type AppContext, createApiHandler } from "../../utils/context.ts";
-import { userFromDatabase } from "../../utils/user.ts";
+} from "../assertions.ts";
+import { type AppContext, createApiHandler } from "../context.ts";
+import { userFromDatabase } from "../user.ts";
 import {
   checkAlreadyExistUserIdInTeam,
   getInviteIdByEmailAndTeam,
@@ -25,7 +25,7 @@ export const updateActivityLog = async (c: AppContext, {
   action: "add_member" | "remove_member";
 }) => {
   const currentTimestamp = new Date().toISOString();
-  const { data } = await c.get("db")
+  const { data } = await c.db
     .from("members")
     .select("activity")
     .eq("user_id", userId)
@@ -34,7 +34,7 @@ export const updateActivityLog = async (c: AppContext, {
 
   const activityLog = data?.activity || [];
 
-  return await c.get("db")
+  return await c.db
     .from("members")
     .update({
       activity: [...activityLog, {
@@ -94,7 +94,7 @@ export const getTeamMembers = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId, withActivity } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // First verify the user has access to the team
     await assertUserHasAccessToTeamById(
@@ -105,7 +105,7 @@ export const getTeamMembers = createApiHandler({
     // Get all members of the team
     const [{ data, error }] = await Promise.all([
       c
-        .get("db")
+        .db
         .from("members")
         .select(`
         id,
@@ -131,7 +131,7 @@ export const getTeamMembers = createApiHandler({
     let activityByUserId: Record<string, string> = {};
 
     if (withActivity) {
-      const { data: activityData } = await c.get("db").rpc(
+      const { data: activityData } = await c.db.rpc(
         "get_latest_user_activity",
         {
           p_resource: "team",
@@ -169,14 +169,14 @@ export const updateTeamMember = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId, memberId, data } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // Verify the user has admin access to the team
     await assertUserIsTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
-      .get("db")
+      .db
       .from("members")
       .select("id")
       .eq("id", memberId)
@@ -191,7 +191,7 @@ export const updateTeamMember = createApiHandler({
 
     // Update the member
     const { data: updatedMember, error: updateError } = await c
-      .get("db")
+      .db
       .from("members")
       .update(data)
       .eq("id", memberId)
@@ -213,11 +213,11 @@ export const removeTeamMember = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId, memberId } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
-      .get("db")
+      .db
       .from("members")
       .select("id, admin, user_id")
       .eq("id", memberId)
@@ -239,7 +239,7 @@ export const removeTeamMember = createApiHandler({
     // Don't allow removing the last admin
     if (member.admin) {
       const { data: adminCount, error: countError } = await c
-        .get("db")
+        .db
         .from("members")
         .select("*", { count: "exact" })
         .eq("team_id", teamId)
@@ -254,7 +254,7 @@ export const removeTeamMember = createApiHandler({
 
     const currentTimestamp = new Date();
     const { error } = await c
-      .get("db")
+      .db
       .from("members")
       .update({
         deleted_at: currentTimestamp.toISOString(),
@@ -281,7 +281,7 @@ export const registerMemberActivity = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId } = props;
-    const user = c.get("user");
+    const user = c.user;
 
     // Verify the user has admin access to the team
     await assertUserHasAccessToTeamById({
@@ -289,7 +289,7 @@ export const registerMemberActivity = createApiHandler({
       userId: user.id,
     }, c);
 
-    await c.get("db").from("user_activity").insert({
+    await c.db.from("user_activity").insert({
       user_id: user.id,
       resource: "team",
       key: "id",
@@ -306,8 +306,8 @@ export const getMyInvites = createApiHandler({
   description: "List all team invites for the current logged in user",
   schema: z.object({}),
   handler: async (_props, c) => {
-    const user = c.get("user");
-    const db = c.get("db");
+    const user = c.user;
+    const db = c.db;
 
     // Get profile to find user email
     const { data: profile, error: profileError } = await db
@@ -373,8 +373,8 @@ export const inviteTeamMembers = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId, invitees } = props;
-    const db = c.get("db");
-    const user = c.get("user");
+    const db = c.db;
+    const user = c.user;
     const teamIdAsNum = Number(teamId);
 
     await assertUserIsTeamAdmin(c, Number(teamId), user.id);
@@ -489,8 +489,8 @@ export const acceptInvite = createApiHandler({
   }),
   handler: async (props, c) => {
     const { id } = props;
-    const db = c.get("db");
-    const user = c.get("user");
+    const db = c.db;
+    const user = c.user;
 
     // Get invite details
     const { data: invite, error: inviteError } = await db
@@ -628,7 +628,7 @@ export const deleteInvite = createApiHandler({
   }),
   handler: async (props, c) => {
     const { id } = props;
-    const db = c.get("db");
+    const db = c.db;
 
     const { data } = await db
       .from("invites")
@@ -652,8 +652,8 @@ export const teamRolesList = createApiHandler({
   }),
   handler: async (props, c) => {
     const { teamId } = props;
-    const db = c.get("db");
-    const user = c.get("user");
+    const db = c.db;
+    const user = c.user;
 
     // Verify the user has access to the team
     await assertUserHasAccessToTeamById(

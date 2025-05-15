@@ -97,15 +97,24 @@ export const getTeamMembers = createApiHandler({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
+  canAccess: async (props, c) => {
+    const { teamId } = props;
+    const user = c.user;
+    const authorization = c.authorization;
+    return await authorization.canAccess(
+      user.id,
+      teamId,
+      "TEAM_MEMBERS_GET",
+    );
+  },
   handler: async (props, c) => {
     const { teamId, withActivity } = props;
-    const user = c.user;
 
-    // First verify the user has access to the team
-    await assertUserHasAccessToTeamById(
-      { userId: user.id, teamId: props.teamId },
-      c,
-    );
+    // // First verify the user has access to the team
+    // await assertUserHasAccessToTeamById(
+    //   { userId: user.id, teamId: props.teamId },
+    //   c,
+    // );
 
     // Get all members of the team
     const [{ data, error }] = await Promise.all([

@@ -8,6 +8,7 @@ import Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { ForbiddenError } from "../errors.ts";
+import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 
 export interface Vars {
   params: Record<string, string>;
@@ -19,6 +20,8 @@ export interface Vars {
   cookie?: string;
   db: Client;
   user: SupaUser;
+  policy: PolicyClient;
+  authorization: AuthorizationClient;
   isLocal?: boolean;
   cf: Cloudflare;
   immutableRes?: boolean;
@@ -116,26 +119,26 @@ export interface ApiHandlerDefinition<
   CanAccessHandler extends (
     props: z.infer<T>,
     c: AppContext,
-  ) => Promise<boolean> | boolean = (
+  ) => Promise<boolean> = (
     props: z.infer<T>,
     c: AppContext,
-  ) => Promise<boolean> | boolean,
+  ) => Promise<boolean>,
 > {
   group?: string;
   name: TName;
   description: string;
   schema: T;
   handler: THandler;
-  canAccess: CanAccessHandler;
+  canAccess?: CanAccessHandler;
 }
 
 export interface ApiHandler<
   TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object,
-  THandler extends (props: z.infer<T>) => Promise<R> = (
+  THandler extends (props: z.infer<T>) => Promise<R> | R = (
     props: z.infer<T>,
-  ) => Promise<R>,
+  ) => Promise<R> | R,
 > {
   group?: string;
   name: TName;
@@ -160,24 +163,27 @@ export const createApiHandlerFactory = <
   TName,
   T,
   R,
-  (props: Parameters<THandler>[0]) => Promise<R>
+  (props: Parameters<THandler>[0]) => Promise<Awaited<ReturnType<THandler>>>
 > => ({
   group,
   ...definition,
   handler: async (
     props: Parameters<THandler>[0],
-  ): Promise<R> => {
+  ): Promise<Awaited<ReturnType<THandler>>> => {
     const context = contextFactory(State.getStore());
 
-    // Check if canAccess function is provided and the user has access
-    const hasAccess = await definition.canAccess(props, context);
+    const hasAccess = await definition.canAccess?.(props, context);
     if (!hasAccess) {
       throw new ForbiddenError(
         `User cannot access this tool ${definition.name}`,
       );
     }
 
-    return definition.handler(props, context);
+    return await definition.handler(props, context) as Awaited<
+      ReturnType<
+        THandler
+      >
+    >;
   },
 });
 

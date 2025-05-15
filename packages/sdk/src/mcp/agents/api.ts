@@ -6,6 +6,7 @@ import {
   WELL_KNOWN_AGENTS,
 } from "../../index.ts";
 import {
+  assertHasUser,
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
@@ -84,6 +85,38 @@ export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
+  canAccess: async (_props, c) => {
+    assertHasUser(c);
+    assertHasWorkspace(c);
+    const user = c.user;
+    const authorization = c.authorization;
+    const { root, slug, value } = c.workspace;
+
+    // TODO (@gimenes): remove this hard coded access for @deco.cx by allowing
+    // deco.cx users to enter in any workspace
+    const isAdmin = user?.email?.endsWith("@deco.cx");
+    if (isAdmin) {
+      return true;
+    }
+
+    if (root === "users" && user.id === slug) {
+      return true;
+    }
+
+    if (root === "shared") {
+      return await authorization.canAccess(user.id, slug, "AGENTS_GET");
+    }
+
+    const { data: agentData } = await c.db.from("deco_chat_agents").select(
+      "visibility",
+    ).eq("workspace", value).single();
+
+    if (agentData?.visibility === "PUBLIC") {
+      return true;
+    }
+
+    return false;
+  },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 

@@ -149,3 +149,5 @@ export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
     },
   );
 }
+
+export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";

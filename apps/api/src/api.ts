@@ -1,6 +1,12 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import { isLocal } from "@deco/sdk/fetch";
-import { GLOBAL_TOOLS, HttpError, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
+import {
+  AuthorizationClient,
+  GLOBAL_TOOLS,
+  HttpError,
+  PolicyClient,
+  WORKSPACE_TOOLS,
+} from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
@@ -31,12 +37,18 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const root = c.req.param("root");
   const workspace = `/${root}/${slug}`;
 
+  const policyClient = PolicyClient.getInstance();
+  policyClient.init(c.var.db);
+  const authorizationClient = new AuthorizationClient(policyClient);
+
   return {
     ...c.var,
     isLocal: c.var.isLocal || isLocal(),
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),
+    policy: policyClient,
+    authorization: authorizationClient,
     workspace: slug && root
       ? {
         root,

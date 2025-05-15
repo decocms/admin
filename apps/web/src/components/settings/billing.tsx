@@ -10,6 +10,7 @@ import {
   ChartTooltipContent,
 } from "@deco/ui/components/chart.tsx";
 import { Label, Pie, PieChart } from "recharts";
+import { DepositDialog } from "../wallet/DepositDialog.tsx";
 
 function BalanceCard() {
   const team = useCurrentTeam();
@@ -29,14 +30,7 @@ function BalanceCard() {
           />
         </div>
         <div className="text-5xl font-bold mb-6">$128.00</div>
-        <Button
-          className="py-4 px-10"
-          variant="outline"
-          size="lg"
-        >
-          <Icon name="arrow_upward" size={16} className="mr-2" />
-          Deposit
-        </Button>
+        <DepositDialog />
       </CardContent>
     </Card>
   );

@@ -183,7 +183,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // this is a weak check, but it works for now
     if (req.headers.get("host") !== null && runtimeKey !== "deno") { // if host is set so its not an internal request so checks must be applied
       this.assertsPrincipalHasAccess();
-    } else if (runtimeKey === "deno") {
+    } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",
       );

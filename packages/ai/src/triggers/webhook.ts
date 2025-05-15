@@ -4,7 +4,7 @@ import { threadOf } from "./tools.ts";
 import type { TriggerHooks } from "./trigger.ts";
 import type { TriggerData } from "./services.ts";
 import { handleOutputTool } from "./outputTool.ts";
-import type { Workspace } from "@deco/sdk/path";
+import { getWorkspaceFromTriggerId } from "../utils/workspace.ts";
 
 export interface WebhookArgs {
   threadId?: string;
@@ -70,9 +70,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
 
     const outputTool = url?.searchParams.get("outputTool");
     if (outputTool) {
-      const workspace = trigger.agentId.split("/").slice(0, 3).join(
-        "/",
-      ) as Workspace;
+      const workspace = getWorkspaceFromTriggerId(trigger.agentId);
       return handleOutputTool({
         outputTool,
         agent,

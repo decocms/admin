@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { AgentSchema } from "./agent.ts";
 
-// deno-lint-ignore-file no-explicit-any
 // TODO(@mcandeia) move from actors types
+// deno-lint-ignore no-explicit-any
 export type TriggerData = any;
+// deno-lint-ignore no-explicit-any
 export type TriggerRun = any;
 
 /**

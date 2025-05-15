@@ -7,11 +7,12 @@ import {
   DialogFooter,
   DialogHeader,
 } from "@deco/ui/components/dialog.tsx";
-import { type Trigger } from "@deco/sdk";
+import { ListTriggersOutputSchema } from "@deco/sdk";
+import { z } from "zod";
 
 export const DeleteTriggerModal = (
   { trigger, agentId, open, onOpenChange }: {
-    trigger: Trigger;
+    trigger: z.infer<typeof ListTriggersOutputSchema>["triggers"][number];
     agentId: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;

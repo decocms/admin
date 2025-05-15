@@ -47,7 +47,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cronExp: z.string(),
+  cron_exp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });
@@ -241,7 +241,6 @@ const createTrigger = async (
   stub: ActorState["stub"] = actors.stub,
   workspace: Workspace,
   agentId: string,
-  userId: string,
   context: CreateTriggerInput & { url?: string },
   resourceId: string | undefined,
   id: string,
@@ -254,8 +253,6 @@ const createTrigger = async (
   try {
     await stub(Trigger).new(triggerId).create(
       { ...context, id, resourceId },
-      agentId,
-      userId,
     );
     return {
       success: true,
@@ -288,6 +285,7 @@ export const createWebhookTrigger = async ({
   trigger,
   resourceId,
   userId,
+  storage,
 }: {
   stub: ActorState["stub"];
   workspace: Workspace;
@@ -295,6 +293,7 @@ export const createWebhookTrigger = async ({
   trigger: z.infer<typeof WebhookTriggerSchema>;
   resourceId?: string;
   userId: string;
+  storage: DecoChatStorage | undefined;
 }): Promise<z.infer<typeof CreateWebhookTriggerOutputSchema>> => {
   const id = crypto.randomUUID();
   const triggerId = Path.resolveHome(
@@ -304,22 +303,37 @@ export const createWebhookTrigger = async ({
 
   const url = buildWebhookUrl(triggerId, trigger.passphrase);
 
-  return await createTrigger(
-    stub,
-    workspace,
-    agentId,
-    userId,
-    {
-      type: "webhook",
-      title: trigger.title,
-      description: trigger.description,
-      passphrase: trigger.passphrase,
-      schema: trigger.schema,
-      url,
-    },
-    resourceId,
-    id,
-  );
+  const data = {
+    type: "webhook",
+    title: trigger.title,
+    description: trigger.description,
+    passphrase: trigger.passphrase,
+    schema: trigger.schema,
+    url ,
+  } as CreateTriggerInput & { url?: string }
+
+  try {
+    const result = await createTrigger(
+      stub,
+      workspace,
+      agentId,
+      data,
+      resourceId,
+      id,
+    );
+    await storage?.triggers
+      ?.for(workspace)
+      .create(data, agentId, userId);
+
+    return result;
+  } catch(error) {
+    return {
+      success: false,
+      message: `Failed to create trigger: ${error}`,
+      id,
+      url: undefined,
+    };
+  }
 };
 
 /**
@@ -336,6 +350,7 @@ export const createCronTrigger = async ({
   trigger,
   resourceId,
   userId,
+  storage,
 }: {
   stub: ActorState["stub"];
   workspace: Workspace;
@@ -343,26 +358,40 @@ export const createCronTrigger = async ({
   trigger: z.infer<typeof CronTriggerSchema>;
   resourceId?: string;
   userId: string;
+  storage: DecoChatStorage | undefined;
 }): Promise<z.infer<typeof CreateCronTriggerOutputSchema>> => {
   const id = crypto.randomUUID();
-  return await createTrigger(
-    stub,
-    workspace,
-    agentId,
-    userId,
-    {
-      type: "cron",
-      title: trigger.title,
-      description: trigger.description,
-      cronExp: trigger.cronExp,
-      prompt: {
-        ...trigger.prompt,
-        resourceId: trigger.prompt.resourceId ?? resourceId,
-      },
+  const data = {
+    type: "cron",
+    title: trigger.title,
+    description: trigger.description,
+    cron_exp: trigger.cron_exp,
+    prompt: {
+      ...trigger.prompt,
+      resourceId: trigger.prompt.resourceId ?? resourceId,
     },
-    resourceId,
+  } as CreateTriggerInput & { url?: string }
+  try {
+    const result = await createTrigger(
+      stub,
+      workspace,
+      agentId,
+      data,
+      resourceId,
     id,
   );
+  await storage?.triggers
+    ?.for(workspace)
+    .create(data, agentId, userId);
+  
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to create trigger: ${error}`,
+      id,
+    };
+  }
 };
 
 /**
@@ -376,11 +405,13 @@ export const deleteTrigger = async ({
   agentId,
   workspace,
   triggerId,
+  storage,
 }: {
   stub: ActorState["stub"];
   agentId: string;
   workspace: Workspace;
   triggerId: string;
+  storage: DecoChatStorage | undefined;
 }): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
   try {
     const triggerWorkspace = Path.resolveHome(
@@ -395,6 +426,10 @@ export const deleteTrigger = async ({
         message: `Failed to delete trigger: ${result}`,
       };
     }
+
+    await storage?.triggers
+      ?.for(workspace)
+      .delete(triggerId);
 
     return {
       success: true,

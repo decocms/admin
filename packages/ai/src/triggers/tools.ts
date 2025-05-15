@@ -38,6 +38,7 @@ export const DECO_TRIGGER_CREATE_CRON = createInnateTool({
       trigger: context,
       resourceId,
       userId: agent.metadata?.principal?.id ?? "",
+      storage: agent.storage,
     });
   },
 });
@@ -59,6 +60,7 @@ export const DECO_TRIGGER_CREATE_WEBHOOK = createInnateTool({
       trigger: context,
       resourceId,
       userId: agent.metadata?.principal?.id ?? "",
+      storage: agent.storage,
     });
   },
 });
@@ -77,6 +79,7 @@ export const DECO_TRIGGER_DELETE = createInnateTool({
       workspace: agent.workspace,
       agentId: agent.state.id.split("/").at(-1) ?? "",
       triggerId: context.id,
+      storage: agent.storage,
     });
   },
 });

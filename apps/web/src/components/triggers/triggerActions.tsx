@@ -1,4 +1,5 @@
-import type { Trigger } from "@deco/sdk";
+import { TriggerOutputSchema } from "@deco/sdk";
+import { z } from "zod";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -10,7 +11,7 @@ import {
 import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
 
 interface TriggerActionsProps {
-  trigger: Trigger;
+  trigger: z.infer<typeof TriggerOutputSchema>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

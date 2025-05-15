@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { useState } from "react";
-import { cronTriggerSchema, useCreateTrigger } from "@deco/sdk";
+import { CronTriggerSchema, useCreateTrigger } from "@deco/sdk";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -141,7 +141,7 @@ function CronSelectInput({ value, onChange, required, error }: {
   );
 }
 
-type CronTriggerFormType = z.infer<typeof cronTriggerSchema>;
+type CronTriggerFormType = z.infer<typeof CronTriggerSchema>;
 
 export function CronTriggerForm({ agentId, onSuccess }: {
   agentId: string;
@@ -150,11 +150,11 @@ export function CronTriggerForm({ agentId, onSuccess }: {
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
   const form = useForm<CronTriggerFormType>({
-    resolver: zodResolver(cronTriggerSchema),
+    resolver: zodResolver(CronTriggerSchema),
     defaultValues: {
       title: "",
       description: "",
-      cronExp: cronPresets[0].value,
+      cron_exp: cronPresets[0].value,
       prompt: { messages: [{ role: "user", content: "" }] },
       type: "cron",
     },
@@ -165,8 +165,8 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       form.setError("prompt", { message: "Prompt is required" });
       return;
     }
-    if (!data.cronExp || !isValidCron(data.cronExp)) {
-      form.setError("cronExp", {
+    if (!data.cron_exp || !isValidCron(data.cron_exp)) {
+      form.setError("cron_exp", {
         message: "Frequency is required and must be valid",
       });
       return;
@@ -175,7 +175,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       {
         title: data.title,
         description: data.description || undefined,
-        cronExp: data.cronExp,
+        cron_exp: data.cron_exp,
         prompt: {
           messages: [{
             role: "user",
@@ -241,19 +241,19 @@ export function CronTriggerForm({ agentId, onSuccess }: {
         />
         <FormField
           control={form.control}
-          name="cronExp"
+          name="cron_exp"
           render={() => (
             <FormItem>
               <FormControl>
                 <Controller
                   control={form.control}
-                  name="cronExp"
+                  name="cron_exp"
                   render={({ field: ctrlField }) => (
                     <CronSelectInput
                       value={ctrlField.value}
                       onChange={ctrlField.onChange}
                       required
-                      error={form.formState.errors.cronExp?.message}
+                      error={form.formState.errors.cron_exp?.message}
                     />
                   )}
                 />

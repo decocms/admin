@@ -156,7 +156,7 @@ export class Trigger {
     await this.run();
   }
 
-  async create(data: TriggerData, agentId: string, userId: string) {
+  async create(data: TriggerData) {
     if (this.metadata?.internalCall === false) {
       return {
         success: false,
@@ -179,10 +179,6 @@ export class Trigger {
     }
 
     try {
-      await this.storage.triggers
-        ?.for(this.workspace as Workspace)
-        .create(data, agentId, userId);
-
       this.setData(data);
       await this.hooks?.onCreated?.(data, this);
 
@@ -221,9 +217,6 @@ export class Trigger {
 
     try {
       await this.hooks?.onDeleted?.(this.data, this);
-      await this.storage.triggers
-        ?.for(this.workspace as Workspace)
-        .delete(this.data.id);
 
       this.data = null;
 

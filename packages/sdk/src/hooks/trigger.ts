@@ -6,26 +6,37 @@ import {
 } from "@tanstack/react-query";
 import {
   createTrigger,
-  CreateTriggerInput,
   deleteTrigger,
   listAllTriggers,
   listTriggers,
-  type ListTriggersResult,
 } from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
 import { KEYS } from "./api.ts";
+import {
+  CreateTriggerInput,
+  ListTriggersOutputSchema,
+} from "../models/trigger.ts";
+import { z } from "zod";
 
 export function useListTriggersByAgentId(
   agentId: string,
   options?: Omit<
-    UseQueryOptions<ListTriggersResult, Error, ListTriggersResult, string[]>,
+    UseQueryOptions<
+      z.infer<typeof ListTriggersOutputSchema>,
+      Error,
+      z.infer<typeof ListTriggersOutputSchema>,
+      string[]
+    >,
     "queryKey" | "queryFn"
   >,
 ) {
   const { workspace } = useSDK();
   return useQuery({
     queryKey: KEYS.TRIGGERS(workspace, agentId),
-    queryFn: () => listTriggers(workspace, agentId),
+    queryFn: async () => {
+      const { data } = await listTriggers(workspace, agentId);
+      return data;
+    },
     ...options,
   });
 }

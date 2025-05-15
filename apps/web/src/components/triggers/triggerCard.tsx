@@ -1,9 +1,12 @@
-import { type Trigger } from "@deco/sdk";
+import { TriggerOutputSchema } from "@deco/sdk";
+import { z } from "zod";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { timeAgo } from "../../utils/timeAgo.ts";
 import { useState } from "react";
 import { TriggerActions } from "./triggerActions.tsx";
 import { TriggerType } from "./triggerType.tsx";
+
+type Trigger = z.infer<typeof TriggerOutputSchema>;
 
 export function TriggerCard({ trigger, onClick }: {
   trigger: Trigger;
@@ -18,7 +21,7 @@ export function TriggerCard({ trigger, onClick }: {
       >
         <div className="flex items-start justify-between">
           <h3 className="text-lg font-semibold text-slate-900">
-            {trigger.title}
+            {trigger.data.title}
           </h3>
         </div>
 
@@ -31,17 +34,17 @@ export function TriggerCard({ trigger, onClick }: {
         <div className="flex items-center gap-2">
           <div className="relative w-6 h-6 rounded-full overflow-hidden bg-slate-200">
             <img
-              src={trigger.author?.avatar ||
+              src={trigger.user?.metadata?.avatar_url ||
                 "https://ui-avatars.com/api/?name=User"}
               alt="User avatar"
               className="w-full h-full object-cover"
             />
           </div>
           <span className="text-sm text-slate-600">
-            {trigger.author?.name || "Anonymous"}
+            {trigger.user?.metadata?.full_name || "Anonymous"}
           </span>
           <span className="text-sm text-slate-400 ml-auto">
-            {timeAgo(new Date(trigger.createdAt || ""))}
+            {timeAgo(new Date(trigger.created_at || ""))}
           </span>
         </div>
       </CardContent>

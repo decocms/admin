@@ -1,8 +1,13 @@
-import { type Trigger } from "@deco/sdk";
+import { TriggerOutputSchema, WebhookTriggerOutputSchema } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { CodeBlock } from "./codeBlock.tsx";
 
-export function WebhookDetails({ trigger }: { trigger: Trigger }) {
+export function WebhookDetails(
+  { trigger }: { trigger: z.infer<typeof TriggerOutputSchema> },
+) {
+  const triggerData = trigger.data as z.infer<
+    typeof WebhookTriggerOutputSchema
+  >;
   return (
     <div className="space-y-4 border p-4 rounded-md bg-slate-50">
       <div className="flex items-center gap-2">
@@ -13,22 +18,22 @@ export function WebhookDetails({ trigger }: { trigger: Trigger }) {
       <div>
         <div className="text-sm font-medium mb-1">Webhook URL</div>
         <CodeBlock className="break-all">
-          {trigger.url}
+          {triggerData.url}
         </CodeBlock>
       </div>
 
-      {trigger.passphrase && (
+      {triggerData.passphrase && (
         <div>
           <div className="text-sm font-medium mb-1">Passphrase</div>
-          <CodeBlock>{trigger.passphrase}</CodeBlock>
+          <CodeBlock>{triggerData.passphrase}</CodeBlock>
         </div>
       )}
 
-      {trigger.schema && (
+      {triggerData.schema && (
         <div>
           <div className="text-sm font-medium mb-1">Schema</div>
           <CodeBlock className="max-h-[200px] overflow-y-auto">
-            {JSON.stringify(trigger.schema, null, 2)}
+            {JSON.stringify(triggerData.schema, null, 2)}
           </CodeBlock>
         </div>
       )}

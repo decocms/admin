@@ -1,4 +1,3 @@
-import type { Trigger } from "@deco/sdk";
 import { useListTriggers } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
@@ -11,6 +10,8 @@ import { AddTriggerModal } from "./addTriggerModal.tsx";
 import { TriggerActions } from "./triggerActions.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
 import { TriggerType } from "./triggerType.tsx";
+import { TriggerOutputSchema } from "@deco/sdk";
+import { z } from "zod";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 
@@ -83,11 +84,13 @@ function ListTriggersSuspended() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-  const triggers: Trigger[] = data?.actions || [];
+  const triggers = (data?.data?.triggers || []) as z.infer<
+    typeof TriggerOutputSchema
+  >[];
 
   const filteredTriggers = search.trim().length > 0
     ? triggers.filter((t) =>
-      t.title.toLowerCase().includes(search.toLowerCase())
+      t.data.title.toLowerCase().includes(search.toLowerCase())
     )
     : triggers;
 
@@ -122,7 +125,9 @@ function ListTriggersSuspended() {
   );
 }
 
-function TableView({ triggers }: { triggers: Trigger[] }) {
+function TableView(
+  { triggers }: { triggers: z.infer<typeof TriggerOutputSchema>[] },
+) {
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [openModalId, setOpenModalId] = useState<string | null>(null);
@@ -138,10 +143,18 @@ function TableView({ triggers }: { triggers: Trigger[] }) {
     }
   }
 
-  function getSortValue(trigger: Trigger, key: SortKey): string {
+  function getSortValue(
+    trigger: z.infer<typeof TriggerOutputSchema>,
+    key: SortKey,
+  ): string {
     if (key === "agent") return trigger.agent?.name?.toLowerCase() || "";
-    if (key === "author") return trigger.author?.name?.toLowerCase() || "";
-    return (trigger[key] as string)?.toLowerCase?.() || "";
+    if (key === "author") {
+      return trigger.user?.metadata?.full_name?.toLowerCase() || "";
+    }
+    if (key === "title" || key === "type") {
+      return trigger.data?.[key]?.toLowerCase?.() || "";
+    }
+    return "";
   }
 
   const sortedTriggers = [...triggers].sort((a, b) => {
@@ -152,17 +165,17 @@ function TableView({ triggers }: { triggers: Trigger[] }) {
     return 0;
   });
 
-  function handleTriggerClick(trigger: Trigger) {
+  function handleTriggerClick(trigger: z.infer<typeof TriggerOutputSchema>) {
     if (!openModalId && trigger.agent?.id && trigger.id) {
       navigate(`/trigger/${trigger.agent.id}/${trigger.id}`);
     }
   }
 
-  const columns: TableColumn<Trigger>[] = [
+  const columns: TableColumn<z.infer<typeof TriggerOutputSchema>>[] = [
     {
       id: "title",
       header: "Name",
-      accessor: (t) => t.title,
+      accessor: (t) => t.data.title,
       sortable: true,
     },
     {
@@ -180,13 +193,13 @@ function TableView({ triggers }: { triggers: Trigger[] }) {
     {
       id: "author",
       header: "Created by",
-      render: (t) => <UserInfo userId={t.author?.id} />,
+      render: (t) => <UserInfo userId={t.user?.id} />,
       sortable: true,
     },
     {
       id: "createdAt",
       header: "Created at",
-      render: (t) => <DateTimeCell value={t.createdAt} />,
+      render: (t) => <DateTimeCell value={t.created_at} />,
     },
     {
       id: "actions",
@@ -213,9 +226,11 @@ function TableView({ triggers }: { triggers: Trigger[] }) {
   );
 }
 
-function CardsView({ triggers }: { triggers: Trigger[] }) {
+function CardsView(
+  { triggers }: { triggers: z.infer<typeof TriggerOutputSchema>[] },
+) {
   const navigate = useNavigateWorkspace();
-  function handleTriggerClick(trigger: Trigger) {
+  function handleTriggerClick(trigger: z.infer<typeof TriggerOutputSchema>) {
     if (trigger.agent?.id && trigger.id) {
       navigate(`/trigger/${trigger.agent.id}/${trigger.id}`);
     }

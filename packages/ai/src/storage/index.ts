@@ -30,7 +30,7 @@ export interface WorkspaceScopedTriggersStorage {
   list(agentId?: string): Promise<TriggerData[]>;
   get(id: string): Promise<TriggerData>;
   create(
-    trigger: TriggerData,
+    trigger: CreateTriggerInput,
     agentId: string,
     userId?: string,
   ): Promise<TriggerData>;

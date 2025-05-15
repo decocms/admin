@@ -3,10 +3,10 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import Ajv from "ajv";
 import { useState } from "react";
-import { useCreateTrigger, webhookTriggerSchema } from "@deco/sdk";
+import { useCreateTrigger, WebhookTriggerSchema } from "@deco/sdk";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
+import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -19,7 +19,7 @@ import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 function JsonSchemaInput({ value, onChange }: {
-  value: string;
+  value: string | undefined;
   onChange: (v: string) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ function JsonSchemaInput({ value, onChange }: {
   return (
     <div className="space-y-2">
       <Textarea
-        value={value}
+        value={value || ""}
         onChange={handleChange}
         rows={5}
         className={error ? "border-red-500" : ""}
@@ -85,7 +85,11 @@ function JsonSchemaInput({ value, onChange }: {
   );
 }
 
-type WebhookTriggerFormType = z.infer<typeof webhookTriggerSchema>;
+const FormSchema = WebhookTriggerSchema.extend({
+  schema: z.string().optional(),
+});
+
+type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 
 export function WebhookTriggerForm({
   agentId,
@@ -97,7 +101,7 @@ export function WebhookTriggerForm({
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
   const form = useForm<WebhookTriggerFormType>({
-    resolver: zodResolver(webhookTriggerSchema),
+    resolver: zodResolver(FormSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -130,8 +134,7 @@ export function WebhookTriggerForm({
         description: data.description || undefined,
         type: "webhook",
         passphrase: data.passphrase || undefined,
-        // deno-lint-ignore no-explicit-any
-        schema: schemaObj as unknown as any || undefined,
+        schema: schemaObj as Record<string, unknown> | undefined,
         outputTool: data.outputTool || undefined,
       },
       {

@@ -1,4 +1,3 @@
-import { type Trigger, useListTriggersByAgentId } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -8,20 +7,24 @@ import { useChatContext } from "../chat/context.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
+import { ListTriggersOutputSchema, useListTriggersByAgentId } from "@deco/sdk";
+import { z } from "zod";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();
-  const { data: triggers, isLoading } = useListTriggersByAgentId(agentId, {
+  const { data, isLoading } = useListTriggersByAgentId(agentId, {
     refetchOnMount: true,
     staleTime: 0,
   });
-  const [selectedTrigger, setSelectedTrigger] = useState<Trigger | null>(null);
+  const [selectedTrigger, setSelectedTrigger] = useState<
+    z.infer<typeof ListTriggersOutputSchema>["triggers"][number] | null
+  >(null);
   const [search, setSearch] = useState("");
 
   if (isLoading) {
     return <ListTriggersLoading />;
   }
-  if (!triggers?.actions?.length) {
+  if (!data?.triggers?.length) {
     return <ListTriggersEmpty />;
   }
   if (selectedTrigger) {
@@ -34,8 +37,8 @@ export function AgentTriggers() {
     );
   }
 
-  const filteredTriggers = triggers.actions.filter((trigger) =>
-    trigger.title.toLowerCase().includes(search.toLowerCase())
+  const filteredTriggers = data.triggers.filter((trigger) =>
+    trigger.data.title.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

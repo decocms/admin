@@ -43,7 +43,7 @@ export class Trigger {
   protected data: TriggerData | null = null;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
-  protected storage?: DecoChatStorage;
+  public storage?: DecoChatStorage;
   protected workspace: Workspace;
 
   constructor(public state: ActorState, protected env: any) {

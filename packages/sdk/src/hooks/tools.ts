@@ -18,7 +18,7 @@ export interface MCPToolCallResult {
   error?: string;
 }
 
-type ToolsData = {
+export type ToolsData = {
   tools: MCPTool[];
   instructions: string;
   version?: {

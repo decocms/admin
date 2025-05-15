@@ -119,6 +119,7 @@ export const webhookTriggerSchema = z.object({
   description: z.string().optional(),
   passphrase: z.string().optional(),
   schema: z.any().optional(),
+  outputTool: z.string().optional(),
   type: z.literal("webhook"),
 });
 

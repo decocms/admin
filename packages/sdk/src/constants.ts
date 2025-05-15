@@ -75,7 +75,7 @@ type Capability =
 
 export const MODELS: Model[] = [
   {
-    id: "auto",
+    id: DEFAULT_MODEL,
     name: "Auto",
     description:
       "deco.chat will automatically choose the best model for you, based on performance and speed.",

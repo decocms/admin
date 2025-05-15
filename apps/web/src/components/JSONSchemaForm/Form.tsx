@@ -23,7 +23,7 @@ export interface JsonSchemaFormProps<
   submitButton: ReactNode;
 }
 
-export function Form<T extends FieldValues = Record<string, unknown>>(
+export default function Form<T extends FieldValues = Record<string, unknown>>(
   { schema, form, disabled = false, onSubmit, error, submitButton }:
     JsonSchemaFormProps<T>,
 ) {
@@ -32,72 +32,80 @@ export function Form<T extends FieldValues = Record<string, unknown>>(
   }
 
   // Handle root schema
-  if (schema.type === "object" && schema.properties) {
-    return (
-      <form
-        className="space-y-4"
-        onSubmit={onSubmit}
-      >
-        {renderObjectProperties<T>(
-          schema.properties,
-          schema.required || [],
-          form,
-          disabled,
-        )}
-
-        {error && (
-          <div className="text-sm text-destructive mt-2">
-            {JSON.stringify(error)}
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {submitButton}
-        </div>
-      </form>
-    );
-  }
-
   return (
-    <div className="text-sm text-muted-foreground">
-      Schema type not supported
-    </div>
+    <form
+      className="space-y-4"
+      onSubmit={onSubmit}
+    >
+      {schema.type === "object" && schema.properties && (
+        <ObjectProperties<T>
+          properties={schema.properties}
+          required={schema.required || []}
+          form={form}
+          disabled={disabled}
+        />
+      )}
+
+      {error && (
+        <div className="text-sm text-destructive mt-2">
+          {JSON.stringify(error)}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        {submitButton}
+      </div>
+    </form>
   );
 }
 
-// Render object properties recursively
-function renderObjectProperties<
+// Object properties component
+function ObjectProperties<
   T extends FieldValues = Record<string, unknown>,
->(
-  properties: Record<string, JSONSchema7Definition>,
-  required: string[] = [],
-  form: JsonSchemaFormProps<T>["form"],
-  disabled: boolean,
-) {
+>({
+  properties,
+  required = [],
+  form,
+  disabled,
+}: {
+  properties: Record<string, JSONSchema7Definition>;
+  required?: string[];
+  form: JsonSchemaFormProps<T>["form"];
+  disabled: boolean;
+}) {
   return (
     <div className="space-y-4">
       {Object.entries(properties).map(([name, propSchema]) => {
         const isRequired = required.includes(name);
-        return renderField<T>(
-          name,
-          propSchema as JSONSchema7,
-          form,
-          isRequired,
-          disabled,
+        return (
+          <Field<T>
+            key={name}
+            name={name}
+            schema={propSchema as JSONSchema7}
+            form={form}
+            isRequired={isRequired}
+            disabled={disabled}
+          />
         );
       })}
     </div>
   );
 }
 
-// Render a field based on its type
-function renderField<T extends FieldValues = Record<string, unknown>>(
-  name: string,
-  schema: JSONSchema7,
-  form: JsonSchemaFormProps<T>["form"],
-  isRequired: boolean = false,
-  disabled: boolean = false,
-) {
+// Field component to render a field based on its type
+function Field<T extends FieldValues = Record<string, unknown>>({
+  name,
+  schema,
+  form,
+  isRequired = false,
+  disabled = false,
+}: {
+  name: string;
+  schema: JSONSchema7;
+  form: JsonSchemaFormProps<T>["form"];
+  isRequired?: boolean;
+  disabled?: boolean;
+}) {
   // Handle anyOf schema
   if (schema.anyOf && Array.isArray(schema.anyOf) && schema.anyOf.length > 0) {
     // Use the unified schema selection utility from schema.ts
@@ -108,12 +116,14 @@ function renderField<T extends FieldValues = Record<string, unknown>>(
       name,
     );
 
-    return renderField<T>(
-      name,
-      representativeSchema,
-      form,
-      isRequired,
-      disabled,
+    return (
+      <Field<T>
+        name={name}
+        schema={representativeSchema}
+        form={form}
+        isRequired={isRequired}
+        disabled={disabled}
+      />
     );
   }
 
@@ -195,12 +205,15 @@ function renderField<T extends FieldValues = Record<string, unknown>>(
                   );
                   const fullName = `${name}.${propName}`;
 
-                  return renderField<T>(
-                    fullName,
-                    propSchema as JSONSchema7,
-                    form,
-                    isPropertyRequired,
-                    disabled,
+                  return (
+                    <Field<T>
+                      key={fullName}
+                      name={fullName}
+                      schema={propSchema as JSONSchema7}
+                      form={form}
+                      isRequired={isPropertyRequired}
+                      disabled={disabled}
+                    />
                   );
                 },
               )}

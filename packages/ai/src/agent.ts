@@ -145,11 +145,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
-    console.log(
-      "creating supa storage",
-      this.env.SUPABASE_SERVER_TOKEN,
-      SUPABASE_URL,
-    );
     this.storage = createSupabaseStorage(
       createServerClient(
         SUPABASE_URL,

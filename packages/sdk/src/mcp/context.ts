@@ -30,6 +30,7 @@ export interface Vars {
 }
 
 export interface EnvVars {
+  OPENROUTER_API_KEY: string;
   VITE_USE_LOCAL_BACKEND: string;
   RESEND_API_KEY: string;
   SUPABASE_URL: string;
@@ -73,9 +74,11 @@ export const getEnv = (ctx: AppContext) => {
     TURSO_GROUP_DATABASE_TOKEN,
     TURSO_ORGANIZATION,
     RESEND_API_KEY,
+    OPENROUTER_API_KEY,
   } = ctx.envVars;
 
   if (
+    typeof OPENROUTER_API_KEY !== "string" ||
     typeof CF_ACCOUNT_ID !== "string" ||
     typeof SUPABASE_URL !== "string" ||
     typeof SUPABASE_SERVER_TOKEN !== "string" ||

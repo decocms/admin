@@ -4,14 +4,17 @@ import {
   type Provider,
   type User as SupaUser,
 } from "@supabase/supabase-js";
-import { Context, Hono } from "hono";
+import { Hono } from "hono";
 import { honoCtxToAppCtx } from "../api.ts";
-import { AppEnv, AUTH_URL, getEnv, HonoAppContext } from "../utils/context.ts";
+import {
+  AUTH_URL,
+  getEnv,
+  HonoAppContext as AppContext,
+} from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
-type AppContext = HonoAppContext;
 
 const appAuth = new Hono();
 const appLogin = new Hono();
@@ -20,7 +23,7 @@ export const ROUTES = {
   ["/login"]: appLogin,
 } as const;
 
-const createDbAndHeadersForRequest = (ctx: Context<AppEnv>) => {
+const createDbAndHeadersForRequest = (ctx: AppContext) => {
   const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(honoCtxToAppCtx(ctx));
   const request = ctx.req.raw;
   const { headers, setCookie } = authSetCookie({ request });
@@ -94,7 +97,7 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
   }
 };
 
-appLogin.all("/oauth", async (ctx: Context<AppEnv>) => {
+appLogin.all("/oauth", async (ctx: AppContext) => {
   const user = ctx.get("user");
 
   // user already logged in, set by userMiddleware

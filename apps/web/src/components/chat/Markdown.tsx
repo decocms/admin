@@ -1,11 +1,16 @@
 import { marked } from "marked";
-import { memo, Suspense, useMemo, useRef } from "react";
+import { memo, Suspense, useCallback, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { lazy, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 
 const LazyHighlighter = lazy(() => import("./LazyHighlighter.tsx"));
 
@@ -84,6 +89,65 @@ function LazyHighlighterFallback() {
   );
 }
 
+function Table(props: React.HTMLAttributes<HTMLTableElement>) {
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+
+  const tableToCsv = useCallback((table: HTMLTableElement | null): string => {
+    if (!table) return "";
+    const rows = Array.from(table.querySelectorAll("tr"));
+    return rows
+      .map((row) =>
+        Array.from(row.querySelectorAll("th,td"))
+          .map((cell) => {
+            let text = cell.textContent || "";
+            text = text.replace(/"/g, '""');
+            if (text.search(/([",\n])/g) >= 0) {
+              text = `"${text}"`;
+            }
+            return text;
+          })
+          .join(",")
+      )
+      .join("\n");
+  }, []);
+
+  const handleCopyCsv = useCallback(async () => {
+    const csv = tableToCsv(tableRef.current);
+    await navigator.clipboard.writeText(csv);
+    setCopied(true);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
+  }, [tableToCsv]);
+
+  return (
+    <>
+      <div className="flex justify-end items-center">
+        <Button
+          variant="ghost"
+          onClick={handleCopyCsv}
+          aria-label="Copy as CSV"
+          className="text-muted-foreground hover:text-foreground h-6 text-[10px]"
+          type="button"
+        >
+          Copy as CSV
+          <Icon name={copied ? "check" : "content_copy"} size={12} />
+        </Button>
+      </div>
+      <div className="overflow-x-auto mb-4 rounded-lg border border-border">
+        <table
+          ref={tableRef}
+          {...props}
+          className="min-w-full border-collapse text-sm"
+        >
+          {props.children}
+        </table>
+      </div>
+    </>
+  );
+}
+
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
     return (
@@ -124,6 +188,30 @@ const MemoizedMarkdownBlock = memo(
                 {props.children}
               </code>
             </pre>
+          ),
+          table: (props) => <Table {...props} />,
+          thead: (props) => (
+            <thead {...props} className="bg-muted">
+              {props.children}
+            </thead>
+          ),
+          tr: (props) => (
+            <tr
+              {...props}
+              className="even:bg-muted/50 border-b border-border last:border-0"
+            />
+          ),
+          th: (props) => (
+            <th
+              {...props}
+              className="px-4 py-2 text-left font-semibold text-muted-foreground border-b border-border"
+            />
+          ),
+          td: (props) => (
+            <td
+              {...props}
+              className="px-4 py-2 border-b border-border"
+            />
           ),
         }}
       >

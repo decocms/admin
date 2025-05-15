@@ -222,8 +222,7 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "./deps.ts";
-import { assertHasWorkspace } from '../../auth/assertions';
-      
+
       export default {
         async fetch(request: Request): Promise<Response> {
           return new Response("Hello from Deno on Cloudflare!");

@@ -72,11 +72,11 @@ export const loadAgent = async (
     throw new AgentNotFoundError(agentId);
   }
 
-  if (response.status === 401) {
+  if (status === 401) {
     throw new UnauthorizedError();
   }
 
-  if (response.status === 403) {
+  if (status === 403) {
     throw new ForbiddenError();
   }
 

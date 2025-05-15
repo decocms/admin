@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_MODEL } from "@deco/sdk";
 
 /**
  * Zod schema for an AI Agent
@@ -32,7 +33,7 @@ export const AgentSchema = z.object({
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */
-  model: z.string().default("anthropic:claude-3.7-sonnet:thinking")
+  model: z.string().default(DEFAULT_MODEL)
     .describe("Model to use for the agent"),
   /** Memory to use for the agent */
   memory: z.object({

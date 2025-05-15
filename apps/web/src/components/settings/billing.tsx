@@ -1,7 +1,7 @@
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import {
   ChartConfig,
@@ -11,9 +11,25 @@ import {
 } from "@deco/ui/components/chart.tsx";
 import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
+import { getWalletAccount } from "@deco/sdk";
+import { useQuery } from "@tanstack/react-query";
+
+
+function AccountValue() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["wallet"],
+    queryFn: () => getWalletAccount("/shared/deco.cx"),
+  });
+
+  if (isLoading) return <Skeleton className="w-24 h-8" />;
+  if (error) return <p>Error loading wallet</p>;
+
+  return <p className="text-5xl font-bold">{data?.balance}</p>;
+}
 
 function BalanceCard() {
   const team = useCurrentTeam();
+  
 
   return (
     <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
@@ -29,7 +45,9 @@ function BalanceCard() {
             className="ml-1 align-middle text-muted-foreground"
           />
         </div>
-        <div className="text-5xl font-bold mb-6">$128.00</div>
+        <div className="mb-6">
+          <AccountValue />
+        </div>
         <DepositDialog />
       </CardContent>
     </Card>

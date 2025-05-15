@@ -151,7 +151,9 @@ export class AgentWallet {
           amount: "2_000000",
           // todo(@camudo): update this name to workspaceId on the wallet service
           userId: this.config.workspace,
-          transactionId: WellKnownTransactions.freeTwoDollars(this.config.workspace),
+          transactionId: WellKnownTransactions.freeTwoDollars(
+            this.config.workspace,
+          ),
         },
       ];
 

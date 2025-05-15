@@ -13,11 +13,12 @@ export const WellKnownWallets = {
   },
   workspace: (
     workspaceId: string,
-  ) => [
-    "workspace" as const,
-    `gen-credits-${workspaceId}`,
-    "liability" as const,
-  ] as const,
+  ) =>
+    [
+      "workspace" as const,
+      `gen-credits-${workspaceId}`,
+      "liability" as const,
+    ] as const,
 } as const;
 
 export const WellKnownTransactions = {

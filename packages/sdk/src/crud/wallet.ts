@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { fetchAPI } from "../fetcher.ts";
+import { callToolFor, fetchAPI } from "../fetcher.ts";
 
-export const getWalletAccount = async () => {
-  const response = await fetchAPI({
-    segments: ["wallet", "account"],
-  });
+export const getWalletAccount = async (workspace: string) => {
+  const response = await callToolFor(workspace, "GET_WALLET_ACCOUNT", {});
   return response.json<any>();
 };
 

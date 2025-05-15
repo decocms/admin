@@ -97,8 +97,8 @@ export const handleOutputTool = async ({
     }
 
     const { tool, schema } = getToolResult;
-    // deno-lint-ignore no-explicit-any
     const toolArgs =
+      // deno-lint-ignore no-explicit-any
       (await agent.generateObject(messages, schema as any)).object;
 
     // deno-lint-ignore no-explicit-any

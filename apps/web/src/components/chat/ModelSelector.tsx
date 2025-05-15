@@ -45,7 +45,7 @@ const CAPABILITY_CONFIGS = {
     text: "text-amber-700",
     label: "Can search the web to answer questions",
   },
-  "mixed": {
+  mixed: {
     icon: "cyclone",
     bg: "bg-slate-100",
     text: "text-slate-700",

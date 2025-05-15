@@ -1,5 +1,6 @@
 export * from "./assertions.ts";
 export * from "./context.ts";
+export * from "./errors.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";

@@ -1,5 +1,5 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { GLOBAL_TOOLS, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
+import { GLOBAL_TOOLS, MCPError, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
@@ -8,7 +8,6 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { MCPError } from "../../../packages/sdk/src/mcp/errors.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";

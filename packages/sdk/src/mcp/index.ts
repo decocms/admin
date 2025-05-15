@@ -2,10 +2,12 @@ export * from "./assertions.ts";
 export * from "./context.ts";
 export * from "./errors.ts";
 import * as agentsAPI from "./agents/api.ts";
+import { AppContext } from "./context.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
+import { createMCPToolsStub, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
@@ -62,5 +64,26 @@ export const WORKSPACE_TOOLS = [
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;
+
+const global = createMCPToolsStub({
+  tools: GLOBAL_TOOLS,
+});
+export const MCPClient = new Proxy(
+  {} as typeof global & {
+    forContext: (ctx: AppContext) => MCPClientStub<WorkspaceTools>;
+  },
+  {
+    get(_, name) {
+      if (name === "forContext") {
+        return (ctx: AppContext) =>
+          createMCPToolsStub({
+            tools: WORKSPACE_TOOLS,
+            context: ctx,
+          });
+      }
+      return global[name as keyof typeof global];
+    },
+  },
+);
 
 export { Entrypoint } from "./hosting/api.ts";

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
-import { type ApiHandler } from "./context.ts";
+import { type ApiHandler, AppContext, State } from "./context.ts";
 
 export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
   [K in TDefinition[number] as K["name"]]: (
@@ -31,6 +31,7 @@ export interface CreateStubHandlerOptions<
   TDefinition extends readonly ApiHandler[],
 > {
   tools: TDefinition;
+  context?: AppContext;
 }
 
 export interface CreateStubAPIOptions {
@@ -65,7 +66,11 @@ export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
           if (!tool) {
             throw new Error(`Tool ${name} not found`);
           }
-          return tool.handler(props);
+          return State.run(
+            options?.context ?? State.getStore(),
+            (args) => tool.handler(args),
+            props,
+          );
         };
       },
     },

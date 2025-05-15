@@ -1,34 +1,9 @@
-import type { Agent, Integration } from "@deco/sdk";
 import type { Workspace } from "@deco/sdk/path";
 import type {
   CreateTriggerInput,
   TriggerData,
   TriggerRun,
 } from "../triggers/services.ts";
-
-export interface WorkspaceScopedAgentStorage {
-  list(): Promise<Agent[]>;
-  get(id: string): Promise<Agent>;
-  create(agent: Agent): Promise<Agent>;
-  update(id: string, agent: Agent): Promise<Agent>;
-  delete(id: string): Promise<void>;
-}
-
-export interface AgentStorage {
-  for(workspace: Workspace): WorkspaceScopedAgentStorage;
-}
-
-export interface WorkspaceScopedIntegrationsStorage {
-  list(): Promise<Integration[]>;
-  get(id: string): Promise<Integration>;
-  create(integration: Integration): Promise<Integration>;
-  update(id: string, integration: Integration): Promise<Integration>;
-  delete(id: string): Promise<void>;
-}
-
-export interface IntegrationsStorage {
-  for(workspace: Workspace): WorkspaceScopedIntegrationsStorage;
-}
 
 export interface WorkspaceScopedTriggersStorage {
   list(agentId?: string): Promise<TriggerData[]>;
@@ -48,8 +23,6 @@ export interface TriggersStorage {
 }
 
 export interface DecoChatStorage {
-  integrations: IntegrationsStorage;
-  agents: AgentStorage;
   triggers?: TriggersStorage;
 }
 

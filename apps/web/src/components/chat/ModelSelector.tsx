@@ -116,7 +116,7 @@ function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
 function SelectedModelDisplay({ model }: { model: typeof MODELS[0] }) {
   return (
     <div className="flex items-center gap-1.5">
-      <img src={model.logo} className="w-3 h-3" />
+      {model.logo && <img src={model.logo} className="w-3 h-3" />}
       <span className="text-xs">{model.name}</span>
     </div>
   );

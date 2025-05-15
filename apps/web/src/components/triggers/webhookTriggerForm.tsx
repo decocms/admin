@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { SingleToolSelector } from "../toolsets/single-selector.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
 function JsonSchemaInput({ value, onChange }: {
   value: string;
@@ -240,12 +241,25 @@ export function WebhookTriggerForm({
                   the selected tool
                 </span>
               </div>
-              <FormControl>
-                <SingleToolSelector
-                  value={field.value || null}
-                  onChange={field.onChange}
-                />
-              </FormControl>
+              <div className="flex gap-2 items-center">
+                <FormControl>
+                  <SingleToolSelector
+                    value={field.value || null}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                {field.value && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-1"
+                    onClick={() => field.onChange("")}
+                  >
+                    <Icon name="close" size={12} className="text-slate-400" />
+                  </Button>
+                )}
+              </div>
               <FormMessage />
             </FormItem>
           )}

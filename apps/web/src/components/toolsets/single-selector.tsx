@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import type { Integration } from "@deco/sdk";
 import type { MCPTool } from "@deco/sdk";
+import { cn } from "@deco/ui/lib/utils.ts";
 
 interface SingleToolSelectorProps {
   value: string | null;
@@ -250,16 +251,18 @@ export function SingleToolSelector(
   }, [value, integrations]);
 
   return (
-    <div>
+    <div className="max-w-[410px]">
       <Button
         type="button"
         variant="outline"
-        className="w-full justify-between truncate"
+        className={cn("w-full justify-between truncate", {
+          "px-1": selected,
+        })}
         onClick={() => setOpen(true)}
       >
         {selected
           ? (
-            <span className="flex items-center gap-2 truncate">
+            <span className="flex items-center gap-2">
               <IntegrationIcon
                 icon={selected.integration.icon}
                 name={selected.integration.name}

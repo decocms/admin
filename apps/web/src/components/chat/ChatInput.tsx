@@ -366,16 +366,21 @@ export function FilePreviewItem(
           ? <Spinner size="xs" />
           : status === "error"
           ? (
-            <span className="text-xs text-red-500">
-              {error || "Upload failed"}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Icon name="error" size={32} className="text-red-500" />
+              </TooltipTrigger>
+              <TooltipContent className="flex flex-col items-center">
+                Error uploading file {error?.toString()}
+              </TooltipContent>
+            </Tooltip>
           )
           : (
             <Tooltip>
               <TooltipTrigger asChild>
                 {file.type.startsWith("image/") && url
                   ? <img src={url} className="h-full w-full object-cover" />
-                  : <Icon name="draft" />}
+                  : <Icon name="draft" size={32} />}
               </TooltipTrigger>
               <TooltipContent className="flex flex-col items-center">
                 <span>{file.name}</span>

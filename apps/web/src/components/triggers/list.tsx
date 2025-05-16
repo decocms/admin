@@ -12,6 +12,7 @@ import { TriggerCard } from "./triggerCard.tsx";
 import { TriggerType } from "./triggerType.tsx";
 import { TriggerOutputSchema } from "@deco/sdk";
 import { z } from "zod";
+import { TriggerToggle } from "./triggerToggle.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 
@@ -172,6 +173,11 @@ function TableView(
   }
 
   const columns: TableColumn<z.infer<typeof TriggerOutputSchema>>[] = [
+    {
+      id: "active",
+      header: "",
+      render: (t) => <TriggerToggle trigger={t} />,
+    },
     {
       id: "title",
       header: "Name",

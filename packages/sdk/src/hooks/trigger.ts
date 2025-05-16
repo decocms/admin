@@ -5,7 +5,9 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 import {
+  activateTrigger,
   createTrigger,
+  deactivateTrigger,
   deleteTrigger,
   listAllTriggers,
   listTriggers,
@@ -65,6 +67,30 @@ export function useDeleteTrigger(agentId: string) {
   return useMutation({
     mutationFn: (triggerId: string) =>
       deleteTrigger(workspace, agentId, triggerId),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, agentId) });
+    },
+  });
+}
+
+export function useActivateTrigger(agentId: string) {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (triggerId: string) => activateTrigger(workspace, triggerId),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, agentId) });
+    },
+  });
+}
+
+export function useDeactivateTrigger(agentId: string) {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (triggerId: string) => deactivateTrigger(workspace, triggerId),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
       client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, agentId) });

@@ -464,6 +464,7 @@ export type Database = {
       };
       deco_chat_triggers: {
         Row: {
+          active: boolean;
           agent_id: string;
           created_at: string;
           id: string;
@@ -473,6 +474,7 @@ export type Database = {
           workspace: string;
         };
         Insert: {
+          active?: boolean;
           agent_id: string;
           created_at?: string;
           id?: string;
@@ -482,6 +484,7 @@ export type Database = {
           workspace: string;
         };
         Update: {
+          active?: boolean;
           agent_id?: string;
           created_at?: string;
           id?: string;

@@ -47,6 +47,7 @@ function mapTrigger(
       // @ts-expect-error - Supabase user metadata is not typed
     } as z.infer<typeof ListTriggersOutputSchema["triggers"][number]["user"]>,
     workspace: trigger.workspace,
+    active: trigger.active,
     data: trigger.metadata as z.infer<typeof TriggerSchema>,
   };
 }
@@ -430,5 +431,130 @@ export const getWebhookTriggerUrl = createApiHandler({
       message: "Webhook trigger URL retrieved successfully",
       url: (data.metadata as { url?: string })?.url,
     };
+  },
+});
+
+export const activateTrigger = createApiHandler({
+  name: "TRIGGERS_ACTIVATE",
+  description: "Activate a trigger",
+  schema: z.object({ triggerId: z.string() }),
+  handler: async ({ triggerId }, c) => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const stub = c.stub;
+    const user = c.user;
+    await assertUserHasAccessToWorkspace(c);
+
+    try {
+      const { data, error: selectError } = await db.from("deco_chat_triggers")
+        .select("*")
+        .eq("id", triggerId)
+        .eq("workspace", workspace)
+        .single();
+
+      if (selectError) {
+        return {
+          success: false,
+          message: "Failed to activate trigger",
+        };
+      }
+
+      if (data?.active) {
+        return {
+          success: true,
+          message: "Trigger already activated",
+        };
+      }
+
+      await stub(Trigger).new(triggerId).create(
+        {
+          ...data.metadata as z.infer<typeof TriggerSchema>,
+          id: data.id,
+          resourceId: user.id,
+        },
+      );
+
+      const { error } = await db.from("deco_chat_triggers")
+        .update({ active: true })
+        .eq("id", triggerId)
+        .eq("workspace", workspace);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Failed to activate trigger",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Trigger activated successfully",
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to activate trigger",
+      };
+    }
+  },
+});
+
+export const deactivateTrigger = createApiHandler({
+  name: "TRIGGERS_DEACTIVATE",
+  description: "Deactivate a trigger",
+  schema: z.object({ triggerId: z.string() }),
+  handler: async ({ triggerId }, c) => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const stub = c.stub;
+    await assertUserHasAccessToWorkspace(c);
+
+    try {
+      const { data, error: selectError } = await db.from("deco_chat_triggers")
+        .select("*")
+        .eq("id", triggerId)
+        .eq("workspace", workspace)
+        .single();
+
+      if (selectError) {
+        return {
+          success: false,
+          message: "Failed to deactivate trigger",
+        };
+      }
+
+      if (!data?.active) {
+        return {
+          success: true,
+          message: "Trigger already deactivated",
+        };
+      }
+
+      await stub(Trigger).new(triggerId).delete();
+
+      const { error } = await db.from("deco_chat_triggers")
+        .update({ active: false })
+        .eq("id", triggerId)
+        .eq("workspace", workspace);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Failed to deactivate trigger",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Trigger deactivated successfully",
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to deactivate trigger",
+      };
+    }
   },
 });

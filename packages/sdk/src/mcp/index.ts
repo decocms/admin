@@ -57,6 +57,8 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.createWebhookTrigger,
   triggersAPI.deleteTrigger,
   triggersAPI.getWebhookTriggerUrl,
+  triggersAPI.activateTrigger,
+  triggersAPI.deactivateTrigger,
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;

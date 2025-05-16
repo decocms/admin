@@ -5,6 +5,7 @@ import { timeAgo } from "../../utils/timeAgo.ts";
 import { useState } from "react";
 import { TriggerActions } from "./triggerActions.tsx";
 import { TriggerType } from "./triggerType.tsx";
+import { TriggerToggle } from "./triggerToggle.tsx";
 
 type Trigger = z.infer<typeof TriggerOutputSchema>;
 
@@ -20,9 +21,12 @@ export function TriggerCard({ trigger, onClick }: {
         onClick={() => onClick(trigger)}
       >
         <div className="flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">
-            {trigger.data.title}
-          </h3>
+          <div className="flex items-center gap-4">
+            <TriggerToggle trigger={trigger} />
+            <h3 className="text-lg font-semibold text-slate-900">
+              {trigger.data.title}
+            </h3>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm text-slate-600">

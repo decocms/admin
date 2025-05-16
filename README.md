@@ -107,7 +107,6 @@ To run database migrations with Supabase:
 7. Now you can run `deno run db:migration`
 8. Remember to run `deno run db:types` to update schemas.ts
 
-
 **Made with ❤️ by deco.chat**
 
 Empowering businesses to scale AI safely, visually, and efficiently. Explore our

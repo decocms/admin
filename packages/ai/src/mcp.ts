@@ -26,7 +26,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
   "http://localhost:3001",
-  "https://admin.wppagent.com",
+  "https://mcp-admin.wppagent.com",
 ];
 export const isApiDecoChatMCPConnection = (
   connection: MCPConnection,

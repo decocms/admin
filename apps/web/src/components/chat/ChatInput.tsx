@@ -274,7 +274,7 @@ ChatInput.UI = (
     }
   };
 
-  const isDragging = useGlobalDrop(handleFileDrop);
+  const _isDragging = useGlobalDrop(handleFileDrop);
 
   return (
     <div className="w-full max-w-[640px] mx-auto">

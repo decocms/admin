@@ -358,6 +358,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_customer: {
+        Row: {
+          created_at: string;
+          customer_id: string;
+          workspace: string;
+        };
+        Insert: {
+          created_at?: string;
+          customer_id: string;
+          workspace: string;
+        };
+        Update: {
+          created_at?: string;
+          customer_id?: string;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
       deco_chat_hosting_apps: {
         Row: {
           cloudflare_script_hash: string | null;
@@ -464,6 +482,7 @@ export type Database = {
       };
       deco_chat_triggers: {
         Row: {
+          active: boolean;
           agent_id: string;
           created_at: string;
           id: string;
@@ -473,6 +492,7 @@ export type Database = {
           workspace: string;
         };
         Insert: {
+          active?: boolean;
           agent_id: string;
           created_at?: string;
           id?: string;
@@ -482,6 +502,7 @@ export type Database = {
           workspace: string;
         };
         Update: {
+          active?: boolean;
           agent_id?: string;
           created_at?: string;
           id?: string;

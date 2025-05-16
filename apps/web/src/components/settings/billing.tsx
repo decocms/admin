@@ -14,7 +14,6 @@ import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import { getWalletAccount } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 
-
 function AccountBalance({ workspace }: { workspace: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["wallet"],
@@ -29,7 +28,7 @@ function AccountBalance({ workspace }: { workspace: string }) {
 
 function BalanceCard() {
   const team = useCurrentTeam();
-  
+
   return (
     <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
       <div className="w-full text-sm mb-8">

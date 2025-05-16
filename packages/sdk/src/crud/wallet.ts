@@ -1,7 +1,8 @@
 import { MCPClient } from "../fetcher.ts";
 
 export const getWalletAccount = async (workspace: string) => {
-  const { status, data, error } = await MCPClient.forWorkspace(workspace).GET_WALLET_ACCOUNT({});
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .GET_WALLET_ACCOUNT({});
   if (status !== 200 || error) {
     throw new Error(error?.message);
   }
@@ -30,12 +31,27 @@ interface WalletStatement {
 //   }>;
 // };
 
-export const createWalletCheckoutSession = async (amountInCents: number) => {
-  // const response = await fetchAPI({
-  //   segments: ["wallet", "checkout"],
-  //   method: "POST",
-  //   body: JSON.stringify({ amountInCents }),
-  // });
-  // return response.json() as Promise<{ checkoutUrl: string }>;
-  return { checkoutUrl: "https://checkout.stripe.com/c/pay/test" };
+export const createWalletCheckoutSession = async ({
+  workspace,
+  amountUSDCents,
+  successUrl,
+  cancelUrl,
+}: {
+  workspace: string;
+  amountUSDCents: number;
+  successUrl: string;
+  cancelUrl: string;
+}) => {
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .CREATE_CHECKOUT_SESSION({
+      amountUSDCents,
+      successUrl,
+      cancelUrl,
+    });
+
+  if (status !== 200 || error) {
+    throw new Error(error?.message);
+  }
+
+  return { checkoutUrl: data.url };
 };

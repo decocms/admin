@@ -59,6 +59,7 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.deleteTrigger,
   triggersAPI.getWebhookTriggerUrl,
   walletAPI.getWalletAccount,
+  walletAPI.createCheckoutSession,
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;

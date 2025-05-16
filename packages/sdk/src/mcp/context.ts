@@ -19,7 +19,7 @@ export interface Vars {
   db: Client;
   user: SupaUser;
   cf: Cloudflare;
-  walletBinding?: { fetch: typeof fetch }
+  walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
   stub: <
     Constructor extends
@@ -43,6 +43,7 @@ export interface EnvVars {
   CF_DISPATCH_NAMESPACE: string;
   WALLET_API_KEY: string;
   STRIPE_SECRET_KEY: string;
+  CURRENCY_API_KEY: string;
 }
 
 export type AppContext = Vars & { envVars: EnvVars };

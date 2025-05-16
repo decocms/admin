@@ -7,7 +7,11 @@ import {
   WellKnownWallets,
 } from "@deco/sdk/wallet";
 import { ClientOf } from "@deco/sdk/http";
-import { assertHasWorkspace } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
+import { createCheckoutSession as createCheckoutSessionStripe } from "./stripe.ts";
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
@@ -41,6 +45,7 @@ export const getWalletAccount = createApiHandler({
   schema: z.object({}),
   handler: async (_, c) => {
     assertHasWorkspace(c);
+    await assertUserHasAccessToWorkspace(c);
 
     const envVars = getEnv(c);
     const wallet = createWalletClient(envVars.WALLET_API_KEY, c.walletBinding);
@@ -66,13 +71,31 @@ export const getWalletAccount = createApiHandler({
 export const createCheckoutSession = createApiHandler({
   name: "CREATE_CHECKOUT_SESSION",
   description: "Create a checkout session for the current tenant's wallet",
-  schema: z.object({}),
-  handler: async (_, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
+  schema: z.object({
+    amountUSDCents: z.number(),
+    successUrl: z.string(),
+    cancelUrl: z.string(),
+  }),
+  handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
 
-    const envVars = getEnv(c);
-    
-    
+    const session = await createCheckoutSessionStripe({
+      successUrl,
+      cancelUrl,
+      product: {
+        id: "WorkspaceWalletDeposit",
+        amountUSD: amountUSDCents,
+      },
+      ctx,
+      metadata: {
+        created_by_user_id: ctx.user.id,
+        created_by_user_email: ctx.user.email || "",
+      },
+    });
+
+    return {
+      url: session.url,
+    };
   },
 });

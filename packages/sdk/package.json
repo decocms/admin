@@ -16,6 +16,7 @@
     "lru-cache": "^11.1.0",
     "react": "^19.1.0",
     "zod": "^3.24.1",
+    "stripe": "18.0.0",
     "@supabase/supabase-js": "^2.49.4",
     "@supabase/ssr": "^0.6.1",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",

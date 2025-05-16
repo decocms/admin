@@ -21,6 +21,10 @@ const Account = {
       id: encodeURIComponent(id),
     });
 
+    if (accountResponse.status === 404) {
+      return null;
+    }
+
     if (!accountResponse.ok) {
       throw new Error("Failed to fetch account");
     }
@@ -51,6 +55,16 @@ export const getWalletAccount = createApiHandler({
       ...WellKnownWallets.workspace(workspace),
     );
     const data = await Account.fetch(wallet, workspaceWalletId);
+
+    if (!data) {
+      return {
+        balance: MicroDollar.ZERO.display(),
+        balanceExact: MicroDollar.ZERO.display({
+          showAllDecimals: true,
+        }),
+      };
+    }
+
     return Account.format(data);
   },
 });

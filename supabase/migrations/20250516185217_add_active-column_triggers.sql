@@ -1,0 +1,2 @@
+ALTER TABLE deco_chat_triggers
+ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;

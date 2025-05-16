@@ -183,6 +183,7 @@ export default function Page(props: Props) {
         threadId={threadId}
         uiOptions={{
           showThreadTools: false,
+          showEditAgent: false,
         }}
       >
         <AgentSettingsFormContext.Provider

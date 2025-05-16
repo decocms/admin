@@ -141,7 +141,7 @@ export const TriggerOutputSchema = z.object({
       avatar_url: z.string().describe("The user avatar"),
     }),
   }),
-  active: z.boolean().describe("The trigger status"),
+  active: z.boolean().optional().describe("The trigger status"),
   workspace: z.string().describe("The workspace ID"),
   data: TriggerSchema,
 });

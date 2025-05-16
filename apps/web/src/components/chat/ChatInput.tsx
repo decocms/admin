@@ -62,6 +62,38 @@ interface UploadedFile {
   error?: string;
 }
 
+const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
+  const [isDragging, setIsDragging] = useState(false);
+
+  /** Global file drop handler */
+  useEffect(() => {
+    function handleDrop(e: Event) {
+      setIsDragging(false);
+      const dragEvent = e as unknown as DragEvent;
+      handleFileDrop(dragEvent);
+    }
+    function handleDragOver(e: Event) {
+      e.preventDefault();
+      setIsDragging(true);
+    }
+    function handleDragLeave() {
+      setIsDragging(false);
+    }
+
+    globalThis.addEventListener("drop", handleDrop);
+    globalThis.addEventListener("dragover", handleDragOver);
+    globalThis.addEventListener("dragleave", handleDragLeave);
+
+    return () => {
+      globalThis.removeEventListener("drop", handleDrop);
+      globalThis.removeEventListener("dragover", handleDragOver);
+      globalThis.removeEventListener("dragleave", handleDragLeave);
+    };
+  }, [handleFileDrop]);
+
+  return isDragging;
+};
+
 ChatInput.UI = (
   { disabled }: { disabled?: boolean },
 ) => {
@@ -242,10 +274,11 @@ ChatInput.UI = (
     }
   };
 
+  const isDragging = useGlobalDrop(handleFileDrop);
+
   return (
     <div className="w-full max-w-[640px] mx-auto">
       <form
-        onDrop={handleFileDrop}
         onSubmit={onSubmit}
         className={cn(
           "relative flex items-center gap-2 pt-0",
@@ -347,16 +380,35 @@ ChatInput.UI = (
           )}
         </div>
       </form>
+      <FileDropOverlay display={isDragging} />
     </div>
   );
 };
+
+function FileDropOverlay({ display }: { display: boolean }) {
+  if (!display) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 pointer-events-none animate-fade-in">
+      <div className="flex flex-col items-center gap-4 bg-white/90 rounded-2xl p-8 shadow-2xl border border-slate-200">
+        <Icon name="upload" size={48} className="text-foreground" />
+        <span className="text-lg font-semibold text-foreground">
+          Drop files to upload
+        </span>
+        <span className="text-sm text-muted-foreground">
+          (Max 5 files, images or PDFs)
+        </span>
+      </div>
+    </div>
+  );
+}
 
 interface FilePreviewItemProps {
   uploadedFile: UploadedFile;
   removeFile: () => void;
 }
 
-export function FilePreviewItem(
+function FilePreviewItem(
   { uploadedFile, removeFile }: FilePreviewItemProps,
 ) {
   const { file, status, error, url } = uploadedFile;

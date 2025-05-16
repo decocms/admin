@@ -120,7 +120,7 @@ export const DECO_TRIGGER_GET_WEBHOOK_URL = createInnateTool({
       const response = await client.TRIGGERS_GET({ id: context.id });
 
       if (
-        !response || !response?.trigger || response.trigger.type !== "webhook"
+        !response || response.type !== "webhook"
       ) {
         return {
           success: false,
@@ -138,7 +138,7 @@ export const DECO_TRIGGER_GET_WEBHOOK_URL = createInnateTool({
         message: "Webhook URL retrieved successfully",
         url: buildWebhookUrl(
           triggerId,
-          (response.trigger as unknown as { passphrase: string }).passphrase,
+          (response as unknown as { passphrase: string }).passphrase,
         ),
       };
     } catch (error) {

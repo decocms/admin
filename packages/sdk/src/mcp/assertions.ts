@@ -95,6 +95,9 @@ export const assertUserHasAccessToTeamBySlug = async (
 export const assertUserHasAccessToWorkspace = async (
   c: AppContext,
 ) => {
+  if (c.isLocal) { // local calls
+    return;
+  }
   assertHasWorkspace(c);
   const user = getContextUser(c);
   const db = c.db;
@@ -110,7 +113,7 @@ export const assertUserHasAccessToWorkspace = async (
     return;
   }
 
-  if (c.workspace.root === "users" && user.id === c.workspace.slug) {
+  if (c.workspace.root === "users" && user?.id === c.workspace.slug) {
     return;
   }
 
@@ -127,6 +130,9 @@ export const assertUserHasAccessToWorkspace = async (
 };
 
 export const assertHasUser = (c: AppContext) => {
+  if (c.isLocal) { // local calls
+    return;
+  }
   const user = c.user;
 
   if (!user) {

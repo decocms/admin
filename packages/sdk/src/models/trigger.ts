@@ -1,12 +1,6 @@
 import { z } from "zod";
 import { AgentSchema } from "./agent.ts";
 
-// TODO(@mcandeia) move from actors types
-// deno-lint-ignore no-explicit-any
-export type TriggerData = any;
-// deno-lint-ignore no-explicit-any
-export type TriggerRun = any;
-
 /**
  * Schema for tool call validation
  */
@@ -84,8 +78,6 @@ export type CreateTriggerInput =
  * Output schema for the trigger creation operation
  */
 export const CreateCronTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   id: z.string(),
 });
 
@@ -99,10 +91,7 @@ export const DeleteTriggerInputSchema = z.object({
 /**
  * Output schema for trigger deletion results
  */
-export const DeleteTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-});
+export const DeleteTriggerOutputSchema = z.void();
 
 export const TriggerSchema = z.union([
   CreateCronTriggerInputSchema,
@@ -120,8 +109,6 @@ export const GetWebhookTriggerUrlInputSchema = z.object({
  * Output schema for webhook trigger URL results
  */
 export const GetWebhookTriggerUrlOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   url: z.string().optional().describe("The URL of the webhook trigger"),
 });
 
@@ -147,24 +134,18 @@ export const TriggerOutputSchema = z.object({
   data: TriggerSchema,
 });
 
-export const CreateTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  trigger: TriggerOutputSchema.nullable().describe("The created trigger"),
-});
+export const CreateTriggerOutputSchema = TriggerOutputSchema.describe(
+  "The created trigger",
+);
 
 /**
  * Output schema for trigger listing results
  */
 export const ListTriggersOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   triggers: z.array(TriggerOutputSchema),
 });
 
 export const CreateWebhookTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   id: z.string(),
   url: z.string().optional().describe("The URL of the webhook"),
 });

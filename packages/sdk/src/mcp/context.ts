@@ -18,6 +18,7 @@ export interface Vars {
   host?: string;
   db: Client;
   user: SupaUser;
+  isLocal?: boolean;
   cf: Cloudflare;
   immutableRes?: boolean;
   stub: <

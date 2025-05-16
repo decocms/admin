@@ -44,7 +44,7 @@ export interface TriggerMetadata {
 function mapTriggerToTriggerData(
   trigger: Awaited<
     ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
-  >["trigger"],
+  >,
 ): TriggerData | null {
   if (!trigger) {
     return null;
@@ -111,6 +111,7 @@ export class Trigger {
     return MCPClient.forContext({
       envVars: this.env,
       db: this.db,
+      isLocal: true,
       stub: this.state.stub as AppContext["stub"],
       workspace: {
         root,
@@ -125,13 +126,12 @@ export class Trigger {
     const triggerData = await this.mcpClient.TRIGGERS_GET({
       id: this.getTriggerId(),
     });
-    const data = triggerData.trigger;
 
-    if (!data) {
-      throw new Error("Trigger not found in Supabase");
+    if (!triggerData) {
+      throw new Error("Trigger not found");
     }
 
-    return mapTriggerToTriggerData(data)!;
+    return mapTriggerToTriggerData(triggerData)!;
   }
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {

@@ -8,7 +8,7 @@ import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createApiHandler, AppContext } from "../context.ts";
+import { AppContext, createApiHandler } from "../context.ts";
 
 export const getAgentsByIds = async (
   ids: string[],

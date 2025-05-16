@@ -1,7 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import {
-  CreateTriggerInput,
-} from "../models/trigger.ts";
+import { CreateTriggerInput } from "../models/trigger.ts";
 
 export const listTriggers = async (workspace: string, agentId: string) => {
   const response = await MCPClient.forWorkspace(workspace).TRIGGERS_LIST(
@@ -9,7 +7,7 @@ export const listTriggers = async (workspace: string, agentId: string) => {
   );
 
   if (response.ok) {
-    return response.data
+    return response.data;
   }
 
   throw new Error("Failed to list triggers");
@@ -19,7 +17,7 @@ export const listAllTriggers = async (workspace: string) => {
   const response = await MCPClient.forWorkspace(workspace).TRIGGERS_LIST({});
 
   if (response.ok) {
-    return response.data
+    return response.data;
   }
 
   throw new Error("Failed to list triggers");
@@ -35,7 +33,7 @@ export const createTrigger = async (
   );
 
   if (response.ok) {
-    return response.data
+    return response.data;
   }
 
   throw new Error("Failed to create trigger");

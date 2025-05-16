@@ -1,6 +1,9 @@
 import { createApiHandler } from "../context.ts";
 import { z } from "zod";
-import { assertHasWorkspace, assertUserHasAccessToWorkspace } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   AgentSchema,

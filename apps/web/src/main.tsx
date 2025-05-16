@@ -116,6 +116,10 @@ const InvitesList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/invites/index.tsx"))
 );
 
+const SalesDeck = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
+);
+
 function NotFound() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -184,6 +188,8 @@ function Router() {
       <Route path="invites" element={<RouteLayout />}>
         <Route index element={<InvitesList />} />
       </Route>
+
+      <Route path="sales-deck" element={<SalesDeck />} />
 
       <Route
         path="chats"

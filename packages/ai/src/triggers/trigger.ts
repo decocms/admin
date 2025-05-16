@@ -9,15 +9,14 @@ import {
   WorkspaceTools,
 } from "@deco/sdk/mcp";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
+import { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { dirname } from "node:path/posix";
 import process from "node:process";
-import type { DecoChatStorage } from "../storage/index.ts";
-import { createSupabaseStorage } from "../storage/supabaseStorage.ts";
 import { hooks as cron } from "./cron.ts";
-import type { TriggerData } from "./services.ts";
+import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
 
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {
@@ -42,6 +41,29 @@ export interface TriggerMetadata {
   reqUrl?: string | null;
   internalCall?: boolean;
 }
+function mapTriggerToTriggerData(
+  trigger: Awaited<
+    ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
+  >["trigger"],
+): TriggerData | null {
+  if (!trigger) {
+    return null;
+  }
+
+  return {
+    id: trigger.id,
+    resourceId: trigger.user.id,
+    createdAt: trigger.created_at,
+    updatedAt: trigger.updated_at,
+    author: {
+      id: trigger.user.id,
+      name: trigger.user.metadata.full_name,
+      email: trigger.user.metadata.email,
+      avatar: trigger.user.metadata.avatar_url,
+    },
+    ...trigger.data,
+  } as TriggerData;
+}
 
 @Actor()
 export class Trigger {
@@ -51,7 +73,6 @@ export class Trigger {
   protected data: TriggerData | null = null;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
-  public storage?: DecoChatStorage;
   protected workspace: Workspace;
   private db: ReturnType<typeof createServerClient>;
 
@@ -68,23 +89,16 @@ export class Trigger {
       { cookies: { getAll: () => [] } },
     );
 
-    this.storage = createSupabaseStorage(
-      this.db,
-    );
     this.mcpClient = this.createMCPClient();
 
     state.blockConcurrencyWhile(async () => {
-      if (this.storage) {
-        try {
-          const loadedData = await this.loadDataFromSupabase();
-          if (loadedData) {
-            this.setData(loadedData);
-          }
-        } catch (error) {
-          console.error("Error loading data from Supabase:", error);
+      try {
+        const loadedData = await this.loadData();
+        if (loadedData) {
+          this.setData(loadedData);
         }
-      } else {
-        console.warn("Supabase storage not available for trigger");
+      } catch (error) {
+        console.error("Error loading data from Supabase:", error);
       }
     });
   }
@@ -107,22 +121,17 @@ export class Trigger {
     });
   }
 
-  private async loadDataFromSupabase(): Promise<TriggerData> {
-    if (!this.storage) {
-      throw new Error("Supabase storage not available");
-    }
+  private async loadData(): Promise<TriggerData> {
+    const triggerData = await this.mcpClient.TRIGGERS_GET({
+      id: this.getTriggerId(),
+    });
+    const data = triggerData.trigger;
 
-    const triggerId = this.getTriggerId();
-
-    const triggerData = await this.storage.triggers
-      ?.for(this.workspace as Workspace)
-      .get(triggerId);
-
-    if (!triggerData) {
+    if (!data) {
       throw new Error("Trigger not found in Supabase");
     }
 
-    return triggerData;
+    return mapTriggerToTriggerData(data)!;
   }
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
@@ -144,6 +153,19 @@ export class Trigger {
     return this.state.id.split("/").at(-1) || "";
   }
 
+  private async saveRun(run: Omit<TriggerRun, "id" | "timestamp">) {
+    await this.db
+      .from("deco_chat_trigger_runs")
+      .insert({
+        trigger_id: run.triggerId,
+        result: run.result as Json,
+        metadata: run.metadata as Json,
+        status: run.status,
+      })
+      .select("*")
+      .single();
+  }
+
   async run(args?: unknown) {
     const runData: Record<string, unknown> = {};
     try {
@@ -162,20 +184,16 @@ export class Trigger {
     } catch (error) {
       runData.error = JSON.stringify(error);
     } finally {
-      await this.storage?.triggers
-        ?.for(this.workspace as Workspace)
-        .run({
-          triggerId: this.getTriggerId(),
-          result: runData.result as Record<string, unknown> | null,
-          status: runData.error ? "error" : "success",
-          metadata: {
-            ...runData.metadata as Record<string, unknown> | null,
-            args,
-            error: runData.error,
-          },
-        }).catch((_err) => {
-          // ignore
-        });
+      await this.saveRun({
+        triggerId: this.getTriggerId(),
+        result: runData.result as Record<string, unknown> | null,
+        status: runData.error ? "error" : "success",
+        metadata: {
+          ...runData.metadata as Record<string, unknown> | null,
+          args,
+          error: runData.error,
+        },
+      });
     }
   }
 
@@ -195,13 +213,6 @@ export class Trigger {
       return {
         success: true,
         message: "Trigger already exists",
-      };
-    }
-
-    if (!this.storage) {
-      return {
-        success: false,
-        message: "Supabase storage not available",
       };
     }
 
@@ -232,13 +243,6 @@ export class Trigger {
     if (!this.data) {
       return {
         success: true,
-      };
-    }
-
-    if (!this.storage) {
-      return {
-        success: false,
-        message: "Supabase storage not available",
       };
     }
 

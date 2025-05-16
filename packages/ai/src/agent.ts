@@ -47,9 +47,7 @@ import { mcpServerTools } from "./mcp.ts";
 import type { AgentMemoryConfig } from "./memory/memory.ts";
 import { AgentMemory, buildMemoryId } from "./memory/memory.ts";
 import { createLLM } from "./models.ts";
-import type { DecoChatStorage } from "./storage/index.ts";
 import { type Agent as Configuration } from "./storage/index.ts";
-import { createSupabaseStorage } from "./storage/supabaseStorage.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
@@ -128,7 +126,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
-  public storage?: DecoChatStorage;
   private db: Awaited<ReturnType<typeof createServerClient>>;
 
   constructor(
@@ -156,9 +153,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       SUPABASE_URL,
       this.env.SUPABASE_SERVER_TOKEN,
       { cookies: { getAll: () => [] } },
-    );
-    this.storage = createSupabaseStorage(
-      this.db,
     );
 
     this.state.blockConcurrencyWhile(async () => {

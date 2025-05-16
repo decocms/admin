@@ -1,25 +1,23 @@
-import {
-  CreateCronTriggerInputSchema,
-  CreateCronTriggerOutputSchema,
-  CreateWebhookTriggerInputSchema,
-  CreateWebhookTriggerOutputSchema,
-  DeleteTriggerInputSchema,
-  DeleteTriggerOutputSchema,
-  GetWebhookTriggerUrlInputSchema,
-  GetWebhookTriggerUrlOutputSchema,
-  ListTriggersOutputSchema,
-} from "./services.ts";
+import { Path } from "@deco/sdk/path";
+import { join } from "node:path/posix";
 import { createInnateTool } from "../utils/createTool.ts";
 import type { TriggerData } from "./services.ts";
 import {
   buildWebhookUrl,
   createCronTrigger,
+  CreateCronTriggerInputSchema,
+  CreateCronTriggerOutputSchema,
   createWebhookTrigger,
+  CreateWebhookTriggerInputSchema,
+  CreateWebhookTriggerOutputSchema,
   deleteTrigger,
+  DeleteTriggerInputSchema,
+  DeleteTriggerOutputSchema,
+  GetWebhookTriggerUrlInputSchema,
+  GetWebhookTriggerUrlOutputSchema,
   listTriggers,
+  ListTriggersOutputSchema,
 } from "./services.ts";
-import { Path } from "@deco/sdk/path";
-import { join } from "node:path/posix";
 
 /**
  * Creates a new trigger tool
@@ -38,7 +36,7 @@ export const DECO_TRIGGER_CREATE_CRON = createInnateTool({
       trigger: context,
       resourceId,
       userId: agent.metadata?.principal?.id ?? "",
-      storage: agent.storage,
+      mcpClient: agent.metadata!.mcpClient!,
     });
   },
 });
@@ -59,8 +57,7 @@ export const DECO_TRIGGER_CREATE_WEBHOOK = createInnateTool({
       agentId: agent.state.id.split("/").at(-1) ?? "",
       trigger: context,
       resourceId,
-      userId: agent.metadata?.principal?.id ?? "",
-      storage: agent.storage,
+      mcpClient: agent.metadata!.mcpClient!,
     });
   },
 });
@@ -79,7 +76,7 @@ export const DECO_TRIGGER_DELETE = createInnateTool({
       workspace: agent.workspace,
       agentId: agent.state.id.split("/").at(-1) ?? "",
       triggerId: context.id,
-      storage: agent.storage,
+      mcpClient: agent.metadata!.mcpClient!,
     });
   },
 });
@@ -94,8 +91,7 @@ export const DECO_TRIGGER_LIST = createInnateTool({
   execute: (agent) => async () => {
     const agentId = agent.state.id.split("/").at(-1) ?? "";
     const triggers = await listTriggers(
-      agent.workspace,
-      agent.storage,
+      agent.metadata!.mcpClient!,
       agentId,
     );
     return {
@@ -103,7 +99,7 @@ export const DECO_TRIGGER_LIST = createInnateTool({
       message: "Triggers listed successfully",
       triggers: triggers.map((trigger) => ({
         id: trigger.id,
-        data: trigger,
+        data: trigger.data,
       })),
     };
   },
@@ -119,18 +115,13 @@ export const DECO_TRIGGER_GET_WEBHOOK_URL = createInnateTool({
   outputSchema: GetWebhookTriggerUrlOutputSchema,
   execute: (agent) => async ({ context }) => {
     try {
-      if (!agent.storage) {
-        return {
-          success: false,
-          message: "Storage not available",
-        };
-      }
+      const client = agent.metadata!.mcpClient!;
 
-      const trigger = await agent.storage.triggers
-        ?.for(agent.workspace)
-        .get(context.id);
+      const response = await client.TRIGGERS_GET({ id: context.id });
 
-      if (!trigger || trigger.type !== "webhook") {
+      if (
+        !response || !response?.trigger || response.trigger.type !== "webhook"
+      ) {
         return {
           success: false,
           message: "Trigger not found",
@@ -145,7 +136,10 @@ export const DECO_TRIGGER_GET_WEBHOOK_URL = createInnateTool({
       return {
         success: true,
         message: "Webhook URL retrieved successfully",
-        url: buildWebhookUrl(triggerId, trigger.passphrase),
+        url: buildWebhookUrl(
+          triggerId,
+          (response.trigger as unknown as { passphrase: string }).passphrase,
+        ),
       };
     } catch (error) {
       return {

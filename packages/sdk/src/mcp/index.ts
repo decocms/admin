@@ -53,6 +53,7 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.deployFiles,
   hostingAPI.deleteApp,
   hostingAPI.getAppInfo,
+  triggersAPI.getTrigger,
   triggersAPI.listTriggers,
   triggersAPI.createTrigger,
   triggersAPI.createCronTrigger,

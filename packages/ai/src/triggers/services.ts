@@ -1,17 +1,15 @@
 import type { ActorState } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
-import type { Agent } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
+import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Workspace } from "@deco/sdk/path";
 import { Path } from "@deco/sdk/path";
 import { join } from "node:path/posix";
 import { z } from "zod";
-import type { DecoChatStorage } from "../storage/index.ts";
 import { Trigger } from "./trigger.ts";
 
 export type TriggerData = CreateTriggerInput & {
   id: string;
-  agent?: Agent;
   resourceId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -172,49 +170,10 @@ export interface TriggerRunListResult {
  * @returns Object containing success status, message, and triggers array
  */
 export const listTriggers = async (
-  workspace: Workspace,
-  storage: DecoChatStorage | undefined,
+  mcpClient: MCPClientStub<WorkspaceTools>,
   agentId?: string,
-): Promise<TriggerData[]> => {
-  try {
-    if (!storage || !storage.triggers) {
-      return [];
-    }
-
-    return await storage.triggers
-      ?.for(workspace)
-      .list(agentId);
-  } catch (_) {
-    return [];
-  }
-};
-
-/**
- * Lists all runs for a specific trigger using filesystem
- * @param workspace - The workspace
- * @param triggerId - The trigger ID
- * @returns Object containing success status, message, and runs array
- */
-export const listTriggerRuns = async (
-  triggerId: string,
-  workspace: Workspace,
-  storage: DecoChatStorage | undefined,
-): Promise<TriggerRunListResult> => {
-  if (!storage) {
-    return {
-      success: false,
-      message: "Storage not available",
-      runs: [],
-    };
-  }
-
-  const runs = await storage.triggers?.for(workspace).listRuns(triggerId);
-
-  return {
-    success: true,
-    message: `Found ${runs?.length} trigger runs`,
-    runs,
-  };
+): Promise<z.infer<typeof ListTriggersOutputSchema>["triggers"]> => {
+  return await mcpClient.TRIGGERS_LIST({ agentId }).then((res) => res.triggers);
 };
 
 /**
@@ -284,16 +243,14 @@ export const createWebhookTrigger = async ({
   agentId,
   trigger,
   resourceId,
-  userId,
-  storage,
+  mcpClient,
 }: {
   stub: ActorState["stub"];
   workspace: Workspace;
   agentId: string;
   trigger: z.infer<typeof WebhookTriggerSchema>;
   resourceId?: string;
-  userId: string;
-  storage: DecoChatStorage | undefined;
+  mcpClient: MCPClientStub<WorkspaceTools>;
 }): Promise<z.infer<typeof CreateWebhookTriggerOutputSchema>> => {
   const id = crypto.randomUUID();
   const triggerId = Path.resolveHome(
@@ -321,9 +278,11 @@ export const createWebhookTrigger = async ({
       resourceId,
       id,
     );
-    await storage?.triggers
-      ?.for(workspace)
-      .create(data, agentId, userId);
+
+    await mcpClient.TRIGGERS_CREATE({
+      agentId,
+      data,
+    });
 
     return result;
   } catch (error) {
@@ -349,8 +308,7 @@ export const createCronTrigger = async ({
   agentId,
   trigger,
   resourceId,
-  userId,
-  storage,
+  mcpClient,
 }: {
   stub: ActorState["stub"];
   workspace: Workspace;
@@ -358,7 +316,7 @@ export const createCronTrigger = async ({
   trigger: z.infer<typeof CronTriggerSchema>;
   resourceId?: string;
   userId: string;
-  storage: DecoChatStorage | undefined;
+  mcpClient: MCPClientStub<WorkspaceTools>;
 }): Promise<z.infer<typeof CreateCronTriggerOutputSchema>> => {
   const id = crypto.randomUUID();
   const data = {
@@ -380,9 +338,11 @@ export const createCronTrigger = async ({
       resourceId,
       id,
     );
-    await storage?.triggers
-      ?.for(workspace)
-      .create(data, agentId, userId);
+
+    await mcpClient.TRIGGERS_CREATE({
+      agentId,
+      data,
+    });
 
     return result;
   } catch (error) {
@@ -405,13 +365,13 @@ export const deleteTrigger = async ({
   agentId,
   workspace,
   triggerId,
-  storage,
+  mcpClient,
 }: {
   stub: ActorState["stub"];
   agentId: string;
   workspace: Workspace;
   triggerId: string;
-  storage: DecoChatStorage | undefined;
+  mcpClient: MCPClientStub<WorkspaceTools>;
 }): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
   try {
     const triggerWorkspace = Path.resolveHome(
@@ -427,9 +387,10 @@ export const deleteTrigger = async ({
       };
     }
 
-    await storage?.triggers
-      ?.for(workspace)
-      .delete(triggerId);
+    await mcpClient.TRIGGERS_DELETE({
+      agentId,
+      triggerId,
+    });
 
     return {
       success: true,

@@ -5,6 +5,7 @@ import {
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { getAgentsByIds } from "../agents/api.ts";
+import { Trigger } from "@deco/ai/actors";
 import {
   AgentSchema,
   CreateCronTriggerInputSchema,
@@ -15,12 +16,18 @@ import {
   ListTriggersOutputSchema,
   TriggerSchema,
 } from "@deco/sdk";
-import { userFromDatabase } from "../user.ts";
-import { Database, Json } from "@deco/sdk/storage";
-import { Trigger } from "@deco/ai/actors";
-import { Path } from "@deco/sdk/path";
-import { join } from "node:path";
 import { Hosts } from "@deco/sdk/hosts";
+import { Path } from "@deco/sdk/path";
+import { Database, Json } from "@deco/sdk/storage";
+import { join } from "node:path";
+import { z } from "zod";
+import { getAgentsByIds } from "../agents/api.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
+import { createApiHandler } from "../context.ts";
+import { userFromDatabase } from "../user.ts";
 
 const SELECT_TRIGGER_QUERY = `
   *,
@@ -36,6 +43,10 @@ function mapTrigger(
   agentsById: Record<string, z.infer<typeof AgentSchema>>,
 ) {
   return {
+    type: trigger.metadata && typeof trigger.metadata === "object" &&
+        "cron_exp" in trigger.metadata
+      ? "cron" as const
+      : "webhook" as const,
     id: trigger.id,
     agent: agentsById[trigger.agent_id],
     created_at: trigger.created_at,
@@ -430,6 +441,56 @@ export const getWebhookTriggerUrl = createApiHandler({
       success: true,
       message: "Webhook trigger URL retrieved successfully",
       url: (data.metadata as { url?: string })?.url,
+    };
+  },
+});
+
+export const getTrigger = createApiHandler({
+  name: "TRIGGERS_GET",
+  description: "Get a trigger by ID",
+  schema: z.object({ id: z.string() }),
+  handler: async (
+    { id: triggerId },
+    c,
+  ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+
+    await assertUserHasAccessToWorkspace(c);
+
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .select(SELECT_TRIGGER_QUERY)
+      .eq("id", triggerId)
+      .eq("workspace", workspace)
+      .single();
+
+    if (error) {
+      return {
+        success: false,
+        message: "Failed to get trigger",
+        trigger: null,
+      };
+    }
+
+    if (!trigger) {
+      return {
+        success: false,
+        message: "Trigger not found",
+        trigger: null,
+      };
+    }
+
+    const agents = await getAgentsByIds([trigger.agent_id], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return {
+      success: true,
+      message: "Trigger retrieved successfully",
+      trigger: mapTrigger(trigger, agentsById),
     };
   },
 });

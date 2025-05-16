@@ -15,13 +15,13 @@ import { getWalletAccount } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 
-function AccountValue() {
+function AccountBalance({ workspace }: { workspace: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["wallet"],
-    queryFn: () => getWalletAccount("/shared/deco.cx"),
+    queryFn: () => getWalletAccount(workspace),
   });
 
-  if (isLoading) return <Skeleton className="w-24 h-8" />;
+  if (isLoading) return <Skeleton className="w-32 h-12" />;
   if (error) return <p>Error loading wallet</p>;
 
   return <p className="text-5xl font-bold">{data?.balance}</p>;
@@ -30,11 +30,10 @@ function AccountValue() {
 function BalanceCard() {
   const team = useCurrentTeam();
   
-
   return (
     <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
       <div className="w-full text-sm mb-8">
-        Wallet
+        AI Usage Wallet
       </div>
       <CardContent className="flex flex-col items-center justify-center gap-2 p-0">
         <div className="flex items-center gap-1 text-base mb-1">
@@ -46,7 +45,7 @@ function BalanceCard() {
           />
         </div>
         <div className="mb-6">
-          <AccountValue />
+          <AccountBalance workspace="/shared/deco.cx" />
         </div>
         <DepositDialog />
       </CardContent>

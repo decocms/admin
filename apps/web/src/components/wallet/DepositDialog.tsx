@@ -64,13 +64,12 @@ export function DepositDialog() {
       <DialogTrigger asChild>
         <Button
           className="py-4 px-10"
-          variant="outline"
           size="lg"
           onClick={() =>
             trackEvent("wallet_add_credits_click", { userId: user?.id })}
         >
-          <Icon name="arrow_upward" size={16} className="mr-2" />
-          Deposit
+          <Icon name="add" size={16} className="mr-2" />
+          Add credits
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AppContext, createApiHandler, getEnv } from "../../utils/context.ts";
+import { createApiHandler, getEnv } from "../context.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -7,13 +7,7 @@ import {
   WellKnownWallets,
 } from "@deco/sdk/wallet";
 import { ClientOf } from "@deco/sdk/http";
-
-function getWorkspace(c: AppContext) {
-  const root = c.req.param("root");
-  const wksSlug = c.req.param("slug");
-  const workspace = `${root}/${wksSlug}`;
-  return { root, wksSlug, workspace };
-}
+import { assertHasWorkspace } from "../assertions.ts";
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
@@ -46,13 +40,13 @@ export const getWalletAccount = createApiHandler({
   description: "Get the wallet account for the current tenant",
   schema: z.object({}),
   handler: async (_, c) => {
-    const { workspace } = getWorkspace(c);
+    assertHasWorkspace(c);
+
     const envVars = getEnv(c);
-    // @ts-expect-error todo: type the worker binding
-    const wallet = createWalletClient(envVars.WALLET_API_KEY, c.var?.WALLET);
+    const wallet = createWalletClient(envVars.WALLET_API_KEY, c.walletBinding);
 
     const workspaceWalletId = WellKnownWallets.build(
-      ...WellKnownWallets.workspace(workspace),
+      ...WellKnownWallets.workspace(c.workspace.value),
     );
     const data = await Account.fetch(wallet, workspaceWalletId);
 
@@ -74,7 +68,11 @@ export const createCheckoutSession = createApiHandler({
   description: "Create a checkout session for the current tenant's wallet",
   schema: z.object({}),
   handler: async (_, c) => {
-    const { workspace } = getWorkspace(c);
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
+
     const envVars = getEnv(c);
+    
+    
   },
 });

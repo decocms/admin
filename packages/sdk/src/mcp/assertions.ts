@@ -16,7 +16,7 @@ type WithWorkspace = Omit<AppContext, "workspace"> & {
 };
 
 export function assertHasWorkspace(
-  c: AppContext | WithWorkspace,
+  c: Pick<AppContext, "workspace"> | Pick<WithWorkspace, "workspace">,
 ): asserts c is WithWorkspace {
   if (!c.workspace) {
     throw new CannotAccessWorkspaceError();

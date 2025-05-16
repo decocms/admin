@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createInnateTool } from "./utils/createTool.ts";
-import type { Agent } from "./storage/index.ts";
+import type { Agent } from "@deco/sdk";
 import {
   GetObjectCommand,
   PutObjectCommand,

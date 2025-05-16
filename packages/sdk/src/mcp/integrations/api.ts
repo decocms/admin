@@ -4,7 +4,6 @@ import {
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
-import { MCPClient } from "@deco/sdk/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
@@ -15,6 +14,7 @@ import {
   IntegrationSchema,
   NEW_INTEGRATION_TEMPLATE,
 } from "../../index.ts";
+import type { Workspace } from "../../path.ts";
 import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
@@ -105,7 +105,7 @@ export const listTools = createApiHandler({
   handler: async ({ connection }, c) => {
     const result = await listToolsByConnectionType(
       connection,
-      MCPClient.forContext(c),
+      c,
     );
 
     // Sort tools by name for consistent UI
@@ -205,25 +205,27 @@ export const getIntegration = createApiHandler({
     id: z.string(),
   }),
   handler: async ({ id }, c) => {
-    assertHasWorkspace(c);
-
     const { uuid, type } = parseId(id);
+    if (uuid in INNATE_INTEGRATIONS) {
+      const data =
+        INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
+      return IntegrationSchema.parse({
+        ...data,
+        id: formatId(type, data.id),
+      });
+    }
+    assertHasWorkspace(c);
 
     const [
       _assertions,
       { data, error },
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(c),
-      uuid in INNATE_INTEGRATIONS
-        ? {
-          data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS],
-          error: null,
-        }
-        : c.db
-          .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-          .select("*")
-          .eq("id", uuid)
-          .single(),
+      c.db
+        .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
+        .select("*")
+        .eq("id", uuid)
+        .single(),
     ]);
 
     if (error) {
@@ -232,6 +234,16 @@ export const getIntegration = createApiHandler({
 
     if (!data) {
       throw new Error("Integration not found");
+    }
+
+    if (type === "a") {
+      const mapAgentToIntegration = agentAsIntegrationFor(
+        c.workspace.value as Workspace,
+      );
+      return IntegrationSchema.parse({
+        ...mapAgentToIntegration(data as unknown as Agent),
+        id: formatId(type, data.id),
+      });
     }
 
     return IntegrationSchema.parse({

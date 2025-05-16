@@ -1,5 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
+import type {
+  DecoConnection,
+  HTTPConnection,
+  Integration,
+  MCPConnection,
+} from "@deco/sdk";
+import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
@@ -10,12 +16,6 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
-import type {
-  DecoConnection,
-  HTTPConnection,
-  Integration,
-  MCPConnection,
-} from "./storage/index.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/createTool.ts";
 import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
@@ -262,10 +262,17 @@ const handleMCPResponse = async (client: Client) => {
 
 export async function listToolsByConnectionType(
   connection: MCPConnection,
-  mcpClient: MCPClientStub<WorkspaceTools>,
+  ctx: AppContext,
 ) {
   switch (connection.type) {
     case "INNATE": {
+      const mcpClient = MCPClient.forContext({
+        ...ctx,
+        workspace: ctx.workspace ??
+          (connection.workspace
+            ? fromWorkspaceString(connection.workspace)
+            : undefined),
+      });
       const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
         id: connection.name,
       });
@@ -303,17 +310,3 @@ export async function listToolsByConnectionType(
     }
   }
 }
-
-export const listTools = async (
-  connection: MCPConnection,
-  mcpClient: MCPClientStub<WorkspaceTools>,
-) => {
-  const result = await listToolsByConnectionType(connection, mcpClient);
-
-  // Sort tools by name for consistent UI
-  if (Array.isArray(result?.tools)) {
-    result.tools.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  return result;
-};

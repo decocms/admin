@@ -1,6 +1,6 @@
+import { AgentSchema } from "@deco/sdk";
 import z from "zod";
 import { pickCapybaraAvatar } from "../capybaras.ts";
-import { AgentSchema } from "../storage/index.ts";
 import { createInnateTool } from "../utils/createTool.ts";
 
 export const DECO_AGENTS_CREATE = createInnateTool({

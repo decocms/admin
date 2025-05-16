@@ -1,7 +1,7 @@
+import type { Integration } from "@deco/sdk";
 import { Path } from "@deco/sdk/path";
 import z from "zod";
 import { AIAgent } from "../agent.ts";
-import type { Integration } from "../storage/index.ts";
 import { INNATE_TOOLS } from "../storage/tools.ts";
 import { createInnateTool } from "../utils/createTool.ts";
 

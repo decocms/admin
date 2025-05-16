@@ -69,6 +69,20 @@ export type WorkspaceTools = typeof WORKSPACE_TOOLS;
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
 });
+
+export const fromWorkspaceString = (
+  _workspace: string,
+): AppContext["workspace"] => {
+  const workspace: string = _workspace.startsWith("/")
+    ? _workspace
+    : `/${_workspace}`;
+  const [_, root, slug] = workspace.split("/");
+  return {
+    value: workspace,
+    root,
+    slug,
+  };
+};
 export const MCPClient = new Proxy(
   {} as typeof global & {
     forContext: (

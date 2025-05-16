@@ -3,11 +3,16 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { DEFAULT_MODEL, WELL_KNOWN_AGENTS } from "@deco/sdk";
+import {
+  type Agent as Configuration,
+  DEFAULT_MODEL,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
 import {
   AppContext,
+  fromWorkspaceString,
   MCPClient,
   MCPClientStub,
   WorkspaceTools,
@@ -47,7 +52,6 @@ import { mcpServerTools } from "./mcp.ts";
 import type { AgentMemoryConfig } from "./memory/memory.ts";
 import { AgentMemory, buildMemoryId } from "./memory/memory.ts";
 import { createLLM } from "./models.ts";
-import { type Agent as Configuration } from "./storage/index.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
@@ -172,21 +176,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   createMCPClient(metadata: AgentMetadata, req: Request) {
-    const workspace: string = this.workspace.startsWith("/")
-      ? this.workspace
-      : `/${this.workspace}`;
-    const [_, root, slug] = workspace.split("/");
     return MCPClient.forContext({
       envVars: this.env,
       db: this.db,
       user: metadata.principal!,
       stub: this.state.stub as AppContext["stub"],
       cookie: metadata.principalCookie ?? undefined,
-      workspace: {
-        root,
-        slug,
-        value: workspace,
-      },
+      workspace: fromWorkspaceString(this.workspace),
       host: req.headers.get("host") ?? undefined,
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
     });

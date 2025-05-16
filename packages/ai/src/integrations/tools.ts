@@ -9,10 +9,10 @@
  *
  * If you need to disable an integration, use INTEGRATION_DISABLE.
  */
+import { type Integration, IntegrationSchema } from "@deco/sdk";
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
-import { type Integration, IntegrationSchema } from "../storage/index.ts";
 import { createInnateTool } from "../utils/createTool.ts";
 import {
   getDecoRegistryServerClient,
@@ -60,6 +60,10 @@ It's always handy to search for installed integrations with no query, since all 
       marketplace,
       installed,
       toolSet,
+    ]: [
+      (Integration & { provider: string })[],
+      Integration[],
+      Record<string, string[]>,
     ] = await Promise.all([
       filters?.installed === true
         ? Promise.resolve([])

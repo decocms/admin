@@ -1,71 +1,52 @@
-import { z } from "zod";
-import { callToolFor } from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 import {
   CreateTriggerInput,
-  CreateTriggerOutputSchema,
-  ListTriggersOutputSchema,
 } from "../models/trigger.ts";
 
-export const listTriggers = async (context: string, agentId: string) => {
-  const response = await callToolFor(
-    context,
-    "TRIGGERS_LIST",
+export const listTriggers = async (workspace: string, agentId: string) => {
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_LIST(
     { agentId },
   );
 
   if (response.ok) {
-    return (await response.json()) as {
-      data: z.infer<typeof ListTriggersOutputSchema>;
-    };
+    return response.data
   }
 
   throw new Error("Failed to list triggers");
 };
 
-export const listAllTriggers = async (context: string) => {
-  const response = await callToolFor(
-    context,
-    "TRIGGERS_LIST",
-    {},
-  );
+export const listAllTriggers = async (workspace: string) => {
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_LIST({});
 
   if (response.ok) {
-    return (await response.json()) as {
-      data: z.infer<typeof ListTriggersOutputSchema>;
-    };
+    return response.data
   }
 
   throw new Error("Failed to list triggers");
 };
 
 export const createTrigger = async (
-  context: string,
+  workspace: string,
   agentId: string,
   trigger: CreateTriggerInput,
 ) => {
-  const response = await callToolFor(
-    context,
-    "TRIGGERS_CREATE",
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_CREATE(
     { agentId, data: trigger },
   );
 
   if (response.ok) {
-    return response.json() as Promise<
-      z.infer<typeof CreateTriggerOutputSchema>
-    >;
+    return response.data
   }
 
   throw new Error("Failed to create trigger");
 };
 
 export const deleteTrigger = async (
-  context: string,
+  workspace: string,
   agentId: string,
   triggerId: string,
 ) => {
-  const response = await callToolFor(
-    context,
-    "TRIGGERS_DELETE",
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_DELETE(
     { agentId, triggerId },
   );
 

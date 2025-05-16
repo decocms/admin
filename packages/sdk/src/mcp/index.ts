@@ -8,6 +8,7 @@ import * as membersAPI from "./members/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
+import * as triggersAPI from "./triggers/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -49,7 +50,13 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.listApps,
   hostingAPI.deployFiles,
   hostingAPI.deleteApp,
-  hostingAPI.getAppInfo,
+  hostingAPI.getAppInfo,  
+  triggersAPI.listTriggers,
+  triggersAPI.createTrigger,
+  triggersAPI.createCronTrigger,
+  triggersAPI.createWebhookTrigger,
+  triggersAPI.deleteTrigger,
+  triggersAPI.getWebhookTriggerUrl,
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;

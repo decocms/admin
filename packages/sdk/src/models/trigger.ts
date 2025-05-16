@@ -31,7 +31,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cronExp: z.string(),
+  cron_exp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });

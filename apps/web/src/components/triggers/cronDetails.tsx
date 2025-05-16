@@ -17,15 +17,15 @@ export function CronDetails(
 
       <div>
         <div className="text-sm font-medium mb-1">Cron Expression</div>
-        <CodeBlock>{triggerData.cronExp}</CodeBlock>
+        <CodeBlock>{triggerData.cron_exp}</CodeBlock>
       </div>
 
       <div>
         <div className="text-sm font-medium mb-1">Runs At</div>
         <div className="text-sm">
-          {triggerData.cronExp
-            ? cronstrue.toString(triggerData.cronExp)
-            : triggerData.cronExp}
+          {triggerData.cron_exp
+            ? cronstrue.toString(triggerData.cron_exp)
+            : triggerData.cron_exp}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
-import { createApiHandler } from "../../utils/context.ts";
+import { createApiHandler } from "../context.ts";
 import { z } from "zod";
-import { assertUserHasAccessToWorkspace } from "../../auth/assertions.ts";
+import { assertHasWorkspace, assertUserHasAccessToWorkspace } from "../assertions.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   AgentSchema,
@@ -12,7 +12,7 @@ import {
   ListTriggersOutputSchema,
   TriggerSchema,
 } from "@deco/sdk";
-import { userFromDatabase } from "../../utils/user.ts";
+import { userFromDatabase } from "../user.ts";
 import { Database, Json } from "@deco/sdk/storage";
 import { Trigger } from "@deco/ai/actors";
 import { Path } from "@deco/sdk/path";
@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { Hosts } from "@deco/sdk/hosts";
 
 const SELECT_TRIGGER_QUERY = `
-  *, 
+  *,
   profile:profiles(
     metadata:users_meta_data_view(
       raw_user_meta_data
@@ -63,12 +63,11 @@ export const listTriggers = createApiHandler({
     { agentId },
     c,
   ): Promise<z.infer<typeof ListTriggersOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const query = db
       .from("deco_chat_triggers")
@@ -93,7 +92,7 @@ export const listTriggers = createApiHandler({
       new Set(data.map((trigger) => trigger.agent_id).filter(Boolean)),
     );
 
-    const agents = await getAgentsByIds(agentIds, workspace, c);
+    const agents = await getAgentsByIds(agentIds, c);
 
     const agentsById = agents.reduce((acc, agent) => {
       acc[agent.id] = agent;
@@ -116,14 +115,13 @@ export const createTrigger = createApiHandler({
     { agentId, data },
     c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
-    const user = c.get("user");
-    const stub = c.get("stub");
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const user = c.user;
+    const stub = c.stub;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const id = crypto.randomUUID();
 
@@ -180,7 +178,7 @@ export const createTrigger = createApiHandler({
         throw new Error(error.message);
       }
 
-      const agents = await getAgentsByIds([agentId], workspace, c);
+      const agents = await getAgentsByIds([agentId], c);
       const agentsById = agents.reduce((acc, agent) => {
         acc[agent.id] = agent;
         return acc;
@@ -209,14 +207,13 @@ export const createCronTrigger = createApiHandler({
     { agentId, data },
     c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
-    const user = c.get("user");
-    const stub = c.get("stub");
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const user = c.user;
+    const stub = c.stub;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const id = crypto.randomUUID();
 
@@ -249,7 +246,7 @@ export const createCronTrigger = createApiHandler({
         throw new Error(error.message);
       }
 
-      const agents = await getAgentsByIds([agentId], workspace, c);
+      const agents = await getAgentsByIds([agentId], c);
       const agentsById = agents.reduce((acc, agent) => {
         acc[agent.id] = agent;
         return acc;
@@ -281,14 +278,13 @@ export const createWebhookTrigger = createApiHandler({
     { agentId, data },
     c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
-    const user = c.get("user");
-    const stub = c.get("stub");
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const user = c.user;
+    const stub = c.stub;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const id = crypto.randomUUID();
 
@@ -324,7 +320,7 @@ export const createWebhookTrigger = createApiHandler({
         throw new Error(error.message);
       }
 
-      const agents = await getAgentsByIds([agentId], workspace, c);
+      const agents = await getAgentsByIds([agentId], c);
       const agentsById = agents.reduce((acc, agent) => {
         acc[agent.id] = agent;
         return acc;
@@ -352,13 +348,12 @@ export const deleteTrigger = createApiHandler({
     { triggerId, agentId },
     c,
   ): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
-    const stub = c.get("stub");
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const stub = c.stub;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const workspaceTrigger = Path.resolveHome(
       join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
@@ -401,12 +396,11 @@ export const getWebhookTriggerUrl = createApiHandler({
     { triggerId },
     c,
   ): Promise<z.infer<typeof GetWebhookTriggerUrlOutputSchema>> => {
-    const db = c.get("db");
-    const root = c.req.param("root");
-    const slug = c.req.param("slug");
-    const workspace = `/${root}/${slug}`;
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
 
-    await assertUserHasAccessToWorkspace(root, slug, c);
+    await assertUserHasAccessToWorkspace(c);
 
     const { data, error } = await db.from("deco_chat_triggers")
       .select("metadata")

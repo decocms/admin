@@ -12,9 +12,10 @@ import { createApiHandler, AppContext } from "../context.ts";
 
 export const getAgentsByIds = async (
   ids: string[],
-  workspace: string,
   c: AppContext,
 ) => {
+  assertHasWorkspace(c);
+
   if (ids.length === 0) return [];
 
   const dbIds = ids.filter((id) => !(id in WELL_KNOWN_AGENTS));
@@ -25,7 +26,7 @@ export const getAgentsByIds = async (
       .from("deco_chat_agents")
       .select("*")
       .in("id", dbIds)
-      .eq("workspace", workspace);
+      .eq("workspace", c.workspace.value);
 
     if (error) {
       throw error;

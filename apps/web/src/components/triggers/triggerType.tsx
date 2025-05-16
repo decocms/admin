@@ -17,9 +17,9 @@ export function TriggerType({ trigger }: {
   return (
     <div className="flex items-center gap-1">
       <Icon name="schedule" size={18} />
-      {trigger.data.cronExp
-        ? cronstrue.toString(trigger.data.cronExp)
-        : trigger.data.cronExp}
+      {trigger.data.cron_exp
+        ? cronstrue.toString(trigger.data.cron_exp)
+        : trigger.data.cron_exp}
     </div>
   );
 }

@@ -33,10 +33,7 @@ export function useListTriggersByAgentId(
   const { workspace } = useSDK();
   return useQuery({
     queryKey: KEYS.TRIGGERS(workspace, agentId),
-    queryFn: async () => {
-      const { data } = await listTriggers(workspace, agentId);
-      return data;
-    },
+    queryFn: () => listTriggers(workspace, agentId),
     ...options,
   });
 }

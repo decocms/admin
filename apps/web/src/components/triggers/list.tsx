@@ -84,7 +84,7 @@ function ListTriggersSuspended() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
-  const triggers = (data?.data?.triggers || []) as z.infer<
+  const triggers = (data?.triggers || []) as z.infer<
     typeof TriggerOutputSchema
   >[];
 

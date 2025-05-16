@@ -82,7 +82,7 @@ export function ChatMessages() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="w-full max-w-[640px] mx-auto">
+    <div className="w-full max-w-2xl mx-auto">
       {isEmpty ? <EmptyState /> : (
         <div className="flex flex-col gap-4">
           {messages.map((message, index) => (

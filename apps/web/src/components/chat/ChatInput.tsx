@@ -298,7 +298,7 @@ ChatInput.UI = (
   const isDragging = useGlobalDrop(handleFileDrop);
 
   return (
-    <div className="w-full max-w-[640px] mx-auto">
+    <div className="w-full max-w-2xl mx-auto">
       <FileDropOverlay display={isDragging} />
       <form
         onSubmit={onSubmit}
@@ -386,7 +386,7 @@ ChatInput.UI = (
           </div>
 
           {uploadedFiles.length > 0 && (
-            <div className="w-fit absolute z-20 bottom-full mb-2 left-0 flex flex-wrap gap-2">
+            <div className="w-fit absolute z-10 bottom-full mb-2 left-0 flex flex-wrap gap-2">
               {uploadedFiles.map((uf, index) => (
                 <FilePreviewItem
                   key={uf.file.name + uf.file.size}
@@ -402,7 +402,6 @@ ChatInput.UI = (
           )}
         </div>
       </form>
-      
     </div>
   );
 };
@@ -413,8 +412,15 @@ function FileDropOverlay({ display }: { display: boolean }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 pointer-events-none animate-fade-in">
-      <div className="flex flex-col items-center gap-4 bg-white/90 rounded-2xl p-8 shadow-2xl border border-slate-200">
+    <div className="relative">
+      <div
+        className={cn(
+          "absolute bottom-2 left-0 right-0 z-50",
+          "flex flex-col items-center justify-center gap-2",
+          "pointer-events-none animate-fade-in",
+          "p-8 shadow-2xl rounded-2xl border border-slate-200 bg-background/95",
+        )}
+      >
         <Icon name="upload" size={48} className="text-foreground" />
         <span className="text-lg font-semibold text-foreground">
           Drop files to upload

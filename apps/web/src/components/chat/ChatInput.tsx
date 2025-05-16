@@ -14,7 +14,17 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { AudioButton } from "./AudioButton.tsx";
@@ -84,7 +94,7 @@ ChatInput.UI = (
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange(
-      { target: { value: markdown } } as React.ChangeEvent<HTMLTextAreaElement>,
+      { target: { value: markdown } } as ChangeEvent<HTMLTextAreaElement>,
     );
   };
 
@@ -98,7 +108,7 @@ ChatInput.UI = (
     }
   }, [isLoading]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter") {
       if (e.shiftKey) {
         return; // Allow new lines with Shift+Enter
@@ -115,36 +125,59 @@ ChatInput.UI = (
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
 
-      // Prevent duplicates and limit to 5 files
-      const allFiles = [
-        ...uploadedFiles.map((uf) => uf.file),
-        ...newFiles,
-      ].slice(0, 5);
+    if (fileList?.length) {
+      uploadFileList(fileList);
+    }
 
-      const uniqueFiles = Array.from(
-        new Map(allFiles.map((f) => [f.name + f.size, f])).values(),
-      );
-
-      const filesToUpload = uniqueFiles
-        .filter((file) =>
-          !uploadedFiles.some((uf) =>
-            uf.file.name === file.name && uf.file.size === file.size
-          )
-        )
-        .map((file): UploadedFile => ({ file, status: "uploading" }));
-
-      setUploadedFiles((prev) => [...prev, ...filesToUpload]);
-      filesToUpload.forEach(({ file }) => uploadFile(file));
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
+
+  const handlePaste = (e: ClipboardEvent) => {
+    const fileList = e.clipboardData.files;
+
+    if (fileList?.length) {
+      uploadFileList(fileList);
+    }
+  };
+
+  function handleFileDrop(e: DragEvent) {
+    e.preventDefault();
+
+    const fileList = e.dataTransfer?.files;
+    if (fileList?.length) {
+      uploadFileList(fileList);
+    }
+  }
+
+  async function uploadFileList(fileList: FileList) {
+    const newFiles = Array.from(fileList);
+
+    // Prevent duplicates and limit to 5 files
+    const allFiles = [
+      ...uploadedFiles.map((uf) => uf.file),
+      ...newFiles,
+    ].slice(0, 5);
+
+    const uniqueFiles = Array.from(
+      new Map(allFiles.map((f) => [f.name + f.size, f])).values(),
+    );
+
+    const filesToUpload = uniqueFiles
+      .filter((file) =>
+        !uploadedFiles.some((uf) =>
+          uf.file.name === file.name && uf.file.size === file.size
+        )
+      )
+      .map((file): UploadedFile => ({ file, status: "uploading" }));
+
+    setUploadedFiles((prev) => [...prev, ...filesToUpload]);
+    await Promise.all(filesToUpload.map(({ file }) => uploadFile(file)));
+  }
 
   async function uploadFile(file: File) {
     try {
@@ -174,28 +207,7 @@ ChatInput.UI = (
     }
   }
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    const imageFiles = Array.from(items)
-      .filter((item) => item.type.startsWith("image/"))
-      .map((item) => item.getAsFile())
-      .filter((file): file is File => file !== null);
-
-    if (imageFiles.length > 0) {
-      const dataTransfer = new DataTransfer();
-      imageFiles.forEach((file) => dataTransfer.items.add(file));
-      setUploadedFiles((prev) =>
-        prev.concat(imageFiles.map((file) => ({
-          file,
-          status: "uploading",
-        })))
-      );
-    }
-  };
-
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (isUploading) {
@@ -233,6 +245,7 @@ ChatInput.UI = (
   return (
     <div className="w-full max-w-[640px] mx-auto">
       <form
+        onDrop={handleFileDrop}
         onSubmit={onSubmit}
         className={cn(
           "relative flex items-center gap-2 pt-0",

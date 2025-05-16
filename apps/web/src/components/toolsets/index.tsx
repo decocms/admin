@@ -61,16 +61,30 @@ export function Integration({
 
   if (error) {
     return (
-      <div className="bg-red-50">
-        <IntegrationHeader.Error integration={integration} />
-        <div className="p-4">
-          <div className="flex items-center space-x-2 text-red-400">
-            <Icon name="cancel" />
-            <p className="text-xs">
-              Failed to load tools for{" "}
-              {integration.name}. Please try again later.
-            </p>
-          </div>
+      <div className="group rounded-lg">
+        <IntegrationHeader
+          variant="error"
+          integration={integration}
+          tools={[]}
+          enabledTools={[]}
+        />
+      </div>
+    );
+  }
+
+  if (toolsData?.tools && enabledTools.length === 0) {
+    return (
+      <div className="group bg-gradient-to-b from-white to-slate-50">
+        <IntegrationHeader
+          integration={integration}
+          tools={toolsData.tools.map((tool: MCPTool) => tool.name)}
+          enabledTools={enabledTools}
+        />
+        <div className="p-4 flex items-center space-x-2 text-slate-400">
+          <Icon name="info" />
+          <p className="text-xs">
+            No tools enabled for this integration.
+          </p>
         </div>
       </div>
     );
@@ -79,7 +93,7 @@ export function Integration({
   return (
     <div
       onClick={() => onIntegrationClick?.(integration)}
-      className="cursor-pointer hover:bg-slate-50 transition-colors rounded-lg"
+      className="cursor-pointer group hover:bg-slate-50 transition-colors rounded-lg"
     >
       <IntegrationHeader
         integration={integration}

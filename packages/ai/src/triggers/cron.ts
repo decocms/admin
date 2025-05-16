@@ -6,7 +6,7 @@ import type { TriggerData } from "./services.ts";
 export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
   type: "cron",
   onCreated: async (data, trigger) => {
-    const cron = new Cron(data.cron_exp);
+    const cron = new Cron(data.cronExp);
     const dt = cron.nextRun();
     if (dt) {
       await trigger.state.storage.setAlarm(dt.getTime());
@@ -43,7 +43,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
         id: crypto.randomUUID(),
       })),
     );
-    const cron = new Cron(data.cron_exp);
+    const cron = new Cron(data.cronExp);
     const dt = cron.nextRun();
     if (dt) {
       await trigger.state.storage.setAlarm(dt.getTime());

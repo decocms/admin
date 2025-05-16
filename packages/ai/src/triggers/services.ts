@@ -47,7 +47,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cron_exp: z.string(),
+  cronExp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });
@@ -365,7 +365,7 @@ export const createCronTrigger = async ({
     type: "cron",
     title: trigger.title,
     description: trigger.description,
-    cron_exp: trigger.cron_exp,
+    cronExp: trigger.cronExp,
     prompt: {
       ...trigger.prompt,
       resourceId: trigger.prompt.resourceId ?? resourceId,

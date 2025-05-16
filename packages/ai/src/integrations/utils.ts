@@ -17,9 +17,7 @@ export const searchInstalledIntegations = async (
   agent: AIAgent,
   query?: string,
 ) => {
-  const integrations = await agent.storage?.integrations
-    .for(agent.workspace)
-    .list();
+  const integrations = await agent.metadata?.mcpClient?.INTEGRATIONS_LIST({});
 
   const lower = query?.toLowerCase() ?? "";
 

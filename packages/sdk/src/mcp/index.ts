@@ -2,12 +2,12 @@ export * from "./assertions.ts";
 export * from "./context.ts";
 export * from "./errors.ts";
 import * as agentsAPI from "./agents/api.ts";
-import { AppContext } from "./context.ts";
+import { ApiHandler, AppContext, State } from "./context.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
-import { createMCPToolsStub, MCPClientStub } from "./stub.ts";
+import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
@@ -70,7 +70,9 @@ const global = createMCPToolsStub({
 });
 export const MCPClient = new Proxy(
   {} as typeof global & {
-    forContext: (ctx: AppContext) => MCPClientStub<WorkspaceTools>;
+    forContext: (
+      ctx: Omit<AppContext, "user"> & { user?: AppContext["user"] },
+    ) => MCPClientStub<WorkspaceTools>;
   },
   {
     get(_, name) {
@@ -87,3 +89,32 @@ export const MCPClient = new Proxy(
 );
 
 export { Entrypoint } from "./hosting/api.ts";
+
+export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
+  options: CreateStubHandlerOptions<TDefinition>,
+): MCPClientStub<TDefinition> {
+  return new Proxy<MCPClientStub<TDefinition>>(
+    {} as MCPClientStub<TDefinition>,
+    {
+      get(_, name) {
+        if (typeof name !== "string") {
+          throw new Error("Name must be a string");
+        }
+        const toolMap = new Map<string, ApiHandler>(
+          options.tools.map((h) => [h.name, h]),
+        );
+        return (props: unknown) => {
+          const tool = toolMap.get(name);
+          if (!tool) {
+            throw new Error(`Tool ${name} not found`);
+          }
+          return State.run(
+            options?.context ?? State.getStore(),
+            (args) => tool.handler(args),
+            props,
+          );
+        };
+      },
+    },
+  );
+}

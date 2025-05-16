@@ -4,9 +4,8 @@ import {
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
-import { createSupabaseStorage } from "@deco/ai/storage";
+import { MCPClient } from "@deco/sdk/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 import {
   Agent,
@@ -20,14 +19,13 @@ import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createApiHandler, getEnv } from "../context.ts";
+import { createApiHandler } from "../context.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
 const parseId = (id: string) => {
-  const [type, uuid] = id.split(":");
-
+  const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
     type: (type || "i") as "i" | "a",
     uuid: uuid || id,
@@ -105,15 +103,10 @@ export const listTools = createApiHandler({
     connection: true,
   }),
   handler: async ({ connection }, c) => {
-    const env = getEnv(c);
-    const storage = createSupabaseStorage(
-      createServerClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVER_TOKEN,
-        { cookies: { getAll: () => [] } },
-      ),
+    const result = await listToolsByConnectionType(
+      connection,
+      MCPClient.forContext(c),
     );
-    const result = await listToolsByConnectionType(connection, storage);
 
     // Sort tools by name for consistent UI
     if (Array.isArray(result?.tools)) {

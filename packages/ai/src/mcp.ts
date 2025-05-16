@@ -1,16 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
+import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   SSEClientTransport,
   type SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import type { Workspace } from "@deco/sdk/path";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import type {
-  DecoChatStorage,
   DecoConnection,
   HTTPConnection,
   Integration,
@@ -21,7 +21,6 @@ import { createTool } from "./utils/createTool.ts";
 import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
 import { slugify } from "./utils/slugify.ts";
 import { mapToolEntries } from "./utils/toolEntries.ts";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
@@ -263,19 +262,22 @@ const handleMCPResponse = async (client: Client) => {
 
 export async function listToolsByConnectionType(
   connection: MCPConnection,
-  storage: DecoChatStorage,
+  mcpClient: MCPClientStub<WorkspaceTools>,
 ) {
   switch (connection.type) {
     case "INNATE": {
-      const maybeIntegration = await storage.integrations.for(
-        connection.workspace as Workspace,
-      ).get(connection.name);
+      const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
+        id: connection.name,
+      });
 
       if (!maybeIntegration) {
         return { error: `Integration ${connection.name} not found` };
       }
 
-      const tools = await mcpServerTools(maybeIntegration, {} as AIAgent);
+      const tools = await mcpServerTools({
+        ...maybeIntegration,
+        id: connection.name,
+      }, {} as AIAgent);
 
       return { tools: mapToolEntries(tools) };
     }
@@ -304,9 +306,9 @@ export async function listToolsByConnectionType(
 
 export const listTools = async (
   connection: MCPConnection,
-  storage: DecoChatStorage,
+  mcpClient: MCPClientStub<WorkspaceTools>,
 ) => {
-  const result = await listToolsByConnectionType(connection, storage);
+  const result = await listToolsByConnectionType(connection, mcpClient);
 
   // Sort tools by name for consistent UI
   if (Array.isArray(result?.tools)) {

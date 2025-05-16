@@ -16,7 +16,7 @@ export const DECO_AGENTS_CREATE = createInnateTool({
       id,
     };
 
-    await agent.storage?.agents.for(agent.workspace).create(manifest);
+    await agent.metadata?.mcpClient?.AGENTS_CREATE(manifest);
 
     return manifest;
   },

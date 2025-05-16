@@ -135,9 +135,10 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
 
       const id = crypto.randomUUID();
 
-      const created = await agent.storage?.integrations
-        .for(agent.workspace)
-        .create({ id, ...(parsed.data as Omit<Integration, "id">) });
+      const created = await agent.metadata?.mcpClient?.INTEGRATIONS_CREATE({
+        id,
+        ...(parsed.data as Omit<Integration, "id">),
+      });
 
       client.close();
 
@@ -158,15 +159,18 @@ const listToolsForIntegration = async (
   integrationId: string,
   agent: AIAgent,
 ) => {
-  const integration = await agent.storage?.integrations
-    .for(agent.workspace)
-    .get(integrationId);
+  const integration = await agent.metadata?.mcpClient?.INTEGRATIONS_GET({
+    id: integrationId,
+  });
 
   if (!integration) {
     throw new Error("Integration not found");
   }
 
-  const result = await mcpServerTools(integration, agent);
+  const result = await mcpServerTools(
+    { ...integration, id: integrationId },
+    agent,
+  );
 
   return {
     tools: Object.values(result).map(({ id, description }) => ({

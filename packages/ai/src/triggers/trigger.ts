@@ -1,18 +1,24 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-
-import { dirname } from "node:path/posix";
+import { SUPABASE_URL } from "@deco/sdk/auth";
+import {
+  AppContext,
+  MCPClient,
+  MCPClientStub,
+  WorkspaceTools,
+} from "@deco/sdk/mcp";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
+import { createServerClient } from "@supabase/ssr";
+import { Cloudflare } from "cloudflare";
+import { getRuntimeKey } from "hono/adapter";
+import { dirname } from "node:path/posix";
 import process from "node:process";
+import type { DecoChatStorage } from "../storage/index.ts";
+import { createSupabaseStorage } from "../storage/supabaseStorage.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
-import { getRuntimeKey } from "hono/adapter";
-import { createServerClient } from "@supabase/ssr";
-import { SUPABASE_URL } from "@deco/sdk/auth";
-import { createSupabaseStorage } from "../storage/supabaseStorage.ts";
-import type { DecoChatStorage } from "../storage/index.ts";
 
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {
   type: TData["type"];
@@ -40,11 +46,14 @@ export interface TriggerMetadata {
 @Actor()
 export class Trigger {
   public metadata?: TriggerMetadata;
+  public mcpClient: MCPClientStub<WorkspaceTools>;
+
   protected data: TriggerData | null = null;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   public storage?: DecoChatStorage;
   protected workspace: Workspace;
+  private db: ReturnType<typeof createServerClient>;
 
   constructor(public state: ActorState, protected env: any) {
     this.env = {
@@ -53,16 +62,16 @@ export class Trigger {
     };
     this.agentId = dirname(dirname(this.state.id)); // strip /triggers/$triggerId
     this.workspace = getTwoFirstSegments(this.state.id);
+    this.db = createServerClient(
+      SUPABASE_URL,
+      this.env.SUPABASE_SERVER_TOKEN,
+      { cookies: { getAll: () => [] } },
+    );
 
-    if (this.env.SUPABASE_SERVER_TOKEN) {
-      this.storage = createSupabaseStorage(
-        createServerClient(
-          SUPABASE_URL,
-          this.env.SUPABASE_SERVER_TOKEN,
-          { cookies: { getAll: () => [] } },
-        ),
-      );
-    }
+    this.storage = createSupabaseStorage(
+      this.db,
+    );
+    this.mcpClient = this.createMCPClient();
 
     state.blockConcurrencyWhile(async () => {
       if (this.storage) {
@@ -77,6 +86,24 @@ export class Trigger {
       } else {
         console.warn("Supabase storage not available for trigger");
       }
+    });
+  }
+
+  private createMCPClient() {
+    const workspace: string = this.workspace.startsWith("/")
+      ? this.workspace
+      : `/${this.workspace}`;
+    const [_, root, slug] = workspace.split("/");
+    return MCPClient.forContext({
+      envVars: this.env,
+      db: this.db,
+      stub: this.state.stub as AppContext["stub"],
+      workspace: {
+        root,
+        slug,
+        value: workspace,
+      },
+      cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
     });
   }
 

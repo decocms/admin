@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
-import { type ApiHandler, AppContext, State } from "./context.ts";
+import type { ApiHandler, AppContext } from "./context.ts";
 
 export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
   [K in TDefinition[number] as K["name"]]: (
@@ -46,35 +46,6 @@ export function isStubHandlerOptions<TDefinition extends readonly ApiHandler[]>(
   options?: CreateStubOptions<TDefinition>,
 ): options is CreateStubHandlerOptions<TDefinition> {
   return typeof options === "object" && "tools" in options;
-}
-
-export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
-  options: CreateStubHandlerOptions<TDefinition>,
-): MCPClientStub<TDefinition> {
-  return new Proxy<MCPClientStub<TDefinition>>(
-    {} as MCPClientStub<TDefinition>,
-    {
-      get(_, name) {
-        if (typeof name !== "string") {
-          throw new Error("Name must be a string");
-        }
-        const toolMap = new Map<string, ApiHandler>(
-          options.tools.map((h) => [h.name, h]),
-        );
-        return (props: unknown) => {
-          const tool = toolMap.get(name);
-          if (!tool) {
-            throw new Error(`Tool ${name} not found`);
-          }
-          return State.run(
-            options?.context ?? State.getStore(),
-            (args) => tool.handler(args),
-            props,
-          );
-        };
-      },
-    },
-  );
 }
 
 export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(

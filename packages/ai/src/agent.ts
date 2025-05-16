@@ -373,7 +373,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       return null;
     }
 
-    const serverTools = await mcpServerTools(integration, this, this.env);
+    const serverTools = await mcpServerTools(
+      { ...integration, id: mcpId },
+      this,
+      this.env,
+    );
 
     if (Object.keys(serverTools ?? {}).length === 0) {
       return null;

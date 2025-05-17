@@ -131,7 +131,7 @@ function InvitesViewContent() {
       const teamSlug = result.teamSlug;
 
       if (teamSlug) {
-        navigate(`/${teamSlug}`);
+        navigate(`/${teamSlug}/agents`);
       } else {
         navigate("/");
       }

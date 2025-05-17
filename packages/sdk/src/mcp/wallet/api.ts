@@ -51,7 +51,7 @@ export const getWalletAccount = createApiHandler({
     const wallet = createWalletClient(envVars.WALLET_API_KEY, c.walletBinding);
 
     const workspaceWalletId = WellKnownWallets.build(
-      ...WellKnownWallets.workspace(c.workspace.value),
+      ...WellKnownWallets.workspace.genCredits(c.workspace.value),
     );
     const data = await Account.fetch(wallet, workspaceWalletId);
 

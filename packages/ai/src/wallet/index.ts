@@ -65,7 +65,7 @@ export class AgentWallet {
     await this.rewardFreeCreditsIfNeeded();
 
     const walletId = WellKnownWallets.build(
-      ...WellKnownWallets.workspace(this.config.workspace),
+      ...WellKnownWallets.workspace.genCredits(this.config.workspace),
     );
     const response = await this.config.wallet["GET /accounts/:id"]({
       id: walletId,

@@ -11,14 +11,16 @@ export const WellKnownWallets = {
     const [discriminator, type] = discriminatorAndCategory.split("@");
     return { type, discriminator, category };
   },
-  workspace: (
-    workspaceId: string,
-  ) =>
-    [
-      "workspace" as const,
-      `gen-credits-${workspaceId}`,
-      "liability" as const,
-    ] as const,
+  workspace: {
+    genCredits: (
+      workspaceId: string,
+    ) =>
+      [
+        "user" as const,
+        `workspace-gen-credits-${workspaceId}`,
+        "liability" as const,
+      ] as const,
+  },
 } as const;
 
 export const WellKnownTransactions = {

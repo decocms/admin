@@ -120,8 +120,10 @@ const handleWorkspaceWalletDeposit: ProductHandler<WorkspaceWalletDeposit> =
     stripe,
     ctx,
   ) => {
-
-    if (Number.isNaN(product.amountUSD) || product.amountUSD < MINIMUM_AMOUNT_IN_USD_CENTS) {
+    if (
+      Number.isNaN(product.amountUSD) ||
+      product.amountUSD < MINIMUM_AMOUNT_IN_USD_CENTS
+    ) {
       throw new Error("Invalid amount");
     }
 

@@ -60,6 +60,9 @@ export const WebhookTriggerSchema = z.object({
   ),
   type: z.literal("webhook"),
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
+  outputTool: z.string().optional().describe(
+    "Output call to be always called on the end of the trigger execution. Format is `integrationId/toolId`",
+  ),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
       "By default this webhook returns the LLM generate text response.\n\n" +
@@ -185,8 +188,20 @@ export const listTriggers = async (
 export const buildWebhookUrl = (
   triggerId: string,
   passphrase: string | undefined,
+  outputTool: string | undefined,
 ) => {
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}`;
+  const url = new URL(
+    `https://${Hosts.API}/actors/${Trigger.name}/invoke/run`,
+  );
+  url.searchParams.set("deno_isolate_instance_id", triggerId);
+
+  if (passphrase) {
+    url.searchParams.set("passphrase", passphrase);
+  }
+  if (outputTool) {
+    url.searchParams.set("outputTool", outputTool);
+  }
+  return url.toString();
 };
 
 /**
@@ -258,7 +273,11 @@ export const createWebhookTrigger = async ({
     workspace,
   ).path;
 
-  const url = buildWebhookUrl(triggerId, trigger.passphrase);
+  const url = buildWebhookUrl(
+    triggerId,
+    trigger.passphrase,
+    trigger.outputTool,
+  );
 
   const data = {
     type: "webhook",

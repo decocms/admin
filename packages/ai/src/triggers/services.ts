@@ -187,8 +187,8 @@ export const listTriggers = async (
  */
 export const buildWebhookUrl = (
   triggerId: string,
-  passphrase: string | undefined,
-  outputTool: string | undefined,
+  passphrase?: string,
+  outputTool?: string,
 ) => {
   const url = new URL(
     `https://${Hosts.API}/actors/${Trigger.name}/invoke/run`,

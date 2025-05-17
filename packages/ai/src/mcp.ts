@@ -189,7 +189,7 @@ export const mcpServerTools = async (
 
 export const createServerClient = async (
   mcpServer: Pick<Integration, "connection" | "name">,
-) => {
+): Promise<Client> => {
   const transport = createTransport(mcpServer.connection);
 
   if (!transport) {

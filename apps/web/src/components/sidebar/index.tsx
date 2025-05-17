@@ -2,9 +2,9 @@ import {
   Thread,
   useAgents,
   useIntegrations,
+  useInvites,
   useMarketplaceIntegrations,
   useThreads,
-  useInvites,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";

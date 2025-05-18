@@ -21,6 +21,7 @@ import {
   createMCPToolsStub,
   State,
 } from "./utils/context.ts";
+import { handleStripeWebhook } from "./webhooks/stripe.ts";
 
 export const app = new Hono<AppEnv>();
 
@@ -198,6 +199,9 @@ app.post(
 Object.entries(loginRoutes).forEach(([route, honoApp]) => {
   app.route(route, honoApp);
 });
+
+// External webhooks
+app.post("/webhooks/stripe", handleStripeWebhook);
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));

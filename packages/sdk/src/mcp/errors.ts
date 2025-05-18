@@ -39,3 +39,10 @@ export class ForbiddenError extends MCPError {
     super(message);
   }
 }
+
+export class WebhookEventIgnoredError extends MCPError {
+  override code = 400;
+  constructor(message: string = "Event ignored") {
+    super(message);
+  }
+}

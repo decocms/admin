@@ -1,7 +1,7 @@
 import Stripe from "stripe";
-import { AppContext } from "../context.ts";
-import { assertHasWorkspace } from "../assertions.ts";
-import { createCurrencyClient } from "../../wallets/currencyApi.ts";
+import { AppContext } from "../../context.ts";
+import { assertHasWorkspace } from "../../assertions.ts";
+import { createCurrencyClient } from "../../../wallets/currencyApi.ts";
 
 const getStripeClient = (secretKey: string) => {
   return new Stripe(secretKey, {
@@ -16,7 +16,7 @@ const getStripeClient = (secretKey: string) => {
  * The relation between the workspace and the Stripe customer is stored in our
  * database, in the `deco_chat_customer` table.
  *
- * The deco.cx admin endpoint handling the stripe webhook will use this relation
+ * The endpoint handling the stripe webhook will use this relation
  * to update the workspace balance.
  */
 const getOrCreateWorkspaceStripeCustomer = async (
@@ -120,6 +120,10 @@ const handleWorkspaceWalletDeposit: ProductHandler<WorkspaceWalletDeposit> =
     stripe,
     ctx,
   ) => {
+    if (!ctx.envVars.CURRENCY_API_KEY) {
+      throw new Error("CURRENCY_API_KEY is not set");
+    }
+
     if (
       Number.isNaN(product.amountUSD) ||
       product.amountUSD < MINIMUM_AMOUNT_IN_USD_CENTS
@@ -204,6 +208,10 @@ export const createCheckoutSession = async ({
   metadata,
   ctx,
 }: CreateCheckoutSessionArgs) => {
+  if (!ctx.envVars.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY is not set");
+  }
+
   const stripe = getStripeClient(ctx.envVars.STRIPE_SECRET_KEY);
 
   const args = await argsFor({

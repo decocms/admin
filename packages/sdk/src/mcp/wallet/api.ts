@@ -11,7 +11,7 @@ import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createCheckoutSession as createCheckoutSessionStripe } from "./stripe.ts";
+import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
@@ -80,7 +80,7 @@ export const createCheckoutSession = createApiHandler({
     assertHasWorkspace(ctx);
     await assertUserHasAccessToWorkspace(ctx);
 
-    const session = await createCheckoutSessionStripe({
+    const session = await createStripeCheckoutSession({
       successUrl,
       cancelUrl,
       product: {

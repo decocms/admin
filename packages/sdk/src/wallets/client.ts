@@ -12,6 +12,12 @@ export interface TransactionOperation {
   timestamp: Date;
 }
 
+export interface WorkspaceCashIn extends TransactionOperation {
+  type: "WorkspaceCashIn";
+  amount: number | string;
+  workspace: string;
+}
+
 export interface CashIn extends TransactionOperation {
   type: "CashIn";
   amount: number | string;
@@ -143,6 +149,7 @@ export type Transaction =
   | Generation
   | AgentGeneration
   | CashIn
+  | WorkspaceCashIn
   | CashOut
   | Wiretransfer
   | GenCreditsReward

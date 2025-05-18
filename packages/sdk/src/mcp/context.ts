@@ -41,10 +41,15 @@ export interface EnvVars {
   CF_ACCOUNT_ID: string;
   CF_API_TOKEN: string;
   CF_DISPATCH_NAMESPACE: string;
+
+  /**
+   * Only needed for locally testing wallet features.
+   */
   WALLET_API_KEY?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   CURRENCY_API_KEY?: string;
+  TESTING_CUSTOMER_ID?: string;
 }
 
 export type AppContext = Vars & { envVars: EnvVars };

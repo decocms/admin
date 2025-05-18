@@ -12,6 +12,7 @@ import {
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
+import { MCPError } from "../errors.ts";
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
@@ -48,6 +49,11 @@ export const getWalletAccount = createApiHandler({
     await assertUserHasAccessToWorkspace(c);
 
     const envVars = getEnv(c);
+
+    if (!envVars.WALLET_API_KEY) {
+      throw new MCPError("WALLET_API_KEY is not set");
+    }
+
     const wallet = createWalletClient(envVars.WALLET_API_KEY, c.walletBinding);
 
     const workspaceWalletId = WellKnownWallets.build(

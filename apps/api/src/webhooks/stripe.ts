@@ -18,7 +18,6 @@ export const handleStripeWebhook = async (c: Context) => {
     const appContext = honoCtxToAppCtx(c);
 
     const payload = await c.req.text();
-
     const event = await verifyAndParseStripeEvent(
       payload,
       signature,
@@ -37,6 +36,8 @@ export const handleStripeWebhook = async (c: Context) => {
       appContext.envVars.WALLET_API_KEY,
       appContext.walletBinding,
     );
+
+    console.log("applying transaction", transaction);
     const response = await wallet["POST /transactions"]({}, {
       body: transaction,
     });

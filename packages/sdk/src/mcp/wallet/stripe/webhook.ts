@@ -47,7 +47,7 @@ async function getCurrencies(c: AppContext) {
 
   const currencyClient = createCurrencyClient(c.envVars.CURRENCY_API_KEY);
   const response = await currencyClient["GET /latest"]({
-    currencies: CURRENCIES_BESIDES_DOLLAR,
+    currencies: [CURRENCIES_BESIDES_DOLLAR.join(",")],
   });
   const data = await response.json();
   return data.data;
@@ -86,12 +86,21 @@ async function getAmountInDollars({
 
 async function getWorkspaceByCustomerId({
   context,
-  customerId,
+  customerId: argsCustomerId,
 }: {
   context: AppContext;
   customerId: string;
 }): Promise<string> {
-  return "test";
+    const customerId = context.envVars.TESTING_CUSTOMER_ID || argsCustomerId;
+    const { data, error } = await context.db.from("deco_chat_customer").select("workspace").eq("customer_id", customerId).maybeSingle();
+
+    if (!data || error) {
+        throw new Error("Failed to get workspace by customer ID", {
+            cause: error,
+        });
+    }
+
+    return data.workspace;
 }
 
 const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =

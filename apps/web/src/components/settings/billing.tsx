@@ -44,7 +44,7 @@ function BalanceCard() {
           />
         </div>
         <div className="mb-6">
-          <AccountBalance workspace="/shared/deco.cx" />
+          <AccountBalance workspace="/users/c40e818c-9a67-4dc6-ac3b-2bb6361663c2" />
         </div>
         <DepositDialog />
       </CardContent>

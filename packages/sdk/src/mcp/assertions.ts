@@ -1,3 +1,4 @@
+import { LRUCache } from "lru-cache";
 import { AppContext } from "./context.ts";
 import {
   CannotAccessWorkspaceError,
@@ -92,6 +93,11 @@ export const assertUserHasAccessToTeamBySlug = async (
   throw new ForbiddenError();
 };
 
+const ONE_MINUTE_MS = 60e3;
+const teamAccessCache = new LRUCache<string, boolean>({
+  max: 1000,
+  ttl: ONE_MINUTE_MS,
+});
 export const assertUserHasAccessToWorkspace = async (
   c: AppContext,
 ) => {
@@ -118,11 +124,15 @@ export const assertUserHasAccessToWorkspace = async (
   }
 
   if (c.workspace.root === "shared") {
+    const key = `${user.id}-${c.workspace.slug}`;
+    if (teamAccessCache.has(key) && teamAccessCache.get(key) === true) {
+      return;
+    }
     await assertUserHasAccessToTeamBySlug(
       { userId: user.id, teamSlug: c.workspace.slug },
       c,
     );
-
+    teamAccessCache.set(key, true);
     return;
   }
 

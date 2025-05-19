@@ -4,6 +4,7 @@ import { Actor } from "@deco/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
 import {
   AppContext,
+  fromWorkspaceString,
   MCPClient,
   MCPClientStub,
   WorkspaceTools,
@@ -104,20 +105,12 @@ export class Trigger {
   }
 
   private createMCPClient() {
-    const workspace: string = this.workspace.startsWith("/")
-      ? this.workspace
-      : `/${this.workspace}`;
-    const [_, root, slug] = workspace.split("/");
     return MCPClient.forContext({
       envVars: this.env,
       db: this.db,
       isLocal: true,
       stub: this.state.stub as AppContext["stub"],
-      workspace: {
-        root,
-        slug,
-        value: workspace,
-      },
+      workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
     });
   }

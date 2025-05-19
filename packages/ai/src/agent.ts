@@ -13,6 +13,7 @@ import { SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
+  assertUserHasAccessToWorkspace,
   fromWorkspaceString,
   MCPClient,
   MCPClientStub,
@@ -179,8 +180,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return path;
   }
 
-  createMCPClient(metadata?: AgentMetadata) {
-    return MCPClient.forContext({
+  createAppContext(metadata?: AgentMetadata): AppContext {
+    return {
       envVars: this.env as any,
       db: this.db,
       user: metadata?.principal ?? undefined,
@@ -189,7 +190,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       cookie: metadata?.principalCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-    });
+    };
+  }
+
+  createMCPClient(metadata?: AgentMetadata) {
+    return MCPClient.forContext(this.createAppContext(metadata));
   }
 
   override async enrichMetadata(
@@ -199,21 +204,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const timings = m.timings;
     const enrichMetadata = timings?.start("enrichMetadata");
     this.metadata = await super.enrichMetadata(m, req);
-    this.metadata.hasAccess ||= this._configuration?.visibility === "PUBLIC";
+    this.metadata.principalCookie = req.headers.get("cookie");
 
     const runtimeKey = getRuntimeKey();
 
     // this is a weak check, but it works for now
-    if (req.headers.get("host") !== null && runtimeKey !== "deno") { // if host is set so its not an internal request so checks must be applied
-      this.assertsPrincipalHasAccess();
+    if (
+      req.headers.get("host") !== null && runtimeKey !== "deno" &&
+      this._configuration?.visibility !== "PUBLIC"
+    ) { // if host is set so its not an internal request so checks must be applied
+      await assertUserHasAccessToWorkspace(
+        this.createAppContext(this.metadata),
+      );
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",
       );
     }
-
     // Propagate supabase token from request to integration token
-    this.metadata.principalCookie = req.headers.get("cookie");
     this.metadata.mcpClient = this.createMCPClient(this.metadata);
     enrichMetadata?.end();
     return this.metadata;

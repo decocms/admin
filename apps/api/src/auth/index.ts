@@ -1,3 +1,4 @@
+import { getUserBySupabaseCookie } from "@deco/sdk/auth";
 import { createSupabaseClient } from "@deco/sdk/storage";
 import {
   EmailOtpType,
@@ -58,9 +59,7 @@ export const getUser = async (
     },
   });
 
-  const { data } = await supabase.auth.getUser(undefined);
-
-  const user = data?.user;
+  const user = await getUserBySupabaseCookie(ctx.req.raw, supabase);
 
   if (!user) {
     return undefined;

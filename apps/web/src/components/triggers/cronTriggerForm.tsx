@@ -25,8 +25,8 @@ import {
 
 const cronPresets = [
   { label: "Every hour", value: "0 * * * *" },
-  { label: "Every day at 9am", value: "0 9 * * *" },
-  { label: "Every Monday at 10am", value: "0 10 * * 1" },
+  { label: "Every day at 9am (UTC)", value: "0 9 * * *" },
+  { label: "Every Monday at 10am (UTC)", value: "0 10 * * 1" },
   { label: "Every 5 minutes", value: "*/5 * * * *" },
   { label: "Custom", value: "custom" },
 ];
@@ -119,6 +119,13 @@ function CronSelectInput({ value, onChange, required, error }: {
               You can select a preset or write your own custom expression.
             </li>
             <li>
+              <b>All times are in UTC</b>. For example:
+              <ul className="list-disc pl-4 mt-1">
+                <li>UTC 17:00 = 14:00 (BRT)</li>
+                <li>UTC 20:00 = 17:00 (BRT)</li>
+              </ul>
+            </li>
+            <li>
               <a
                 href="https://crontab.guru"
                 target="_blank"
@@ -132,7 +139,8 @@ function CronSelectInput({ value, onChange, required, error }: {
 
           <div className="font-semibold mb-1">Example:</div>
           <pre className="bg-white border rounded p-2 text-xs overflow-x-auto">
-{`0 9 * * *     (every day at 9am)
+{`0 9 * * *     (every day at 9am UTC)
+0 17 * * *    (every day at 5pm UTC)
 */5 * * * *   (every 5 minutes)`}
           </pre>
         </div>

@@ -13,9 +13,19 @@ import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import { getWalletAccount, getWalletStatements, useSDK } from "@deco/sdk";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@deco/ui/components/dialog.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useState } from "react";
 
 function AccountBalance() {
@@ -57,27 +67,86 @@ function AccountStatements() {
 
   console.log(statements.items);
   return (
-      <div className="flex flex-col gap-3">
-        {statements.items.map((statement) => (
-          <Dialog key={statement.id}>
-            <DialogTrigger asChild>
-              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer">
+    <div className="flex flex-col gap-3">
+      {statements.items.map((statement) => (
+        <Dialog key={statement.id}>
+          <DialogTrigger asChild>
+            <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    statement.type === "credit"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-gray-50 text-gray-600"
+                  }`}
+                >
+                  {statement.icon
+                    ? <Icon name={statement.icon} size={16} />
+                    : (
+                      <Icon
+                        name={statement.type === "credit"
+                          ? "paid"
+                          : "data_usage"}
+                        size={16}
+                      />
+                    )}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {statement.title}
+                  </p>
+                  {statement.description && (
+                    <p className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap max-w-[280px]">
+                      {statement.description}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    {new Date(statement.timestamp).toLocaleDateString(
+                      undefined,
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}
+                  </p>
+                </div>
+              </div>
+              <p
+                className={`font-medium ${
+                  statement.type === "credit"
+                    ? "text-green-600"
+                    : "text-gray-900"
+                }`}
+              >
+                {statement.amountExact}
+              </p>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Transaction Details</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       statement.type === "credit"
                         ? "bg-green-50 text-green-600"
                         : "bg-gray-50 text-gray-600"
                     }`}
                   >
                     {statement.icon
-                      ? <Icon name={statement.icon} size={16} />
+                      ? <Icon name={statement.icon} size={20} />
                       : (
                         <Icon
                           name={statement.type === "credit"
                             ? "paid"
                             : "data_usage"}
-                          size={16}
+                          size={20}
                         />
                       )}
                   </div>
@@ -85,143 +154,84 @@ function AccountStatements() {
                     <p className="font-medium text-gray-900">
                       {statement.title}
                     </p>
-                    {statement.description && (
-                      <p className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap max-w-[280px]">
-                        {statement.description}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-400">
-                      {new Date(statement.timestamp).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <p
-                  className={`font-medium ${
-                    statement.type === "credit"
-                      ? "text-green-600"
-                      : "text-gray-900"
-                  }`}
-                >
-                  {statement.amountExact}
-                </p>
-              </div>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[525px]">
-              <DialogHeader>
-                <DialogTitle>Transaction Details</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    <p
+                      className={`text-lg font-medium ${
                         statement.type === "credit"
-                          ? "bg-green-50 text-green-600"
-                          : "bg-gray-50 text-gray-600"
+                          ? "text-green-600"
+                          : "text-gray-900"
                       }`}
                     >
-                      {statement.icon
-                        ? <Icon name={statement.icon} size={20} />
-                        : (
-                          <Icon
-                            name={statement.type === "credit"
-                              ? "paid"
-                              : "data_usage"}
-                            size={20}
-                          />
-                        )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {statement.title}
-                      </p>
-                      <p
-                        className={`text-lg font-medium ${
-                          statement.type === "credit"
-                            ? "text-green-600"
-                            : "text-gray-900"
-                        }`}
-                      >
-                        {statement.amountExact}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">
-                      {new Date(statement.timestamp).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
+                      {statement.amountExact}
                     </p>
-                    {statement.description && (
-                      <p className="text-sm text-gray-600">
-                        {statement.description}
-                      </p>
-                    )}
                   </div>
+                </div>
 
-                  {statement.metadata && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-900">
-                        Details
-                      </p>
-                      <table className="w-full text-sm">
-                        <tbody className="divide-y divide-gray-100">
-                          {Object.entries(statement.metadata).map((
-                            [key, value],
-                          ) => (
-                            <tr key={key}>
-                              <td className="py-2 text-gray-500">{key}</td>
-                              <td className="py-2 text-gray-900 text-right overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px]">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
-                                      <span>{value as string}</span>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {value as string}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-500">
+                    {new Date(statement.timestamp).toLocaleDateString(
+                      undefined,
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}
+                  </p>
+                  {statement.description && (
+                    <p className="text-sm text-gray-600">
+                      {statement.description}
+                    </p>
                   )}
                 </div>
+
+                {statement.metadata && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      Details
+                    </p>
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-gray-100">
+                        {Object.entries(statement.metadata).map((
+                          [key, value],
+                        ) => (
+                          <tr key={key}>
+                            <td className="py-2 text-gray-500">{key}</td>
+                            <td className="py-2 text-gray-900 text-right overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px]">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
+                                    <span>{value as string}</span>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {value as string}
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
-        ))}
-        {isFetching ? <div>Loading more...</div> : null}
-        {statements?.nextCursor && (
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => setCursor(statements.nextCursor)}
-          >
-            Load more
-          </Button>
-        )}
-      </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ))}
+      {isFetching ? <div>Loading more...</div> : null}
+      {statements?.nextCursor && (
+        <Button
+          className="w-full"
+          variant="outline"
+          onClick={() => setCursor(statements.nextCursor)}
+        >
+          Load more
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -369,7 +379,9 @@ function CreditsUsedPerThread() {
   return (
     <Card className="w-full h-full flex flex-col rounded-md border border-slate-200 gap-0">
       <div className="w-full text-sm p-4 border-b border-slate-200">
-        Credits Used Per Thread
+        {/* TODO(@camudo): Make this a nice list grouped by thread + add to the /audit/chat view price on individual messages */}
+        {/* Credits Used Per Thread */}
+        Last generations
       </div>
       <div className="flex-1 h-fit overflow-y-auto px-3 pb-16 pt-3">
         <AccountStatements />

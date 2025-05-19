@@ -91,16 +91,18 @@ async function getWorkspaceByCustomerId({
   context: AppContext;
   customerId: string;
 }): Promise<string> {
-    const customerId = context.envVars.TESTING_CUSTOMER_ID || argsCustomerId;
-    const { data, error } = await context.db.from("deco_chat_customer").select("workspace").eq("customer_id", customerId).maybeSingle();
+  const customerId = context.envVars.TESTING_CUSTOMER_ID || argsCustomerId;
+  const { data, error } = await context.db.from("deco_chat_customer").select(
+    "workspace",
+  ).eq("customer_id", customerId).maybeSingle();
 
-    if (!data || error) {
-        throw new Error("Failed to get workspace by customer ID", {
-            cause: error,
-        });
-    }
+  if (!data || error) {
+    throw new Error("Failed to get workspace by customer ID", {
+      cause: error,
+    });
+  }
 
-    return data.workspace;
+  return data.workspace;
 }
 
 const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =

@@ -63,7 +63,6 @@ function parseCurrency(value: string) {
   return value.replace(/\D/g, "");
 }
 
-
 function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

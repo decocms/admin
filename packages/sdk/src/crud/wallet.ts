@@ -21,7 +21,10 @@ interface WalletStatement {
   metadata?: Record<string, string>;
 }
 
-export const getWalletStatements = async (workspace: string, cursor?: string) => {
+export const getWalletStatements = async (
+  workspace: string,
+  cursor?: string,
+) => {
   const { status, data, error } = await MCPClient.forWorkspace(workspace)
     .GET_WALLET_STATEMENTS({
       cursor,

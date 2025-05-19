@@ -48,7 +48,11 @@ const Account = {
 };
 
 const AccountStatements = {
-  fetch: async (wallet: ClientOf<WalletAPI>, workspace: string, cursor?: string) => {
+  fetch: async (
+    wallet: ClientOf<WalletAPI>,
+    workspace: string,
+    cursor?: string,
+  ) => {
     const filter = [
       `type=AgentGeneration`,
       `workspace=${workspace}`,
@@ -69,7 +73,6 @@ const AccountStatements = {
   format: (
     statements: WalletAPI["GET /transactions"]["response"],
   ) => {
-
     const buildTransactionInfo = ({
       type,
       description,
@@ -167,7 +170,11 @@ export const getWalletStatements = createApiHandler({
 
     const wallet = getWalletClient(ctx);
 
-    const statements = await AccountStatements.fetch(wallet, ctx.workspace.value, cursor);
+    const statements = await AccountStatements.fetch(
+      wallet,
+      ctx.workspace.value,
+      cursor,
+    );
     return AccountStatements.format(statements);
   },
 });

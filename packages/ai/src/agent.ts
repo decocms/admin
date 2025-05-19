@@ -814,7 +814,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         // TODO(@mcandeia): add error tracking with posthog
       },
       onFinish: (result) => {
-        const model = this.inferBestModel(this._configuration?.model ?? DEFAULT_MODEL);
+        const model = this.inferBestModel(
+          this._configuration?.model ?? DEFAULT_MODEL,
+        );
         wallet.computeLLMUsage({
           userId: this.metadata?.principal?.id,
           usage: result.usage,

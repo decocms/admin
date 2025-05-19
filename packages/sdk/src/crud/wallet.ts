@@ -9,25 +9,13 @@ export const getWalletAccount = async (workspace: string) => {
   return data;
 };
 
-interface WalletStatement {
-  id: string;
-  timestamp: string;
-  title: string;
-  amount: string;
-  amountExact: string;
-  description?: string;
-  type: "credit" | "debit";
-  icon?: string;
-  metadata?: Record<string, string>;
-}
-
-export const getWalletStatements = async (
+export const getThreadsUsage = async (
   workspace: string,
-  cursor?: string,
+  range: "day" | "week" | "month",
 ) => {
   const { status, data, error } = await MCPClient.forWorkspace(workspace)
-    .GET_WALLET_STATEMENTS({
-      cursor,
+    .GET_THREADS_USAGE({
+      range,
     });
   if (status !== 200 || error) {
     throw new Error(error?.message);
@@ -35,17 +23,13 @@ export const getWalletStatements = async (
   return data;
 };
 
-export const getWalletInsights = async (
+export const getAgentsUsage = async (
   workspace: string,
-  insightsQuery: {
-    type: "credits_used_by_agent";
-    range: "day" | "week" | "month";
-  },
+  range: "day" | "week" | "month",
 ) => {
   const { status, data, error } = await MCPClient.forWorkspace(workspace)
-    .GET_WALLET_INSIGHTS({
-      type: insightsQuery.type,
-      range: insightsQuery.range,
+    .GET_AGENTS_USAGE({
+      range,
     });
   if (status !== 200 || error) {
     throw new Error(error?.message);

@@ -246,19 +246,6 @@ export interface WalletAPI {
       nextCursor?: string;
     };
   };
-  "GET /insights/generations": {
-    searchParams: {
-      userId: string;
-    };
-    response: {
-      total: string;
-      dataPoints: {
-        app: string;
-        day: string;
-        amount: string;
-      }[];
-    };
-  };
   "POST /transactions/:id/commit": {
     body: {
       mcpId: string;
@@ -277,7 +264,7 @@ export interface WalletAPI {
       id: string;
     };
   };
-  "GET /insights/agents": {
+  "GET /usage/agents": {
     searchParams: {
       workspace: string;
       range: "day" | "week" | "month";
@@ -287,7 +274,22 @@ export interface WalletAPI {
       items: {
         id: string;
         label: string;
-        total: number;
+        total: string;
+      }[];
+    };
+  };
+  "GET /usage/threads": {
+    searchParams: {
+      workspace: string;
+      range: "day" | "week" | "month";
+    };
+    response: {
+      total: string;
+      items: {
+        id: string;
+        total: string;
+        agentId: string;
+        generatedBy: string;
       }[];
     };
   };

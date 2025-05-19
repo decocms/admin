@@ -47,110 +47,60 @@ const Account = {
   },
 };
 
-const AccountStatements = {
-  fetch: async (
-    wallet: ClientOf<WalletAPI>,
-    workspace: string,
-    cursor?: string,
-  ) => {
-    const filter = [
-      `type=AgentGeneration`,
-      `workspace=${workspace}`,
-    ].join(";");
+const isNotNull = <T>(value: T | null): value is T => Boolean(value);
 
-    const statementsResponse = await wallet["GET /transactions"]({
-      filter,
-      ...(cursor ? { cursor } : {}),
-      limit: 50,
-    });
-
-    if (!statementsResponse.ok) {
-      throw new Error("Failed to fetch statements");
-    }
-
-    return statementsResponse.json();
-  },
-  format: (
-    statements: WalletAPI["GET /transactions"]["response"],
-  ) => {
-    const buildTransactionInfo = ({
-      type,
-      description,
-    }: {
-      type: string;
-      description?: string;
-    }) => {
-      switch (type) {
-        case "AgentGeneration":
-          return {
-            title: "Agent usage",
-            icon: "robot_2",
-            description: description ?? "Agent usage",
-          };
-        default:
-          return {
-            title: "Transaction",
-            description: description ?? "Transaction",
-          };
-      }
-    };
-
-    return {
-      items: statements.items.map((statement) => {
-        if (statement.transaction.type !== "AgentGeneration") {
-          return null;
-        }
-
-        const userGenCreditsEntry = statement.entries[0];
-
-        if (!userGenCreditsEntry) {
-          return null;
-        }
-
-        const microdollar = MicroDollar.fromMicrodollarString(
-          userGenCreditsEntry.amount as unknown as string,
-        );
-        const amount = microdollar.display();
-        const amountExact = microdollar.display({
-          showAllDecimals: true,
-        });
-
-        return {
-          entries: statement.entries,
-          timestamp: statement.timestamp,
-          type: "debit",
-          amount,
-          amountExact,
-          metadata: statement.transaction.metadata,
-          ...buildTransactionInfo(statement.transaction),
-        };
-      }).filter(Boolean),
-      nextCursor: statements.nextCursor,
-    };
-  },
-};
-
-const AccountInsights = {
+const ThreadsUsage = {
   fetch: async (
     wallet: ClientOf<WalletAPI>,
     workspace: string,
     range: "day" | "week" | "month",
   ) => {
-    const insightsResponse = await wallet["GET /insights/agents"]({
+    const usageResponse = await wallet["GET /usage/threads"]({
       workspace,
       range,
     });
 
-    if (!insightsResponse.ok) {
-      throw new Error("Failed to fetch insights");
+    if (!usageResponse.ok) {
+      throw new Error("Failed to fetch usage");
     }
 
-    return insightsResponse.json();
+    return usageResponse.json();
   },
-  format: (insights: WalletAPI["GET /insights/agents"]["response"]) => {
+  format: (
+    usage: WalletAPI["GET /usage/threads"]["response"],
+  ) => {
     return {
-      total: MicroDollar.fromMicrodollarString(insights.total).display(),
-      items: insights.items.map((item: any) => ({
+      items: usage.items.map((thread) => ({
+        ...thread,
+        total: MicroDollar.fromMicrodollarString(thread.total).display({
+          showAllDecimals: true,
+        }),
+      })).filter(isNotNull),
+    };
+  },
+};
+
+const AgentsUsage = {
+  fetch: async (
+    wallet: ClientOf<WalletAPI>,
+    workspace: string,
+    range: "day" | "week" | "month",
+  ) => {
+    const usageResponse = await wallet["GET /usage/agents"]({
+      workspace,
+      range,
+    });
+
+    if (!usageResponse.ok) {
+      throw new Error("Failed to fetch usage");
+    }
+
+    return usageResponse.json();
+  },
+  format: (usage: WalletAPI["GET /usage/agents"]["response"]) => {
+    return {
+      total: MicroDollar.fromMicrodollarString(usage.total).display(),
+      items: usage.items.map((item) => ({
         id: item.id,
         label: item.label,
         total: MicroDollar.fromMicrodollarString(item.total).toDollars(),
@@ -187,51 +137,45 @@ export const getWalletAccount = createApiHandler({
   },
 });
 
-export const getWalletStatements = createApiHandler({
-  name: "GET_WALLET_STATEMENTS",
-  description: "Get the statements for the current tenant's wallet",
+export const getThreadsUsage = createApiHandler({
+  name: "GET_THREADS_USAGE",
+  description: "Get the threads usage for the current tenant's wallet",
   schema: z.object({
-    cursor: z.string().optional(),
-  }),
-  handler: async ({ cursor }, ctx) => {
-    assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
-
-    const wallet = getWalletClient(ctx);
-
-    const statements = await AccountStatements.fetch(
-      wallet,
-      ctx.workspace.value,
-      cursor,
-    );
-    return AccountStatements.format(statements);
-  },
-});
-
-export const getWalletInsights = createApiHandler({
-  name: "GET_WALLET_INSIGHTS",
-  description: "Get the insights for the current tenant's wallet",
-  schema: z.object({
-    // todo(@camudo): add more queries
-    type: z.enum(["credits_used_by_agent"]),
     range: z.enum(["day", "week", "month"]),
   }),
-  handler: async ({ type, range }, ctx) => {
-    if (type !== "credits_used_by_agent") {
-      throw new MCPError("Invalid insight type");
-    }
-
+  handler: async ({ range }, ctx) => {
     assertHasWorkspace(ctx);
     await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
 
-    const insights = await AccountInsights.fetch(
+    const usage = await ThreadsUsage.fetch(
       wallet,
       ctx.workspace.value,
       range,
     );
-    return AccountInsights.format(insights);
+    return ThreadsUsage.format(usage);
+  },
+});
+
+export const getAgentsUsage = createApiHandler({
+  name: "GET_AGENTS_USAGE",
+  description: "Get the agents usage for the current tenant's wallet",
+  schema: z.object({
+    range: z.enum(["day", "week", "month"]),
+  }),
+  handler: async ({ range }, ctx) => {
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
+
+    const wallet = getWalletClient(ctx);
+
+    const usage = await AgentsUsage.fetch(
+      wallet,
+      ctx.workspace.value,
+      range,
+    );
+    return AgentsUsage.format(usage);
   },
 });
 

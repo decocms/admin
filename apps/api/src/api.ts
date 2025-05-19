@@ -1,5 +1,5 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { GLOBAL_TOOLS, MCPError, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
+import { GLOBAL_TOOLS, HttpError, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
@@ -45,7 +45,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 };
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
-  if (!(err instanceof MCPError)) {
+  if (!(err instanceof HttpError)) {
     throw err;
   }
 

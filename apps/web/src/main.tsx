@@ -1,6 +1,6 @@
 import "./polyfills.ts";
 
-import { Button } from "@deco/ui/components/button.tsx";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -11,7 +11,6 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
-
 import { EmptyState } from "./components/common/EmptyState.tsx";
 import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 
@@ -120,27 +119,18 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
 );
 
-function NotFound() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  return (
-    <div className="h-full w-full flex flex-col items-center justify-center gap-4">
-      <h1>Not Found</h1>
-      <p>The path {location.pathname} was not found.</p>
-      <Button onClick={() => navigate("/")}>Go to Home</Button>
-    </div>
-  );
+function NotFound(): null {
+  throw new NotFoundError("The path was not found");
 }
 
 function ErrorFallback() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state: { error }, reset } = useError();
-  const notLoggedIn = error?.name === "NotLoggedInError";
+  const isUnauthorized = error instanceof UnauthorizedError;
 
   useEffect(() => {
-    if (!notLoggedIn) {
+    if (!isUnauthorized) {
       return;
     }
 
@@ -153,13 +143,43 @@ function ErrorFallback() {
 
     const next = new URL(location.pathname, globalThis.location.origin);
     navigate(`/login?next=${next}`, { replace: true });
-  }, [notLoggedIn, location.pathname, reset, navigate]);
+  }, [isUnauthorized, location.pathname, reset, navigate]);
 
-  if (notLoggedIn) {
+  if (isUnauthorized) {
     return (
       <div className="h-full w-full flex items-center justify-center">
         <Spinner />
       </div>
+    );
+  }
+
+  if (error instanceof ForbiddenError) {
+    return (
+      <EmptyState
+        icon="report"
+        title="Access Denied"
+        description={error?.message ??
+          "User does not have access to this resource"}
+        buttonProps={{
+          onClick: () => globalThis.location.href = "/",
+          children: "Go back to home",
+        }}
+      />
+    );
+  }
+
+  if (error instanceof NotFoundError) {
+    return (
+      <EmptyState
+        icon="report"
+        title="Not Found"
+        description={error?.message ??
+          "The resource you are looking for does not exist"}
+        buttonProps={{
+          onClick: () => globalThis.location.href = "/",
+          children: "Go back to home",
+        }}
+      />
     );
   }
 

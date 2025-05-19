@@ -1,11 +1,11 @@
 import { LRUCache } from "lru-cache";
-import { AppContext } from "./context.ts";
 import {
-  CannotAccessWorkspaceError,
   ForbiddenError,
-  MissingDatabaseError,
+  InternalServerError,
+  NotFoundError,
   UnauthorizedError,
-} from "./errors.ts";
+} from "../errors.ts";
+import { AppContext } from "./context.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
@@ -20,7 +20,7 @@ export function assertHasWorkspace(
   c: Pick<AppContext, "workspace"> | Pick<WithWorkspace, "workspace">,
 ): asserts c is WithWorkspace {
   if (!c.workspace) {
-    throw new CannotAccessWorkspaceError();
+    throw new NotFoundError();
   }
 }
 
@@ -90,7 +90,7 @@ export const assertUserHasAccessToTeamBySlug = async (
     return;
   }
 
-  throw new ForbiddenError();
+  throw new ForbiddenError("User does not have access to this team");
 };
 
 const ONE_MINUTE_MS = 60e3;
@@ -109,7 +109,7 @@ export const assertUserHasAccessToWorkspace = async (
   const db = c.db;
 
   if (!db) {
-    throw new MissingDatabaseError();
+    throw new InternalServerError("Missing database");
   }
 
   // TODO (@gimenes): remove this hard coded access for @deco.cx by allowing

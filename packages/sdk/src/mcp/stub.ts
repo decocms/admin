@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
+import { getErrorByStatusCode } from "../errors.ts";
 import type { ApiHandler, AppContext } from "./context.ts";
 
 export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
@@ -59,9 +60,9 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
           throw new Error("Name must be a string");
         }
 
-        return (args: unknown, init?: RequestInit) => {
+        return async (args: unknown, init?: RequestInit) => {
           const workspace = options?.workspace ?? "";
-          return fetch(
+          const response = await fetch(
             new URL(
               `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join(
                 "/",
@@ -78,14 +79,22 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
                 "x-trace-debug-id": getTraceDebugId(),
               },
             },
-          ).then(async (r) => {
-            const data = await r.json() as any;
-            return {
-              ...data,
-              status: r.status,
-              ok: r.ok,
-            };
-          });
+          );
+
+          const data = await response.json() as any;
+
+          if (!response.ok) {
+            throw getErrorByStatusCode(
+              response.status,
+              data.error || "Internal Server Error",
+            );
+          }
+
+          return {
+            ...data,
+            status: response.status,
+            ok: response.ok,
+          };
         };
       },
     },

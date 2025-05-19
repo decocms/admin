@@ -10,7 +10,7 @@ import {
 } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
-import { ThreadNotFoundError } from "../errors.ts";
+import { NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
 
 const safeParse = (str: string) => {
@@ -227,7 +227,7 @@ export const getThread = createApiHandler({
     });
 
     if (!result?.rows.length || error) {
-      throw new ThreadNotFoundError();
+      throw new NotFoundError();
     }
 
     const thread = ThreadSchema.parse(result.rows[0]);

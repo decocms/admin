@@ -1,6 +1,6 @@
 export * from "./assertions.ts";
 export * from "./context.ts";
-export * from "./errors.ts";
+export * from "../errors.ts";
 import * as agentsAPI from "./agents/api.ts";
 import { ApiHandler, AppContext, State } from "./context.ts";
 import * as hostingAPI from "./hosting/api.ts";

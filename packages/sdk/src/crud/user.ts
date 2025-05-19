@@ -12,19 +12,8 @@ export interface User {
   };
 }
 
-export class NotLoggedInError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotLoggedInError";
-  }
-}
-
 export const fetchUser = async () => {
-  const { status, ok, data, error } = await MCPClient.PROFILES_GET({});
-
-  if (status === 401) {
-    throw new NotLoggedInError("User is not logged in");
-  }
+  const { ok, data, error } = await MCPClient.PROFILES_GET({});
 
   if (!ok || !data) {
     throw new Error(error?.message ?? "Failed to fetch user");

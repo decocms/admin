@@ -1,4 +1,4 @@
-import { AUTH_URL, NotLoggedInError } from "@deco/sdk";
+import { AUTH_URL, UnauthorizedError } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -272,7 +272,7 @@ export function SidebarFooter() {
   return (
     <Suspense fallback={<Skeleton />}>
       <ErrorBoundary
-        shouldCatch={(error) => error instanceof NotLoggedInError}
+        shouldCatch={(error) => error instanceof UnauthorizedError}
         fallback={<AnonymouseUser />}
       >
         <SidebarFooterInner>

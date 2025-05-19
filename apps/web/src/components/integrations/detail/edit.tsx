@@ -37,25 +37,25 @@ function MainChat() {
 }
 
 const TABS: Record<string, Tab> = {
+  tools: {
+    Component: ThreadSettingsTab,
+    title: "Tools",
+    hideFromViews: true,
+  },
   main: {
     Component: MainChat,
     title: "Chat setup",
     initialOpen: true,
   },
-  inspector: {
-    Component: Inspector,
-    title: "Test integration",
-    initialOpen: true,
-  },
   form: {
     Component: DetailForm,
     title: "Setup",
-    initialOpen: true,
+    initialOpen: "within",
   },
-  tools: {
-    Component: ThreadSettingsTab,
-    title: "Tools",
-    hideFromViews: true,
+  inspector: {
+    Component: Inspector,
+    title: "Test integration",
+    initialOpen: "right",
   },
 };
 

@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
   AddPanelOptions,
@@ -14,6 +15,7 @@ import {
   type DockviewReadyEvent,
   IDockviewPanelHeaderProps,
   type IDockviewPanelProps,
+  type SerializedDockview,
 } from "dockview-react";
 import {
   ComponentProps,
@@ -149,10 +151,18 @@ export const openPanel = <T extends object>(
   );
 };
 
+const safeParse = (value: string | null) => {
+  try {
+    return JSON.parse(value || "null");
+  } catch {
+    return null;
+  }
+};
+
 export interface Tab {
   Component: ComponentType;
-  initialOpen?: boolean;
   title: string;
+  initialOpen?: boolean | "right" | "within";
   hideFromViews?: boolean;
 }
 
@@ -160,36 +170,40 @@ type Props =
   & Partial<Omit<ComponentProps<typeof DockviewReact>, "components">>
   & { tabs: Record<string, Tab> };
 
-function isMobile() {
-  return globalThis.innerWidth <= 768;
-}
-
-const addPanel = (options: AddPanelOptions, api: DockviewApi) => {
-  const targetGroup = api.groups.find((group) =>
+const addPanel = (
+  options: AddPanelOptions,
+  api: DockviewApi,
+  isMobile: boolean,
+) => {
+  const targetGroup = api.groups.findLast((group) =>
     group.locked !== NO_DROP_TARGET
   );
 
-  const mobile = isMobile();
   const views = options.id === DOCKED_VIEWS_TAB.id;
+  const { position, ...otherOptions } = options;
 
   const panelOptions: AddPanelOptions = views
     ? {
       maximumWidth: 288,
       minimumWidth: 288,
       initialWidth: 288,
-      position: { direction: "right" },
+      position: isMobile && targetGroup?.id
+        ? { direction: "within" }
+        : { direction: "right" },
       ...options,
       floating: false,
     }
     : {
-      minimumWidth: mobile ? globalThis.innerWidth : 300,
-      maximumWidth: mobile ? globalThis.innerWidth : undefined,
-      initialWidth: mobile ? globalThis.innerWidth : targetGroup?.width || 400,
+      minimumWidth: isMobile ? globalThis.innerWidth : 300,
+      maximumWidth: isMobile ? globalThis.innerWidth : undefined,
       position: {
-        direction: mobile || targetGroup?.id ? "within" : "right",
+        direction:
+          !targetGroup?.id || (position?.direction === "right" && !isMobile)
+            ? "right"
+            : "within",
         referenceGroup: targetGroup?.id,
       },
-      ...options,
+      ...otherOptions,
       floating: false,
     };
 
@@ -211,8 +225,9 @@ const equals = (a: Set<string>, b: Set<string>) => {
 };
 
 function Docked(
-  { onReady, tabs, ...props }: Props,
+  { tabs, ...props }: Props,
 ) {
+  const isMobile = useIsMobile();
   const [api, setApi] = useState<DockviewApi | null>(null);
   const { setOpenPanels } = useDock();
   const wrappedTabs = useMemo(
@@ -235,17 +250,30 @@ function Docked(
     setApi(event.api);
 
     const initialPanels = new Set<string>();
-    Object.entries(tabs).forEach(([key, value]) => {
-      if (value.initialOpen) {
-        initialPanels.add(key);
-
-        addPanel({ id: key, component: key, title: value.title }, event.api);
+    for (const [key, value] of Object.entries(tabs)) {
+      if (!value.initialOpen) {
+        continue;
       }
-    });
+
+      initialPanels.add(key);
+
+      addPanel(
+        {
+          id: key,
+          component: key,
+          title: value.title,
+          position: value.initialOpen === "right"
+            ? { direction: "right" }
+            : undefined,
+        },
+        event.api,
+        isMobile,
+      );
+    }
 
     setOpenPanels(initialPanels);
 
-    event.api.onDidLayoutChange(() => {
+    const disposable = event.api.onDidLayoutChange(() => {
       const currentPanels = new Set(event.api.panels.map((panel) => panel.id));
 
       setOpenPanels((prev) =>
@@ -253,8 +281,10 @@ function Docked(
       );
     });
 
-    onReady?.(event);
-  }, [onReady, tabs]);
+    return () => {
+      disposable.dispose();
+    };
+  }, [tabs, isMobile]);
 
   useEffect(() => {
     if (!api) {
@@ -274,7 +304,7 @@ function Docked(
           panel.api.updateParameters(payload.params || {});
         }
       } else {
-        addPanel(payload, api);
+        addPanel(payload, api, isMobile);
       }
     };
 
@@ -285,7 +315,7 @@ function Docked(
       // @ts-expect-error - I don't really know how to properly type this
       channel.removeEventListener("message", handleMessage);
     };
-  }, [api, channel]);
+  }, [isMobile, api, channel]);
 
   return (
     <div className="h-full w-full">

@@ -12,9 +12,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
-import { createWalletCheckoutSession } from "@deco/sdk";
-import { useParams } from "npm:react-router@^7.4.1";
-import { useWorkspace } from "../../hooks/useWorkspace.ts";
+import { createWalletCheckoutSession, useSDK } from "@deco/sdk";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
 
@@ -33,7 +31,7 @@ function parseCurrency(value: string) {
 }
 
 export function DepositDialog() {
-  const workspace = useWorkspace();
+  const { workspace } = useSDK();
 
   const createCheckoutSession = useMutation({
     mutationFn: (amountInCents: number) =>

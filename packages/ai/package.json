@@ -19,7 +19,7 @@
     "@aws-sdk/client-s3": "^3.808.0",
     "@aws-sdk/s3-request-presigner": "^3.808.0",
     "@mastra/memory": "0.3.0",
-    "@modelcontextprotocol/sdk": "^1.11.2",
+    "@modelcontextprotocol/sdk": "1.11.4",
     "ai": "^4.1.61",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.4",

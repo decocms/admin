@@ -5,7 +5,7 @@
   "private": true,
   "dependencies": {
     "@libsql/client": "^0.15.4",
-    "@modelcontextprotocol/sdk": "^1.11.3",
+    "@modelcontextprotocol/sdk": "1.11.4",
     "cloudflare": "^4.2.0",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.0",
     "@tanstack/react-query": "^5.72.0",

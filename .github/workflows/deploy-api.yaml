@@ -42,6 +42,10 @@ jobs:
             GOOGLE_API_KEY
             OTEL_EXPORTER_OTLP_ENDPOINT
             OTEL_EXPORTER_OTLP_HEADERS
+            AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY
+            AWS_REGION
+            DECO_CHAT_DATA_BUCKET_NAME
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
@@ -60,3 +64,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DECO_CHAT_DATA_BUCKET_NAME: ${{ secrets.DECO_CHAT_DATA_BUCKET_NAME }}

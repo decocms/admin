@@ -61,6 +61,7 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
         }
 
         return async (args: unknown, init?: RequestInit) => {
+          const traceDebugId = getTraceDebugId();
           const workspace = options?.workspace ?? "";
           const response = await fetch(
             new URL(
@@ -76,7 +77,7 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
               ...init,
               headers: {
                 ...init?.headers,
-                "x-trace-debug-id": getTraceDebugId(),
+                "x-trace-debug-id": traceDebugId,
               },
             },
           );
@@ -87,6 +88,7 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
             throw getErrorByStatusCode(
               response.status,
               data.error || "Internal Server Error",
+              traceDebugId,
             );
           }
 

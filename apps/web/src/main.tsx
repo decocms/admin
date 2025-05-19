@@ -1,6 +1,11 @@
 import "./polyfills.ts";
 
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "@deco/sdk";
+import {
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+  UnauthorizedError,
+} from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
@@ -158,8 +163,17 @@ function ErrorFallback() {
       <EmptyState
         icon="report"
         title="Access Denied"
-        description={error?.message ??
-          "User does not have access to this resource"}
+        description={
+          <>
+            <div>
+              {error?.message ??
+                "User does not have access to this resource"}
+            </div>
+            <div className="text-xs">
+              {error?.errorId}
+            </div>
+          </>
+        }
         buttonProps={{
           onClick: () => globalThis.location.href = "/",
           children: "Go back to home",
@@ -173,8 +187,17 @@ function ErrorFallback() {
       <EmptyState
         icon="report"
         title="Not Found"
-        description={error?.message ??
-          "The resource you are looking for does not exist"}
+        description={
+          <>
+            <div>
+              {error?.message ??
+                "The resource you are looking for does not exist"}
+            </div>
+            <div className="text-xs">
+              {error?.errorId}
+            </div>
+          </>
+        }
         buttonProps={{
           onClick: () => globalThis.location.href = "/",
           children: "Go back to home",
@@ -187,8 +210,17 @@ function ErrorFallback() {
     <EmptyState
       icon="report"
       title="Something went wrong"
-      description={error?.message ??
-        "Looks like we are facing some technical issues. Please try again."}
+      description={
+        <>
+          <div>
+            {error?.message ??
+              "Looks like we are facing some technical issues. Please try again."}
+          </div>
+          <div className="text-xs">
+            {(error as InternalServerError)?.errorId}
+          </div>
+        </>
+      }
       buttonProps={{
         onClick: () => globalThis.location.reload(),
         children: "Retry",

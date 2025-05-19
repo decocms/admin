@@ -11,8 +11,12 @@ import {
 } from "@deco/ui/components/chart.tsx";
 import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
-import { getWalletAccount, useSDK } from "@deco/sdk";
-import { useQuery } from "@tanstack/react-query";
+import { getWalletAccount, getWalletStatements, useSDK } from "@deco/sdk";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@deco/ui/components/dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import { useState } from "react";
 
 function AccountBalance() {
   const { workspace } = useSDK();
@@ -25,6 +29,200 @@ function AccountBalance() {
   if (error) return <p>Error loading wallet</p>;
 
   return <p className="text-5xl font-bold">{data?.balance}</p>;
+}
+
+function AccountStatements() {
+  const [cursor, setCursor] = useState("");
+  const { workspace } = useSDK();
+  const { data: statements, isLoading, error, isFetching } = useQuery({
+    queryKey: ["wallet-statements", workspace, cursor],
+    queryFn: () => getWalletStatements(workspace, cursor),
+    placeholderData: keepPreviousData,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) return <p className="text-gray-500">Error loading statements</p>;
+  if (!statements?.items.length) {
+    return <p className="text-gray-500">No activity yet</p>;
+  }
+
+  console.log(statements.items);
+  return (
+      <div className="flex flex-col gap-3">
+        {statements.items.map((statement) => (
+          <Dialog key={statement.id}>
+            <DialogTrigger asChild>
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      statement.type === "credit"
+                        ? "bg-green-50 text-green-600"
+                        : "bg-gray-50 text-gray-600"
+                    }`}
+                  >
+                    {statement.icon
+                      ? <Icon name={statement.icon} size={16} />
+                      : (
+                        <Icon
+                          name={statement.type === "credit"
+                            ? "paid"
+                            : "data_usage"}
+                          size={16}
+                        />
+                      )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {statement.title}
+                    </p>
+                    {statement.description && (
+                      <p className="text-sm text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap max-w-[280px]">
+                        {statement.description}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400">
+                      {new Date(statement.timestamp).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`font-medium ${
+                    statement.type === "credit"
+                      ? "text-green-600"
+                      : "text-gray-900"
+                  }`}
+                >
+                  {statement.amountExact}
+                </p>
+              </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[525px]">
+              <DialogHeader>
+                <DialogTitle>Transaction Details</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        statement.type === "credit"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-gray-50 text-gray-600"
+                      }`}
+                    >
+                      {statement.icon
+                        ? <Icon name={statement.icon} size={20} />
+                        : (
+                          <Icon
+                            name={statement.type === "credit"
+                              ? "paid"
+                              : "data_usage"}
+                            size={20}
+                          />
+                        )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {statement.title}
+                      </p>
+                      <p
+                        className={`text-lg font-medium ${
+                          statement.type === "credit"
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {statement.amountExact}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-500">
+                      {new Date(statement.timestamp).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </p>
+                    {statement.description && (
+                      <p className="text-sm text-gray-600">
+                        {statement.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {statement.metadata && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        Details
+                      </p>
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-100">
+                          {Object.entries(statement.metadata).map((
+                            [key, value],
+                          ) => (
+                            <tr key={key}>
+                              <td className="py-2 text-gray-500">{key}</td>
+                              <td className="py-2 text-gray-900 text-right overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px]">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
+                                      <span>{value as string}</span>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {value as string}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        ))}
+        {isFetching ? <div>Loading more...</div> : null}
+        {statements?.nextCursor && (
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={() => setCursor(statements.nextCursor)}
+          >
+            Load more
+          </Button>
+        )}
+      </div>
+  );
 }
 
 function BalanceCard() {
@@ -169,13 +367,17 @@ function CreditsUsedPerAgentCard(
 
 function CreditsUsedPerThread() {
   return (
-    <Card className="w-full p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
-      <div className="w-full text-sm mb-8">
+    <Card className="w-full h-full flex flex-col rounded-md border border-slate-200 gap-0">
+      <div className="w-full text-sm p-4 border-b border-slate-200">
         Credits Used Per Thread
+      </div>
+      <div className="flex-1 h-fit overflow-y-auto px-3 pb-16 pt-3">
+        <AccountStatements />
       </div>
     </Card>
   );
 }
+
 export default function BillingSettings() {
   const agents = [
     {
@@ -214,12 +416,14 @@ export default function BillingSettings() {
   return (
     <div className="h-full text-slate-700">
       <SettingsMobileHeader currentPage="billing" />
-      <div className="flex gap-4 p-4">
-        <div className="flex flex-col justify-center gap-4 max-w-4xl">
+      <div className="flex gap-4 p-4 h-[calc(100vh-64px)]">
+        <div className="flex flex-col gap-4 w-1/2 min-w-0">
           <BalanceCard />
           <CreditsUsedPerAgentCard agents={agents} total={total} />
         </div>
-        <CreditsUsedPerThread />
+        <div className="w-2/3 min-w-0">
+          <CreditsUsedPerThread />
+        </div>
       </div>
     </div>
   );

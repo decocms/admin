@@ -81,7 +81,7 @@ const AccountStatements = {
         case "AgentGeneration":
           return {
             title: "Agent usage",
-            icon: "smart_toy",
+            icon: "robot_2",
             description: description ?? "Agent usage",
           };
         default:

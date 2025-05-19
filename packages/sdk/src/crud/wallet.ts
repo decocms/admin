@@ -21,15 +21,16 @@ interface WalletStatement {
   metadata?: Record<string, string>;
 }
 
-// export const getWalletStatements = async (cursor?: string) => {
-//   const response = await fetchAPI({
-//     path: `/wallet/statements${cursor ? `?cursor=${cursor}` : ""}`,
-//   });
-//   return response.json() as Promise<{
-//     items: WalletStatement[];
-//     nextCursor: string;
-//   }>;
-// };
+export const getWalletStatements = async (workspace: string, cursor?: string) => {
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .GET_WALLET_STATEMENTS({
+      cursor,
+    });
+  if (status !== 200 || error) {
+    throw new Error(error?.message);
+  }
+  return data;
+};
 
 export const createWalletCheckoutSession = async ({
   workspace,

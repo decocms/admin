@@ -457,6 +457,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     await this.initAgent(config);
   }
 
+  // todo(@camudo): change this to a nice algorithm someday
+  private inferBestModel(model: string) {
+    if (model === "auto") {
+      return "openai:gpt-4.1-mini";
+    }
+    return model;
+  }
+
   private createLLM(
     { model, bypassGateway, bypassOpenRouter }: {
       model: string;
@@ -464,11 +472,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       bypassOpenRouter?: boolean;
     },
   ): { llm: LanguageModelV1; tokenLimit: number } {
-    // todo(@camudo): change this to a nice algorithm someday
-    if (model === "auto") {
-      model = "openai:gpt-4.1-mini";
-    }
-
+    model = this.inferBestModel(model);
     const [provider, ...rest] = model.split(":");
     const providerModel = rest.join(":");
     const accountId = this.env?.ACCOUNT_ID ?? DEFAULT_ACCOUNT_ID;
@@ -810,11 +814,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         // TODO(@mcandeia): add error tracking with posthog
       },
       onFinish: (result) => {
+        const model = this.inferBestModel(this._configuration?.model ?? DEFAULT_MODEL);
         wallet.computeLLMUsage({
           userId: this.metadata?.principal?.id,
           usage: result.usage,
           threadId: this.thread.threadId,
-          model: this._configuration?.model ?? DEFAULT_MODEL,
+          model,
           agentName: this._configuration?.name ?? ANONYMOUS_NAME,
         });
       },

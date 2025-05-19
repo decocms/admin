@@ -11,10 +11,11 @@ import {
 } from "@deco/ui/components/chart.tsx";
 import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
-import { getWalletAccount } from "@deco/sdk";
+import { getWalletAccount, useSDK } from "@deco/sdk";
 import { useQuery } from "@tanstack/react-query";
 
-function AccountBalance({ workspace }: { workspace: string }) {
+function AccountBalance() {
+  const { workspace } = useSDK();
   const { data, isLoading, error } = useQuery({
     queryKey: ["wallet"],
     queryFn: () => getWalletAccount(workspace),
@@ -44,7 +45,7 @@ function BalanceCard() {
           />
         </div>
         <div className="mb-6">
-          <AccountBalance workspace="/users/c40e818c-9a67-4dc6-ac3b-2bb6361663c2" />
+          <AccountBalance />
         </div>
         <DepositDialog />
       </CardContent>

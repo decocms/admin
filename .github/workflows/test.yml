@@ -31,6 +31,8 @@ jobs:
         run: deno run fmt --check
 
       - name: Run check
+        env:
+          DENO_V8_FLAGS: --max-old-space-size=16384
         run: deno run check
 
       - name: Run test

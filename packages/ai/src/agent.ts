@@ -193,8 +193,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
   }
 
-  createMCPClient(metadata?: AgentMetadata) {
-    return MCPClient.forContext(this.createAppContext(metadata));
+  createMCPClient(ctx?: AppContext) {
+    return MCPClient.forContext(ctx ?? this.createAppContext(this.metadata));
   }
 
   override async enrichMetadata(
@@ -207,6 +207,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.metadata.principalCookie = req.headers.get("cookie");
 
     const runtimeKey = getRuntimeKey();
+    const ctx = this.createAppContext(this.metadata);
 
     // this is a weak check, but it works for now
     if (
@@ -214,7 +215,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this._configuration?.visibility !== "PUBLIC"
     ) { // if host is set so its not an internal request so checks must be applied
       await assertUserHasAccessToWorkspace(
-        this.createAppContext(this.metadata),
+        ctx,
       );
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
@@ -222,7 +223,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       );
     }
     // Propagate supabase token from request to integration token
-    this.metadata.mcpClient = this.createMCPClient(this.metadata);
+    this.metadata.mcpClient = this.createMCPClient(ctx);
     enrichMetadata?.end();
     return this.metadata;
   }

@@ -35,6 +35,24 @@ export const getWalletStatements = async (
   return data;
 };
 
+export const getWalletInsights = async (
+  workspace: string,
+  insightsQuery: {
+    type: "credits_used_by_agent";
+    range: "day" | "week" | "month";
+  },
+) => {
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .GET_WALLET_INSIGHTS({
+      type: insightsQuery.type,
+      range: insightsQuery.range,
+    });
+  if (status !== 200 || error) {
+    throw new Error(error?.message);
+  }
+  return data;
+};
+
 export const createWalletCheckoutSession = async ({
   workspace,
   amountUSDCents,

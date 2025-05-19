@@ -3,6 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { Link } from "react-router";
 import {
   ChartConfig,
   ChartContainer,
@@ -11,8 +12,18 @@ import {
 } from "@deco/ui/components/chart.tsx";
 import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
-import { getWalletAccount, getWalletStatements, useSDK } from "@deco/sdk";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  getWalletAccount,
+  getWalletInsights,
+  getWalletStatements,
+  useAgents,
+  useSDK,
+} from "@deco/sdk";
+import {
+  keepPreviousData,
+  useQuery,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +37,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import { Suspense, useState } from "react";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 
 function AccountBalance() {
   const { workspace } = useSDK();
@@ -261,40 +280,131 @@ function BalanceCard() {
   );
 }
 
-interface Agent {
-  label: string;
-  color: string;
-  value: number;
-  iconUrl?: string;
+function color(id: string) {
+  const colors = [
+    "#FF6B6B", // coral red
+    "#4ECDC4", // turquoise
+    "#45B7D1", // sky blue
+    "#96CEB4", // sage green
+    "#FFEEAD", // cream
+    "#D4A5A5", // dusty rose
+    "#9B59B6", // purple
+    "#3498DB", // blue
+    "#E67E22", // orange
+    "#2ECC71", // emerald
+    "#F1C40F", // yellow
+    "#1ABC9C", // teal
+    "#E74C3C", // red
+    "#34495E", // navy
+    "#16A085", // green
+    "#D35400", // dark orange
+    "#8E44AD", // violet
+    "#2980B9", // dark blue
+    "#27AE60", // forest green
+    "#C0392B", // burgundy
+  ];
+
+  // Use the first part of the ID as a seed for consistent colors
+  const seed = id.split("-")[0];
+  const hash = seed.split("").reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  return colors[hash % colors.length];
 }
 
-interface CreditsUsedPerAgentCardProps {
-  agents: Agent[];
-  total: number;
-  title?: string;
-}
+function CreditsUsedPerAgentCard({
+  agents: workspaceAgents,
+}: {
+  agents: ReturnType<typeof useAgents>;
+}) {
+  const { workspace } = useSDK();
+  const [insightsQuery, setInsightsQuery] = useState<{
+    type: "credits_used_by_agent";
+    range: "day" | "week" | "month";
+  }>({
+    type: "credits_used_by_agent",
+    range: "month",
+  });
+  const [top5Only, setTop5Only] = useState(false);
+  const { data: insights } = useSuspenseQuery({
+    queryKey: [
+      "wallet-insights",
+      workspace,
+      insightsQuery.type,
+      insightsQuery.range,
+    ],
+    queryFn: () => getWalletInsights(workspace, insightsQuery),
+  });
+  const withWorkpaceLink = useWorkspaceLink();
 
-function CreditsUsedPerAgentCard(
-  { agents, total, title = "Credits Used Per Agent" }:
-    CreditsUsedPerAgentCardProps,
-) {
+  const total = insights.total;
+  const enrichedAgents = insights.items.map((_agent) => {
+    const agent = workspaceAgents.data?.find((a) => a.id === _agent.id);
+    return {
+      id: _agent.id,
+      total: _agent.total,
+      avatar: agent?.avatar,
+      label: agent?.name || _agent.label || _agent.id,
+      color: color(_agent.id),
+    };
+  }).sort((a, b) => b.total - a.total).slice(0, top5Only ? 5 : undefined);
+
   const chartConfig = Object.fromEntries(
-    agents.map((agent, idx) => [
-      `agent${idx}`,
-      { label: agent.label, color: agent.color },
+    enrichedAgents.map((agent) => [
+      agent.id,
+      {
+        label: agent.label,
+        color: agent.color,
+      },
     ]),
   ) satisfies ChartConfig;
 
-  const agentsChartData = agents.map((agent, idx) => ({
-    browser: `agent${idx}`,
-    visitors: agent.value,
+  const agentsChartData = enrichedAgents.map((agent) => ({
+    agentId: agent.id,
+    total: agent.total,
     fill: agent.color,
   }));
 
   return (
     <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
-      <div className="w-full text-sm mb-8">
-        {title}
+      <div className="w-full text-sm mb-8 flex justify-between items-center">
+        <span>Credits Used Per Agent</span>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={top5Only ? "default" : "outline"}
+                className="!h-7 !w-7 text-xs"
+                size="icon"
+                onClick={() => setTop5Only((prev) => !prev)}
+              >
+                <Icon name="format_list_numbered" size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Top 5 only
+            </TooltipContent>
+          </Tooltip>
+          <Select
+            value={insightsQuery.range}
+            onValueChange={(value: "day" | "week" | "month") =>
+              setInsightsQuery((prev) => ({ ...prev, range: value }))}
+          >
+            <SelectTrigger className="!h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day" className="text-xs">Today</SelectItem>
+              <SelectItem value="week" className="text-xs">
+                This Week
+              </SelectItem>
+              <SelectItem value="month" className="text-xs">
+                This Month
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <CardContent className="flex flex-row items-center justify-center gap-8 w-full pb-0">
         <div className="flex-shrink-0">
@@ -309,12 +419,12 @@ function CreditsUsedPerAgentCard(
             <PieChart>
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent hideLabel />}
+                content={<ChartTooltipContent hideLabel labelKey="label" />}
               />
               <Pie
                 data={agentsChartData}
-                dataKey="visitors"
-                nameKey="browser"
+                dataKey="total"
+                nameKey="agentId"
                 innerRadius={47.5}
               >
                 <Label
@@ -332,7 +442,7 @@ function CreditsUsedPerAgentCard(
                             y={viewBox.cy}
                             className="fill-foreground text-lg"
                           >
-                            ${total}
+                            {total}
                           </tspan>
                           <tspan
                             x={viewBox.cx}
@@ -350,23 +460,31 @@ function CreditsUsedPerAgentCard(
             </PieChart>
           </ChartContainer>
         </div>
-        <ul className="flex flex-col gap-4 min-w-[180px]">
-          {agents.map((agent, idx) => (
-            <li key={agent.label} className="flex items-center gap-2">
-              <span
-                className="inline-block w-3 h-3 rounded-full"
-                style={{ backgroundColor: agent.color }}
-              />
-              {agent.iconUrl && (
-                <img
-                  src={agent.iconUrl}
-                  alt={agent.label}
-                  className="w-5 h-5 rounded-sm object-cover border border-muted"
-                />
-              )}
-              <span className="text-xs text-muted-foreground">
-                {agent.label}
-              </span>
+        <ul className="flex flex-col overflow-y-auto max-h-[200px] gap-4 min-w-[180px]">
+          {enrichedAgents.map((agent) => (
+            <li key={agent.id} className="flex items-center gap-2">
+              <Link
+                to={withWorkpaceLink(
+                  `/agent/${agent.id}/${crypto.randomUUID()}`,
+                )}
+              >
+                <div className="flex items-center gap-2 hover:underline">
+                  <span
+                    className="inline-block w-3 h-3 rounded-full"
+                    style={{ backgroundColor: agent.color }}
+                  />
+                  {agent.avatar && (
+                    <img
+                      src={agent.avatar}
+                      alt={agent.label}
+                      className="w-5 h-5 rounded-sm object-cover border border-muted"
+                    />
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {agent.label}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
@@ -374,6 +492,17 @@ function CreditsUsedPerAgentCard(
     </Card>
   );
 }
+
+CreditsUsedPerAgentCard.Fallback = () => (
+  <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
+    <div className="w-full text-sm mb-8 flex justify-between items-center">
+      <span>Credits Used Per Agent</span>
+    </div>
+    <CardContent className="flex flex-row items-center justify-center gap-8 w-full pb-0">
+      <Skeleton className="w-full h-[250px]" />
+    </CardContent>
+  </Card>
+);
 
 function CreditsUsedPerThread() {
   return (
@@ -383,7 +512,7 @@ function CreditsUsedPerThread() {
         {/* Credits Used Per Thread */}
         Last generations
       </div>
-      <div className="flex-1 h-fit overflow-y-auto px-3 pb-16 pt-3">
+      <div className="flex-1 overflow-y-auto px-3 pb-16 pt-3">
         <AccountStatements />
       </div>
     </Card>
@@ -391,49 +520,19 @@ function CreditsUsedPerThread() {
 }
 
 export default function BillingSettings() {
-  const agents = [
-    {
-      label: "Internal Rituals Agent",
-      color: "#6D6DFF",
-      value: 120,
-      iconUrl: "https://assets.webdraw.app/uploads/capy-38.png",
-    },
-    {
-      label: "HR Assistant",
-      color: "#7ED6A2",
-      value: 80,
-      iconUrl: "https://assets.webdraw.app/uploads/capy-34.png",
-    },
-    {
-      label: "Brandable",
-      color: "#F48C8C",
-      value: 180,
-      iconUrl: "https://assets.webdraw.app/uploads/capy-37.png",
-    },
-    {
-      label: "Research Buddy",
-      color: "#B6E388",
-      value: 60,
-      iconUrl: "https://assets.webdraw.app/uploads/capy-36.png",
-    },
-    {
-      label: "Onboarding Coach",
-      color: "#FFD36E",
-      value: 45,
-      iconUrl: "https://assets.webdraw.app/uploads/capy-35.png",
-    },
-  ];
-  const total = agents.reduce((sum, agent) => sum + agent.value, 0);
+  const agents = useAgents();
 
   return (
     <div className="h-full text-slate-700">
       <SettingsMobileHeader currentPage="billing" />
       <div className="flex gap-4 p-4 h-[calc(100vh-64px)]">
-        <div className="flex flex-col gap-4 w-1/2 min-w-0">
+        <div className="flex flex-col h-full min-w-0 min-w-lg gap-4">
           <BalanceCard />
-          <CreditsUsedPerAgentCard agents={agents} total={total} />
+          <Suspense fallback={<CreditsUsedPerAgentCard.Fallback />}>
+            <CreditsUsedPerAgentCard agents={agents} />
+          </Suspense>
         </div>
-        <div className="w-2/3 min-w-0">
+        <div className="flex flex-col h-full min-w-0 w-full">
           <CreditsUsedPerThread />
         </div>
       </div>

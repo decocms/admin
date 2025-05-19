@@ -61,6 +61,7 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.getWebhookTriggerUrl,
   walletAPI.getWalletAccount,
   walletAPI.getWalletStatements,
+  walletAPI.getWalletInsights,
   walletAPI.createCheckoutSession,
 ] as const;
 

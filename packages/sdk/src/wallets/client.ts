@@ -277,6 +277,20 @@ export interface WalletAPI {
       id: string;
     };
   };
+  "GET /insights/agents": {
+    searchParams: {
+      workspace: string;
+      range: "day" | "week" | "month";
+    };
+    response: {
+      total: string;
+      items: {
+        id: string;
+        label: string;
+        total: number;
+      }[];
+    };
+  };
 }
 
 // for local dev

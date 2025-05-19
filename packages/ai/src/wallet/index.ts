@@ -101,7 +101,7 @@ export class AgentWallet {
     };
     const vendor = {
       type: "vendor",
-      id: this.config.workspace, // TODO: this should be the agent's vendor id, once we have a way to sell agents
+      id: this.config.workspace,
     };
     const generatedBy = {
       type: "user",

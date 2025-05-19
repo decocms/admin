@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AppContext, createApiHandler, getEnv } from "../context.ts";
+import { AppContext, createApiHandler } from "../context.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -130,6 +130,35 @@ const AccountStatements = {
   },
 };
 
+const AccountInsights = {
+  fetch: async (
+    wallet: ClientOf<WalletAPI>,
+    workspace: string,
+    range: "day" | "week" | "month",
+  ) => {
+    const insightsResponse = await wallet["GET /insights/agents"]({
+      workspace,
+      range,
+    });
+
+    if (!insightsResponse.ok) {
+      throw new Error("Failed to fetch insights");
+    }
+
+    return insightsResponse.json();
+  },
+  format: (insights: WalletAPI["GET /insights/agents"]["response"]) => {
+    return {
+      total: MicroDollar.fromMicrodollarString(insights.total).display(),
+      items: insights.items.map((item: any) => ({
+        id: item.id,
+        label: item.label,
+        total: MicroDollar.fromMicrodollarString(item.total).toDollars(),
+      })),
+    };
+  },
+};
+
 export const getWalletAccount = createApiHandler({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
@@ -176,6 +205,33 @@ export const getWalletStatements = createApiHandler({
       cursor,
     );
     return AccountStatements.format(statements);
+  },
+});
+
+export const getWalletInsights = createApiHandler({
+  name: "GET_WALLET_INSIGHTS",
+  description: "Get the insights for the current tenant's wallet",
+  schema: z.object({
+    // todo(@camudo): add more queries
+    type: z.enum(["credits_used_by_agent"]),
+    range: z.enum(["day", "week", "month"]),
+  }),
+  handler: async ({ type, range }, ctx) => {
+    if (type !== "credits_used_by_agent") {
+      throw new MCPError("Invalid insight type");
+    }
+
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
+
+    const wallet = getWalletClient(ctx);
+
+    const insights = await AccountInsights.fetch(
+      wallet,
+      ctx.workspace.value,
+      range,
+    );
+    return AccountInsights.format(insights);
   },
 });
 

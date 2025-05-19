@@ -21,7 +21,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
@@ -66,6 +66,8 @@ function SettingsTab() {
     onMutationSuccess,
   } = useAgentSettingsForm();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const toolsSet = form.watch("tools_set");
   const setIntegrationTools = (
     integrationId: string,
@@ -97,6 +99,31 @@ function SettingsTab() {
     setIsModalOpen(true);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      form.setValue("avatar", base64String, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   const onSubmit = () => {
     // The actual mutation is handled in the Page context's actionButtons
     // This is just a placeholder to satisfy the form API
@@ -116,13 +143,43 @@ function SettingsTab() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center gap-6">
-                    <div className="h-16 w-16">
-                      <AgentAvatar
-                        name={agent.name}
-                        avatar={agent.avatar}
-                        className="rounded-lg"
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="avatar"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex justify-center items-center">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleFileChange}
+                            />
+                            <FormControl>
+                              <div
+                                className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                                onClick={triggerFileInput}
+                              >
+                                <AgentAvatar
+                                  name={agent.name}
+                                  avatar={field.value || agent.avatar}
+                                  className="rounded-lg"
+                                />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <Icon
+                                    name="upload"
+                                    className="text-white text-xl"
+                                  />
+                                </div>
+                                <Input type="hidden" {...field} />
+                              </div>
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <div className="flex-1 flex flex-col gap-1">
                       <FormLabel>Name</FormLabel>
                       <FormControl>

@@ -205,7 +205,7 @@ function TableView(
     {
       id: "createdAt",
       header: "Created at",
-      render: (t) => <DateTimeCell value={t.created_at} />,
+      render: (t) => <DateTimeCell value={t.createdAt} />,
     },
     {
       id: "actions",

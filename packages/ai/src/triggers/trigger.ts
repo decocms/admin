@@ -53,8 +53,8 @@ function mapTriggerToTriggerData(
   return {
     id: trigger.id,
     resourceId: trigger.user.id,
-    createdAt: trigger.created_at,
-    updatedAt: trigger.updated_at,
+    createdAt: trigger.createdAt,
+    updatedAt: trigger.updatedAt,
     author: {
       id: trigger.user.id,
       name: trigger.user.metadata.full_name,

@@ -37,13 +37,13 @@ function mapTrigger(
 ) {
   return {
     type: trigger.metadata && typeof trigger.metadata === "object" &&
-        "cron_exp" in trigger.metadata
+        "cronExp" in trigger.metadata
       ? "cron" as const
       : "webhook" as const,
     id: trigger.id,
     agent: agentsById[trigger.agent_id],
-    created_at: trigger.created_at,
-    updated_at: trigger.updated_at,
+    createdAt: trigger.created_at,
+    updatedAt: trigger.updated_at,
     user: {
       // @ts-expect-error - Supabase user metadata is not typed
       ...userFromDatabase(trigger.profile),

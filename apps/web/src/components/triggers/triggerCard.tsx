@@ -48,7 +48,7 @@ export function TriggerCard({ trigger, onClick }: {
             {trigger.user?.metadata?.full_name || "Anonymous"}
           </span>
           <span className="text-sm text-slate-400 ml-auto">
-            {timeAgo(new Date(trigger.created_at || ""))}
+            {timeAgo(new Date(trigger.createdAt || ""))}
           </span>
         </div>
       </CardContent>

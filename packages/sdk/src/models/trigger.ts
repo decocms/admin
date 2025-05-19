@@ -25,7 +25,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cron_exp: z.string(),
+  cronExp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });
@@ -119,8 +119,8 @@ export const TriggerOutputSchema = z.object({
   id: z.string().describe("The trigger ID"),
   type: z.enum(["cron", "webhook"]),
   agent: AgentSchema,
-  created_at: z.string().describe("The creation date"),
-  updated_at: z.string().describe("The update date"),
+  createdAt: z.string().describe("The creation date"),
+  updatedAt: z.string().describe("The update date"),
   user: z.object({
     id: z.string().describe("The user ID"),
     metadata: z.object({

@@ -32,7 +32,7 @@ import { IntegrationInfo } from "../../common/TableCells.tsx";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 
-const INTEGRATION_ID_BLACKLIST = new Set([
+const INTEGRATION_ID_DENYLIST = new Set([
   "i:workspace-management",
   "i:user-management",
 ]);
@@ -98,7 +98,7 @@ function IntegrationCard({
           </div>
 
           <div onClick={(e) => e.stopPropagation()}>
-            {!INTEGRATION_ID_BLACKLIST.has(integration.id) && (
+            {!INTEGRATION_ID_DENYLIST.has(integration.id) && (
               <IntegrationActions onDelete={() => onDelete(integration.id)} />
             )}
           </div>
@@ -223,7 +223,7 @@ function TableView(
       header: "",
       render: (integration) => (
         <div onClick={(e) => e.stopPropagation()}>
-          {!INTEGRATION_ID_BLACKLIST.has(integration.id) && (
+          {!INTEGRATION_ID_DENYLIST.has(integration.id) && (
             <IntegrationActions onDelete={() => onDelete(integration.id)} />
           )}
         </div>

@@ -16,7 +16,7 @@ export interface Vars {
   };
   cookie?: string;
   db: Client;
-  user?: SupaUser;
+  user: SupaUser;
   isLocal?: boolean;
   cf: Cloudflare;
   immutableRes?: boolean;

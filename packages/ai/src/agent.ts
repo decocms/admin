@@ -184,7 +184,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return {
       envVars: this.env as any,
       db: this.db,
-      user: metadata?.principal ?? undefined,
+      user: metadata?.principal!,
       isLocal: metadata?.principal == null,
       stub: this.state.stub as AppContext["stub"],
       cookie: metadata?.principalCookie ?? undefined,

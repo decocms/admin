@@ -170,7 +170,7 @@ function ErrorFallback() {
                 "User does not have access to this resource"}
             </div>
             <div className="text-xs">
-              {error?.errorId}
+              {error?.traceId}
             </div>
           </>
         }
@@ -194,7 +194,7 @@ function ErrorFallback() {
                 "The resource you are looking for does not exist"}
             </div>
             <div className="text-xs">
-              {error?.errorId}
+              {error?.traceId}
             </div>
           </>
         }
@@ -217,7 +217,7 @@ function ErrorFallback() {
               "Looks like we are facing some technical issues. Please try again."}
           </div>
           <div className="text-xs">
-            {(error as InternalServerError)?.errorId}
+            {(error as InternalServerError)?.traceId}
           </div>
         </>
       }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NotFoundError, UserInputError } from "../../errors.ts";
 import { Database } from "../../storage/index.ts";
 import { assertHasWorkspace } from "../assertions.ts";
 import { AppContext, createApiHandler, getEnv } from "../context.ts";
@@ -259,7 +260,7 @@ Important Notes:
     }, {} as Record<string, string>);
 
     if (!(ENTRYPOINT in filesRecord)) {
-      throw new Error(`${ENTRYPOINT} is not in the files`);
+      throw new UserInputError(`${ENTRYPOINT} is not in the files`);
     }
 
     await createNamespaceOnce(c);
@@ -342,7 +343,7 @@ export const getAppInfo = createApiHandler({
       .single();
 
     if (error || !data) {
-      throw new Error("App not found");
+      throw new NotFoundError("App not found");
     }
 
     return Mappers.toApp(data);

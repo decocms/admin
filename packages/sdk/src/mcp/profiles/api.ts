@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
@@ -25,7 +26,7 @@ export const getProfile = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     // @ts-expect-error - Supabase user metadata is not typed
@@ -63,11 +64,11 @@ export const updateProfile = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Profile not found");
+      throw new NotFoundError("Profile not found");
     }
 
     return data;

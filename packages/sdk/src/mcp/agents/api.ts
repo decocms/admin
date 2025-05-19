@@ -9,6 +9,7 @@ import {
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { AppContext, createApiHandler } from "../context.ts";
+import { InternalServerError, NotFoundError } from "../index.ts";
 
 export const getAgentsByIds = async (
   ids: string[],
@@ -66,7 +67,7 @@ export const listAgents = createApiHandler({
     ]);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return data
@@ -105,11 +106,11 @@ export const getAgent = createApiHandler({
     }
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Agent not found");
+      throw new NotFoundError("Agent not found");
     }
 
     return AgentSchema.parse(data);
@@ -138,7 +139,7 @@ export const createAgent = createApiHandler({
     ]);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return AgentSchema.parse(data);
@@ -165,11 +166,11 @@ export const updateAgent = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Agent not found");
+      throw new NotFoundError("Agent not found");
     }
 
     return AgentSchema.parse(data);
@@ -191,7 +192,7 @@ export const deleteAgent = createApiHandler({
       .eq("id", id);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return true;

@@ -1,6 +1,14 @@
 import { Trigger } from "@deco/ai/actors";
+import { join } from "node:path";
+import { z } from "zod";
 import {
-  AgentSchema,
+  InternalServerError,
+  NotFoundError,
+  UserInputError,
+} from "../../errors.ts";
+import { Hosts } from "../../hosts.ts";
+import { AgentSchema } from "../../models/agent.ts";
+import {
   CreateCronTriggerInputSchema,
   CreateTriggerOutputSchema,
   CreateWebhookTriggerInputSchema,
@@ -8,12 +16,9 @@ import {
   GetWebhookTriggerUrlOutputSchema,
   ListTriggersOutputSchema,
   TriggerSchema,
-} from "@deco/sdk";
-import { Hosts } from "@deco/sdk/hosts";
-import { Path } from "@deco/sdk/path";
-import { Database, Json } from "@deco/sdk/storage";
-import { join } from "node:path";
-import { z } from "zod";
+} from "../../models/trigger.ts";
+import { Path } from "../../path.ts";
+import { Database, Json } from "../../storage/index.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   assertHasWorkspace,
@@ -89,7 +94,7 @@ export const listTriggers = createApiHandler({
     const { data, error } = await query;
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     const agentIds = Array.from(
@@ -135,14 +140,14 @@ export const createTrigger = createApiHandler({
     if (data.type === "cron") {
       const parse = CreateCronTriggerInputSchema.safeParse(data);
       if (!parse.success) {
-        throw new Error("Invalid trigger");
+        throw new UserInputError("Invalid trigger");
       }
     }
 
     if (data.type === "webhook") {
       const parse = CreateWebhookTriggerInputSchema.safeParse(data);
       if (!parse.success) {
-        throw new Error("Invalid trigger");
+        throw new UserInputError("Invalid trigger");
       }
       (data as z.infer<typeof TriggerSchema> & { url: string }).url =
         buildWebhookUrl(triggerId, data.passphrase);
@@ -168,7 +173,7 @@ export const createTrigger = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     const agents = await getAgentsByIds([agentId], c);
@@ -224,7 +229,7 @@ export const createCronTrigger = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     const agents = await getAgentsByIds([agentId], c);
@@ -286,7 +291,7 @@ export const createWebhookTrigger = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     const agents = await getAgentsByIds([agentId], c);
@@ -326,7 +331,7 @@ export const deleteTrigger = createApiHandler({
       .eq("workspace", workspace);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
   },
 });
@@ -352,11 +357,11 @@ export const getWebhookTriggerUrl = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Trigger not found");
+      throw new NotFoundError("Trigger not found");
     }
 
     return {
@@ -386,7 +391,7 @@ export const getTrigger = createApiHandler({
       .maybeSingle();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!trigger) {

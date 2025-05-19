@@ -13,7 +13,9 @@ import {
   INNATE_INTEGRATIONS,
   Integration,
   IntegrationSchema,
+  InternalServerError,
   NEW_INTEGRATION_TEMPLATE,
+  UserInputError,
 } from "../../index.ts";
 import type { Workspace } from "../../path.ts";
 import {
@@ -21,6 +23,7 @@ import {
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
+import { NotFoundError } from "../index.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -179,7 +182,9 @@ export const listIntegrations = createApiHandler({
     const error = integrations.error || agents.error;
 
     if (error) {
-      throw new Error(error.message || "Failed to list integrations");
+      throw new InternalServerError(
+        error.message || "Failed to list integrations",
+      );
     }
 
     return [
@@ -239,11 +244,11 @@ export const getIntegration = createApiHandler({
     ]);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Integration not found");
+      throw new NotFoundError("Integration not found");
     }
 
     if (type === "a") {
@@ -283,7 +288,7 @@ export const createIntegration = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return IntegrationSchema.parse({
@@ -308,7 +313,7 @@ export const updateIntegration = createApiHandler({
     const { uuid, type } = parseId(id);
 
     if (type === "a") {
-      throw new Error("Cannot update an agent integration");
+      throw new UserInputError("Cannot update an agent integration");
     }
 
     const { data, error } = await c.db
@@ -319,11 +324,11 @@ export const updateIntegration = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Integration not found");
+      throw new NotFoundError("Integration not found");
     }
 
     return IntegrationSchema.parse({
@@ -347,7 +352,7 @@ export const deleteIntegration = createApiHandler({
     const { uuid, type } = parseId(id);
 
     if (type === "a") {
-      throw new Error("Cannot delete an agent integration");
+      throw new UserInputError("Cannot delete an agent integration");
     }
 
     const { error } = await c.db
@@ -356,7 +361,7 @@ export const deleteIntegration = createApiHandler({
       .eq("id", uuid);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return true;

@@ -37,8 +37,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const root = c.req.param("root");
   const workspace = `/${root}/${slug}`;
 
-  const policyClient = PolicyClient.getInstance();
-  policyClient.init(c.var.db);
+  const policyClient = PolicyClient.getInstance(c.var.db);
   const authorizationClient = new AuthorizationClient(policyClient);
 
   return {

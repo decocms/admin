@@ -56,7 +56,7 @@ export class PolicyClient {
   private userPolicyCache: LRUCache<string, Policy[]>;
   private teamRolesCache: LRUCache<number, Role[]>;
 
-  private constructor() {
+  private constructor(db: Client) {
     // Initialize caches
     this.userPolicyCache = new LRUCache<string, Policy[]>({
       ttl: TWO_MIN,
@@ -66,23 +66,17 @@ export class PolicyClient {
       ttl: TWO_MIN,
       max: 100,
     });
+    this.db = db;
   }
 
   /**
    * Get singleton instance of PolicyClient
    */
-  public static getInstance(): PolicyClient {
+  public static getInstance(db: Client): PolicyClient {
     if (!PolicyClient.instance) {
-      PolicyClient.instance = new PolicyClient();
+      PolicyClient.instance = new PolicyClient(db);
     }
     return PolicyClient.instance;
-  }
-
-  /**
-   * Initialize the policy client with database client
-   */
-  public init(db: Client): void {
-    this.db = db;
   }
 
   /**

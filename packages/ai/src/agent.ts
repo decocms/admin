@@ -14,9 +14,11 @@ import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
   assertUserHasAccessToWorkspace,
+  AuthorizationClient,
   fromWorkspaceString,
   MCPClient,
   MCPClientStub,
+  PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
 import { trace } from "@deco/sdk/observability";
@@ -198,6 +200,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   createAppContext(metadata?: AgentMetadata): AppContext {
+    const policyClient = PolicyClient.getInstance(this.db);
     return {
       params: {},
       envVars: this.env as any,
@@ -208,6 +211,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       cookie: metadata?.principalCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
+      policy: policyClient,
+      authorization: new AuthorizationClient(policyClient),
     };
   }
 

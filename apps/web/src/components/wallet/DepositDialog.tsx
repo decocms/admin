@@ -32,7 +32,6 @@ function parseCurrency(value: string) {
 
 export function DepositDialog() {
   const { workspace } = useSDK();
-
   const createCheckoutSession = useMutation({
     mutationFn: (amountInCents: number) =>
       createWalletCheckoutSession({

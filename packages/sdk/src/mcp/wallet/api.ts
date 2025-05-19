@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createApiHandler, getEnv } from "../context.ts";
+import { AppContext, createApiHandler, getEnv } from "../context.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -13,6 +13,13 @@ import {
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 import { MCPError } from "../errors.ts";
+
+const getWalletClient = (c: AppContext) => {
+  if (!c.envVars.WALLET_API_KEY) {
+    throw new MCPError("WALLET_API_KEY is not set");
+  }
+  return createWalletClient(c.envVars.WALLET_API_KEY, c.walletBinding);
+};
 
 const Account = {
   fetch: async (wallet: ClientOf<WalletAPI>, id: string) => {
@@ -40,6 +47,86 @@ const Account = {
   },
 };
 
+const AccountStatements = {
+  fetch: async (wallet: ClientOf<WalletAPI>, workspace: string, cursor?: string) => {
+    const filter = [
+      `type=AgentGeneration`,
+      `workspace=${workspace}`,
+    ].join(";");
+
+    const statementsResponse = await wallet["GET /transactions"]({
+      filter,
+      ...(cursor ? { cursor } : {}),
+      limit: 50,
+    });
+
+    if (!statementsResponse.ok) {
+      throw new Error("Failed to fetch statements");
+    }
+
+    return statementsResponse.json();
+  },
+  format: (
+    statements: WalletAPI["GET /transactions"]["response"],
+  ) => {
+
+    const buildTransactionInfo = ({
+      type,
+      description,
+    }: {
+      type: string;
+      description?: string;
+    }) => {
+      switch (type) {
+        case "AgentGeneration":
+          return {
+            title: "Agent usage",
+            icon: "smart_toy",
+            description: description ?? "Agent usage",
+          };
+        default:
+          return {
+            title: "Transaction",
+            description: description ?? "Transaction",
+          };
+      }
+    };
+
+    return {
+      items: statements.items.map((statement) => {
+        if (statement.transaction.type !== "AgentGeneration") {
+          return null;
+        }
+
+        const userGenCreditsEntry = statement.entries[0];
+
+        if (!userGenCreditsEntry) {
+          return null;
+        }
+
+        const microdollar = MicroDollar.fromMicrodollarString(
+          userGenCreditsEntry.amount as unknown as string,
+        );
+        const amount = microdollar.display();
+        const amountExact = microdollar.display({
+          showAllDecimals: true,
+        });
+
+        return {
+          entries: statement.entries,
+          timestamp: statement.timestamp,
+          type: "debit",
+          amount,
+          amountExact,
+          metadata: statement.transaction.metadata,
+          ...buildTransactionInfo(statement.transaction),
+        };
+      }).filter(Boolean),
+      nextCursor: statements.nextCursor,
+    };
+  },
+};
+
 export const getWalletAccount = createApiHandler({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
@@ -48,13 +135,7 @@ export const getWalletAccount = createApiHandler({
     assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);
 
-    const envVars = getEnv(c);
-
-    if (!envVars.WALLET_API_KEY) {
-      throw new MCPError("WALLET_API_KEY is not set");
-    }
-
-    const wallet = createWalletClient(envVars.WALLET_API_KEY, c.walletBinding);
+    const wallet = getWalletClient(c);
 
     const workspaceWalletId = WellKnownWallets.build(
       ...WellKnownWallets.workspace.genCredits(c.workspace.value),
@@ -71,6 +152,23 @@ export const getWalletAccount = createApiHandler({
     }
 
     return Account.format(data);
+  },
+});
+
+export const getWalletStatements = createApiHandler({
+  name: "GET_WALLET_STATEMENTS",
+  description: "Get the statements for the current tenant's wallet",
+  schema: z.object({
+    cursor: z.string().optional(),
+  }),
+  handler: async ({ cursor }, ctx) => {
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
+
+    const wallet = getWalletClient(ctx);
+
+    const statements = await AccountStatements.fetch(wallet, ctx.workspace.value, cursor);
+    return AccountStatements.format(statements);
   },
 });
 

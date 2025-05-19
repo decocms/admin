@@ -15,7 +15,7 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Fragment, ReactNode } from "react";
+import { Fragment, ReactNode, useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/data/useUser.ts";
@@ -23,8 +23,14 @@ import { useWorkspaceLink } from "../hooks/useNavigateWorkspace.ts";
 import RegisterActivity from "./common/RegisterActivity.tsx";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
+import { useLocalStorage } from "../hooks/useLocalStorage.ts";
 
 export function RouteLayout() {
+  const {
+    value: defaultOpen,
+    update: setDefaultOpen,
+  } = useLocalStorage({ key: "deco-chat-sidebar", defaultValue: true });
+  const [open, setOpen] = useState(defaultOpen);
   const { teamSlug } = useParams();
   const user = useUser();
 
@@ -34,6 +40,11 @@ export function RouteLayout() {
 
   return (
     <SidebarProvider
+      open={open}
+      onOpenChange={(open) => {
+        setDefaultOpen(open);
+        setOpen(open);
+      }}
       className="h-full bg-slate-50"
       style={{
         "--sidebar-width": "16rem",

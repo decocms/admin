@@ -148,7 +148,8 @@ export const createAgent = createApiHandler({
 
 export const createTempAgent = createApiHandler({
   name: "AGENTS_CREATE_TEMP",
-  description: "Inserts or updates a temp agent for the whatsapp integration based on userId",
+  description:
+    "Inserts or updates a temp agent for the whatsapp integration based on userId",
   schema: z.object({
     agentId: z.string(),
     userId: z.string(),
@@ -161,8 +162,8 @@ export const createTempAgent = createApiHandler({
           agent_id: agentId,
           user_id: userId,
         }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
+          onConflict: "user_id",
+          ignoreDuplicates: false,
         })
         .select()
         .single(),
@@ -175,7 +176,6 @@ export const createTempAgent = createApiHandler({
     return data;
   },
 });
-
 
 export const updateAgent = createApiHandler({
   name: "AGENTS_UPDATE",

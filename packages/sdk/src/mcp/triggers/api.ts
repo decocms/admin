@@ -131,9 +131,13 @@ export const createTrigger = createApiHandler({
     await assertUserHasAccessToWorkspace(c);
 
     // Check if there's already a WhatsApp-enabled trigger for this agent
-    const whatsappEnabled = (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean }).whatsappEnabled;
+    const whatsappEnabled =
+      (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+        .whatsappEnabled;
     if (whatsappEnabled) {
-      const { data: existingTriggers, error: checkError } = await db.from("deco_chat_triggers")
+      const { data: existingTriggers, error: checkError } = await db.from(
+        "deco_chat_triggers",
+      )
         .select("id")
         .eq("agent_id", agentId)
         .eq("workspace", workspace)
@@ -144,7 +148,9 @@ export const createTrigger = createApiHandler({
       }
 
       if (existingTriggers && existingTriggers.length > 0) {
-        throw new UserInputError("Only one WhatsApp-enabled trigger is allowed per agent");
+        throw new UserInputError(
+          "Only one WhatsApp-enabled trigger is allowed per agent",
+        );
       }
     }
 
@@ -186,7 +192,9 @@ export const createTrigger = createApiHandler({
         user_id: user.id,
         workspace,
         metadata: data as Json,
-        whatsapp_enabled: (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean }).whatsappEnabled,
+        whatsapp_enabled:
+          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+            .whatsappEnabled,
       })
       .select(SELECT_TRIGGER_QUERY)
       .single();
@@ -305,7 +313,9 @@ export const createWebhookTrigger = createApiHandler({
         user_id: user.id,
         workspace,
         metadata: data as Json,
-        whatsapp_enabled: (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean }).whatsappEnabled,
+        whatsapp_enabled:
+          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+            .whatsappEnabled,
       })
       .select(SELECT_TRIGGER_QUERY)
       .single();

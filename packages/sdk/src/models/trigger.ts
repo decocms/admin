@@ -46,7 +46,9 @@ export const WebhookTriggerSchema = z.object({
       "By default this webhook returns the LLM generate text response.\n\n" +
       "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
   ),
-  whatsappEnabled: z.boolean().optional().describe("Whether the webhook is enabled for WhatsApp"),
+  whatsappEnabled: z.boolean().optional().describe(
+    "Whether the webhook is enabled for WhatsApp",
+  ),
 });
 
 export const WebhookTriggerOutputSchema = z.object({

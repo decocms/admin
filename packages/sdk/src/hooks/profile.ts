@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./api.ts";
 
@@ -18,7 +22,15 @@ export const useProfile = () => {
 export const useUpdateProfile = () => {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: { name?: string | null; email?: string; phone?: string | null; deco_user_id?: number | null; is_new_user?: boolean | null }) => {
+    mutationFn: async (
+      updates: {
+        name?: string | null;
+        email?: string;
+        phone?: string | null;
+        deco_user_id?: number | null;
+        is_new_user?: boolean | null;
+      },
+    ) => {
       const { ok, data, error } = await MCPClient.PROFILES_UPDATE(updates);
       if (!ok || !data) {
         throw new Error(error?.message ?? "Failed to update user profile");
@@ -29,4 +41,4 @@ export const useUpdateProfile = () => {
       client.invalidateQueries({ queryKey: KEYS.PROFILE() });
     },
   });
-}; 
+};

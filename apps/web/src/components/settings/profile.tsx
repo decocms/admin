@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@deco/ui/components/dialog.tsx";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import countriesData from "../../utils/countries.json" with { type: "json" };
@@ -23,7 +31,9 @@ function getCountryConfig(country: any): Country {
         let digits = value.replace(/\D/g, "");
         if (digits.length > 11) digits = digits.slice(0, 11);
         if (digits.length === 11) {
-          return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+          return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${
+            digits.slice(7)
+          }`;
         } else if (digits.length > 2) {
           return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
         } else if (digits.length > 0) {
@@ -31,7 +41,8 @@ function getCountryConfig(country: any): Country {
         }
         return "";
       },
-      validate: (value: string) => /^\+?55\d{11}$/.test(value.replace(/\D/g, "")),
+      validate: (value: string) =>
+        /^\+?55\d{11}$/.test(value.replace(/\D/g, "")),
       placeholder: "+5511975854882",
     };
   }
@@ -42,7 +53,9 @@ function getCountryConfig(country: any): Country {
         let digits = value.replace(/\D/g, "");
         if (digits.length > 10) digits = digits.slice(0, 10);
         if (digits.length === 10) {
-          return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+          return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${
+            digits.slice(6)
+          }`;
         } else if (digits.length > 3) {
           return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
         } else if (digits.length > 0) {
@@ -50,7 +63,8 @@ function getCountryConfig(country: any): Country {
         }
         return "";
       },
-      validate: (value: string) => /^\+?1\d{10}$/.test(value.replace(/\D/g, "")),
+      validate: (value: string) =>
+        /^\+?1\d{10}$/.test(value.replace(/\D/g, "")),
       placeholder: "+14155551234",
     };
   }
@@ -64,7 +78,12 @@ function getCountryConfig(country: any): Country {
 
 const COUNTRIES: Country[] = countriesData.map(getCountryConfig);
 
-export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function ProfileSettings(
+  { open, onOpenChange }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  },
+) {
   const { data: profile, isLoading, error: loadError } = useProfile();
   const updateProfile = useUpdateProfile();
   const [dialCode, setDialCode] = useState("+1"); // default to US/Canada
@@ -79,7 +98,9 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
     let raw = e.target.value;
     if (!raw.startsWith("+")) raw = "+" + raw.replace(/\D/g, "");
     setDialCode(raw);
-    const match = COUNTRIES.find(c => raw === c.dial_code || raw.startsWith(c.dial_code));
+    const match = COUNTRIES.find((c) =>
+      raw === c.dial_code || raw.startsWith(c.dial_code)
+    );
     setCountry(match || null);
     // Reset local value if country changes
     setLocalValue("");
@@ -104,7 +125,9 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
   useEffect(() => {
     if (profile?.phone) {
       // Find country by dial_code
-      const match = COUNTRIES.find(c => profile.phone.startsWith(c.dial_code));
+      const match = COUNTRIES.find((c) =>
+        profile.phone.startsWith(c.dial_code)
+      );
       setCountry(match || null);
       if (match) {
         setDialCode(match.dial_code);
@@ -121,7 +144,9 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
 
   function validatePhone() {
     if (!country) {
-      setError("Please enter a valid international phone number (e.g. +5511975854882)");
+      setError(
+        "Please enter a valid international phone number (e.g. +5511975854882)",
+      );
       return false;
     }
     if (!country.validate(fullPhone)) {
@@ -138,7 +163,8 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
       { phone: fullPhone },
       {
         onSuccess: () => setSuccess(true),
-        onError: (err: any) => setError(err.message || "Failed to update profile"),
+        onError: (err: any) =>
+          setError(err.message || "Failed to update profile"),
       },
     );
   }
@@ -150,52 +176,83 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
           <DialogTitle>Profile</DialogTitle>
           <DialogDescription>Your account information</DialogDescription>
         </DialogHeader>
-        {isLoading ? (
-          <div className="py-8 text-center text-muted-foreground">Loading...</div>
-        ) : loadError ? (
-          <div className="py-8 text-center text-red-500">{String(loadError.message)}</div>
-        ) : (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <Avatar url={profile?.metadata?.avatar_url} fallback={profile?.metadata?.full_name || profile?.email} className="w-20 h-20" />
-            <div className="text-lg font-semibold">{profile?.metadata?.full_name || profile?.email}</div>
-            <div className="text-sm text-slate-500">{profile?.email}</div>
-            <div className="w-full max-w-xs flex flex-col gap-2">
-              <label htmlFor="profile-phone" className="text-sm font-medium text-slate-700">Phone Number</label>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{country?.flag ?? "🌐"}</span>
-                <input
-                  id="profile-dialcode"
-                  type="text"
-                  className="border rounded px-2 py-2 text-sm w-20 text-center"
-                  placeholder="+55"
-                  value={dialCode}
-                  onChange={handleDialCodeChange}
-                  maxLength={5}
-                  inputMode="tel"
-                  autoComplete="tel-country-code"
-                  disabled={updateProfile.isPending}
-                />
-                <input
-                  id="profile-local"
-                  type="tel"
-                  className="border rounded px-3 py-2 text-sm flex-1"
-                  placeholder={country?.placeholder?.replace(country.dial_code, "") ?? "11975854882"}
-                  value={localValue}
-                  onChange={handleLocalChange}
-                  onBlur={validatePhone}
-                  maxLength={20}
-                  inputMode="tel"
-                  autoComplete="tel-local"
-                  disabled={updateProfile.isPending}
-                />
-              </div>
-              {error && <span className="text-red-500 text-xs mt-1">{error}</span>}
-              {success && <span className="text-green-600 text-xs mt-1">Saved!</span>}
+        {isLoading
+          ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Loading...
             </div>
-          </div>
-        )}
+          )
+          : loadError
+          ? (
+            <div className="py-8 text-center text-red-500">
+              {String(loadError.message)}
+            </div>
+          )
+          : (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <Avatar
+                url={profile?.metadata?.avatar_url}
+                fallback={profile?.metadata?.full_name || profile?.email}
+                className="w-20 h-20"
+              />
+              <div className="text-lg font-semibold">
+                {profile?.metadata?.full_name || profile?.email}
+              </div>
+              <div className="text-sm text-slate-500">{profile?.email}</div>
+              <div className="w-full max-w-xs flex flex-col gap-2">
+                <label
+                  htmlFor="profile-phone"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Phone Number
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{country?.flag ?? "🌐"}</span>
+                  <input
+                    id="profile-dialcode"
+                    type="text"
+                    className="border rounded px-2 py-2 text-sm w-20 text-center"
+                    placeholder="+55"
+                    value={dialCode}
+                    onChange={handleDialCodeChange}
+                    maxLength={5}
+                    inputMode="tel"
+                    autoComplete="tel-country-code"
+                    disabled={updateProfile.isPending}
+                  />
+                  <input
+                    id="profile-local"
+                    type="tel"
+                    className="border rounded px-3 py-2 text-sm flex-1"
+                    placeholder={country?.placeholder?.replace(
+                      country.dial_code,
+                      "",
+                    ) ?? "11975854882"}
+                    value={localValue}
+                    onChange={handleLocalChange}
+                    onBlur={validatePhone}
+                    maxLength={20}
+                    inputMode="tel"
+                    autoComplete="tel-local"
+                    disabled={updateProfile.isPending}
+                  />
+                </div>
+                {error && (
+                  <span className="text-red-500 text-xs mt-1">{error}</span>
+                )}
+                {success && (
+                  <span className="text-green-600 text-xs mt-1">Saved!</span>
+                )}
+              </div>
+            </div>
+          )}
         <DialogFooter>
-          <Button type="button" variant="default" onClick={handleSave} disabled={updateProfile.isPending || isLoading}>
+          <Button
+            type="button"
+            variant="default"
+            onClick={handleSave}
+            disabled={updateProfile.isPending || isLoading}
+          >
             {updateProfile.isPending ? "Saving..." : "Save"}
           </Button>
           <DialogClose asChild>
@@ -207,4 +264,4 @@ export function ProfileSettings({ open, onOpenChange }: { open: boolean; onOpenC
       </DialogContent>
     </Dialog>
   );
-} 
+}

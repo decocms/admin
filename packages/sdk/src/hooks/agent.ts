@@ -53,7 +53,8 @@ export const useCreateTempAgent = () => {
   const { workspace } = useSDK();
 
   const create = useMutation({
-    mutationFn: ({ agentId, userId }: { agentId: string, userId: string }) => createTempAgent(workspace, agentId, userId),
+    mutationFn: ({ agentId, userId }: { agentId: string; userId: string }) =>
+      createTempAgent(workspace, agentId, userId),
   });
 
   return create;

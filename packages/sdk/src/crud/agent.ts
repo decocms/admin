@@ -52,8 +52,13 @@ export const createAgent = async (
   return data;
 };
 
-export const createTempAgent = async (workspace: string, agentId: string, userId: string) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_CREATE_TEMP({ agentId, userId });
+export const createTempAgent = async (
+  workspace: string,
+  agentId: string,
+  userId: string,
+) => {
+  const { error, data } = await MCPClient.forWorkspace(workspace)
+    .AGENTS_CREATE_TEMP({ agentId, userId });
 
   if (error) {
     throw new Error(error.message);

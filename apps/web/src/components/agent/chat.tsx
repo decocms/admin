@@ -25,8 +25,8 @@ import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import {  useCreateTrigger, useCreateTempAgent} from "@deco/sdk";
-import { useUser } from '../../hooks/data/useUser.ts'
+import { useCreateTempAgent, useCreateTrigger } from "@deco/sdk";
+import { useUser } from "../../hooks/data/useUser.ts";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -115,7 +115,11 @@ function ActionsButtons() {
           );
         },
         onError: (error) => {
-          if (error.message.includes("Only one WhatsApp-enabled trigger is allowed per agent")) {
+          if (
+            error.message.includes(
+              "Only one WhatsApp-enabled trigger is allowed per agent",
+            )
+          ) {
             createTempAgent(
               { agentId, userId: user.id },
               {
@@ -126,7 +130,9 @@ function ActionsButtons() {
                   });
                 },
                 onError: (tempAgentError) => {
-                  alert(`Failed to create temporary agent: ${tempAgentError.message}`);
+                  alert(
+                    `Failed to create temporary agent: ${tempAgentError.message}`,
+                  );
                 },
               },
             );
@@ -154,7 +160,7 @@ function ActionsButtons() {
           WhatsApp
         </TooltipContent>
       </Tooltip>
-      
+
       {displayNewChat && (
         <Tooltip>
           <TooltipTrigger asChild>

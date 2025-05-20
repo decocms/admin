@@ -8,9 +8,9 @@ import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createApiHandler, type AppContext } from "../context.ts";
+import { type AppContext, createApiHandler } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
-import { NotFoundError, InternalServerError } from "../index.ts";
+import { InternalServerError, NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 
@@ -299,13 +299,17 @@ export const updateThreadTitle = createApiHandler({
     const result = await memory.updateThread({
       id: threadId,
       title,
-      metadata: currentThread.metadata,
+      metadata: currentThread.metadata ?? {},
     });
     if (!result) {
       throw new InternalServerError("Failed to update thread title");
     }
 
-    return result;
+    return {
+      ...result,
+      createdAt: result.createdAt instanceof Date ? result.createdAt.toISOString() : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date ? result.updatedAt.toISOString() : result.updatedAt,
+    };
   },
 });
 
@@ -326,13 +330,17 @@ export const updateThreadMetadata = createApiHandler({
 
     const result = await memory.updateThread({
       id: threadId,
-      title: currentThread.title,
+      title: currentThread.title ?? "",
       metadata: { ...currentThread.metadata, ...metadata },
     });
     if (!result) {
       throw new InternalServerError("Failed to update thread metadata");
     }
 
-    return result;
+    return {
+      ...result,
+      createdAt: result.createdAt instanceof Date ? result.createdAt.toISOString() : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date ? result.updatedAt.toISOString() : result.updatedAt,
+    };
   },
 });

@@ -13,8 +13,8 @@ import {
   getThreadMessages,
   getThreadTools,
   listThreads,
-  updateThreadTitle,
   updateThreadMetadata,
+  updateThreadTitle,
 } from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";

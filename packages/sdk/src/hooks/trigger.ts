@@ -37,7 +37,7 @@ export function useListTriggersByAgentId(
     queryKey: KEYS.TRIGGERS(workspace, agentId),
     queryFn: () => listTriggers(workspace, agentId),
     staleTime: 0,
-    
+
     ...options,
   });
 }

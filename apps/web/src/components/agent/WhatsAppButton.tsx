@@ -97,7 +97,9 @@ export function WhatsAppButton() {
 
   function handleWhatsAppClick() {
     if (!profile?.phone) {
-      toast("To enable your agent for WhatsApp use, first register your WhatsApp phone number.");
+      toast(
+        "To enable your agent for WhatsApp use, first register your WhatsApp phone number.",
+      );
       openProfileModal(runWhatsAppIntegration);
       return;
     }

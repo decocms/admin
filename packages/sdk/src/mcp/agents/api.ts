@@ -163,6 +163,9 @@ export const createTempAgent = createApiHandler({
     agentId: z.string(),
     userId: z.string(),
   }),
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource("AGENTS_CREATE", c);
+  },
   handler: async ({ agentId, userId }, c) => {
     const [{ data, error }] = await Promise.all([
       c.db
@@ -243,6 +246,9 @@ export const getTempAgent = createApiHandler({
   name: "AGENTS_GET_TEMP",
   description: "Get the temp WhatsApp agent for the current user",
   schema: z.object({ userId: z.string() }),
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource("AGENTS_GET", c);
+  },
   handler: async ({ userId }, c) => {
     const { data, error } = await c.db
       .from("temp_wpp_agents")

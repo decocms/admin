@@ -64,7 +64,7 @@ export function WhatsAppButton() {
           });
         },
         onError: (error) => {
-          alert(`Failed to create temporary agent: ${error.message}`);
+          toast.error(`Failed to create temporary agent: ${error.message}`);
         },
       },
     );

@@ -5,11 +5,7 @@ import {
   NEW_AGENT_TEMPLATE,
   WELL_KNOWN_AGENTS,
 } from "../../index.ts";
-import {
-  assertHasUser,
-  assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
-} from "../assertions.ts";
+import { assertHasUser, assertHasWorkspace } from "../assertions.ts";
 import { AppContext, createApiHandler } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { PostgrestError } from "@supabase/supabase-js";
@@ -53,23 +49,41 @@ export const getAgentsByIds = async (
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
+const canAccessAgent = async (
+  resource: string,
+  c: AppContext,
+): Promise<boolean> => {
+  assertHasUser(c);
+  assertHasWorkspace(c);
+  const user = c.user;
+  const authorization = c.authorization;
+  const { root, slug } = c.workspace;
+
+  if (root === "users" && user.id === slug) {
+    return true;
+  }
+
+  if (root === "shared") {
+    return await authorization.canAccess(user.id, slug, resource);
+  }
+
+  return false;
+};
+
 export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
   description: "List all agents",
   schema: z.object({}),
+  canAccess: async (_props, c) => {
+    return await canAccessAgent("AGENTS_LIST", c);
+  },
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    const [
-      _assertions,
-      { data, error },
-    ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      c.db
-        .from("deco_chat_agents")
-        .select("*")
-        .ilike("workspace", c.workspace.value),
-    ]);
+    const { data, error } = await c.db
+      .from("deco_chat_agents")
+      .select("*")
+      .ilike("workspace", c.workspace.value);
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -86,31 +100,17 @@ export const getAgent = createApiHandler({
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
   canAccess: async (_props, c) => {
-    assertHasUser(c);
+    const hasAccess = await canAccessAgent("AGENTS_GET", c);
+    if (hasAccess) {
+      return true;
+    }
+
     assertHasWorkspace(c);
-    const user = c.user;
-    const authorization = c.authorization;
-    const { root, slug, value } = c.workspace;
-
-    // TODO (@gimenes): remove this hard coded access for @deco.cx by allowing
-    // deco.cx users to enter in any workspace
-    const isAdmin = user?.email?.endsWith("@deco.cx");
-    if (isAdmin) {
-      return true;
-    }
-
-    if (root === "users" && user.id === slug) {
-      return true;
-    }
-
-    if (root === "shared") {
-      return await authorization.canAccess(user.id, slug, "AGENTS_GET");
-    }
-
     const { data: agentData } = await c.db.from("deco_chat_agents").select(
       "visibility",
-    ).eq("workspace", value).single();
+    ).eq("workspace", c.workspace.value).single();
 
+    // TODO: implement this using authorization system
     if (agentData?.visibility === "PUBLIC") {
       return true;
     }
@@ -120,27 +120,16 @@ export const getAgent = createApiHandler({
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    const [
-      hasAccessToWorkspace,
-      { data, error },
-    ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c)
-        .then(() => true).catch((e) => e),
-      id in WELL_KNOWN_AGENTS
-        ? {
-          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-          error: null,
-        }
-        : c.db
-          .from("deco_chat_agents")
-          .select("*")
-          .eq("id", id)
-          .single(),
-    ]);
-
-    if (hasAccessToWorkspace !== true && data?.visibility !== "PUBLIC") {
-      throw hasAccessToWorkspace;
-    }
+    const { data, error } = id in WELL_KNOWN_AGENTS
+      ? {
+        data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+        error: null,
+      }
+      : await c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .eq("id", id)
+        .single();
 
     if ((error && error.code == NO_DATA_ERROR) || !data) {
       throw new AgentNotFoundError(id);
@@ -158,10 +147,11 @@ export const createAgent = createApiHandler({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   schema: AgentSchema.partial(),
+  canAccess: async (_agent, c) => {
+    return await canAccessAgent("AGENTS_CREATE", c);
+  },
   handler: async (agent, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -221,11 +211,11 @@ export const updateAgent = createApiHandler({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
+  canAccess: async (_, c) => {
+    return await canAccessAgent("AGENTS_UPDATE", c);
+  },
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
-
     const { data, error } = await c.db
       .from("deco_chat_agents")
       .update({ ...agent, id, workspace: c.workspace.value })
@@ -249,11 +239,11 @@ export const deleteAgent = createApiHandler({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   schema: z.object({ id: z.string() }),
+  canAccess: async (_, c) => {
+    return await canAccessAgent("AGENTS_DELETE", c);
+  },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
-
     const { error } = await c.db
       .from("deco_chat_agents")
       .delete()

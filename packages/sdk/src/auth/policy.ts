@@ -92,6 +92,7 @@ export class PolicyClient {
 
     const teamId = typeof teamIdOrSlug === "number"
       ? teamIdOrSlug
+      // TODO: add cache
       : (await this.db.from("teams").select("id").eq("slug", teamIdOrSlug)
         .single()).data?.id;
 

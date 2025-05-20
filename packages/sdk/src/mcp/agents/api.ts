@@ -5,7 +5,10 @@ import {
   NEW_AGENT_TEMPLATE,
   WELL_KNOWN_AGENTS,
 } from "../../index.ts";
-import { assertHasUser, assertHasWorkspace } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  canAccessWorkspaceResource,
+} from "../assertions.ts";
 import { AppContext, createApiHandler } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { PostgrestError } from "@supabase/supabase-js";
@@ -49,33 +52,12 @@ export const getAgentsByIds = async (
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
-const canAccessAgent = async (
-  resource: string,
-  c: AppContext,
-): Promise<boolean> => {
-  assertHasUser(c);
-  assertHasWorkspace(c);
-  const user = c.user;
-  const authorization = c.authorization;
-  const { root, slug } = c.workspace;
-
-  if (root === "users" && user.id === slug) {
-    return true;
-  }
-
-  if (root === "shared") {
-    return await authorization.canAccess(user.id, slug, resource);
-  }
-
-  return false;
-};
-
 export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
   description: "List all agents",
   schema: z.object({}),
   canAccess: async (_props, c) => {
-    return await canAccessAgent("AGENTS_LIST", c);
+    return await canAccessWorkspaceResource("AGENTS_LIST", c);
   },
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -100,7 +82,7 @@ export const getAgent = createApiHandler({
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
   canAccess: async (_props, c) => {
-    const hasAccess = await canAccessAgent("AGENTS_GET", c);
+    const hasAccess = await canAccessWorkspaceResource("AGENTS_GET", c);
     if (hasAccess) {
       return true;
     }
@@ -148,7 +130,7 @@ export const createAgent = createApiHandler({
   description: "Create a new agent",
   schema: AgentSchema.partial(),
   canAccess: async (_agent, c) => {
-    return await canAccessAgent("AGENTS_CREATE", c);
+    return await canAccessWorkspaceResource("AGENTS_CREATE", c);
   },
   handler: async (agent, c) => {
     assertHasWorkspace(c);
@@ -212,7 +194,7 @@ export const updateAgent = createApiHandler({
     agent: AgentSchema.partial(),
   }),
   canAccess: async (_, c) => {
-    return await canAccessAgent("AGENTS_UPDATE", c);
+    return await canAccessWorkspaceResource("AGENTS_UPDATE", c);
   },
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
@@ -240,7 +222,7 @@ export const deleteAgent = createApiHandler({
   description: "Delete an agent by id",
   schema: z.object({ id: z.string() }),
   canAccess: async (_, c) => {
-    return await canAccessAgent("AGENTS_DELETE", c);
+    return await canAccessWorkspaceResource("AGENTS_DELETE", c);
   },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

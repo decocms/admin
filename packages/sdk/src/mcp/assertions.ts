@@ -152,3 +152,24 @@ export const assertHasUser = (c: AppContext) => {
     throw new UnauthorizedError();
   }
 };
+
+export const canAccessWorkspaceResource = async (
+  resource: string,
+  c: AppContext,
+): Promise<boolean> => {
+  assertHasUser(c);
+  assertHasWorkspace(c);
+  const user = c.user;
+  const authorization = c.authorization;
+  const { root, slug } = c.workspace;
+
+  if (root === "users" && user.id === slug) {
+    return true;
+  }
+
+  if (root === "shared") {
+    return await authorization.canAccess(user.id, slug, resource);
+  }
+
+  return false;
+};

@@ -29,6 +29,7 @@ export function WhatsAppButton() {
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
   const { data: tempWppAgent } = useTempWppAgent(user.id);
+  const { workspace } = useSDK();
 
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
@@ -38,8 +39,10 @@ export function WhatsAppButton() {
   );
 
   function runWhatsAppIntegration() {
-    const audio = new Audio("/holy-melody.mp3");
-    audio.play();
+    if (workspace.name === "deco.cx") {
+      const audio = new Audio("/holy-melody.mp3");
+      audio.play();
+    }
     createTrigger(
       {
         title: "WhatsApp Integration",

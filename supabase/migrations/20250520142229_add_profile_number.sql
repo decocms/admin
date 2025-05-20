@@ -1,0 +1,5 @@
+ALTER TABLE profiles
+ADD COLUMN phone TEXT;
+
+ALTER TABLE profiles
+ADD COLUMN phone_verified_at TIMESTAMP WITH TIME ZONE;

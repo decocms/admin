@@ -15,6 +15,7 @@ import { useChatContext } from "../chat/context.tsx";
 import { useProfile } from "@deco/sdk/hooks";
 import { useProfileModal } from "../layout.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { useTempWppAgent } from "@deco/sdk/hooks";
 
 const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
 
@@ -27,6 +28,7 @@ export function WhatsAppButton() {
   const focusChat = useFocusChat();
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
+  const { data: tempWppAgent } = useTempWppAgent(user.id);
 
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
@@ -102,7 +104,11 @@ export function WhatsAppButton() {
     runWhatsAppIntegration();
   }
 
-  if (whatsappTrigger) {
+  // Show WhatsApp link if this agent is the temp agent and has a WhatsApp-enabled trigger
+  if (
+    tempWppAgent?.agent_id === agentId &&
+    whatsappTrigger
+  ) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
@@ -119,6 +125,7 @@ export function WhatsAppButton() {
     );
   }
 
+  // Otherwise, show enable button
   return (
     <Tooltip>
       <TooltipTrigger asChild>

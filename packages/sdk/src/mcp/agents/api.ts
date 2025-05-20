@@ -229,3 +229,20 @@ export const deleteAgent = createApiHandler({
     return true;
   },
 });
+
+export const getTempAgent = createApiHandler({
+  name: "AGENTS_GET_TEMP",
+  description: "Get the temp WhatsApp agent for the current user",
+  schema: z.object({ userId: z.string() }),
+  handler: async ({ userId }, c) => {
+    const { data, error } = await c.db
+      .from("temp_wpp_agents")
+      .select("agent_id")
+      .eq("user_id", userId)
+      .single();
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+    return data;
+  },
+});

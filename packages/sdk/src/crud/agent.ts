@@ -151,3 +151,15 @@ export const validateAgent = (
     return [null, error instanceof Error ? error : new Error("Invalid agent")];
   }
 };
+
+export const getTempAgent = async (
+  workspace: string,
+  userId: string,
+) => {
+  const { error, data } = await MCPClient.forWorkspace(workspace)
+    .AGENTS_GET_TEMP({ userId });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data;
+};

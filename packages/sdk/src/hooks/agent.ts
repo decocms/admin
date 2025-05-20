@@ -17,6 +17,7 @@ import {
   listAgents,
   loadAgent,
   updateAgent,
+  getTempAgent,
 } from "../crud/agent.ts";
 import { ForbiddenError, UnauthorizedError } from "../errors.ts";
 import type { Agent } from "../models/agent.ts";
@@ -182,4 +183,13 @@ export const useAgentStub = (
     () => stub<any>("AIAgent").new(agentRoot).withMetadata({ threadId }),
     [agentRoot, threadId],
   );
+};
+
+export const useTempWppAgent = (userId: string) => {
+  const { workspace } = useSDK();
+  return useSuspenseQuery({
+    queryKey: ["temp_wpp_agent", workspace, userId],
+    queryFn: () => getTempAgent(workspace, userId),
+    staleTime: 0,
+  });
 };

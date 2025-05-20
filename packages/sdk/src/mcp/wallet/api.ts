@@ -122,10 +122,10 @@ export const getWalletAccount = createApiHandler({
     const workspaceWalletId = WellKnownWallets.build(
       ...WellKnownWallets.workspace.genCredits(c.workspace.value),
     );
-    console.log({workspaceWalletId});
+    console.log({ workspaceWalletId });
     const data = await Account.fetch(wallet, workspaceWalletId);
 
-    console.log({data});
+    console.log({ data });
     if (!data) {
       return {
         balance: MicroDollar.ZERO.display(),

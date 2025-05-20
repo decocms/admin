@@ -20,7 +20,7 @@ import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
-import { DefaultBreadcrumb, PageLayout, useProfileModal } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";

@@ -66,30 +66,7 @@ export function WhatsAppButton() {
           );
         },
         onError: (error) => {
-          if (
-            error.message.includes(
-              "Only one WhatsApp-enabled trigger is allowed per agent",
-            )
-          ) {
-            createTempAgent(
-              { agentId, userId: user.id },
-              {
-                onSuccess: () => {
-                  toast.success("This agent is now available on WhatsApp.");
-                  focusChat(agentId, crypto.randomUUID(), {
-                    history: false,
-                  });
-                },
-                onError: (tempAgentError) => {
-                  alert(
-                    `Failed to create temporary agent: ${tempAgentError.message}`,
-                  );
-                },
-              },
-            );
-          } else {
-            alert(`Failed to create WhatsApp integration: ${error.message}`);
-          }
+          alert(`Failed to create WhatsApp integration: ${error.message}`);
         },
       },
     );

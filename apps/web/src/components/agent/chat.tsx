@@ -92,7 +92,10 @@ function ActionsButtons() {
     return null;
   }
 
-  const runWhatsAppIntegration = () => {
+  const handleWhatsAppClick = () => {
+    const audio = new Audio("/holy-melody.mp3");
+    audio.play();
+
     createTrigger(
       {
         title: "WhatsApp Integration",

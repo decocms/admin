@@ -307,8 +307,12 @@ export const updateThreadTitle = createApiHandler({
 
     return {
       ...result,
-      createdAt: result.createdAt instanceof Date ? result.createdAt.toISOString() : result.createdAt,
-      updatedAt: result.updatedAt instanceof Date ? result.updatedAt.toISOString() : result.updatedAt,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
     };
   },
 });
@@ -339,8 +343,12 @@ export const updateThreadMetadata = createApiHandler({
 
     return {
       ...result,
-      createdAt: result.createdAt instanceof Date ? result.createdAt.toISOString() : result.createdAt,
-      updatedAt: result.updatedAt instanceof Date ? result.updatedAt.toISOString() : result.updatedAt,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
     };
   },
 });

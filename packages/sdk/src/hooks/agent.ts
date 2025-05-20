@@ -12,6 +12,7 @@ import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   AgentNotFoundError,
   createAgent,
+  createTempAgent,
   deleteAgent,
   listAgents,
   loadAgent,
@@ -43,6 +44,16 @@ export const useCreateAgent = () => {
         (old) => !old ? [result] : [result, ...old],
       );
     },
+  });
+
+  return create;
+};
+
+export const useCreateTempAgent = () => {
+  const { workspace } = useSDK();
+
+  const create = useMutation({
+    mutationFn: ({ agentId, userId }: { agentId: string, userId: string }) => createTempAgent(workspace, agentId, userId),
   });
 
   return create;

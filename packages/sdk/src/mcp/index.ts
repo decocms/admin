@@ -11,6 +11,7 @@ import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
+import * as fsAPI from "./fs/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -62,6 +63,11 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.getWebhookTriggerUrl,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
+  fsAPI.listFiles,
+  fsAPI.readFile,
+  fsAPI.readFileMetadata,
+  fsAPI.writeFile,
+  fsAPI.deleteFile,
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;

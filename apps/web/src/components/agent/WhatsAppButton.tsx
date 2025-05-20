@@ -12,6 +12,9 @@ import {
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
+import { useProfile } from "@deco/sdk/hooks";
+import { useProfileModal } from "../layout.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
 
@@ -22,6 +25,8 @@ export function WhatsAppButton() {
   const { mutate: createTempAgent } = useCreateTempAgent();
   const user = useUser();
   const focusChat = useFocusChat();
+  const { data: profile } = useProfile();
+  const { openProfileModal } = useProfileModal();
 
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
@@ -30,10 +35,9 @@ export function WhatsAppButton() {
       (trigger.data as any).whatsappEnabled,
   );
 
-  const handleWhatsAppClick = () => {
+  function runWhatsAppIntegration() {
     const audio = new Audio("/holy-melody.mp3");
     audio.play();
-
     createTrigger(
       {
         title: "WhatsApp Integration",
@@ -48,7 +52,7 @@ export function WhatsAppButton() {
             { agentId, userId: user.id },
             {
               onSuccess: () => {
-                alert("This agent is now available on WhatsApp.");
+                toast.success("This agent is now available on WhatsApp.");
                 focusChat(agentId, crypto.randomUUID(), {
                   history: false,
                 });
@@ -69,7 +73,7 @@ export function WhatsAppButton() {
               { agentId, userId: user.id },
               {
                 onSuccess: () => {
-                  alert("This agent is now available on WhatsApp.");
+                  toast.success("This agent is now available on WhatsApp.");
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,
                   });
@@ -87,7 +91,16 @@ export function WhatsAppButton() {
         },
       },
     );
-  };
+  }
+
+  function handleWhatsAppClick() {
+    if (!profile?.phone) {
+      toast("To enable your agent for WhatsApp use, first register your WhatsApp phone number.");
+      openProfileModal(runWhatsAppIntegration);
+      return;
+    }
+    runWhatsAppIntegration();
+  }
 
   if (whatsappTrigger) {
     return (

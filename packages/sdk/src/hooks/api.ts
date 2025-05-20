@@ -58,4 +58,5 @@ export const KEYS = {
     workspace: Workspace,
     threadId: string,
   ) => ["thread-tools", workspace, threadId],
+  PROFILE: () => ["profile"],
 };

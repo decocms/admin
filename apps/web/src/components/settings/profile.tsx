@@ -146,7 +146,8 @@ export function ProfileSettings(
           setSuccess(true);
           if (onPhoneSaved) onPhoneSaved();
         },
-        onError: (err: any) => setError(err.message || "Failed to update profile"),
+        onError: (err: any) =>
+          setError(err.message || "Failed to update profile"),
       },
     );
   }
@@ -156,7 +157,7 @@ export function ProfileSettings(
     if (profile?.phone) {
       // Find country by dial_code
       const match = COUNTRIES.find((c) =>
-        profile.phone.startsWith(c.dial_code)
+        profile.phone?.startsWith(c.dial_code)
       );
       setCountry(match || null);
       if (match) {

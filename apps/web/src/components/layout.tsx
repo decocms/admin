@@ -15,7 +15,14 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Fragment, ReactNode, useState, createContext, useContext, useRef } from "react";
+import {
+  createContext,
+  Fragment,
+  ReactNode,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/data/useUser.ts";
@@ -31,10 +38,14 @@ interface ProfileModalContextType {
   openProfileModal: (onPhoneSaved?: () => void) => void;
   closeProfileModal: () => void;
 }
-export const ProfileModalContext = createContext<ProfileModalContextType | undefined>(undefined);
+export const ProfileModalContext = createContext<
+  ProfileModalContextType | undefined
+>(undefined);
 export function useProfileModal() {
   const ctx = useContext(ProfileModalContext);
-  if (!ctx) throw new Error("useProfileModal must be used within ProfileModalContext");
+  if (!ctx) {
+    throw new Error("useProfileModal must be used within ProfileModalContext");
+  }
   return ctx;
 }
 
@@ -70,7 +81,9 @@ export function RouteLayout() {
     : `users/${user?.id}`;
 
   return (
-    <ProfileModalContext.Provider value={{ openProfileModal, closeProfileModal }}>
+    <ProfileModalContext.Provider
+      value={{ openProfileModal, closeProfileModal }}
+    >
       <SidebarProvider
         open={open}
         onOpenChange={(open) => {
@@ -88,7 +101,11 @@ export function RouteLayout() {
           <SidebarInset className="h-full flex-col bg-slate-50">
             <Outlet />
           </SidebarInset>
-          <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} onPhoneSaved={handlePhoneSaved} />
+          <ProfileSettings
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+            onPhoneSaved={handlePhoneSaved}
+          />
           <RegisterActivity teamSlug={teamSlug} />
           <Toaster />
         </SDKProvider>

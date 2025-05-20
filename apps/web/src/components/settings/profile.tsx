@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -12,7 +13,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import countriesData from "../../utils/countries.json" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
-
 interface Country {
   code: string;
   name: string;
@@ -95,27 +95,25 @@ export function ProfileSettings(
 
   // On dial code change: detect country and update flag/mask
   function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    let raw = e.target.value;
-    if (!raw.startsWith("+")) raw = "+" + raw.replace(/\D/g, "");
-    setDialCode(raw);
-    const match = COUNTRIES.find((c) =>
-      raw === c.dial_code || raw.startsWith(c.dial_code)
+    const raw = e.target.value;
+    const formattedRaw = !raw.startsWith("+") ? "+" + raw.replace(/\D/g, "") : raw;
+    setDialCode(formattedRaw);
+    const match = COUNTRIES?.find((c) =>
+      formattedRaw === c.dial_code || formattedRaw.startsWith(c.dial_code)
     );
+    
     setCountry(match || null);
     // Reset local value if country changes
     setLocalValue("");
-    setFullPhone(raw);
+    setFullPhone(formattedRaw);
     setError("");
   }
 
   // On local number change: mask and update full phone
   function handleLocalChange(e: React.ChangeEvent<HTMLInputElement>) {
-    let raw = e.target.value;
+    const raw = e.target.value;
     const digits = raw.replace(/\D/g, "");
-    let masked = raw;
-    if (country) {
-      masked = country.mask(digits);
-    }
+    const masked = country ? country.mask(digits) : raw;
     setLocalValue(masked);
     setFullPhone(dialCode + digits);
     setError("");

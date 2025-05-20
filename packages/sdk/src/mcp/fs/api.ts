@@ -66,7 +66,7 @@ const getS3Client = (c: AppContext) => {
 };
 
 export const listFiles = createApiHandler({
-  name: "FILES_LIST",
+  name: "FS_LIST",
   description: "List files from a given bucket given a prefix",
   schema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
@@ -89,7 +89,7 @@ export const listFiles = createApiHandler({
 });
 
 export const readFile = createApiHandler({
-  name: "FILES_READ",
+  name: "FS_READ",
   description: "Get a secure temporary link to read a file",
   schema: z.object({
     path: z.string(),
@@ -115,7 +115,7 @@ export const readFile = createApiHandler({
 });
 
 export const readFileMetadata = createApiHandler({
-  name: "FILES_READ_METADATA",
+  name: "FS_READ_METADATA",
   description: "Get metadata about a file",
   schema: z.object({
     path: z.string(),
@@ -142,7 +142,7 @@ export const readFileMetadata = createApiHandler({
 });
 
 export const writeFile = createApiHandler({
-  name: "FILES_WRITE",
+  name: "FS_WRITE",
   description: "Get a secure temporary link to upload a file",
   schema: z.object({
     path: z.string(),
@@ -179,7 +179,7 @@ export const writeFile = createApiHandler({
 });
 
 export const deleteFile = createApiHandler({
-  name: "FILES_DELETE",
+  name: "FS_DELETE",
   description: "Delete a file",
   schema: z.object({ path: z.string() }),
   handler: async ({ path }, c) => {

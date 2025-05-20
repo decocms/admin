@@ -1,7 +1,8 @@
-import { useAgent } from "@deco/sdk";
+import { NotFoundError, useAgent } from "@deco/sdk";
 import { Suspense } from "react";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 
 interface Props {
   agentId: string;
@@ -12,9 +13,16 @@ export function AgentBreadcrumbSegment(
   { agentId, variant = "default" }: Props,
 ) {
   return (
-    <Suspense fallback={<AgentBreadcrumbSegment.Loading />}>
-      <AgentBreadcrumbSegment.UI agentId={agentId} variant={variant} />
-    </Suspense>
+    <ErrorBoundary
+      fallback={null}
+      shouldCatch={(e) => e instanceof NotFoundError}
+    >
+      <Suspense
+        fallback={<AgentBreadcrumbSegment.Loading />}
+      >
+        <AgentBreadcrumbSegment.UI agentId={agentId} variant={variant} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

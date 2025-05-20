@@ -1,6 +1,6 @@
 import {
-  AgentNotFoundError,
   MODELS,
+  NotFoundError,
   readFile,
   useAgent,
   useSDK,
@@ -38,7 +38,7 @@ export function ChatInput() {
   return (
     <ErrorBoundary
       fallback={<ChatInput.UI disabled />}
-      shouldCatch={(e) => e instanceof AgentNotFoundError}
+      shouldCatch={(e) => e instanceof NotFoundError}
     >
       <Suspense
         fallback={<ChatInput.UI disabled />}

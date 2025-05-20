@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  AgentNotFoundError,
   AgentSchema,
   NEW_AGENT_TEMPLATE,
   WELL_KNOWN_AGENTS,
@@ -10,6 +11,9 @@ import {
 } from "../assertions.ts";
 import { AppContext, createApiHandler } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
+import { PostgrestError } from "@supabase/supabase-js";
+
+const NO_DATA_ERROR = "PGRST116";
 
 export const getAgentsByIds = async (
   ids: string[],
@@ -105,12 +109,12 @@ export const getAgent = createApiHandler({
       throw hasAccessToWorkspace;
     }
 
-    if (error) {
-      throw new InternalServerError(error.message);
+    if ((error && error.code == NO_DATA_ERROR) || !data) {
+      throw new AgentNotFoundError(id);
     }
 
-    if (!data) {
-      throw new NotFoundError("Agent not found");
+    if (error) {
+      throw new InternalServerError((error as PostgrestError).message);
     }
 
     return AgentSchema.parse(data);

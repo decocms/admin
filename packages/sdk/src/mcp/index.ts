@@ -1,10 +1,11 @@
+export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
-export * from "../errors.ts";
 import * as agentsAPI from "./agents/api.ts";
 import { ApiHandler, AppContext, State } from "./context.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
+import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
@@ -63,6 +64,9 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.getWebhookTriggerUrl,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
+  knowledgeAPI.forget,
+  knowledgeAPI.remember,
+  knowledgeAPI.search,
   fsAPI.listFiles,
   fsAPI.readFile,
   fsAPI.readFileMetadata,

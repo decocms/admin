@@ -5,6 +5,11 @@
   "private": true,
   "dependencies": {
     "@aws-sdk/s3-request-presigner": "^3.812.0",
+    "@ai-sdk/openai": "1.3.22",
+    "@mastra/core": "0.9.0",
+    "@mastra/mcp": "0.4.0",
+    "@mastra/memory": "0.3.0",
+    "@mastra/rag": "0.1.23",
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "1.11.4",
     "cloudflare": "^4.2.0",
@@ -18,6 +23,8 @@
     "react": "^19.1.0",
     "zod": "3.24.3",
     "@aws-sdk/client-s3": "^3.808.0",
+    "uuid": "^11.1.0",
+    "@tursodatabase/api": "^1.9.0",
     "@supabase/supabase-js": "^2.49.4",
     "@supabase/ssr": "^0.6.1",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",
@@ -39,6 +46,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./observability": "./src/observability/index.ts",
+    "./memory": "./src/memory/memory.ts",
     "./actors": "./src/actors/index.ts",
     "./cache": "./src/cache/index.ts",
     "./common": "./src/common/index.ts",

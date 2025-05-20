@@ -57,7 +57,7 @@ const createSQLClientFor = async (
   organization: string,
   authToken: string,
 ) => {
-  const memoryId = await toAlphanumericId(
+  const memoryId = toAlphanumericId(
     `${workspace}/default`,
   );
   const uniqueDbName = await generateUUIDv5(

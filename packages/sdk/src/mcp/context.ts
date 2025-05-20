@@ -30,6 +30,8 @@ export interface Vars {
 }
 
 export type EnvVars = z.infer<typeof envSchema>;
+  TURSO_ADMIN_TOKEN: string;
+  OPENAI_API_KEY: string;
 
 export type AppContext = Vars & {
   envVars: EnvVars;
@@ -67,6 +69,8 @@ const envSchema = z.object({
   TURSO_ORGANIZATION: z.string().readonly(),
   RESEND_API_KEY: z.string().readonly(),
   OPENROUTER_API_KEY: z.string().readonly(),
+  TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
+  OPENAI_API_KEY: z.any().optional().readonly()
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

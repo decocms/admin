@@ -1,11 +1,11 @@
+import type { Workspace } from "@deco/sdk/path";
 import type { Client as LibSQLClient } from "@libsql/client";
 import type { StorageThreadType } from "@mastra/core";
 import type { SharedMemoryConfig } from "@mastra/core/memory";
 import { Memory as MastraMemory } from "@mastra/memory";
-import type { Workspace } from "@deco/sdk/path";
-import { toAlphanumericId } from "../utils/slugify.ts";
+import { slugify, toAlphanumericId } from "../mcp/slugify.ts";
 import { LibSQLFactory, type LibSQLFactoryOpts } from "./libsql.ts";
-
+export { slugify, toAlphanumericId };
 type CreateThreadOpts = Parameters<MastraMemory["createThread"]>[0];
 
 interface WorkspaceMemoryConfig extends SharedMemoryConfig {

@@ -6,8 +6,8 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
 import type { Message } from "../types.ts";
-import { slugify } from "../utils/slugify.ts";
 import type { Trigger } from "./trigger.ts";
+import { slugify } from "@deco/sdk/memory";
 
 export interface RunOutputToolArgs {
   agent: ActorProxy<AIAgent>;

@@ -6,6 +6,7 @@ import {
   UnauthorizedError,
 } from "../errors.ts";
 import { AppContext } from "./context.ts";
+import { Workspace } from "../path.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
@@ -13,7 +14,7 @@ const getContextUser = (c: AppContext) => {
 };
 
 type WithWorkspace = Omit<AppContext, "workspace"> & {
-  workspace: { root: string; slug: string; value: string };
+  workspace: { root: string; slug: string; value: Workspace };
 };
 
 export function assertHasWorkspace(

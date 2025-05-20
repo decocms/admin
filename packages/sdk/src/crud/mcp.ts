@@ -1,7 +1,8 @@
+import { NotFoundError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
 
-export class IntegrationNotFoundError extends Error {
+export class IntegrationNotFoundError extends NotFoundError {
   integrationId: string;
 
   constructor(integrationId: string) {

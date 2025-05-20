@@ -1,12 +1,6 @@
 import { z } from "zod";
 import { AgentSchema } from "./agent.ts";
 
-// TODO(@mcandeia) move from actors types
-// deno-lint-ignore no-explicit-any
-export type TriggerData = any;
-// deno-lint-ignore no-explicit-any
-export type TriggerRun = any;
-
 /**
  * Schema for tool call validation
  */
@@ -31,7 +25,7 @@ export const CronTriggerSchema = z.object({
   description: z.string().optional().describe(
     "The description of the trigger",
   ),
-  cron_exp: z.string(),
+  cronExp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
 });
@@ -51,6 +45,9 @@ export const WebhookTriggerSchema = z.object({
     "The JSONSchema of the returning of the webhook.\n\n" +
       "By default this webhook returns the LLM generate text response.\n\n" +
       "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
+  ),
+  whatsappEnabled: z.boolean().optional().describe(
+    "Whether the webhook is enabled for WhatsApp",
   ),
 });
 
@@ -84,8 +81,6 @@ export type CreateTriggerInput =
  * Output schema for the trigger creation operation
  */
 export const CreateCronTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   id: z.string(),
 });
 
@@ -99,10 +94,7 @@ export const DeleteTriggerInputSchema = z.object({
 /**
  * Output schema for trigger deletion results
  */
-export const DeleteTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-});
+export const DeleteTriggerOutputSchema = z.void();
 
 export const TriggerSchema = z.union([
   CreateCronTriggerInputSchema,
@@ -120,8 +112,6 @@ export const GetWebhookTriggerUrlInputSchema = z.object({
  * Output schema for webhook trigger URL results
  */
 export const GetWebhookTriggerUrlOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   url: z.string().optional().describe("The URL of the webhook trigger"),
 });
 
@@ -130,9 +120,10 @@ export const GetWebhookTriggerUrlOutputSchema = z.object({
  */
 export const TriggerOutputSchema = z.object({
   id: z.string().describe("The trigger ID"),
+  type: z.enum(["cron", "webhook"]),
   agent: AgentSchema,
-  created_at: z.string().describe("The creation date"),
-  updated_at: z.string().describe("The update date"),
+  createdAt: z.string().describe("The creation date"),
+  updatedAt: z.string().describe("The update date"),
   user: z.object({
     id: z.string().describe("The user ID"),
     metadata: z.object({
@@ -141,28 +132,23 @@ export const TriggerOutputSchema = z.object({
       avatar_url: z.string().describe("The user avatar"),
     }),
   }),
+  active: z.boolean().optional().describe("The trigger status"),
   workspace: z.string().describe("The workspace ID"),
   data: TriggerSchema,
 });
 
-export const CreateTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  trigger: TriggerOutputSchema.nullable().describe("The created trigger"),
-});
+export const CreateTriggerOutputSchema = TriggerOutputSchema.describe(
+  "The created trigger",
+);
 
 /**
  * Output schema for trigger listing results
  */
 export const ListTriggersOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   triggers: z.array(TriggerOutputSchema),
 });
 
 export const CreateWebhookTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
   id: z.string(),
   url: z.string().optional().describe("The URL of the webhook"),
 });

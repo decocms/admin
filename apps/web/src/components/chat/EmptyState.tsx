@@ -62,7 +62,7 @@ EmptyState.UI = () => {
 
   return (
     <div className="h-full flex flex-col justify-between py-12">
-      <div className="flex flex-col items-center justify-center max-w-[640px] mx-auto p-4 duration-300 transition-all">
+      <div className="flex flex-col items-center justify-center max-w-2xl mx-auto p-4 duration-300 transition-all">
         <div className="flex flex-col items-center gap-4 mb-6">
           <div className="w-12 h-12 flex items-center justify-center ">
             <AgentAvatar
@@ -85,7 +85,7 @@ EmptyState.UI = () => {
             {uiOptions.showEditAgent && (
               <Button
                 variant="outline"
-                onClick={() => editAgent(agentId)}
+                onClick={() => editAgent(agentId, crypto.randomUUID())}
               >
                 <Icon name="tune" size={16} />
                 Edit agent

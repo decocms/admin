@@ -53,6 +53,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { ListPageHeader } from "../common/ListPageHeader.tsx";
 import { Table } from "../common/Table.tsx";
+import { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
 
@@ -573,7 +574,7 @@ function List() {
   );
 }
 
-const TABS = {
+const TABS: Record<string, Tab> = {
   list: {
     Component: List,
     title: "Agents",

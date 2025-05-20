@@ -25,6 +25,7 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
@@ -71,7 +72,7 @@ const Chat = () => {
   );
 };
 
-const TABS = {
+const TABS: Record<string, Tab> = {
   chatView: {
     Component: ThreadView,
     title: "Thread",
@@ -87,15 +88,15 @@ const TABS = {
     title: "Agent Triggers",
     initialOpen: true,
   },
-  chat: {
-    Component: Chat,
-    title: "Chat preview",
-    initialOpen: true,
-  },
   setup: {
     Component: AgentSettings,
     title: "Setup",
-    initialOpen: true,
+    initialOpen: "within",
+  },
+  chat: {
+    Component: Chat,
+    title: "Chat preview",
+    initialOpen: "right",
   },
 };
 
@@ -183,6 +184,7 @@ export default function Page(props: Props) {
         threadId={threadId}
         uiOptions={{
           showThreadTools: false,
+          showEditAgent: false,
         }}
       >
         <AgentSettingsFormContext.Provider

@@ -1,14 +1,14 @@
+import { ListTriggersOutputSchema, useListTriggersByAgentId } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
+import { z } from "zod";
 import { useChatContext } from "../chat/context.tsx";
 import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
-import { TriggerDetails } from "./triggerDetails.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
-import { ListTriggersOutputSchema, useListTriggersByAgentId } from "@deco/sdk";
-import { z } from "zod";
+import { TriggerDetails } from "./triggerDetails.tsx";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();

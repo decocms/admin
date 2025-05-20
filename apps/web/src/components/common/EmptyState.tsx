@@ -1,7 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 export function EmptyState({
   icon,
@@ -11,7 +11,7 @@ export function EmptyState({
 }: {
   icon: string;
   title: string;
-  description: string;
+  description: string | ReactNode;
   buttonProps: ComponentProps<typeof Button>;
 }) {
   return (
@@ -34,9 +34,9 @@ export function EmptyState({
         <h3 className="text-2xl font-semibold text-foreground text-center">
           {title}
         </h3>
-        <p className="text-sm text-muted-foreground text-center">
+        <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
           {description}
-        </p>
+        </div>
       </div>
       <Button
         variant="outline"

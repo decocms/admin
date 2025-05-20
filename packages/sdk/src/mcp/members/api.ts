@@ -1,5 +1,10 @@
 import { z } from "zod";
 import {
+  InternalServerError,
+  NotFoundError,
+  UserInputError,
+} from "../../errors.ts";
+import {
   assertUserHasAccessToTeamById,
   assertUserIsTeamAdmin,
 } from "../assertions.ts";
@@ -186,7 +191,7 @@ export const updateTeamMember = createApiHandler({
 
     if (memberError) throw memberError;
     if (!member) {
-      throw new Error("Member not found in this team");
+      throw new NotFoundError("Member not found in this team");
     }
 
     // Update the member
@@ -227,7 +232,7 @@ export const removeTeamMember = createApiHandler({
 
     if (memberError) throw memberError;
     if (!member) {
-      throw new Error("Member not found in this team");
+      throw new NotFoundError("Member not found in this team");
     }
 
     // Is not removing "my" membership from team
@@ -248,7 +253,7 @@ export const removeTeamMember = createApiHandler({
 
       if (countError) throw countError;
       if (adminCount.length <= 1) {
-        throw new Error("Cannot remove the last admin of the team");
+        throw new UserInputError("Cannot remove the last admin of the team");
       }
     }
 
@@ -318,7 +323,7 @@ export const getMyInvites = createApiHandler({
 
     if (profileError) throw profileError;
     if (!profile) {
-      throw new Error("User profile not found");
+      throw new NotFoundError("User profile not found");
     }
 
     // Find invites for this email
@@ -381,11 +386,11 @@ export const inviteTeamMembers = createApiHandler({
 
     // Check for valid inputs
     if (!invitees || !teamId || Number.isNaN(teamIdAsNum)) {
-      throw new Error("Missing or invalid information");
+      throw new UserInputError("Missing or invalid information");
     }
 
     if (invitees.some(({ email }) => !email)) {
-      throw new Error("Missing emails");
+      throw new UserInputError("Missing emails");
     }
 
     // Apply default owner role for invitees without roles
@@ -435,11 +440,11 @@ export const inviteTeamMembers = createApiHandler({
     const { data: teamData, error: teamError } = await getTeamById(teamId, db);
 
     if (!teamData || teamError) {
-      throw new Error("Team not found");
+      throw new NotFoundError("Team not found");
     }
 
     if (!userBelongsToTeam(teamData, user.id)) {
-      throw new Error(`You don't have access to team ${teamId}`);
+      throw new UserInputError(`You don't have access to team ${teamId}`);
     }
 
     // Create invites
@@ -454,7 +459,7 @@ export const inviteTeamMembers = createApiHandler({
     const inviteResult = await insertInvites(invites, db);
 
     if (!inviteResult.data || inviteResult.error) {
-      throw new Error("Failed to create invites");
+      throw new InternalServerError("Failed to create invites");
     }
 
     // Send emails
@@ -500,7 +505,7 @@ export const acceptInvite = createApiHandler({
       .single();
 
     if (!invite || inviteError) {
-      throw new Error(
+      throw new NotFoundError(
         "We couldn't find your invitation. It may be invalid or already accepted.",
       );
     }
@@ -528,11 +533,11 @@ export const acceptInvite = createApiHandler({
     }
 
     if (!profiles || !profiles[0]) {
-      throw new Error("Profile not found");
+      throw new NotFoundError("Profile not found");
     }
 
     if (profiles[0].user_id !== user.id) {
-      throw new Error(
+      throw new UserInputError(
         "It looks like this invite isn't for you. Please ensure your email matches the one specified in the invitation.",
       );
     }
@@ -637,7 +642,7 @@ export const deleteInvite = createApiHandler({
       .select();
 
     if (!data || data.length === 0) {
-      throw new Error("Invite not found");
+      throw new NotFoundError("Invite not found");
     }
 
     return { ok: true };

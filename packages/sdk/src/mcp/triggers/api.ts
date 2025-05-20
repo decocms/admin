@@ -1,12 +1,14 @@
-import { createApiHandler } from "../context.ts";
+import { Trigger } from "@deco/ai/actors";
+import { join } from "node:path";
 import { z } from "zod";
 import {
-  assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
-} from "../assertions.ts";
-import { getAgentsByIds } from "../agents/api.ts";
+  InternalServerError,
+  NotFoundError,
+  UserInputError,
+} from "../../errors.ts";
+import { Hosts } from "../../hosts.ts";
+import { AgentSchema } from "../../models/agent.ts";
 import {
-  AgentSchema,
   CreateCronTriggerInputSchema,
   CreateTriggerOutputSchema,
   CreateWebhookTriggerInputSchema,
@@ -14,13 +16,16 @@ import {
   GetWebhookTriggerUrlOutputSchema,
   ListTriggersOutputSchema,
   TriggerSchema,
-} from "@deco/sdk";
+} from "../../models/trigger.ts";
+import { Path } from "../../path.ts";
+import { Database, Json } from "../../storage/index.ts";
+import { getAgentsByIds } from "../agents/api.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
+import { createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
-import { Database, Json } from "@deco/sdk/storage";
-import { Trigger } from "@deco/ai/actors";
-import { Path } from "@deco/sdk/path";
-import { join } from "node:path";
-import { Hosts } from "@deco/sdk/hosts";
 
 const SELECT_TRIGGER_QUERY = `
   *,
@@ -36,10 +41,14 @@ function mapTrigger(
   agentsById: Record<string, z.infer<typeof AgentSchema>>,
 ) {
   return {
+    type: trigger.metadata && typeof trigger.metadata === "object" &&
+        "cronExp" in trigger.metadata
+      ? "cron" as const
+      : "webhook" as const,
     id: trigger.id,
     agent: agentsById[trigger.agent_id],
-    created_at: trigger.created_at,
-    updated_at: trigger.updated_at,
+    createdAt: trigger.created_at,
+    updatedAt: trigger.updated_at,
     user: {
       // @ts-expect-error - Supabase user metadata is not typed
       ...userFromDatabase(trigger.profile),
@@ -47,6 +56,7 @@ function mapTrigger(
       // @ts-expect-error - Supabase user metadata is not typed
     } as z.infer<typeof ListTriggersOutputSchema["triggers"][number]["user"]>,
     workspace: trigger.workspace,
+    active: trigger.active,
     data: trigger.metadata as z.infer<typeof TriggerSchema>,
   };
 }
@@ -84,11 +94,7 @@ export const listTriggers = createApiHandler({
     const { data, error } = await query;
 
     if (error) {
-      return {
-        success: false,
-        message: "Failed to list triggers",
-        triggers: [],
-      };
+      throw new InternalServerError(error.message);
     }
 
     const agentIds = Array.from(
@@ -103,8 +109,6 @@ export const listTriggers = createApiHandler({
     }, {} as Record<string, z.infer<typeof AgentSchema>>);
 
     return {
-      success: true,
-      message: "Triggers listed successfully",
       triggers: data.map((trigger) => mapTrigger(trigger, agentsById)),
     };
   },
@@ -126,6 +130,24 @@ export const createTrigger = createApiHandler({
 
     await assertUserHasAccessToWorkspace(c);
 
+    // Check if there's already a WhatsApp-enabled trigger for this agent
+    const whatsappEnabled =
+      (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+        .whatsappEnabled;
+    if (whatsappEnabled) {
+      const { data: _existingTriggers, error: checkError } = await db.from(
+        "deco_chat_triggers",
+      )
+        .select("id")
+        .eq("agent_id", agentId)
+        .eq("workspace", workspace)
+        .eq("whatsapp_enabled", true);
+
+      if (checkError) {
+        throw new InternalServerError(checkError.message);
+      }
+    }
+
     const id = crypto.randomUUID();
 
     const triggerId = Path.resolveHome(
@@ -136,69 +158,52 @@ export const createTrigger = createApiHandler({
     if (data.type === "cron") {
       const parse = CreateCronTriggerInputSchema.safeParse(data);
       if (!parse.success) {
-        return {
-          success: false,
-          message: "Invalid trigger",
-          trigger: null,
-        };
+        throw new UserInputError("Invalid trigger");
       }
     }
 
     if (data.type === "webhook") {
       const parse = CreateWebhookTriggerInputSchema.safeParse(data);
       if (!parse.success) {
-        return {
-          success: false,
-          message: "Invalid trigger",
-          trigger: null,
-        };
+        throw new UserInputError("Invalid trigger");
       }
       (data as z.infer<typeof TriggerSchema> & { url: string }).url =
         buildWebhookUrl(triggerId, data.passphrase);
     }
 
-    try {
-      await stub(Trigger).new(triggerId).create(
-        {
-          ...data,
-          id,
-          resourceId: user.id,
-        },
-      );
+    await stub(Trigger).new(triggerId).create(
+      {
+        ...data,
+        id,
+        resourceId: user.id,
+      },
+    );
 
-      const { data: trigger, error } = await db.from("deco_chat_triggers")
-        .insert({
-          id,
-          agent_id: agentId,
-          user_id: user.id,
-          workspace,
-          metadata: data as Json,
-        })
-        .select(SELECT_TRIGGER_QUERY)
-        .single();
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .insert({
+        id,
+        agent_id: agentId,
+        user_id: user.id,
+        workspace,
+        metadata: data as Json,
+        whatsapp_enabled:
+          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+            .whatsappEnabled,
+      })
+      .select(SELECT_TRIGGER_QUERY)
+      .single();
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const agents = await getAgentsByIds([agentId], c);
-      const agentsById = agents.reduce((acc, agent) => {
-        acc[agent.id] = agent;
-        return acc;
-      }, {} as Record<string, z.infer<typeof AgentSchema>>);
-
-      return {
-        success: true,
-        message: "Trigger created successfully",
-        trigger: mapTrigger(trigger, agentsById),
-      };
-    } catch (_) {
-      return {
-        success: false,
-        message: "Failed to create trigger",
-        trigger: null,
-      };
+    if (error) {
+      throw new InternalServerError(error.message);
     }
+
+    const agents = await getAgentsByIds([agentId], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return mapTrigger(trigger, agentsById);
   },
 });
 
@@ -225,48 +230,36 @@ export const createCronTrigger = createApiHandler({
       workspace,
     ).path;
 
-    try {
-      await stub(Trigger).new(triggerId).create(
-        {
-          ...data,
-          id,
-          resourceId: user.id,
-        },
-      );
+    await stub(Trigger).new(triggerId).create(
+      {
+        ...data,
+        id,
+        resourceId: user.id,
+      },
+    );
 
-      const { data: trigger, error } = await db.from("deco_chat_triggers")
-        .insert({
-          id,
-          agent_id: agentId,
-          user_id: user.id,
-          workspace,
-          metadata: data as Json,
-        })
-        .select(SELECT_TRIGGER_QUERY)
-        .single();
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .insert({
+        id,
+        agent_id: agentId,
+        user_id: user.id,
+        workspace,
+        metadata: data as Json,
+      })
+      .select(SELECT_TRIGGER_QUERY)
+      .single();
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const agents = await getAgentsByIds([agentId], c);
-      const agentsById = agents.reduce((acc, agent) => {
-        acc[agent.id] = agent;
-        return acc;
-      }, {} as Record<string, z.infer<typeof AgentSchema>>);
-
-      return {
-        success: true,
-        message: "Trigger created successfully",
-        trigger: mapTrigger(trigger, agentsById),
-      };
-    } catch (_) {
-      return {
-        success: false,
-        message: "Failed to create trigger",
-        trigger: null,
-      };
+    if (error) {
+      throw new InternalServerError(error.message);
     }
+
+    const agents = await getAgentsByIds([agentId], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return mapTrigger(trigger, agentsById);
   },
 });
 
@@ -299,48 +292,39 @@ export const createWebhookTrigger = createApiHandler({
     (data as z.infer<typeof TriggerSchema> & { url: string }).url =
       buildWebhookUrl(triggerId, data.passphrase);
 
-    try {
-      await stub(Trigger).new(triggerId).create(
-        {
-          ...data,
-          id,
-          resourceId: user.id,
-        },
-      );
+    await stub(Trigger).new(triggerId).create(
+      {
+        ...data,
+        id,
+        resourceId: user.id,
+      },
+    );
 
-      const { data: trigger, error } = await db.from("deco_chat_triggers")
-        .insert({
-          id,
-          agent_id: agentId,
-          user_id: user.id,
-          workspace,
-          metadata: data as Json,
-        })
-        .select(SELECT_TRIGGER_QUERY)
-        .single();
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .insert({
+        id,
+        agent_id: agentId,
+        user_id: user.id,
+        workspace,
+        metadata: data as Json,
+        whatsapp_enabled:
+          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
+            .whatsappEnabled,
+      })
+      .select(SELECT_TRIGGER_QUERY)
+      .single();
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const agents = await getAgentsByIds([agentId], c);
-      const agentsById = agents.reduce((acc, agent) => {
-        acc[agent.id] = agent;
-        return acc;
-      }, {} as Record<string, z.infer<typeof AgentSchema>>);
-
-      return {
-        success: true,
-        message: "Trigger created successfully",
-        trigger: mapTrigger(trigger, agentsById),
-      };
-    } catch (_) {
-      return {
-        success: false,
-        message: "Failed to create trigger",
-        trigger: null,
-      };
+    if (error) {
+      throw new InternalServerError(error.message);
     }
+
+    const agents = await getAgentsByIds([agentId], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return mapTrigger(trigger, agentsById);
   },
 });
 export const deleteTrigger = createApiHandler({
@@ -363,30 +347,15 @@ export const deleteTrigger = createApiHandler({
       workspace,
     ).path;
 
-    try {
-      await stub(Trigger).new(workspaceTrigger).delete();
+    await stub(Trigger).new(workspaceTrigger).delete();
 
-      const { error } = await db.from("deco_chat_triggers")
-        .delete()
-        .eq("id", triggerId)
-        .eq("workspace", workspace);
+    const { error } = await db.from("deco_chat_triggers")
+      .delete()
+      .eq("id", triggerId)
+      .eq("workspace", workspace);
 
-      if (error) {
-        return {
-          success: false,
-          message: "Failed to delete trigger",
-        };
-      }
-
-      return {
-        success: true,
-        message: "Trigger deleted successfully",
-      };
-    } catch (_) {
-      return {
-        success: false,
-        message: "Failed to delete trigger",
-      };
+    if (error) {
+      throw new InternalServerError(error.message);
     }
   },
 });
@@ -412,23 +381,178 @@ export const getWebhookTriggerUrl = createApiHandler({
       .single();
 
     if (error) {
-      return {
-        success: false,
-        message: "Failed to get webhook trigger URL",
-      };
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      return {
-        success: false,
-        message: "Trigger not found",
-      };
+      throw new NotFoundError("Trigger not found");
     }
 
     return {
-      success: true,
-      message: "Webhook trigger URL retrieved successfully",
       url: (data.metadata as { url?: string })?.url,
     };
+  },
+});
+
+export const getTrigger = createApiHandler({
+  name: "TRIGGERS_GET",
+  description: "Get a trigger by ID",
+  schema: z.object({ id: z.string() }),
+  handler: async (
+    { id: triggerId },
+    c,
+  ): Promise<z.infer<typeof CreateTriggerOutputSchema> | null> => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+
+    await assertUserHasAccessToWorkspace(c);
+
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .select(SELECT_TRIGGER_QUERY)
+      .eq("id", triggerId)
+      .eq("workspace", workspace)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+
+    if (!trigger) {
+      return null;
+    }
+
+    const agents = await getAgentsByIds([trigger.agent_id], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return mapTrigger(trigger, agentsById);
+  },
+});
+
+export const activateTrigger = createApiHandler({
+  name: "TRIGGERS_ACTIVATE",
+  description: "Activate a trigger",
+  schema: z.object({ triggerId: z.string() }),
+  handler: async ({ triggerId }, c) => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const stub = c.stub;
+    const user = c.user;
+    await assertUserHasAccessToWorkspace(c);
+
+    try {
+      const { data, error: selectError } = await db.from("deco_chat_triggers")
+        .select("*")
+        .eq("id", triggerId)
+        .eq("workspace", workspace)
+        .single();
+
+      if (selectError) {
+        return {
+          success: false,
+          message: "Failed to activate trigger",
+        };
+      }
+
+      if (data?.active) {
+        return {
+          success: true,
+          message: "Trigger already activated",
+        };
+      }
+
+      await stub(Trigger).new(triggerId).create(
+        {
+          ...data.metadata as z.infer<typeof TriggerSchema>,
+          id: data.id,
+          resourceId: user.id,
+        },
+      );
+
+      const { error } = await db.from("deco_chat_triggers")
+        .update({ active: true })
+        .eq("id", triggerId)
+        .eq("workspace", workspace);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Failed to activate trigger",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Trigger activated successfully",
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to activate trigger",
+      };
+    }
+  },
+});
+
+export const deactivateTrigger = createApiHandler({
+  name: "TRIGGERS_DEACTIVATE",
+  description: "Deactivate a trigger",
+  schema: z.object({ triggerId: z.string() }),
+  handler: async ({ triggerId }, c) => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const stub = c.stub;
+    await assertUserHasAccessToWorkspace(c);
+
+    try {
+      const { data, error: selectError } = await db.from("deco_chat_triggers")
+        .select("*")
+        .eq("id", triggerId)
+        .eq("workspace", workspace)
+        .single();
+
+      if (selectError) {
+        return {
+          success: false,
+          message: "Failed to deactivate trigger",
+        };
+      }
+
+      if (!data?.active) {
+        return {
+          success: true,
+          message: "Trigger already deactivated",
+        };
+      }
+
+      await stub(Trigger).new(triggerId).delete();
+
+      const { error } = await db.from("deco_chat_triggers")
+        .update({ active: false })
+        .eq("id", triggerId)
+        .eq("workspace", workspace);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Failed to deactivate trigger",
+        };
+      }
+
+      return {
+        success: true,
+        message: "Trigger deactivated successfully",
+      };
+    } catch (_) {
+      return {
+        success: false,
+        message: "Failed to deactivate trigger",
+      };
+    }
   },
 });

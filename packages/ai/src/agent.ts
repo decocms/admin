@@ -3,9 +3,22 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { DEFAULT_MODEL, WELL_KNOWN_AGENTS } from "@deco/sdk";
+import {
+  type Agent as Configuration,
+  DEFAULT_MODEL,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
+import { contextStorage } from "@deco/sdk/fetch";
+import {
+  AppContext,
+  assertUserHasAccessToWorkspace,
+  fromWorkspaceString,
+  MCPClient,
+  MCPClientStub,
+  WorkspaceTools,
+} from "@deco/sdk/mcp";
 import { trace } from "@deco/sdk/observability";
 import {
   getTwoFirstSegments as getWorkspace,
@@ -32,6 +45,7 @@ import {
   type StreamTextResult,
   type TextStreamPart,
 } from "ai";
+import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { join } from "node:path/posix";
 import process from "node:process";
@@ -40,12 +54,6 @@ import { mcpServerTools } from "./mcp.ts";
 import type { AgentMemoryConfig } from "./memory/memory.ts";
 import { AgentMemory, buildMemoryId } from "./memory/memory.ts";
 import { createLLM } from "./models.ts";
-import type { DecoChatStorage } from "./storage/index.ts";
-import {
-  type Agent as Configuration,
-  AgentNotFoundError,
-} from "./storage/index.ts";
-import { createSupabaseStorage } from "./storage/supabaseStorage.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
@@ -84,6 +92,7 @@ export interface AgentMetadata extends AuthMetadata {
   wallet?: Promise<AgentWallet>;
   principalCookie?: string | null;
   timings?: ServerTimingsBuilder;
+  mcpClient?: MCPClientStub<WorkspaceTools>;
 }
 
 const DEFAULT_MEMORY_LAST_MESSAGES = 8;
@@ -123,13 +132,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
-  public storage?: DecoChatStorage;
-
+  private db: Awaited<ReturnType<typeof createServerClient>>;
+  private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   constructor(
     public readonly state: ActorState,
-    protected override env: any,
+    protected actorEnv: any,
   ) {
-    super(removeNonSerializableFields(env));
+    super(removeNonSerializableFields(actorEnv));
+
     this.id = toAlphanumericId(this.state.id);
     this.env = {
       CF_ACCOUNT_ID: DEFAULT_ACCOUNT_ID,
@@ -141,20 +151,21 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       agentId: this.id,
       agentPath: this.state.id,
       workspace: this.workspace,
-      wallet: createWalletClient(this.env.WALLET_API_KEY, env?.WALLET),
+      wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
     });
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
-    this.storage = createSupabaseStorage(
-      createServerClient(
-        SUPABASE_URL,
-        this.env.SUPABASE_SERVER_TOKEN,
-        { cookies: { getAll: () => [] } },
-      ),
+    this.db = createServerClient(
+      SUPABASE_URL,
+      this.env.SUPABASE_SERVER_TOKEN,
+      { cookies: { getAll: () => [] } },
     );
 
+    this.agentScoppedMcpClient = this.createMCPClient();
     this.state.blockConcurrencyWhile(async () => {
-      await this.init();
+      await this.runWithContext(async () => {
+        await this.init();
+      });
     });
   }
 
@@ -169,6 +180,23 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return path;
   }
 
+  createAppContext(metadata?: AgentMetadata): AppContext {
+    return {
+      envVars: this.env as any,
+      db: this.db,
+      user: metadata?.principal!,
+      isLocal: metadata?.principal == null,
+      stub: this.state.stub as AppContext["stub"],
+      cookie: metadata?.principalCookie ?? undefined,
+      workspace: fromWorkspaceString(this.workspace),
+      cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
+    };
+  }
+
+  createMCPClient(ctx?: AppContext) {
+    return MCPClient.forContext(ctx ?? this.createAppContext(this.metadata));
+  }
+
   override async enrichMetadata(
     m: AgentMetadata,
     req: Request,
@@ -176,21 +204,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const timings = m.timings;
     const enrichMetadata = timings?.start("enrichMetadata");
     this.metadata = await super.enrichMetadata(m, req);
-    this.metadata.hasAccess ||= this._configuration?.visibility === "PUBLIC";
+    this.metadata.principalCookie = req.headers.get("cookie");
 
     const runtimeKey = getRuntimeKey();
+    const ctx = this.createAppContext(this.metadata);
 
     // this is a weak check, but it works for now
-    if (req.headers.get("host") !== null && runtimeKey !== "deno") { // if host is set so its not an internal request so checks must be applied
-      this.assertsPrincipalHasAccess();
+    if (
+      req.headers.get("host") !== null && runtimeKey !== "deno" &&
+      this._configuration?.visibility !== "PUBLIC"
+    ) { // if host is set so its not an internal request so checks must be applied
+      await assertUserHasAccessToWorkspace(
+        ctx,
+      );
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",
       );
     }
-
     // Propagate supabase token from request to integration token
-    this.metadata.principalCookie = req.headers.get("cookie");
+    this.metadata.mcpClient = this.createMCPClient(ctx);
     enrichMetadata?.end();
     return this.metadata;
   }
@@ -208,10 +241,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       avatar: config.avatar || parsed.avatar || pickCapybaraAvatar(),
     };
 
-    this.storage?.agents.for(this.workspace).update(
-      parsed.id,
-      updatedConfig,
-    );
+    await this.metadata?.mcpClient?.AGENTS_UPDATE({
+      agent: updatedConfig,
+      id: parsed.id,
+    });
 
     await this.init(updatedConfig);
     this._configuration = updatedConfig;
@@ -335,18 +368,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       return this.callableToolSet[mcpId];
     }
 
-    const integration = await this.storage?.integrations
-      .for(this.workspace)
-      .get(mcpId);
+    const integration = await this.metadata?.mcpClient?.INTEGRATIONS_GET({
+      id: mcpId,
+    });
 
     if (!integration) {
       return null;
     }
 
-    const serverTools = await mcpServerTools(integration, this, this.env);
+    const serverTools = await mcpServerTools(
+      { ...integration, id: mcpId },
+      this,
+      this.env as any,
+    );
 
     if (Object.keys(serverTools ?? {}).length === 0) {
       return null;
+    }
+
+    // Do not cache SSE connections, they are unreliable it seems
+    if (integration.connection.type === "SSE") {
+      return serverTools;
     }
 
     this.callableToolSet[mcpId] = serverTools;
@@ -507,15 +549,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   // Warning: This method also updates the configuration in memory
   async configuration(): Promise<Configuration> {
+    const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const manifest = this.agentId in WELL_KNOWN_AGENTS
       ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
-      : await this.storage?.agents.for(this.workspace).get(this.agentId)
-        .catch((error) => {
-          if (error instanceof AgentNotFoundError) {
-            return null;
-          }
-          throw error;
-        });
+      : await client.AGENTS_GET({
+        id: this.agentId,
+      }).catch((err) => {
+        console.error("Error getting agent", err);
+        return null;
+      });
 
     const merged: Configuration = {
       name: ANONYMOUS_NAME,
@@ -691,6 +733,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     return agent;
   }
+  private runWithContext<T>(fn: () => Promise<T>) {
+    return contextStorage.run({
+      env: this.actorEnv,
+      ctx: {
+        passThroughOnException: () => {},
+        waitUntil: () => {},
+        props: {},
+      },
+    }, fn);
+  }
 
   async onBeforeInvoke(
     opts: InvokeMiddlewareOptions,
@@ -698,9 +750,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ) {
     const timings = createServerTimings();
     const methodTiming = timings.start(`actor-${opts.method}`);
-    const response = await next({
-      ...opts,
-      metadata: { ...opts?.metadata ?? {}, timings },
+    const response = await this.runWithContext(async () => {
+      return await next({
+        ...opts,
+        metadata: { ...opts?.metadata ?? {}, timings },
+      });
     });
     methodTiming.end();
     try {

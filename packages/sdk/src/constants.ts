@@ -156,40 +156,12 @@ export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
 };
 
 export const INNATE_INTEGRATIONS = {
-  DECO_AGENTS: {
-    id: "DECO_AGENTS",
-    name: "Agents",
-    description: "Tools for managing agents, integrations, triggers, and more.",
-    icon: "https://assets.webdraw.app/uploads/agents.png",
-    connection: { type: "INNATE", name: "DECO_AGENTS" },
-  },
-  DECO_TRIGGER: {
-    id: "DECO_TRIGGER",
-    name: "Trigger",
-    description: "Tools for managing triggers.",
-    icon: "https://assets.webdraw.app/uploads/triggers.png",
-    connection: { type: "INNATE", name: "DECO_TRIGGER" },
-  },
   DECO_INTEGRATIONS: {
     id: "DECO_INTEGRATIONS",
     name: "Integrations",
     description: "Tools for managing integrations.",
     icon: "https://assets.webdraw.app/uploads/integrations.png",
     connection: { type: "INNATE", name: "DECO_INTEGRATIONS" },
-  },
-  DECO_WALLET: {
-    id: "DECO_WALLET",
-    name: "Wallet",
-    description: "Tools for managing wallets.",
-    icon: "https://assets.webdraw.app/uploads/wallet.png",
-    connection: { type: "INNATE", name: "DECO_WALLET" },
-  },
-  DECO_THREADS: {
-    id: "DECO_THREADS",
-    name: "Threads",
-    description: "Tools for managing threads.",
-    icon: "https://assets.webdraw.app/uploads/threads.png",
-    connection: { type: "INNATE", name: "DECO_THREADS" },
   },
   DECO_UTILS: {
     id: "DECO_UTILS",
@@ -215,21 +187,12 @@ export const WELL_KNOWN_AGENTS = {
     model: DEFAULT_MODEL,
     visibility: "PUBLIC",
     tools_set: {
-      DECO_AGENTS: [
-        "DECO_AGENTS_CREATE",
-        "DECO_AGENTS_CONFIGURATION",
-        "DECO_AGENTS_CONFIGURE",
-        "DECO_AGENTS_WHO_AM_I",
-      ],
       DECO_INTEGRATIONS: [
         "DECO_INTEGRATIONS_SEARCH",
         "DECO_INTEGRATION_INSTALL",
         "DECO_INTEGRATION_ENABLE",
         "DECO_INTEGRATION_DISABLE",
         "DECO_INTEGRATION_LIST_TOOLS",
-      ],
-      DECO_WALLET: [
-        "DECO_WALLET_PRE_AUTHORIZE_TRANSACTION",
       ],
     },
     views: [],
@@ -297,11 +260,6 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   model: DEFAULT_MODEL,
   visibility: "WORKSPACE",
   tools_set: {
-    DECO_AGENTS: [
-      "DECO_AGENTS_CONFIGURATION",
-      "DECO_AGENTS_CONFIGURE",
-      "DECO_AGENTS_WHO_AM_I",
-    ],
     DECO_INTEGRATIONS: [
       "DECO_INTEGRATIONS_SEARCH",
       "DECO_INTEGRATION_INSTALL",

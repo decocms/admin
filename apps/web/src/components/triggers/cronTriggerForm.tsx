@@ -25,8 +25,8 @@ import {
 
 const cronPresets = [
   { label: "Every hour", value: "0 * * * *" },
-  { label: "Every day at 9am", value: "0 9 * * *" },
-  { label: "Every Monday at 10am", value: "0 10 * * 1" },
+  { label: "Every day at 9am (UTC)", value: "0 9 * * *" },
+  { label: "Every Monday at 10am (UTC)", value: "0 10 * * 1" },
   { label: "Every 5 minutes", value: "*/5 * * * *" },
   { label: "Custom", value: "custom" },
 ];
@@ -119,6 +119,13 @@ function CronSelectInput({ value, onChange, required, error }: {
               You can select a preset or write your own custom expression.
             </li>
             <li>
+              <b>All times are in UTC</b>. For example:
+              <ul className="list-disc pl-4 mt-1">
+                <li>UTC 17:00 = 14:00 (BRT)</li>
+                <li>UTC 20:00 = 17:00 (BRT)</li>
+              </ul>
+            </li>
+            <li>
               <a
                 href="https://crontab.guru"
                 target="_blank"
@@ -132,7 +139,8 @@ function CronSelectInput({ value, onChange, required, error }: {
 
           <div className="font-semibold mb-1">Example:</div>
           <pre className="bg-white border rounded p-2 text-xs overflow-x-auto">
-{`0 9 * * *     (every day at 9am)
+{`0 9 * * *     (every day at 9am UTC)
+0 17 * * *    (every day at 5pm UTC)
 */5 * * * *   (every 5 minutes)`}
           </pre>
         </div>
@@ -154,7 +162,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
     defaultValues: {
       title: "",
       description: "",
-      cron_exp: cronPresets[0].value,
+      cronExp: cronPresets[0].value,
       prompt: { messages: [{ role: "user", content: "" }] },
       type: "cron",
     },
@@ -165,8 +173,8 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       form.setError("prompt", { message: "Prompt is required" });
       return;
     }
-    if (!data.cron_exp || !isValidCron(data.cron_exp)) {
-      form.setError("cron_exp", {
+    if (!data.cronExp || !isValidCron(data.cronExp)) {
+      form.setError("cronExp", {
         message: "Frequency is required and must be valid",
       });
       return;
@@ -175,7 +183,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
       {
         title: data.title,
         description: data.description || undefined,
-        cron_exp: data.cron_exp,
+        cronExp: data.cronExp,
         prompt: {
           messages: [{
             role: "user",
@@ -241,19 +249,19 @@ export function CronTriggerForm({ agentId, onSuccess }: {
         />
         <FormField
           control={form.control}
-          name="cron_exp"
+          name="cronExp"
           render={() => (
             <FormItem>
               <FormControl>
                 <Controller
                   control={form.control}
-                  name="cron_exp"
+                  name="cronExp"
                   render={({ field: ctrlField }) => (
                     <CronSelectInput
                       value={ctrlField.value}
                       onChange={ctrlField.onChange}
                       required
-                      error={form.formState.errors.cron_exp?.message}
+                      error={form.formState.errors.cronExp?.message}
                     />
                   )}
                 />

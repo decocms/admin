@@ -1,32 +1,31 @@
 // deno-lint-ignore-file no-explicit-any
+import type {
+  DecoConnection,
+  HTTPConnection,
+  Integration,
+  MCPConnection,
+} from "@deco/sdk";
+import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   SSEClientTransport,
   type SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import type { Workspace } from "@deco/sdk/path";
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
-import type {
-  DecoChatStorage,
-  DecoConnection,
-  HTTPConnection,
-  Integration,
-  MCPConnection,
-} from "./storage/index.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/createTool.ts";
 import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
 import { slugify } from "./utils/slugify.ts";
 import { mapToolEntries } from "./utils/toolEntries.ts";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
   "http://localhost:3001",
-  "https://admin.wppagent.com",
+  "https://mcp-admin.wppagent.com",
 ];
 export const isApiDecoChatMCPConnection = (
   connection: MCPConnection,
@@ -93,12 +92,6 @@ const getMCPServerTools = async (
     return {};
   }
 };
-
-// const HANDOFF_RESTRICTED_TOOLS: Record<string, string[]> = {
-//   DECO_AGENT: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_AGENT,
-//   DECO_INTEGRATIONS: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_INTEGRATIONS,
-//   DECO_THREADS: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_THREADS,
-// };
 
 export const fetchMeta = async (baseUrl: string) => {
   const response = await fetch(new URL("/live/_meta", baseUrl));
@@ -190,7 +183,7 @@ export const mcpServerTools = async (
 
 export const createServerClient = async (
   mcpServer: Pick<Integration, "connection" | "name">,
-) => {
+): Promise<Client> => {
   const transport = createTransport(mcpServer.connection);
 
   if (!transport) {
@@ -263,19 +256,29 @@ const handleMCPResponse = async (client: Client) => {
 
 export async function listToolsByConnectionType(
   connection: MCPConnection,
-  storage: DecoChatStorage,
+  ctx: AppContext,
 ) {
   switch (connection.type) {
     case "INNATE": {
-      const maybeIntegration = await storage.integrations.for(
-        connection.workspace as Workspace,
-      ).get(connection.name);
+      const mcpClient = MCPClient.forContext({
+        ...ctx,
+        workspace: ctx.workspace ??
+          (connection.workspace
+            ? fromWorkspaceString(connection.workspace)
+            : undefined),
+      });
+      const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
+        id: connection.name,
+      });
 
       if (!maybeIntegration) {
         return { error: `Integration ${connection.name} not found` };
       }
 
-      const tools = await mcpServerTools(maybeIntegration, {} as AIAgent);
+      const tools = await mcpServerTools({
+        ...maybeIntegration,
+        id: connection.name,
+      }, {} as AIAgent);
 
       return { tools: mapToolEntries(tools) };
     }
@@ -301,17 +304,3 @@ export async function listToolsByConnectionType(
     }
   }
 }
-
-export const listTools = async (
-  connection: MCPConnection,
-  storage: DecoChatStorage,
-) => {
-  const result = await listToolsByConnectionType(connection, storage);
-
-  // Sort tools by name for consistent UI
-  if (Array.isArray(result?.tools)) {
-    result.tools.sort((a, b) => a.name.localeCompare(b.name));
-  }
-
-  return result;
-};

@@ -32,7 +32,9 @@ const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 export const listTools = async (
   connection: MCPConnection,
 ): Promise<ToolsData> => {
-  const { data, ok } = await MCPClient.INTEGRATIONS_LIST_TOOLS({ connection });
+  const { data, ok } = await MCPClient.INTEGRATIONS_LIST_TOOLS({
+    connection,
+  });
   if (!ok) {
     throw new Error("Failed to list tools");
   }

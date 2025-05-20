@@ -9,10 +9,10 @@
  *
  * If you need to disable an integration, use INTEGRATION_DISABLE.
  */
+import { type Integration, IntegrationSchema } from "@deco/sdk";
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
-import { type Integration, IntegrationSchema } from "../storage/index.ts";
 import { createInnateTool } from "../utils/createTool.ts";
 import {
   getDecoRegistryServerClient,
@@ -60,6 +60,10 @@ It's always handy to search for installed integrations with no query, since all 
       marketplace,
       installed,
       toolSet,
+    ]: [
+      (Integration & { provider: string })[],
+      Integration[],
+      Record<string, string[]>,
     ] = await Promise.all([
       filters?.installed === true
         ? Promise.resolve([])
@@ -135,9 +139,10 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
 
       const id = crypto.randomUUID();
 
-      const created = await agent.storage?.integrations
-        .for(agent.workspace)
-        .create({ id, ...(parsed.data as Omit<Integration, "id">) });
+      const created = await agent.metadata?.mcpClient?.INTEGRATIONS_CREATE({
+        id,
+        ...(parsed.data as Omit<Integration, "id">),
+      });
 
       client.close();
 
@@ -158,15 +163,18 @@ const listToolsForIntegration = async (
   integrationId: string,
   agent: AIAgent,
 ) => {
-  const integration = await agent.storage?.integrations
-    .for(agent.workspace)
-    .get(integrationId);
+  const integration = await agent.metadata?.mcpClient?.INTEGRATIONS_GET({
+    id: integrationId,
+  });
 
   if (!integration) {
     throw new Error("Integration not found");
   }
 
-  const result = await mcpServerTools(integration, agent);
+  const result = await mcpServerTools(
+    { ...integration, id: integrationId },
+    agent,
+  );
 
   return {
     tools: Object.values(result).map(({ id, description }) => ({

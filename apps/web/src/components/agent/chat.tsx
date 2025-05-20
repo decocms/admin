@@ -25,6 +25,7 @@ import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import { WhatsAppButton } from "./WhatsAppButton.tsx";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -85,6 +86,8 @@ function ActionsButtons() {
 
   return (
     <div className="hidden md:flex items-center gap-2">
+      <WhatsAppButton />
+
       {displayNewChat && (
         <Tooltip>
           <TooltipTrigger asChild>

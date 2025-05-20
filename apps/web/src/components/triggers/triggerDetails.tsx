@@ -9,6 +9,7 @@ import { AuditListContent } from "../audit/list.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { CronDetails } from "./cronDetails.tsx";
 import { WebhookDetails } from "./webhookDetails.tsx";
+import { TriggerToggle } from "./triggerToggle.tsx";
 import { z } from "zod";
 
 const useTrigger = (agentId: string, triggerId: string) => {
@@ -60,6 +61,9 @@ export function TriggerDetails(
             <Badge variant="outline" className="ml-2">
               {trigger.data.type}
             </Badge>
+            <div className="ml-auto">
+              <TriggerToggle trigger={trigger} />
+            </div>
           </div>
 
           {trigger.data.description && (

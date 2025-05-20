@@ -1,18 +1,18 @@
-import { ToolAction } from "@mastra/core";
-import { DecoChatStorage } from "../storage/index.ts";
 import { ActorProxy } from "@deco/actors";
+import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Workspace } from "@deco/sdk/path";
+import { ToolAction } from "@mastra/core";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIAgent } from "../agent.ts";
-import type { Message } from "../types.ts";
-import type { Trigger } from "./trigger.ts";
 import { mcpServerTools } from "../mcp.ts";
+import type { Message } from "../types.ts";
 import { slugify } from "../utils/slugify.ts";
+import type { Trigger } from "./trigger.ts";
 
 export interface RunOutputToolArgs {
   agent: ActorProxy<AIAgent>;
   outputTool: string;
-  storage: DecoChatStorage;
+  mcpClient: MCPClientStub<WorkspaceTools>;
   workspace: Workspace;
 }
 
@@ -30,7 +30,7 @@ interface RunOutputToolSuccess {
 export type RunOutputToolResult = RunOutputToolError | RunOutputToolSuccess;
 
 export async function getOutputTool(
-  { agent, outputTool, storage, workspace }: RunOutputToolArgs,
+  { agent, outputTool, mcpClient }: RunOutputToolArgs,
 ): Promise<RunOutputToolResult> {
   const [integrationId, toolId] = outputTool.split("/");
   if (!integrationId || !toolId) {
@@ -41,8 +41,9 @@ export async function getOutputTool(
     };
   }
 
-  const integration = await storage.integrations.for(workspace)
-    .get(integrationId);
+  const integration = await mcpClient.INTEGRATIONS_GET({
+    id: integrationId,
+  });
 
   if (!integration) {
     return {
@@ -52,7 +53,10 @@ export async function getOutputTool(
     };
   }
 
-  const tools = await mcpServerTools(integration, agent as unknown as AIAgent);
+  const tools = await mcpServerTools(
+    { ...integration, id: integrationId },
+    agent as unknown as AIAgent,
+  );
   const maybeTool = tools[slugify(toolId)];
   if (!maybeTool || !maybeTool.execute) {
     return {
@@ -83,7 +87,7 @@ export const handleOutputTool = async ({
     const getToolResult = await getOutputTool({
       agent,
       outputTool,
-      storage: trigger.storage as DecoChatStorage,
+      mcpClient: trigger.mcpClient,
       workspace,
     });
 

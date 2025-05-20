@@ -33,6 +33,8 @@ jobs:
             CF_ACCOUNT_ID
             CF_API_TOKEN
             CF_DISPATCH_NAMESPACE
+            CF_R2_ACCESS_KEY_ID
+            CF_R2_SECRET_ACCESS_KEY
             RESEND_API_KEY
             OPENROUTER_API_KEY
             WALLET_API_KEY
@@ -42,16 +44,22 @@ jobs:
             GOOGLE_API_KEY
             OTEL_EXPORTER_OTLP_ENDPOINT
             OTEL_EXPORTER_OTLP_HEADERS
+            AWS_ACCESS_KEY_ID
+            AWS_SECRET_ACCESS_KEY
+            AWS_REGION
+            DECO_CHAT_DATA_BUCKET_NAME
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
           TURSO_ORGANIZATION: ${{ secrets.TURSO_ORGANIZATION }}
           TURSO_GROUP_DATABASE_TOKEN: ${{ secrets.TURSO_GROUP_DATABASE_TOKEN }}
           TURSO_ADMIN_TOKEN: ${{ secrets.TURSO_ADMIN_TOKEN }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_DISPATCH_NAMESPACE: "deco-chat-prod"
+          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
           WALLET_API_KEY: ${{ secrets.WALLET_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -60,3 +68,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          DECO_CHAT_DATA_BUCKET_NAME: ${{ secrets.DECO_CHAT_DATA_BUCKET_NAME }}

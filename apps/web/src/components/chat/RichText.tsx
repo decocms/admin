@@ -78,19 +78,15 @@ export function RichTextArea({
   }, [value, editor]);
 
   useEffect(() => {
-    if (editor) {
-      editor.setEditable(!disabled);
-    }
+    editor?.setEditable(!disabled);
   }, [disabled, editor]);
 
   return (
-    <>
-      <EditorContent
-        editor={editor}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-        onPaste={onPaste}
-      />
-    </>
+    <EditorContent
+      editor={editor}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      onPaste={onPaste}
+    />
   );
 }

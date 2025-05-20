@@ -489,6 +489,7 @@ export type Database = {
           metadata: Json;
           updated_at: string;
           user_id: string | null;
+          whatsapp_enabled: boolean;
           workspace: string;
         };
         Insert: {
@@ -499,6 +500,7 @@ export type Database = {
           metadata: Json;
           updated_at?: string;
           user_id?: string | null;
+          whatsapp_enabled?: boolean;
           workspace: string;
         };
         Update: {
@@ -509,6 +511,7 @@ export type Database = {
           metadata?: Json;
           updated_at?: string;
           user_id?: string | null;
+          whatsapp_enabled?: boolean;
           workspace?: string;
         };
         Relationships: [
@@ -1646,6 +1649,8 @@ export type Database = {
           id: number;
           is_new_user: boolean | null;
           name: string | null;
+          phone: string | null;
+          phone_verified_at: string | null;
           user_id: string;
         };
         Insert: {
@@ -1655,6 +1660,8 @@ export type Database = {
           id?: number;
           is_new_user?: boolean | null;
           name?: string | null;
+          phone?: string | null;
+          phone_verified_at?: string | null;
           user_id: string;
         };
         Update: {
@@ -1664,6 +1671,8 @@ export type Database = {
           id?: number;
           is_new_user?: boolean | null;
           name?: string | null;
+          phone?: string | null;
+          phone_verified_at?: string | null;
           user_id?: string;
         };
         Relationships: [
@@ -2299,6 +2308,42 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "webdraw_user_metadata";
             referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      temp_wpp_agents: {
+        Row: {
+          agent_id: string;
+          created_at: string;
+          id: number;
+          user_id: string;
+        };
+        Insert: {
+          agent_id: string;
+          created_at?: string;
+          id?: number;
+          user_id: string;
+        };
+        Update: {
+          agent_id?: string;
+          created_at?: string;
+          id?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "temp_wpp_agents_agent_id_fkey";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_agents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "temp_wpp_agents_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users_meta_data_view";
+            referencedColumns: ["id"];
           },
         ];
       };

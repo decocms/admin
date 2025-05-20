@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
@@ -19,13 +20,14 @@ export const getProfile = createApiHandler({
         id:user_id,
         name,
         email,
+        phone,
         metadata:users_meta_data_view(id, raw_user_meta_data)
       `)
       .eq("user_id", user.id)
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     // @ts-expect-error - Supabase user metadata is not typed
@@ -41,9 +43,10 @@ export const updateProfile = createApiHandler({
     email: z.string().optional(),
     deco_user_id: z.number().nullable().optional(),
     is_new_user: z.boolean().nullable().optional(),
+    phone: z.string().nullable().optional(),
   }),
   handler: async (
-    { name, email, deco_user_id, is_new_user },
+    { name, email, deco_user_id, is_new_user, phone },
     c,
   ) => {
     const user = c.user;
@@ -57,17 +60,18 @@ export const updateProfile = createApiHandler({
         email,
         deco_user_id,
         is_new_user,
+        phone,
       })
       .eq("user_id", user.id)
       .select()
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Profile not found");
+      throw new NotFoundError("Profile not found");
     }
 
     return data;

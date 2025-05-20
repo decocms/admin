@@ -12,7 +12,9 @@ import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   AgentNotFoundError,
   createAgent,
+  createTempAgent,
   deleteAgent,
+  getTempAgent,
   listAgents,
   loadAgent,
   updateAgent,
@@ -43,6 +45,17 @@ export const useCreateAgent = () => {
         (old) => !old ? [result] : [result, ...old],
       );
     },
+  });
+
+  return create;
+};
+
+export const useCreateTempAgent = () => {
+  const { workspace } = useSDK();
+
+  const create = useMutation({
+    mutationFn: ({ agentId, userId }: { agentId: string; userId: string }) =>
+      createTempAgent(workspace, agentId, userId),
   });
 
   return create;
@@ -170,4 +183,13 @@ export const useAgentStub = (
     () => stub<any>("AIAgent").new(agentRoot).withMetadata({ threadId }),
     [agentRoot, threadId],
   );
+};
+
+export const useTempWppAgent = (userId: string) => {
+  const { workspace } = useSDK();
+  return useSuspenseQuery({
+    queryKey: ["temp_wpp_agent", workspace, userId],
+    queryFn: () => getTempAgent(workspace, userId),
+    staleTime: 0,
+  });
 };

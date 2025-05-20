@@ -1,10 +1,11 @@
-import { AppContext } from "./context.ts";
+import { LRUCache } from "lru-cache";
 import {
-  CannotAccessWorkspaceError,
   ForbiddenError,
-  MissingDatabaseError,
+  InternalServerError,
+  NotFoundError,
   UnauthorizedError,
-} from "./errors.ts";
+} from "../errors.ts";
+import { AppContext } from "./context.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
@@ -16,10 +17,10 @@ type WithWorkspace = Omit<AppContext, "workspace"> & {
 };
 
 export function assertHasWorkspace(
-  c: AppContext | WithWorkspace,
+  c: Pick<AppContext, "workspace"> | Pick<WithWorkspace, "workspace">,
 ): asserts c is WithWorkspace {
   if (!c.workspace) {
-    throw new CannotAccessWorkspaceError();
+    throw new NotFoundError();
   }
 }
 
@@ -89,18 +90,26 @@ export const assertUserHasAccessToTeamBySlug = async (
     return;
   }
 
-  throw new ForbiddenError();
+  throw new ForbiddenError("User does not have access to this team");
 };
 
+const ONE_MINUTE_MS = 60e3;
+const teamAccessCache = new LRUCache<string, boolean>({
+  max: 1000,
+  ttl: ONE_MINUTE_MS,
+});
 export const assertUserHasAccessToWorkspace = async (
   c: AppContext,
 ) => {
+  if (c.isLocal) { // local calls
+    return;
+  }
   assertHasWorkspace(c);
   const user = getContextUser(c);
   const db = c.db;
 
   if (!db) {
-    throw new MissingDatabaseError();
+    throw new InternalServerError("Missing database");
   }
 
   // TODO (@gimenes): remove this hard coded access for @deco.cx by allowing
@@ -110,16 +119,20 @@ export const assertUserHasAccessToWorkspace = async (
     return;
   }
 
-  if (c.workspace.root === "users" && user.id === c.workspace.slug) {
+  if (c.workspace.root === "users" && user?.id === c.workspace.slug) {
     return;
   }
 
   if (c.workspace.root === "shared") {
+    const key = `${user.id}-${c.workspace.slug}`;
+    if (teamAccessCache.has(key) && teamAccessCache.get(key) === true) {
+      return;
+    }
     await assertUserHasAccessToTeamBySlug(
       { userId: user.id, teamSlug: c.workspace.slug },
       c,
     );
-
+    teamAccessCache.set(key, true);
     return;
   }
 
@@ -127,6 +140,9 @@ export const assertUserHasAccessToWorkspace = async (
 };
 
 export const assertHasUser = (c: AppContext) => {
+  if (c.isLocal) { // local calls
+    return;
+  }
   const user = c.user;
 
   if (!user) {

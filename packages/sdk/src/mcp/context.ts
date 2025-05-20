@@ -15,9 +15,9 @@ export interface Vars {
     value: string;
   };
   cookie?: string;
-  host?: string;
   db: Client;
   user: SupaUser;
+  isLocal?: boolean;
   cf: Cloudflare;
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
@@ -30,29 +30,10 @@ export interface Vars {
   ) => StubFactory<InstanceType<Constructor>>;
 }
 
-export interface EnvVars {
-  OPENROUTER_API_KEY: string;
-  VITE_USE_LOCAL_BACKEND: string;
-  RESEND_API_KEY: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVER_TOKEN: string;
-  TURSO_GROUP_DATABASE_TOKEN: string;
-  TURSO_ORGANIZATION: string;
-  CF_ACCOUNT_ID: string;
-  CF_API_TOKEN: string;
-  CF_DISPATCH_NAMESPACE: string;
-
-  /**
-   * Only needed for locally testing wallet features.
-   */
-  WALLET_API_KEY?: string;
-  STRIPE_SECRET_KEY?: string;
-  STRIPE_WEBHOOK_SECRET?: string;
-  CURRENCY_API_KEY?: string;
-  TESTING_CUSTOMER_ID?: string;
-}
-
-export type AppContext = Vars & { envVars: EnvVars };
+export type EnvVars = z.infer<typeof envSchema>;
+export type AppContext = Vars & {
+  envVars: EnvVars;
+};
 
 const isErrorLike = (error: unknown): error is Error =>
   Boolean((error as Error)?.message);
@@ -73,29 +54,32 @@ export const serializeError = (error: unknown): string => {
   }
 };
 
-const REQUIRED_LOCAL_ENV_VARS = [
-  "OPENROUTER_API_KEY",
-  "CF_ACCOUNT_ID",
-  "SUPABASE_URL",
-  "SUPABASE_SERVER_TOKEN",
-  "CF_API_TOKEN",
-  "CF_DISPATCH_NAMESPACE",
-  "TURSO_GROUP_DATABASE_TOKEN",
-  "TURSO_ORGANIZATION",
-] as const;
 
-export const getEnv = (ctx: AppContext) => {
-  if (
-    !REQUIRED_LOCAL_ENV_VARS.every((v) => typeof ctx.envVars[v] === "string")
-  ) {
-    const missing = REQUIRED_LOCAL_ENV_VARS.filter(
-      (v) => typeof ctx.envVars[v] !== "string",
-    );
-    throw new Error(`Missing environment variables: ${missing.join(", ")}`);
-  }
+const envSchema = z.object({
+  CF_DISPATCH_NAMESPACE: z.string().readonly(),
+  CF_ACCOUNT_ID: z.string().readonly(),
+  CF_API_TOKEN: z.string().readonly(),
+  CF_R2_ACCESS_KEY_ID: z.string().readonly(),
+  CF_R2_SECRET_ACCESS_KEY: z.string().readonly(),
+  VITE_USE_LOCAL_BACKEND: z.any().optional().readonly(),
+  SUPABASE_URL: z.string().readonly(),
+  SUPABASE_SERVER_TOKEN: z.string().readonly(),
+  TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
+  TURSO_ORGANIZATION: z.string().readonly(),
+  RESEND_API_KEY: z.string().readonly(),
 
-  return ctx.envVars;
-};
+  /**
+   * Only needed for locally testing wallet features.
+   */
+  WALLET_API_KEY: z.string().optional().readonly(),
+  STRIPE_SECRET_KEY: z.string().optional().readonly(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().readonly(),
+  CURRENCY_API_KEY: z.string().optional().readonly(),
+  TESTING_CUSTOMER_ID: z.string().optional().readonly(),
+});
+
+export const getEnv = (ctx: AppContext): EnvVars =>
+  envSchema.parse(ctx.envVars);
 
 export const AUTH_URL = (ctx: AppContext) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"

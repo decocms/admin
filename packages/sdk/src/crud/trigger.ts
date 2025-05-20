@@ -52,3 +52,29 @@ export const deleteTrigger = async (
     throw new Error("Failed to delete trigger");
   }
 };
+
+export const activateTrigger = async (
+  workspace: string,
+  triggerId: string,
+) => {
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_ACTIVATE(
+    { triggerId },
+  );
+
+  if (response.ok) {
+    return response.data;
+  }
+};
+
+export const deactivateTrigger = async (
+  workspace: string,
+  triggerId: string,
+) => {
+  const response = await MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE(
+    { triggerId },
+  );
+
+  if (response.ok) {
+    return response.data;
+  }
+};

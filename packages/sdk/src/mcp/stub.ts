@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
-import { type ApiHandler } from "./context.ts";
+import { getErrorByStatusCode } from "../errors.ts";
+import type { ApiHandler, AppContext } from "./context.ts";
 
 export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
   [K in TDefinition[number] as K["name"]]: (
@@ -31,6 +32,7 @@ export interface CreateStubHandlerOptions<
   TDefinition extends readonly ApiHandler[],
 > {
   tools: TDefinition;
+  context?: AppContext;
 }
 
 export interface CreateStubAPIOptions {
@@ -47,31 +49,6 @@ export function isStubHandlerOptions<TDefinition extends readonly ApiHandler[]>(
   return typeof options === "object" && "tools" in options;
 }
 
-export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
-  options: CreateStubHandlerOptions<TDefinition>,
-): MCPClientStub<TDefinition> {
-  return new Proxy<MCPClientStub<TDefinition>>(
-    {} as MCPClientStub<TDefinition>,
-    {
-      get(_, name) {
-        if (typeof name !== "string") {
-          throw new Error("Name must be a string");
-        }
-        const toolMap = new Map<string, ApiHandler>(
-          options.tools.map((h) => [h.name, h]),
-        );
-        return (props: unknown) => {
-          const tool = toolMap.get(name);
-          if (!tool) {
-            throw new Error(`Tool ${name} not found`);
-          }
-          return tool.handler(props);
-        };
-      },
-    },
-  );
-}
-
 export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
@@ -83,9 +60,10 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
           throw new Error("Name must be a string");
         }
 
-        return (args: unknown, init?: RequestInit) => {
+        return async (args: unknown, init?: RequestInit) => {
+          const traceDebugId = getTraceDebugId();
           const workspace = options?.workspace ?? "";
-          return fetch(
+          const response = await fetch(
             new URL(
               `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join(
                 "/",
@@ -99,17 +77,26 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
               ...init,
               headers: {
                 ...init?.headers,
-                "x-trace-debug-id": getTraceDebugId(),
+                "x-trace-debug-id": traceDebugId,
               },
             },
-          ).then(async (r) => {
-            const data = await r.json() as any;
-            return {
-              ...data,
-              status: r.status,
-              ok: r.ok,
-            };
-          });
+          );
+
+          const data = await response.json() as any;
+
+          if (!response.ok) {
+            throw getErrorByStatusCode(
+              response.status,
+              data.error || "Internal Server Error",
+              traceDebugId,
+            );
+          }
+
+          return {
+            ...data,
+            status: response.status,
+            ok: response.ok,
+          };
         };
       },
     },

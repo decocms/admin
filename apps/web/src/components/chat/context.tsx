@@ -1,6 +1,7 @@
 import { CreateMessage, useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
+  getTraceDebugId,
   useAddOptimisticThread,
   useAgentRoot,
   useInvalidateAll,
@@ -18,7 +19,6 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
-import { getTraceDebugId } from "@deco/sdk";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -43,7 +43,6 @@ type IContext = {
   agentRoot: string;
   threadId: string;
   scrollRef: RefObject<HTMLDivElement | null>;
-  fileDataRef: RefObject<FileData[]>;
   setAutoScroll: (e: HTMLDivElement | null, enabled: boolean) => void;
   isAutoScrollEnabled: (e: HTMLDivElement | null) => boolean;
   retry: (context?: string[]) => void;
@@ -96,7 +95,6 @@ export function ChatProvider({
     addOptimisticThread,
   } = useAddOptimisticThread();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileDataRef = useRef<FileData[]>([]);
   const onceRef = useRef(false);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
   const { data: initialMessages } = !options.showThreadMessages
@@ -120,31 +118,27 @@ export function ChatProvider({
         addOptimisticThread(threadId, agentId);
       }
 
-      const files = fileDataRef.current;
-      const allMessages = (messages as CreateMessage[]).slice(
-        -LAST_MESSAGES_COUNT,
-      );
-      const last = allMessages.at(-1);
-      const annotations = files && files.length > 0
-        ? [
-          files.map((file: FileData) => ({
+      const messagesWindow = messages.slice(-LAST_MESSAGES_COUNT);
+      const lastMessage = messagesWindow.at(-1);
+
+      /** Add annotation so we can use the file URL as a parameter to a tool call */
+      if (lastMessage) {
+        lastMessage.annotations =
+          lastMessage?.["experimental_attachments"]?.map((attachment) => ({
             type: "file",
-            url: file.url,
-            name: file.name,
-            contentType: file.contentType,
+            url: attachment.url,
+            name: attachment.name ?? "unknown file",
+            contentType: attachment.contentType ?? "unknown content type",
             content:
               "This message refers to a file uploaded by the user. You might use the file URL as a parameter to a tool call.",
-          })),
-        ]
-        : last?.annotations || [];
-      if (last) {
-        last.annotations = annotations;
+          })) || lastMessage?.annotations;
       }
-      const bypassOpenRouter = !preferences.useOpenRouter;
 
+      const bypassOpenRouter = !preferences.useOpenRouter;
       const overrides = getAgentOverrides(agentId);
+
       return {
-        args: [allMessages, {
+        args: [messagesWindow, {
           model: options.showModelSelector // use the agent model if selector is not shown on the UI
             ? preferences.defaultModel
             : undefined,
@@ -236,22 +230,8 @@ export function ChatProvider({
   };
 
   const handleSubmit: typeof chat.handleSubmit = (e, options) => {
-    // deno-lint-ignore no-explicit-any
-    const opts: any = options;
-    if (opts?.fileData && opts.fileData.length > 0) {
-      fileDataRef.current = opts.fileData;
-    } else {
-      fileDataRef.current = [];
-    }
-
     chat.handleSubmit(e, options);
-
     setAutoScroll(scrollRef.current, true);
-
-    // the timeout is absolutely necessary trust me do not question do not remove just accept it
-    setTimeout(() => {
-      fileDataRef.current = [];
-    }, 1000);
   };
 
   useEffect(() => {
@@ -272,7 +252,6 @@ export function ChatProvider({
         agentRoot,
         chat: { ...chat, handleSubmit: handleSubmit },
         scrollRef,
-        fileDataRef,
         uiOptions: options,
         setAutoScroll,
         isAutoScrollEnabled,

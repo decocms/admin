@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NotFoundError, UserInputError } from "../../errors.ts";
 import {
   assertUserHasAccessToTeamBySlug,
   assertUserIsTeamAdmin,
@@ -44,7 +45,7 @@ export const getTeam = createApiHandler({
 
     if (error) throw error;
     if (!teamData) {
-      throw new Error("Team not found or user does not have access");
+      throw new NotFoundError("Team not found or user does not have access");
     }
 
     return teamData;
@@ -80,7 +81,7 @@ export const createTeam = createApiHandler({
         .maybeSingle();
       if (slugError) throw slugError;
       if (existingTeam) {
-        throw new Error("A team with this slug already exists.");
+        throw new UserInputError("A team with this slug already exists.");
       }
     }
 
@@ -163,7 +164,7 @@ export const updateTeam = createApiHandler({
         .maybeSingle();
       if (slugError) throw slugError;
       if (existingTeam) {
-        throw new Error("A team with this slug already exists.");
+        throw new UserInputError("A team with this slug already exists.");
       }
     }
 

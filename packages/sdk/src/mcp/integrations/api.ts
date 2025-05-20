@@ -4,30 +4,32 @@ import {
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
-import { createSupabaseStorage } from "@deco/ai/storage";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createServerClient } from "@supabase/ssr";
 import { z } from "zod";
 import {
   Agent,
   AgentSchema,
+  API_SERVER_URL,
   INNATE_INTEGRATIONS,
   Integration,
   IntegrationSchema,
+  InternalServerError,
   NEW_INTEGRATION_TEMPLATE,
+  UserInputError,
 } from "../../index.ts";
+import type { Workspace } from "../../path.ts";
 import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createApiHandler, getEnv } from "../context.ts";
+import { createApiHandler } from "../context.ts";
+import { NotFoundError } from "../index.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
 const parseId = (id: string) => {
-  const [type, uuid] = id.split(":");
-
+  const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
     type: (type || "i") as "i" | "a",
     uuid: uuid || id,
@@ -105,15 +107,10 @@ export const listTools = createApiHandler({
     connection: true,
   }),
   handler: async ({ connection }, c) => {
-    const env = getEnv(c);
-    const storage = createSupabaseStorage(
-      createServerClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVER_TOKEN,
-        { cookies: { getAll: () => [] } },
-      ),
+    const result = await listToolsByConnectionType(
+      connection,
+      c,
     );
-    const result = await listToolsByConnectionType(connection, storage);
 
     // Sort tools by name for consistent UI
     if (Array.isArray(result?.tools)) {
@@ -124,6 +121,40 @@ export const listTools = createApiHandler({
   },
 });
 
+const virtualIntegrationsFor = (workspace: string) => {
+  // Create a virtual User Management integration
+  const userManagementIntegration = {
+    id: formatId("i", "user-management"),
+    name: "User Management",
+    description: "Manage your teams, invites and profile",
+    connection: {
+      type: "HTTP",
+      url: new URL("/mcp", API_SERVER_URL).href,
+    },
+    icon: "https://i.imgur.com/GD4o7vx.png",
+    workspace,
+    created_at: new Date().toISOString(),
+  };
+
+  // Create a virtual Workspace Management integration
+  const workspaceManagementIntegration = {
+    id: formatId("i", "workspace-management"),
+    name: "Workspace Management",
+    description: "Manage your agents, integrations and threads",
+    connection: {
+      type: "HTTP",
+      url: new URL(`${workspace}/mcp`, API_SERVER_URL).href,
+    },
+    icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
+    workspace,
+    created_at: new Date().toISOString(),
+  };
+
+  return [
+    userManagementIntegration,
+    workspaceManagementIntegration,
+  ];
+};
 export const listIntegrations = createApiHandler({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
@@ -131,9 +162,6 @@ export const listIntegrations = createApiHandler({
   handler: async (_, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
-    const host = c.host || "deco.chat";
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${host}`;
 
     const [
       _assertions,
@@ -154,42 +182,13 @@ export const listIntegrations = createApiHandler({
     const error = integrations.error || agents.error;
 
     if (error) {
-      throw new Error(error.message || "Failed to list integrations");
+      throw new InternalServerError(
+        error.message || "Failed to list integrations",
+      );
     }
 
-    // Create a virtual User Management integration
-    const userManagementIntegration = {
-      id: formatId("i", "user-management"),
-      name: "User Management",
-      description: "Manage your teams, invites and profile",
-      connection: {
-        type: "HTTP",
-        url: `${baseUrl}/mcp`,
-      },
-      icon: "https://i.imgur.com/GD4o7vx.png",
-      workspace,
-      created_at: new Date().toISOString(),
-    };
-
-    // Create a virtual Workspace Management integration
-    const workspaceManagementIntegration = {
-      id: formatId("i", "workspace-management"),
-      name: "Workspace Management",
-      description: "Manage your agents, integrations and threads",
-      connection: {
-        type: "HTTP",
-        url: `${baseUrl}${workspace}}/mcp`,
-      },
-      icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-      workspace,
-      created_at: new Date().toISOString(),
-    };
-
-    // TODO: Make Actor Backend able to handle these two virtual integrations
-
     return [
-      userManagementIntegration,
-      workspaceManagementIntegration,
+      ...virtualIntegrationsFor(workspace),
       ...integrations.data.map((item) => ({
         ...item,
         id: formatId("i", item.id),
@@ -212,33 +211,54 @@ export const getIntegration = createApiHandler({
     id: z.string(),
   }),
   handler: async ({ id }, c) => {
+    const { uuid, type } = parseId(id);
+    if (uuid in INNATE_INTEGRATIONS) {
+      const data =
+        INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
+      return IntegrationSchema.parse({
+        ...data,
+        id: formatId(type, data.id),
+      });
+    }
     assertHasWorkspace(c);
 
-    const { uuid, type } = parseId(id);
+    const virtualIntegrations = virtualIntegrationsFor(c.workspace.value);
+
+    if (virtualIntegrations.some((i) => i.id === id)) {
+      return IntegrationSchema.parse({
+        ...virtualIntegrations.find((i) => i.id === id),
+        id: formatId(type, id),
+      });
+    }
 
     const [
       _assertions,
       { data, error },
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(c),
-      uuid in INNATE_INTEGRATIONS
-        ? {
-          data: INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS],
-          error: null,
-        }
-        : c.db
-          .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-          .select("*")
-          .eq("id", uuid)
-          .single(),
+      c.db
+        .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
+        .select("*")
+        .eq("id", uuid)
+        .single(),
     ]);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Integration not found");
+      throw new NotFoundError("Integration not found");
+    }
+
+    if (type === "a") {
+      const mapAgentToIntegration = agentAsIntegrationFor(
+        c.workspace.value as Workspace,
+      );
+      return IntegrationSchema.parse({
+        ...mapAgentToIntegration(data as unknown as Agent),
+        id: formatId(type, data.id),
+      });
     }
 
     return IntegrationSchema.parse({
@@ -268,7 +288,7 @@ export const createIntegration = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return IntegrationSchema.parse({
@@ -293,7 +313,7 @@ export const updateIntegration = createApiHandler({
     const { uuid, type } = parseId(id);
 
     if (type === "a") {
-      throw new Error("Cannot update an agent integration");
+      throw new UserInputError("Cannot update an agent integration");
     }
 
     const { data, error } = await c.db
@@ -304,11 +324,11 @@ export const updateIntegration = createApiHandler({
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     if (!data) {
-      throw new Error("Integration not found");
+      throw new NotFoundError("Integration not found");
     }
 
     return IntegrationSchema.parse({
@@ -332,7 +352,7 @@ export const deleteIntegration = createApiHandler({
     const { uuid, type } = parseId(id);
 
     if (type === "a") {
-      throw new Error("Cannot delete an agent integration");
+      throw new UserInputError("Cannot delete an agent integration");
     }
 
     const { error } = await c.db
@@ -341,7 +361,7 @@ export const deleteIntegration = createApiHandler({
       .eq("id", uuid);
 
     if (error) {
-      throw new Error(error.message);
+      throw new InternalServerError(error.message);
     }
 
     return true;

@@ -1,6 +1,6 @@
+import type { Integration } from "@deco/sdk";
 import type { AIAgent } from "../agent.ts";
 import { createServerClient } from "../mcp.ts";
-import type { Integration } from "../storage/index.ts";
 
 const DECO_REGISTRY_SERVER_URL = "https://mcp.deco.site";
 
@@ -16,10 +16,8 @@ export const getDecoRegistryServerClient = () => {
 export const searchInstalledIntegations = async (
   agent: AIAgent,
   query?: string,
-) => {
-  const integrations = await agent.storage?.integrations
-    .for(agent.workspace)
-    .list();
+): Promise<Integration[]> => {
+  const integrations = await agent.metadata?.mcpClient?.INTEGRATIONS_LIST({});
 
   const lower = query?.toLowerCase() ?? "";
 
@@ -31,7 +29,9 @@ export const searchInstalledIntegations = async (
     );
 };
 
-export const searchMarketplaceIntegations = async (query?: string) => {
+export const searchMarketplaceIntegations = async (
+  query?: string,
+): Promise<(Integration & { provider: string })[]> => {
   const client = await getDecoRegistryServerClient();
 
   try {
@@ -40,13 +40,9 @@ export const searchMarketplaceIntegations = async (query?: string) => {
       arguments: { query },
     }) as { content: { text: string }[] };
 
-    const list = JSON.parse(result.content[0].text) as {
-      id: string;
-      name: string;
-      description: string;
-      icon: string;
+    const list = JSON.parse(result.content[0].text) as (Integration & {
       provider: string;
-    }[];
+    })[];
 
     return list;
   } finally {

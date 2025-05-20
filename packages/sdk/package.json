@@ -48,6 +48,8 @@
     "./wallet": "./src/wallets/index.ts",
     "./storage": "./src/storage/index.ts",
     "./mcp": "./src/mcp/index.ts",
-    "./fetch": "./src/fetch.ts"
+    "./fetch": "./src/fetch.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./hooks/profile": "./src/hooks/profile.ts"
   }
 }

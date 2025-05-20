@@ -121,27 +121,6 @@ export function ProfileSettings(
     setError("");
   }
 
-  // On load, parse phone
-  useEffect(() => {
-    if (profile?.phone) {
-      // Find country by dial_code
-      const match = COUNTRIES.find((c) =>
-        profile.phone.startsWith(c.dial_code)
-      );
-      setCountry(match || null);
-      if (match) {
-        setDialCode(match.dial_code);
-        const local = profile.phone.slice(match.dial_code.length);
-        setLocalValue(match.mask(local));
-        setFullPhone(profile.phone);
-      } else {
-        setDialCode("+");
-        setLocalValue(profile.phone);
-        setFullPhone(profile.phone);
-      }
-    }
-  }, [profile]);
-
   function validatePhone() {
     if (!country) {
       setError(
@@ -168,6 +147,27 @@ export function ProfileSettings(
       },
     );
   }
+
+  // On load, parse phone
+  useEffect(() => {
+    if (profile?.phone) {
+      // Find country by dial_code
+      const match = COUNTRIES.find((c) =>
+        profile.phone.startsWith(c.dial_code)
+      );
+      setCountry(match || null);
+      if (match) {
+        setDialCode(match.dial_code);
+        const local = profile.phone.slice(match.dial_code.length);
+        setLocalValue(match.mask(local));
+        setFullPhone(profile.phone);
+      } else {
+        setDialCode("+");
+        setLocalValue(profile.phone);
+        setFullPhone(profile.phone);
+      }
+    }
+  }, [profile]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

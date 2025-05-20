@@ -20,13 +20,15 @@ import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { DefaultBreadcrumb, PageLayout, useProfileModal } from "../layout.tsx";
 import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import { useCreateTempAgent, useCreateTrigger } from "@deco/sdk";
 import { useUser } from "../../hooks/data/useUser.ts";
+import { useProfile } from "@deco/sdk/hooks";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -80,6 +82,8 @@ function ActionsButtons() {
   const { mutate: createTrigger } = useCreateTrigger(agentId);
   const { mutate: createTempAgent } = useCreateTempAgent();
   const user = useUser();
+  const { openProfileModal } = useProfileModal();
+  const { data: profile } = useProfile();
 
   const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
   const displayNewChat = displaySettings && chat.messages.length !== 0;
@@ -88,7 +92,7 @@ function ActionsButtons() {
     return null;
   }
 
-  const handleWhatsAppClick = () => {
+  const runWhatsAppIntegration = () => {
     createTrigger(
       {
         title: "WhatsApp Integration",
@@ -103,7 +107,7 @@ function ActionsButtons() {
             { agentId, userId: user.id },
             {
               onSuccess: () => {
-                alert("This agent is now available on WhatsApp.");
+                toast.success("This agent is now available on WhatsApp.");
                 focusChat(agentId, crypto.randomUUID(), {
                   history: false,
                 });
@@ -124,7 +128,7 @@ function ActionsButtons() {
               { agentId, userId: user.id },
               {
                 onSuccess: () => {
-                  alert("This agent is now available on WhatsApp.");
+                  toast.success("This agent is now available on WhatsApp.");
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,
                   });
@@ -142,6 +146,15 @@ function ActionsButtons() {
         },
       },
     );
+  };
+
+  const handleWhatsAppClick = () => {
+    if (!profile?.phone) {
+      toast("To enable your agent for WhatsApp use, first register your WhatsApp phone number.");
+      openProfileModal(runWhatsAppIntegration);
+      return;
+    }
+    runWhatsAppIntegration();
   };
 
   return (

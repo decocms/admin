@@ -79,9 +79,10 @@ function getCountryConfig(country: any): Country {
 const COUNTRIES: Country[] = countriesData.map(getCountryConfig);
 
 export function ProfileSettings(
-  { open, onOpenChange }: {
+  { open, onOpenChange, onPhoneSaved }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onPhoneSaved?: () => void;
   },
 ) {
   const { data: profile, isLoading, error: loadError } = useProfile();
@@ -162,9 +163,11 @@ export function ProfileSettings(
     updateProfile.mutate(
       { phone: fullPhone },
       {
-        onSuccess: () => setSuccess(true),
-        onError: (err: any) =>
-          setError(err.message || "Failed to update profile"),
+        onSuccess: () => {
+          setSuccess(true);
+          if (onPhoneSaved) onPhoneSaved();
+        },
+        onError: (err: any) => setError(err.message || "Failed to update profile"),
       },
     );
   }

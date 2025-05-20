@@ -9,6 +9,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 
 export interface Vars {
+  params: Record<string, string>;
   workspace?: {
     root: string;
     slug: string;
@@ -102,14 +103,19 @@ export const createAIHandler =
   };
 
 export interface ApiHandlerDefinition<
+  TAppContext extends AppContext = AppContext,
   TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object,
-  THandler extends (props: z.infer<T>, c: AppContext) => Promise<R> | R = (
+  THandler extends (
     props: z.infer<T>,
-    c: AppContext,
+    c: TAppContext,
+  ) => Promise<R> | R = (
+    props: z.infer<T>,
+    c: TAppContext,
   ) => Promise<R> | R,
 > {
+  group?: string;
   name: TName;
   description: string;
   schema: T;
@@ -124,32 +130,40 @@ export interface ApiHandler<
     props: z.infer<T>,
   ) => Promise<R> | R,
 > {
+  group?: string;
   name: TName;
   description: string;
   schema: T;
   handler: THandler;
 }
-
-export const createApiHandler = <
+export const createApiHandlerFactory = <
+  TAppContext extends AppContext = AppContext,
+>(contextFactory: (c: AppContext) => TAppContext, group?: string) =>
+<
   TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object | boolean,
-  THandler extends (props: z.infer<T>, c: AppContext) => Promise<R> | R = (
+  THandler extends (props: z.infer<T>, c: TAppContext) => Promise<R> | R = (
     props: z.infer<T>,
-    c: AppContext,
+    c: TAppContext,
   ) => Promise<R> | R,
 >(
-  definition: ApiHandlerDefinition<TName, T, R, THandler>,
+  definition: ApiHandlerDefinition<TAppContext, TName, T, R, THandler>,
 ): ApiHandler<
   TName,
   T,
   R,
   (props: Parameters<THandler>[0]) => ReturnType<THandler>
 > => ({
+  group,
   ...definition,
   handler: (props: Parameters<THandler>[0]): ReturnType<THandler> =>
-    definition.handler(props, State.getStore()) as ReturnType<THandler>,
+    definition.handler(props, contextFactory(State.getStore())) as ReturnType<
+      THandler
+    >,
 });
+
+export const createApiHandler = createApiHandlerFactory<AppContext>((c) => c);
 
 export type MCPDefinition = ApiHandler[];
 

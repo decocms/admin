@@ -193,6 +193,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   createAppContext(metadata?: AgentMetadata): AppContext {
     return {
+      params: {},
       envVars: this.env as any,
       db: this.db,
       user: metadata?.principal!,

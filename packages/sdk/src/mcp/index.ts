@@ -64,6 +64,8 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.getWebhookTriggerUrl,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
+  knowledgeAPI.createBase,
+  knowledgeAPI.deleteBase,
   knowledgeAPI.forget,
   knowledgeAPI.remember,
   knowledgeAPI.search,
@@ -75,7 +77,6 @@ export const WORKSPACE_TOOLS = [
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;
-
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
 });
@@ -93,6 +94,7 @@ export const fromWorkspaceString = (
     slug,
   };
 };
+
 export const MCPClient = new Proxy(
   {} as typeof global & {
     forContext: (

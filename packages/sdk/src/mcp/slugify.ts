@@ -70,7 +70,7 @@ export async function generateUUIDv5(
  * @param name The name to slugify
  * @returns A slugified string
  */
-export const slugify = (name: string) => {
+export const slugifyForDNS = (name: string) => {
   // Lowercase and replace all non-alphanumeric with hyphens
   let slug = name.toLowerCase().replace(/[^a-z0-9]/g, "-");
   // Replace multiple hyphens with a single hyphen
@@ -82,3 +82,12 @@ export const slugify = (name: string) => {
   // If the result is empty, return a default value (e.g., "subdomain")
   return slug || "subdomain";
 };
+
+/**
+ * Slugifies a string by converting it to lowercase and replacing all non-alphanumeric characters with a dash.
+ * @param input The string to slugify.
+ * @returns The slugified string.
+ */
+export function slugify(input: string): string {
+  return input.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+}

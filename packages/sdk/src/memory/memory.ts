@@ -3,9 +3,9 @@ import type { Client as LibSQLClient } from "@libsql/client";
 import type { StorageThreadType } from "@mastra/core";
 import type { SharedMemoryConfig } from "@mastra/core/memory";
 import { Memory as MastraMemory } from "@mastra/memory";
-import { slugify, toAlphanumericId } from "../mcp/slugify.ts";
+import { slugify, slugifyForDNS, toAlphanumericId } from "../mcp/slugify.ts";
 import { LibSQLFactory, type LibSQLFactoryOpts } from "./libsql.ts";
-export { slugify, toAlphanumericId };
+export { slugify, slugifyForDNS, toAlphanumericId };
 type CreateThreadOpts = Parameters<MastraMemory["createThread"]>[0];
 
 interface WorkspaceMemoryConfig extends SharedMemoryConfig {
@@ -15,6 +15,7 @@ interface WorkspaceMemoryConfig extends SharedMemoryConfig {
 interface CreateWorkspaceMemoryOpts
   extends LibSQLFactoryOpts, Omit<SharedMemoryConfig, "storage" | "vector"> {
   workspace: Workspace;
+  discriminator?: string;
 }
 
 export class WorkspaceMemory extends MastraMemory {
@@ -28,9 +29,10 @@ export class WorkspaceMemory extends MastraMemory {
     tursoAdminToken,
     tursoOrganization,
     tokenStorage,
+    discriminator,
     ...opts
   }: CreateWorkspaceMemoryOpts) {
-    const memoryId = buildMemoryId(workspace);
+    const memoryId = buildMemoryId(workspace, discriminator);
 
     const libsqlFactory = new LibSQLFactory({
       tursoAdminToken,

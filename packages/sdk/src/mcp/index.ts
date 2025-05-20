@@ -38,6 +38,7 @@ export const WORKSPACE_TOOLS = [
   agentsAPI.getAgent,
   agentsAPI.deleteAgent,
   agentsAPI.createAgent,
+  agentsAPI.createTempAgent,
   agentsAPI.updateAgent,
   agentsAPI.listAgents,
   integrationsAPI.getIntegration,

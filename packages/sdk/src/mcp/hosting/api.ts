@@ -228,7 +228,6 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "./deps.ts";
-import { assertUserHasAccessToWorkspace } from '@deco/sdk/mcp';
 
       export default {
         async fetch(request: Request): Promise<Response> {

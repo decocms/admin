@@ -160,7 +160,6 @@ export const canAccessWorkspaceResource = async (
   assertHasUser(c);
   assertHasWorkspace(c);
   const user = c.user;
-  const authorization = c.authorization;
   const { root, slug } = c.workspace;
 
   if (root === "users" && user.id === slug) {
@@ -168,8 +167,14 @@ export const canAccessWorkspaceResource = async (
   }
 
   if (root === "shared") {
-    return await authorization.canAccess(user.id, slug, resource);
+    return await c.authorization.canAccess(user.id, slug, resource);
   }
 
   return false;
 };
+
+export const canAccessTeamResource = (
+  resource: string,
+  teamIdOrSlug: string | number,
+  c: AppContext,
+) => c.authorization.canAccess(c.user.id, teamIdOrSlug, resource);

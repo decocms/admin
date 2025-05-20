@@ -156,7 +156,7 @@ export function ProfileSettings(
     if (profile?.phone) {
       // Find country by dial_code
       const match = COUNTRIES.find((c) =>
-        profile.phone.startsWith(c.dial_code)
+        profile.phone?.startsWith(c.dial_code)
       );
       setCountry(match || null);
       if (match) {

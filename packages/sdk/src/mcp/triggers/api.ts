@@ -135,7 +135,7 @@ export const createTrigger = createApiHandler({
       (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
         .whatsappEnabled;
     if (whatsappEnabled) {
-      const { data: existingTriggers, error: checkError } = await db.from(
+      const { data: _existingTriggers, error: checkError } = await db.from(
         "deco_chat_triggers",
       )
         .select("id")
@@ -145,12 +145,6 @@ export const createTrigger = createApiHandler({
 
       if (checkError) {
         throw new InternalServerError(checkError.message);
-      }
-
-      if (existingTriggers && existingTriggers.length > 0) {
-        throw new UserInputError(
-          "Only one WhatsApp-enabled trigger is allowed per agent",
-        );
       }
     }
 

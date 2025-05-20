@@ -29,18 +29,7 @@ export interface Vars {
   ) => StubFactory<InstanceType<Constructor>>;
 }
 
-export interface EnvVars {
-  OPENROUTER_API_KEY: string;
-  VITE_USE_LOCAL_BACKEND: string;
-  RESEND_API_KEY: string;
-  SUPABASE_URL: string;
-  SUPABASE_SERVER_TOKEN: string;
-  TURSO_GROUP_DATABASE_TOKEN: string;
-  TURSO_ORGANIZATION: string;
-  CF_ACCOUNT_ID: string;
-  CF_API_TOKEN: string;
-  CF_DISPATCH_NAMESPACE: string;
-}
+export type EnvVars = z.infer<typeof envSchema>;
 
 export type AppContext = Vars & {
   envVars: EnvVars;
@@ -65,45 +54,23 @@ export const serializeError = (error: unknown): string => {
   }
 };
 
-export const getEnv = (ctx: AppContext) => {
-  const {
-    CF_DISPATCH_NAMESPACE,
-    CF_ACCOUNT_ID,
-    CF_API_TOKEN,
-    VITE_USE_LOCAL_BACKEND,
-    SUPABASE_URL,
-    SUPABASE_SERVER_TOKEN,
-    TURSO_GROUP_DATABASE_TOKEN,
-    TURSO_ORGANIZATION,
-    RESEND_API_KEY,
-    OPENROUTER_API_KEY,
-  } = ctx.envVars;
+const envSchema = z.object({
+  CF_DISPATCH_NAMESPACE: z.string().readonly(),
+  CF_ACCOUNT_ID: z.string().readonly(),
+  CF_API_TOKEN: z.string().readonly(),
+  CF_R2_ACCESS_KEY_ID: z.string().readonly(),
+  CF_R2_SECRET_ACCESS_KEY: z.string().readonly(),
+  VITE_USE_LOCAL_BACKEND: z.string().readonly(),
+  SUPABASE_URL: z.string().readonly(),
+  SUPABASE_SERVER_TOKEN: z.string().readonly(),
+  TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
+  TURSO_ORGANIZATION: z.string().readonly(),
+  RESEND_API_KEY: z.string().readonly(),
+  OPENROUTER_API_KEY: z.string().readonly(),
+});
 
-  if (
-    typeof OPENROUTER_API_KEY !== "string" ||
-    typeof CF_ACCOUNT_ID !== "string" ||
-    typeof SUPABASE_URL !== "string" ||
-    typeof SUPABASE_SERVER_TOKEN !== "string" ||
-    typeof CF_API_TOKEN !== "string" ||
-    typeof CF_DISPATCH_NAMESPACE !== "string" ||
-    typeof TURSO_GROUP_DATABASE_TOKEN !== "string" ||
-    typeof TURSO_ORGANIZATION !== "string"
-  ) {
-    throw new Error("Missing environment variables");
-  }
-
-  return {
-    CF_ACCOUNT_ID,
-    CF_API_TOKEN,
-    CF_DISPATCH_NAMESPACE,
-    VITE_USE_LOCAL_BACKEND,
-    SUPABASE_URL,
-    SUPABASE_SERVER_TOKEN,
-    TURSO_GROUP_DATABASE_TOKEN,
-    TURSO_ORGANIZATION,
-    RESEND_API_KEY,
-  };
-};
+export const getEnv = (ctx: AppContext): EnvVars =>
+  envSchema.parse(ctx.envVars);
 
 export const AUTH_URL = (ctx: AppContext) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"

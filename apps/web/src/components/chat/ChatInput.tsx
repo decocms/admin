@@ -1,8 +1,9 @@
 import {
   AgentNotFoundError,
-  LEGACY_API_SERVER_URL,
   MODELS,
+  readFile,
   useAgent,
+  useSDK,
   useWriteFile,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -118,8 +119,8 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
 ChatInput.UI = (
   { disabled }: { disabled?: boolean },
 ) => {
+  const { workspace } = useSDK();
   const {
-    agentRoot,
     chat: { stop, input, handleInputChange, handleSubmit, status },
     uiOptions: { showModelSelector, showThreadTools },
   } = useChatContext();
@@ -234,16 +235,18 @@ ChatInput.UI = (
 
   async function uploadFile(file: File) {
     try {
+      const path = `uploads/${file.name}`;
       const buffer = await file.arrayBuffer();
       await writeFileMutation.mutateAsync({
-        path: `${agentRoot}/${file.name}`,
+        path,
+        contentType: file.type,
         content: new Uint8Array(buffer),
       });
-      const url = new URL(`${agentRoot}/${file.name}`, LEGACY_API_SERVER_URL);
+
+      const url = await readFile({ workspace, path });
+
       setUploadedFiles((prev) =>
-        prev.map((uf) =>
-          uf.file === file ? { ...uf, url: url.href, status: "done" } : uf
-        )
+        prev.map((uf) => uf.file === file ? { ...uf, url, status: "done" } : uf)
       );
     } catch (error) {
       setUploadedFiles((prev) =>
@@ -386,7 +389,7 @@ ChatInput.UI = (
           </div>
 
           {uploadedFiles.length > 0 && (
-            <div className="w-fit absolute z-10 bottom-full mb-2 left-0 flex flex-wrap gap-2">
+            <div className="w-fit absolute z-50 bottom-full mb-2 left-0 flex flex-wrap gap-2">
               {uploadedFiles.map((uf, index) => (
                 <FilePreviewItem
                   key={uf.file.name + uf.file.size}

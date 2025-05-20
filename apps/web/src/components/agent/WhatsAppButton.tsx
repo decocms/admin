@@ -132,7 +132,7 @@ export function WhatsAppButton() {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button variant="ghost" size="icon" onClick={handleWhatsAppClick}>
-          <img src="/img/zap.svg" className="w-4 h-4" />
+          <img src="/img/zap.svg" className="w-4 h-4 grayscale" />
         </Button>
       </TooltipTrigger>
       <TooltipContent>

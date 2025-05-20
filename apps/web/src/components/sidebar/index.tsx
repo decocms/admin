@@ -158,6 +158,8 @@ function ThreadActions({ thread, onEdit, className }: {
 }) {
   const [open, setOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const match = useMatch(buildThreadUrl(thread));
+  const isCurrentThread = !!match;
 
   return (
     <>
@@ -187,18 +189,20 @@ function ThreadActions({ thread, onEdit, className }: {
             <Icon name="edit" className="mr-2" size={16} />
             Rename
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setOpen(false);
-              setShowDeleteModal(true);
-            }}
-            className="text-red-500 focus:text-red-500"
-          >
-            <Icon name="delete" className="mr-2" size={16} />
-            Delete
-          </DropdownMenuItem>
+          {!isCurrentThread && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setOpen(false);
+                setShowDeleteModal(true);
+              }}
+              className="text-red-500 focus:text-red-500"
+            >
+              <Icon name="delete" className="mr-2" size={16} />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

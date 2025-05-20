@@ -146,7 +146,8 @@ export function ProfileSettings(
           setSuccess(true);
           if (onPhoneSaved) onPhoneSaved();
         },
-        onError: (err: any) => setError(err.message || "Failed to update profile"),
+        onError: (err: any) =>
+          setError(err.message || "Failed to update profile"),
       },
     );
   }

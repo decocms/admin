@@ -12,11 +12,11 @@ import {
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
-import { MCPError } from "../errors.ts";
+import { InternalServerError, UserInputError } from "../../errors.ts";
 
 const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
-    throw new MCPError("WALLET_API_KEY is not set");
+    throw new InternalServerError("WALLET_API_KEY is not set");
   }
   return createWalletClient(c.envVars.WALLET_API_KEY, c.walletBinding);
 };
@@ -274,7 +274,7 @@ export const redeemWalletVoucher = createApiHandler({
     const amountHintMicroDollars = voucherId.split("-")[1];
 
     if (!amountHintMicroDollars) {
-      throw new MCPError("Invalid voucher ID");
+      throw new UserInputError("Invalid voucher ID");
     }
 
     const amountMicroDollars = MicroDollar.fromMicrodollarString(
@@ -282,7 +282,7 @@ export const redeemWalletVoucher = createApiHandler({
     );
 
     if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-      throw new MCPError("Invalid voucher ID");
+      throw new UserInputError("Invalid voucher ID");
     }
 
     const operation = {

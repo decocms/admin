@@ -1,10 +1,12 @@
 import {
   Thread,
   useAgents,
+  useDeleteThread,
   useIntegrations,
   useInvites,
   useMarketplaceIntegrations,
   useThreads,
+  useUpdateThreadTitle,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -21,7 +23,7 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { ReactNode, Suspense } from "react";
+import { ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
@@ -30,6 +32,27 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form } from "@deco/ui/components/form.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -54,6 +77,12 @@ const STATIC_ITEMS = [
   },
 ];
 
+const editTitleSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+});
+
+type EditTitleForm = z.infer<typeof editTitleSchema>;
+
 const WithActive = (
   { children, ...props }: {
     to: string;
@@ -73,7 +102,243 @@ function buildThreadUrl(thread: Thread): string {
   return `chat/${thread.metadata.agentId}/${thread.id}`;
 }
 
-function SidebarThreadList({ threads }: { threads: Thread[] }) {
+function DeleteThreadModal(
+  { thread, open, onOpenChange }: {
+    thread: Thread;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  },
+) {
+  const user = useUser();
+  const deleteThread = useDeleteThread(thread.id, user?.id ?? "");
+
+  const handleDelete = async () => {
+    try {
+      await deleteThread.mutateAsync();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Failed to delete thread:", error);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Thread</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{thread.title}"? This action cannot
+            be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteThread.isPending}
+          >
+            {deleteThread.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ThreadActions({ thread, onEdit, className }: {
+  thread: Thread;
+  onEdit: () => void;
+  className: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("h-8 w-8", className)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <Icon name="more_vert" className="text-slate-500" size={16} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(false);
+              onEdit();
+            }}
+          >
+            <Icon name="edit" className="mr-2" size={16} />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setOpen(false);
+              setShowDeleteModal(true);
+            }}
+            className="text-red-500 focus:text-red-500"
+          >
+            <Icon name="delete" className="mr-2" size={16} />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DeleteThreadModal
+        thread={thread}
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+      />
+    </>
+  );
+}
+
+function SidebarThreadItem(
+  { thread, userId, onThreadClick }: {
+    thread: Thread;
+    userId: string;
+    onThreadClick: (thread: Thread) => void;
+  },
+) {
+  const [isEditing, setIsEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const updateTitle: ReturnType<typeof useUpdateThreadTitle> =
+    useUpdateThreadTitle(thread.id, userId);
+
+  const methods = useForm<EditTitleForm>({
+    resolver: zodResolver(editTitleSchema),
+    defaultValues: {
+      title: thread.title,
+    },
+  });
+
+  // Focus the input when the thread is being edited
+  useEffect(() => {
+    if (isEditing) {
+      const input = formRef.current?.querySelector("input");
+      input?.focus();
+    }
+  }, [isEditing]);
+
+  // Close the input when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isEditing && formRef.current &&
+        !formRef.current.contains(event.target as Node)
+      ) {
+        setIsEditing(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isEditing]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = methods.getValues();
+
+    if (data.title === thread.title) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      updateTitle.mutateAsync(data.title);
+      setIsEditing(false);
+    } catch (_) {
+      methods.setValue("title", thread.title);
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <SidebarMenuItem
+      key={thread.id}
+      className="relative group/item"
+    >
+      <div className="w-full">
+        <WithActive to={buildThreadUrl(thread)}>
+          {({ isActive }) => (
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={thread.title}
+              className="h-9 w-full pr-8"
+            >
+              {isEditing
+                ? (
+                  <Form {...methods}>
+                    <form
+                      ref={formRef}
+                      onSubmit={handleSubmit}
+                      className="flex-1"
+                    >
+                      <Input
+                        {...methods.register("title")}
+                        className="h-8 text-sm w-5/6"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSubmit(e);
+                          }
+                        }}
+                        onBlur={handleSubmit}
+                      />
+                    </form>
+                  </Form>
+                )
+                : (
+                  <Link
+                    to={buildThreadUrl(thread)}
+                    onClick={() => onThreadClick(thread)}
+                  >
+                    <span className="truncate">{thread.title}</span>
+                  </Link>
+                )}
+            </SidebarMenuButton>
+          )}
+        </WithActive>
+      </div>
+
+      {!isEditing && (
+        <ThreadActions
+          thread={thread}
+          className="absolute right-2 top-1/2 -translate-y-1/2 transition-all opacity-0 group-hover/item:opacity-100"
+          onEdit={() => {
+            setIsEditing(true);
+            methods.setValue("title", thread.title);
+          }}
+        />
+      )}
+    </SidebarMenuItem>
+  );
+}
+
+function SidebarThreadList(
+  { threads, userId }: { threads: Thread[]; userId: string },
+) {
   const { isMobile, toggleSidebar } = useSidebar();
 
   const handleThreadClick = (thread: Thread) => {
@@ -86,25 +351,12 @@ function SidebarThreadList({ threads }: { threads: Thread[] }) {
   };
 
   return threads.map((thread) => (
-    <SidebarMenuItem key={thread.id}>
-      <WithActive to={buildThreadUrl(thread)}>
-        {({ isActive }) => (
-          <SidebarMenuButton
-            asChild
-            isActive={isActive}
-            tooltip={thread.title}
-            className="h-9"
-          >
-            <Link
-              to={buildThreadUrl(thread)}
-              onClick={() => handleThreadClick(thread)}
-            >
-              <span className="truncate">{thread.title}</span>
-            </Link>
-          </SidebarMenuButton>
-        )}
-      </WithActive>
-    </SidebarMenuItem>
+    <SidebarThreadItem
+      key={thread.id}
+      thread={thread}
+      userId={userId}
+      onThreadClick={handleThreadClick}
+    />
   ));
 }
 
@@ -132,7 +384,10 @@ function SidebarThreads() {
           <SidebarGroupContent>
             <SidebarGroupLabel>Today</SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
-              <SidebarThreadList threads={groupedThreads.today} />
+              <SidebarThreadList
+                threads={groupedThreads.today}
+                userId={user?.id ?? ""}
+              />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -143,7 +398,10 @@ function SidebarThreads() {
           <SidebarGroupContent>
             <SidebarGroupLabel>Yesterday</SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
-              <SidebarThreadList threads={groupedThreads.yesterday} />
+              <SidebarThreadList
+                threads={groupedThreads.yesterday}
+                userId={user?.id ?? ""}
+              />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -156,7 +414,10 @@ function SidebarThreads() {
               <SidebarGroupContent>
                 <SidebarGroupLabel>{date}</SidebarGroupLabel>
                 <SidebarMenu className="gap-0.5">
-                  <SidebarThreadList threads={threads} />
+                  <SidebarThreadList
+                    threads={threads}
+                    userId={user?.id ?? ""}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

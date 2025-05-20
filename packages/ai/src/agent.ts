@@ -315,6 +315,60 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
+  public async updateThreadTitle(threadId: string, title: string) {
+    try {
+      const thread = await this.memory.getThreadById({ threadId });
+      if (!thread) {
+        return {
+          success: false,
+          message: "Thread not found",
+        };
+      }
+      const updated = { ...thread, title };
+      await this.memory.saveThread({
+        thread: { ...updated },
+      });
+
+      return {
+        success: true,
+        message: "Thread title updated",
+      };
+    } catch (error) {
+      console.error("Error updating thread title", error);
+      return {
+        success: false,
+        message: "Error updating thread title",
+      };
+    }
+  }
+
+  public async updateThreadMetadata(threadId: string, metadata: Record<string, unknown>) {
+    try {
+      const thread = await this.memory.getThreadById({ threadId });
+      if (!thread) {
+        return {
+          success: false,
+          message: "Thread not found",
+        };
+      }
+      const updated = { ...thread.metadata, ...metadata };
+      await this.memory.saveThread({
+        thread: { ...thread, metadata: updated },
+      });
+
+      return {
+        success: true,
+        message: "Thread metadata updated",
+      };
+    } catch (error) {
+      console.error("Error updating thread metadata", error);
+      return {
+        success: false,
+        message: "Error updating thread metadata",
+      };
+    }
+  }
+  
   public async updateThreadTools(tool_set: Configuration["tools_set"]) {
     const thread = await this.memory.getThreadById(this.thread);
     if (!thread) {

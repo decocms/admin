@@ -125,6 +125,9 @@ export const listThreads = createApiHandler({
       args.push(cursor);
     }
 
+    // Filter out deleted threads
+    whereClauses.push("(json_extract(metadata, '$.deleted') IS NULL OR json_extract(metadata, '$.deleted') = false)");
+
     const whereClause = whereClauses.length > 0
       ? `WHERE ${whereClauses.join(" AND ")}`
       : "";

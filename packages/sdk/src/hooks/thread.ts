@@ -170,3 +170,63 @@ export const useInvalidateAll = () => {
     });
   }, [client]);
 };
+
+export const useUpdateThreadTitle = (threadId: string, userId: string) => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+  const agentStub = useAgentStub(threadId);
+
+  return useMutation({
+    mutationFn: async (newTitle: string) => {
+      return await agentStub.updateThreadTitle(threadId, newTitle);
+    },
+    onMutate: async (newTitle: string) => {
+      await client.cancelQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+
+      const previousThreads = client.getQueryData(KEYS.THREADS(workspace, userId));
+
+      // Optimistically update the thread in the threads list
+      // deno-lint-ignore no-explicit-any
+      client.setQueryData(KEYS.THREADS(workspace, userId), (old: any) => {
+        if (!old) return old;
+        // deno-lint-ignore no-explicit-any
+        const newThreads = old.threads.map((thread: any) =>
+          thread.id === threadId ? { ...thread, title: newTitle } : thread
+        );
+        return { ...old, threads: newThreads };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousThreads };
+    },
+    // deno-lint-ignore no-explicit-any
+    onError: (_: any, __: any, context: any) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousThreads) {
+        client.setQueryData(KEYS.THREADS(workspace, userId), context.previousThreads);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
+      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+    },
+  });
+};
+
+export const useDeleteThread = (threadId: string, userId: string) => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+  const agentStub = useAgentStub(threadId);
+
+  return useMutation({
+    mutationFn: async () => {
+      return await agentStub.updateThreadMetadata(threadId, {
+        deleted: true,
+      });
+    },
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+    },
+  });
+};

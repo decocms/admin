@@ -44,7 +44,7 @@ export function WhatsAppButton() {
       const audio = new Audio("/holy-melody.mp3");
       audio.play();
     }
-    createTrigger(
+    !whatsappTrigger && createTrigger(
       {
         title: "WhatsApp Integration",
         description: "WhatsApp integration for this agent",
@@ -52,25 +52,19 @@ export function WhatsAppButton() {
         passphrase: crypto.randomUUID(),
         whatsappEnabled: true,
       },
+    );
+
+    createTempAgent(
+      { agentId, userId: user.id },
       {
         onSuccess: () => {
-          createTempAgent(
-            { agentId, userId: user.id },
-            {
-              onSuccess: () => {
-                toast.success("This agent is now available on WhatsApp.");
-                focusChat(agentId, crypto.randomUUID(), {
-                  history: false,
-                });
-              },
-              onError: (error) => {
-                alert(`Failed to create temporary agent: ${error.message}`);
-              },
-            },
-          );
+          toast.success("This agent is now available on WhatsApp.");
+          focusChat(agentId, crypto.randomUUID(), {
+            history: false,
+          });
         },
         onError: (error) => {
-          alert(`Failed to create WhatsApp integration: ${error.message}`);
+          alert(`Failed to create temporary agent: ${error.message}`);
         },
       },
     );

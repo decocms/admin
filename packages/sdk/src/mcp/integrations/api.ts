@@ -109,7 +109,9 @@ export const listTools = createApiHandler({
   schema: IntegrationSchema.pick({
     connection: true,
   }),
-  canAccess: () => Promise.resolve(true),
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
+  },
   handler: async ({ connection }, c) => {
     const result = await listToolsByConnectionType(
       connection,
@@ -185,8 +187,8 @@ export const listIntegrations = createApiHandler({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
   schema: z.object({}),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("INTEGRATIONS_LIST", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -241,8 +243,8 @@ export const getIntegration = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("INTEGRATIONS_GET", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id }, c) => {
     const { uuid, type } = parseId(id);
@@ -304,8 +306,8 @@ export const createIntegration = createApiHandler({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
   schema: IntegrationSchema.partial(),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("INTEGRATIONS_CREATE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async (integration, c) => {
     assertHasWorkspace(c);
@@ -338,8 +340,8 @@ export const updateIntegration = createApiHandler({
     id: z.string(),
     integration: IntegrationSchema,
   }),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("INTEGRATIONS_UPDATE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
@@ -378,8 +380,8 @@ export const deleteIntegration = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("INTEGRATIONS_UPDATE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

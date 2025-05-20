@@ -56,8 +56,8 @@ export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
   description: "List all agents",
   schema: z.object({}),
-  canAccess: async (_props, c) => {
-    return await canAccessWorkspaceResource("AGENTS_LIST", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -81,8 +81,8 @@ export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
-  canAccess: async (_props, c) => {
-    const hasAccess = await canAccessWorkspaceResource("AGENTS_GET", c);
+  async canAccess(_props, c) {
+    const hasAccess = await canAccessWorkspaceResource(this.name, c);
     if (hasAccess) {
       return true;
     }
@@ -129,8 +129,8 @@ export const createAgent = createApiHandler({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   schema: AgentSchema.partial(),
-  canAccess: async (_agent, c) => {
-    return await canAccessWorkspaceResource("AGENTS_CREATE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async (agent, c) => {
     assertHasWorkspace(c);
@@ -193,8 +193,8 @@ export const updateAgent = createApiHandler({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("AGENTS_UPDATE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
@@ -221,8 +221,8 @@ export const deleteAgent = createApiHandler({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   schema: z.object({ id: z.string() }),
-  canAccess: async (_, c) => {
-    return await canAccessWorkspaceResource("AGENTS_DELETE", c);
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);

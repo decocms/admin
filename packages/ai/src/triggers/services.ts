@@ -1,5 +1,14 @@
 import type { ActorState } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
+import {
+  CreateCronTriggerOutputSchema,
+  CreateTriggerInput,
+  CreateWebhookTriggerOutputSchema,
+  CronTriggerSchema,
+  DeleteTriggerOutputSchema,
+  ListTriggersOutputSchema,
+  WebhookTriggerSchema,
+} from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
 import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Workspace } from "@deco/sdk/path";
@@ -20,130 +29,6 @@ export type TriggerData = CreateTriggerInput & {
     avatar: string;
   };
 };
-
-/**
- * Schema for tool call validation
- */
-export const PromptSchema = z.object({
-  threadId: z.string().optional().describe(
-    "if not provided, the same conversation thread will be used, you can pass any string you want to use",
-  ),
-  resourceId: z.string().optional().describe(
-    "if not provided, the same resource will be used, you can pass any string you want to use",
-  ),
-  messages: z.array(z.object({
-    role: z.enum(["user", "assistant", "system"]),
-    content: z.string(),
-  })).describe("The messages to send to the LLM"),
-});
-
-/**
- * Schema for cron trigger validation
- */
-export const CronTriggerSchema = z.object({
-  title: z.string().describe("The title of the trigger"),
-  description: z.string().optional().describe(
-    "The description of the trigger",
-  ),
-  cronExp: z.string(),
-  prompt: PromptSchema,
-  type: z.literal("cron"),
-});
-
-/**
- * Schema for webhook trigger validation
- */
-export const WebhookTriggerSchema = z.object({
-  title: z.string().describe("The title of the trigger"),
-  description: z.string().optional().describe(
-    "The description of the trigger",
-  ),
-  type: z.literal("webhook"),
-  passphrase: z.string().optional().describe("The passphrase for the webhook"),
-  outputTool: z.string().optional().describe(
-    "Output call to be always called on the end of the trigger execution. Format is `integrationId/toolId`",
-  ),
-  schema: z.record(z.string(), z.unknown()).optional().describe(
-    "The JSONSchema of the returning of the webhook.\n\n" +
-      "By default this webhook returns the LLM generate text response.\n\n" +
-      "If a JSONSchema is specified, it returns a JSON with the specified schema.\n\n",
-  ),
-});
-
-/**
- * Input schema for creating new triggers
- */
-export const CreateCronTriggerInputSchema = CronTriggerSchema;
-
-export const CreateWebhookTriggerInputSchema = WebhookTriggerSchema;
-
-export type CreateTriggerInput =
-  | z.infer<typeof CreateCronTriggerInputSchema>
-  | z.infer<typeof CreateWebhookTriggerInputSchema>;
-
-/**
- * Output schema for the trigger creation operation
- */
-export const CreateCronTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  id: z.string(),
-});
-
-/**
- * Input schema for deleting a trigger
- */
-export const DeleteTriggerInputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
-});
-
-/**
- * Output schema for trigger deletion results
- */
-export const DeleteTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-});
-
-export const TriggerSchema = z.union([
-  CreateCronTriggerInputSchema,
-  CreateWebhookTriggerInputSchema,
-]);
-
-/**
- * Input schema for getting webhook trigger URL
- */
-export const GetWebhookTriggerUrlInputSchema = z.object({
-  id: z.string().describe("The trigger ID"),
-});
-
-/**
- * Output schema for webhook trigger URL results
- */
-export const GetWebhookTriggerUrlOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  url: z.string().optional().describe("The URL of the webhook trigger"),
-});
-
-/**
- * Output schema for trigger listing results
- */
-export const ListTriggersOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  triggers: z.array(z.object({
-    id: z.string().describe("The trigger ID"),
-    data: TriggerSchema,
-  })),
-});
-
-export const CreateWebhookTriggerOutputSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  id: z.string(),
-  url: z.string().optional().describe("The URL of the webhook"),
-});
 
 export interface TriggerListResult {
   success: boolean;
@@ -288,30 +173,21 @@ export const createWebhookTrigger = async ({
     url,
   } as CreateTriggerInput & { url?: string };
 
-  try {
-    const result = await createTrigger(
-      stub,
-      workspace,
-      agentId,
-      data,
-      resourceId,
-      id,
-    );
+  const result = await createTrigger(
+    stub,
+    workspace,
+    agentId,
+    data,
+    resourceId,
+    id,
+  );
 
-    await mcpClient.TRIGGERS_CREATE({
-      agentId,
-      data,
-    });
+  await mcpClient.TRIGGERS_CREATE({
+    agentId,
+    data,
+  });
 
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to create trigger: ${error}`,
-      id,
-      url: undefined,
-    };
-  }
+  return result;
 };
 
 /**
@@ -348,29 +224,21 @@ export const createCronTrigger = async ({
       resourceId: trigger.prompt.resourceId ?? resourceId,
     },
   } as CreateTriggerInput & { url?: string };
-  try {
-    const result = await createTrigger(
-      stub,
-      workspace,
-      agentId,
-      data,
-      resourceId,
-      id,
-    );
+  const result = await createTrigger(
+    stub,
+    workspace,
+    agentId,
+    data,
+    resourceId,
+    id,
+  );
 
-    await mcpClient.TRIGGERS_CREATE({
-      agentId,
-      data,
-    });
+  await mcpClient.TRIGGERS_CREATE({
+    agentId,
+    data,
+  });
 
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to create trigger: ${error}`,
-      id,
-    };
-  }
+  return result;
 };
 
 /**
@@ -392,33 +260,18 @@ export const deleteTrigger = async ({
   triggerId: string;
   mcpClient: MCPClientStub<WorkspaceTools>;
 }): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
-  try {
-    const triggerWorkspace = Path.resolveHome(
-      join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
-      workspace,
-    ).path;
-    const result = await stub(Trigger).new(triggerWorkspace).delete();
+  const triggerWorkspace = Path.resolveHome(
+    join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
+    workspace,
+  ).path;
+  const result = await stub(Trigger).new(triggerWorkspace).delete();
 
-    if (!result || result.success === false) {
-      return {
-        success: false,
-        message: `Failed to delete trigger: ${result}`,
-      };
-    }
-
-    await mcpClient.TRIGGERS_DELETE({
-      agentId,
-      triggerId,
-    });
-
-    return {
-      success: true,
-      message: `Trigger ${triggerId} deleted successfully`,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: `Failed to delete trigger: ${error}`,
-    };
+  if (!result || result.success === false) {
+    throw new Error(`Failed to delete trigger: ${result}`);
   }
+
+  await mcpClient.TRIGGERS_DELETE({
+    agentId,
+    triggerId,
+  });
 };

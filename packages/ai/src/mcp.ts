@@ -93,12 +93,6 @@ const getMCPServerTools = async (
   }
 };
 
-// const HANDOFF_RESTRICTED_TOOLS: Record<string, string[]> = {
-//   DECO_AGENT: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_AGENT,
-//   DECO_INTEGRATIONS: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_INTEGRATIONS,
-//   DECO_THREADS: WELL_KNOWN_DEFAULT_INTEGRATION_TOOLS.DECO_THREADS,
-// };
-
 export const fetchMeta = async (baseUrl: string) => {
   const response = await fetch(new URL("/live/_meta", baseUrl));
   if (!response.ok) {

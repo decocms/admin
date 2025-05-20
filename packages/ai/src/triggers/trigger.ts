@@ -20,6 +20,17 @@ import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
 
+export const threadOf = (
+  data: TriggerData,
+  url?: URL,
+): { threadId: string | undefined; resourceId: string | undefined } => {
+  const resourceId = data.resourceId ?? url?.searchParams.get("resourceId") ??
+    undefined;
+  const threadId = url?.searchParams.get("threadId") ??
+    (resourceId ? crypto.randomUUID() : undefined); // generate a random threadId if resourceId exists.
+  return { threadId, resourceId };
+};
+
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {
   type: TData["type"];
   onCreated?(data: TData, trigger: Trigger): Promise<void>;

@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { Database } from "../../storage/index.ts";
-import { assertHasWorkspace } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  assertUserHasAccessToWorkspace,
+} from "../assertions.ts";
 import { AppContext, createApiHandler, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 
@@ -72,10 +75,13 @@ export const listApps = createApiHandler({
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
 
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", workspace);
+    const [__, { data, error }] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      c.db
+        .from(DECO_CHAT_HOSTING_APPS_TABLE)
+        .select("*")
+        .eq("workspace", workspace),
+    ]);
 
     if (error) throw error;
 
@@ -222,6 +228,7 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "./deps.ts";
+import { assertUserHasAccessToWorkspace } from '@deco/sdk/mcp';
 
       export default {
         async fetch(request: Request): Promise<Response> {
@@ -252,6 +259,8 @@ Important Notes:
     ),
   }),
   handler: async ({ appSlug, files }, c) => {
+    await assertUserHasAccessToWorkspace(c);
+
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
@@ -294,6 +303,8 @@ export const deleteApp = createApiHandler({
   description: "Delete an app and its worker",
   schema: AppInputSchema,
   handler: async ({ appSlug }, c) => {
+    await assertUserHasAccessToWorkspace(c);
+
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
@@ -334,12 +345,15 @@ export const getAppInfo = createApiHandler({
   handler: async ({ appSlug }, c) => {
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", workspace)
-      .eq("slug", slug)
-      .single();
+    const [_, { data, error }] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      c.db
+        .from(DECO_CHAT_HOSTING_APPS_TABLE)
+        .select("*")
+        .eq("workspace", workspace)
+        .eq("slug", slug)
+        .single(),
+    ]);
 
     if (error || !data) {
       throw new Error("App not found");

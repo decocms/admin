@@ -10,16 +10,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
-const GenerateInputSchema = z.object({
-  prompt: z.string().describe("The prompt to generate content for"),
-});
-
-const GenerateOutputSchema = z.object({
-  text: z.string().describe(
-    "The generated content as a string",
-  ),
-});
-
 const FetchInputSchema = z.object({
   url: z.string().describe("The URL to fetch content from"),
   method: z.enum(["GET", "PUT", "POST", "DELETE", "PATCH", "HEAD"] as const)
@@ -85,22 +75,6 @@ const PollForContentInputSchema = z.object({
 const PollForContentOutputSchema = z.object({
   hasContent: z.boolean().describe("Whether the URL has content available"),
   message: z.string().describe("Status message about the URL check"),
-});
-
-export const GENERATE = createInnateTool({
-  id: "GENERATE",
-  description:
-    "ONLY USED ON WORKFLOWS YOU MUST NOT USE THIS TOOL DIRECTLY. This tool generates content using the agent.",
-  inputSchema: GenerateInputSchema,
-  outputSchema: GenerateOutputSchema,
-  execute: (agent) => async ({ context }) => {
-    return {
-      text: await agent.generate(
-        [{ id: crypto.randomUUID(), role: "user", content: context.prompt }],
-      )
-        .then((result) => result.text),
-    };
-  },
 });
 
 export const RENDER = createInnateTool({
@@ -238,27 +212,6 @@ export const POLL_FOR_CONTENT = createInnateTool({
       hasContent: false,
       message: "Maximum retry attempts reached",
     };
-  },
-});
-
-const RefreshToolsOutputSchema = z.object({
-  success: z.boolean().describe("Whether the update was successful"),
-  message: z.string().describe(
-    "A message describing the result of the update attempt",
-  ),
-});
-
-export const REFRESH_TOOLS = createInnateTool({
-  id: "REFRESH_TOOLS",
-  description:
-    "Refresh the tools available to the agent, sometimes an MCP server is installed or uninstalled but the internal tools are not updated, use this tool to update the tools. This operation is slow, so use only when necessary. This tool do not update MCP server list. Also updates its instructions if necessary.",
-  outputSchema: RefreshToolsOutputSchema,
-  execute: (agent) => async () => {
-    await agent.init();
-    return Promise.resolve({
-      success: true,
-      message: "Tools updated successfully",
-    });
   },
 });
 
@@ -429,9 +382,7 @@ function getContentType(extension: string): string {
 
 export const tools = {
   FETCH,
-  GENERATE,
   POLL_FOR_CONTENT,
-  REFRESH_TOOLS,
   RENDER,
   SHOW_PICKER,
   CONFIRM,

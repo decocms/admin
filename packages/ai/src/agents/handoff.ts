@@ -41,9 +41,7 @@ export const createHandoffToolsFor = (integration: Integration) => ({
 
         const response = await targetAgent.generate([userMessage], {
           tools: {
-            DECO_AGENTS: Object.keys(INNATE_TOOLS.DECO_AGENTS),
             DECO_INTEGRATIONS: Object.keys(INNATE_TOOLS.DECO_INTEGRATIONS),
-            DECO_THREADS: Object.keys(INNATE_TOOLS.DECO_THREADS),
           },
         });
 

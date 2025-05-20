@@ -25,6 +25,8 @@ import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import {  useCreateTrigger, useCreateTempAgent} from "@deco/sdk";
+import { useUser } from '../../hooks/data/useUser.ts'
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -75,6 +77,9 @@ function ActionsButtons() {
   const { agentId, chat } = useChatContext();
   const focusChat = useFocusChat();
   const focusAgent = useEditAgent();
+  const { mutate: createTrigger } = useCreateTrigger(agentId);
+  const { mutate: createTempAgent } = useCreateTempAgent();
+  const user = useUser();
 
   const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
   const displayNewChat = displaySettings && chat.messages.length !== 0;
@@ -83,8 +88,73 @@ function ActionsButtons() {
     return null;
   }
 
+  const handleWhatsAppClick = () => {
+    createTrigger(
+      {
+        title: "WhatsApp Integration",
+        description: "WhatsApp integration for this agent",
+        type: "webhook",
+        passphrase: crypto.randomUUID(),
+        whatsappEnabled: true,
+      },
+      {
+        onSuccess: () => {
+          createTempAgent(
+            { agentId, userId: user.id },
+            {
+              onSuccess: () => {
+                alert("This agent is now available on WhatsApp.");
+                focusChat(agentId, crypto.randomUUID(), {
+                  history: false,
+                });
+              },
+              onError: (error) => {
+                alert(`Failed to create temporary agent: ${error.message}`);
+              },
+            },
+          );
+        },
+        onError: (error) => {
+          if (error.message.includes("Only one WhatsApp-enabled trigger is allowed per agent")) {
+            createTempAgent(
+              { agentId, userId: user.id },
+              {
+                onSuccess: () => {
+                  alert("This agent is now available on WhatsApp.");
+                  focusChat(agentId, crypto.randomUUID(), {
+                    history: false,
+                  });
+                },
+                onError: (tempAgentError) => {
+                  alert(`Failed to create temporary agent: ${tempAgentError.message}`);
+                },
+              },
+            );
+          } else {
+            alert(`Failed to create WhatsApp integration: ${error.message}`);
+          }
+        },
+      },
+    );
+  };
+
   return (
     <div className="hidden md:flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleWhatsAppClick}
+          >
+            <img src="/img/zap.svg" className="w-4 h-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          WhatsApp
+        </TooltipContent>
+      </Tooltip>
+      
       {displayNewChat && (
         <Tooltip>
           <TooltipTrigger asChild>

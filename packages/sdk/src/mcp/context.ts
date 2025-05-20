@@ -129,7 +129,7 @@ export interface ApiHandlerDefinition<
   description: string;
   schema: T;
   handler: THandler;
-  canAccess?: CanAccessHandler;
+  canAccess: CanAccessHandler;
 }
 
 export interface ApiHandler<

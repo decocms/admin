@@ -166,7 +166,7 @@ export const createTempAgent = createApiHandler({
           ignoreDuplicates: false,
         })
         .select()
-        .single(),
+        .maybeSingle(),
     ]);
 
     if (error) {
@@ -239,7 +239,7 @@ export const getTempAgent = createApiHandler({
       .from("temp_wpp_agents")
       .select("agent_id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
     if (error) {
       throw new InternalServerError(error.message);
     }

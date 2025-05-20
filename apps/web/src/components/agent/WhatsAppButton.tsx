@@ -16,7 +16,6 @@ import { useProfile } from "@deco/sdk/hooks";
 import { useProfileModal } from "../layout.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useTempWppAgent } from "@deco/sdk/hooks";
-import { useSDK } from "@deco/sdk";
 
 const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
 
@@ -30,7 +29,6 @@ export function WhatsAppButton() {
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
   const { data: tempWppAgent } = useTempWppAgent(user.id);
-  const { workspace } = useSDK();
 
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
@@ -40,10 +38,6 @@ export function WhatsAppButton() {
   );
 
   function runWhatsAppIntegration() {
-    if (workspace === "shared/deco.cx") {
-      const audio = new Audio("/holy-melody.mp3");
-      audio.play();
-    }
     !whatsappTrigger && createTrigger(
       {
         title: "WhatsApp Integration",

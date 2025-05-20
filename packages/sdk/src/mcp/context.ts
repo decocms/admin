@@ -55,7 +55,6 @@ export const serializeError = (error: unknown): string => {
   }
 };
 
-
 const envSchema = z.object({
   CF_DISPATCH_NAMESPACE: z.string().readonly(),
   CF_ACCOUNT_ID: z.string().readonly(),

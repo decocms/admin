@@ -70,7 +70,7 @@ export function DepositDialog() {
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          className="py-4 px-10"
+          className="w-full"
           size="lg"
           onClick={() =>
             trackEvent("wallet_add_credits_click", { userId: user?.id })}

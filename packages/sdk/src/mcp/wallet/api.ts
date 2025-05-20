@@ -122,8 +122,10 @@ export const getWalletAccount = createApiHandler({
     const workspaceWalletId = WellKnownWallets.build(
       ...WellKnownWallets.workspace.genCredits(c.workspace.value),
     );
+    console.log({workspaceWalletId});
     const data = await Account.fetch(wallet, workspaceWalletId);
 
+    console.log({data});
     if (!data) {
       return {
         balance: MicroDollar.ZERO.display(),
@@ -207,6 +209,99 @@ export const createCheckoutSession = createApiHandler({
 
     return {
       url: session.url,
+    };
+  },
+});
+
+export const createWalletVoucher = createApiHandler({
+  name: "CREATE_VOUCHER",
+  description: "Create a voucher with money from the current tenant's wallet",
+  schema: z.object({
+    amount: z.number().describe(
+      "The amount of money to add to the voucher. Specified in USD dollars.",
+    ),
+  }),
+  handler: async ({ amount }, ctx) => {
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
+
+    console.log("workspace", ctx.workspace.value);
+
+    // const wallet = getWalletClient(ctx);
+    // const id = crypto.randomUUID();
+    // const amountMicroDollars = MicroDollar.fromDollars(amount);
+
+    // if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
+    //   throw new MCPError("Amount must be positive");
+    // }
+
+    // const operation = {
+    //   type: "WorkspaceCreateVoucher" as const,
+    //   amount: amountMicroDollars.toMicrodollarString(),
+    //   voucherId: id,
+    //   workspace: ctx.workspace.value,
+    // } as const;
+
+    // const response = await wallet["POST /transactions"]({}, {
+    //   body: operation,
+    // });
+
+    // if (!response.ok) {
+    //   throw new Error("Failed to create voucher");
+    // }
+
+    // const transaction = await response.json();
+
+    return {
+      // id: transaction.id,
+      id: "123",
+    };
+  },
+});
+
+export const redeemWalletVoucher = createApiHandler({
+  name: "REDEEM_VOUCHER",
+  description: "Redeem a voucher for the current tenant's wallet",
+  schema: z.object({
+    voucherId: z.string(),
+  }),
+  handler: async ({ voucherId }, ctx) => {
+    assertHasWorkspace(ctx);
+    await assertUserHasAccessToWorkspace(ctx);
+
+    const wallet = getWalletClient(ctx);
+
+    const amountHintMicroDollars = voucherId.split("-")[1];
+
+    if (!amountHintMicroDollars) {
+      throw new MCPError("Invalid voucher ID");
+    }
+
+    const amountMicroDollars = MicroDollar.fromMicrodollarString(
+      amountHintMicroDollars,
+    );
+
+    if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
+      throw new MCPError("Invalid voucher ID");
+    }
+
+    const operation = {
+      type: "WorkspaceRedeemVoucher" as const,
+      amount: amountMicroDollars.toMicrodollarString(),
+      voucherId,
+      workspace: ctx.workspace.value,
+    } as const;
+
+    const response = await wallet["POST /transactions"]({}, {
+      body: operation,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to redeem voucher");
+    }
+
+    return {
+      voucherId,
     };
   },
 });

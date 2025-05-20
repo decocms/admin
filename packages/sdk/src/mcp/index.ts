@@ -63,6 +63,8 @@ export const WORKSPACE_TOOLS = [
   walletAPI.getThreadsUsage,
   walletAPI.getAgentsUsage,
   walletAPI.createCheckoutSession,
+  walletAPI.redeemWalletVoucher,
+  walletAPI.createWalletVoucher,
 ] as const;
 
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;

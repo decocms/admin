@@ -13,11 +13,20 @@ export const WellKnownWallets = {
   },
   workspace: {
     genCredits: (
-      workspaceId: string,
+      workspace: string,
     ) =>
       [
         "user" as const,
-        `workspace-gen-credits-${workspaceId}`,
+        `workspace-gen-credits-${workspace}`,
+        "liability" as const,
+      ] as const,
+    voucher: (
+      id: string,
+      amount: string,
+    ) =>
+      [
+        "user" as const,
+        `deco-chat-voucher-${id}-${amount}`,
         "liability" as const,
       ] as const,
   },

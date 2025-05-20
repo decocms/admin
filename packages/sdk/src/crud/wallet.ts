@@ -61,3 +61,39 @@ export const createWalletCheckoutSession = async ({
 
   return { checkoutUrl: data.url };
 };
+
+export const redeemWalletVoucher = async ({
+  workspace,
+  voucherId,
+}: {
+  workspace: string;
+  voucherId: string;
+}) => {
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .REDEEM_VOUCHER({
+      voucherId,
+    });
+  if (status !== 200 || error) {
+    throw new Error(error?.message);
+  }
+  return data;
+};
+
+export const createWalletVoucher = async ({
+  workspace,
+  amount,
+}: {
+  workspace: string;
+  amount: number;
+}) => {
+  const { status, data, error } = await MCPClient.forWorkspace(workspace)
+    .CREATE_VOUCHER({
+      amount,
+    });
+
+  if (status !== 200 || error) {
+    throw new Error(error?.message);
+  }
+
+  return data;
+};

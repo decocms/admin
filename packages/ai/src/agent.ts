@@ -743,6 +743,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const wallet = this.wallet;
     const walletTiming = timings.start("init-wallet");
     const hasBalance = await wallet.canProceed();
+    console.log("hasBalance", hasBalance);
     walletTiming.end();
 
     if (!hasBalance) {

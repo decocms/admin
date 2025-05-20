@@ -68,8 +68,12 @@ export class AgentWallet {
       ...WellKnownWallets.workspace.genCredits(this.config.workspace),
     );
     const response = await this.config.wallet["GET /accounts/:id"]({
-      id: walletId,
+      id: encodeURIComponent(walletId),
     });
+
+    if (response.status === 404) {
+      return false;
+    }
 
     if (!response.ok) {
       console.error("Failed to check balance", response);
@@ -147,12 +151,11 @@ export class AgentWallet {
     const promise = (async () => {
       const rewards = [
         {
-          type: "GenCreditsReward" as const,
+          type: "WorkspaceGenCreditReward" as const,
           amount: "2_000000",
-          // todo(@camudo): update this name to workspaceId on the wallet service
-          userId: this.config.workspace,
+          workspace: this.config.workspace,
           transactionId: WellKnownTransactions.freeTwoDollars(
-            this.config.workspace,
+            encodeURIComponent(this.config.workspace),
           ),
         },
       ];

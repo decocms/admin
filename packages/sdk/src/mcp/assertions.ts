@@ -2,7 +2,6 @@ import { AppContext } from "./context.ts";
 import {
   CannotAccessWorkspaceError,
   ForbiddenError,
-  MCPError,
   MissingDatabaseError,
   UnauthorizedError,
 } from "./errors.ts";

@@ -108,6 +108,12 @@ export interface GenCreditsReward extends TransactionOperation {
   userId: string;
 }
 
+export interface WorkspaceGenCreditReward extends TransactionOperation {
+  type: "WorkspaceGenCreditReward";
+  amount: number | string;
+  workspace: string;
+}
+
 interface BaseGeneration extends TransactionOperation {
   generatedBy: User;
   payer?: Payer;
@@ -153,6 +159,9 @@ export type Transaction =
   | CashOut
   | Wiretransfer
   | GenCreditsReward
+  | WorkspaceGenCreditReward
+  | WorkspaceCreateVoucher
+  | WorkspaceRedeemVoucher
   | PreAuthorization
   | CommitPreAuthorized;
 
@@ -164,6 +173,20 @@ export interface Wiretransfer extends TransactionOperation {
   from: string;
   to: string;
   description?: string;
+}
+
+export interface WorkspaceCreateVoucher extends TransactionOperation {
+  type: "WorkspaceCreateVoucher";
+  amount: number | string;
+  voucherId: string;
+  workspace: string;
+}
+
+export interface WorkspaceRedeemVoucher extends TransactionOperation {
+  type: "WorkspaceRedeemVoucher";
+  amount: number | string;
+  voucherId: string;
+  workspace: string;
 }
 
 export interface GeneratedFact {
@@ -290,6 +313,11 @@ export interface WalletAPI {
         total: string;
         agentId: string;
         generatedBy: string;
+        tokens: {
+          totalTokens: number;
+          promptTokens: number;
+          completionTokens: number;
+        };
       }[];
     };
   };

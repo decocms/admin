@@ -37,7 +37,6 @@ import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";

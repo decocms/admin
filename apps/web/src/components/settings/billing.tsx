@@ -13,6 +13,7 @@ import {
 import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import {
+  type Agent,
   getAgentsUsage,
   getThreadsUsage,
   getWalletAccount,
@@ -20,12 +21,9 @@ import {
   useAgents,
   useSDK,
   useTeamMembersBySlug,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
-import {
-  keepPreviousData,
-  useQuery,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +46,100 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useUser } from "../../hooks/data/useUser.ts";
+import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
+
+interface UserAvatarProps {
+  member?: Member;
+  size?: "sm" | "md" | "lg";
+}
+
+function UserAvatar({ member, size = "md" }: UserAvatarProps) {
+  const sizeClasses = {
+    sm: "w-4 h-4",
+    md: "w-8 h-8",
+    lg: "w-12 h-12",
+  };
+
+  if (member?.profiles?.metadata?.avatar_url) {
+    return (
+      <img
+        src={member.profiles.metadata.avatar_url}
+        alt={member.profiles.metadata?.full_name || "User"}
+        className={`${sizeClasses[size]} rounded-md object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${
+        sizeClasses[size]
+      } rounded-md flex items-center justify-center bg-gray-200`}
+    >
+      <Icon
+        name="person"
+        size={size === "sm" ? 12 : size === "md" ? 16 : 24}
+        className="text-gray-500"
+      />
+    </div>
+  );
+}
+
+interface AgentAvatarProps {
+  agent?: Agent;
+  size?: "sm" | "md" | "lg";
+}
+
+function AgentAvatar({ agent, size = "md" }: AgentAvatarProps) {
+  const sizeClasses = {
+    sm: "w-10 h-10",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
+  };
+
+  if (agent?.id === WELL_KNOWN_AGENTS.teamAgent.id) {
+    return (
+      <div
+        className={`${
+          sizeClasses[size]
+        } rounded-sm flex items-center justify-center border border-muted bg-primary-light`}
+      >
+        <Icon
+          name="robot_2"
+          size={size === "sm" ? 24 : size === "md" ? 28 : 32}
+          className="text-primary-dark"
+        />
+      </div>
+    );
+  }
+
+  if (agent?.avatar) {
+    return (
+      <img
+        src={agent.avatar}
+        alt={agent.name || "Agent"}
+        className={`${
+          sizeClasses[size]
+        } rounded-sm object-cover border border-muted`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${
+        sizeClasses[size]
+      } rounded-sm flex items-center justify-center bg-gray-50 border border-muted`}
+    >
+      <Icon
+        name="robot_2"
+        size={size === "sm" ? 24 : size === "md" ? 28 : 32}
+        className="text-gray-400"
+      />
+    </div>
+  );
+}
 
 function AccountBalance() {
   const { workspace } = useSDK();
@@ -73,16 +165,14 @@ function BalanceCard() {
       <CardContent className="flex flex-col items-center justify-center gap-2 p-0">
         <div className="flex items-center gap-1 text-base mb-1">
           {team.label}
-          <Icon
-            name="visibility"
-            size={18}
-            className="ml-1 align-middle text-muted-foreground"
-          />
         </div>
         <div className="mb-6">
           <AccountBalance />
         </div>
-        <DepositDialog />
+        <div className="flex flex-col items-center gap-2">
+          <DepositDialog />
+          <VoucherDialog />
+        </div>
       </CardContent>
     </Card>
   );
@@ -313,7 +403,7 @@ function CreditsUsedPerThread({
 }) {
   const { workspace } = useSDK();
   const withWorkpaceLink = useWorkspaceLink();
-  const [range, setRange] = useState<"day" | "week" | "month">("month");
+  const [range, setRange] = useState<"day" | "week" | "month">("week");
   const { data: threads } = useSuspenseQuery({
     queryKey: ["threads-usage", workspace, range],
     queryFn: () => getThreadsUsage(workspace, range),
@@ -357,46 +447,13 @@ function CreditsUsedPerThread({
             <DialogTrigger asChild>
               <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4">
-                  {thread.agent?.avatar
-                    ? (
-                      <img
-                        src={thread.agent.avatar}
-                        alt={thread.agent.name || "Agent"}
-                        className="w-10 h-10 rounded-sm object-cover border border-muted"
-                      />
-                    )
-                    : (
-                      <div className="w-10 h-10 rounded-sm flex items-center justify-center bg-gray-50 border border-muted">
-                        <Icon
-                          name="robot_2"
-                          size={24}
-                          className="text-gray-400"
-                        />
-                      </div>
-                    )}
+                  <AgentAvatar agent={thread.agent} size="sm" />
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-medium text-slate-900">
                       {thread.agent?.name || "Unknown Agent"}
                     </span>
                     <div className="flex items-center gap-2">
-                      {thread.member?.profiles?.metadata?.avatar_url
-                        ? (
-                          <img
-                            src={thread.member.profiles.metadata.avatar_url}
-                            alt={thread.member.profiles.metadata?.full_name ||
-                              "User"}
-                            className="w-4 h-4 rounded-md object-cover"
-                          />
-                        )
-                        : (
-                          <div className="w-4 h-4 rounded-md flex items-center justify-center bg-gray-50">
-                            <Icon
-                              name="user"
-                              size={12}
-                              className="text-gray-400"
-                            />
-                          </div>
-                        )}
+                      <UserAvatar member={thread.member} size="sm" />
                       <span className="text-xs text-slate-500">
                         {thread.member?.profiles?.metadata?.full_name ||
                           "Unknown User"}
@@ -422,13 +479,30 @@ function CreditsUsedPerThread({
   );
 }
 
+CreditsUsedPerThread.Fallback = () => (
+  <Card className="w-full h-full flex flex-col rounded-md border border-slate-200 gap-0">
+    <div className="w-full text-sm p-4 border-b border-slate-200 flex justify-between items-center">
+      <span>Credits Used Per Thread</span>
+    </div>
+    <CardContent className="flex flex-col items-center justify-center gap-2 p-3 overflow-y-auto">
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index} className="w-full h-[72px] bg-slate-100 rounded-md" />
+      ))}
+    </CardContent>
+  </Card>
+);
+
 interface ThreadDetailsProps {
   thread: {
-    agent?: any;
+    agent?: Agent;
     member?: Member;
     id: string;
     total: string;
-    [key: string]: any;
+    tokens?: {
+      totalTokens: number;
+      promptTokens: number;
+      completionTokens: number;
+    };
   };
   withWorkpaceLink: (path: string) => string;
 }
@@ -440,21 +514,8 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
         <DialogTitle>Thread Details</DialogTitle>
       </DialogHeader>
       <div className="flex flex-col gap-6">
-        {/* Agent Section */}
         <div className="flex items-center gap-4">
-          {thread.agent?.avatar
-            ? (
-              <img
-                src={thread.agent.avatar}
-                alt={thread.agent.name || "Agent"}
-                className="w-12 h-12 rounded-sm object-cover border border-muted"
-              />
-            )
-            : (
-              <div className="w-12 h-12 rounded-sm flex items-center justify-center bg-gray-50 border border-muted">
-                <Icon name="robot_2" size={28} className="text-gray-400" />
-              </div>
-            )}
+          <AgentAvatar agent={thread.agent} size="md" />
           <div className="flex flex-col justify-center">
             <span className="text-base font-semibold text-gray-900">
               {thread.agent?.name || "Unknown Agent"}
@@ -467,32 +528,45 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
 
         <div className="border-t border-slate-100" />
 
-        {/* User Section */}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground mb-1">
             User
           </span>
           <div className="flex items-center gap-3">
-            {thread.member?.profiles?.metadata?.avatar_url
-              ? (
-                <img
-                  src={thread.member.profiles.metadata.avatar_url}
-                  alt={thread.member.profiles.metadata?.full_name || "User"}
-                  className="w-8 h-8 rounded-md object-cover"
-                />
-              )
-              : (
-                <div className="w-8 h-8 rounded-md flex items-center justify-center bg-gray-50">
-                  <Icon name="user" size={16} className="text-gray-400" />
-                </div>
-              )}
+            <UserAvatar member={thread.member} size="md" />
             <span className="text-sm text-gray-900">
               {thread.member?.profiles?.metadata?.full_name || "Unknown User"}
             </span>
           </div>
         </div>
 
-        {/* View messages button */}
+        <div className="border-t border-slate-100" />
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground mb-1">
+            Token Usage
+          </span>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">
+                {thread.tokens?.totalTokens || 0}
+              </span>
+              <span className="text-xs text-muted-foreground">Total</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">
+                {thread.tokens?.promptTokens || 0}
+              </span>
+              <span className="text-xs text-muted-foreground">Prompt</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">
+                {thread.tokens?.completionTokens || 0}
+              </span>
+              <span className="text-xs text-muted-foreground">Completion</span>
+            </div>
+          </div>
+        </div>
+
         <Button
           variant="outline"
           size="sm"
@@ -511,14 +585,46 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
   );
 }
 
-export default function BillingSettings() {
-  const agents = useAgents();
+function userToMember(user: ReturnType<typeof useUser>): Member {
+  return {
+    id: -1,
+    user_id: user.id,
+    profiles: {
+      email: user.email,
+      id: user.id,
+      is_anonymous: false,
+      metadata: user.metadata,
+    },
+    roles: [],
+    created_at: "",
+    lastActivity: "",
+  };
+}
+
+function useMembers() {
   const { teamSlug } = useParams();
   const { data: _members } = useTeamMembersBySlug(teamSlug ?? null);
+  const user = useUser();
 
   const members = useMemo(() => {
-    return _members?.length ? _members : [];
+    // if no members, it is the personal workspace of the user
+    // so we just format the current user to a Member
+    return _members?.length ? _members : [userToMember(user)];
   }, [_members]);
+
+  return members;
+}
+
+export default function BillingSettings() {
+  const _agents = useAgents();
+  const agents = {
+    ..._agents,
+    data: _agents.data.concat([
+      WELL_KNOWN_AGENTS.teamAgent,
+      WELL_KNOWN_AGENTS.setupAgent,
+    ]),
+  };
+  const members = useMembers();
 
   return (
     <div className="h-full text-slate-700">
@@ -531,10 +637,12 @@ export default function BillingSettings() {
           </Suspense>
         </div>
         <div className="flex flex-col h-full min-w-0 w-full">
-          <CreditsUsedPerThread
-            agents={agents}
-            teamMembers={members}
-          />
+          <Suspense fallback={<CreditsUsedPerThread.Fallback />}>
+            <CreditsUsedPerThread
+              agents={agents}
+              teamMembers={members}
+            />
+          </Suspense>
         </div>
       </div>
     </div>

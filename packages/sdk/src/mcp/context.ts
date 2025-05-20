@@ -60,7 +60,7 @@ const envSchema = z.object({
   CF_API_TOKEN: z.string().readonly(),
   CF_R2_ACCESS_KEY_ID: z.string().readonly(),
   CF_R2_SECRET_ACCESS_KEY: z.string().readonly(),
-  VITE_USE_LOCAL_BACKEND: z.string().readonly(),
+  VITE_USE_LOCAL_BACKEND: z.any().optional().readonly(),
   SUPABASE_URL: z.string().readonly(),
   SUPABASE_SERVER_TOKEN: z.string().readonly(),
   TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),

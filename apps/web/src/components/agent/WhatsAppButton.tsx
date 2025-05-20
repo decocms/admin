@@ -40,7 +40,7 @@ export function WhatsAppButton() {
   );
 
   function runWhatsAppIntegration() {
-    if (workspace.name === "deco.cx") {
+    if (workspace === "shared/deco.cx") {
       const audio = new Audio("/holy-melody.mp3");
       audio.play();
     }

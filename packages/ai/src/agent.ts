@@ -51,8 +51,13 @@ import { join } from "node:path/posix";
 import process from "node:process";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
-import type { AgentMemoryConfig } from "./memory/memory.ts";
-import { AgentMemory, buildMemoryId } from "./memory/memory.ts";
+import type { AgentMemoryConfig } from "@deco/sdk/memory";
+import {
+  AgentMemory,
+  buildMemoryId,
+  slugify,
+  toAlphanumericId,
+} from "@deco/sdk/memory";
 import { createLLM } from "./models.ts";
 import type {
   AIAgent as IIAgent,
@@ -62,7 +67,6 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
-import { slugify, toAlphanumericId } from "./utils/slugify.ts";
 import { AgentWallet } from "./wallet/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
@@ -94,6 +98,12 @@ export interface AgentMetadata extends AuthMetadata {
   timings?: ServerTimingsBuilder;
   mcpClient?: MCPClientStub<WorkspaceTools>;
 }
+
+const normalizeMCPId = (mcpId: string) => {
+  return mcpId.startsWith("i:") || mcpId.startsWith("a:")
+    ? mcpId.slice(2)
+    : mcpId;
+};
 
 const DEFAULT_MEMORY_LAST_MESSAGES = 8;
 const DEFAULT_MAX_STEPS = 25;
@@ -180,8 +190,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return path;
   }
 
+  public get embedder() {
+    const openai = createOpenAI({
+      apiKey: this.env.OPENAI_API_KEY,
+    });
+    return openai.embedding("text-embedding-3-small");
+  }
+
   createAppContext(metadata?: AgentMetadata): AppContext {
     return {
+      params: {},
       envVars: this.env as any,
       db: this.db,
       user: metadata?.principal!,
@@ -398,37 +416,42 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   protected async pickCallableTools(
     tool_set: Configuration["tools_set"],
+    timings?: ServerTimingsBuilder,
   ): Promise<ToolsetsInput> {
     const tools: ToolsetsInput = {};
-
-    for (const [mcpId, filterList] of Object.entries(tool_set)) {
-      const allToolsFor = await this.getOrCreateCallableToolSet(mcpId)
-        .catch(() => {
-          return null;
-        });
-
-      if (!allToolsFor) {
-        console.warn(`No tools found for server: ${mcpId}. Skipping.`);
-        continue;
-      }
-
-      if (filterList.length === 0) {
-        tools[mcpId] = allToolsFor;
-        continue;
-      }
-      const toolsInput: ToolsInput = {};
-      for (const item of filterList) {
-        const slug = slugify(item);
-        if (slug in allToolsFor) {
-          toolsInput[slug] = allToolsFor[slug];
-          continue;
+    await Promise.all(
+      Object.entries(tool_set).map(async ([mcpId, filterList]) => {
+        const getOrCreateCallableToolSetTiming = timings?.start(
+          `connect-mcp-${normalizeMCPId(mcpId)}`,
+        );
+        const allToolsFor = await this.getOrCreateCallableToolSet(mcpId)
+          .catch(() => {
+            return null;
+          });
+        getOrCreateCallableToolSetTiming?.end();
+        if (!allToolsFor) {
+          console.warn(`No tools found for server: ${mcpId}. Skipping.`);
+          return;
         }
 
-        console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
-      }
+        if (filterList.length === 0) {
+          tools[mcpId] = allToolsFor;
+          return;
+        }
+        const toolsInput: ToolsInput = {};
+        for (const item of filterList) {
+          const slug = slugify(item);
+          if (slug in allToolsFor) {
+            toolsInput[slug] = allToolsFor[slug];
+            continue;
+          }
 
-      tools[mcpId] = toolsInput;
-    }
+          console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
+        }
+
+        tools[mcpId] = toolsInput;
+      }),
+    );
 
     return tools;
   }
@@ -439,9 +462,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     tokenLimit: number,
   ) {
     if (this.memoryId !== memoryId || !this.memory) {
-      const openai = createOpenAI({
-        apiKey: this.env.OPENAI_API_KEY,
-      });
       const tursoOrganization = this.env.TURSO_ORGANIZATION ?? "decoai";
       const tokenStorage = this.env.TURSO_GROUP_DATABASE_TOKEN ?? {
         getToken: (memoryId: string) => {
@@ -464,7 +484,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         tursoOrganization,
         tokenStorage,
         processors: [new TokenLimiter({ limit: tokenLimit })],
-        embedder: openai.embedding("text-embedding-3-small"),
+        embedder: this.embedder,
         workspace: this.workspace,
         options: {
           semanticRecall: false,
@@ -703,7 +723,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const tool_set = await this.getThreadTools();
     getThreadToolsTiming?.end();
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
-    const toolsets = await this.pickCallableTools(tool_set);
+    const toolsets = await this.pickCallableTools(tool_set, timings);
     pickCallableToolsTiming?.end();
     const filtered = this.filterToolsets(toolsets, restrictedTools);
     return filtered;

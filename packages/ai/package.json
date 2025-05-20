@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "cloudflare": "^4.2.0",
+    "@deco/sdk": "^0.1.1",
     "@ai-sdk/anthropic": "^1.1.17",
     "@ai-sdk/google": "^1.1.25",
     "@ai-sdk/openai": "^1.2.5",

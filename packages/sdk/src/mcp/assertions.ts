@@ -6,19 +6,22 @@ import {
   UnauthorizedError,
 } from "../errors.ts";
 import { AppContext } from "./context.ts";
+import { Workspace } from "../path.ts";
 
 const getContextUser = (c: AppContext) => {
   assertHasUser(c);
   return c.user!;
 };
 
-type WithWorkspace = Omit<AppContext, "workspace"> & {
-  workspace: { root: string; slug: string; value: string };
-};
+type WithWorkspace<TAppContext extends AppContext = AppContext> =
+  & Omit<TAppContext, "workspace">
+  & {
+    workspace: { root: string; slug: string; value: Workspace };
+  };
 
-export function assertHasWorkspace(
-  c: Pick<AppContext, "workspace"> | Pick<WithWorkspace, "workspace">,
-): asserts c is WithWorkspace {
+export function assertHasWorkspace<TContext extends AppContext = AppContext>(
+  c: Pick<TContext, "workspace"> | Pick<WithWorkspace<TContext>, "workspace">,
+): asserts c is WithWorkspace<TContext> {
   if (!c.workspace) {
     throw new NotFoundError();
   }

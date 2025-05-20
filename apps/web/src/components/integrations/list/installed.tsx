@@ -32,10 +32,11 @@ import { IntegrationInfo } from "../../common/TableCells.tsx";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 
-const INTEGRATION_ID_DENYLIST = new Set([
+const INTEGRATION_ID_DENYLIST = [
   "i:workspace-management",
   "i:user-management",
-]);
+  "i:knowledge-base",
+];
 
 interface IntegrationActionsProps {
   onDelete: () => void;
@@ -98,7 +99,9 @@ function IntegrationCard({
           </div>
 
           <div onClick={(e) => e.stopPropagation()}>
-            {!INTEGRATION_ID_DENYLIST.has(integration.id) && (
+            {!INTEGRATION_ID_DENYLIST.some((id) =>
+              integration.id.startsWith(id)
+            ) && (
               <IntegrationActions onDelete={() => onDelete(integration.id)} />
             )}
           </div>
@@ -223,9 +226,9 @@ function TableView(
       header: "",
       render: (integration) => (
         <div onClick={(e) => e.stopPropagation()}>
-          {!INTEGRATION_ID_DENYLIST.has(integration.id) && (
-            <IntegrationActions onDelete={() => onDelete(integration.id)} />
-          )}
+          {!INTEGRATION_ID_DENYLIST.some((id) =>
+            integration.id.startsWith(id)
+          ) && <IntegrationActions onDelete={() => onDelete(integration.id)} />}
         </div>
       ),
     },

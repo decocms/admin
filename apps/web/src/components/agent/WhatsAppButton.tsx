@@ -16,6 +16,7 @@ import { useProfile } from "@deco/sdk/hooks";
 import { useProfileModal } from "../layout.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useTempWppAgent } from "@deco/sdk/hooks";
+import { useSDK } from "@deco/sdk";
 
 const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
 

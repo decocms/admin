@@ -241,7 +241,10 @@ export const getIntegration = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  async canAccess(_, c) {
+  async canAccess({ id }, c) {
+    if (INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS]) {
+      return true;
+    }
     return await canAccessWorkspaceResource(this.name, c);
   },
   handler: async ({ id }, c) => {

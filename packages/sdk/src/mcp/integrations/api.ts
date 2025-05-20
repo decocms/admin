@@ -109,9 +109,7 @@ export const listTools = createApiHandler({
   schema: IntegrationSchema.pick({
     connection: true,
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: () => Promise.resolve(true),
   handler: async ({ connection }, c) => {
     const result = await listToolsByConnectionType(
       connection,

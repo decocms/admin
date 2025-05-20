@@ -43,7 +43,6 @@ import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { Avatar } from "../common/Avatar.tsx";
-import { ProfileSettings } from "../settings/profile.tsx";
 
 function UserPreferencesModal({ open, onOpenChange }: {
   open: boolean;
@@ -143,7 +142,6 @@ function LoggedUser() {
   const location = useLocation();
   const { data: stars } = useGitHubStars();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const logoutUrl = useMemo(() => {
     const url = new URL(AUTH_URL);
@@ -213,17 +211,7 @@ function LoggedUser() {
         </ResponsiveDropdownItem>
 
         <ResponsiveDropdownSeparator />
-        <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
-            onClick={() => setProfileOpen(true)}
-          >
-            <Icon name="person" />
-            Profile
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownSeparator />
+
         <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
           <button
             type="button"
@@ -247,9 +235,6 @@ function LoggedUser() {
           </a>
         </ResponsiveDropdownItem>
       </ResponsiveDropdownContent>
-      {profileOpen && (
-        <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
-      )}
       {preferencesOpen && (
         <UserPreferencesModal
           open={preferencesOpen}

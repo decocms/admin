@@ -20,7 +20,6 @@ export const getProfile = createApiHandler({
         id:user_id,
         name,
         email,
-        phone,
         metadata:users_meta_data_view(id, raw_user_meta_data)
       `)
       .eq("user_id", user.id)
@@ -43,10 +42,9 @@ export const updateProfile = createApiHandler({
     email: z.string().optional(),
     deco_user_id: z.number().nullable().optional(),
     is_new_user: z.boolean().nullable().optional(),
-    phone: z.string().nullable().optional(),
   }),
   handler: async (
-    { name, email, deco_user_id, is_new_user, phone },
+    { name, email, deco_user_id, is_new_user },
     c,
   ) => {
     const user = c.user;
@@ -60,7 +58,6 @@ export const updateProfile = createApiHandler({
         email,
         deco_user_id,
         is_new_user,
-        phone,
       })
       .eq("user_id", user.id)
       .select()

@@ -52,21 +52,6 @@ export const createAgent = async (
   return data;
 };
 
-export const createTempAgent = async (
-  workspace: string,
-  agentId: string,
-  userId: string,
-) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace)
-    .AGENTS_CREATE_TEMP({ agentId, userId });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
-};
-
 /**
  * Load an agent from the file system
  * @param agentId - The id of the agent to load
@@ -150,16 +135,4 @@ export const validateAgent = (
   } catch (error) {
     return [null, error instanceof Error ? error : new Error("Invalid agent")];
   }
-};
-
-export const getTempAgent = async (
-  workspace: string,
-  userId: string,
-) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace)
-    .AGENTS_GET_TEMP({ userId });
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data;
 };

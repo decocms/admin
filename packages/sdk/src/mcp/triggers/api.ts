@@ -130,24 +130,6 @@ export const createTrigger = createApiHandler({
 
     await assertUserHasAccessToWorkspace(c);
 
-    // Check if there's already a WhatsApp-enabled trigger for this agent
-    const whatsappEnabled =
-      (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
-        .whatsappEnabled;
-    if (whatsappEnabled) {
-      const { data: _existingTriggers, error: checkError } = await db.from(
-        "deco_chat_triggers",
-      )
-        .select("id")
-        .eq("agent_id", agentId)
-        .eq("workspace", workspace)
-        .eq("whatsapp_enabled", true);
-
-      if (checkError) {
-        throw new InternalServerError(checkError.message);
-      }
-    }
-
     const id = crypto.randomUUID();
 
     const triggerId = Path.resolveHome(
@@ -186,9 +168,6 @@ export const createTrigger = createApiHandler({
         user_id: user.id,
         workspace,
         metadata: data as Json,
-        whatsapp_enabled:
-          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
-            .whatsappEnabled,
       })
       .select(SELECT_TRIGGER_QUERY)
       .single();
@@ -307,9 +286,6 @@ export const createWebhookTrigger = createApiHandler({
         user_id: user.id,
         workspace,
         metadata: data as Json,
-        whatsapp_enabled:
-          (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
-            .whatsappEnabled,
       })
       .select(SELECT_TRIGGER_QUERY)
       .single();

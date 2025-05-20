@@ -489,7 +489,6 @@ export type Database = {
           metadata: Json;
           updated_at: string;
           user_id: string | null;
-          whatsapp_enabled: boolean;
           workspace: string;
         };
         Insert: {
@@ -500,7 +499,6 @@ export type Database = {
           metadata: Json;
           updated_at?: string;
           user_id?: string | null;
-          whatsapp_enabled?: boolean;
           workspace: string;
         };
         Update: {
@@ -511,7 +509,6 @@ export type Database = {
           metadata?: Json;
           updated_at?: string;
           user_id?: string | null;
-          whatsapp_enabled?: boolean;
           workspace?: string;
         };
         Relationships: [
@@ -2341,7 +2338,7 @@ export type Database = {
           {
             foreignKeyName: "temp_wpp_agents_user_id_fkey";
             columns: ["user_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "users_meta_data_view";
             referencedColumns: ["id"];
           },

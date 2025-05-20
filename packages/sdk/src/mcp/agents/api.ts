@@ -146,37 +146,6 @@ export const createAgent = createApiHandler({
   },
 });
 
-export const createTempAgent = createApiHandler({
-  name: "AGENTS_CREATE_TEMP",
-  description:
-    "Inserts or updates a temp agent for the whatsapp integration based on userId",
-  schema: z.object({
-    agentId: z.string(),
-    userId: z.string(),
-  }),
-  handler: async ({ agentId, userId }, c) => {
-    const [{ data, error }] = await Promise.all([
-      c.db
-        .from("temp_wpp_agents")
-        .upsert({
-          agent_id: agentId,
-          user_id: userId,
-        }, {
-          onConflict: "user_id",
-          ignoreDuplicates: false,
-        })
-        .select()
-        .single(),
-    ]);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
-
-    return data;
-  },
-});
-
 export const updateAgent = createApiHandler({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
@@ -227,22 +196,5 @@ export const deleteAgent = createApiHandler({
     }
 
     return true;
-  },
-});
-
-export const getTempAgent = createApiHandler({
-  name: "AGENTS_GET_TEMP",
-  description: "Get the temp WhatsApp agent for the current user",
-  schema: z.object({ userId: z.string() }),
-  handler: async ({ userId }, c) => {
-    const { data, error } = await c.db
-      .from("temp_wpp_agents")
-      .select("agent_id")
-      .eq("user_id", userId)
-      .single();
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
-    return data;
   },
 });

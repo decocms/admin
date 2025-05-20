@@ -342,7 +342,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  public async updateThreadMetadata(threadId: string, metadata: Record<string, unknown>) {
+  public async updateThreadMetadata(
+    threadId: string,
+    metadata: Record<string, unknown>,
+  ) {
     try {
       const thread = await this.memory.getThreadById({ threadId });
       if (!thread) {
@@ -368,7 +371,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
     }
   }
-  
+
   public async updateThreadTools(tool_set: Configuration["tools_set"]) {
     const thread = await this.memory.getThreadById(this.thread);
     if (!thread) {

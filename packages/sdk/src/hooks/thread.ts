@@ -183,7 +183,9 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
     onMutate: async (newTitle: string) => {
       await client.cancelQueries({ queryKey: KEYS.THREADS(workspace, userId) });
 
-      const previousThreads = client.getQueryData(KEYS.THREADS(workspace, userId));
+      const previousThreads = client.getQueryData(
+        KEYS.THREADS(workspace, userId),
+      );
 
       // Optimistically update the thread in the threads list
       // deno-lint-ignore no-explicit-any
@@ -203,7 +205,10 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
     onError: (_: any, __: any, context: any) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousThreads) {
-        client.setQueryData(KEYS.THREADS(workspace, userId), context.previousThreads);
+        client.setQueryData(
+          KEYS.THREADS(workspace, userId),
+          context.previousThreads,
+        );
       }
     },
     onSettled: () => {

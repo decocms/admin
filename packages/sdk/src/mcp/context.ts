@@ -67,7 +67,9 @@ const envSchema = z.object({
   SUPABASE_SERVER_TOKEN: z.string().readonly(),
   TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
   TURSO_ORGANIZATION: z.string().readonly(),
-  RESEND_API_KEY: z.string().readonly(),
+  RESEND_API_KEY: z.any().optional().readonly(),
+  OPENROUTER_API_KEY: z.string().readonly(),
+  TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
 
   /**

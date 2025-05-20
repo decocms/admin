@@ -8,10 +8,21 @@ import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createApiHandler, type AppContext } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
-import { NotFoundError } from "../index.ts";
+import { NotFoundError, InternalServerError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
+import { WorkspaceMemory } from "../../memory/memory.ts";
+
+async function getWorkspaceMemory(c: AppContext) {
+  assertHasWorkspace(c);
+  return await WorkspaceMemory.create({
+    workspace: c.workspace.value,
+    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN ?? "",
+    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
+    tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+  });
+}
 
 const safeParse = (str: string) => {
   try {
@@ -267,5 +278,61 @@ export const getThreadTools = createApiHandler({
     const { data: thread } = ThreadSchema.safeParse(result?.rows[0] ?? {});
 
     return { tools_set: thread?.metadata.tools_set ?? null };
+  },
+});
+
+export const updateThreadTitle = createApiHandler({
+  name: "THREADS_UPDATE_TITLE",
+  description: "Update a thread's title",
+  schema: z.object({
+    threadId: z.string(),
+    title: z.string(),
+  }),
+  handler: async ({ threadId, title }, c) => {
+    const memory = await getWorkspaceMemory(c);
+
+    const currentThread = await memory.getThreadById({ threadId });
+    if (!currentThread) {
+      throw new NotFoundError();
+    }
+
+    const result = await memory.updateThread({
+      id: threadId,
+      title,
+      metadata: currentThread.metadata,
+    });
+    if (!result) {
+      throw new InternalServerError("Failed to update thread title");
+    }
+
+    return result;
+  },
+});
+
+export const updateThreadMetadata = createApiHandler({
+  name: "THREADS_UPDATE_METADATA",
+  description: "Update a thread's metadata",
+  schema: z.object({
+    threadId: z.string(),
+    metadata: z.record(z.unknown()),
+  }),
+  handler: async ({ threadId, metadata }, c) => {
+    const memory = await getWorkspaceMemory(c);
+
+    const currentThread = await memory.getThreadById({ threadId });
+    if (!currentThread) {
+      throw new NotFoundError();
+    }
+
+    const result = await memory.updateThread({
+      id: threadId,
+      title: currentThread.title,
+      metadata: { ...currentThread.metadata, ...metadata },
+    });
+    if (!result) {
+      throw new InternalServerError("Failed to update thread metadata");
+    }
+
+    return result;
   },
 });

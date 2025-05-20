@@ -108,3 +108,31 @@ export async function getThreadTools(
   }
   return data as ThreadTools;
 }
+
+export async function updateThreadTitle(
+  workspace: string,
+  threadId: string,
+  title: string,
+  init: RequestInit = {},
+): Promise<ThreadDetails> {
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_UPDATE_TITLE({ threadId, title }, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to update thread title");
+  }
+  return data as ThreadDetails;
+}
+
+export async function updateThreadMetadata(
+  workspace: string,
+  threadId: string,
+  metadata: Record<string, unknown>,
+  init: RequestInit = {},
+): Promise<ThreadDetails> {
+  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+    .THREADS_UPDATE_METADATA({ threadId, metadata }, init);
+  if (!ok || !data) {
+    throw new Error(error?.message || "Failed to update thread metadata");
+  }
+  return data as ThreadDetails;
+}

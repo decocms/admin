@@ -13,6 +13,8 @@ import {
   getThreadMessages,
   getThreadTools,
   listThreads,
+  updateThreadTitle,
+  updateThreadMetadata,
 } from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
@@ -174,11 +176,10 @@ export const useInvalidateAll = () => {
 export const useUpdateThreadTitle = (threadId: string, userId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
-  const agentStub = useAgentStub(threadId);
 
   return useMutation({
     mutationFn: async (newTitle: string) => {
-      return await agentStub.updateThreadTitle(threadId, newTitle);
+      return await updateThreadTitle(workspace, threadId, newTitle);
     },
     onMutate: async (newTitle: string) => {
       await client.cancelQueries({ queryKey: KEYS.THREADS(workspace, userId) });
@@ -222,15 +223,16 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
 export const useDeleteThread = (threadId: string, userId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
-  const agentStub = useAgentStub(threadId);
 
   return useMutation({
     mutationFn: async () => {
-      return await agentStub.updateThreadMetadata(threadId, {
+      return await updateThreadMetadata(workspace, threadId, {
         deleted: true,
       });
     },
     onSuccess: () => {
+      // Invalidate both the thread and threads list queries
+      client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
       client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
     },
   });

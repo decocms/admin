@@ -53,6 +53,8 @@ export const WORKSPACE_TOOLS = [
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,
   threadsAPI.getThreadTools,
+  threadsAPI.updateThreadTitle,
+  threadsAPI.updateThreadMetadata,
   hostingAPI.listApps,
   hostingAPI.deployFiles,
   hostingAPI.deleteApp,

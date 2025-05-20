@@ -24,7 +24,6 @@ import {
 } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { NotFoundError } from "../index.ts";
-import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -122,10 +121,7 @@ export const listTools = createApiHandler({
   },
 });
 
-const virtualIntegrationsFor = (
-  workspace: string,
-  knowledgeBases: string[],
-) => {
+const virtualIntegrationsFor = (workspace: string) => {
   // Create a virtual User Management integration
   const userManagementIntegration = {
     id: formatId("i", "user-management"),
@@ -139,7 +135,6 @@ const virtualIntegrationsFor = (
     workspace,
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(`${workspace}/mcp`, API_SERVER_URL);
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {
@@ -148,7 +143,7 @@ const virtualIntegrationsFor = (
     description: "Manage your agents, integrations and threads",
     connection: {
       type: "HTTP",
-      url: workspaceMcp.href,
+      url: new URL(`${workspace}/mcp`, API_SERVER_URL).href,
     },
     icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
     workspace,
@@ -158,23 +153,6 @@ const virtualIntegrationsFor = (
   return [
     userManagementIntegration,
     workspaceManagementIntegration,
-    ...knowledgeBases.map((kb) => {
-      const url = new URL(workspaceMcp);
-      url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
-      url.searchParams.set("name", kb);
-      return {
-        id: formatId("i", `knowledge-base-${kb}`),
-        name: `${kb} (Knowledge Base)`,
-        description: "A knowledge base for your workspace",
-        connection: {
-          type: "HTTP",
-          url: url.href,
-        },
-        icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-        workspace,
-        created_at: new Date().toISOString(),
-      };
-    }),
   ];
 };
 export const listIntegrations = createApiHandler({
@@ -189,7 +167,6 @@ export const listIntegrations = createApiHandler({
       _assertions,
       integrations,
       agents,
-      knowledgeBases,
     ] = await Promise.all([
       assertUserHasAccessToWorkspace(c),
       c.db
@@ -200,9 +177,6 @@ export const listIntegrations = createApiHandler({
         .from("deco_chat_agents")
         .select("*")
         .ilike("workspace", workspace),
-      listKnowledgeBases.handler({}).catch(() => {
-        return { names: [] as string[] };
-      }),
     ]);
 
     const error = integrations.error || agents.error;
@@ -214,7 +188,7 @@ export const listIntegrations = createApiHandler({
     }
 
     return [
-      ...virtualIntegrationsFor(workspace, knowledgeBases.names),
+      ...virtualIntegrationsFor(workspace),
       ...integrations.data.map((item) => ({
         ...item,
         id: formatId("i", item.id),
@@ -248,11 +222,7 @@ export const getIntegration = createApiHandler({
     }
     assertHasWorkspace(c);
 
-    const knowledgeBases = await listKnowledgeBases.handler({});
-    const virtualIntegrations = virtualIntegrationsFor(
-      c.workspace.value,
-      knowledgeBases.names,
-    );
+    const virtualIntegrations = virtualIntegrationsFor(c.workspace.value);
 
     if (virtualIntegrations.some((i) => i.id === id)) {
       return IntegrationSchema.parse({

@@ -6,7 +6,6 @@ import type {
   MCPConnection,
 } from "@deco/sdk";
 import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
-import { slugify } from "@deco/sdk/memory";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
@@ -20,6 +19,7 @@ import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/createTool.ts";
 import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
+import { slugify } from "./utils/slugify.ts";
 import { mapToolEntries } from "./utils/toolEntries.ts";
 
 const ApiDecoChatURLs = [

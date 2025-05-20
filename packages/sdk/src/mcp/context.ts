@@ -9,7 +9,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 
 export interface Vars {
-  params: Record<string, string>;
   workspace?: {
     root: string;
     slug: string;
@@ -59,17 +58,15 @@ const envSchema = z.object({
   CF_DISPATCH_NAMESPACE: z.string().readonly(),
   CF_ACCOUNT_ID: z.string().readonly(),
   CF_API_TOKEN: z.string().readonly(),
-  CF_R2_ACCESS_KEY_ID: z.any().optional().readonly(),
-  CF_R2_SECRET_ACCESS_KEY: z.any().optional().readonly(),
+  CF_R2_ACCESS_KEY_ID: z.string().readonly(),
+  CF_R2_SECRET_ACCESS_KEY: z.string().readonly(),
   VITE_USE_LOCAL_BACKEND: z.any().optional().readonly(),
   SUPABASE_URL: z.string().readonly(),
   SUPABASE_SERVER_TOKEN: z.string().readonly(),
   TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
   TURSO_ORGANIZATION: z.string().readonly(),
-  RESEND_API_KEY: z.any().optional().readonly(),
+  RESEND_API_KEY: z.string().readonly(),
   OPENROUTER_API_KEY: z.string().readonly(),
-  TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
-  OPENAI_API_KEY: z.any().optional().readonly(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>
@@ -101,19 +98,14 @@ export const createAIHandler =
   };
 
 export interface ApiHandlerDefinition<
-  TAppContext extends AppContext = AppContext,
   TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object,
-  THandler extends (
+  THandler extends (props: z.infer<T>, c: AppContext) => Promise<R> | R = (
     props: z.infer<T>,
-    c: TAppContext,
-  ) => Promise<R> | R = (
-    props: z.infer<T>,
-    c: TAppContext,
+    c: AppContext,
   ) => Promise<R> | R,
 > {
-  group?: string;
   name: TName;
   description: string;
   schema: T;
@@ -128,40 +120,32 @@ export interface ApiHandler<
     props: z.infer<T>,
   ) => Promise<R> | R,
 > {
-  group?: string;
   name: TName;
   description: string;
   schema: T;
   handler: THandler;
 }
-export const createApiHandlerFactory = <
-  TAppContext extends AppContext = AppContext,
->(contextFactory: (c: AppContext) => TAppContext, group?: string) =>
-<
+
+export const createApiHandler = <
   TName extends string = string,
   T extends z.ZodType = z.ZodType,
   R extends object | boolean = object | boolean,
-  THandler extends (props: z.infer<T>, c: TAppContext) => Promise<R> | R = (
+  THandler extends (props: z.infer<T>, c: AppContext) => Promise<R> | R = (
     props: z.infer<T>,
-    c: TAppContext,
+    c: AppContext,
   ) => Promise<R> | R,
 >(
-  definition: ApiHandlerDefinition<TAppContext, TName, T, R, THandler>,
+  definition: ApiHandlerDefinition<TName, T, R, THandler>,
 ): ApiHandler<
   TName,
   T,
   R,
   (props: Parameters<THandler>[0]) => ReturnType<THandler>
 > => ({
-  group,
   ...definition,
   handler: (props: Parameters<THandler>[0]): ReturnType<THandler> =>
-    definition.handler(props, contextFactory(State.getStore())) as ReturnType<
-      THandler
-    >,
+    definition.handler(props, State.getStore()) as ReturnType<THandler>,
 });
-
-export const createApiHandler = createApiHandlerFactory<AppContext>((c) => c);
 
 export type MCPDefinition = ApiHandler[];
 

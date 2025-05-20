@@ -32,7 +32,6 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
   return {
     ...c.var,
-    params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),
     workspace: slug && root
@@ -78,30 +77,10 @@ const createMCPHandlerFor = (
   }
 
   return async (c: Context) => {
-    let srv = server;
-    const group = c.req.query("group");
-    if (group) {
-      const serverGroup = new McpServer(
-        { name: "@deco/api", version: "1.0.0" },
-        { capabilities: { tools: {} } },
-      );
-
-      for (const tool of tools) {
-        if (tool.group === group) {
-          serverGroup.tool(
-            tool.name,
-            tool.description,
-            tool.schema.shape,
-            createAIHandler(tool.handler),
-          );
-        }
-      }
-      srv = serverGroup;
-    }
     const transport = new HttpServerTransport();
 
     startTime(c, "mcp-connect");
-    await srv.connect(transport);
+    await server.connect(transport);
     endTime(c, "mcp-connect");
 
     startTime(c, "mcp-handle-message");

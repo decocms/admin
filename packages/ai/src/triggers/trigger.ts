@@ -123,7 +123,6 @@ export class Trigger {
       stub: this.state.stub as AppContext["stub"],
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-      params: {},
     });
   }
 

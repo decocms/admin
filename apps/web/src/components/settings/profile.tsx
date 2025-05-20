@@ -96,12 +96,14 @@ export function ProfileSettings(
   // On dial code change: detect country and update flag/mask
   function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value;
-    const formattedRaw = !raw.startsWith("+") ? "+" + raw.replace(/\D/g, "") : raw;
+    const formattedRaw = !raw.startsWith("+")
+      ? "+" + raw.replace(/\D/g, "")
+      : raw;
     setDialCode(formattedRaw);
     const match = COUNTRIES?.find((c) =>
       formattedRaw === c.dial_code || formattedRaw.startsWith(c.dial_code)
     );
-    
+
     setCountry(match || null);
     // Reset local value if country changes
     setLocalValue("");

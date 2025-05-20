@@ -176,7 +176,16 @@ export class PolicyClient {
     }
 
     // Cache the result
-    this.userPolicyCache.set(cacheKey, policies);
+    this.userPolicyCache.set(
+      cacheKey,
+      policies.map((policy) => ({
+        ...policy,
+        // filter admin policies
+        statements: policy.statements.filter((r) =>
+          !r.resource.endsWith(".ts")
+        ),
+      })),
+    );
 
     return policies;
   }

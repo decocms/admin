@@ -164,7 +164,7 @@ const virtualIntegrationsFor = (
       url.searchParams.set("name", kb);
       return {
         id: formatId("i", `knowledge-base-${kb}`),
-        name: kb,
+        name: `${kb} (Knowledge Base)`,
         description: "A knowledge base for your workspace",
         connection: {
           type: "HTTP",

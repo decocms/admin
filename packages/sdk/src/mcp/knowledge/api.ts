@@ -32,6 +32,22 @@ const openAIEmbedder = (apiKey: string) => {
   return openai.embedding("text-embedding-3-small");
 };
 
+async function getVector(c: AppContext) {
+  assertHasWorkspace(c);
+  const mem = await WorkspaceMemory.create({
+    workspace: c.workspace.value,
+    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
+    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
+    tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+    discriminator: KNOWLEDGE_BASE_GROUP,
+  });
+  const vector = mem.vector;
+  if (!vector) {
+    throw new InternalServerError("Missing vector");
+  }
+  return vector;
+}
+
 const DEFAULT_DIMENSION = 1536;
 
 export const listKnowledgeBases = createApiHandler({
@@ -39,19 +55,7 @@ export const listKnowledgeBases = createApiHandler({
   description: "List all knowledge bases",
   schema: z.object({}),
   handler: async (_, c) => {
-    assertHasWorkspace(c);
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-      discriminator: KNOWLEDGE_BASE_GROUP, // used to create a unique database for the knowledge base
-    });
-    const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
-
+    const vector = await getVector(c);
     const names = await vector.listIndexes();
     // lazily create the default knowledge base
     if (!names.includes(DEFAULT_KNOWLEDGE_BASE_NAME)) {
@@ -72,19 +76,8 @@ export const deleteBase = createApiHandler({
     name: z.string().describe("The name of the knowledge base"),
   }),
   handler: async ({ name }, c) => {
-    assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-    });
-    const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
-
+    const vector = await getVector(c);
     await vector.deleteIndex(name);
   },
 });
@@ -97,18 +90,8 @@ export const createBase = createApiHandler({
       .optional(),
   }),
   handler: async ({ name, dimension }, c) => {
-    assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-    });
-    const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
+    const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
       dimension: dimension ?? DEFAULT_DIMENSION,
@@ -123,18 +106,8 @@ export const forget = createKnowledgeBaseApiHandler({
     docId: z.string().describe("The id of the content to forget"),
   }),
   handler: async ({ docId }, c) => {
-    assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-    });
-    const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
+    const vector = await getVector(c);
     await vector.deleteIndexById(c.name, docId);
   },
 });
@@ -153,25 +126,14 @@ export const remember = createKnowledgeBaseApiHandler({
     ).optional(),
   }),
   handler: async ({ content, metadata, docId: _id }, c) => {
-    assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-    });
-    const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
 
+    const vector = await getVector(c);
     const docId = _id ?? crypto.randomUUID();
     const embedder = openAIEmbedder(c.envVars.OPENAI_API_KEY);
-
     // Create embeddings using OpenAI
     const { embedding } = await embed({
       model: embedder,
@@ -179,7 +141,7 @@ export const remember = createKnowledgeBaseApiHandler({
     });
     await vector.upsert(c.name, [embedding], [{
       id: docId,
-      metadata,
+      metadata: { ...metadata ?? {}, content },
     }]);
 
     return {
@@ -204,6 +166,7 @@ export const search = createKnowledgeBaseApiHandler({
       tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
       tursoOrganization: c.envVars.TURSO_ORGANIZATION,
       tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+      discriminator: KNOWLEDGE_BASE_GROUP, // used to create a unique database for the knowledge base
     });
     const vector = mem.vector;
     if (!vector) {

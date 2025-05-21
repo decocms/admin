@@ -74,11 +74,11 @@ const envSchema = z.object({
   /**
    * Only needed for locally testing wallet features.
    */
-  WALLET_API_KEY: z.string().optional().readonly(),
-  STRIPE_SECRET_KEY: z.string().optional().readonly(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional().readonly(),
-  CURRENCY_API_KEY: z.string().optional().readonly(),
-  TESTING_CUSTOMER_ID: z.string().optional().readonly(),
+  WALLET_API_KEY: z.string().nullish(),
+  STRIPE_SECRET_KEY: z.string().nullish(),
+  STRIPE_WEBHOOK_SECRET: z.string().nullish(),
+  CURRENCY_API_KEY: z.string().nullish(),
+  TESTING_CUSTOMER_ID: z.string().nullish(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

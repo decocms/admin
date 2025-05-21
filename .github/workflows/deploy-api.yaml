@@ -48,6 +48,9 @@ jobs:
             AWS_SECRET_ACCESS_KEY
             AWS_REGION
             DECO_CHAT_DATA_BUCKET_NAME
+            STRIPE_SECRET_KEY
+            STRIPE_WEBHOOK_SECRET
+            CURRENCY_API_KEY
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVER_TOKEN: ${{ secrets.SUPABASE_SERVER_TOKEN }}
@@ -72,3 +75,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           DECO_CHAT_DATA_BUCKET_NAME: ${{ secrets.DECO_CHAT_DATA_BUCKET_NAME }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          CURRENCY_API_KEY: ${{ secrets.CURRENCY_API_KEY }}

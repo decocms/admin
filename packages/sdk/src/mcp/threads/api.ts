@@ -292,6 +292,9 @@ export const updateThreadTitle = createApiHandler({
     threadId: z.string(),
     title: z.string(),
   }),
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
+  },
   handler: async ({ threadId, title }, c) => {
     const memory = await getWorkspaceMemory(c);
 
@@ -328,6 +331,9 @@ export const updateThreadMetadata = createApiHandler({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
+  async canAccess(_, c) {
+    return await canAccessWorkspaceResource(this.name, c);
+  },
   handler: async ({ threadId, metadata }, c) => {
     const memory = await getWorkspaceMemory(c);
 

@@ -7,8 +7,6 @@ import { type User as SupaUser } from "@supabase/supabase-js";
 import Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { ForbiddenError } from "../errors.ts";
-import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 
 export interface Vars {
   params: Record<string, string>;
@@ -20,8 +18,6 @@ export interface Vars {
   cookie?: string;
   db: Client;
   user: SupaUser;
-  policy: PolicyClient;
-  authorization: AuthorizationClient;
   isLocal?: boolean;
   cf: Cloudflare;
   immutableRes?: boolean;
@@ -116,22 +112,12 @@ export interface ApiHandlerDefinition<
     props: z.infer<T>,
     c: TAppContext,
   ) => Promise<R> | R,
-  CanAccessHandler extends (
-    name: TName,
-    props: z.infer<T>,
-    c: AppContext,
-  ) => Promise<boolean> = (
-    name: TName,
-    props: z.infer<T>,
-    c: AppContext,
-  ) => Promise<boolean>,
 > {
   group?: string;
   name: TName;
   description: string;
   schema: T;
   handler: THandler;
-  canAccess: CanAccessHandler;
 }
 
 export interface ApiHandler<
@@ -165,32 +151,14 @@ export const createApiHandlerFactory = <
   TName,
   T,
   R,
-  (props: Parameters<THandler>[0]) => Promise<Awaited<ReturnType<THandler>>>
+  (props: Parameters<THandler>[0]) => ReturnType<THandler>
 > => ({
   group,
   ...definition,
-  handler: async (
-    props: Parameters<THandler>[0],
-  ): Promise<Awaited<ReturnType<THandler>>> => {
-    const context = contextFactory(State.getStore());
-
-    const hasAccess = await definition.canAccess?.(
-      definition.name,
-      props,
-      context,
-    );
-    if (!hasAccess) {
-      throw new ForbiddenError(
-        `User cannot access this tool ${definition.name}`,
-      );
-    }
-
-    return await definition.handler(props, context) as Awaited<
-      ReturnType<
-        THandler
-      >
-    >;
-  },
+  handler: (props: Parameters<THandler>[0]): ReturnType<THandler> =>
+    definition.handler(props, contextFactory(State.getStore())) as ReturnType<
+      THandler
+    >,
 });
 
 export const createApiHandler = createApiHandlerFactory<AppContext>((c) => c);

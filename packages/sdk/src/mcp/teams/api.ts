@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
-import { bypass, canAccessTeamResource } from "../assertions.ts";
+import {
+  assertUserHasAccessToTeamBySlug,
+  assertUserIsTeamAdmin,
+} from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
@@ -24,12 +27,15 @@ export const getTeam = createApiHandler({
   schema: z.object({
     slug: z.string(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.slug, c);
-  },
   handler: async (props, c) => {
     const { slug } = props;
+    const user = c.user;
 
+    // check user belongs to team
+    await assertUserHasAccessToTeamBySlug(
+      { teamSlug: slug, userId: user.id },
+      c,
+    );
     const { data: teamData, error } = await c
       .db
       .from("teams")
@@ -54,7 +60,6 @@ export const createTeam = createApiHandler({
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
-  canAccess: bypass,
   /**
    * This function handle this steps:
    * 1. check if team slug already exists;
@@ -133,7 +138,6 @@ export const updateTeam = createApiHandler({
   name: "TEAMS_UPDATE",
   description: "Update an existing team",
   schema: z.object({
-    // team id
     id: z.number(),
     data: z.object({
       name: z.string().optional(),
@@ -141,11 +145,12 @@ export const updateTeam = createApiHandler({
       stripe_subscription_id: z.string().optional(),
     }),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.id, c);
-  },
   handler: async (props, c) => {
     const { id, data } = props;
+    const user = c.user;
+
+    // First verify the user has admin access to the team
+    await assertUserIsTeamAdmin(c, id, user.id);
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -187,11 +192,12 @@ export const deleteTeam = createApiHandler({
   schema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
     const { teamId } = props;
+    const user = c.user;
+
+    // First verify the user has admin access to the team
+    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     const members = await c.db
       .from("members")
@@ -223,7 +229,6 @@ export const listTeams = createApiHandler({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   schema: z.object({}),
-  canAccess: bypass,
   handler: async (_, c) => {
     const user = c.user;
 

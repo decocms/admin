@@ -11,7 +11,6 @@ import { WELL_KNOWN_ORIGINS } from "../../hosts.ts";
 import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
-  canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { AppContext, createApiHandler, getEnv } from "../context.ts";
 
@@ -72,7 +71,6 @@ export const listFiles = createApiHandler({
   schema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ prefix: root }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -99,7 +97,6 @@ export const readFile = createApiHandler({
       "Seconds until URL expires (default: 60)",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60 }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -123,7 +120,6 @@ export const readFileMetadata = createApiHandler({
   schema: z.object({
     path: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -160,7 +156,6 @@ export const writeFile = createApiHandler({
       "Metadata to be added to the file",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -187,7 +182,6 @@ export const deleteFile = createApiHandler({
   name: "FS_DELETE",
   description: "Delete a file",
   schema: z.object({ path: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 

@@ -7,7 +7,7 @@ import {
 } from "../../index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { AppContext, createApiHandler } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
@@ -56,14 +56,19 @@ export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
   description: "List all agents",
   schema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    const { data, error } = await c.db
-      .from("deco_chat_agents")
-      .select("*")
-      .ilike("workspace", c.workspace.value);
+    const [
+      _assertions,
+      { data, error },
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .ilike("workspace", c.workspace.value),
+    ]);
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -79,37 +84,30 @@ export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
-  async canAccess(name, props, c) {
-    const hasAccess = await canAccessWorkspaceResource(name, props, c);
-    if (hasAccess) {
-      return true;
-    }
-
-    assertHasWorkspace(c);
-    const { data: agentData } = await c.db.from("deco_chat_agents").select(
-      "visibility",
-    ).eq("workspace", c.workspace.value).eq("id", props.id).single();
-
-    // TODO: implement this using authorization system
-    if (agentData?.visibility === "PUBLIC") {
-      return true;
-    }
-
-    return false;
-  },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    const { data, error } = id in WELL_KNOWN_AGENTS
-      ? {
-        data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-        error: null,
-      }
-      : await c.db
-        .from("deco_chat_agents")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const [
+      hasAccessToWorkspace,
+      { data, error },
+    ] = await Promise.all([
+      assertUserHasAccessToWorkspace(c)
+        .then(() => true).catch((e) => e),
+      id in WELL_KNOWN_AGENTS
+        ? {
+          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          error: null,
+        }
+        : c.db
+          .from("deco_chat_agents")
+          .select("*")
+          .eq("id", id)
+          .single(),
+    ]);
+
+    if (hasAccessToWorkspace !== true && data?.visibility !== "PUBLIC") {
+      throw hasAccessToWorkspace;
+    }
 
     if ((error && error.code == NO_DATA_ERROR) || !data) {
       throw new AgentNotFoundError(id);
@@ -127,9 +125,10 @@ export const createAgent = createApiHandler({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   schema: AgentSchema.partial(),
-  canAccess: canAccessWorkspaceResource,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
+
+    await assertUserHasAccessToWorkspace(c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -159,9 +158,6 @@ export const createTempAgent = createApiHandler({
     agentId: z.string(),
     userId: z.string(),
   }),
-  async canAccess(_name, _props, c) {
-    return await canAccessWorkspaceResource("AGENTS_CREATE", _props, c);
-  },
   handler: async ({ agentId, userId }, c) => {
     const [{ data, error }] = await Promise.all([
       c.db
@@ -192,9 +188,11 @@ export const updateAgent = createApiHandler({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
+
+    await assertUserHasAccessToWorkspace(c);
+
     const { data, error } = await c.db
       .from("deco_chat_agents")
       .update({ ...agent, id, workspace: c.workspace.value })
@@ -218,9 +216,11 @@ export const deleteAgent = createApiHandler({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   schema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
+
+    await assertUserHasAccessToWorkspace(c);
+
     const { error } = await c.db
       .from("deco_chat_agents")
       .delete()
@@ -238,9 +238,6 @@ export const getTempAgent = createApiHandler({
   name: "AGENTS_GET_TEMP",
   description: "Get the temp WhatsApp agent for the current user",
   schema: z.object({ userId: z.string() }),
-  async canAccess(_name, _props, c) {
-    return await canAccessWorkspaceResource("AGENTS_GET", _props, c);
-  },
   handler: async ({ userId }, c) => {
     const { data, error } = await c.db
       .from("temp_wpp_agents")

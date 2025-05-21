@@ -6,7 +6,6 @@ import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
   assertUserHasAccessToWorkspace,
-  canAccessWorkspaceResource,
 } from "../assertions.ts";
 import {
   AppContext,
@@ -55,7 +54,6 @@ export const listKnowledgeBases = createApiHandler({
   name: "KNOWLEDGE_BASE_LIST",
   description: "List all knowledge bases",
   schema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const vector = await getVector(c);
     const names = await vector.listIndexes();
@@ -77,7 +75,6 @@ export const deleteBase = createApiHandler({
   schema: z.object({
     name: z.string().describe("The name of the knowledge base"),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ name }, c) => {
     await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
@@ -87,7 +84,6 @@ export const deleteBase = createApiHandler({
     };
   },
 });
-
 export const createBase = createApiHandler({
   name: "KNOWLEDGE_BASE_CREATE",
   description: "Create a knowledge base",
@@ -101,7 +97,6 @@ export const createBase = createApiHandler({
     dimension: z.number().describe("The dimension of the knowledge base")
       .optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ name, dimension }, c) => {
     await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
@@ -122,7 +117,6 @@ export const forget = createKnowledgeBaseApiHandler({
   schema: z.object({
     docId: z.string().describe("The id of the content to forget"),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ docId }, c) => {
     await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
@@ -145,7 +139,6 @@ export const remember = createKnowledgeBaseApiHandler({
       "The metadata to remember",
     ).optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ content, metadata, docId: _id }, c) => {
     await assertUserHasAccessToWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
@@ -179,7 +172,6 @@ export const search = createKnowledgeBaseApiHandler({
     topK: z.number().describe("The number of results to return").optional(),
     content: z.boolean().describe("Whether to return the content").optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ query, topK }, c) => {
     assertHasWorkspace(c);
     await assertUserHasAccessToWorkspace(c);

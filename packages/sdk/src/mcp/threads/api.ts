@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { type AppContext, createApiHandler } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
@@ -97,17 +97,19 @@ export const listThreads = createApiHandler({
     ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
     orderBy ??= "createdAt_desc";
     // Parse orderBy parameter
@@ -185,17 +187,19 @@ export const getThreadMessages = createApiHandler({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   schema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
     const { data: result, error } = await safeExecute(client, {
       sql:
@@ -219,17 +223,19 @@ export const getThread = createApiHandler({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
   schema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
     const { data: result, error } = await safeExecute(client, {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -250,17 +256,19 @@ export const getThreadTools = createApiHandler({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
   schema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
+    const [_, client] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      createSQLClientFor(
+        workspace,
+        TURSO_ORGANIZATION,
+        TURSO_GROUP_DATABASE_TOKEN,
+      ),
+    ]);
 
     const { data: result } = await safeExecute(client, {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -280,7 +288,6 @@ export const updateThreadTitle = createApiHandler({
     threadId: z.string(),
     title: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, title }, c) => {
     const memory = await getWorkspaceMemory(c);
 
@@ -317,7 +324,6 @@ export const updateThreadMetadata = createApiHandler({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, metadata }, c) => {
     const memory = await getWorkspaceMemory(c);
 

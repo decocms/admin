@@ -3,7 +3,7 @@ import { NotFoundError, UserInputError } from "../../errors.ts";
 import { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertUserHasAccessToWorkspace,
 } from "../assertions.ts";
 import { AppContext, createApiHandler, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
@@ -73,14 +73,16 @@ export const listApps = createApiHandler({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   schema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
 
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", workspace);
+    const [__, { data, error }] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      c.db
+        .from(DECO_CHAT_HOSTING_APPS_TABLE)
+        .select("*")
+        .eq("workspace", workspace),
+    ]);
 
     if (error) throw error;
 
@@ -256,8 +258,9 @@ Important Notes:
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug, files }, c) => {
+    await assertUserHasAccessToWorkspace(c);
+
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
@@ -299,8 +302,9 @@ export const deleteApp = createApiHandler({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
   schema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
+    await assertUserHasAccessToWorkspace(c);
+
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
@@ -338,16 +342,18 @@ export const getAppInfo = createApiHandler({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
   schema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", workspace)
-      .eq("slug", slug)
-      .single();
+    const [_, { data, error }] = await Promise.all([
+      assertUserHasAccessToWorkspace(c),
+      c.db
+        .from(DECO_CHAT_HOSTING_APPS_TABLE)
+        .select("*")
+        .eq("workspace", workspace)
+        .eq("slug", slug)
+        .single(),
+    ]);
 
     if (error || !data) {
       throw new NotFoundError("App not found");

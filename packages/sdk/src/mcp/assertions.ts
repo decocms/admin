@@ -152,32 +152,3 @@ export const assertHasUser = (c: AppContext) => {
     throw new UnauthorizedError();
   }
 };
-
-export const bypass = () => Promise.resolve(true);
-
-export const canAccessWorkspaceResource = async (
-  resource: string,
-  _: unknown,
-  c: AppContext,
-): Promise<boolean> => {
-  assertHasUser(c);
-  assertHasWorkspace(c);
-  const user = c.user;
-  const { root, slug } = c.workspace;
-
-  if (root === "users" && user.id === slug) {
-    return true;
-  }
-
-  if (root === "shared") {
-    return await c.authorization.canAccess(user.id, slug, resource);
-  }
-
-  return false;
-};
-
-export const canAccessTeamResource = (
-  resource: string,
-  teamIdOrSlug: string | number,
-  c: AppContext,
-) => c.authorization.canAccess(c.user.id, teamIdOrSlug, resource);

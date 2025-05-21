@@ -56,9 +56,7 @@ export const listAgents = createApiHandler({
   name: "AGENTS_LIST",
   description: "List all agents",
   schema: z.object({}),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
@@ -81,8 +79,8 @@ export const getAgent = createApiHandler({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
-  async canAccess(props, c) {
-    const hasAccess = await canAccessWorkspaceResource(this.name, c);
+  async canAccess(name, props, c) {
+    const hasAccess = await canAccessWorkspaceResource(name,props, c);
     if (hasAccess) {
       return true;
     }
@@ -129,9 +127,7 @@ export const createAgent = createApiHandler({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   schema: AgentSchema.partial(),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
 
@@ -163,8 +159,8 @@ export const createTempAgent = createApiHandler({
     agentId: z.string(),
     userId: z.string(),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource("AGENTS_CREATE", c);
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_CREATE", _props, c);
   },
   handler: async ({ agentId, userId }, c) => {
     const [{ data, error }] = await Promise.all([
@@ -196,9 +192,7 @@ export const updateAgent = createApiHandler({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
     const { data, error } = await c.db
@@ -224,9 +218,7 @@ export const deleteAgent = createApiHandler({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   schema: z.object({ id: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     const { error } = await c.db
@@ -246,8 +238,8 @@ export const getTempAgent = createApiHandler({
   name: "AGENTS_GET_TEMP",
   description: "Get the temp WhatsApp agent for the current user",
   schema: z.object({ userId: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource("AGENTS_GET", c);
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_GET", _props, c);
   },
   handler: async ({ userId }, c) => {
     const { data, error } = await c.db

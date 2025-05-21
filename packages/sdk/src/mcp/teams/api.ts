@@ -24,8 +24,8 @@ export const getTeam = createApiHandler({
   schema: z.object({
     slug: z.string(),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.slug, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.slug, c);
   },
   handler: async (props, c) => {
     const { slug } = props;
@@ -141,8 +141,8 @@ export const updateTeam = createApiHandler({
       stripe_subscription_id: z.string().optional(),
     }),
   }),
-  async canAccess(props, c) {
-    return await c.authorization.canAccess(c.user.id, props.id, this.name);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.id, c);
   },
   handler: async (props, c) => {
     const { id, data } = props;
@@ -187,8 +187,8 @@ export const deleteTeam = createApiHandler({
   schema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(props, c) {
-    return await c.authorization.canAccess(c.user.id, props.teamId, this.name);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId } = props;

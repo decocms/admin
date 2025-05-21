@@ -72,9 +72,7 @@ export const listFiles = createApiHandler({
   schema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ prefix: root }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -101,9 +99,7 @@ export const readFile = createApiHandler({
       "Seconds until URL expires (default: 60)",
     ),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60 }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -127,9 +123,7 @@ export const readFileMetadata = createApiHandler({
   schema: z.object({
     path: z.string(),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -166,9 +160,7 @@ export const writeFile = createApiHandler({
       "Metadata to be added to the file",
     ),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -195,9 +187,7 @@ export const deleteFile = createApiHandler({
   name: "FS_DELETE",
   description: "Delete a file",
   schema: z.object({ path: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 

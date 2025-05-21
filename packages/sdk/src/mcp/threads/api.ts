@@ -97,10 +97,7 @@ export const listThreads = createApiHandler({
     ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
-  async canAccess(_, c) {
-    // TODO: handle threads based on agents
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
@@ -188,10 +185,7 @@ export const getThreadMessages = createApiHandler({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   schema: z.object({ id: z.string() }),
-  async canAccess(_, c) {
-    // TODO: handle threads based on agents
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
@@ -225,10 +219,7 @@ export const getThread = createApiHandler({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
   schema: z.object({ id: z.string() }),
-  async canAccess(_, c) {
-    // TODO: handle threads based on agents
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
@@ -259,10 +250,7 @@ export const getThreadTools = createApiHandler({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
   schema: z.object({ id: z.string() }),
-  async canAccess(_, c) {
-    // TODO: handle threads based on agents
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
@@ -292,9 +280,7 @@ export const updateThreadTitle = createApiHandler({
     threadId: z.string(),
     title: z.string(),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, title }, c) => {
     const memory = await getWorkspaceMemory(c);
 
@@ -331,9 +317,7 @@ export const updateThreadMetadata = createApiHandler({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, metadata }, c) => {
     const memory = await getWorkspaceMemory(c);
 

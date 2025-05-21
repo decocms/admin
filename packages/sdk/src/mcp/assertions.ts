@@ -157,6 +157,7 @@ export const bypass = () => Promise.resolve(true);
 
 export const canAccessWorkspaceResource = async (
   resource: string,
+  _: unknown,
   c: AppContext,
 ): Promise<boolean> => {
   assertHasUser(c);

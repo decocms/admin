@@ -117,9 +117,11 @@ export interface ApiHandlerDefinition<
     c: TAppContext,
   ) => Promise<R> | R,
   CanAccessHandler extends (
+    name: TName,
     props: z.infer<T>,
     c: AppContext,
   ) => Promise<boolean> = (
+    name: TName,
     props: z.infer<T>,
     c: AppContext,
   ) => Promise<boolean>,
@@ -172,7 +174,7 @@ export const createApiHandlerFactory = <
   ): Promise<Awaited<ReturnType<THandler>>> => {
     const context = contextFactory(State.getStore());
 
-    const hasAccess = await definition.canAccess?.(props, context);
+    const hasAccess = await definition.canAccess?.(definition.name, props, context);
     if (!hasAccess) {
       throw new ForbiddenError(
         `User cannot access this tool ${definition.name}`,

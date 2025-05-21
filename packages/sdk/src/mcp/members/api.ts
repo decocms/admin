@@ -94,8 +94,8 @@ export const getTeamMembers = createApiHandler({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId, withActivity } = props;
@@ -165,8 +165,8 @@ export const updateTeamMember = createApiHandler({
       admin: z.boolean().optional(),
     }),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId, memberId, data } = props;
@@ -208,8 +208,8 @@ export const removeTeamMember = createApiHandler({
     teamId: z.number(),
     memberId: z.number(),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c) ||
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c) ||
       (await c.db.from("members").select("user_id").eq("id", props.memberId).eq(
           "team_id",
           props.teamId,
@@ -276,8 +276,8 @@ export const registerMemberActivity = createApiHandler({
   schema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId } = props;
@@ -366,8 +366,8 @@ export const inviteTeamMembers = createApiHandler({
       })),
     })),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId, invitees } = props;
@@ -648,8 +648,8 @@ export const teamRolesList = createApiHandler({
   schema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(props, c) {
-    return await canAccessTeamResource(this.name, props.teamId, c);
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
     const { teamId } = props;

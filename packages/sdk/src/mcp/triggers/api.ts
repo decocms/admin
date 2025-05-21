@@ -72,9 +72,7 @@ export const listTriggers = createApiHandler({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
   schema: z.object({ agentId: z.string().optional() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId },
     c,
@@ -119,9 +117,7 @@ export const createTrigger = createApiHandler({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
   schema: z.object({ agentId: z.string(), data: TriggerSchema }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -213,9 +209,7 @@ export const createCronTrigger = createApiHandler({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
   schema: z.object({ agentId: z.string(), data: CreateCronTriggerInputSchema }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -273,9 +267,7 @@ export const createWebhookTrigger = createApiHandler({
     agentId: z.string(),
     data: CreateWebhookTriggerInputSchema,
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -335,9 +327,7 @@ export const deleteTrigger = createApiHandler({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
   schema: z.object({ triggerId: z.string(), agentId: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId, agentId },
     c,
@@ -369,9 +359,7 @@ export const getWebhookTriggerUrl = createApiHandler({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
   schema: z.object({ triggerId: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId },
     c,
@@ -404,9 +392,7 @@ export const getTrigger = createApiHandler({
   name: "TRIGGERS_GET",
   description: "Get a trigger by ID",
   schema: z.object({ id: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { id: triggerId },
     c,
@@ -443,9 +429,7 @@ export const activateTrigger = createApiHandler({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
   schema: z.object({ triggerId: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
     const db = c.db;
@@ -511,9 +495,7 @@ export const deactivateTrigger = createApiHandler({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
   schema: z.object({ triggerId: z.string() }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
     const db = c.db;

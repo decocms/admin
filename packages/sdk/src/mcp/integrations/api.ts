@@ -186,9 +186,7 @@ export const listIntegrations = createApiHandler({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
   schema: z.object({}),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -242,11 +240,12 @@ export const getIntegration = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  async canAccess({ id }, c) {
+  async canAccess(name, props, c) {
+    const { id } = props
     if (INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS]) {
       return true;
     }
-    return await canAccessWorkspaceResource(this.name, c);
+    return await canAccessWorkspaceResource(name, props, c);
   },
   handler: async ({ id }, c) => {
     const { uuid, type } = parseId(id);
@@ -308,9 +307,7 @@ export const createIntegration = createApiHandler({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
   schema: IntegrationSchema.partial(),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async (integration, c) => {
     assertHasWorkspace(c);
 
@@ -342,9 +339,7 @@ export const updateIntegration = createApiHandler({
     id: z.string(),
     integration: IntegrationSchema,
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
 
@@ -382,9 +377,7 @@ export const deleteIntegration = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  async canAccess(_, c) {
-    return await canAccessWorkspaceResource(this.name, c);
-  },
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 

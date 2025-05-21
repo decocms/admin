@@ -13,7 +13,6 @@ import {
   getTeamById,
   insertInvites,
   sendInviteEmail,
-  updateUserRole,
   userBelongsToTeam,
 } from "./invitesUtils.ts";
 
@@ -564,17 +563,11 @@ export const acceptInvite = createApiHandler({
       if (invite.invited_roles && Array.isArray(invite.invited_roles)) {
         const rolePromises = invite.invited_roles.map(async (roleData) => {
           const role = roleData as { id: number; name: string };
-          return await updateUserRole(
-            db,
-            Number(invite.team_id),
-            invite.invited_email,
-            {
-              roleId: role.id,
-              action: "grant",
-            },
-          );
+          await c.policy.updateUserRole(invite.team_id, invite.invited_email, {
+            roleId: role.id,
+            action: "grant",
+          });
         });
-
         try {
           await Promise.all(rolePromises);
         } catch (error) {

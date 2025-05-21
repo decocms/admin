@@ -56,7 +56,7 @@ const ThreadsUsage = {
     range: "day" | "week" | "month",
   ) => {
     const usageResponse = await wallet["GET /usage/threads"]({
-      workspace,
+      workspace: encodeURIComponent(workspace),
       range,
     });
 
@@ -225,36 +225,32 @@ export const createWalletVoucher = createApiHandler({
     assertHasWorkspace(ctx);
     await assertUserHasAccessToWorkspace(ctx);
 
-    console.log("workspace", ctx.workspace.value);
+    const wallet = getWalletClient(ctx);
+    const id = crypto.randomUUID();
+    const amountMicroDollars = MicroDollar.fromDollars(amount);
+    const claimableId = `${id}-${amountMicroDollars.toMicrodollarString()}`;
 
-    // const wallet = getWalletClient(ctx);
-    // const id = crypto.randomUUID();
-    // const amountMicroDollars = MicroDollar.fromDollars(amount);
+    if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
+      throw new UserInputError("Amount must be positive");
+    }
 
-    // if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
-    //   throw new MCPError("Amount must be positive");
-    // }
+    const operation = {
+      type: "WorkspaceCreateVoucher" as const,
+      amount: amountMicroDollars.toMicrodollarString(),
+      voucherId: id,
+      workspace: ctx.workspace.value,
+    } as const;
 
-    // const operation = {
-    //   type: "WorkspaceCreateVoucher" as const,
-    //   amount: amountMicroDollars.toMicrodollarString(),
-    //   voucherId: id,
-    //   workspace: ctx.workspace.value,
-    // } as const;
+    const response = await wallet["POST /transactions"]({}, {
+      body: operation,
+    });
 
-    // const response = await wallet["POST /transactions"]({}, {
-    //   body: operation,
-    // });
-
-    // if (!response.ok) {
-    //   throw new Error("Failed to create voucher");
-    // }
-
-    // const transaction = await response.json();
+    if (!response.ok) {
+      throw new Error("Failed to create voucher");
+    }
 
     return {
-      // id: transaction.id,
-      id: "123",
+      id: claimableId,
     };
   },
 });
@@ -263,15 +259,17 @@ export const redeemWalletVoucher = createApiHandler({
   name: "REDEEM_VOUCHER",
   description: "Redeem a voucher for the current tenant's wallet",
   schema: z.object({
-    voucherId: z.string(),
+    voucher: z.string(),
   }),
-  handler: async ({ voucherId }, ctx) => {
+  handler: async ({ voucher }, ctx) => {
     assertHasWorkspace(ctx);
     await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
 
-    const amountHintMicroDollars = voucherId.split("-")[1];
+    const parts = voucher.split("-");
+    const voucherId = parts.slice(0, -1).join("-");
+    const amountHintMicroDollars = parts.at(-1);
 
     if (!amountHintMicroDollars) {
       throw new UserInputError("Invalid voucher ID");

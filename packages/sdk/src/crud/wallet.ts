@@ -64,14 +64,14 @@ export const createWalletCheckoutSession = async ({
 
 export const redeemWalletVoucher = async ({
   workspace,
-  voucherId,
+  voucher,
 }: {
   workspace: string;
-  voucherId: string;
+  voucher: string;
 }) => {
   const { status, data, error } = await MCPClient.forWorkspace(workspace)
     .REDEEM_VOUCHER({
-      voucherId,
+      voucher,
     });
   if (status !== 200 || error) {
     throw new Error(error?.message);

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { Link, useParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChartConfig,
   ChartContainer,
@@ -14,16 +15,15 @@ import { Label, Pie, PieChart } from "recharts";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import {
   type Agent,
-  getAgentsUsage,
-  getThreadsUsage,
-  getWalletAccount,
   type Member,
   useAgents,
   useSDK,
   useTeamMembersBySlug,
+  useUsagePerAgent,
+  useUsagePerThread,
+  useWorkspaceWalletBalance,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 
 interface UserAvatarProps {
   member?: Member;
@@ -142,23 +143,29 @@ function AgentAvatar({ agent, size = "md" }: AgentAvatarProps) {
 }
 
 function AccountBalance() {
-  const { workspace } = useSDK();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["wallet"],
-    queryFn: () => getWalletAccount(workspace),
-  });
-
-  if (isLoading) return <Skeleton className="w-32 h-12" />;
-  if (error) return <p>Error loading wallet</p>;
-
-  return <p className="text-5xl font-bold">{data?.balance}</p>;
+  const account = useWorkspaceWalletBalance();
+  return <p className="text-5xl font-bold">{account?.balance}</p>;
 }
 
 function BalanceCard() {
   const team = useCurrentTeam();
+  const account = useWorkspaceWalletBalance();
 
   return (
-    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
+    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200 relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-2 top-2"
+        onClick={account.refetch}
+        disabled={account.isRefetching}
+      >
+        <Icon
+          name="refresh"
+          size={16}
+          className={account.isRefetching ? "animate-spin" : ""}
+        />
+      </Button>
       <div className="w-full text-sm mb-8">
         AI Usage Wallet
       </div>
@@ -167,7 +174,13 @@ function BalanceCard() {
           {team.label}
         </div>
         <div className="mb-6">
-          <AccountBalance />
+          <Suspense fallback={<Skeleton className="w-32 h-12" />}>
+            <ErrorBoundary
+              fallback={<p className="text-red-500">Error loading balance</p>}
+            >
+              <AccountBalance />
+            </ErrorBoundary>
+          </Suspense>
         </div>
         <div className="flex flex-col items-center gap-2">
           <DepositDialog />
@@ -216,18 +229,9 @@ function CreditsUsedPerAgentCard({
 }: {
   agents: ReturnType<typeof useAgents>;
 }) {
-  const { workspace } = useSDK();
   const [range, setRange] = useState<"day" | "week" | "month">("month");
-  const [top5Only, setTop5Only] = useState(false);
-  const { data: usage } = useSuspenseQuery({
-    queryKey: [
-      "wallet-usage",
-      workspace,
-      range,
-    ],
-    queryFn: () => getAgentsUsage(workspace, range),
-  });
   const withWorkpaceLink = useWorkspaceLink();
+  const usage = useUsagePerAgent({ range });
 
   const total = usage.total;
   const enrichedAgents = usage.items.map((_agent) => {
@@ -239,7 +243,7 @@ function CreditsUsedPerAgentCard({
       label: agent?.name || _agent.label || _agent.id,
       color: color(_agent.id),
     };
-  }).sort((a, b) => b.total - a.total).slice(0, top5Only ? 5 : undefined);
+  }).sort((a, b) => b.total - a.total);
 
   const chartConfig = Object.fromEntries(
     enrichedAgents.map((agent) => [
@@ -262,21 +266,6 @@ function CreditsUsedPerAgentCard({
       <div className="w-full text-sm mb-8 flex justify-between items-center">
         <span>Credits Used Per Agent</span>
         <div className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={top5Only ? "default" : "outline"}
-                className="!h-7 !w-7 text-xs"
-                size="icon"
-                onClick={() => setTop5Only((prev) => !prev)}
-              >
-                <Icon name="format_list_numbered" size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              Top 5 only
-            </TooltipContent>
-          </Tooltip>
           <Select
             value={range}
             onValueChange={(value: "day" | "week" | "month") => setRange(value)}
@@ -401,13 +390,9 @@ function CreditsUsedPerThread({
   agents: ReturnType<typeof useAgents>;
   teamMembers: Member[];
 }) {
-  const { workspace } = useSDK();
   const withWorkpaceLink = useWorkspaceLink();
   const [range, setRange] = useState<"day" | "week" | "month">("week");
-  const { data: threads } = useSuspenseQuery({
-    queryKey: ["threads-usage", workspace, range],
-    queryFn: () => getThreadsUsage(workspace, range),
-  });
+  const threads = useUsagePerThread({ range });
 
   const enrichedThreads = threads.items.map((thread) => {
     const agent = workspaceAgents.data?.find((a) => a.id === thread.agentId);
@@ -594,6 +579,7 @@ function userToMember(user: ReturnType<typeof useUser>): Member {
       id: user.id,
       is_anonymous: false,
       metadata: user.metadata,
+      phone: user.phone,
     },
     roles: [],
     created_at: "",

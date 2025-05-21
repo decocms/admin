@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { createCurrencyClient } from "../../../wallets/currencyApi.ts";
 import { MicroDollar } from "../../../wallets/microdollar.ts";
-import { WebhookEventIgnoredError } from "../../errors.ts";
+import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../../../wallets/client.ts";
 

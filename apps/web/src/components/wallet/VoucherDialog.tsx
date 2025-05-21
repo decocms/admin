@@ -13,17 +13,17 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function VoucherDialog() {
-  const [voucherId, setVoucherId] = useState("");
+  const [voucher, setVoucher] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const { workspace } = useSDK();
   const queryClient = useQueryClient();
 
   const { mutate: redeemVoucher, isPending } = useMutation({
-    mutationFn: () => redeemWalletVoucher({ workspace, voucherId }),
+    mutationFn: () => redeemWalletVoucher({ workspace, voucher }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       setIsOpen(false);
-      setVoucherId("");
+      setVoucher("");
     },
   });
 
@@ -45,16 +45,16 @@ export function VoucherDialog() {
               Voucher Code
             </label>
             <Input
-              id="voucherId"
-              value={voucherId}
-              onChange={(e) => setVoucherId(e.target.value)}
+              id="voucher"
+              value={voucher}
+              onChange={(e) => setVoucher(e.target.value)}
               placeholder="Enter your voucher code"
               className="w-full"
             />
           </div>
           <Button
             onClick={() => redeemVoucher()}
-            disabled={!voucherId || isPending}
+            disabled={!voucher || isPending}
             className="w-full"
           >
             {isPending ? "Redeeming..." : "Redeem"}

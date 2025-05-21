@@ -370,8 +370,7 @@ ChatInput.UI = (
                   <Button
                     type={isLoading ? "button" : "submit"}
                     size="icon"
-                    disabled={isUploading || (!isLoading &&
-                      (!input.trim() && uploadedFiles.length === 0))}
+                    disabled={isUploading || (!isLoading && !input.trim())}
                     onClick={isLoading ? stop : undefined}
                     className="h-8 w-8 transition-all hover:opacity-70"
                     title={isLoading

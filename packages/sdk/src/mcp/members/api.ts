@@ -711,7 +711,7 @@ export const teamRolesList = createTool({
 });
 
 export const updateMemberRole = createTool({
-  name: "UPDATE_MEMBER_ROLE",
+  name: "TEAM_MEMBERS_UPDATE_ROLE",
   description: "Update a member's role in a team",
   inputSchema: z.object({
     teamId: z.number(),

@@ -74,12 +74,10 @@ function UserInfo({
   // If userId matches current user, use user data directly
   const isCurrentUser = userId && user && userId === user.id;
 
-  // Only fetch team members if not current user and teamId is not null
-  const members = (!isCurrentUser && teamId !== null)
-    ? useTeamMembers(teamId).data
-    : undefined;
+  const { data: teamMembers = [] } = useTeamMembers(teamId ?? null);
+  const members = (!isCurrentUser && teamId !== null) ? teamMembers : [];
   const member = useMemo(
-    () => members?.find((m) => m.user_id === userId),
+    () => members.find((m) => m.user_id === userId),
     [members, userId],
   );
 

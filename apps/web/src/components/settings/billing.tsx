@@ -1,29 +1,21 @@
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  type Agent,
+  type Member,
+  useAgents,
+  useTeamMembersBySlug,
+  useUsagePerAgent,
+  useUsagePerThread,
+  useWorkspaceWalletBalance,
+  WELL_KNOWN_AGENTS
+} from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
-import { Link, useParams } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@deco/ui/components/chart.tsx";
-import { Label, Pie, PieChart } from "recharts";
-import { DepositDialog } from "../wallet/DepositDialog.tsx";
-import {
-  type Agent,
-  type Member,
-  useAgents,
-  useSDK,
-  useTeamMembersBySlug,
-  useUsagePerAgent,
-  useUsagePerThread,
-  useWorkspaceWalletBalance,
-  WELL_KNOWN_AGENTS,
-} from "@deco/sdk";
 import {
   Dialog,
   DialogContent,
@@ -31,12 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Select,
   SelectContent,
@@ -44,11 +31,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useState } from "react";
-import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useUser } from "../../hooks/data/useUser.ts";
-import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
+import { Link, useParams } from "react-router";
+import { Label, Pie, PieChart } from "recharts";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { useUser } from "../../hooks/data/useUser.ts";
+import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { DepositDialog } from "../wallet/DepositDialog.tsx";
+import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
+import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 
 interface UserAvatarProps {
   member?: Member;

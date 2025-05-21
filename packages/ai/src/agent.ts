@@ -29,7 +29,7 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import { createWalletClient } from "@deco/sdk/wallet";
+import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import type { StorageThreadType } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
@@ -817,7 +817,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const wallet = this.wallet;
     const walletTiming = timings.start("init-wallet");
     const hasBalance = await wallet.canProceed();
-    console.log("hasBalance", hasBalance);
     walletTiming.end();
 
     if (!hasBalance) {

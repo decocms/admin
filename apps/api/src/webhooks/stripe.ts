@@ -37,7 +37,6 @@ export const handleStripeWebhook = async (c: Context) => {
       appContext.walletBinding,
     );
 
-    console.log("applying transaction", transaction);
     const response = await wallet["POST /transactions"]({}, {
       body: transaction,
     });

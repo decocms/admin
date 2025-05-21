@@ -1,26 +1,34 @@
+import {
+  Agent,
+  useAgent,
+  useCreateTempAgent,
+  useCreateTrigger,
+  useListTriggersByAgentId,
+} from "@deco/sdk";
+import { useProfile, useTempWppAgent } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import {
-  useCreateTempAgent,
-  useCreateTrigger,
-  useListTriggersByAgentId,
-} from "@deco/sdk";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
-import { useProfile } from "@deco/sdk/hooks";
 import { useProfileModal } from "../layout.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { useTempWppAgent } from "@deco/sdk/hooks";
 
-const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
+const getWhatsAppLink = (agent: Agent) => {
+  const url = new URL("https://wa.me/11920902075");
+
+  url.searchParams.set("text", `Hey, is that ${agent.name}?`);
+
+  return url.href;
+};
 
 export function WhatsAppButton() {
   const { agentId } = useChatContext();
+  const { data: agent } = useAgent(agentId);
   const { data: triggers } = useListTriggersByAgentId(agentId);
   const { mutate: createTrigger } = useCreateTrigger(agentId);
   const { mutate: createTempAgent } = useCreateTempAgent();
@@ -83,7 +91,7 @@ export function WhatsAppButton() {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <a href={WHATSAPP_LINK} target="_blank">
+          <a href={getWhatsAppLink(agent)} target="_blank">
             <Button variant="ghost" size="icon">
               <img src="/img/zap.svg" className="w-4 h-4" />
             </Button>

@@ -107,7 +107,9 @@ export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
   id: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
   inputSchema: z.object({
-    integrationId: z.string().describe("The id of the integration to start the OAuth flow for"),
+    integrationId: z.string().describe(
+      "The id of the integration to start the OAuth flow for",
+    ),
   }),
   execute: () => async ({ context }) => {
     const { integrationId } = context;

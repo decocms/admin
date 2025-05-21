@@ -5,7 +5,7 @@ import {
   MicroDollar,
   WalletAPI,
   WellKnownWallets,
-} from "@deco/sdk/wallet";
+} from "./index.ts";
 import { ClientOf } from "@deco/sdk/http";
 import {
   assertHasWorkspace,

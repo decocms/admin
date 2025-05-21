@@ -56,9 +56,9 @@
     "./auth": "./src/auth/index.ts",
     "./timings": "./src/timings.ts",
     "./http": "./src/http.ts",
-    "./wallet": "./src/wallets/index.ts",
     "./storage": "./src/storage/index.ts",
     "./mcp": "./src/mcp/index.ts",
+    "./mcp/wallet": "./src/mcp/wallet/index.ts",
     "./fetch": "./src/fetch.ts",
     "./hooks": "./src/hooks/index.ts",
     "./hooks/profile": "./src/hooks/profile.ts"

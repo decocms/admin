@@ -6,7 +6,7 @@ import {
   WebhookEventIgnoredError,
 } from "@deco/sdk/mcp";
 import { honoCtxToAppCtx } from "../api.ts";
-import { createWalletClient } from "@deco/sdk/wallet";
+import { createWalletClient } from "@deco/sdk/mcp/wallet";
 
 export const handleStripeWebhook = async (c: Context) => {
   try {

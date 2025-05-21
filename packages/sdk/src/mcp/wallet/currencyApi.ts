@@ -6,7 +6,7 @@
  *
  * @see https://currencyapi.com/docs
  */
-import { createHttpClient } from "../http.ts";
+import { createHttpClient } from "../../http.ts";
 
 interface CurrencyAPI {
   "GET /latest": {

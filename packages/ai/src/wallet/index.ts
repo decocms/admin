@@ -5,7 +5,7 @@ import {
   type WalletAPI,
   WellKnownTransactions,
   WellKnownWallets,
-} from "@deco/sdk/wallet";
+} from "@deco/sdk/mcp/wallet";
 import type { LanguageModelUsage } from "ai";
 import { WebCache } from "@deco/sdk/cache";
 

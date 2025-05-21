@@ -1,4 +1,4 @@
-import { createHttpClient } from "../http.ts";
+import { createHttpClient } from "../../http.ts";
 import { MicroDollar } from "./microdollar.ts";
 
 export interface DoubleEntry {

@@ -20,6 +20,7 @@ import {
 import type { Workspace } from "../../path.ts";
 import {
   assertHasWorkspace,
+  bypass,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
@@ -59,7 +60,7 @@ export const callTool = createApiHandler({
     connection: true,
   }).merge(CallToolRequestSchema.pick({ params: true })),
   // The tool call will be authorized itself. This is a proxy
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async ({ connection: reqConnection, params: toolCall }, c) => {
     const connection = isApiDecoChatMCPConnection(reqConnection)
       ? patchApiDecoChatTokenHTTPConnection(
@@ -109,7 +110,7 @@ export const listTools = createApiHandler({
   schema: IntegrationSchema.pick({
     connection: true,
   }),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async ({ connection }, c) => {
     const result = await listToolsByConnectionType(
       connection,

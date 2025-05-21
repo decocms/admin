@@ -4,7 +4,7 @@ import {
   NotFoundError,
   UserInputError,
 } from "../../errors.ts";
-import { canAccessTeamResource } from "../assertions.ts";
+import { bypass, canAccessTeamResource } from "../assertions.ts";
 import { type AppContext, createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 import {
@@ -299,7 +299,7 @@ export const getMyInvites = createApiHandler({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
   schema: z.object({}),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async (_props, c) => {
     const user = c.user;
     const db = c.db;
@@ -483,7 +483,7 @@ export const acceptInvite = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async (props, c) => {
     const { id } = props;
     const db = c.db;
@@ -623,7 +623,7 @@ export const deleteInvite = createApiHandler({
   schema: z.object({
     id: z.string(),
   }),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async (props, c) => {
     const { id } = props;
     const db = c.db;

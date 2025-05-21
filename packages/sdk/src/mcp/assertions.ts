@@ -153,6 +153,8 @@ export const assertHasUser = (c: AppContext) => {
   }
 };
 
+export const bypass = () => Promise.resolve(true);
+
 export const canAccessWorkspaceResource = async (
   resource: string,
   c: AppContext,

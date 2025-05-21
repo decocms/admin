@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
-import { canAccessTeamResource } from "../assertions.ts";
+import { bypass, canAccessTeamResource } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
@@ -54,7 +54,7 @@ export const createTeam = createApiHandler({
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   /**
    * This function handle this steps:
    * 1. check if team slug already exists;
@@ -223,7 +223,7 @@ export const listTeams = createApiHandler({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   schema: z.object({}),
-  canAccess: () => Promise.resolve(true),
+  canAccess: bypass,
   handler: async (_, c) => {
     const user = c.user;
 

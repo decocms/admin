@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { AppContext } from "../../context.ts";
 import { assertHasWorkspace } from "../../assertions.ts";
-import { createCurrencyClient } from "../../../wallets/currencyApi.ts";
+import { createCurrencyClient } from "../index.ts";
 
 const getStripeClient = (secretKey: string) => {
   return new Stripe(secretKey, {

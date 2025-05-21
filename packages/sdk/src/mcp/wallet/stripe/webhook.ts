@@ -1,9 +1,8 @@
 import Stripe from "stripe";
-import { createCurrencyClient } from "../../../wallets/currencyApi.ts";
-import { MicroDollar } from "../../../wallets/microdollar.ts";
 import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
-import type { Transaction } from "../../../wallets/client.ts";
+import { Transaction } from "../client.ts";
+import { createCurrencyClient, MicroDollar } from "../index.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,

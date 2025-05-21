@@ -367,7 +367,7 @@ export const inviteTeamMembers = createApiHandler({
     })),
   }),
   async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
+    return await canAccessTeamResource(name, Number(props.teamId), c);
   },
   handler: async (props, c) => {
     const { teamId, invitees } = props;

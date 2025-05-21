@@ -6,7 +6,7 @@ import {
   useUsagePerAgent,
   useUsagePerThread,
   useWorkspaceWalletBalance,
-  WELL_KNOWN_AGENTS
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";

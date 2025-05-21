@@ -80,7 +80,7 @@ export const getAgent = createApiHandler({
   description: "Get an agent by id",
   schema: z.object({ id: z.string() }),
   async canAccess(name, props, c) {
-    const hasAccess = await canAccessWorkspaceResource(name,props, c);
+    const hasAccess = await canAccessWorkspaceResource(name, props, c);
     if (hasAccess) {
       return true;
     }

@@ -241,7 +241,7 @@ export const getIntegration = createApiHandler({
     id: z.string(),
   }),
   async canAccess(name, props, c) {
-    const { id } = props
+    const { id } = props;
     if (INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS]) {
       return true;
     }

@@ -174,7 +174,11 @@ export const createApiHandlerFactory = <
   ): Promise<Awaited<ReturnType<THandler>>> => {
     const context = contextFactory(State.getStore());
 
-    const hasAccess = await definition.canAccess?.(definition.name, props, context);
+    const hasAccess = await definition.canAccess?.(
+      definition.name,
+      props,
+      context,
+    );
     if (!hasAccess) {
       throw new ForbiddenError(
         `User cannot access this tool ${definition.name}`,

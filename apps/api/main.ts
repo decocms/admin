@@ -10,7 +10,10 @@ import { default as app } from "./src/app.ts";
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
 
 // Domains we consider "self"
-const SELF_DOMAINS: string[] = [Hosts.API, `localhost:${Deno.env.get("PORT")}`];
+const SELF_DOMAINS: string[] = [
+  Hosts.API,
+  `localhost:${Deno.env.get("PORT") || 3001}`,
+];
 
 // Patch fetch globally
 const originalFetch = globalThis.fetch;

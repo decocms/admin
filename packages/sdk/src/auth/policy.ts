@@ -12,6 +12,8 @@ export const BASE_ROLES_ID = {
   ADMIN: 4,
 };
 
+const BLOCKED_ROLES = new Set([BASE_ROLES_ID.PUBLISHER]);
+
 // Typed interfaces
 export interface Statement {
   effect: "allow" | "deny";
@@ -270,7 +272,10 @@ export class PolicyClient {
     }
 
     // Cache the result
-    await this.teamRolesCache.set(this.getTeamRolesCacheKey(teamId), roles);
+    await this.teamRolesCache.set(
+      this.getTeamRolesCacheKey(teamId),
+      this.filterTeamRoles(roles),
+    );
 
     return roles;
   }
@@ -293,8 +298,8 @@ export class PolicyClient {
       this.getTeamRoles(teamId),
     ]);
 
-    const profile = memberWithProfile?.profiles
-    const role = roles.find(r => r.id === params.roleId)
+    const profile = memberWithProfile?.profiles;
+    const role = roles.find((r) => r.id === params.roleId);
 
     if (!profile) {
       throw new Error("User not found");
@@ -377,6 +382,10 @@ export class PolicyClient {
       // filter admin policies
       statements: policy.statements.filter((r) => !r.resource.endsWith(".ts")),
     }));
+  }
+
+  public filterTeamRoles<R extends Pick<Role, "id">>(roles: R[]): R[] {
+    return roles.filter((r) => !BLOCKED_ROLES.has(r.id));
   }
 
   private getUserPoliceCacheKey(userId: string, teamId: number) {

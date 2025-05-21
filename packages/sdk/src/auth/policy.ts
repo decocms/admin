@@ -1,8 +1,8 @@
 import { Client } from "@deco/sdk/storage";
-import { LRUCache } from "lru-cache";
+import { WebCache } from "../cache/index.ts";
 
 // Cache duration
-const TWO_MIN = 1000 * 60 * 2;
+const TWO_MIN_TTL = 1000 * 60 * 2;
 
 // Base roles
 export const BASE_ROLES_ID = {
@@ -53,19 +53,15 @@ export interface RoleUpdateParams {
 export class PolicyClient {
   private static instance: PolicyClient | null = null;
   private db: Client | null = null;
-  private userPolicyCache: LRUCache<string, Policy[]>;
-  private teamRolesCache: LRUCache<number, Role[]>;
+  private userPolicyCache: WebCache<Pick<Policy, "statements">[]>;
+  private teamRolesCache: WebCache<Role[]>;
+  private teamSlugCache: WebCache<number>;
 
   private constructor() {
     // Initialize caches
-    this.userPolicyCache = new LRUCache<string, Policy[]>({
-      ttl: TWO_MIN,
-      max: 1000,
-    });
-    this.teamRolesCache = new LRUCache<number, Role[]>({
-      ttl: TWO_MIN,
-      max: 100,
-    });
+    this.userPolicyCache = new WebCache<Policy[]>("user-policies", TWO_MIN_TTL);
+    this.teamRolesCache = new WebCache<Role[]>("team-role", TWO_MIN_TTL);
+    this.teamSlugCache = new WebCache<number>("team-slug", TWO_MIN_TTL);
   }
 
   /**
@@ -85,106 +81,59 @@ export class PolicyClient {
   public async getUserPolicies(
     userId: string,
     teamIdOrSlug: number | string,
-  ): Promise<Policy[]> {
+  ): Promise<Pick<Policy, "statements">[]> {
     if (!this.db) {
       throw new Error("PolicyClient not initialized with database client");
     }
 
     const teamId = typeof teamIdOrSlug === "number"
       ? teamIdOrSlug
-      // TODO: add cache
-      : (await this.db.from("teams").select("id").eq("slug", teamIdOrSlug)
-        .single()).data?.id;
+      : await this.getTeamIdBySlug(teamIdOrSlug);
 
     if (teamId === undefined) {
       throw new Error(`Team with slug "${teamIdOrSlug}" not found`);
     }
 
-    const cacheKey = `${userId}:${teamId}`;
+    const cacheKey = this.getUserPoliceCacheKey(userId, teamId);
 
     // Try to get from cache first
-    const cachedPolicies = this.userPolicyCache.get(cacheKey);
+    const cachedPolicies = await this.userPolicyCache.get(cacheKey);
     if (cachedPolicies) {
       return cachedPolicies;
     }
 
-    // Get member ID for the user in this team
-    const { data: memberId, error: memberIdError } = await this.db
-      .from("members")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("team_id", teamId)
-      .is("deleted_at", null)
-      .single();
-
-    if (memberIdError || !memberId) {
-      return [];
-    }
-
-    // Get all roles for this member
-    const { data: memberRoles, error: memberRolesError } = await this.db
+    const { data, error: policiesError } = await this.db
       .from("member_roles")
-      .select("role_id")
-      .eq("member_id", memberId.id);
-
-    if (memberRolesError || !memberRoles?.length) {
-      return [];
-    }
-
-    // Get role details with policies
-    const roleIds = memberRoles.map((mr) => mr.role_id);
-    const { data: roles, error: rolesError } = await this.db
-      .from("roles")
       .select(`
-        id,
-        name,
-        description,
-        team_id,
-        policies:role_policies(
-          policy_id
+            members!inner(team_id, user_id),
+            roles (
+              role_policies (
+                policies (
+                  statements
+                )
+              )
+            )
+          `)
+      .eq("members.team_id", teamId)
+      .eq("members.user_id", userId);
+
+    const policies = data?.map((memberRole) => ({
+      statements: memberRole.roles.role_policies
+        .map((rolePolicies) =>
+          rolePolicies.policies.statements as unknown as Statement[] ?? []
         )
-      `)
-      .in("id", roleIds);
-
-    if (rolesError || !roles?.length) {
-      return [];
-    }
-
-    // Extract all policy IDs from roles
-    const policyIds = roles.flatMap((role) =>
-      role.policies?.map((rp: { policy_id: number }) => rp.policy_id) || []
-    );
-
-    if (!policyIds.length) {
-      return [];
-    }
-
-    // Get all policy details with statements
-    const { data: policies, error: policiesError } = await this.db
-      .from("policies")
-      .select(`
-        id,
-        name,
-        team_id,
-        statements
-      `)
-      .in("id", policyIds)
-      .overrideTypes<Policy[]>();
+        .flat(),
+    }));
 
     if (policiesError || !policies) {
       return [];
     }
 
     // Cache the result
-    this.userPolicyCache.set(
+    await this.userPolicyCache.delete(cacheKey);
+    await this.userPolicyCache.set(
       cacheKey,
-      policies.map((policy) => ({
-        ...policy,
-        // filter admin policies
-        statements: policy.statements.filter((r) =>
-          !r.resource.endsWith(".ts")
-        ),
-      })),
+      this.filterValidPolicies(policies),
     );
 
     return policies;
@@ -199,7 +148,9 @@ export class PolicyClient {
     }
 
     // Try to get from cache first
-    const cachedRoles = this.teamRolesCache.get(teamId);
+    const cachedRoles = await this.teamRolesCache.get(
+      this.getTeamRolesCacheKey(teamId),
+    );
     if (cachedRoles) {
       return cachedRoles;
     }
@@ -219,7 +170,8 @@ export class PolicyClient {
     }
 
     // Cache the result
-    this.teamRolesCache.set(teamId, roles);
+    await this.teamRolesCache.delete(this.getTeamRolesCacheKey(teamId));
+    await this.teamRolesCache.set(this.getTeamRolesCacheKey(teamId), roles);
 
     return roles;
   }
@@ -306,9 +258,44 @@ export class PolicyClient {
     }
 
     // Invalidate cache for this user
-    this.userPolicyCache.delete(`${profile.user_id}:${teamId}`);
+    await this.userPolicyCache.delete(
+      this.getUserPoliceCacheKey(profile.user_id, teamId),
+    );
 
     return role;
+  }
+
+  private async getTeamIdBySlug(teamSlug: string): Promise<number> {
+    const cachedTeamId = await this.teamSlugCache.get(teamSlug);
+    if (cachedTeamId) return cachedTeamId;
+
+    const teamId =
+      (await this.db?.from("teams").select("id").eq("slug", teamSlug)
+        .single())?.data?.id;
+
+    if (!teamId) throw new Error(`Not found team id with slug: ${teamSlug}`);
+
+    await this.teamSlugCache.delete(teamSlug);
+    await this.teamSlugCache.set(teamSlug, teamId);
+    return teamId;
+  }
+
+  private filterValidPolicies<T extends Pick<Policy, "statements">>(
+    policies: T[],
+  ): T[] {
+    return policies.map((policy) => ({
+      ...policy,
+      // filter admin policies
+      statements: policy.statements.filter((r) => !r.resource.endsWith(".ts")),
+    }));
+  }
+
+  private getUserPoliceCacheKey(userId: string, teamId: number) {
+    return `${userId}:${teamId}`;
+  }
+
+  private getTeamRolesCacheKey(teamId: number) {
+    return teamId.toString();
   }
 }
 

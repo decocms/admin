@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 export * from "./src/actors.ts";
+import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
-import { contextStorage } from "@deco/sdk/fetch";
 import { default as app } from "./src/app.ts";
 
 // Choose instrumented app depending on runtime
@@ -47,6 +47,8 @@ globalThis.fetch = async function patchedFetch(
     if (!context) {
       throw new Error("Missing context for internal self-invocation");
     }
+    // this allow self-invocation in local mode
+    context.isLocal = true;
     // Delegate to internal handler
     return await instrumentedApp.fetch!(
       req as Request<unknown, IncomingRequestCfProperties<unknown>>,

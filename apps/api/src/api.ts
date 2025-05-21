@@ -1,4 +1,5 @@
 import { HttpServerTransport } from "@deco/mcp/http";
+import { isLocal } from "@deco/sdk/fetch";
 import { GLOBAL_TOOLS, HttpError, WORKSPACE_TOOLS } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Context, Hono } from "hono";
@@ -32,6 +33,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
   return {
     ...c.var,
+    isLocal: c.var.isLocal || isLocal(),
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),

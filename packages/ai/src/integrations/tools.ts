@@ -18,6 +18,7 @@ import {
   getDecoRegistryServerClient,
   searchInstalledIntegations,
   searchMarketplaceIntegations,
+  startOauthFlow,
 } from "./utils.ts";
 
 export const DECO_INTEGRATIONS_SEARCH = createInnateTool({
@@ -99,6 +100,19 @@ It's always handy to search for installed integrations with no query, since all 
     return {
       integrations: list,
     };
+  },
+});
+
+export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
+  id: "DECO_INTEGRATION_OAUTH_START",
+  description: "Start the OAuth flow for an integration",
+  inputSchema: z.object({
+    integrationId: z.string().describe("The id of the integration to start the OAuth flow for"),
+  }),
+  execute: () => async ({ context }) => {
+    const { integrationId } = context;
+    const redirectUrl = await startOauthFlow(integrationId);
+    return { redirectUrl };
   },
 });
 
@@ -281,4 +295,5 @@ export const tools = {
   DECO_INTEGRATION_ENABLE,
   DECO_INTEGRATION_DISABLE,
   DECO_INTEGRATION_LIST_TOOLS,
+  DECO_INTEGRATION_OAUTH_START,
 } as const;

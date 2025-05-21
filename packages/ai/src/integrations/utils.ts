@@ -1,4 +1,4 @@
-import type { Integration } from "@deco/sdk";
+import { DECO_CHAT_URL, type Integration } from "@deco/sdk";
 import type { AIAgent } from "../agent.ts";
 import { createServerClient } from "../mcp.ts";
 
@@ -48,4 +48,25 @@ export const searchMarketplaceIntegations = async (
   } finally {
     client.close();
   }
+};
+
+export const startOauthFlow = async (
+  integrationId: string,
+) => {
+  const installId = crypto.randomUUID();
+  const url = new URL(`${DECO_REGISTRY_SERVER_URL}/oauth/start`);
+  url.searchParams.set("installId", installId);
+  url.searchParams.set("appName", integrationId);
+  url.searchParams.set("returnUrl", `${DECO_CHAT_URL}/integrations`);
+  const response = await fetch(url.toString(), {
+    redirect: "manual",
+  });
+
+  const redirectUrl = response.headers.get("location");
+
+  if (!redirectUrl) {
+    throw new Error("No redirect URL found");
+  }
+
+  return redirectUrl;
 };

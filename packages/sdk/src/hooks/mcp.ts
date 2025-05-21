@@ -151,6 +151,8 @@ export const useMarketplaceIntegrations = () => {
   });
 };
 
+const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = ["github"];
+
 export const useInstallFromMarketplace = () => {
   const agentStub = useAgentStub();
   const client = useQueryClient();
@@ -158,6 +160,16 @@ export const useInstallFromMarketplace = () => {
 
   const mutation = useMutation({
     mutationFn: async (id: string) => {
+      if (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase())) {
+        const result = await agentStub.callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START", { integrationId: id });
+        const redirectUrl = result?.data?.redirectUrl;
+        if (!redirectUrl) {
+          throw new Error("No redirect URL found");
+        }
+        globalThis.location.href = redirectUrl;
+        return;
+      }
+
       const result: { data: { installationId: string } } = await agentStub
         .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id });
 

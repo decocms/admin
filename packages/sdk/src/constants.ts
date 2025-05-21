@@ -23,6 +23,10 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   );
 }
 
+export const DECO_CHAT_URL = LOCAL_DEBUGGER
+  ? "http://localhost:3000"
+  : "https://deco.chat";
+
 export const LEGACY_API_SERVER_URL = LOCAL_DEBUGGER
   ? "http://localhost:8000"
   : "https://fs.deco.chat";

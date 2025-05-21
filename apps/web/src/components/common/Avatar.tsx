@@ -6,6 +6,8 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { HTMLAttributes, type ReactNode, useMemo } from "react";
+import { useFile } from "@deco/sdk";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -60,6 +62,11 @@ export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
    * The object fit of the avatar image
    */
   objectFit?: "contain" | "cover";
+
+  /**
+   * Additional CSS classes to apply to the avatar fallback
+   */
+  fallbackClassName?: string;
 }
 
 export function Avatar({
@@ -67,6 +74,7 @@ export function Avatar({
   fallback,
   className,
   objectFit = "cover",
+  fallbackClassName,
   ...props
 }: AvatarProps) {
   // Extract initials from string fallback (first two characters)
@@ -95,7 +103,9 @@ export function Avatar({
           (objectFit === "contain" && url) ? "object-contain" : "object-cover",
         )}
       />
-      <AvatarFallback className={cn(fallbackColor, "rounded-lg")}>
+      <AvatarFallback
+        className={cn(fallbackColor, "rounded-lg", fallbackClassName)}
+      >
         {fallbackContent}
       </AvatarFallback>
     </AvatarUI>
@@ -103,10 +113,11 @@ export function Avatar({
 }
 
 export const AgentAvatar = (
-  { name, avatar, className }: {
+  { name, avatar, className, isLoading }: {
     name?: string;
     avatar?: string;
     className?: string;
+    isLoading?: boolean;
   },
 ) => {
   if (!name || name === "Anonymous") {
@@ -127,11 +138,31 @@ export const AgentAvatar = (
   }
 
   const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
+  const isFilePath = avatar && !isUrlLike;
+  const { data: fileUrl, isLoading: isFileLoading, isError } = useFile(
+    isFilePath ? avatar : "",
+  );
+
+  if (isLoading || (isFilePath && isFileLoading)) {
+    return (
+      <Skeleton
+        className={cn(
+          "w-full h-full rounded-lg",
+          className,
+        )}
+      />
+    );
+  }
+
+  const url = isUrlLike ? avatar : fileUrl;
+  const fallback = (isFilePath && isError) || (isUrlLike && !avatar)
+    ? name.substring(0, 2)
+    : undefined;
 
   return (
     <Avatar
-      url={isUrlLike ? avatar : undefined}
-      fallback={isUrlLike ? avatar : name.substring(0, 2)}
+      url={url}
+      fallback={fallback}
       className={cn(
         "w-full h-full",
         className,

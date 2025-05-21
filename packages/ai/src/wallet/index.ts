@@ -67,7 +67,7 @@ export class AgentWallet {
     const walletId = WellKnownWallets.build(
       ...WellKnownWallets.workspace.genCredits(this.config.workspace),
     );
-    const response = await this.config.wallet["GET /accounts/:id"]({
+    const response = await this.client["GET /accounts/:id"]({
       id: encodeURIComponent(walletId),
     });
 
@@ -128,7 +128,7 @@ export class AgentWallet {
       },
     };
 
-    const response = await this.config.wallet["POST /transactions"]({}, {
+    const response = await this.client["POST /transactions"]({}, {
       body: operation,
     });
 
@@ -162,7 +162,7 @@ export class AgentWallet {
 
       await Promise.all(
         rewards.map(async (operation) => {
-          const response = await this.config.wallet["PUT /transactions/:id"](
+          const response = await this.client["PUT /transactions/:id"](
             { id: operation.transactionId },
             { body: operation },
           );

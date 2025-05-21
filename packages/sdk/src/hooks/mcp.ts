@@ -170,7 +170,8 @@ export const useInstallFromMarketplace = () => {
           throw new Error("No redirect URL found");
         }
         globalThis.location.href = redirectUrl;
-        return;
+        // just to make the type checker happy
+        return {} as Integration;
       }
 
       const result: { data: { installationId: string } } = await agentStub

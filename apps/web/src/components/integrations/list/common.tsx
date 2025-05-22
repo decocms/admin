@@ -98,7 +98,7 @@ function IntegrationIconContent(
               url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className="w-full h-full rounded-2xl"
+              className="w-full h-full rounded-none"
               objectFit="contain"
             />
           )

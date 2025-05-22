@@ -56,7 +56,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         options[key] = parser(val) as any;
       }
     }
-
     const { threadId, resourceId } = threadOf(data, url);
 
     const agent = trigger.state
@@ -90,9 +89,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
     ];
 
     const outputTool = url?.searchParams.get("outputTool");
-
-    console.log("outputTool", outputTool);
-
     if (outputTool) {
       const workspace = getWorkspaceFromAgentId(trigger.agentId);
       return handleOutputTool({

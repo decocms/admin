@@ -11,6 +11,7 @@ export const getProfile = createApiHandler({
   schema: z.object({}),
   canAccess: bypass,
   handler: async (_, c) => {
+    assertHasUser(c);
     assertPrincipalIsUser(c);
 
     const user = c.user;
@@ -18,8 +19,6 @@ export const getProfile = createApiHandler({
     if (user.is_anonymous) {
       throw new UnauthorizedError();
     }
-
-    assertHasUser(c);
 
     // TODO: change profile data to have necessary info
     const { data, error } = await c.db

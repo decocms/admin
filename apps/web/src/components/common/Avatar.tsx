@@ -5,7 +5,7 @@ import {
 } from "@deco/ui/components/avatar.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { HTMLAttributes, type ReactNode, useMemo } from "react";
+import { HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
@@ -112,14 +112,30 @@ export function Avatar({
   );
 }
 
-export const AgentAvatar = (
-  { name, avatar, className, isLoading }: {
+function FileAvatar(
+  { path, name, className }: { path: string; name: string; className?: string },
+) {
+  const { data: fileUrl } = useFile(path);
+
+  return (
+    <Avatar
+      url={typeof fileUrl === "string" ? fileUrl : undefined}
+      fallback={name.substring(0, 2)}
+      className={cn(
+        "w-full h-full",
+        className,
+      )}
+    />
+  );
+}
+
+function AgentAvatarContent(
+  { name, avatar, className }: {
     name?: string;
     avatar?: string;
     className?: string;
-    isLoading?: boolean;
   },
-) => {
+) {
   if (!name || name === "Anonymous") {
     return (
       <div
@@ -139,34 +155,46 @@ export const AgentAvatar = (
 
   const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
   const isFilePath = avatar && !isUrlLike;
-  const { data: fileUrl, isLoading: isFileLoading, isError } = useFile(
-    isFilePath ? avatar : "",
-  );
 
-  if (isLoading || (isFilePath && isFileLoading)) {
-    return (
-      <Skeleton
-        className={cn(
-          "w-full h-full rounded-lg",
-          className,
-        )}
-      />
-    );
+  if (isFilePath) {
+    return <FileAvatar path={avatar} name={name} className={className} />;
   }
-
-  const url = isUrlLike ? avatar : fileUrl;
-  const fallback = (isFilePath && isError) || (isUrlLike && !avatar)
-    ? name.substring(0, 2)
-    : undefined;
 
   return (
     <Avatar
-      url={url}
-      fallback={fallback}
+      url={avatar}
+      fallback={!avatar ? name.substring(0, 2) : undefined}
       className={cn(
         "w-full h-full",
         className,
       )}
     />
+  );
+}
+
+export const AgentAvatar = (
+  { name, avatar, className }: {
+    name?: string;
+    avatar?: string;
+    className?: string;
+  },
+) => {
+  return (
+    <Suspense
+      fallback={
+        <Skeleton
+          className={cn(
+            "w-full h-full rounded-lg",
+            className,
+          )}
+        />
+      }
+    >
+      <AgentAvatarContent
+        name={name}
+        avatar={avatar}
+        className={className}
+      />
+    </Suspense>
   );
 };

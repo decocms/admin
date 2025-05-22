@@ -21,6 +21,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef, useState } from "react";
 import { useFormContext } from "./context.ts";
 import { IntegrationIcon } from "../list/common.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
 const ICON_FILE_PATH = "assets/integrations";
 
@@ -142,19 +143,25 @@ export function DetailForm() {
                       >
                         {iconValue
                           ? (
-                            <div className="relative w-full h-full">
-                              <IntegrationIcon
-                                icon={iconValue}
-                                name={form.getValues("name") || "Integration"}
-                                isLoading={isUploading}
-                              />
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <Icon
-                                  name="upload"
-                                  className="text-white text-xl"
-                                />
-                              </div>
-                            </div>
+                            <>
+                              {isUploading
+                                ? <Skeleton className="rounded-2xl w-16 h-16" />
+                                : (
+                                  <div className="relative w-full h-full">
+                                    <IntegrationIcon
+                                      icon={iconValue}
+                                      name={form.getValues("name") ||
+                                        "Integration"}
+                                    />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                      <Icon
+                                        name="upload"
+                                        className="text-white text-xl"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                            </>
                           )
                           : (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-slate-100 rounded-lg p-2 border border-slate-200">

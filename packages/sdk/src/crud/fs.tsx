@@ -54,6 +54,10 @@ export const readFile = async ({
   path,
   expiresIn,
 }: ReadOptions) => {
+  if (!path) {
+    return null;
+  }
+
   const { data } = await MCPClient
     .forWorkspace(workspace)
     .FS_READ({ path, ...(expiresIn ? { expiresIn } : {}) });

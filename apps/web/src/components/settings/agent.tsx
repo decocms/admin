@@ -16,6 +16,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Select,
   SelectContent,
@@ -198,19 +199,30 @@ function SettingsTab() {
                                 className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                                 onClick={triggerFileInput}
                               >
-                                <AgentAvatar
-                                  name={agent.name}
-                                  avatar={field.value || agent.avatar}
-                                  className="rounded-lg"
-                                  isLoading={isUploading}
-                                />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                  <Icon
-                                    name="upload"
-                                    className="text-white text-xl"
-                                  />
-                                </div>
-                                <Input type="hidden" {...field} />
+                                {isUploading
+                                  ? (
+                                    <Skeleton
+                                      className={cn(
+                                        "w-full h-full rounded-lg",
+                                      )}
+                                    />
+                                  )
+                                  : (
+                                    <>
+                                      <AgentAvatar
+                                        name={agent.name}
+                                        avatar={field.value || agent.avatar}
+                                        className="rounded-lg"
+                                      />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <Icon
+                                          name="upload"
+                                          className="text-white text-xl"
+                                        />
+                                      </div>
+                                      <Input type="hidden" {...field} />
+                                    </>
+                                  )}
                               </div>
                             </FormControl>
                           </div>

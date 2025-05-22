@@ -3,38 +3,67 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Avatar } from "../../common/Avatar.tsx";
+import { Suspense } from "react";
 
-export interface Props {
-  icon?: string;
-  name: string;
+function FileIcon({ path, fallback, className, variant }: {
+  path: string;
+  fallback: React.ReactNode;
   className?: string;
-  isLoading?: boolean;
-  variant?: "default" | "small";
-}
+  variant: "default" | "small";
+}) {
+  const { data: fileUrl } = useFile(path);
 
-export function IntegrationIcon(
-  { icon, className, isLoading, variant = "default" }: Props,
-) {
-  const isUrlLike = icon && /^(data:)|(https?:)/.test(icon);
-  const isFilePath = icon && !isUrlLike;
-  const { data: fileUrl, isLoading: isFileLoading } = useFile(
-    isFilePath ? icon : "",
-  );
-
-  if (isLoading || (isFilePath && isFileLoading)) {
+  if (variant === "small") {
     return (
-      <Skeleton
-        className={cn(
-          "rounded-2xl w-16 h-16",
-          variant === "default" ? "p-2" : "",
-          className,
-        )}
-      />
+      <div className="relative w-full h-full">
+        <Avatar
+          url={typeof fileUrl === "string" ? fileUrl : undefined}
+          fallback={fallback}
+          fallbackClassName="!bg-transparent"
+          className="w-full h-full rounded-none"
+          objectFit="contain"
+        />
+      </div>
     );
   }
 
-  const url = isUrlLike ? icon : fileUrl;
+  return (
+    <div
+      className={cn(
+        "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
+        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
+        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+        className,
+      )}
+    >
+      <Avatar
+        url={typeof fileUrl === "string" ? fileUrl : undefined}
+        fallback={fallback}
+        fallbackClassName="!bg-transparent"
+        className="w-full h-full rounded-lg"
+        objectFit="contain"
+      />
+    </div>
+  );
+}
+
+function IntegrationIconContent(
+  { icon, className, variant = "default" }: Props,
+) {
+  const isUrlLike = icon && /^(data:)|(https?:)/.test(icon);
+  const isFilePath = icon && !isUrlLike;
   const fallback = <Icon name="conversion_path" className="text-slate-600" />;
+
+  if (isFilePath) {
+    return (
+      <FileIcon
+        path={icon}
+        fallback={fallback}
+        className={className}
+        variant={variant}
+      />
+    );
+  }
 
   if (variant === "small") {
     return (
@@ -44,13 +73,13 @@ export function IntegrationIcon(
           className,
         )}
       >
-        {url
+        {icon
           ? (
             <Avatar
-              url={url}
+              url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className="w-full h-full rounded-none"
+              className="w-full h-full rounded-2xl"
               objectFit="contain"
             />
           )
@@ -68,10 +97,10 @@ export function IntegrationIcon(
         className,
       )}
     >
-      {url
+      {icon
         ? (
           <Avatar
-            url={url}
+            url={icon}
             fallback={fallback}
             fallbackClassName="!bg-transparent"
             className="w-full h-full rounded-lg"
@@ -80,5 +109,30 @@ export function IntegrationIcon(
         )
         : fallback}
     </div>
+  );
+}
+
+export interface Props {
+  icon?: string;
+  name: string;
+  className?: string;
+  variant?: "default" | "small";
+}
+
+export function IntegrationIcon(props: Props) {
+  return (
+    <Suspense
+      fallback={
+        <Skeleton
+          className={cn(
+            "rounded-2xl w-16 h-16 border border-slate-200",
+            props.variant === "default" ? "p-2" : "",
+            props.className,
+          )}
+        />
+      }
+    >
+      <IntegrationIconContent {...props} />
+    </Suspense>
   );
 }

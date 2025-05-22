@@ -5,7 +5,6 @@ import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import {
@@ -79,7 +78,6 @@ export const deleteBase = createApiHandler({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ name }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.deleteIndex(name);
     return {
@@ -103,7 +101,6 @@ export const createBase = createApiHandler({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ name, dimension }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
@@ -124,7 +121,6 @@ export const forget = createKnowledgeBaseApiHandler({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ docId }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.deleteIndexById(c.name, docId);
     return {
@@ -147,7 +143,6 @@ export const remember = createKnowledgeBaseApiHandler({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ content, metadata, docId: _id }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
@@ -182,7 +177,6 @@ export const search = createKnowledgeBaseApiHandler({
   canAccess: canAccessWorkspaceResource,
   handler: async ({ query, topK }, c) => {
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     const mem = await WorkspaceMemory.create({
       workspace: c.workspace.value,
       tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,

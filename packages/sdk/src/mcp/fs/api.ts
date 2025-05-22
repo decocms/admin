@@ -10,7 +10,6 @@ import { z } from "zod";
 import { WELL_KNOWN_ORIGINS } from "../../hosts.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { AppContext, createApiHandler, getEnv } from "../context.ts";
@@ -85,7 +84,6 @@ export const listFiles = createApiHandler({
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
     const s3Client = getS3Client(c);
@@ -112,7 +110,6 @@ export const readFile = createApiHandler({
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
     const s3Client = getS3Client(c);
@@ -136,7 +133,6 @@ export const readFileMetadata = createApiHandler({
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
     const s3Client = getS3Client(c);
@@ -173,7 +169,6 @@ export const writeFile = createApiHandler({
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
     const s3Client = getS3Client(c);
@@ -200,7 +195,6 @@ export const deleteFile = createApiHandler({
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
     const s3Client = getS3Client(c);

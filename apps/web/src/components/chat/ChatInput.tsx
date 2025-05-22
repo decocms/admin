@@ -246,7 +246,11 @@ ChatInput.UI = (
       const url = await readFile({ workspace, path });
 
       setUploadedFiles((prev) =>
-        prev.map((uf) => uf.file === file ? { ...uf, url, status: "done" } : uf)
+        prev.map((uf) =>
+          uf.file === file
+            ? { ...uf, url: url || undefined, status: "done" }
+            : uf
+        )
       );
     } catch (error) {
       setUploadedFiles((prev) =>

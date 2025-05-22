@@ -113,6 +113,10 @@ export const useRemoveAgent = () => {
         listKey,
         (old) => !old ? [] : old.filter((agent) => agent.id !== id),
       );
+
+      // Invalidate triggers
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace) });
+      client.invalidateQueries({ queryKey: KEYS.TRIGGERS(workspace, id) });
     },
   });
 

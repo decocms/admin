@@ -12,6 +12,7 @@ import {
 import { AppContext, createApiHandler } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { PostgrestError } from "@supabase/supabase-js";
+import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const NO_DATA_ERROR = "PGRST116";
 
@@ -225,6 +226,11 @@ export const deleteAgent = createApiHandler({
       .from("deco_chat_agents")
       .delete()
       .eq("id", id);
+
+    const triggers = await listTriggers.handler({ agentId: id });
+    for (const trigger of triggers.triggers) {
+      await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
+    }
 
     if (error) {
       throw new InternalServerError(error.message);

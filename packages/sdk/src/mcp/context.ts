@@ -11,7 +11,7 @@ import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError } from "../errors.ts";
 import { JWTPayload } from "../auth/jwt.ts";
 
-export type UserPrincipal = Pick<SupaUser, "id" | "email">;
+export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
 export type Principal =
   | UserPrincipal

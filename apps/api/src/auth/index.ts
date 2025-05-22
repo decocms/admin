@@ -15,6 +15,7 @@ import {
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
+import { assertPrincipalIsUser } from "./assertions.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 
@@ -104,10 +105,14 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
 };
 
 appLogin.all("/oauth", async (ctx: AppContext) => {
-  const user = ctx.get("user");
+  let user;
+  try {
+    assertPrincipalIsUser(ctx.var);
+    user = ctx.var.user;
+  } catch { /**/ }
 
   // user already logged in, set by userMiddleware
-  if (user) {
+  if (user && !user.is_anonymous) {
     return ctx.redirect("/");
   }
 

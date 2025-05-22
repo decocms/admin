@@ -3,7 +3,6 @@ import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser, assertPrincipalIsUser, bypass } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
-import { UnauthorizedError } from "../index.ts";
 
 export const getProfile = createApiHandler({
   name: "PROFILES_GET",
@@ -14,10 +13,6 @@ export const getProfile = createApiHandler({
     assertPrincipalIsUser(c);
 
     const user = c.user;
-
-    if (user.is_anonymous) {
-      throw new UnauthorizedError();
-    }
 
     assertHasUser(c);
 

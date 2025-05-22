@@ -59,6 +59,7 @@ const providers: Record<
     envVarName: "ANTHROPIC_API_KEY",
     mapOpenRouterModel: {
       "claude-3.7-sonnet:thinking": "claude-3-7-sonnet-latest",
+      "claude-sonnet-4": "claude-4-sonnet-latest",
     } satisfies Partial<
       Record<string, ModelsOf<AnthropicProvider>>
     >,

@@ -13,8 +13,9 @@ import { SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
-  assertUserHasAccessToWorkspace,
   AuthorizationClient,
+  canAccessWorkspaceResource,
+  ForbiddenError,
   fromWorkspaceString,
   MCPClient,
   MCPClientStub,
@@ -237,9 +238,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       req.headers.get("host") !== null && runtimeKey !== "deno" &&
       this._configuration?.visibility !== "PUBLIC"
     ) { // if host is set so its not an internal request so checks must be applied
-      await assertUserHasAccessToWorkspace(
+      const canAccess = await canAccessWorkspaceResource(
+        "AGENTS_GET",
+        null,
         ctx,
       );
+
+      if (!canAccess) throw new ForbiddenError("Cannot access agent");
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",

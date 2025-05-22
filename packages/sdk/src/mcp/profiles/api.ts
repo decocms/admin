@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
-import { assertHasUser, assertPrincipalIsUser, bypass } from "../assertions.ts";
+import { assertHasUser, bypass } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 
@@ -10,8 +10,6 @@ export const getProfile = createApiHandler({
   schema: z.object({}),
   canAccess: bypass,
   handler: async (_, c) => {
-    assertPrincipalIsUser(c);
-
     const user = c.user;
 
     assertHasUser(c);
@@ -53,9 +51,9 @@ export const updateProfile = createApiHandler({
     { name, email, deco_user_id, is_new_user, phone },
     c,
   ) => {
-    assertPrincipalIsUser(c);
-    assertHasUser(c);
     const user = c.user;
+
+    assertHasUser(c);
 
     const { data, error } = await c.db
       .from("profiles")

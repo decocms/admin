@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
-import {
-  assertPrincipalIsUser,
-  bypass,
-  canAccessTeamResource,
-} from "../assertions.ts";
+import { bypass, canAccessTeamResource } from "../assertions.ts";
 import { createApiHandler } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
@@ -67,7 +63,6 @@ export const createTeam = createApiHandler({
    * 4. Add member role as onwer (id: 1).
    */
   handler: async (props, c) => {
-    assertPrincipalIsUser(c);
     const { name, slug, stripe_subscription_id } = props;
     const user = c.user;
 
@@ -230,7 +225,6 @@ export const listTeams = createApiHandler({
   schema: z.object({}),
   canAccess: bypass,
   handler: async (_, c) => {
-    assertPrincipalIsUser(c);
     const user = c.user;
 
     const { data, error } = await c

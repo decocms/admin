@@ -4,11 +4,7 @@ import {
   NotFoundError,
   UserInputError,
 } from "../../errors.ts";
-import {
-  assertPrincipalIsUser,
-  bypass,
-  canAccessTeamResource,
-} from "../assertions.ts";
+import { bypass, canAccessTeamResource } from "../assertions.ts";
 import { type AppContext, createApiHandler } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 import {
@@ -283,7 +279,6 @@ export const registerMemberActivity = createApiHandler({
     return await canAccessTeamResource(name, props.teamId, c);
   },
   handler: async (props, c) => {
-    assertPrincipalIsUser(c);
     const { teamId } = props;
     const user = c.user;
 
@@ -305,7 +300,6 @@ export const getMyInvites = createApiHandler({
   schema: z.object({}),
   canAccess: bypass,
   handler: async (_props, c) => {
-    assertPrincipalIsUser(c);
     const user = c.user;
     const db = c.db;
 
@@ -375,8 +369,6 @@ export const inviteTeamMembers = createApiHandler({
     return await canAccessTeamResource(name, Number(props.teamId), c);
   },
   handler: async (props, c) => {
-    assertPrincipalIsUser(c);
-
     const { teamId, invitees } = props;
     const db = c.db;
     const user = c.user;

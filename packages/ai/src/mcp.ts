@@ -5,7 +5,6 @@ import type {
   Integration,
   MCPConnection,
 } from "@deco/sdk";
-import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
 import type { ToolAction } from "@mastra/core";
@@ -50,11 +49,8 @@ export const patchApiDecoChatTokenHTTPConnection = (
 const getMCPServerTools = async (
   mcpServer: Integration,
   agent: AIAgent,
-  signal?: AbortSignal,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
-  const client = await createServerClient(mcpServer, signal).catch(
-    console.error,
-  );
+  const client = await createServerClient(mcpServer).catch(console.error);
 
   if (!client) {
     return {};
@@ -162,7 +158,6 @@ export const getDecoSiteTools = async (
 export const mcpServerTools = async (
   mcpServer: Integration,
   agent: AIAgent,
-  signal?: AbortSignal,
   env?: Env,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
   if (!mcpServer.connection) {
@@ -171,13 +166,9 @@ export const mcpServerTools = async (
 
   // Propagate req token to api.deco.chat integration
   if (isApiDecoChatMCPConnection(mcpServer.connection)) {
-    const cookie = createSessionTokenCookie(
-      await agent.token(),
-      new URL(mcpServer.connection.url).hostname,
-    );
     mcpServer.connection = patchApiDecoChatTokenHTTPConnection(
       mcpServer.connection,
-      agent.metadata?.userCookie ?? cookie,
+      agent.metadata?.principalCookie ?? undefined,
     );
   }
 
@@ -185,16 +176,15 @@ export const mcpServerTools = async (
     ? await getDecoSiteTools(mcpServer.connection)
     : mcpServer.connection.type === "INNATE"
     ? getToolsForInnateIntegration(mcpServer, agent, env)
-    : await getMCPServerTools(mcpServer, agent, signal);
+    : await getMCPServerTools(mcpServer, agent);
 
   return response;
 };
 
 export const createServerClient = async (
   mcpServer: Pick<Integration, "connection" | "name">,
-  signal?: AbortSignal,
 ): Promise<Client> => {
-  const transport = createTransport(mcpServer.connection, signal);
+  const transport = createTransport(mcpServer.connection);
 
   if (!transport) {
     throw new Error("Unknown MCP connection type");
@@ -211,10 +201,7 @@ export const createServerClient = async (
   return client;
 };
 
-export const createTransport = (
-  connection: MCPConnection,
-  signal?: AbortSignal,
-) => {
+export const createTransport = (connection: MCPConnection) => {
   if (connection.type === "Websocket") {
     return new WebSocketClientTransport(new URL(connection.url));
   }
@@ -234,7 +221,7 @@ export const createTransport = (
 
   if (connection.type === "SSE") {
     const config: SSEClientTransportOptions = {
-      requestInit: { headers, signal },
+      requestInit: { headers },
     };
 
     if (connection.token) {
@@ -246,7 +233,6 @@ export const createTransport = (
               ...headers,
               Accept: "text/event-stream",
             },
-            signal,
           });
         },
       };
@@ -255,7 +241,7 @@ export const createTransport = (
     return new SSEClientTransport(new URL(connection.url), config);
   }
   return new StreamableHTTPClientTransport(new URL(connection.url), {
-    requestInit: { headers, signal },
+    requestInit: { headers },
   });
 };
 

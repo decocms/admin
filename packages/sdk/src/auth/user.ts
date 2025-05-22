@@ -6,8 +6,6 @@ import {
   getSessionToken,
   parseAuthorizationHeader,
 } from "./supabase.ts";
-import { JwtIssuer } from "./jwt.ts";
-import { Principal } from "../mcp/context.ts";
 
 export type { AuthUser };
 const ONE_MINUTE_MS = 60e3;
@@ -21,9 +19,7 @@ const MILLISECONDS = 1e3;
 export async function getUserBySupabaseCookie(
   request: Request,
   supabaseServerToken: string | SupabaseClient,
-  supabaseJWTSecret: string,
-): Promise<Principal | undefined> {
-  const jwtIssuer = JwtIssuer.forSecret(supabaseJWTSecret);
+): Promise<AuthUser | undefined> {
   const accessToken = parseAuthorizationHeader(request);
   const sessionToken = getSessionToken(request);
   if (!sessionToken && !accessToken) {
@@ -41,15 +37,12 @@ export async function getUserBySupabaseCookie(
       supabaseServerToken,
     )
     : { supabase: supabaseServerToken };
-  const [{ data: _user }, jwt] = await Promise.all([
-    supabase.auth.getUser(
-      accessToken,
-    ),
-    jwtIssuer.verify(sessionToken),
-  ]);
+  const { data: _user } = await supabase.auth.getUser(
+    accessToken,
+  );
   const user = _user?.user;
   if (!user) {
-    return jwt;
+    return undefined;
   }
   let cachettl = undefined;
   if (sessionToken) {

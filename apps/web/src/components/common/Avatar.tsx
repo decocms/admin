@@ -8,6 +8,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { isFilePath } from "../../utils/path.ts";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -118,14 +119,25 @@ function FileAvatar(
   const { data: fileUrl } = useFile(path);
 
   return (
-    <Avatar
-      url={typeof fileUrl === "string" ? fileUrl : undefined}
-      fallback={name.substring(0, 2)}
-      className={cn(
-        "w-full h-full",
-        className,
-      )}
-    />
+    <Suspense
+      fallback={
+        <Skeleton
+          className={cn(
+            "w-full h-full rounded-lg",
+            className,
+          )}
+        />
+      }
+    >
+      <Avatar
+        url={typeof fileUrl === "string" ? fileUrl : undefined}
+        fallback={name.substring(0, 2)}
+        className={cn(
+          "w-full h-full",
+          className,
+        )}
+      />
+    </Suspense>
   );
 }
 
@@ -153,17 +165,14 @@ function AgentAvatarContent(
     );
   }
 
-  const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
-  const isFilePath = avatar && !isUrlLike;
-
-  if (isFilePath) {
+  if (avatar && isFilePath(avatar)) {
     return <FileAvatar path={avatar} name={name} className={className} />;
   }
 
   return (
     <Avatar
       url={avatar}
-      fallback={!avatar ? name.substring(0, 2) : undefined}
+      fallback={name.substring(0, 2)}
       className={cn(
         "w-full h-full",
         className,

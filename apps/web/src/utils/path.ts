@@ -4,19 +4,19 @@
  */
 export function isUrlLike(path?: string): boolean {
   if (!path) return false;
-  
+
   // Handle data URIs
-  if (path.startsWith('data:')) return true;
-  
+  if (path.startsWith("data:")) return true;
+
   // Try URL.canParse() first (modern browsers)
-  if (typeof URL !== 'undefined' && 'canParse' in URL) {
+  if (typeof URL !== "undefined" && "canParse" in URL) {
     try {
       return URL.canParse(path);
     } catch {
       return false;
     }
   }
-  
+
   // Fallback to regex for broader compatibility
   return /^(https?:)|(ftp:)|(file:)|(blob:)/.test(path);
 }
@@ -27,4 +27,4 @@ export function isUrlLike(path?: string): boolean {
 export function isFilePath(path?: string): boolean {
   if (!path) return false;
   return !isUrlLike(path);
-} 
+}

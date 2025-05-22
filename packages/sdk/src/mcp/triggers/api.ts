@@ -63,9 +63,14 @@ function mapTrigger(
 
 export const buildWebhookUrl = (
   triggerId: string,
-  passphrase: string | undefined,
+  passphrase?: string,
+  outputTool?: string,
 ) => {
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}`;
+  const params = new URLSearchParams();
+  if (passphrase) params.append("passphrase", passphrase);
+  params.append("deno_isolate_instance_id", triggerId);
+  if (outputTool) params.append("output_tool", outputTool);
+  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?${params.toString()}`;
 };
 
 export const listTriggers = createApiHandler({
@@ -166,7 +171,7 @@ export const createTrigger = createApiHandler({
         throw new UserInputError("Invalid trigger");
       }
       (data as z.infer<typeof TriggerSchema> & { url: string }).url =
-        buildWebhookUrl(triggerId, data.passphrase);
+        buildWebhookUrl(triggerId, data.passphrase, data.outputTool);
     }
 
     const userId = typeof user.id === "string" ? user.id : undefined;

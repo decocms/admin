@@ -28,12 +28,6 @@ export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
   }
 }
 
-  const isAdmin = user && typeof user === "object" && "email" in user &&
-    typeof user.email === "string" && user?.email?.endsWith("@deco.cx");
-  if (
-    "id" in user && typeof user.id === "string" && c.workspace.root === "shared"
-  ) {
-
 export const assertHasUser = (c: AppContext) => {
   if (c.isLocal) { // local calls
     return;

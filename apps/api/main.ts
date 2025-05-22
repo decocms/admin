@@ -47,8 +47,6 @@ globalThis.fetch = async function patchedFetch(
     if (!context) {
       throw new Error("Missing context for internal self-invocation");
     }
-    // this allow self-invocation in local mode
-    context.isLocal = true;
     // Delegate to internal handler
     return await instrumentedApp.fetch!(
       req as Request<unknown, IncomingRequestCfProperties<unknown>>,

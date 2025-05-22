@@ -12,7 +12,7 @@ export interface ServerTimingsBuilder {
     desc?: string,
     start?: number,
   ) => {
-    end: () => void;
+    end: (desc?: string) => void;
     setDesc: (desc: string | undefined) => void;
     name: () => string;
   } & Disposable;
@@ -28,8 +28,9 @@ export function createServerTimings(): ServerTimingsBuilder {
     timings.push(t);
 
     return {
-      end: () => {
+      end: (desc?: string) => {
         t.end = performance.now();
+        t.desc = desc;
       },
       setDesc: (desc: string | undefined) => {
         t.desc = desc;

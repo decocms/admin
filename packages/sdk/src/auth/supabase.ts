@@ -85,6 +85,17 @@ export const getSessionToken = (request: Request): string => {
   return tokenParts.join("").replace("base64-", "");
 };
 
+export const createSessionTokenCookie = (
+  token: string,
+  domain: string,
+): string => {
+  return serializeCookieHeader(SB_TOKEN_COOKIE_NAME, token, {
+    domain,
+    sameSite: "none",
+    secure: true,
+  });
+};
+
 export const parseAuthorizationHeader = (
   request: Request,
 ): string | undefined => {

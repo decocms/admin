@@ -11,6 +11,7 @@ import {
   AUTH_URL,
   getEnv,
   HonoAppContext as AppContext,
+  type Principal,
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
@@ -43,8 +44,10 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
 // TODO: add LRU Cache
 export const getUser = async (
   ctx: AppContext,
-): Promise<SupaUser | undefined> => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(honoCtxToAppCtx(ctx));
+): Promise<Principal | undefined> => {
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN, ISSUER_JWT_SECRET } = getEnv(
+    honoCtxToAppCtx(ctx),
+  );
 
   const cookies = getCookies(ctx.req.raw.headers);
   const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN, {
@@ -59,7 +62,11 @@ export const getUser = async (
     },
   });
 
-  const user = await getUserBySupabaseCookie(ctx.req.raw, supabase);
+  const user = await getUserBySupabaseCookie(
+    ctx.req.raw,
+    supabase,
+    ISSUER_JWT_SECRET,
+  );
 
   if (!user) {
     return undefined;

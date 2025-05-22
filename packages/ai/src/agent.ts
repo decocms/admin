@@ -9,7 +9,7 @@ import {
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { SUPABASE_URL } from "@deco/sdk/auth";
+import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
@@ -22,6 +22,13 @@ import {
   PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
+import type { AgentMemoryConfig } from "@deco/sdk/memory";
+import {
+  AgentMemory,
+  buildMemoryId,
+  slugify,
+  toAlphanumericId,
+} from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
 import {
   getTwoFirstSegments as getWorkspace,
@@ -54,13 +61,6 @@ import { join } from "node:path/posix";
 import process from "node:process";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
-import type { AgentMemoryConfig } from "@deco/sdk/memory";
-import {
-  AgentMemory,
-  buildMemoryId,
-  slugify,
-  toAlphanumericId,
-} from "@deco/sdk/memory";
 import { createLLM } from "./models.ts";
 import type {
   AIAgent as IIAgent,
@@ -79,6 +79,7 @@ const ANONYMOUS_INSTRUCTIONS =
   "You should help users to configure yourself. Users should give you your name, instructions, and optionally a model (leave it default if the user don't mention it, don't force they to set it). This is your only task for now. Tell the user that you are ready to configure yourself when you have all the information.";
 
 const ANONYMOUS_NAME = "Anonymous";
+const LOAD_TOOLS_TIMEOUT_MS = 5_000;
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -97,7 +98,7 @@ export interface AgentMetadata extends AuthMetadata {
   threadId?: string;
   resourceId?: string;
   wallet?: Promise<AgentWallet>;
-  principalCookie?: string | null;
+  userCookie?: string | null;
   timings?: ServerTimingsBuilder;
   mcpClient?: MCPClientStub<WorkspaceTools>;
 }
@@ -206,10 +207,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       params: {},
       envVars: this.env as any,
       db: this.db,
-      user: metadata?.principal!,
-      isLocal: metadata?.principal == null,
+      user: metadata?.user!,
+      isLocal: metadata?.user == null,
       stub: this.state.stub as AppContext["stub"],
-      cookie: metadata?.principalCookie ?? undefined,
+      cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
@@ -228,7 +229,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const timings = m.timings;
     const enrichMetadata = timings?.start("enrichMetadata");
     this.metadata = await super.enrichMetadata(m, req);
-    this.metadata.principalCookie = req.headers.get("cookie");
+    this.metadata.userCookie = req.headers.get("cookie");
 
     const runtimeKey = getRuntimeKey();
     const ctx = this.createAppContext(this.metadata);
@@ -391,6 +392,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   protected async getOrCreateCallableToolSet(
     mcpId: string,
+    signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
     if (this.callableToolSet[mcpId]) {
       return this.callableToolSet[mcpId];
@@ -407,6 +409,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const serverTools = await mcpServerTools(
       { ...integration, id: mcpId },
       this,
+      signal,
       this.env as any,
     );
 
@@ -434,15 +437,31 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         const getOrCreateCallableToolSetTiming = timings?.start(
           `connect-mcp-${normalizeMCPId(mcpId)}`,
         );
-        const allToolsFor = await this.getOrCreateCallableToolSet(mcpId)
-          .catch(() => {
-            return null;
-          });
-        getOrCreateCallableToolSetTiming?.end();
+        const timeout = new AbortController();
+        const allToolsFor = await Promise.race(
+          [
+            this.getOrCreateCallableToolSet(
+              mcpId,
+              timeout.signal,
+            )
+              .catch(() => {
+                return null;
+              }),
+            new Promise((resolve) =>
+              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)
+            ).then(() => {
+              // should not rely only on timeout abort because it also aborts subsequent requests
+              timeout.abort();
+              return null;
+            }),
+          ],
+        );
         if (!allToolsFor) {
           console.warn(`No tools found for server: ${mcpId}. Skipping.`);
+          getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
           return;
         }
+        getOrCreateCallableToolSetTiming?.end();
 
         if (filterList.length === 0) {
           tools[mcpId] = allToolsFor;
@@ -640,7 +659,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const threadId = this.metadata?.threadId ?? this.memory.generateId(); // private thread with the given resource
     return {
       threadId,
-      resourceId: this.metadata?.resourceId ?? this.metadata?.principal?.id ??
+      resourceId: this.metadata?.resourceId ?? this.metadata?.user?.id ??
         threadId,
     };
   }
@@ -823,7 +842,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // if no wallet was initialized, let the stream proceed.
     // we can change this later to be more restrictive.
     const wallet = this.wallet;
-    const userId = this.metadata?.principal?.id;
+    const userId = this.metadata?.user?.id;
     if (userId) {
       const walletTiming = timings.start("init-wallet");
       const hasBalance = await wallet.canProceed(userId);
@@ -960,5 +979,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     return this.wallet.client;
+  }
+
+  token() {
+    return JwtIssuer.forSecret(this.env.ISSUER_JWT_SECRET).create({
+      sub: `agent:${this.id}`,
+      aud: this.workspace,
+    });
   }
 }

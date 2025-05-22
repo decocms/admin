@@ -7,9 +7,15 @@ import { type User as SupaUser } from "@supabase/supabase-js";
 import Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { ForbiddenError } from "../errors.ts";
 import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+import { ForbiddenError } from "../errors.ts";
+import { JWTPayload } from "../auth/jwt.ts";
 
+export type UserPrincipal = Pick<SupaUser, "id" | "email">;
+export type AgentPrincipal = JWTPayload;
+export type Principal =
+  | UserPrincipal
+  | AgentPrincipal;
 export interface Vars {
   params: Record<string, string>;
   workspace?: {
@@ -19,7 +25,7 @@ export interface Vars {
   };
   cookie?: string;
   db: Client;
-  user: SupaUser;
+  user: Principal;
   policy: PolicyClient;
   authorization: AuthorizationClient;
   isLocal?: boolean;
@@ -68,6 +74,7 @@ const envSchema = z.object({
   VITE_USE_LOCAL_BACKEND: z.any().optional().readonly(),
   SUPABASE_URL: z.string().readonly(),
   SUPABASE_SERVER_TOKEN: z.string().readonly(),
+  ISSUER_JWT_SECRET: z.any().optional().readonly(),
   TURSO_GROUP_DATABASE_TOKEN: z.string().readonly(),
   TURSO_ORGANIZATION: z.string().readonly(),
   RESEND_API_KEY: z.any().optional().readonly(),

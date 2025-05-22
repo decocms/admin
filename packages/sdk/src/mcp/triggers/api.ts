@@ -169,11 +169,12 @@ export const createTrigger = createApiHandler({
         buildWebhookUrl(triggerId, data.passphrase);
     }
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -181,7 +182,7 @@ export const createTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
         whatsapp_enabled:
@@ -227,11 +228,12 @@ export const createCronTrigger = createApiHandler({
       workspace,
     ).path;
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -239,7 +241,7 @@ export const createCronTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
       })
@@ -288,11 +290,12 @@ export const createWebhookTrigger = createApiHandler({
     (data as z.infer<typeof TriggerSchema> & { url: string }).url =
       buildWebhookUrl(triggerId, data.passphrase);
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -300,7 +303,7 @@ export const createWebhookTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
         whatsapp_enabled:
@@ -462,7 +465,7 @@ export const activateTrigger = createApiHandler({
         {
           ...data.metadata as z.infer<typeof TriggerSchema>,
           id: data.id,
-          resourceId: user.id,
+          resourceId: typeof user.id === "string" ? user.id : undefined,
         },
       );
 

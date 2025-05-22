@@ -1,7 +1,12 @@
 import { NotFoundError, UnauthorizedError } from "../errors.ts";
-import { AppContext } from "./context.ts";
 import { Workspace } from "../path.ts";
+import { AppContext, UserPrincipal } from "./context.ts";
 
+type WithUser<TAppContext extends AppContext = AppContext> =
+  & Omit<TAppContext, "user">
+  & {
+    user: UserPrincipal;
+  };
 type WithWorkspace<TAppContext extends AppContext = AppContext> =
   & Omit<TAppContext, "workspace">
   & {
@@ -15,6 +20,19 @@ export function assertHasWorkspace<TContext extends AppContext = AppContext>(
     throw new NotFoundError();
   }
 }
+export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
+  c: Pick<TContext, "user"> | Pick<WithUser<TContext>, "user">,
+): asserts c is WithUser<TContext> {
+  if (!c.user || typeof c.user.id !== "string") {
+    throw new NotFoundError();
+  }
+}
+
+  const isAdmin = user && typeof user === "object" && "email" in user &&
+    typeof user.email === "string" && user?.email?.endsWith("@deco.cx");
+  if (
+    "id" in user && typeof user.id === "string" && c.workspace.root === "shared"
+  ) {
 
 export const assertHasUser = (c: AppContext) => {
   if (c.isLocal) { // local calls
@@ -42,12 +60,17 @@ export const canAccessWorkspaceResource = async (
   const user = c.user;
   const { root, slug } = c.workspace;
 
+  // agent tokens
+  if ("aud" in user && user.aud === c.workspace.value) {
+    return true;
+  }
+
   if (root === "users" && user.id === slug) {
     return true;
   }
 
   if (root === "shared") {
-    return await c.authorization.canAccess(user.id, slug, resource);
+    return await c.authorization.canAccess(user.id as string, slug, resource);
   }
 
   return false;
@@ -57,4 +80,14 @@ export const canAccessTeamResource = (
   resource: string,
   teamIdOrSlug: string | number,
   c: AppContext,
-) => c.authorization.canAccess(c.user.id, teamIdOrSlug, resource);
+) => {
+  if (c.isLocal) {
+    return bypass();
+  }
+  assertHasUser(c);
+  const user = c.user;
+  if ("id" in user && typeof user.id === "string") {
+    return c.authorization.canAccess(user.id, teamIdOrSlug, resource);
+  }
+  return false;
+};

@@ -1,5 +1,4 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { isLocal } from "@deco/sdk/fetch";
 import {
   AuthorizationClient,
   GLOBAL_TOOLS,
@@ -30,7 +29,6 @@ import {
 } from "./utils/context.ts";
 
 export const app = new Hono<AppEnv>();
-
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
   const slug = c.req.param("slug");
@@ -42,7 +40,6 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
   return {
     ...c.var,
-    isLocal: c.var.isLocal || isLocal(),
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),

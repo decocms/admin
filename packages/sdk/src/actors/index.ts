@@ -1,8 +1,9 @@
 import process from "node:process";
 import { type AuthUser, getUserBySupabaseCookie } from "../auth/user.ts";
+import { type Principal } from "../mcp/index.ts";
 
 export interface AuthMetadata {
-  principal?: AuthUser | null;
+  user?: AuthUser | null;
 }
 
 export abstract class BaseActor<
@@ -19,20 +20,21 @@ export abstract class BaseActor<
   }
 
   async enrichMetadata(m: TMetadata, req: Request): Promise<TMetadata> {
-    const principal = await this.loadSessionPrincipal(req);
+    const user = await this.loadUser(req);
     return {
       ...m,
-      principal,
+      user: user,
     };
   }
 
-  async loadSessionPrincipal(req: Request): Promise<AuthUser | null> {
+  async loadUser(req: Request): Promise<Principal | null> {
     if (!req) {
       return null;
     }
     const user = await getUserBySupabaseCookie(
       req,
       (this.env as Record<string, string>)?.SUPABASE_SERVER_TOKEN,
+      (this.env as Record<string, string>)?.ISSUER_JWT_SECRET,
     );
     return user ?? null;
   }

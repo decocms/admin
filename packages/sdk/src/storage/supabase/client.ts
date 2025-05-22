@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./schema.ts";
+import { SUPABASE_URL } from "@deco/sdk/auth";
+import process from "node:process";
 
 export type Options = Parameters<typeof createServerClient>;
 export type Client = ReturnType<typeof createServerClient<Database, "public">>;
@@ -24,10 +26,9 @@ export let client:
   | ReturnType<typeof createServerClient<Database, "public">>
   | undefined;
 
-export const getServerClient = (
-  supabaseUrl: Options[0],
-  supabaseKey: Options[1],
-): Client => {
+export const getServerClient = (): Client => {
+  const supabaseUrl = SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVER_TOKEN ?? "";
   client ||= createServerClient<Database, "public">(
     supabaseUrl,
     supabaseKey,

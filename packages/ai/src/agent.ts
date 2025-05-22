@@ -9,7 +9,7 @@ import {
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
+import { JwtIssuer } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
@@ -45,7 +45,7 @@ import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
-import { createServerClient } from "@supabase/ssr";
+import { getServerClient } from "@deco/sdk/storage";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
@@ -146,7 +146,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
-  private db: Awaited<ReturnType<typeof createServerClient>>;
+  private db: Awaited<ReturnType<typeof getServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   constructor(
     public readonly state: ActorState,
@@ -169,11 +169,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
-    this.db = createServerClient(
-      SUPABASE_URL,
-      this.env.SUPABASE_SERVER_TOKEN,
-      { cookies: { getAll: () => [] } },
-    );
+    this.db = getServerClient();
 
     this.agentScoppedMcpClient = this.createMCPClient();
     this.state.blockConcurrencyWhile(async () => {

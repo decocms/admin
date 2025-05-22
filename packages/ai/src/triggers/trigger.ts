@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { SUPABASE_URL } from "@deco/sdk/auth";
 import {
   AppContext,
   AuthorizationClient,
@@ -13,7 +12,7 @@ import {
 } from "@deco/sdk/mcp";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
-import { createServerClient } from "@supabase/ssr";
+import { getServerClient } from "@deco/sdk/storage";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { dirname } from "node:path/posix";
@@ -88,7 +87,7 @@ export class Trigger {
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
-  private db: ReturnType<typeof createServerClient>;
+  private db: ReturnType<typeof getServerClient>;
 
   constructor(public state: ActorState, protected env: any) {
     this.env = {
@@ -97,11 +96,7 @@ export class Trigger {
     };
     this.agentId = dirname(dirname(this.state.id)); // strip /triggers/$triggerId
     this.workspace = getTwoFirstSegments(this.state.id);
-    this.db = createServerClient(
-      SUPABASE_URL,
-      this.env.SUPABASE_SERVER_TOKEN,
-      { cookies: { getAll: () => [] } },
-    );
+    this.db = getServerClient();
 
     this.mcpClient = this.createMCPClient();
 

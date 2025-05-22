@@ -9,14 +9,12 @@ export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
   next,
 ) => {
   const {
-    SUPABASE_URL,
-    SUPABASE_SERVER_TOKEN,
     CF_API_TOKEN,
   } = getEnv(honoCtxToAppCtx(ctx));
 
   ctx.set(
     "db",
-    getServerClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN),
+    getServerClient(),
   );
 
   ctx.set(

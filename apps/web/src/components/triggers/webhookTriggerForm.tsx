@@ -3,7 +3,11 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import Ajv from "ajv";
 import { useState } from "react";
-import { useCreateTrigger, WebhookTriggerSchema } from "@deco/sdk";
+import {
+  TriggerOutputSchema,
+  useCreateTrigger,
+  WebhookTriggerSchema,
+} from "@deco/sdk";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,23 +95,34 @@ const FormSchema = WebhookTriggerSchema.extend({
 
 type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 
+type WebhookTriggerData = z.infer<typeof WebhookTriggerSchema>;
+
 export function WebhookTriggerForm({
   agentId,
   onSuccess,
+  initialValues,
 }: {
   agentId: string;
   onSuccess?: () => void;
+  initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
+  const isEditing = !!initialValues;
+
+  const webhookData = initialValues?.data.type === "webhook"
+    ? initialValues.data as WebhookTriggerData
+    : undefined;
 
   const form = useForm<WebhookTriggerFormType>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      passphrase: "",
-      schema: "",
-      outputTool: "",
+      title: initialValues?.data.title || "",
+      description: initialValues?.data.description || "",
+      passphrase: webhookData?.passphrase || "",
+      schema: webhookData?.schema
+        ? JSON.stringify(webhookData.schema, null, 2)
+        : "",
+      outputTool: webhookData?.outputTool || "",
       type: "webhook",
     },
   });
@@ -274,7 +289,7 @@ export function WebhookTriggerForm({
         )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating..." : "Create"}
+            {isPending ? "Saving..." : isEditing ? "Save" : "Create"}
           </Button>
         </div>
       </form>

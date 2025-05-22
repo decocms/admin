@@ -10,7 +10,11 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { useState } from "react";
-import { CronTriggerSchema, useCreateTrigger } from "@deco/sdk";
+import {
+  CronTriggerSchema,
+  TriggerOutputSchema,
+  useCreateTrigger,
+} from "@deco/sdk";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -151,19 +155,27 @@ function CronSelectInput({ value, onChange, required, error }: {
 
 type CronTriggerFormType = z.infer<typeof CronTriggerSchema>;
 
-export function CronTriggerForm({ agentId, onSuccess }: {
+type CronTriggerData = z.infer<typeof CronTriggerSchema>;
+
+export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
   agentId: string;
   onSuccess?: () => void;
+  initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
   const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
+  const isEditing = !!initialValues;
+
+  const cronData = initialValues?.data.type === "cron"
+    ? initialValues.data as CronTriggerData
+    : undefined;
 
   const form = useForm<CronTriggerFormType>({
     resolver: zodResolver(CronTriggerSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      cronExp: cronPresets[0].value,
-      prompt: { messages: [{ role: "user", content: "" }] },
+      title: initialValues?.data.title || "",
+      description: initialValues?.data.description || "",
+      cronExp: cronData?.cronExp || cronPresets[0].value,
+      prompt: cronData?.prompt || { messages: [{ role: "user", content: "" }] },
       type: "cron",
     },
   });
@@ -299,7 +311,7 @@ export function CronTriggerForm({ agentId, onSuccess }: {
         )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating..." : "Create"}
+            {isPending ? "Saving..." : isEditing ? "Save" : "Create"}
           </Button>
         </div>
       </form>

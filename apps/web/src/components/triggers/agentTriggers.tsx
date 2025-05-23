@@ -6,10 +6,9 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { z } from "zod";
 import { useChatContext } from "../chat/context.tsx";
-import { TriggerModal as TriggerModalButton } from "./triggerModal.tsx";
+import { AddTriggerModal as AddTriggerModalButton } from "./addTriggerModal.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
 import { TriggerDetails } from "./triggerDetails.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();
@@ -54,19 +53,7 @@ export function AgentTriggers() {
             className="w-full py-2 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
           />
         </div>
-        <TriggerModalButton
-          agentId={agentId}
-          triggerAction={
-            <Button
-              variant="special"
-              title="Add Trigger"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Icon name="add" />
-              <span className="hidden md:inline">Create trigger</span>
-            </Button>
-          }
-        />
+        <AddTriggerModalButton agentId={agentId} />
       </div>
       <ScrollArea className="flex-1 min-h-0 px-2">
         <div className="grid grid-cols-1 gap-4">
@@ -108,19 +95,7 @@ export function ListTriggersEmpty() {
         Triggers allow you to trigger your agent on a schedule or from external
         systems.
       </p>
-      <TriggerModalButton
-        agentId={agentId}
-        triggerAction={
-          <Button
-            variant="special"
-            title="Add Trigger"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Icon name="add" />
-            <span className="hidden md:inline">Create trigger</span>
-          </Button>
-        }
-      />
+      <AddTriggerModalButton agentId={agentId} />
     </div>
   );
 }

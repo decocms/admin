@@ -33,13 +33,3 @@ export const deactivateTrigger = (
   workspace: string,
   triggerId: string,
 ) => MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE({ triggerId });
-
-export const updateTrigger = (
-  workspace: string,
-  agentId: string,
-  triggerId: string,
-  trigger: CreateTriggerInput,
-) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_UPDATE(
-    { agentId, triggerId, data: trigger },
-  );

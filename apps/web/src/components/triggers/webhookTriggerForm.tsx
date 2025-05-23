@@ -3,12 +3,7 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import Ajv from "ajv";
 import { useState } from "react";
-import {
-  TriggerOutputSchema,
-  useCreateTrigger,
-  useUpdateTrigger,
-  WebhookTriggerSchema,
-} from "@deco/sdk";
+import { useCreateTrigger, WebhookTriggerSchema } from "@deco/sdk";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -96,40 +91,23 @@ const FormSchema = WebhookTriggerSchema.extend({
 
 type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 
-type WebhookTriggerData = z.infer<typeof WebhookTriggerSchema>;
-
 export function WebhookTriggerForm({
   agentId,
   onSuccess,
-  initialValues,
 }: {
   agentId: string;
   onSuccess?: () => void;
-  initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
-  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
-    agentId,
-  );
-  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
-    agentId,
-  );
-  const isEditing = !!initialValues;
-  const isPending = isCreating || isUpdating;
-
-  const webhookData = initialValues?.data.type === "webhook"
-    ? initialValues.data as WebhookTriggerData
-    : undefined;
+  const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
   const form = useForm<WebhookTriggerFormType>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      title: initialValues?.data.title || "",
-      description: initialValues?.data.description || "",
-      passphrase: webhookData?.passphrase || "",
-      schema: webhookData?.schema
-        ? JSON.stringify(webhookData.schema, null, 2)
-        : "",
-      outputTool: webhookData?.outputTool || "",
+      title: "",
+      description: "",
+      passphrase: "",
+      schema: "",
+      outputTool: "",
       type: "webhook",
     },
   });
@@ -150,54 +128,27 @@ export function WebhookTriggerForm({
         return;
       }
     }
-    if (isEditing && initialValues) {
-      updateTrigger(
-        {
-          triggerId: initialValues.id,
-          trigger: {
-            title: data.title,
-            description: data.description || undefined,
-            type: "webhook",
-            passphrase: data.passphrase || undefined,
-            schema: schemaObj as Record<string, unknown> | undefined,
-            outputTool: data.outputTool || undefined,
-          },
+    createTrigger(
+      {
+        title: data.title,
+        description: data.description || undefined,
+        type: "webhook",
+        passphrase: data.passphrase || undefined,
+        schema: schemaObj as Record<string, unknown> | undefined,
+        outputTool: data.outputTool || undefined,
+      },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
         },
-        {
-          onSuccess: () => {
-            form.reset();
-            onSuccess?.();
-          },
-          onError: (error: Error) => {
-            form.setError("root", {
-              message: error?.message || "Failed to update trigger",
-            });
-          },
+        onError: (error: Error) => {
+          form.setError("root", {
+            message: error?.message || "Failed to create trigger",
+          });
         },
-      );
-    } else {
-      createTrigger(
-        {
-          title: data.title,
-          description: data.description || undefined,
-          type: "webhook",
-          passphrase: data.passphrase || undefined,
-          schema: schemaObj as Record<string, unknown> | undefined,
-          outputTool: data.outputTool || undefined,
-        },
-        {
-          onSuccess: () => {
-            form.reset();
-            onSuccess?.();
-          },
-          onError: (error: Error) => {
-            form.setError("root", {
-              message: error?.message || "Failed to create trigger",
-            });
-          },
-        },
-      );
-    }
+      },
+    );
   };
 
   return (
@@ -323,7 +274,7 @@ export function WebhookTriggerForm({
         )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : isEditing ? "Save" : "Create"}
+            {isPending ? "Creating..." : "Create"}
           </Button>
         </div>
       </form>

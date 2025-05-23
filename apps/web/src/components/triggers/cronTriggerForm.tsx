@@ -10,12 +10,7 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { useState } from "react";
-import {
-  CronTriggerSchema,
-  TriggerOutputSchema,
-  useCreateTrigger,
-  useUpdateTrigger,
-} from "@deco/sdk";
+import { CronTriggerSchema, useCreateTrigger } from "@deco/sdk";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -88,7 +83,7 @@ function CronSelectInput({ value, onChange, required, error }: {
       <Label htmlFor="cron-frequency">Frequency</Label>
       <Select value={selected} onValueChange={handlePresetChange}>
         <SelectTrigger id="cron-frequency" className="w-full">
-          <SelectValue placeholder="Select frequency" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {cronPresets.map((p) => (
@@ -156,33 +151,19 @@ function CronSelectInput({ value, onChange, required, error }: {
 
 type CronTriggerFormType = z.infer<typeof CronTriggerSchema>;
 
-type CronTriggerData = z.infer<typeof CronTriggerSchema>;
-
-export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
+export function CronTriggerForm({ agentId, onSuccess }: {
   agentId: string;
   onSuccess?: () => void;
-  initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
-  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
-    agentId,
-  );
-  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
-    agentId,
-  );
-  const isEditing = !!initialValues;
-  const isPending = isCreating || isUpdating;
-
-  const cronData = initialValues?.data.type === "cron"
-    ? initialValues.data as CronTriggerData
-    : undefined;
+  const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
 
   const form = useForm<CronTriggerFormType>({
     resolver: zodResolver(CronTriggerSchema),
     defaultValues: {
-      title: initialValues?.data.title || "",
-      description: initialValues?.data.description || "",
-      cronExp: cronData?.cronExp || cronPresets[0].value,
-      prompt: cronData?.prompt || { messages: [{ role: "user", content: "" }] },
+      title: "",
+      description: "",
+      cronExp: cronPresets[0].value,
+      prompt: { messages: [{ role: "user", content: "" }] },
       type: "cron",
     },
   });
@@ -198,62 +179,31 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
       });
       return;
     }
-    if (initialValues) {
-      updateTrigger(
-        {
-          triggerId: initialValues.id,
-          trigger: {
-            title: data.title,
-            description: data.description || undefined,
-            cronExp: data.cronExp,
-            prompt: {
-              messages: [{
-                role: "user",
-                content: data.prompt.messages[0].content,
-              }],
-            },
-            type: "cron",
-          },
+    createTrigger(
+      {
+        title: data.title,
+        description: data.description || undefined,
+        cronExp: data.cronExp,
+        prompt: {
+          messages: [{
+            role: "user",
+            content: data.prompt.messages[0].content,
+          }],
         },
-        {
-          onSuccess: () => {
-            form.reset();
-            onSuccess?.();
-          },
-          onError: (error: Error) => {
-            form.setError("root", {
-              message: error?.message || "Failed to update trigger",
-            });
-          },
+        type: "cron",
+      },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
         },
-      );
-    } else {
-      createTrigger(
-        {
-          title: data.title,
-          description: data.description || undefined,
-          cronExp: data.cronExp,
-          prompt: {
-            messages: [{
-              role: "user",
-              content: data.prompt.messages[0].content,
-            }],
-          },
-          type: "cron",
+        onError: (error: Error) => {
+          form.setError("root", {
+            message: error?.message || "Failed to create trigger",
+          });
         },
-        {
-          onSuccess: () => {
-            form.reset();
-            onSuccess?.();
-          },
-          onError: (error: Error) => {
-            form.setError("root", {
-              message: error?.message || "Failed to create trigger",
-            });
-          },
-        },
-      );
-    }
+      },
+    );
   };
 
   return (
@@ -349,7 +299,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
         )}
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : isEditing ? "Save" : "Create"}
+            {isPending ? "Creating..." : "Create"}
           </Button>
         </div>
       </form>

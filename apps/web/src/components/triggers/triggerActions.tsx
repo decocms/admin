@@ -9,8 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
-import { TriggerModal } from "./triggerModal.tsx";
-import { useState } from "react";
 
 interface TriggerActionsProps {
   trigger: z.infer<typeof TriggerOutputSchema>;
@@ -21,8 +19,6 @@ interface TriggerActionsProps {
 export function TriggerActions(
   { trigger, open, onOpenChange }: TriggerActionsProps,
 ) {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
   return (
     <>
       <DropdownMenu>
@@ -37,22 +33,12 @@ export function TriggerActions(
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditModalOpen(true);
-            }}
-          >
-            <Icon name="edit" className="h-4 w-4 mr-2" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
             className="text-red-500"
             onClick={(e) => {
               e.stopPropagation();
               onOpenChange(true);
             }}
           >
-            <Icon name="delete" className="h-4 w-4 mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -62,11 +48,6 @@ export function TriggerActions(
         agentId={trigger.agent?.id || ""}
         open={open}
         onOpenChange={onOpenChange}
-      />
-      <TriggerModal
-        trigger={trigger}
-        isOpen={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
       />
     </>
   );

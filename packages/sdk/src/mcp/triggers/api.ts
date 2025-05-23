@@ -248,7 +248,7 @@ export const updateTrigger = createTool({
         throw new UserInputError("Invalid trigger");
       }
       (data as z.infer<typeof TriggerSchema> & { url: string }).url =
-        buildWebhookUrl(triggerPath, data.passphrase);
+        buildWebhookUrl(triggerPath, data.passphrase, data.outputTool);
     }
 
     const userId = typeof user.id === "string" ? user.id : undefined;

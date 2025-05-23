@@ -13,7 +13,6 @@
     "clean": "rm deno.lock 2> /dev/null || true && rm -rf node_modules && rm -rf apps/api/node_modules && rm -rf apps/web/node_modules && rm -rf packages/ui/node_modules && rm -rf packages/sdk/node_modules && rm -rf packages/ai/node_modules && deno install",
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked",
-    "db:migration:create": "supabase migration new",
     "npm:build": "npm run build --workspace=apps/web",
     "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
     "rolesCLI": "deno run --env-file=./apps/web/.env -A scripts/roleAndPolicyCLI.ts"

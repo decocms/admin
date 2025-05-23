@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS deco_chat_hosting_apps(
+CREATE TABLE deco_chat_hosting_apps(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL, -- the slug of the app, e.g. 'default' or custom
   workspace text NOT NULL,
@@ -13,11 +13,11 @@ CREATE TABLE IF NOT EXISTS deco_chat_hosting_apps(
 );
 
 -- Optional: index for fast lookup by workspace
-CREATE INDEX IF NOT EXISTS idx_hosting_apps_workspace
+CREATE INDEX idx_hosting_apps_workspace
   ON deco_chat_hosting_apps (workspace);
 
 -- Optional: index for fast lookup by slug
-CREATE INDEX IF NOT EXISTS idx_hosting_apps_slug
+CREATE INDEX idx_hosting_apps_slug
   ON deco_chat_hosting_apps (slug);
 
 -- Enable Row Level Security

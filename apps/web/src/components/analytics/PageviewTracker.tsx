@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 
-export default function PageviewTrackerLayout() {
+export function PageviewTracker() {
   const location = useLocation();
 
   useEffect(() => {
@@ -16,5 +16,5 @@ export default function PageviewTrackerLayout() {
     });
   }, [location.pathname, location.search]);
 
-  return <Outlet />;
+  return null;
 }

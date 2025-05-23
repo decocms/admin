@@ -10,12 +10,14 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  createBrowserRouter,
-  RouterProvider,
+  BrowserRouter,
+  Route,
+  Routes,
   useLocation,
-  useRouteError,
+  useNavigate,
 } from "react-router";
 import { EmptyState } from "./components/common/EmptyState.tsx";
+import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -42,12 +44,14 @@ const RouteLayout = lazy(() =>
     default: mod.RouteLayout,
   }))
 );
-const PageviewTrackerLayout = lazy(
-  () => import("./components/analytics/PageviewTracker.tsx"),
-);
 
 const Login = lazy(() => import("./components/login/index.tsx"));
 const About = lazy(() => import("./components/about/index.tsx"));
+const PageviewTracker = lazy(() =>
+  import("./components/analytics/PageviewTracker.tsx").then((mod) => ({
+    default: mod.PageviewTracker,
+  }))
+);
 
 /**
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
@@ -126,8 +130,9 @@ function NotFound(): null {
 }
 
 function ErrorFallback() {
-  const { pathname } = useLocation();
-  const error = useRouteError();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { state: { error }, reset } = useError();
   const isUnauthorized = error instanceof UnauthorizedError;
 
   useEffect(() => {
@@ -139,14 +144,16 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === "/") {
-      globalThis.location.href = "/about";
+    reset();
 
+    if (location.pathname === "/") {
+      navigate("/about", { replace: true });
       return;
     }
 
-    const next = new URL(pathname, globalThis.location.origin);
-    globalThis.location.href = `/login?next=${next}`;
+    const next = new URL(location.pathname, globalThis.location.origin);
+    navigate(`/login?next=${next}`, { replace: true });
+  }, [isUnauthorized, location.pathname, reset, navigate]);
   }, [isUnauthorized, pathname]);
 
   if (isUnauthorized) {
@@ -240,70 +247,119 @@ function HomeChat() {
   );
 }
 
-const router = createBrowserRouter([
-  {
-    errorElement: <ErrorFallback />,
-    Component: PageviewTrackerLayout,
-    children: [
-      {
-        path: "/login",
-        Component: Login,
-      },
-      {
-        path: "/login/magiclink",
-        Component: MagicLink,
-      },
-      {
-        path: "/about",
-        Component: About,
-      },
-      {
-        path: "/invites",
-        Component: RouteLayout,
-        children: [
-          { index: true, Component: InvitesList },
-        ],
-      },
-      {
-        path: "/sales-deck",
-        Component: SalesDeck,
-      },
-      {
-        path: "/chats",
-        Component: PublicChats,
-      },
-      {
-        path: "/:teamSlug?",
-        Component: RouteLayout,
-        children: [
-          {
-            index: true,
-            Component: HomeChat,
-          },
-          { path: "wallet", Component: Wallet },
-          { path: "agents", Component: AgentList },
-          { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "chat/:id/:threadId", Component: Chat },
-          {
-            path: "integrations/marketplace",
-            Component: IntegrationMarketplace,
-          },
-          { path: "integrations", Component: IntegrationList },
-          { path: "integration/:id", Component: IntegrationDetail },
-          { path: "triggers", Component: TriggerList },
-          { path: "trigger/:agentId/:triggerId", Component: TriggerDetails },
-          { path: "settings", Component: Settings },
-          { path: "audits", Component: AuditList },
-          { path: "audit/:id", Component: AuditDetail },
-        ],
-      },
-      { path: "*", Component: NotFound },
-    ],
-  },
-]);
+function Router() {
+  return (
+    <Routes>
+      <Route path="login" element={<Login />} />
+      <Route path="login/magiclink" element={<MagicLink />} />
+
+      <Route path="about" element={<About />} />
+
+      <Route path="invites" element={<RouteLayout />}>
+        <Route index element={<InvitesList />} />
+      </Route>
+
+      <Route path="sales-deck" element={<SalesDeck />} />
+
+      <Route
+        path="chats"
+        element={<PublicChats />}
+      />
+
+      <Route path="/:teamSlug?" element={<RouteLayout />}>
+        <Route
+          index
+          element={
+            <Chat
+              showThreadMessages={false}
+              agentId="teamAgent"
+              threadId={crypto.randomUUID()}
+              key="disabled-messages"
+            />
+          }
+        />
+
+        <Route
+          path="wallet"
+          element={<Wallet />}
+        />
+        <Route
+          path="agents"
+          element={<AgentList />}
+        />
+        <Route
+          path="agent/:id/:threadId"
+          element={<AgentDetail />}
+        />
+        <Route
+          path="chat/:id/:threadId"
+          element={<Chat />}
+        />
+        <Route
+          path="integrations/marketplace"
+          element={<IntegrationMarketplace />}
+        />
+        <Route
+          path="integrations"
+          element={<IntegrationList />}
+        />
+        <Route
+          path="integration/:id"
+          element={<IntegrationDetail />}
+        />
+        <Route
+          path="triggers"
+          element={<TriggerList />}
+        />
+        <Route
+          path="trigger/:agentId/:triggerId"
+          element={<TriggerDetails />}
+        />
+        <Route
+          path="settings"
+          element={<Settings />}
+        />
+        <Route
+          path="audits"
+          element={<AuditList />}
+        />
+        <Route
+          path="audit/:id"
+          element={<AuditDetail />}
+        />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <ErrorBoundary
+        fallback={<ErrorFallback />}
+        shouldCatch={(error) => {
+          import("./hooks/analytics.ts").then((mod) =>
+            mod.trackException(error)
+          );
+
+          return true;
+        }}
+      >
+        <Suspense fallback={null}>
+          <PageviewTracker />
+        </Suspense>
+        <Suspense
+          fallback={
+            <div className="h-full w-full flex items-center justify-center">
+              <Spinner />
+            </div>
+          }
+        >
+          <Router />
+        </Suspense>
+      </ErrorBoundary>
+    </BrowserRouter>
   </StrictMode>,
 );

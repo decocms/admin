@@ -60,34 +60,35 @@ export const useCreateTempAgent = () => {
   return create;
 };
 
-export const useUpdateAgent = () => {
+export const useUpdateAgentCache = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
+  const update = (agent: Agent) => {
+    // Update the individual agent in cache
+    const itemKey = KEYS.AGENT(workspace, agent.id);
+    client.cancelQueries({ queryKey: itemKey });
+    client.setQueryData<Agent>(itemKey, agent);
+
+    // Update the list
+    const listKey = KEYS.AGENT(workspace);
+    client.cancelQueries({ queryKey: listKey });
+    client.setQueryData<Agent[]>(
+      listKey,
+      (old) => !old ? [agent] : old.map((a) => a.id === agent.id ? agent : a),
+    );
+  };
+
+  return update;
+};
+
+export const useUpdateAgent = () => {
+  const { workspace } = useSDK();
+  const updateAgentCache = useUpdateAgentCache();
+
   const update = useMutation({
     mutationFn: (agent: Agent) => updateAgent(workspace, agent),
-    onSuccess: (result) => {
-      // Update the individual agent in cache
-      const itemKey = KEYS.AGENT(workspace, result.id);
-      client.cancelQueries({ queryKey: itemKey });
-      client.setQueryData<Agent>(itemKey, result);
-
-      // Update the list
-      const listKey = KEYS.AGENT(workspace);
-      client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Agent[]>(
-        listKey,
-        (old) =>
-          !old
-            ? [result]
-            : old.map((agent) => agent.id === result.id ? result : agent),
-      );
-
-      // Update thread tools because it may have been changed
-      const toolsKey = ["tools"];
-      client.cancelQueries({ queryKey: toolsKey });
-      client.invalidateQueries({ queryKey: toolsKey, exact: false });
-    },
+    onSuccess: (result) => updateAgentCache(result),
   });
 
   return update;

@@ -2,25 +2,30 @@ import {
   type Agent,
   AgentSchema,
   Integration,
+  NotFoundError,
   useAgent,
   useIntegrations,
   useUpdateAgent,
+  useUpdateAgentCache,
 } from "@deco/sdk";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createContext, Suspense, useContext, useMemo } from "react";
+import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router";
-import {
-  getAgentOverrides,
-  useAgentHasChanges,
-  useAgentOverridesSetter,
-  useOnAgentChangesDiscarded,
-} from "../../hooks/useAgentOverrides.ts";
-import { usePersistedDirtyForm } from "../../hooks/usePersistedDirtyForm.ts";
+import { useBlocker, useParams } from "react-router";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -104,8 +109,7 @@ const TABS: Record<string, Tab> = {
 interface AgentSettingsFormContextValue {
   form: ReturnType<typeof useForm<Agent>>;
   hasChanges: boolean;
-  discardCurrentChanges: () => void;
-  onMutationSuccess: () => void;
+  handleSubmit: () => void;
   installedIntegrations: Integration[];
   agent: Agent;
 }
@@ -113,6 +117,7 @@ interface AgentSettingsFormContextValue {
 const AgentSettingsFormContext = createContext<
   AgentSettingsFormContextValue | undefined
 >(undefined);
+
 export function useAgentSettingsForm() {
   const ctx = useContext(AgentSettingsFormContext);
   if (!ctx) {
@@ -122,7 +127,6 @@ export function useAgentSettingsForm() {
   }
   return ctx;
 }
-// --- End AgentSettingsFormContext ---
 
 export default function Page(props: Props) {
   const params = useParams();
@@ -132,7 +136,7 @@ export default function Page(props: Props) {
   );
 
   if (!agentId) {
-    return <div>Agent not found</div>;
+    throw new NotFoundError("Agent not found");
   }
 
   const threadId = useMemo(
@@ -148,116 +152,154 @@ export default function Page(props: Props) {
   const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
+  const updateAgentCache = useUpdateAgentCache();
 
-  // Persisted dirty form logic
-  const agentOverrides = useAgentOverridesSetter(agentId);
-
-  const { hasChanges, discardCurrentChanges } = useAgentHasChanges(agentId);
-
-  const { form, discardChanges, onMutationSuccess } = usePersistedDirtyForm<
-    Agent
-  >({
-    resolver: zodResolver(AgentSchema),
+  const form = useForm<Agent>({
     defaultValues: agent,
-    persist: agentOverrides.update,
-    getOverrides: () => getAgentOverrides(agentId),
+    resolver: zodResolver(AgentSchema),
   });
 
-  useOnAgentChangesDiscarded(agentId, discardChanges);
-
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
-  const handleSubmit = form.handleSubmit((data: Agent) =>
-    updateAgent.mutateAsync(data, { onSuccess: onMutationSuccess })
+  const hasChanges = numberOfChanges > 0;
+
+  // Use deferred values for better UX - updates cache at lower priority
+  const values = form.watch();
+  useEffect(() => {
+    const timeout = setTimeout(() => updateAgentCache(values), 200);
+
+    return () => clearTimeout(timeout);
+  }, [values, updateAgentCache]);
+
+  const handleSubmit = form.handleSubmit(
+    (data: Agent) => {
+      updateAgent.mutateAsync(data);
+      form.reset(data);
+    },
   );
 
+  const blocked = useBlocker(hasChanges);
+
+  function handleCancel() {
+    blocked.reset?.();
+  }
+
+  function discardChanges() {
+    form.reset();
+    updateAgentCache(form.getValues());
+    blocked.proceed?.();
+  }
+
   return (
-    <Suspense
-      key={chatKey}
-      fallback={
-        <div className="h-full w-full flex items-center justify-center">
-          <Spinner />
-        </div>
-      }
-    >
-      <ChatProvider
-        agentId={agentId}
-        threadId={threadId}
-        uiOptions={{
-          showThreadTools: false,
-          showEditAgent: false,
-        }}
+    <>
+      <AlertDialog open={blocked.state === "blocked"}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. If you leave this page, your edits will
+              be lost. Are you sure you want to discard your changes and
+              navigate away?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardChanges}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Suspense
+        key={chatKey}
+        fallback={
+          <div className="h-full w-full flex items-center justify-center">
+            <Spinner />
+          </div>
+        }
       >
-        <AgentSettingsFormContext.Provider
-          value={{
-            form,
-            hasChanges,
-            discardCurrentChanges,
-            onMutationSuccess,
-            installedIntegrations: installedIntegrations.filter(
-              (i) => !i.id.includes(agentId),
-            ),
-            agent,
+        <ChatProvider
+          agentId={agentId}
+          threadId={threadId}
+          uiOptions={{
+            showThreadTools: false,
+            showEditAgent: false,
+            showModelSelector: false,
           }}
         >
-          <PageLayout
-            tabs={TABS}
-            key={agentId}
-            actionButtons={
-              <div
-                className={cn(
-                  "flex items-center gap-2 bg-slate-50",
-                  "transition-opacity",
-                  numberOfChanges > 0 ? "opacity-100" : "opacity-0",
-                )}
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={form.formState.isSubmitting}
-                  onClick={discardCurrentChanges}
+          <AgentSettingsFormContext.Provider
+            value={{
+              form,
+              hasChanges: hasChanges,
+              handleSubmit,
+              installedIntegrations: installedIntegrations.filter(
+                (i) => !i.id.includes(agentId),
+              ),
+              agent,
+            }}
+          >
+            <PageLayout
+              tabs={TABS}
+              key={agentId}
+              actionButtons={
+                <div
+                  className={cn(
+                    "flex items-center gap-2 bg-slate-50",
+                    "transition-opacity",
+                    hasChanges ? "opacity-100" : "opacity-0",
+                  )}
                 >
-                  Discard
-                </Button>
-                <Button
-                  variant="special"
-                  onClick={handleSubmit}
-                  disabled={!numberOfChanges ||
-                    form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting
-                    ? (
-                      <>
-                        <Spinner size="xs" />
-                        <span>Saving...</span>
-                      </>
-                    )
-                    : (
-                      <span>
-                        Save {numberOfChanges}{" "}
-                        change{numberOfChanges > 1 ? "s" : ""}
-                      </span>
-                    )}
-                </Button>
-              </div>
-            }
-            breadcrumb={
-              <DefaultBreadcrumb
-                items={[
-                  { link: "/agents", label: "Agents" },
-                  {
-                    label: (
-                      <AgentBreadcrumbSegment
-                        agentId={agentId}
-                        variant="summary"
-                      />
-                    ),
-                  },
-                ]}
-              />
-            }
-          />
-        </AgentSettingsFormContext.Provider>
-      </ChatProvider>
-    </Suspense>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={form.formState.isSubmitting}
+                    onClick={discardChanges}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    variant="special"
+                    onClick={handleSubmit}
+                    disabled={!numberOfChanges ||
+                      form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting
+                      ? (
+                        <>
+                          <Spinner size="xs" />
+                          <span>Saving...</span>
+                        </>
+                      )
+                      : (
+                        <span>
+                          Save {numberOfChanges}{" "}
+                          change{numberOfChanges > 1 ? "s" : ""}
+                        </span>
+                      )}
+                  </Button>
+                </div>
+              }
+              breadcrumb={
+                <DefaultBreadcrumb
+                  items={[
+                    { link: "/agents", label: "Agents" },
+                    {
+                      label: (
+                        <AgentBreadcrumbSegment
+                          agentId={agentId}
+                          variant="summary"
+                        />
+                      ),
+                    },
+                  ]}
+                />
+              }
+            />
+          </AgentSettingsFormContext.Provider>
+        </ChatProvider>
+      </Suspense>
+    </>
   );
 }

@@ -45,19 +45,17 @@ import {
 import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useAgentHasChanges } from "../../hooks/useAgentOverrides.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
-import { Avatar } from "../common/Avatar.tsx";
+import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
 import { ListPageHeader } from "../common/ListPageHeader.tsx";
 import { Table } from "../common/Table.tsx";
 import { Tab } from "../dock/index.tsx";
+import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
-import { AgentAvatar } from "../common/Avatar.tsx";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -140,32 +138,21 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
 }
 
 function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
-  const { hasChanges } = useAgentHasChanges(agent.id);
   const integrations = Object
     .entries(agent.tools_set ?? {})
     .filter(([_, tools]) => tools.length > 0)
     .slice(0, max ?? Infinity);
+
   return (
-    <>
-      {hasChanges
-        ? (
-          <div className="text-xs text-slate-700 font-medium h-8 border border-slate-200 rounded-full flex items-center justify-center gap-1 w-fit px-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            Unsaved Changes
-          </div>
-        )
-        : (
-          <div className="flex gap-2 flex-wrap">
-            {integrations.map(([toolSetId]) => (
-              <ErrorBoundary key={toolSetId} fallback={null}>
-                <Suspense fallback={null}>
-                  <IntegrationMiniature toolSetId={toolSetId} />
-                </Suspense>
-              </ErrorBoundary>
-            ))}
-          </div>
-        )}
-    </>
+    <div className="flex gap-2 flex-wrap">
+      {integrations.map(([toolSetId]) => (
+        <ErrorBoundary key={toolSetId} fallback={null}>
+          <Suspense fallback={null}>
+            <IntegrationMiniature toolSetId={toolSetId} />
+          </Suspense>
+        </ErrorBoundary>
+      ))}
+    </div>
   );
 }
 

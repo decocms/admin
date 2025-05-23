@@ -184,8 +184,7 @@ export const createToolFactory = <
         );
       }
 
-      const structuredContent = await def.handler(props,context,
-      );
+      const structuredContent = await def.handler(props, context);
 
       return {
         isError: false,

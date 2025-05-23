@@ -44,6 +44,7 @@ import type { StorageThreadType } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
+import { OpenAIVoice } from "@mastra/voice-openai";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
 import {
@@ -71,6 +72,7 @@ import type {
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
+import { Buffer } from "node:buffer";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -535,6 +537,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: config.name,
       instructions: config.instructions,
       model: llm,
+      voice: new OpenAIVoice({
+        listeningModel: {
+          apiKey: this.env.OPENAI_API_KEY,
+          name: 'whisper-1',
+        },
+        speechModel: {
+          apiKey: this.env.OPENAI_API_KEY,
+          name: 'tts-1',
+        }
+      }),
     });
   }
 
@@ -581,6 +593,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
   private get agent(): Agent {
     return this._agent ?? this.anonymous;
+  }
+
+  private async getAudioTranscription(audioStream: ReadableStream) {
+    const transcription = await this.agent.voice.listen(audioStream as any);
+    return transcription as string;
   }
 
   public getAgentName() {
@@ -768,6 +785,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         instructions: this._configuration?.instructions ??
           ANONYMOUS_INSTRUCTIONS,
         model: llm,
+        voice: new OpenAIVoice({
+          listeningModel: {
+            apiKey: this.env.OPENAI_API_KEY,
+            name: 'whisper-1',
+          },
+          speechModel: {
+            apiKey: this.env.OPENAI_API_KEY,
+            name: 'tts-1',
+          }
+        }),
       });
     }
 
@@ -808,6 +835,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   async stream(
     payload: AIMessage[],
     options?: StreamOptions,
+    audioBase64?: string,
   ): Promise<Response> {
     const tracer = trace.getTracer("stream-tracer");
 
@@ -833,6 +861,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const agentOverridesTiming = timings.start("agent-overrides");
     const agent = this.withAgentOverrides(options);
     agentOverridesTiming.end();
+
 
     // if no wallet was initialized, let the stream proceed.
     // we can change this later to be more restrictive.
@@ -879,7 +908,21 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxLimit - this.maxTokens(),
     );
 
-    const response = await agent.stream(payload, {
+    const transcription = audioBase64 ? async () => {
+      const audioStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(Buffer.from(audioBase64, "base64")));
+          controller.close();
+        }
+      });
+      return await this.getAudioTranscription(audioStream as any);
+    } : undefined;
+
+    const response = await agent.stream(transcription ? [{
+      role: "user",
+      id: crypto.randomUUID(),
+      content: await transcription(),
+    }] : payload, {
       ...this.thread,
       context,
       toolsets,

@@ -66,6 +66,11 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         resourceId: resourceId ?? data.id ?? undefined,
       });
 
+    const audioFromArgs = args && typeof args === "object" &&
+        "audioBase64" in args && typeof args.audioBase64 === "string"
+      ? args.audioBase64
+      : undefined;
+
     const messagesFromArgs = args && typeof args === "object" &&
         "messages" in args && isAIMessages(args.messages)
       ? args.messages
@@ -119,7 +124,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       }
     }
     return useStream
-      ? await agent.stream(messages, options)
+      ? await agent.stream(messages, options, audioFromArgs)
       : await agent.generate(messages, options);
   },
 };

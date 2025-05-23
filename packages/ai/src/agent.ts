@@ -739,7 +739,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     const transcription = await this.getAudioTranscription(audioStream as any);
-    
+
     return [{
       role: "user",
       id: crypto.randomUUID(),
@@ -753,7 +753,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     audio?: {
       audioBase64?: string;
       audioUrl?: string;
-    }
+    },
   ): Promise<GenerateTextResult<any, any>> {
     const toolsets = await this.withToolOverrides(options?.tools);
 
@@ -867,10 +867,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   async stream(
     payload: AIMessage[],
     options?: StreamOptions,
-      audio?: {
-        audioBase64?: string;
-        audioUrl?: string;
-      }
+    audio?: {
+      audioBase64?: string;
+      audioUrl?: string;
+    },
   ): Promise<Response> {
     const tracer = trace.getTracer("stream-tracer");
 

@@ -540,12 +540,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       voice: new OpenAIVoice({
         listeningModel: {
           apiKey: this.env.OPENAI_API_KEY,
-          name: 'whisper-1',
+          name: "whisper-1",
         },
         speechModel: {
           apiKey: this.env.OPENAI_API_KEY,
-          name: 'tts-1',
-        }
+          name: "tts-1",
+        },
       }),
     });
   }
@@ -788,12 +788,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         voice: new OpenAIVoice({
           listeningModel: {
             apiKey: this.env.OPENAI_API_KEY,
-            name: 'whisper-1',
+            name: "whisper-1",
           },
           speechModel: {
             apiKey: this.env.OPENAI_API_KEY,
-            name: 'tts-1',
-          }
+            name: "tts-1",
+          },
         }),
       });
     }
@@ -862,7 +862,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const agent = this.withAgentOverrides(options);
     agentOverridesTiming.end();
 
-
     // if no wallet was initialized, let the stream proceed.
     // we can change this later to be more restrictive.
     const wallet = this.wallet;
@@ -908,64 +907,73 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxLimit - this.maxTokens(),
     );
 
-    const transcription = audioBase64 ? async () => {
-      const audioStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array(Buffer.from(audioBase64, "base64")));
-          controller.close();
-        }
-      });
-      return await this.getAudioTranscription(audioStream as any);
-    } : undefined;
+    const transcription = audioBase64
+      ? async () => {
+        const audioStream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new Uint8Array(Buffer.from(audioBase64, "base64")),
+            );
+            controller.close();
+          },
+        });
+        return await this.getAudioTranscription(audioStream as any);
+      }
+      : undefined;
 
-    const response = await agent.stream(transcription ? [{
-      role: "user",
-      id: crypto.randomUUID(),
-      content: await transcription(),
-    }] : payload, {
-      ...this.thread,
-      context,
-      toolsets,
-      instructions: options?.instructions,
-      maxSteps: this.maxSteps(),
-      maxTokens: this.maxTokens(),
-      experimental_transform: experimentalTransform,
-      providerOptions: budgetTokens > MIN_THINKING_TOKENS
-        ? {
-          anthropic: {
-            thinking: {
-              type: "enabled",
-              budgetTokens,
+    const response = await agent.stream(
+      transcription
+        ? [{
+          role: "user",
+          id: crypto.randomUUID(),
+          content: await transcription(),
+        }]
+        : payload,
+      {
+        ...this.thread,
+        context,
+        toolsets,
+        instructions: options?.instructions,
+        maxSteps: this.maxSteps(),
+        maxTokens: this.maxTokens(),
+        experimental_transform: experimentalTransform,
+        providerOptions: budgetTokens > MIN_THINKING_TOKENS
+          ? {
+            anthropic: {
+              thinking: {
+                type: "enabled",
+                budgetTokens,
+              },
             },
-          },
-        }
-        : {},
-      ...(typeof options?.lastMessages === "number"
-        ? {
-          memoryOptions: {
-            lastMessages: options.lastMessages,
-            semanticRecall: false,
-          },
-        }
-        : {}),
-      onChunk: () => {
-        endTtfbSpan();
+          }
+          : {},
+        ...(typeof options?.lastMessages === "number"
+          ? {
+            memoryOptions: {
+              lastMessages: options.lastMessages,
+              semanticRecall: false,
+            },
+          }
+          : {}),
+        onChunk: () => {
+          endTtfbSpan();
+        },
+        onError: () => {
+          // TODO(@mcandeia): add error tracking with posthog
+        },
+        onFinish: (result) => {
+          if (userId) {
+            wallet.computeLLMUsage({
+              userId,
+              usage: result.usage,
+              threadId: this.thread.threadId,
+              model: this._configuration?.model ?? DEFAULT_MODEL,
+              agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+            });
+          }
+        },
       },
-      onError: () => {
-        // TODO(@mcandeia): add error tracking with posthog
-      },
-      onFinish: (result) => {
-        if (userId) {
-          wallet.computeLLMUsage({
-            userId,
-            usage: result.usage,
-            threadId: this.thread.threadId,
-            model: this._configuration?.model ?? DEFAULT_MODEL,
-            agentName: this._configuration?.name ?? ANONYMOUS_NAME,
-          });
-        }
-      },
-    });
+    );
     streamTiming.end();
 
     const dataStreamResponseTiming = timings.start("data-stream-response");

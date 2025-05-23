@@ -7,26 +7,14 @@ export interface Team {
   created_at: string;
 }
 
-export const listTeams = async (
+export const listTeams = (
   init?: RequestInit,
-): Promise<Team[]> => {
-  const { data, error, ok } = await MCPClient.TEAMS_LIST({}, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to list teams");
-  }
-  return data as Team[];
-};
+): Promise<Team[]> => MCPClient.TEAMS_LIST({}, init) as Promise<Team[]>;
 
-export const getTeam = async (
+export const getTeam = (
   slug: string,
   init?: RequestInit,
-): Promise<Team> => {
-  const { data, error, ok } = await MCPClient.TEAMS_GET({ slug }, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to get team");
-  }
-  return data as Team;
-};
+): Promise<Team> => MCPClient.TEAMS_GET({ slug }, init) as Promise<Team>;
 
 export interface CreateTeamInput {
   name: string;
@@ -35,14 +23,10 @@ export interface CreateTeamInput {
   [key: string]: unknown;
 }
 
-export async function createTeam(
+export const createTeam = (
   input: CreateTeamInput,
   init?: RequestInit,
-): Promise<Team> {
-  const { data, error, ok } = await MCPClient.TEAMS_CREATE(input, init);
-  if (!ok || !data) throw new Error(error?.message || "Failed to create team");
-  return data as Team;
-}
+): Promise<Team> => MCPClient.TEAMS_CREATE(input, init) as Promise<Team>;
 
 export interface UpdateTeamInput {
   id: number;
@@ -52,20 +36,13 @@ export interface UpdateTeamInput {
   [key: string]: unknown;
 }
 
-export async function updateTeam(
+export const updateTeam = (
   input: UpdateTeamInput,
   init?: RequestInit,
-): Promise<Team> {
-  const { data, error, ok } = await MCPClient.TEAMS_UPDATE(input, init);
-  if (!ok || !data) throw new Error(error?.message || "Failed to update team");
-  return data as Team;
-}
+): Promise<Team> => MCPClient.TEAMS_UPDATE(input, init) as Promise<Team>;
 
-export async function deleteTeam(
+export const deleteTeam = (
   teamId: number,
   init?: RequestInit,
-): Promise<{ success: boolean }> {
-  const { data, error, ok } = await MCPClient.TEAMS_DELETE({ teamId }, init);
-  if (!ok || !data) throw new Error(error?.message || "Failed to delete team");
-  return data as { success: boolean };
-}
+): Promise<{ success: boolean }> =>
+  MCPClient.TEAMS_DELETE({ teamId }, init) as Promise<{ success: boolean }>;

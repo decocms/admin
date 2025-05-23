@@ -1,4 +1,4 @@
-import { type MCPConnection } from "@deco/sdk";
+import { type MCPConnection, useWriteFile } from "@deco/sdk";
 import {
   Form,
   FormControl,
@@ -18,8 +18,22 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useFormContext } from "./context.ts";
+import { IntegrationIcon } from "../list/common.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+
+const ICON_FILE_PATH = "assets/integrations";
+
+const useIconFilename = () => {
+  const generate = (originalFile: File) => {
+    const extension = originalFile.name.split(".").pop()?.toLowerCase() ||
+      "png";
+    return `icon-${crypto.randomUUID()}.${extension}`;
+  };
+
+  return { generate };
+};
 
 export function DetailForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +42,10 @@ export function DetailForm() {
     onSubmit,
     form,
   } = useFormContext();
+
+  const writeFileMutation = useWriteFile();
+  const { generate: generateIconFilename } = useIconFilename();
+  const [isUploading, setIsUploading] = useState(false);
 
   const iconValue = form.watch("icon");
   const connection = form.watch("connection");
@@ -60,7 +78,7 @@ export function DetailForm() {
   };
 
   // Function to handle file input changes (image upload)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -69,12 +87,27 @@ export function DetailForm() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      form.setValue("icon", base64String, { shouldValidate: true });
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsUploading(true);
+      const filename = generateIconFilename(file);
+      const path = `${ICON_FILE_PATH}/${filename}`;
+      const buffer = await file.arrayBuffer();
+      await writeFileMutation.mutateAsync({
+        path,
+        contentType: file.type,
+        content: new Uint8Array(buffer),
+      });
+
+      form.setValue("icon", path, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    } catch (error) {
+      console.error("Failed to upload icon:", error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Function to trigger file input click
@@ -105,27 +138,33 @@ export function DetailForm() {
                     />
                     <FormControl>
                       <div
-                        className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                        className="w-16 h-16 group aspect-square rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                         onClick={triggerFileInput}
                       >
-                        {iconValue && /^(data:)|(http?s:)/.test(iconValue)
+                        {iconValue
                           ? (
                             <>
-                              <img
-                                src={iconValue}
-                                alt="Icon preview"
-                                className="w-full h-full object-contain"
-                              />
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <Icon
-                                  name="upload"
-                                  className="text-white text-xl"
-                                />
-                              </div>
+                              {isUploading
+                                ? <Skeleton className="rounded-2xl w-16 h-16" />
+                                : (
+                                  <div className="relative w-full h-full">
+                                    <IntegrationIcon
+                                      icon={iconValue}
+                                      name={form.getValues("name") ||
+                                        "Integration"}
+                                    />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                      <Icon
+                                        name="upload"
+                                        className="text-white text-xl"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                             </>
                           )
                           : (
-                            <>
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-slate-100 rounded-lg p-2 border border-slate-200">
                               <Icon
                                 name="upload"
                                 className="text-muted-foreground/70 text-xl"
@@ -133,7 +172,7 @@ export function DetailForm() {
                               <span className="text-xs text-muted-foreground/70 text-center px-1">
                                 Upload Icon
                               </span>
-                            </>
+                            </div>
                           )}
                         <Input type="hidden" {...field} />
                       </div>

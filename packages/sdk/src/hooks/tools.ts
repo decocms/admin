@@ -29,34 +29,18 @@ export type ToolsData = {
 
 const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 
-export const listTools = async (
-  connection: MCPConnection,
-): Promise<ToolsData> => {
-  const { data, ok } = await MCPClient.INTEGRATIONS_LIST_TOOLS({
-    connection,
-  });
-  if (!ok) {
-    throw new Error("Failed to list tools");
-  }
+export const listTools = (connection: MCPConnection): Promise<ToolsData> =>
+  MCPClient.INTEGRATIONS_LIST_TOOLS({ connection }) as Promise<ToolsData>;
 
-  return data as ToolsData;
-};
-
-export const callTool = async (
+export const callTool = (
   connection: MCPConnection,
   toolCallArgs: MCPToolCall,
-) => {
-  const { data, ok } = await MCPClient.INTEGRATIONS_CALL_TOOL({
+) =>
+  MCPClient.INTEGRATIONS_CALL_TOOL({
     connection,
     // deno-lint-ignore no-explicit-any
     params: toolCallArgs as any,
   });
-  if (!ok) {
-    throw new Error("Failed to call tool");
-  }
-
-  return data as MCPToolCallResult;
-};
 
 export function useTools(connection: MCPConnection) {
   const response = useQuery({

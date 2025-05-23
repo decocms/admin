@@ -1,3 +1,4 @@
+import { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   AgentSchema,
@@ -6,10 +7,13 @@ import {
 } from "../../index.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { AppContext, createApiHandler } from "../context.ts";
+import { AppContext, createTool } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
+import { deleteTrigger, listTriggers } from "../triggers/api.ts";
+
+const NO_DATA_ERROR = "PGRST116";
 
 export const getAgentsByIds = async (
   ids: string[],
@@ -48,23 +52,18 @@ export const getAgentsByIds = async (
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
-export const listAgents = createApiHandler({
+export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    const [
-      _assertions,
-      { data, error },
-    ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      c.db
-        .from("deco_chat_agents")
-        .select("*")
-        .ilike("workspace", c.workspace.value),
-    ]);
+    const { data, error } = await c.db
+      .from("deco_chat_agents")
+      .select("*")
+      .ilike("workspace", c.workspace.value);
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -76,55 +75,61 @@ export const listAgents = createApiHandler({
   },
 });
 
-export const getAgent = createApiHandler({
+export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  async canAccess(name, props, c) {
+    const hasAccess = await canAccessWorkspaceResource(name, props, c);
+    if (hasAccess) {
+      return true;
+    }
+
+    assertHasWorkspace(c);
+    const { data: agentData } = await c.db.from("deco_chat_agents").select(
+      "visibility",
+    ).eq("workspace", c.workspace.value).eq("id", props.id).single();
+
+    // TODO: implement this using authorization system
+    if (agentData?.visibility === "PUBLIC") {
+      return true;
+    }
+
+    return false;
+  },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    const [
-      hasAccessToWorkspace,
-      { data, error },
-    ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c)
-        .then(() => true).catch((e) => e),
-      id in WELL_KNOWN_AGENTS
-        ? {
-          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-          error: null,
-        }
-        : c.db
-          .from("deco_chat_agents")
-          .select("*")
-          .eq("id", id)
-          .single(),
-    ]);
+    const { data, error } = id in WELL_KNOWN_AGENTS
+      ? {
+        data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+        error: null,
+      }
+      : await c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-    if (hasAccessToWorkspace !== true && data?.visibility !== "PUBLIC") {
-      throw hasAccessToWorkspace;
+    if ((error && error.code == NO_DATA_ERROR) || !data) {
+      throw new NotFoundError(id);
     }
 
     if (error) {
-      throw new InternalServerError(error.message);
-    }
-
-    if (!data) {
-      throw new NotFoundError("Agent not found");
+      throw new InternalServerError((error as PostgrestError).message);
     }
 
     return AgentSchema.parse(data);
   },
 });
 
-export const createAgent = createApiHandler({
+export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  schema: AgentSchema.partial(),
+  inputSchema: AgentSchema.partial(),
+  canAccess: canAccessWorkspaceResource,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -146,14 +151,17 @@ export const createAgent = createApiHandler({
   },
 });
 
-export const createTempAgent = createApiHandler({
+export const createTempAgent = createTool({
   name: "AGENTS_CREATE_TEMP",
   description:
     "Inserts or updates a temp agent for the whatsapp integration based on userId",
-  schema: z.object({
+  inputSchema: z.object({
     agentId: z.string(),
     userId: z.string(),
   }),
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_CREATE", _props, c);
+  },
   handler: async ({ agentId, userId }, c) => {
     const [{ data, error }] = await Promise.all([
       c.db
@@ -177,18 +185,16 @@ export const createTempAgent = createApiHandler({
   },
 });
 
-export const updateAgent = createApiHandler({
+export const updateAgent = createTool({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
-
     const { data, error } = await c.db
       .from("deco_chat_agents")
       .update({ ...agent, id, workspace: c.workspace.value })
@@ -208,19 +214,22 @@ export const updateAgent = createApiHandler({
   },
 });
 
-export const deleteAgent = createApiHandler({
+export const deleteAgent = createTool({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
-
     const { error } = await c.db
       .from("deco_chat_agents")
       .delete()
       .eq("id", id);
+
+    const triggers = await listTriggers.handler({ agentId: id });
+    for (const trigger of triggers.structuredContent.triggers) {
+      await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
+    }
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -230,10 +239,13 @@ export const deleteAgent = createApiHandler({
   },
 });
 
-export const getTempAgent = createApiHandler({
+export const getTempAgent = createTool({
   name: "AGENTS_GET_TEMP",
   description: "Get the temp WhatsApp agent for the current user",
-  schema: z.object({ userId: z.string() }),
+  inputSchema: z.object({ userId: z.string() }),
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_GET", _props, c);
+  },
   handler: async ({ userId }, c) => {
     const { data, error } = await c.db
       .from("temp_wpp_agents")
@@ -243,6 +255,7 @@ export const getTempAgent = createApiHandler({
     if (error) {
       throw new InternalServerError(error.message);
     }
+
     return data;
   },
 });

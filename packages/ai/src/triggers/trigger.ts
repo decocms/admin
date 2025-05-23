@@ -4,9 +4,11 @@ import { Actor } from "@deco/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
 import {
   AppContext,
+  AuthorizationClient,
   fromWorkspaceString,
   MCPClient,
   MCPClientStub,
+  PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
@@ -116,6 +118,8 @@ export class Trigger {
   }
 
   private createMCPClient() {
+    const policyClient = PolicyClient.getInstance(this.db);
+    const authorizationClient = new AuthorizationClient(policyClient);
     return MCPClient.forContext({
       envVars: this.env,
       db: this.db,
@@ -124,6 +128,8 @@ export class Trigger {
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       params: {},
+      policy: policyClient,
+      authorization: authorizationClient,
     });
   }
 

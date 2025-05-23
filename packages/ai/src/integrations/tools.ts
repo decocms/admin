@@ -9,7 +9,11 @@
  *
  * If you need to disable an integration, use INTEGRATION_DISABLE.
  */
-import { type Integration, IntegrationSchema } from "@deco/sdk";
+import {
+  CallToolResultSchema,
+  type Integration,
+  IntegrationSchema,
+} from "@deco/sdk";
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
@@ -18,6 +22,7 @@ import {
   getDecoRegistryServerClient,
   searchInstalledIntegations,
   searchMarketplaceIntegations,
+  startOauthFlow,
 } from "./utils.ts";
 
 export const DECO_INTEGRATIONS_SEARCH = createInnateTool({
@@ -102,6 +107,21 @@ It's always handy to search for installed integrations with no query, since all 
   },
 });
 
+export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
+  id: "DECO_INTEGRATION_OAUTH_START",
+  description: "Start the OAuth flow for an integration",
+  inputSchema: z.object({
+    integrationId: z.string().describe(
+      "The id of the integration to start the OAuth flow for",
+    ),
+  }),
+  execute: () => async ({ context }) => {
+    const { integrationId } = context;
+    const redirectUrl = await startOauthFlow(integrationId);
+    return { redirectUrl };
+  },
+});
+
 const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
   success: z.boolean().describe("Whether the configuration was successful"),
   message: z.string().describe(
@@ -131,10 +151,11 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
       const result = await client.callTool({
         name: "CONFIGURE",
         arguments: { id: context.id },
-      }) as { content: { text: string }[] };
+        // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+      }, CallToolResultSchema);
 
       const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
-        JSON.parse(result.content[0].text),
+        result.structuredContent,
       );
 
       const id = crypto.randomUUID();
@@ -281,4 +302,5 @@ export const tools = {
   DECO_INTEGRATION_ENABLE,
   DECO_INTEGRATION_DISABLE,
   DECO_INTEGRATION_LIST_TOOLS,
+  DECO_INTEGRATION_OAUTH_START,
 } as const;

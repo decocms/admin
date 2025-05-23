@@ -1,17 +1,24 @@
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
-import { assertHasUser } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { assertHasUser, assertPrincipalIsUser, bypass } from "../assertions.ts";
+import { createTool } from "../context.ts";
+import { UnauthorizedError } from "../index.ts";
 import { userFromDatabase } from "../user.ts";
 
-export const getProfile = createApiHandler({
+export const getProfile = createTool({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: bypass,
   handler: async (_, c) => {
+    assertHasUser(c);
+    assertPrincipalIsUser(c);
+
     const user = c.user;
 
-    assertHasUser(c);
+    if (user.is_anonymous) {
+      throw new UnauthorizedError();
+    }
 
     // TODO: change profile data to have necessary info
     const { data, error } = await c.db
@@ -35,23 +42,24 @@ export const getProfile = createApiHandler({
   },
 });
 
-export const updateProfile = createApiHandler({
+export const updateProfile = createTool({
   name: "PROFILES_UPDATE",
   description: "Update the current user's profile",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string().nullable().optional(),
     email: z.string().optional(),
     deco_user_id: z.number().nullable().optional(),
     is_new_user: z.boolean().nullable().optional(),
     phone: z.string().nullable().optional(),
   }),
+  canAccess: bypass,
   handler: async (
     { name, email, deco_user_id, is_new_user, phone },
     c,
   ) => {
-    const user = c.user;
-
+    assertPrincipalIsUser(c);
     assertHasUser(c);
+    const user = c.user;
 
     const { data, error } = await c.db
       .from("profiles")

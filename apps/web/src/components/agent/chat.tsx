@@ -26,7 +26,6 @@ import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import { WhatsAppButton } from "./WhatsAppButton.tsx";
-import { useSDK } from "@deco/sdk";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -85,11 +84,9 @@ function ActionsButtons() {
     return null;
   }
 
-  const { workspace } = useSDK();
-
   return (
     <div className="hidden md:flex items-center gap-2">
-      {workspace === "shared/deco.cx" && <WhatsAppButton />}
+      <WhatsAppButton />
 
       {displayNewChat && (
         <Tooltip>

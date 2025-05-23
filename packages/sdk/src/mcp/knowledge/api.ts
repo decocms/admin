@@ -5,20 +5,16 @@ import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
-import {
-  AppContext,
-  createApiHandler,
-  createApiHandlerFactory,
-} from "../context.ts";
+import { AppContext, createTool, createToolFactory } from "../context.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
 }
 export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
 export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
-const createKnowledgeBaseApiHandler = createApiHandlerFactory<
+const createKnowledgeBaseTool = createToolFactory<
   KnowledgeBaseContext
 >((c) => ({
   ...c,
@@ -50,10 +46,11 @@ async function getVector(c: AppContext) {
 
 const DEFAULT_DIMENSION = 1536;
 
-export const listKnowledgeBases = createApiHandler({
+export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
   description: "List all knowledge bases",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const vector = await getVector(c);
     const names = await vector.listIndexes();
@@ -69,14 +66,14 @@ export const listKnowledgeBases = createApiHandler({
   },
 });
 
-export const deleteBase = createApiHandler({
+export const deleteBase = createTool({
   name: "KNOWLEDGE_BASE_DELETE",
   description: "Delete a knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string().describe("The name of the knowledge base"),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ name }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.deleteIndex(name);
     return {
@@ -84,10 +81,10 @@ export const deleteBase = createApiHandler({
     };
   },
 });
-export const createBase = createApiHandler({
+export const createBase = createTool({
   name: "KNOWLEDGE_BASE_CREATE",
   description: "Create a knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string()
       .regex(
         /^[a-z0-9-_]+$/,
@@ -97,8 +94,8 @@ export const createBase = createApiHandler({
     dimension: z.number().describe("The dimension of the knowledge base")
       .optional(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ name, dimension }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
@@ -111,14 +108,14 @@ export const createBase = createApiHandler({
   },
 });
 
-export const forget = createKnowledgeBaseApiHandler({
+export const forget = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_FORGET",
   description: "Forget something",
-  schema: z.object({
+  inputSchema: z.object({
     docId: z.string().describe("The id of the content to forget"),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ docId }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     const vector = await getVector(c);
     await vector.deleteIndexById(c.name, docId);
     return {
@@ -127,21 +124,20 @@ export const forget = createKnowledgeBaseApiHandler({
   },
 });
 
-export const remember = createKnowledgeBaseApiHandler({
+export const remember = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_REMEMBER",
   description: "Remember something",
-  schema: z.object({
+  inputSchema: z.object({
     docId: z.string().optional().describe(
       "The id of the content being remembered",
     ),
     content: z.string().describe("The content to remember"),
-    name: z.string().describe("The name of the knowledge base").optional(),
     metadata: z.record(z.string(), z.string()).describe(
       "The metadata to remember",
     ).optional(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ content, metadata, docId: _id }, c) => {
-    await assertUserHasAccessToWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
@@ -165,17 +161,17 @@ export const remember = createKnowledgeBaseApiHandler({
   },
 });
 
-export const search = createKnowledgeBaseApiHandler({
+export const search = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_SEARCH",
   description: "Search the knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     query: z.string().describe("The query to search the knowledge base"),
     topK: z.number().describe("The number of results to return").optional(),
     content: z.boolean().describe("Whether to return the content").optional(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ query, topK }, c) => {
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
     const mem = await WorkspaceMemory.create({
       workspace: c.workspace.value,
       tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,

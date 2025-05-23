@@ -6,12 +6,23 @@ import {
 import { z } from "zod";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
-import { NotFoundError } from "../index.ts";
+import { InternalServerError, NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
+import { WorkspaceMemory } from "../../memory/memory.ts";
+
+async function getWorkspaceMemory(c: AppContext) {
+  assertHasWorkspace(c);
+  return await WorkspaceMemory.create({
+    workspace: c.workspace.value,
+    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN ?? "",
+    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
+    tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+  });
+}
 
 const safeParse = (str: string) => {
   try {
@@ -70,11 +81,11 @@ const createSQLClientFor = async (
   });
 };
 
-export const listThreads = createApiHandler({
+export const listThreads = createTool({
   name: "THREADS_LIST",
   description:
     "List all threads in a workspace with cursor-based pagination and filtering",
-  schema: z.object({
+  inputSchema: z.object({
     limit: z.number().min(1).max(20).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
@@ -86,19 +97,17 @@ export const listThreads = createApiHandler({
     ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      createSQLClientFor(
-        workspace,
-        TURSO_ORGANIZATION,
-        TURSO_GROUP_DATABASE_TOKEN,
-      ),
-    ]);
+    const client = await createSQLClientFor(
+      workspace,
+      TURSO_ORGANIZATION,
+      TURSO_GROUP_DATABASE_TOKEN,
+    );
 
     orderBy ??= "createdAt_desc";
     // Parse orderBy parameter
@@ -124,6 +133,11 @@ export const listThreads = createApiHandler({
       whereClauses.push(`${field} ${operator} ?`);
       args.push(cursor);
     }
+
+    // Filter out deleted threads
+    whereClauses.push(
+      "(json_extract(metadata, '$.deleted') IS NULL OR json_extract(metadata, '$.deleted') = false)",
+    );
 
     const whereClause = whereClauses.length > 0
       ? `WHERE ${whereClauses.join(" AND ")}`
@@ -167,23 +181,21 @@ export const listThreads = createApiHandler({
   },
 });
 
-export const getThreadMessages = createApiHandler({
+export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      createSQLClientFor(
-        workspace,
-        TURSO_ORGANIZATION,
-        TURSO_GROUP_DATABASE_TOKEN,
-      ),
-    ]);
+    const client = await createSQLClientFor(
+      workspace,
+      TURSO_ORGANIZATION,
+      TURSO_GROUP_DATABASE_TOKEN,
+    );
 
     const { data: result, error } = await safeExecute(client, {
       sql:
@@ -203,23 +215,21 @@ export const getThreadMessages = createApiHandler({
   },
 });
 
-export const getThread = createApiHandler({
+export const getThread = createTool({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      createSQLClientFor(
-        workspace,
-        TURSO_ORGANIZATION,
-        TURSO_GROUP_DATABASE_TOKEN,
-      ),
-    ]);
+    const client = await createSQLClientFor(
+      workspace,
+      TURSO_ORGANIZATION,
+      TURSO_GROUP_DATABASE_TOKEN,
+    );
 
     const { data: result, error } = await safeExecute(client, {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -236,23 +246,21 @@ export const getThread = createApiHandler({
   },
 });
 
-export const getThreadTools = createApiHandler({
+export const getThreadTools = createTool({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const [_, client] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      createSQLClientFor(
-        workspace,
-        TURSO_ORGANIZATION,
-        TURSO_GROUP_DATABASE_TOKEN,
-      ),
-    ]);
+    const client = await createSQLClientFor(
+      workspace,
+      TURSO_ORGANIZATION,
+      TURSO_GROUP_DATABASE_TOKEN,
+    );
 
     const { data: result } = await safeExecute(client, {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -262,5 +270,79 @@ export const getThreadTools = createApiHandler({
     const { data: thread } = ThreadSchema.safeParse(result?.rows[0] ?? {});
 
     return { tools_set: thread?.metadata.tools_set ?? null };
+  },
+});
+
+export const updateThreadTitle = createTool({
+  name: "THREADS_UPDATE_TITLE",
+  description: "Update a thread's title",
+  inputSchema: z.object({
+    threadId: z.string(),
+    title: z.string(),
+  }),
+  canAccess: canAccessWorkspaceResource,
+  handler: async ({ threadId, title }, c) => {
+    const memory = await getWorkspaceMemory(c);
+
+    const currentThread = await memory.getThreadById({ threadId });
+    if (!currentThread) {
+      throw new NotFoundError();
+    }
+
+    const result = await memory.updateThread({
+      id: threadId,
+      title,
+      metadata: currentThread.metadata ?? {},
+    });
+    if (!result) {
+      throw new InternalServerError("Failed to update thread title");
+    }
+
+    return {
+      ...result,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
+    };
+  },
+});
+
+export const updateThreadMetadata = createTool({
+  name: "THREADS_UPDATE_METADATA",
+  description: "Update a thread's metadata",
+  inputSchema: z.object({
+    threadId: z.string(),
+    metadata: z.record(z.unknown()),
+  }),
+  canAccess: canAccessWorkspaceResource,
+  handler: async ({ threadId, metadata }, c) => {
+    const memory = await getWorkspaceMemory(c);
+
+    const currentThread = await memory.getThreadById({ threadId });
+    if (!currentThread) {
+      throw new NotFoundError();
+    }
+
+    const result = await memory.updateThread({
+      id: threadId,
+      title: currentThread.title ?? "",
+      metadata: { ...currentThread.metadata, ...metadata },
+    });
+    if (!result) {
+      throw new InternalServerError("Failed to update thread metadata");
+    }
+
+    return {
+      ...result,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
+    };
   },
 });

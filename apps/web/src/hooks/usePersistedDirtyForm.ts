@@ -32,15 +32,22 @@ export function usePersistedDirtyForm<T extends FieldValues>({
     if (form.formState.isDirty) {
       persist(formValues);
     }
-  }, [formValues]);
+  }, [formValues, form.formState.isDirty]);
 
   useEffect(() => {
     const overrides = getOverrides();
     if (overrides) {
-      form.reset(overrides);
-    }
-
-    if (!overrides && defaultValues) {
+      // Compare with defaultValues to mark fields as dirty
+      Object.keys(overrides).forEach((key) => {
+        if (overrides[key] !== defaultValues[key]) {
+          // deno-lint-ignore no-explicit-any
+          form.setValue(key as any, overrides[key], {
+            shouldDirty: true,
+            shouldTouch: true,
+          });
+        }
+      });
+    } else if (defaultValues) {
       form.reset(defaultValues);
     }
   }, [defaultValues, form]);

@@ -1,4 +1,4 @@
-import { AgentNotFoundError, useAgent } from "@deco/sdk";
+import { NotFoundError, useAgent } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
@@ -9,7 +9,7 @@ export function ChatHeader() {
   return (
     <ErrorBoundary
       fallback={<ChatHeader.Fallback />}
-      shouldCatch={(e) => e instanceof AgentNotFoundError}
+      shouldCatch={(e) => e instanceof NotFoundError}
     >
       <Suspense fallback={<ChatHeader.Skeleton />}>
         <ChatHeader.UI />

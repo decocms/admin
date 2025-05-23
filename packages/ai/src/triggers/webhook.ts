@@ -119,7 +119,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       }
     }
     return useStream
-      ? await agent.stream(messages)
-      : await agent.generate(messages);
+      ? await agent.stream(messages, options)
+      : await agent.generate(messages, options);
   },
 };

@@ -11,9 +11,11 @@ import {
   AUTH_URL,
   getEnv,
   HonoAppContext as AppContext,
+  type Principal,
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
+import { assertPrincipalIsUser } from "./assertions.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 
@@ -43,8 +45,10 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
 // TODO: add LRU Cache
 export const getUser = async (
   ctx: AppContext,
-): Promise<SupaUser | undefined> => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN } = getEnv(honoCtxToAppCtx(ctx));
+): Promise<Principal | undefined> => {
+  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN, ISSUER_JWT_SECRET } = getEnv(
+    honoCtxToAppCtx(ctx),
+  );
 
   const cookies = getCookies(ctx.req.raw.headers);
   const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN, {
@@ -59,7 +63,11 @@ export const getUser = async (
     },
   });
 
-  const user = await getUserBySupabaseCookie(ctx.req.raw, supabase);
+  const user = await getUserBySupabaseCookie(
+    ctx.req.raw,
+    supabase,
+    ISSUER_JWT_SECRET,
+  );
 
   if (!user) {
     return undefined;
@@ -97,10 +105,14 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
 };
 
 appLogin.all("/oauth", async (ctx: AppContext) => {
-  const user = ctx.get("user");
+  let user;
+  try {
+    assertPrincipalIsUser(ctx.var);
+    user = ctx.var.user;
+  } catch { /**/ }
 
   // user already logged in, set by userMiddleware
-  if (user) {
+  if (user && !user.is_anonymous) {
     return ctx.redirect("/");
   }
 

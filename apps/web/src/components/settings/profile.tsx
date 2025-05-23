@@ -43,7 +43,7 @@ function getCountryConfig(country: any): Country {
       },
       validate: (value: string) =>
         /^\+?55\d{11}$/.test(value.replace(/\D/g, "")),
-      placeholder: "+5511975854882",
+      placeholder: "+55119100000000",
     };
   }
   if (country.dial_code === "+1") {

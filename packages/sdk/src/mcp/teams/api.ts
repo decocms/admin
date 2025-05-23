@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import {
-  assertUserHasAccessToTeamBySlug,
-  assertUserIsTeamAdmin,
+  assertPrincipalIsUser,
+  bypass,
+  canAccessTeamResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createTool } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -21,21 +22,18 @@ export const removeNameAccents = (name: string): string => {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
-export const getTeam = createApiHandler({
+export const getTeam = createTool({
   name: "TEAMS_GET",
   description: "Get a team by slug",
-  schema: z.object({
+  inputSchema: z.object({
     slug: z.string(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.slug, c);
+  },
   handler: async (props, c) => {
     const { slug } = props;
-    const user = c.user;
 
-    // check user belongs to team
-    await assertUserHasAccessToTeamBySlug(
-      { teamSlug: slug, userId: user.id },
-      c,
-    );
     const { data: teamData, error } = await c
       .db
       .from("teams")
@@ -52,14 +50,15 @@ export const getTeam = createApiHandler({
   },
 });
 
-export const createTeam = createApiHandler({
+export const createTeam = createTool({
   name: "TEAMS_CREATE",
   description: "Create a new team",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string(),
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
+  canAccess: bypass,
   /**
    * This function handle this steps:
    * 1. check if team slug already exists;
@@ -68,6 +67,7 @@ export const createTeam = createApiHandler({
    * 4. Add member role as onwer (id: 1).
    */
   handler: async (props, c) => {
+    assertPrincipalIsUser(c);
     const { name, slug, stripe_subscription_id } = props;
     const user = c.user;
 
@@ -134,23 +134,22 @@ export const createTeam = createApiHandler({
   },
 });
 
-export const updateTeam = createApiHandler({
+export const updateTeam = createTool({
   name: "TEAMS_UPDATE",
   description: "Update an existing team",
-  schema: z.object({
-    id: z.number(),
+  inputSchema: z.object({
+    id: z.number().describe("The id of the team to update"),
     data: z.object({
       name: z.string().optional(),
       slug: z.string().optional(),
       stripe_subscription_id: z.string().optional(),
     }),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.id, c);
+  },
   handler: async (props, c) => {
     const { id, data } = props;
-    const user = c.user;
-
-    // First verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, id, user.id);
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -186,18 +185,17 @@ export const updateTeam = createApiHandler({
   },
 });
 
-export const deleteTeam = createApiHandler({
+export const deleteTeam = createTool({
   name: "TEAMS_DELETE",
   description: "Delete a team by id",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
+  },
   handler: async (props, c) => {
     const { teamId } = props;
-    const user = c.user;
-
-    // First verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     const members = await c.db
       .from("members")
@@ -225,11 +223,13 @@ export const deleteTeam = createApiHandler({
   },
 });
 
-export const listTeams = createApiHandler({
+export const listTeams = createTool({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: bypass,
   handler: async (_, c) => {
+    assertPrincipalIsUser(c);
     const user = c.user;
 
     const { data, error } = await c

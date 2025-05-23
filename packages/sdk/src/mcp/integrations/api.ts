@@ -17,12 +17,14 @@ import {
   NEW_INTEGRATION_TEMPLATE,
   UserInputError,
 } from "../../index.ts";
+import { CallToolResultSchema } from "../../models/toolCall.ts";
 import type { Workspace } from "../../path.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  bypass,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createTool } from "../context.ts";
 import { NotFoundError } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 
@@ -52,12 +54,14 @@ const agentAsIntegrationFor =
     },
   });
 
-export const callTool = createApiHandler({
+export const callTool = createTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
-  schema: IntegrationSchema.pick({
+  inputSchema: IntegrationSchema.pick({
     connection: true,
   }).merge(CallToolRequestSchema.pick({ params: true })),
+  // The tool call will be authorized itself. This is a proxy
+  canAccess: bypass,
   handler: async ({ connection: reqConnection, params: toolCall }, c) => {
     const connection = isApiDecoChatMCPConnection(reqConnection)
       ? patchApiDecoChatTokenHTTPConnection(
@@ -83,7 +87,8 @@ export const callTool = createApiHandler({
       const result = await client.callTool({
         name: toolCall.name,
         arguments: toolCall.arguments || {},
-      });
+        // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+      }, CallToolResultSchema);
 
       await client.close();
 
@@ -101,12 +106,13 @@ export const callTool = createApiHandler({
   },
 });
 
-export const listTools = createApiHandler({
+export const listTools = createTool({
   name: "INTEGRATIONS_LIST_TOOLS",
   description: "List tools of a given integration",
-  schema: IntegrationSchema.pick({
+  inputSchema: IntegrationSchema.pick({
     connection: true,
   }),
+  canAccess: bypass,
   handler: async ({ connection }, c) => {
     const result = await listToolsByConnectionType(
       connection,
@@ -177,21 +183,21 @@ const virtualIntegrationsFor = (
     }),
   ];
 };
-export const listIntegrations = createApiHandler({
+
+export const listIntegrations = createTool({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
     const [
-      _assertions,
       integrations,
       agents,
       knowledgeBases,
     ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
       c.db
         .from("deco_chat_integrations")
         .select("*")
@@ -200,9 +206,7 @@ export const listIntegrations = createApiHandler({
         .from("deco_chat_agents")
         .select("*")
         .ilike("workspace", workspace),
-      listKnowledgeBases.handler({}).catch(() => {
-        return { names: [] as string[] };
-      }),
+      listKnowledgeBases.handler({}),
     ]);
 
     const error = integrations.error || agents.error;
@@ -213,8 +217,11 @@ export const listIntegrations = createApiHandler({
       );
     }
 
-    return [
-      ...virtualIntegrationsFor(workspace, knowledgeBases.names),
+    const result = [
+      ...virtualIntegrationsFor(
+        workspace,
+        knowledgeBases.structuredContent?.names ?? [],
+      ),
       ...integrations.data.map((item) => ({
         ...item,
         id: formatId("i", item.id),
@@ -227,15 +234,24 @@ export const listIntegrations = createApiHandler({
     ]
       .map((i) => IntegrationSchema.safeParse(i)?.data)
       .filter((i) => !!i);
+
+    return result;
   },
 });
 
-export const getIntegration = createApiHandler({
+export const getIntegration = createTool({
   name: "INTEGRATIONS_GET",
   description: "Get an integration by id",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
+  async canAccess(name, props, c) {
+    const { id } = props;
+    if (INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS]) {
+      return true;
+    }
+    return await canAccessWorkspaceResource(name, props, c);
+  },
   handler: async ({ id }, c) => {
     const { uuid, type } = parseId(id);
     if (uuid in INNATE_INTEGRATIONS) {
@@ -251,7 +267,7 @@ export const getIntegration = createApiHandler({
     const knowledgeBases = await listKnowledgeBases.handler({});
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
-      knowledgeBases.names,
+      knowledgeBases.structuredContent?.names ?? [],
     );
 
     if (virtualIntegrations.some((i) => i.id === id)) {
@@ -261,24 +277,18 @@ export const getIntegration = createApiHandler({
       });
     }
 
-    const [
-      _assertions,
-      { data, error },
-    ] = await Promise.all([
-      assertUserHasAccessToWorkspace(c),
-      c.db
-        .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-        .select("*")
-        .eq("id", uuid)
-        .single(),
-    ]);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
+    const { data, error } = await c.db
+      .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
+      .select("*")
+      .eq("id", uuid)
+      .single();
 
     if (!data) {
       throw new NotFoundError("Integration not found");
+    }
+
+    if (error) {
+      throw new InternalServerError((error as Error).message);
     }
 
     if (type === "a") {
@@ -298,14 +308,13 @@ export const getIntegration = createApiHandler({
   },
 });
 
-export const createIntegration = createApiHandler({
+export const createIntegration = createTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
-  schema: IntegrationSchema.partial(),
+  inputSchema: IntegrationSchema.partial(),
+  canAccess: canAccessWorkspaceResource,
   handler: async (integration, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -328,17 +337,16 @@ export const createIntegration = createApiHandler({
   },
 });
 
-export const updateIntegration = createApiHandler({
+export const updateIntegration = createTool({
   name: "INTEGRATIONS_UPDATE",
   description: "Update an existing integration",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
     integration: IntegrationSchema,
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
 
     const { uuid, type } = parseId(id);
 
@@ -368,16 +376,15 @@ export const updateIntegration = createApiHandler({
   },
 });
 
-export const deleteIntegration = createApiHandler({
+export const deleteIntegration = createTool({
   name: "INTEGRATIONS_DELETE",
   description: "Delete an integration by id",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-
-    await assertUserHasAccessToWorkspace(c);
 
     const { uuid, type } = parseId(id);
 

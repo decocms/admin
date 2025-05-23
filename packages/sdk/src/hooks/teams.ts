@@ -13,17 +13,22 @@ import {
   UpdateTeamInput,
 } from "../crud/teams.ts";
 import { KEYS } from "./api.ts";
+import { InternalServerError } from "../errors.ts";
 
 export const useTeams = () => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAMS(),
     queryFn: ({ signal }) => listTeams({ signal }),
+    retry: (failureCount, error) =>
+      error instanceof InternalServerError && failureCount < 2,
   });
 };
 
 export const useTeam = (slug: string = "") => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM(slug),
+    retry: (failureCount, error) =>
+      error instanceof InternalServerError && failureCount < 2,
     queryFn: ({ signal }) => {
       if (!slug.length) {
         return null;

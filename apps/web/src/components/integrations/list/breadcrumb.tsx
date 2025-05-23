@@ -16,7 +16,7 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMatch } from "react-router";
 import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
 import { ListPageHeader } from "../../common/ListPageHeader.tsx";
@@ -30,6 +30,27 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
 
   const create = useCreateIntegration();
   const updateThreadMessages = useUpdateThreadMessages();
+
+  const handleCreateAuthenticatedIntegration = async (mcpUrl: string) => {
+    const result = await create.mutateAsync({
+      connection: {
+        type: "HTTP" as const,
+        url: mcpUrl,
+        token: "",
+      },
+    });
+    updateThreadMessages(result.id);
+    navigateWorkspace(`/integration/${result.id}`);
+  };
+
+  useEffect(() => {
+    const url = new URL(globalThis.location.href);
+    const mcpUrl = url.searchParams.get("mcpUrl");
+    if (mcpUrl) {
+      handleCreateAuthenticatedIntegration(mcpUrl);
+      url.searchParams.delete("mcpUrl");
+    }
+  }, []);
 
   const handleCreate = async () => {
     try {

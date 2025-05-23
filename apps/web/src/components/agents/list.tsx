@@ -56,6 +56,8 @@ import { Table } from "../common/Table.tsx";
 import { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useEditAgent, useFocusChat } from "./hooks.ts";
+import { AgentAvatar } from "../common/Avatar.tsx";
+import { IntegrationIcon } from "../integrations/list/common.tsx";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -121,21 +123,12 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           asChild
         >
           <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg overflow-hidden">
-            {icon.startsWith("icon://")
-              ? (
-                <Icon
-                  name={icon.replace("icon://", "")}
-                  className="text-base rounded-none"
-                />
-              )
-              : (
-                <Avatar
-                  url={icon}
-                  fallback={integration.name.substring(0, 2)}
-                  objectFit="contain"
-                  className="h-full w-full rounded-none"
-                />
-              )}
+            <IntegrationIcon
+              icon={icon}
+              name={integration.name}
+              variant="small"
+              className="h-full w-full"
+            />
           </div>
         </TooltipTrigger>
         <TooltipContent>
@@ -314,14 +307,9 @@ function Card({ agent }: { agent: Agent }) {
         <div className="flex flex-col gap-3 w-full">
           <div className="relative w-full">
             <div className="h-12 w-12 flex justify-center overflow-hidden rounded-lg shadow-sm">
-              <Avatar
-                url={agent.avatar && /^(data:)|(https?:)/.test(agent.avatar)
-                  ? agent.avatar
-                  : undefined}
-                fallback={agent.avatar &&
-                    !/^(data:)|(https?:)/.test(agent.avatar)
-                  ? agent.avatar
-                  : agent.name.substring(0, 2)}
+              <AgentAvatar
+                name={agent.name}
+                avatar={agent.avatar}
                 className="h-full w-full rounded-lg"
               />
             </div>
@@ -555,14 +543,14 @@ function List() {
               ? "No team agents yet"
               : "No agents match your filter"}
             description={agents.length === 0
-              ? "You haven’t created any agents yet. Create one to get started."
+              ? "You haven't created any agents yet. Create one to get started."
               : visibility === "public" &&
                   agentsByVisibility["public"].length === 0
-              ? "Once agents are shared publicly, they’ll appear here for anyone to explore and try out."
+              ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
               : visibility === "workspace" &&
                   agentsByVisibility["workspace"].length === 0
               ? "Agents shared with your team will show up here. Create one to start collaborating."
-              : "Try adjusting your search. If you still can’t find what you’re looking for, you can create a new agent."}
+              : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
             buttonProps={{
               disabled: creating,
               children: creating ? "Creating..." : "Create Agent",

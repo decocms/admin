@@ -6,11 +6,11 @@ import {
 import {
   createIntegration,
   deleteIntegration,
-  IntegrationNotFoundError,
   listIntegrations,
   loadIntegration,
   saveIntegration,
 } from "../crud/mcp.ts";
+import { InternalServerError } from "../errors.ts";
 import type { Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
@@ -103,7 +103,7 @@ export const useIntegration = (id: string) => {
     queryKey: KEYS.INTEGRATION(workspace, id),
     queryFn: ({ signal }) => loadIntegration(workspace, id, signal),
     retry: (failureCount, error) =>
-      error instanceof IntegrationNotFoundError ? false : failureCount < 2,
+      error instanceof InternalServerError && failureCount < 2,
   });
 
   return data;
@@ -151,6 +151,8 @@ export const useMarketplaceIntegrations = () => {
   });
 };
 
+const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = ["github"];
+
 export const useInstallFromMarketplace = () => {
   const agentStub = useAgentStub();
   const client = useQueryClient();
@@ -158,12 +160,30 @@ export const useInstallFromMarketplace = () => {
 
   const mutation = useMutation({
     mutationFn: async (id: string) => {
+      if (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase())) {
+        const result = await agentStub.callTool(
+          "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
+          { integrationId: id },
+        );
+        const redirectUrl = result?.data?.redirectUrl;
+        if (!redirectUrl) {
+          throw new Error("No redirect URL found");
+        }
+        globalThis.location.href = redirectUrl;
+        // just to make the type checker happy
+        return null;
+      }
+
       const result: { data: { installationId: string } } = await agentStub
         .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id });
 
       return loadIntegration(workspace, result.data.installationId);
     },
     onSuccess: (result) => {
+      if (!result) {
+        return;
+      }
+
       // update item
       const itemKey = KEYS.INTEGRATION(workspace, result.id);
       client.cancelQueries({ queryKey: itemKey });

@@ -58,6 +58,7 @@ export const WebhookTriggerOutputSchema = z.object({
   ),
   type: z.literal("webhook"),
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
+  outputTool: z.string().optional(),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
       "By default this webhook returns the LLM generate text response.\n\n" +

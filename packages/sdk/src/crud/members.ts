@@ -43,79 +43,44 @@ export interface MemberFormData {
  * Fetch invites for the current user
  * @returns List of invites
  */
-export const getMyInvites = async (
+export const getMyInvites = (
   signal?: AbortSignal,
-): Promise<Invite[]> => {
-  const { data, error, ok } = await MCPClient.MY_INVITES_LIST({}, { signal });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to fetch invites");
-  }
-
-  return data as Invite[];
-};
+): Promise<Invite[]> =>
+  MCPClient.MY_INVITES_LIST({}, { signal }) as Promise<Invite[]>;
 
 /**
  * Accept an invite
  * @param inviteId - The ID of the invite to accept
  * @returns Success status and team info
  */
-export const acceptInvite = async (
+export const acceptInvite = (
   inviteId: string,
 ): Promise<
   { ok: boolean; teamId: number; teamName: string; teamSlug: string }
-> => {
-  const { data, error, ok } = await MCPClient.TEAM_INVITE_ACCEPT({
-    id: inviteId,
-  });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to accept invite");
-  }
-
-  return data;
-};
+> => MCPClient.TEAM_INVITE_ACCEPT({ id: inviteId });
 
 /**
  * Fetch team members by team ID
  * @param teamId - The ID of the team to fetch members for
  * @returns List of team members
  */
-export const getTeamMembers = async (
+export const getTeamMembers = (
   { teamId, withActivity }: { teamId: number; withActivity?: boolean },
   signal?: AbortSignal,
-): Promise<Member[]> => {
-  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_GET({
-    teamId,
-    withActivity,
-  }, { signal });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to fetch team members");
-  }
-
-  return data as Member[];
-};
+): Promise<Member[]> =>
+  MCPClient.TEAM_MEMBERS_GET({ teamId, withActivity }, { signal }) as Promise<
+    Member[]
+  >;
 
 /**
  * Fetch team roles by team ID
  * @param teamId - The ID of the team to fetch roles for
  * @returns List of team roles
  */
-export const getTeamRoles = async (
+export const getTeamRoles = (
   teamId: number,
   signal?: AbortSignal,
-): Promise<Role[]> => {
-  const { data, error, ok } = await MCPClient.TEAM_ROLES_LIST({ teamId }, {
-    signal,
-  });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to fetch team roles");
-  }
-
-  return data;
-};
+): Promise<Role[]> => MCPClient.TEAM_ROLES_LIST({ teamId }, { signal });
 
 /**
  * Invite new members to a team
@@ -123,24 +88,14 @@ export const getTeamRoles = async (
  * @param invitees - Array of invitees with email and roles
  * @returns Response message from the API
  */
-export const inviteTeamMembers = async (
+export const inviteTeamMembers = (
   teamId: number,
   invitees: Array<{
     email: string;
     roles: Array<{ id: number; name: string }>;
   }>,
-): Promise<{ message: string }> => {
-  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_INVITE({
-    teamId: teamId.toString(),
-    invitees,
-  });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to invite team members");
-  }
-
-  return data;
-};
+): Promise<{ message: string }> =>
+  MCPClient.TEAM_MEMBERS_INVITE({ teamId: teamId.toString(), invitees });
 
 /**
  * Remove a member from a team
@@ -148,21 +103,11 @@ export const inviteTeamMembers = async (
  * @param memberId - The ID of the member to remove
  * @returns Success status
  */
-export const removeTeamMember = async (
+export const removeTeamMember = (
   teamId: number,
   memberId: number,
-): Promise<{ success: boolean }> => {
-  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_REMOVE({
-    teamId,
-    memberId,
-  });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to remove team member");
-  }
-
-  return data;
-};
+): Promise<{ success: boolean }> =>
+  MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId });
 
 export const registerActivity = (teamId: number) => {
   MCPClient.TEAM_MEMBER_ACTIVITY_REGISTER({ teamId });

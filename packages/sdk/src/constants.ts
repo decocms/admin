@@ -23,6 +23,10 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   );
 }
 
+export const DECO_CHAT_URL = LOCAL_DEBUGGER
+  ? "http://localhost:3000"
+  : "https://deco.chat";
+
 export const LEGACY_API_SERVER_URL = LOCAL_DEBUGGER
   ? "http://localhost:8000"
   : "https://fs.deco.chat";
@@ -58,15 +62,16 @@ const LOGOS = {
   openai:
     "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
   anthropic:
-    "https://assets.decocache.com/webdraw/6780dee0-80d6-4c83-bf4f-8e5773d867ea/claude.png",
+    "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
   google:
-    "https://assets.decocache.com/webdraw/eb7480aa-a68b-4ce4-98ff-36aa121762a7/google.svg",
+    "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
   xai:
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
 export const DEFAULT_MODEL = "auto";
 
+// TODO(@camudo): Make native web search work
 type Capability =
   | "reasoning"
   | "image-upload"
@@ -80,20 +85,26 @@ export const MODELS: Model[] = [
     description:
       "deco.chat will automatically choose the best model for you, based on performance and speed.",
     logo: "",
-    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+  },
+  {
+    id: "anthropic:claude-sonnet-4",
+    name: "Claude Sonnet 4",
+    logo: LOGOS.anthropic,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
-    name: "Claude 3.7 Sonnet",
+    name: "Claude Sonnet 3.7",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
   },
   {
     id: "google:gemini-2.5-pro-preview",
-    name: "Google Gemini 2.5 Pro",
+    name: "Google Gemini Pro 2.5",
     logo: LOGOS.google,
-    capabilities: ["reasoning", "image-upload", "file-upload", "web-search"],
+    capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "google:gemini-2.5-pro-preview-03-25",
   },
   {

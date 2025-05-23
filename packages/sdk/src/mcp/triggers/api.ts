@@ -22,9 +22,9 @@ import { Database, Json } from "../../storage/index.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createTool } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 
 const SELECT_TRIGGER_QUERY = `
@@ -63,15 +63,21 @@ function mapTrigger(
 
 export const buildWebhookUrl = (
   triggerId: string,
-  passphrase: string | undefined,
+  passphrase?: string,
+  outputTool?: string,
 ) => {
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}`;
+  const params = new URLSearchParams();
+  if (passphrase) params.append("passphrase", passphrase);
+  params.append("deno_isolate_instance_id", triggerId);
+  if (outputTool) params.append("output_tool", outputTool);
+  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?${params.toString()}`;
 };
 
-export const listTriggers = createApiHandler({
+export const listTriggers = createTool({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
-  schema: z.object({ agentId: z.string().optional() }),
+  inputSchema: z.object({ agentId: z.string().optional() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId },
     c,
@@ -79,8 +85,6 @@ export const listTriggers = createApiHandler({
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
-
-    await assertUserHasAccessToWorkspace(c);
 
     const query = db
       .from("deco_chat_triggers")
@@ -114,10 +118,11 @@ export const listTriggers = createApiHandler({
   },
 });
 
-export const createTrigger = createApiHandler({
+export const createTrigger = createTool({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
-  schema: z.object({ agentId: z.string(), data: TriggerSchema }),
+  inputSchema: z.object({ agentId: z.string(), data: TriggerSchema }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -127,8 +132,6 @@ export const createTrigger = createApiHandler({
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
-
-    await assertUserHasAccessToWorkspace(c);
 
     // Check if there's already a WhatsApp-enabled trigger for this agent
     const whatsappEnabled =
@@ -168,14 +171,15 @@ export const createTrigger = createApiHandler({
         throw new UserInputError("Invalid trigger");
       }
       (data as z.infer<typeof TriggerSchema> & { url: string }).url =
-        buildWebhookUrl(triggerId, data.passphrase);
+        buildWebhookUrl(triggerId, data.passphrase, data.outputTool);
     }
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -183,7 +187,7 @@ export const createTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
         whatsapp_enabled:
@@ -207,10 +211,14 @@ export const createTrigger = createApiHandler({
   },
 });
 
-export const createCronTrigger = createApiHandler({
+export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
-  schema: z.object({ agentId: z.string(), data: CreateCronTriggerInputSchema }),
+  inputSchema: z.object({
+    agentId: z.string(),
+    data: CreateCronTriggerInputSchema,
+  }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -221,8 +229,6 @@ export const createCronTrigger = createApiHandler({
     const user = c.user;
     const stub = c.stub;
 
-    await assertUserHasAccessToWorkspace(c);
-
     const id = crypto.randomUUID();
 
     const triggerId = Path.resolveHome(
@@ -230,11 +236,12 @@ export const createCronTrigger = createApiHandler({
       workspace,
     ).path;
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -242,7 +249,7 @@ export const createCronTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
       })
@@ -263,13 +270,14 @@ export const createCronTrigger = createApiHandler({
   },
 });
 
-export const createWebhookTrigger = createApiHandler({
+export const createWebhookTrigger = createTool({
   name: "TRIGGERS_CREATE_WEBHOOK",
   description: "Create a webhook trigger",
-  schema: z.object({
+  inputSchema: z.object({
     agentId: z.string(),
     data: CreateWebhookTriggerInputSchema,
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
     c,
@@ -279,8 +287,6 @@ export const createWebhookTrigger = createApiHandler({
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
-
-    await assertUserHasAccessToWorkspace(c);
 
     const id = crypto.randomUUID();
 
@@ -292,11 +298,12 @@ export const createWebhookTrigger = createApiHandler({
     (data as z.infer<typeof TriggerSchema> & { url: string }).url =
       buildWebhookUrl(triggerId, data.passphrase);
 
+    const userId = typeof user.id === "string" ? user.id : undefined;
     await stub(Trigger).new(triggerId).create(
       {
         ...data,
         id,
-        resourceId: user.id,
+        resourceId: userId,
       },
     );
 
@@ -304,7 +311,7 @@ export const createWebhookTrigger = createApiHandler({
       .insert({
         id,
         agent_id: agentId,
-        user_id: user.id,
+        user_id: userId,
         workspace,
         metadata: data as Json,
         whatsapp_enabled:
@@ -327,10 +334,11 @@ export const createWebhookTrigger = createApiHandler({
     return mapTrigger(trigger, agentsById);
   },
 });
-export const deleteTrigger = createApiHandler({
+export const deleteTrigger = createTool({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
-  schema: z.object({ triggerId: z.string(), agentId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string(), agentId: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId, agentId },
     c,
@@ -339,8 +347,6 @@ export const deleteTrigger = createApiHandler({
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
-
-    await assertUserHasAccessToWorkspace(c);
 
     const workspaceTrigger = Path.resolveHome(
       join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
@@ -360,10 +366,11 @@ export const deleteTrigger = createApiHandler({
   },
 });
 
-export const getWebhookTriggerUrl = createApiHandler({
+export const getWebhookTriggerUrl = createTool({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId },
     c,
@@ -371,8 +378,6 @@ export const getWebhookTriggerUrl = createApiHandler({
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
-
-    await assertUserHasAccessToWorkspace(c);
 
     const { data, error } = await db.from("deco_chat_triggers")
       .select("metadata")
@@ -394,10 +399,11 @@ export const getWebhookTriggerUrl = createApiHandler({
   },
 });
 
-export const getTrigger = createApiHandler({
+export const getTrigger = createTool({
   name: "TRIGGERS_GET",
   description: "Get a trigger by ID",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { id: triggerId },
     c,
@@ -405,8 +411,6 @@ export const getTrigger = createApiHandler({
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
-
-    await assertUserHasAccessToWorkspace(c);
 
     const { data: trigger, error } = await db.from("deco_chat_triggers")
       .select(SELECT_TRIGGER_QUERY)
@@ -432,17 +436,17 @@ export const getTrigger = createApiHandler({
   },
 });
 
-export const activateTrigger = createApiHandler({
+export const activateTrigger = createTool({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
     const user = c.user;
-    await assertUserHasAccessToWorkspace(c);
 
     try {
       const { data, error: selectError } = await db.from("deco_chat_triggers")
@@ -469,7 +473,7 @@ export const activateTrigger = createApiHandler({
         {
           ...data.metadata as z.infer<typeof TriggerSchema>,
           id: data.id,
-          resourceId: user.id,
+          resourceId: typeof user.id === "string" ? user.id : undefined,
         },
       );
 
@@ -498,16 +502,16 @@ export const activateTrigger = createApiHandler({
   },
 });
 
-export const deactivateTrigger = createApiHandler({
+export const deactivateTrigger = createTool({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
-    await assertUserHasAccessToWorkspace(c);
 
     try {
       const { data, error: selectError } = await db.from("deco_chat_triggers")

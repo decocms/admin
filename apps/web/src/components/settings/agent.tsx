@@ -1,4 +1,8 @@
-import { type Integration as IntegrationType, useSDK } from "@deco/sdk";
+import {
+  type Integration as IntegrationType,
+  useSDK,
+  useWriteFile,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -12,6 +16,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Select,
   SelectContent,
@@ -28,10 +33,13 @@ import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
+import { useOnAgentChangesDiscarded } from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
+
+const AVATAR_FILE_PATH = "assets/avatars";
 
 function CopyLinkButton(
   { className, link }: { className: string; link: string },
@@ -58,6 +66,16 @@ function CopyLinkButton(
   );
 }
 
+const useAvatarFilename = () => {
+  const generate = (originalFile: File) => {
+    const extension = originalFile.name.split(".").pop()?.toLowerCase() ||
+      "png";
+    return `avatar-${crypto.randomUUID()}.${extension}`;
+  };
+
+  return { generate };
+};
+
 function SettingsTab() {
   const {
     form,
@@ -66,7 +84,16 @@ function SettingsTab() {
     onMutationSuccess,
   } = useAgentSettingsForm();
 
+  const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { generate: generateAvatarFilename } = useAvatarFilename();
+  const [isUploading, setIsUploading] = useState(false);
+
+  useOnAgentChangesDiscarded(agent.id, () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  });
 
   const toolsSet = form.watch("tools_set");
   const setIntegrationTools = (
@@ -99,7 +126,7 @@ function SettingsTab() {
     setIsModalOpen(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -108,16 +135,27 @@ function SettingsTab() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      form.setValue("avatar", base64String, {
+    try {
+      setIsUploading(true);
+      const filename = generateAvatarFilename(file);
+      const path = `${AVATAR_FILE_PATH}/${filename}`;
+      const buffer = await file.arrayBuffer();
+      await writeFileMutation.mutateAsync({
+        path,
+        contentType: file.type,
+        content: new Uint8Array(buffer),
+      });
+
+      form.setValue("avatar", path, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to upload avatar:", error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const triggerFileInput = () => {
@@ -161,18 +199,30 @@ function SettingsTab() {
                                 className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                                 onClick={triggerFileInput}
                               >
-                                <AgentAvatar
-                                  name={agent.name}
-                                  avatar={field.value || agent.avatar}
-                                  className="rounded-lg"
-                                />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                  <Icon
-                                    name="upload"
-                                    className="text-white text-xl"
-                                  />
-                                </div>
-                                <Input type="hidden" {...field} />
+                                {isUploading
+                                  ? (
+                                    <Skeleton
+                                      className={cn(
+                                        "w-full h-full rounded-lg",
+                                      )}
+                                    />
+                                  )
+                                  : (
+                                    <>
+                                      <AgentAvatar
+                                        name={agent.name}
+                                        avatar={field.value || agent.avatar}
+                                        className="rounded-lg"
+                                      />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <Icon
+                                          name="upload"
+                                          className="text-white text-xl"
+                                        />
+                                      </div>
+                                      <Input type="hidden" {...field} />
+                                    </>
+                                  )}
                               </div>
                             </FormControl>
                           </div>

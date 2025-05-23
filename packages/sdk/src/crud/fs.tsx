@@ -6,7 +6,7 @@ interface ListOptions {
 }
 
 export const listFiles = async ({ workspace, root }: ListOptions) => {
-  const { data } = await MCPClient
+  const data = await MCPClient
     .forWorkspace(workspace)
     .FS_LIST({ prefix: root });
 
@@ -28,7 +28,7 @@ export const writeFile = async ({
   contentType,
   expiresIn,
 }: WriteOptions) => {
-  const { data: uploadUrl } = await MCPClient
+  const { url: uploadUrl } = await MCPClient
     .forWorkspace(workspace)
     .FS_WRITE({ path, contentType, ...(expiresIn ? { expiresIn } : {}) });
 
@@ -54,9 +54,13 @@ export const readFile = async ({
   path,
   expiresIn,
 }: ReadOptions) => {
-  const { data } = await MCPClient
+  if (!path) {
+    return null;
+  }
+
+  const { url } = await MCPClient
     .forWorkspace(workspace)
     .FS_READ({ path, ...(expiresIn ? { expiresIn } : {}) });
 
-  return data; // presigned GET url
+  return url;
 };

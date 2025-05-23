@@ -39,6 +39,13 @@ export function WebhookDetails(
         </div>
       )}
 
+      {triggerData.outputTool && (
+        <div>
+          <div className="text-sm font-medium mb-1">Output Tool</div>
+          <CodeBlock>{triggerData.outputTool}</CodeBlock>
+        </div>
+      )}
+
       <div className="text-sm text-muted-foreground">
         Use this URL to trigger this trigger from external systems.
       </div>

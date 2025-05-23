@@ -1,27 +1,34 @@
+import {
+  Agent,
+  useAgent,
+  useCreateTempAgent,
+  useCreateTrigger,
+  useListTriggersByAgentId,
+} from "@deco/sdk";
+import { useProfile, useTempWppAgent } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import {
-  useCreateTempAgent,
-  useCreateTrigger,
-  useListTriggersByAgentId,
-} from "@deco/sdk";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
-import { useProfile } from "@deco/sdk/hooks";
 import { useProfileModal } from "../layout.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
-import { useTempWppAgent } from "@deco/sdk/hooks";
-import { useSDK } from "@deco/sdk";
 
-const WHATSAPP_LINK = "https://wa.me/11920902075?text=Hi!";
+const getWhatsAppLink = (agent: Agent) => {
+  const url = new URL("https://wa.me/11920902075");
+
+  url.searchParams.set("text", `Hey, is that ${agent.name}?`);
+
+  return url.href;
+};
 
 export function WhatsAppButton() {
   const { agentId } = useChatContext();
+  const { data: agent } = useAgent(agentId);
   const { data: triggers } = useListTriggersByAgentId(agentId);
   const { mutate: createTrigger } = useCreateTrigger(agentId);
   const { mutate: createTempAgent } = useCreateTempAgent();
@@ -30,7 +37,6 @@ export function WhatsAppButton() {
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
   const { data: tempWppAgent } = useTempWppAgent(user.id);
-  const { workspace } = useSDK();
 
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
@@ -40,11 +46,7 @@ export function WhatsAppButton() {
   );
 
   function runWhatsAppIntegration() {
-    if (workspace === "shared/deco.cx") {
-      const audio = new Audio("/holy-melody.mp3");
-      audio.play();
-    }
-    createTrigger(
+    !whatsappTrigger && createTrigger(
       {
         title: "WhatsApp Integration",
         description: "WhatsApp integration for this agent",
@@ -52,25 +54,19 @@ export function WhatsAppButton() {
         passphrase: crypto.randomUUID(),
         whatsappEnabled: true,
       },
+    );
+
+    createTempAgent(
+      { agentId, userId: user.id },
       {
         onSuccess: () => {
-          createTempAgent(
-            { agentId, userId: user.id },
-            {
-              onSuccess: () => {
-                toast.success("This agent is now available on WhatsApp.");
-                focusChat(agentId, crypto.randomUUID(), {
-                  history: false,
-                });
-              },
-              onError: (error) => {
-                alert(`Failed to create temporary agent: ${error.message}`);
-              },
-            },
-          );
+          toast.success("This agent is now available on WhatsApp.");
+          focusChat(agentId, crypto.randomUUID(), {
+            history: false,
+          });
         },
         onError: (error) => {
-          alert(`Failed to create WhatsApp integration: ${error.message}`);
+          toast.error(`Failed to create temporary agent: ${error.message}`);
         },
       },
     );
@@ -95,7 +91,7 @@ export function WhatsAppButton() {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <a href={WHATSAPP_LINK} target="_blank">
+          <a href={getWhatsAppLink(agent)} target="_blank">
             <Button variant="ghost" size="icon">
               <img src="/img/zap.svg" className="w-4 h-4" />
             </Button>

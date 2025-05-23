@@ -1,6 +1,6 @@
 import {
-  AgentNotFoundError,
   MODELS,
+  NotFoundError,
   readFile,
   useAgent,
   useSDK,
@@ -38,7 +38,7 @@ export function ChatInput() {
   return (
     <ErrorBoundary
       fallback={<ChatInput.UI disabled />}
-      shouldCatch={(e) => e instanceof AgentNotFoundError}
+      shouldCatch={(e) => e instanceof NotFoundError}
     >
       <Suspense
         fallback={<ChatInput.UI disabled />}
@@ -246,7 +246,11 @@ ChatInput.UI = (
       const url = await readFile({ workspace, path });
 
       setUploadedFiles((prev) =>
-        prev.map((uf) => uf.file === file ? { ...uf, url, status: "done" } : uf)
+        prev.map((uf) =>
+          uf.file === file
+            ? { ...uf, url: url || undefined, status: "done" }
+            : uf
+        )
       );
     } catch (error) {
       setUploadedFiles((prev) =>
@@ -370,8 +374,7 @@ ChatInput.UI = (
                   <Button
                     type={isLoading ? "button" : "submit"}
                     size="icon"
-                    disabled={isUploading || (!isLoading &&
-                      (!input.trim() && uploadedFiles.length === 0))}
+                    disabled={isUploading || (!isLoading && !input.trim())}
                     onClick={isLoading ? stop : undefined}
                     className="h-8 w-8 transition-all hover:opacity-70"
                     title={isLoading

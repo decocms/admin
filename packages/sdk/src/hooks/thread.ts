@@ -13,6 +13,8 @@ import {
   getThreadMessages,
   getThreadTools,
   listThreads,
+  updateThreadMetadata,
+  updateThreadTitle,
 } from "../crud/thread.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
@@ -169,4 +171,69 @@ export const useInvalidateAll = () => {
       predicate: (_query) => true,
     });
   }, [client]);
+};
+
+export const useUpdateThreadTitle = (threadId: string, userId: string) => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (newTitle: string) => {
+      return await updateThreadTitle(workspace, threadId, newTitle);
+    },
+    onMutate: async (newTitle: string) => {
+      await client.cancelQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+
+      const previousThreads = client.getQueryData(
+        KEYS.THREADS(workspace, userId),
+      );
+
+      // Optimistically update the thread in the threads list
+      // deno-lint-ignore no-explicit-any
+      client.setQueryData(KEYS.THREADS(workspace, userId), (old: any) => {
+        if (!old) return old;
+        // deno-lint-ignore no-explicit-any
+        const newThreads = old.threads.map((thread: any) =>
+          thread.id === threadId ? { ...thread, title: newTitle } : thread
+        );
+        return { ...old, threads: newThreads };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousThreads };
+    },
+    // deno-lint-ignore no-explicit-any
+    onError: (_: any, __: any, context: any) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousThreads) {
+        client.setQueryData(
+          KEYS.THREADS(workspace, userId),
+          context.previousThreads,
+        );
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure data is in sync
+      client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
+      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+    },
+  });
+};
+
+export const useDeleteThread = (threadId: string, userId: string) => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return await updateThreadMetadata(workspace, threadId, {
+        deleted: true,
+      });
+    },
+    onSuccess: () => {
+      // Invalidate both the thread and threads list queries
+      client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
+      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+    },
+  });
 };

@@ -1,4 +1,4 @@
-import { AgentNotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { NotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
@@ -32,7 +32,7 @@ export function EmptyState() {
   return (
     <ErrorBoundary
       fallback={<EmptyState.Fallback />}
-      shouldCatch={(e) => e instanceof AgentNotFoundError}
+      shouldCatch={(e) => e instanceof NotFoundError}
     >
       <Suspense fallback={<EmptyState.Skeleton />}>
         <EmptyState.UI />

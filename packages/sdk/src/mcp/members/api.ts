@@ -5,10 +5,11 @@ import {
   UserInputError,
 } from "../../errors.ts";
 import {
-  assertUserHasAccessToTeamById,
-  assertUserIsTeamAdmin,
+  assertPrincipalIsUser,
+  bypass,
+  canAccessTeamResource,
 } from "../assertions.ts";
-import { type AppContext, createApiHandler } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 import {
   checkAlreadyExistUserIdInTeam,
@@ -16,7 +17,6 @@ import {
   getTeamById,
   insertInvites,
   sendInviteEmail,
-  updateUserRole,
   userBelongsToTeam,
 } from "./invitesUtils.ts";
 
@@ -90,22 +90,18 @@ const mapMember = (
   roles: member_roles.map((memberRole) => memberRole.roles).filter(isRole),
 });
 
-export const getTeamMembers = createApiHandler({
+export const getTeamMembers = createTool({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
+  },
   handler: async (props, c) => {
     const { teamId, withActivity } = props;
-    const user = c.user;
-
-    // First verify the user has access to the team
-    await assertUserHasAccessToTeamById(
-      { userId: user.id, teamId: props.teamId },
-      c,
-    );
 
     // Get all members of the team
     const [{ data, error }] = await Promise.all([
@@ -162,22 +158,21 @@ export const getTeamMembers = createApiHandler({
   },
 });
 
-export const updateTeamMember = createApiHandler({
+export const updateTeamMember = createTool({
   name: "TEAM_MEMBERS_UPDATE",
   description: "Update a team member. Usefull for updating admin status.",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     memberId: z.number(),
     data: z.object({
       admin: z.boolean().optional(),
     }),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
+  },
   handler: async (props, c) => {
     const { teamId, memberId, data } = props;
-    const user = c.user;
-
-    // Verify the user has admin access to the team
-    await assertUserIsTeamAdmin(c, teamId, user.id);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -209,16 +204,22 @@ export const updateTeamMember = createApiHandler({
   },
 });
 
-export const removeTeamMember = createApiHandler({
+export const removeTeamMember = createTool({
   name: "TEAM_MEMBERS_REMOVE",
   description: "Remove a member from a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     memberId: z.number(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c) ||
+      (await c.db.from("members").select("user_id").eq("id", props.memberId).eq(
+          "team_id",
+          props.teamId,
+        ).single()).data?.user_id === c.user.id;
+  },
   handler: async (props, c) => {
     const { teamId, memberId } = props;
-    const user = c.user;
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -233,12 +234,6 @@ export const removeTeamMember = createApiHandler({
     if (memberError) throw memberError;
     if (!member) {
       throw new NotFoundError("Member not found in this team");
-    }
-
-    // Is not removing "my" membership from team
-    if (member.user_id !== user.id) {
-      // Verify the user has admin access to the team
-      await assertUserIsTeamAdmin(c, teamId, user.id);
     }
 
     // Don't allow removing the last admin
@@ -278,21 +273,19 @@ export const removeTeamMember = createApiHandler({
   },
 });
 
-export const registerMemberActivity = createApiHandler({
+export const registerMemberActivity = createTool({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
   description: "Register that the user accessed a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
+  },
   handler: async (props, c) => {
+    assertPrincipalIsUser(c);
     const { teamId } = props;
     const user = c.user;
-
-    // Verify the user has admin access to the team
-    await assertUserHasAccessToTeamById({
-      teamId,
-      userId: user.id,
-    }, c);
 
     await c.db.from("user_activity").insert({
       user_id: user.id,
@@ -306,11 +299,13 @@ export const registerMemberActivity = createApiHandler({
 });
 
 // User's invites list handler
-export const getMyInvites = createApiHandler({
+export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: bypass,
   handler: async (_props, c) => {
+    assertPrincipalIsUser(c);
     const user = c.user;
     const db = c.db;
 
@@ -362,11 +357,11 @@ export const getMyInvites = createApiHandler({
 });
 
 // New invite team member handler
-export const inviteTeamMembers = createApiHandler({
+export const inviteTeamMembers = createTool({
   name: "TEAM_MEMBERS_INVITE",
   description:
     "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.string(),
     invitees: z.array(z.object({
       email: z.string().email(),
@@ -376,13 +371,16 @@ export const inviteTeamMembers = createApiHandler({
       })),
     })),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, Number(props.teamId), c);
+  },
   handler: async (props, c) => {
+    assertPrincipalIsUser(c);
+
     const { teamId, invitees } = props;
     const db = c.db;
     const user = c.user;
     const teamIdAsNum = Number(teamId);
-
-    await assertUserIsTeamAdmin(c, Number(teamId), user.id);
 
     // Check for valid inputs
     if (!invitees || !teamId || Number.isNaN(teamIdAsNum)) {
@@ -486,12 +484,13 @@ export const inviteTeamMembers = createApiHandler({
 });
 
 // Accept invite handler
-export const acceptInvite = createApiHandler({
+export const acceptInvite = createTool({
   name: "TEAM_INVITE_ACCEPT",
   description: "Accept a team invitation",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
+  canAccess: bypass,
   handler: async (props, c) => {
     const { id } = props;
     const db = c.db;
@@ -572,17 +571,11 @@ export const acceptInvite = createApiHandler({
       if (invite.invited_roles && Array.isArray(invite.invited_roles)) {
         const rolePromises = invite.invited_roles.map(async (roleData) => {
           const role = roleData as { id: number; name: string };
-          return await updateUserRole(
-            db,
-            Number(invite.team_id),
-            invite.invited_email,
-            {
-              roleId: role.id,
-              action: "grant",
-            },
-          );
+          await c.policy.updateUserRole(invite.team_id, invite.invited_email, {
+            roleId: role.id,
+            action: "grant",
+          });
         });
-
         try {
           await Promise.all(rolePromises);
         } catch (error) {
@@ -625,12 +618,13 @@ export const acceptInvite = createApiHandler({
 });
 
 // Delete invite handler
-export const deleteInvite = createApiHandler({
+export const deleteInvite = createTool({
   name: "TEAM_INVITE_DELETE",
   description: "Delete a team invitation",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
+  canAccess: bypass,
   handler: async (props, c) => {
     const { id } = props;
     const db = c.db;
@@ -649,22 +643,18 @@ export const deleteInvite = createApiHandler({
   },
 });
 
-export const teamRolesList = createApiHandler({
+export const teamRolesList = createTool({
   name: "TEAM_ROLES_LIST",
   description: "Get all roles available for a team, including basic deco roles",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
+  async canAccess(name, props, c) {
+    return await canAccessTeamResource(name, props.teamId, c);
+  },
   handler: async (props, c) => {
     const { teamId } = props;
     const db = c.db;
-    const user = c.user;
-
-    // Verify the user has access to the team
-    await assertUserHasAccessToTeamById(
-      { userId: user.id, teamId },
-      c,
-    );
 
     // Helper function to create the team or deco basic roles query
     const getTeamOrDecoBasicRolesQuery = (teamId: number) => {

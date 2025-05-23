@@ -5,7 +5,10 @@ import {
 } from "@deco/ui/components/avatar.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { HTMLAttributes, type ReactNode, useMemo } from "react";
+import { HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
+import { useFile } from "@deco/sdk";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { isFilePath } from "../../utils/path.ts";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -60,6 +63,11 @@ export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
    * The object fit of the avatar image
    */
   objectFit?: "contain" | "cover";
+
+  /**
+   * Additional CSS classes to apply to the avatar fallback
+   */
+  fallbackClassName?: string;
 }
 
 export function Avatar({
@@ -67,6 +75,7 @@ export function Avatar({
   fallback,
   className,
   objectFit = "cover",
+  fallbackClassName,
   ...props
 }: AvatarProps) {
   // Extract initials from string fallback (first two characters)
@@ -95,20 +104,50 @@ export function Avatar({
           (objectFit === "contain" && url) ? "object-contain" : "object-cover",
         )}
       />
-      <AvatarFallback className={cn(fallbackColor, "rounded-lg")}>
+      <AvatarFallback
+        className={cn(fallbackColor, "rounded-lg", fallbackClassName)}
+      >
         {fallbackContent}
       </AvatarFallback>
     </AvatarUI>
   );
 }
 
-export const AgentAvatar = (
+function FileAvatar(
+  { path, name, className }: { path: string; name: string; className?: string },
+) {
+  const { data: fileUrl } = useFile(path);
+
+  return (
+    <Suspense
+      fallback={
+        <Skeleton
+          className={cn(
+            "w-full h-full rounded-lg",
+            className,
+          )}
+        />
+      }
+    >
+      <Avatar
+        url={typeof fileUrl === "string" ? fileUrl : undefined}
+        fallback={name.substring(0, 2)}
+        className={cn(
+          "w-full h-full",
+          className,
+        )}
+      />
+    </Suspense>
+  );
+}
+
+function AgentAvatarContent(
   { name, avatar, className }: {
     name?: string;
     avatar?: string;
     className?: string;
   },
-) => {
+) {
   if (!name || name === "Anonymous") {
     return (
       <div
@@ -126,16 +165,45 @@ export const AgentAvatar = (
     );
   }
 
-  const isUrlLike = avatar && /^(data:)|(https?:)/.test(avatar);
+  if (avatar && isFilePath(avatar)) {
+    return <FileAvatar path={avatar} name={name} className={className} />;
+  }
 
   return (
     <Avatar
-      url={isUrlLike ? avatar : undefined}
-      fallback={isUrlLike ? avatar : name.substring(0, 2)}
+      url={avatar}
+      fallback={name.substring(0, 2)}
       className={cn(
         "w-full h-full",
         className,
       )}
     />
+  );
+}
+
+export const AgentAvatar = (
+  { name, avatar, className }: {
+    name?: string;
+    avatar?: string;
+    className?: string;
+  },
+) => {
+  return (
+    <Suspense
+      fallback={
+        <Skeleton
+          className={cn(
+            "w-full h-full rounded-lg",
+            className,
+          )}
+        />
+      }
+    >
+      <AgentAvatarContent
+        name={name}
+        avatar={avatar}
+        className={className}
+      />
+    </Suspense>
   );
 };

@@ -13,12 +13,4 @@ export interface User {
   phone: string | null;
 }
 
-export const fetchUser = async () => {
-  const { ok, data, error } = await MCPClient.PROFILES_GET({});
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to fetch user");
-  }
-
-  return data;
-};
+export const fetchUser = () => MCPClient.PROFILES_GET({});

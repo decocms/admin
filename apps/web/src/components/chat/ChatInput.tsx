@@ -1,6 +1,4 @@
 import {
-  AgentNotFoundError,
-  LEGACY_API_SERVER_URL,
   MODELS,
   NotFoundError,
   readFile,
@@ -126,7 +124,6 @@ ChatInput.UI = (
   const {
     chat: { stop, input, handleInputChange, handleSubmit, status },
     uiOptions: { showModelSelector, showThreadTools },
-    setStreamTools,
     setMentions,
   } = useChatContext();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);

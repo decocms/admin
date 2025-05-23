@@ -32,6 +32,7 @@ function Dots() {
 
 export function ChatMessages() {
   const {
+    agentId,
     scrollRef,
     chat,
     isAutoScrollEnabled,

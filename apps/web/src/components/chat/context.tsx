@@ -21,6 +21,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { MentionItem } from "./extensions/Mention.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { useAllIntegrationTools } from "../../hooks/useAllIntegrationTools.ts";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -110,6 +111,8 @@ export function ChatProvider({
 
   const correlationIdRef = useRef<string | null>(null);
 
+  const { toolsMap } = useAllIntegrationTools();
+
   const chat = useChat({
     initialMessages: initialMessages || [],
     credentials: "include",
@@ -140,7 +143,18 @@ export function ChatProvider({
       }
 
       const bypassOpenRouter = !preferences.useOpenRouter;
-      const integrations = mentions?.map((tool) => tool.id);
+      const integrations = mentions?.map((integration) => integration.id);
+
+      const filteredToolsMap = Object.fromEntries(
+        Object.entries(toolsMap)
+          .filter(([key]) => integrations?.includes(key))
+          .map(([key, tools]) => [
+            key,
+            Object.fromEntries(tools.map((tool) => [tool.name, tool])),
+          ]),
+      );
+
+      console.log("filteredToolsMap", filteredToolsMap);
 
       return {
         args: [messagesWindow, {
@@ -151,7 +165,7 @@ export function ChatProvider({
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,
-          integrations,
+          tools: filteredToolsMap,
           smoothStream: {
             delayInMs: 20,
             chunk: "word",

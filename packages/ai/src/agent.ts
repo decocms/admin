@@ -73,6 +73,7 @@ import type {
 import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
 import { Buffer } from "node:buffer";
+import { AudioMessage } from "./index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -130,6 +131,10 @@ const removeNonSerializableFields = (obj: any) => {
   }
   return newObj;
 };
+
+function isAudioMessage(message: AIMessage): message is AudioMessage {
+  return "audioBase64" in message && typeof message.audioBase64 === "string";
+}
 
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
@@ -680,7 +685,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     jsonSchema: JSONSchema7,
   ): Promise<GenerateObjectResult<TObject>> {
-    const result = await this.agent.generate(payload, {
+    const aiMessages = await Promise.all(
+      payload.map((msg) => this.convertToAIMessage(msg)),
+    );
+    const result = await this.agent.generate(aiMessages, {
       ...this.thread,
       output: jsonSchema,
       maxSteps: this.maxSteps(),
@@ -750,7 +758,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const agent = this.withAgentOverrides(options);
 
-    return agent.generate(payload, {
+    const aiMessages = await Promise.all(
+      payload.map((msg) => this.convertToAIMessage(msg)),
+    );
+
+    return agent.generate(aiMessages, {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
@@ -832,11 +844,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }, fn);
   }
 
-  private async convertToAIMessage(message: AIMessage): Promise<AIMessage> {
-    if (
-      "audioBase64" in message && message.audioBase64 &&
-      typeof message.audioBase64 === "string"
-    ) {
+  private async convertToAIMessage(message: AIMessage): Promise<Message> {
+    if (isAudioMessage(message)) {
       const transcription = await this.handleAudioTranscription({
         audioBase64: message.audioBase64,
       });
@@ -845,7 +854,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         role: "user",
         id: crypto.randomUUID(),
         content: transcription,
-      } as AIMessage;
+      };
     }
     return message;
   }
@@ -1028,7 +1037,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const tool_set = await this.getThreadTools();
     const toolsets = await this.pickCallableTools(tool_set);
 
-    const response = await this.agent.stream(payload, {
+    const aiMessages = await Promise.all(
+      payload.map((msg) => this.convertToAIMessage(msg)),
+    );
+
+    const response = await this.agent.stream(aiMessages, {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),

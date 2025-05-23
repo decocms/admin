@@ -81,7 +81,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         audioBase64: audioFromArgs,
         id: crypto.randomUUID(),
         role: "user" as const,
-        content: `I am sending you an audio message.`,
       }]
       : messagesFromArgs ?? [
         {

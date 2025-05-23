@@ -32,7 +32,7 @@ interface ToolsetSelectorProps {
   initialSelectedIntegration?: string | null;
 }
 
-function useToolSelection(toolsSet: ToolsMap, open: boolean) {
+export function useToolSelection(toolsSet: ToolsMap, open: boolean) {
   const [selected, setSelected] = useState<SelectedToolsMap>({});
 
   useEffect(() => {
@@ -166,7 +166,7 @@ function IntegrationList({
   );
 }
 
-function ToolList({
+export function ToolList({
   integration,
   selectedTools,
   toolsSet,

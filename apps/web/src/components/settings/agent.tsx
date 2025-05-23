@@ -24,6 +24,13 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@deco/ui/components/table.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
@@ -31,7 +38,7 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "../toolsets/index.tsx";
+import { Integration, IntegrationRow } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
 
 // Token limits for Anthropic models
@@ -392,7 +399,27 @@ function SettingsTab() {
                   <Icon name="add" />
                 </Button>
               </div>
-              <div className="flex-1">
+              <Table as="div">
+                <TableHeader as="div">
+                  <TableRow as="div">
+                    <TableHead as="div">""</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody as="div">
+                  {usedIntegrations.map((integration) => (
+                    <IntegrationRow
+                      key={integration.id}
+                      integration={integration}
+                      setIntegrationTools={setIntegrationTools}
+                      enabledTools={toolsSet[integration.id] || []}
+                      onIntegrationClick={handleIntegrationClick}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+              {
+                /*
+<div className="flex-1">
                 <div className="flex flex-col gap-2">
                   {usedIntegrations
                     .map((integration) => (
@@ -406,6 +433,8 @@ function SettingsTab() {
                     ))}
                 </div>
               </div>
+              */
+              }
             </div>
           </form>
         </div>

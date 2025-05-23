@@ -1,9 +1,18 @@
+import { Fragment, useMemo } from "react";
 import type { Integration, MCPTool } from "@deco/sdk";
 import { useTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { TableCell, TableRow } from "@deco/ui/components/table.tsx";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@deco/ui/components/collapsible.tsx";
 import { IntegrationHeader } from "./header.tsx";
+import { IntegrationIcon } from "./icon.tsx";
+import { ToolList, useToolSelection } from "./selector.tsx";
 
 /**
  * Returns the count of differences between two toolsets.
@@ -129,5 +138,47 @@ export function Integration({
         </div>
       )}
     </div>
+  );
+}
+
+export function IntegrationRow(props: IntegrationProps) {
+  const { integration } = props;
+  const { data: toolsData } = useTools(
+    integration.connection,
+  );
+  const toolsSet = useMemo(
+    () => ({ [integration.id]: toolsData.tools.map((tool) => tool.name) }),
+    [integration.id, toolsData],
+  );
+  const { selected, toggle } = useToolSelection(toolsSet, true);
+  return (
+    <Collapsible asChild>
+      <Fragment>
+        <TableRow as="div">
+          <CollapsibleTrigger asChild>
+            <TableCell as="div">
+              <span className="inline-flex items-center gap-2">
+                <IntegrationIcon
+                  icon={integration.icon}
+                  name={integration.name}
+                  className="h-8 w-8 shrink-0"
+                />
+                {props.integration.name}
+              </span>
+            </TableCell>
+          </CollapsibleTrigger>
+        </TableRow>
+        <CollapsibleContent asChild>
+          <span className="block">
+            <ToolList
+              integration={integration}
+              selectedTools={selected}
+              toolsSet={toolsSet}
+              onToggle={toggle}
+            />
+          </span>
+        </CollapsibleContent>
+      </Fragment>
+    </Collapsible>
   );
 }

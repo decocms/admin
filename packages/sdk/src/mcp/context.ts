@@ -170,7 +170,13 @@ export const createToolFactory = <
         def.name,
         props,
         context,
-      );
+      ).catch((error) => {
+        console.warn(
+          "Failed to authorize tool with the following error",
+          error,
+        );
+        return false;
+      });
 
       if (!hasAccess) {
         throw new ForbiddenError(

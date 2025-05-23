@@ -65,7 +65,6 @@ export function TriggerActions(
       />
       <TriggerModal
         trigger={trigger}
-        agentId={trigger.agent?.id}
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
       />

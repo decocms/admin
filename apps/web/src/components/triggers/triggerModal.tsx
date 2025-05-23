@@ -1,6 +1,5 @@
 import type { Agent } from "@deco/sdk";
 import { useAgents } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
@@ -86,8 +85,9 @@ function AgentSelect({
 }
 
 export function TriggerModal(
-  { triggerAction, trigger, isOpen, onOpenChange }: {
-    triggerAction: React.ReactNode;
+  { triggerAction, trigger, isOpen, onOpenChange, agentId }: {
+    triggerAction?: React.ReactNode;
+    agentId?: string;
     trigger?: z.infer<typeof TriggerOutputSchema>;
     isOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
@@ -95,7 +95,7 @@ export function TriggerModal(
 ) {
   const { data: agents = [] } = useAgents();
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
-    trigger?.agent?.id || agents[0]?.id || "",
+    trigger?.agent?.id || agentId || agents[0]?.id || "",
   );
   const [triggerType, setTriggerType] = useState<"webhook" | "cron">(
     trigger?.data.type === "cron" ? "cron" : "webhook",

@@ -266,6 +266,8 @@ export const updateTrigger = createTool({
       .update({
         metadata: data as Json,
       })
+      .eq("id", triggerId)
+      .eq("workspace", workspace)
       .select(SELECT_TRIGGER_QUERY)
       .single();
 

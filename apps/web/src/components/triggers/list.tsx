@@ -6,7 +6,7 @@ import { ListPageHeader } from "../common/ListPageHeader.tsx";
 import { Table, TableColumn } from "../common/Table.tsx";
 import { AgentInfo, DateTimeCell, UserInfo } from "../common/TableCells.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { TriggerModal } from "./TriggerModal.tsx";
+import { TriggerModal } from "./triggerModal.tsx";
 import { TriggerActions } from "./triggerActions.tsx";
 import { TriggerCard } from "./triggerCard.tsx";
 import { TriggerType } from "./triggerType.tsx";

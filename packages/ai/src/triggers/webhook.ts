@@ -124,7 +124,11 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       }
     }
     return useStream
-      ? await agent.stream(messages, options, audioFromArgs)
-      : await agent.generate(messages, options);
+      ? await agent.stream(messages, options, {
+        audioBase64: audioFromArgs,
+      })
+      : await agent.generate(messages, options, {
+        audioBase64: audioFromArgs,
+      });
   },
 };

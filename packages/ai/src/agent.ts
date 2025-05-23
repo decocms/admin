@@ -83,6 +83,9 @@ const ANONYMOUS_INSTRUCTIONS =
 
 const ANONYMOUS_NAME = "Anonymous";
 const LOAD_TOOLS_TIMEOUT_MS = 5_000;
+const DEFAULT_TEXT_TO_SPEECH_MODEL = "tts-1";
+const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";
+const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -542,16 +545,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: config.name,
       instructions: config.instructions,
       model: llm,
-      voice: new OpenAIVoice({
-        listeningModel: {
-          apiKey: this.env.OPENAI_API_KEY,
-          name: "whisper-1",
-        },
-        speechModel: {
-          apiKey: this.env.OPENAI_API_KEY,
-          name: "tts-1",
-        },
-      }),
+      voice: this.createVoiceConfig(),
     });
   }
 
@@ -600,6 +594,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return this._agent ?? this.anonymous;
   }
 
+  /**
+   * Get the audio transcription of the given audio stream
+   * @param audioStream - The audio stream to get the transcription of
+   * @returns The transcription of the audio stream
+   */
   private async getAudioTranscription(audioStream: ReadableStream) {
     const transcription = await this.agent.voice.listen(audioStream as any);
     return transcription as string;
@@ -630,6 +629,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       model: DEFAULT_MODEL,
       views: [],
       visibility: "WORKSPACE",
+      voice: {
+        textToSpeech: {
+          enabled: false,
+          model: DEFAULT_TEXT_TO_SPEECH_MODEL,
+        },
+        speechToText: {
+          enabled: true,
+          model: DEFAULT_SPEECH_TO_TEXT_MODEL,
+        },
+      },
       ...manifest,
     };
 
@@ -730,16 +739,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private async handleAudioTranscription(audio: {
-    audioBase64?: string;
+    audioBase64: string;
   }): Promise<string> {
-    if ("audioBase64" in audio && !audio.audioBase64) {
-      throw new Error("No audio base64 provided");
+    const buffer = Buffer.from(audio.audioBase64, "base64");
+    if (buffer.length > MAX_AUDIO_SIZE) {
+      throw new Error("Audio size exceeds the maximum allowed size");
     }
-
     const audioStream = new ReadableStream({
       start(controller) {
         controller.enqueue(
-          new Uint8Array(Buffer.from(audio.audioBase64 ?? "", "base64")),
+          new Uint8Array(buffer),
         );
         controller.close();
       },
@@ -799,6 +808,25 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return filtered;
   }
 
+  private createVoiceConfig() {
+    if (!this.env.OPENAI_API_KEY) {
+      return undefined;
+    }
+
+    return new OpenAIVoice({
+      listeningModel: {
+        apiKey: this.env.OPENAI_API_KEY,
+        name: this._configuration?.voice?.speechToText?.model ??
+          DEFAULT_SPEECH_TO_TEXT_MODEL as any,
+      },
+      speechModel: {
+        apiKey: this.env.OPENAI_API_KEY,
+        name: this._configuration?.voice?.textToSpeech?.model ??
+          DEFAULT_TEXT_TO_SPEECH_MODEL as any,
+      },
+    });
+  }
+
   private withAgentOverrides(options?: GenerateOptions): Agent {
     let agent = this.agent;
 
@@ -818,16 +846,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         instructions: this._configuration?.instructions ??
           ANONYMOUS_INSTRUCTIONS,
         model: llm,
-        voice: new OpenAIVoice({
-          listeningModel: {
-            apiKey: this.env.OPENAI_API_KEY,
-            name: "whisper-1",
-          },
-          speechModel: {
-            apiKey: this.env.OPENAI_API_KEY,
-            name: "tts-1",
-          },
-        }),
+        voice: this.createVoiceConfig(),
       });
     }
 

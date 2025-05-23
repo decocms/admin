@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
-import { AddTriggerModal } from "./addTriggerModal.tsx";
+import { TriggerModal } from "./triggerModal.tsx";
 import { useState } from "react";
 
 interface TriggerActionsProps {
@@ -42,6 +42,7 @@ export function TriggerActions(
               setIsEditModalOpen(true);
             }}
           >
+            <Icon name="edit" className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -51,6 +52,7 @@ export function TriggerActions(
               onOpenChange(true);
             }}
           >
+            <Icon name="delete" className="h-4 w-4 mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -61,7 +63,7 @@ export function TriggerActions(
         open={open}
         onOpenChange={onOpenChange}
       />
-      <AddTriggerModal
+      <TriggerModal
         trigger={trigger}
         agentId={trigger.agent?.id}
         isOpen={isEditModalOpen}

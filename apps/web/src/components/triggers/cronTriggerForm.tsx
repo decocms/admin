@@ -14,6 +14,7 @@ import {
   CronTriggerSchema,
   TriggerOutputSchema,
   useCreateTrigger,
+  useUpdateTrigger,
 } from "@deco/sdk";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -87,7 +88,7 @@ function CronSelectInput({ value, onChange, required, error }: {
       <Label htmlFor="cron-frequency">Frequency</Label>
       <Select value={selected} onValueChange={handlePresetChange}>
         <SelectTrigger id="cron-frequency" className="w-full">
-          <SelectValue />
+          <SelectValue placeholder="Select frequency" />
         </SelectTrigger>
         <SelectContent>
           {cronPresets.map((p) => (
@@ -162,8 +163,14 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
   onSuccess?: () => void;
   initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
-  const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
+  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
+    agentId,
+  );
+  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
+    agentId,
+  );
   const isEditing = !!initialValues;
+  const isPending = isCreating || isUpdating;
 
   const cronData = initialValues?.data.type === "cron"
     ? initialValues.data as CronTriggerData
@@ -191,31 +198,62 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
       });
       return;
     }
-    createTrigger(
-      {
-        title: data.title,
-        description: data.description || undefined,
-        cronExp: data.cronExp,
-        prompt: {
-          messages: [{
-            role: "user",
-            content: data.prompt.messages[0].content,
-          }],
+    if (initialValues) {
+      updateTrigger(
+        {
+          triggerId: initialValues.id,
+          trigger: {
+            title: data.title,
+            description: data.description || undefined,
+            cronExp: data.cronExp,
+            prompt: {
+              messages: [{
+                role: "user",
+                content: data.prompt.messages[0].content,
+              }],
+            },
+            type: "cron",
+          },
         },
-        type: "cron",
-      },
-      {
-        onSuccess: () => {
-          form.reset();
-          onSuccess?.();
+        {
+          onSuccess: () => {
+            form.reset();
+            onSuccess?.();
+          },
+          onError: (error: Error) => {
+            form.setError("root", {
+              message: error?.message || "Failed to update trigger",
+            });
+          },
         },
-        onError: (error: Error) => {
-          form.setError("root", {
-            message: error?.message || "Failed to create trigger",
-          });
+      );
+    } else {
+      createTrigger(
+        {
+          title: data.title,
+          description: data.description || undefined,
+          cronExp: data.cronExp,
+          prompt: {
+            messages: [{
+              role: "user",
+              content: data.prompt.messages[0].content,
+            }],
+          },
+          type: "cron",
         },
-      },
-    );
+        {
+          onSuccess: () => {
+            form.reset();
+            onSuccess?.();
+          },
+          onError: (error: Error) => {
+            form.setError("root", {
+              message: error?.message || "Failed to create trigger",
+            });
+          },
+        },
+      );
+    }
   };
 
   return (

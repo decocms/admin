@@ -211,6 +211,78 @@ export const createTrigger = createTool({
   },
 });
 
+export const updateTrigger = createTool({
+  name: "TRIGGERS_UPDATE",
+  description: "Update a trigger",
+  inputSchema: z.object({
+    agentId: z.string(),
+    triggerId: z.string(),
+    data: TriggerSchema,
+  }),
+  canAccess: canAccessWorkspaceResource,
+  handler: async (
+    { agentId, triggerId, data },
+    c,
+  ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    assertHasWorkspace(c);
+    const db = c.db;
+    const workspace = c.workspace.value;
+    const user = c.user;
+    const stub = c.stub;
+
+    const triggerPath = Path.resolveHome(
+      join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
+      workspace,
+    ).path;
+
+    if (data.type === "cron") {
+      const parse = CreateCronTriggerInputSchema.safeParse(data);
+      if (!parse.success) {
+        throw new UserInputError("Invalid trigger");
+      }
+    }
+
+    if (data.type === "webhook") {
+      const parse = CreateWebhookTriggerInputSchema.safeParse(data);
+      if (!parse.success) {
+        throw new UserInputError("Invalid trigger");
+      }
+      (data as z.infer<typeof TriggerSchema> & { url: string }).url =
+        buildWebhookUrl(triggerPath, data.passphrase);
+    }
+
+    const userId = typeof user.id === "string" ? user.id : undefined;
+
+    await stub(Trigger).new(triggerPath).delete();
+    await stub(Trigger).new(triggerPath).create(
+      {
+        ...data,
+        id: triggerId,
+        resourceId: userId,
+      },
+    );
+
+    const { data: trigger, error } = await db.from("deco_chat_triggers")
+      .update({
+        metadata: data as Json,
+      })
+      .select(SELECT_TRIGGER_QUERY)
+      .single();
+
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+
+    const agents = await getAgentsByIds([agentId], c);
+    const agentsById = agents.reduce((acc, agent) => {
+      acc[agent.id] = agent;
+      return acc;
+    }, {} as Record<string, z.infer<typeof AgentSchema>>);
+
+    return mapTrigger(trigger, agentsById);
+  },
+});
+
 export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",

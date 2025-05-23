@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   TriggerOutputSchema,
   useCreateTrigger,
+  useUpdateTrigger,
   WebhookTriggerSchema,
 } from "@deco/sdk";
 import { useForm } from "react-hook-form";
@@ -106,8 +107,14 @@ export function WebhookTriggerForm({
   onSuccess?: () => void;
   initialValues?: z.infer<typeof TriggerOutputSchema>;
 }) {
-  const { mutate: createTrigger, isPending } = useCreateTrigger(agentId);
+  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
+    agentId,
+  );
+  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
+    agentId,
+  );
   const isEditing = !!initialValues;
+  const isPending = isCreating || isUpdating;
 
   const webhookData = initialValues?.data.type === "webhook"
     ? initialValues.data as WebhookTriggerData
@@ -143,27 +150,54 @@ export function WebhookTriggerForm({
         return;
       }
     }
-    createTrigger(
-      {
-        title: data.title,
-        description: data.description || undefined,
-        type: "webhook",
-        passphrase: data.passphrase || undefined,
-        schema: schemaObj as Record<string, unknown> | undefined,
-        outputTool: data.outputTool || undefined,
-      },
-      {
-        onSuccess: () => {
-          form.reset();
-          onSuccess?.();
+    if (isEditing && initialValues) {
+      updateTrigger(
+        {
+          triggerId: initialValues.id,
+          trigger: {
+            title: data.title,
+            description: data.description || undefined,
+            type: "webhook",
+            passphrase: data.passphrase || undefined,
+            schema: schemaObj as Record<string, unknown> | undefined,
+            outputTool: data.outputTool || undefined,
+          },
         },
-        onError: (error: Error) => {
-          form.setError("root", {
-            message: error?.message || "Failed to create trigger",
-          });
+        {
+          onSuccess: () => {
+            form.reset();
+            onSuccess?.();
+          },
+          onError: (error: Error) => {
+            form.setError("root", {
+              message: error?.message || "Failed to update trigger",
+            });
+          },
         },
-      },
-    );
+      );
+    } else {
+      createTrigger(
+        {
+          title: data.title,
+          description: data.description || undefined,
+          type: "webhook",
+          passphrase: data.passphrase || undefined,
+          schema: schemaObj as Record<string, unknown> | undefined,
+          outputTool: data.outputTool || undefined,
+        },
+        {
+          onSuccess: () => {
+            form.reset();
+            onSuccess?.();
+          },
+          onError: (error: Error) => {
+            form.setError("root", {
+              message: error?.message || "Failed to create trigger",
+            });
+          },
+        },
+      );
+    }
   };
 
   return (

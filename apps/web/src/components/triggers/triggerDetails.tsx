@@ -11,6 +11,7 @@ import { CronDetails } from "./cronDetails.tsx";
 import { WebhookDetails } from "./webhookDetails.tsx";
 import { TriggerToggle } from "./triggerToggle.tsx";
 import { z } from "zod";
+import { TriggerModal } from "./triggerModal.tsx";
 
 const useTrigger = (agentId: string, triggerId: string) => {
   const { data, isLoading } = useListTriggersByAgentId(agentId);
@@ -61,7 +62,16 @@ export function TriggerDetails(
             <Badge variant="outline" className="ml-2">
               {trigger.data.type}
             </Badge>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <TriggerModal
+                trigger={trigger}
+                triggerAction={
+                  <Button variant="special">
+                    <Icon name="edit" className="h-4 w-4 mr-2" />
+                    Edit Trigger
+                  </Button>
+                }
+              />
               <TriggerToggle trigger={trigger} />
             </div>
           </div>

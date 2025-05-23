@@ -1,9 +1,10 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
   AuthorizationClient,
+  createMCPToolsStub,
   GLOBAL_TOOLS,
-  HttpError,
   PolicyClient,
+  ToolLike,
   WORKSPACE_TOOLS,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -14,19 +15,13 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import {
-  ApiHandler,
-  AppContext,
-  AppEnv,
-  createAIHandler,
-  createMCPToolsStub,
-  State,
-} from "./utils/context.ts";
+import { AppContext, AppEnv, State } from "./utils/context.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -56,16 +51,14 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 };
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
-  if (!(err instanceof HttpError)) {
-    throw err;
+  if ("code" in err) {
+    throw new HTTPException(
+      (err.code as ContentfulStatusCode | undefined) ?? 500,
+      { message: err.message ?? "Internal server error" },
+    );
   }
 
-  throw new HTTPException(
-    (err.code as ContentfulStatusCode | undefined) ?? 500,
-    {
-      message: err.message,
-    },
-  );
+  throw err;
 };
 /**
  * Creates and sets up an MCP server for the given tools
@@ -73,56 +66,48 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
 const createMCPHandlerFor = (
   tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS,
 ) => {
-  const server = new McpServer(
-    { name: "@deco/api", version: "1.0.0" },
-    { capabilities: { tools: {} } },
-  );
-
-  for (const tool of tools) {
-    server.tool(
-      tool.name,
-      tool.description,
-      tool.schema.shape,
-      createAIHandler(tool.handler),
-    );
-  }
-
   return async (c: Context) => {
-    let srv = server;
     const group = c.req.query("group");
-    if (group) {
-      const serverGroup = new McpServer(
-        { name: "@deco/api", version: "1.0.0" },
-        { capabilities: { tools: {} } },
-      );
 
-      for (const tool of tools) {
-        if (tool.group === group) {
-          serverGroup.tool(
-            tool.name,
-            tool.description,
-            tool.schema.shape,
-            createAIHandler(tool.handler),
-          );
-        }
+    const server = new McpServer(
+      { name: "@deco/api", version: "1.0.0" },
+      { capabilities: { tools: {} } },
+    );
+
+    for (const tool of tools) {
+      if (group && tool.group !== group) {
+        continue;
       }
-      srv = serverGroup;
+
+      server.registerTool(
+        tool.name,
+        {
+          annotations: tool.annotations,
+          description: tool.description,
+          inputSchema: tool.inputSchema.shape,
+          // @ts-expect-error TODO: fix this
+          outputSchema: tool.outputSchema?.shape || z.any(),
+        },
+        // @ts-expect-error TODO: fix this
+        tool.handler,
+      );
     }
+
     const transport = new HttpServerTransport();
 
     startTime(c, "mcp-connect");
-    await srv.connect(transport);
+    await server.connect(transport);
     endTime(c, "mcp-connect");
 
     startTime(c, "mcp-handle-message");
-    c.res = await State.run(
+    const res = await State.run(
       honoCtxToAppCtx(c),
       transport.handleMessage.bind(transport),
       c.req.raw,
-    ).catch(mapMCPErrorToHTTPExceptionOrThrow);
+    );
     endTime(c, "mcp-handle-message");
 
-    return c.res;
+    return res;
   };
 };
 
@@ -131,7 +116,7 @@ const createMCPHandlerFor = (
  * UIs can call the tools without suffering the serialization
  * of the protocol.
  */
-const createToolCallHandlerFor = (tools: readonly ApiHandler[]) => {
+const createToolCallHandlerFor = (tools: ToolLike) => {
   const toolMap = new Map(tools.map((t) => [t.name, t]));
 
   return async (c: Context) => {
@@ -139,11 +124,11 @@ const createToolCallHandlerFor = (tools: readonly ApiHandler[]) => {
     const tool = c.req.param("tool");
     const args = await c.req.json();
 
-    const t = toolMap.get(tool);
+    const t = toolMap.get(tool as ToolLike[number]["name"]);
     if (!t) {
       throw new HTTPException(404, { message: "Tool not found" });
     }
-    const { data, error } = t.schema.safeParse(args);
+    const { data, error } = t.inputSchema.safeParse(args);
 
     if (error || !data) {
       throw new HTTPException(400, {
@@ -154,7 +139,8 @@ const createToolCallHandlerFor = (tools: readonly ApiHandler[]) => {
     startTime(c, tool);
     const result = await State.run(
       honoCtxToAppCtx(c),
-      (args) => client[tool](args),
+      // @ts-expect-error this should be fine
+      (args) => client[tool as ToolLike[number]["name"]](args),
       data,
     ).catch(mapMCPErrorToHTTPExceptionOrThrow);
     endTime(c, tool);

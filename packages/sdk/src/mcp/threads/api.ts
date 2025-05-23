@@ -8,7 +8,7 @@ import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { type AppContext, createApiHandler } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convertToUIMessages.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
@@ -81,11 +81,11 @@ const createSQLClientFor = async (
   });
 };
 
-export const listThreads = createApiHandler({
+export const listThreads = createTool({
   name: "THREADS_LIST",
   description:
     "List all threads in a workspace with cursor-based pagination and filtering",
-  schema: z.object({
+  inputSchema: z.object({
     limit: z.number().min(1).max(20).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
@@ -181,10 +181,10 @@ export const listThreads = createApiHandler({
   },
 });
 
-export const getThreadMessages = createApiHandler({
+export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
@@ -215,10 +215,10 @@ export const getThreadMessages = createApiHandler({
   },
 });
 
-export const getThread = createApiHandler({
+export const getThread = createTool({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
@@ -246,10 +246,10 @@ export const getThread = createApiHandler({
   },
 });
 
-export const getThreadTools = createApiHandler({
+export const getThreadTools = createTool({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
@@ -273,10 +273,10 @@ export const getThreadTools = createApiHandler({
   },
 });
 
-export const updateThreadTitle = createApiHandler({
+export const updateThreadTitle = createTool({
   name: "THREADS_UPDATE_TITLE",
   description: "Update a thread's title",
-  schema: z.object({
+  inputSchema: z.object({
     threadId: z.string(),
     title: z.string(),
   }),
@@ -310,10 +310,10 @@ export const updateThreadTitle = createApiHandler({
   },
 });
 
-export const updateThreadMetadata = createApiHandler({
+export const updateThreadMetadata = createTool({
   name: "THREADS_UPDATE_METADATA",
   description: "Update a thread's metadata",
-  schema: z.object({
+  inputSchema: z.object({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),

@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import type {
-  DecoConnection,
-  HTTPConnection,
-  Integration,
-  MCPConnection,
+import {
+  CallToolResultSchema,
+  type DecoConnection,
+  type HTTPConnection,
+  type Integration,
+  type MCPConnection,
 } from "@deco/sdk";
 import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
@@ -84,7 +85,9 @@ const getMCPServerTools = async (
                   const result = await innerClient.callTool({
                     name: tool.name,
                     arguments: context,
-                  });
+                    // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+                  }, CallToolResultSchema);
+
                   await innerClient.close();
                   return result;
                 } catch (error) {

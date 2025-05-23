@@ -253,7 +253,7 @@ function MarketplaceTab() {
     setIsPending(true);
     installIntegration(selectedIntegration.id, {
       onSuccess: (data) => {
-        if (typeof data.id !== "string") {
+        if (typeof data?.id !== "string") {
           setIsPending(false);
           return;
         }

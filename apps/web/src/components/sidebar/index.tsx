@@ -99,7 +99,7 @@ const WithActive = (
 };
 
 function buildThreadUrl(thread: Thread): string {
-  return `chat/${thread.metadata.agentId}/${thread.id}`;
+  return `chat/${thread.metadata?.agentId ?? ""}/${thread.id}`;
 }
 
 function DeleteThreadModal(
@@ -349,7 +349,7 @@ function SidebarThreadList(
     trackEvent("sidebar_thread_click", {
       threadId: thread.id,
       threadTitle: thread.title,
-      agentId: thread.metadata.agentId,
+      agentId: thread.metadata?.agentId ?? "",
     });
     isMobile && toggleSidebar();
   };

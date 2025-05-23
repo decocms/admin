@@ -1,16 +1,6 @@
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import { type Agent, AgentSchema } from "../models/agent.ts";
 import { stub } from "../stub.ts";
-
-export class AgentNotFoundError extends NotFoundError {
-  agentId: string;
-
-  constructor(agentId: string) {
-    super(`Agent ${agentId} not found`);
-    this.agentId = agentId;
-  }
-}
 
 /**
  * Update an agent
@@ -34,106 +24,53 @@ export const updateAgent = async (workspace: string, agent: Agent) => {
  * Create a new agent
  * @returns The new agent
  */
-export const createAgent = async (
+export const createAgent = (
   workspace: string,
   template: Partial<Agent> = {},
-) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_CREATE(
-    {
-      id: crypto.randomUUID(),
-      ...template,
-    },
-  );
+) =>
+  MCPClient.forWorkspace(workspace).AGENTS_CREATE({
+    id: crypto.randomUUID(),
+    ...template,
+  });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
-};
-
-export const createTempAgent = async (
+export const createTempAgent = (
   workspace: string,
   agentId: string,
   userId: string,
-) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace)
-    .AGENTS_CREATE_TEMP({ agentId, userId });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
-};
+) => MCPClient.forWorkspace(workspace).AGENTS_CREATE_TEMP({ agentId, userId });
 
 /**
  * Load an agent from the file system
  * @param agentId - The id of the agent to load
  * @returns The agent
  */
-export const loadAgent = async (
+export const loadAgent = (
   workspace: string,
   agentId: string,
   signal?: AbortSignal,
-): Promise<Agent> => {
-  const { error, data, status } = await MCPClient.forWorkspace(workspace)
+): Promise<Agent> =>
+  MCPClient.forWorkspace(workspace)
     .AGENTS_GET(
       { id: agentId },
       { signal },
     );
 
-  if (status === 404) {
-    throw new AgentNotFoundError(agentId);
-  }
-
-  if (status === 401) {
-    throw new UnauthorizedError();
-  }
-
-  if (status === 403) {
-    throw new ForbiddenError();
-  }
-
-  if (error) {
-    throw new Error(error.message || "Failed to load agent");
-  }
-
-  return data;
-};
-
-export const listAgents = async (
+export const listAgents = (
   workspace: string,
   signal?: AbortSignal,
-): Promise<Agent[]> => {
-  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_LIST(
+): Promise<Agent[]> =>
+  MCPClient.forWorkspace(workspace).AGENTS_LIST(
     {},
     { signal },
   );
-
-  if (error) {
-    throw new Error(error.message || "Failed to list agents");
-  }
-
-  return data;
-};
 
 /**
  * Delete an agent from the file system
  * @param workspace - The workspace of the agent
  * @param agentId - The id of the agent to delete
  */
-export const deleteAgent = async (workspace: string, agentId: string) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace).AGENTS_DELETE(
-    { id: agentId },
-  );
-
-  if (error) {
-    throw new Error(error.message || "Failed to delete agent");
-  }
-
-  return data;
-};
+export const deleteAgent = (workspace: string, agentId: string) =>
+  MCPClient.forWorkspace(workspace).AGENTS_DELETE({ id: agentId });
 
 /**
  * Validate an agent against the Zod schema
@@ -152,14 +89,7 @@ export const validateAgent = (
   }
 };
 
-export const getTempAgent = async (
+export const getTempAgent = (
   workspace: string,
   userId: string,
-) => {
-  const { error, data } = await MCPClient.forWorkspace(workspace)
-    .AGENTS_GET_TEMP({ userId });
-  if (error) {
-    throw new Error(error.message);
-  }
-  return data;
-};
+) => MCPClient.forWorkspace(workspace).AGENTS_GET_TEMP({ userId });

@@ -10,7 +10,6 @@ import {
 import { useMemo } from "react";
 import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
-  AgentNotFoundError,
   createAgent,
   createTempAgent,
   deleteAgent,
@@ -19,7 +18,7 @@ import {
   loadAgent,
   updateAgent,
 } from "../crud/agent.ts";
-import { ForbiddenError, UnauthorizedError } from "../errors.ts";
+import { InternalServerError } from "../errors.ts";
 import type { Agent } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 import { KEYS } from "./api.ts";
@@ -131,11 +130,7 @@ export const useAgent = (id: string) => {
     queryKey: KEYS.AGENT(workspace, id),
     queryFn: ({ signal }) => loadAgent(workspace, id, signal),
     retry: (failureCount, error) =>
-      error instanceof AgentNotFoundError ||
-        error instanceof UnauthorizedError ||
-        error instanceof ForbiddenError
-        ? false
-        : failureCount < 2,
+      error instanceof InternalServerError && failureCount < 2,
   });
 
   return data;

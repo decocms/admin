@@ -11,7 +11,7 @@ interface AuditTableProps {
     id: string;
     resourceId: string;
     title: string;
-    metadata: { agentId: string };
+    metadata?: { agentId: string };
     createdAt: string;
     updatedAt: string;
   }>;
@@ -52,7 +52,7 @@ export function AuditTable(
     {
       id: "agent",
       header: "Agent",
-      accessor: (row) => <AgentInfo agentId={row.metadata.agentId} />,
+      accessor: (row) => <AgentInfo agentId={row.metadata?.agentId} />,
     },
     {
       id: "user",

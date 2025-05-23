@@ -1,14 +1,14 @@
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser, assertPrincipalIsUser, bypass } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
-import { userFromDatabase } from "../user.ts";
+import { createTool } from "../context.ts";
 import { UnauthorizedError } from "../index.ts";
+import { userFromDatabase } from "../user.ts";
 
-export const getProfile = createApiHandler({
+export const getProfile = createTool({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: bypass,
   handler: async (_, c) => {
     assertHasUser(c);
@@ -42,10 +42,10 @@ export const getProfile = createApiHandler({
   },
 });
 
-export const updateProfile = createApiHandler({
+export const updateProfile = createTool({
   name: "PROFILES_UPDATE",
   description: "Update the current user's profile",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string().nullable().optional(),
     email: z.string().optional(),
     deco_user_id: z.number().nullable().optional(),

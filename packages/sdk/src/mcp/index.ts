@@ -2,7 +2,8 @@ export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
 import * as agentsAPI from "./agents/api.ts";
-import { ApiHandler, AppContext, State } from "./context.ts";
+import { AppContext, State } from "./context.ts";
+import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as knowledgeAPI from "./knowledge/api.ts";
@@ -12,7 +13,6 @@ import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
-import * as fsAPI from "./fs/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -34,7 +34,7 @@ export const GLOBAL_TOOLS = [
   integrationsAPI.callTool,
   integrationsAPI.listTools,
 ] as const;
-export type GlobalTools = typeof GLOBAL_TOOLS;
+
 // Tools tied to an specific workspace
 export const WORKSPACE_TOOLS = [
   agentsAPI.getAgent,
@@ -80,7 +80,10 @@ export const WORKSPACE_TOOLS = [
   fsAPI.deleteFile,
 ] as const;
 
+export type GlobalTools = typeof GLOBAL_TOOLS;
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;
+export type ToolLike = GlobalTools | WorkspaceTools;
+
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
 });
@@ -109,10 +112,7 @@ export const MCPClient = new Proxy(
     get(_, name) {
       if (name === "forContext") {
         return (ctx: AppContext) =>
-          createMCPToolsStub({
-            tools: WORKSPACE_TOOLS,
-            context: ctx,
-          });
+          createMCPToolsStub({ tools: WORKSPACE_TOOLS, context: ctx });
       }
       return global[name as keyof typeof global];
     },
@@ -121,7 +121,7 @@ export const MCPClient = new Proxy(
 
 export { Entrypoint } from "./hosting/api.ts";
 
-export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
+export function createMCPToolsStub<TDefinition extends ToolLike>(
   options: CreateStubHandlerOptions<TDefinition>,
 ): MCPClientStub<TDefinition> {
   return new Proxy<MCPClientStub<TDefinition>>(
@@ -131,7 +131,7 @@ export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
         if (typeof name !== "string") {
           throw new Error("Name must be a string");
         }
-        const toolMap = new Map<string, ApiHandler>(
+        const toolMap = new Map<string, ToolLike[number]>(
           options.tools.map((h) => [h.name, h]),
         );
         return (props: unknown) => {
@@ -141,7 +141,16 @@ export function createMCPToolsStub<TDefinition extends readonly ApiHandler[]>(
           }
           return State.run(
             options?.context ?? State.getStore(),
-            (args) => tool.handler(args),
+            async (args) => {
+              // @ts-expect-error this should be fine
+              const result = await tool.handler(args);
+
+              if (result.isError) {
+                throw result.structuredContent;
+              }
+
+              return result.structuredContent;
+            },
             props,
           );
         };

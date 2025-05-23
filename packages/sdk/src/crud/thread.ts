@@ -26,7 +26,7 @@ export interface Thread {
   id: string;
   resourceId: string;
   title: string;
-  metadata: Metadata;
+  metadata?: Metadata;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,18 +35,11 @@ export interface Metadata {
   agentId: string;
 }
 
-export const listThreads = async (
+export const listThreads = (
   workspace: string,
   options: Options,
   init?: RequestInit,
-) => {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .THREADS_LIST(options, init);
-  if (!ok) {
-    throw new Error(error?.message || "Failed to list threads");
-  }
-  return data as ThreadList;
-};
+) => MCPClient.forWorkspace(workspace).THREADS_LIST(options, init);
 
 export interface ThreadDetails {
   id: string;
@@ -57,18 +50,13 @@ export interface ThreadDetails {
   metadata?: { agentId?: string; tools_set?: Record<string, string[]> };
 }
 
-export async function getThread(
+export const getThread = (
   workspace: string,
   threadId: string,
   init: RequestInit = {},
-): Promise<ThreadDetails> {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+): Promise<ThreadDetails> =>
+  MCPClient.forWorkspace(workspace)
     .THREADS_GET({ id: threadId }, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to get thread");
-  }
-  return data as ThreadDetails;
-}
 
 export interface ThreadMessage {
   id: string;
@@ -79,60 +67,44 @@ export interface ThreadMessage {
   createdAt: Date;
 }
 
-export async function getThreadMessages(
+export const getThreadMessages = (
   workspace: string,
   threadId: string,
   init: RequestInit = {},
-): Promise<ThreadMessage[]> {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .THREADS_GET_MESSAGES({ id: threadId }, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to get thread messages");
-  }
-  return data as ThreadMessage[];
-}
+): Promise<ThreadMessage[]> =>
+  MCPClient.forWorkspace(workspace).THREADS_GET_MESSAGES(
+    { id: threadId },
+    init,
+  ) as Promise<ThreadMessage[]>;
 
 export interface ThreadTools {
   tools_set: Record<string, string[]>;
 }
 
-export async function getThreadTools(
+export const getThreadTools = (
   workspace: string,
   threadId: string,
   init: RequestInit = {},
-): Promise<ThreadTools> {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
+): Promise<ThreadTools> =>
+  MCPClient.forWorkspace(workspace)
     .THREADS_GET_TOOLS({ id: threadId }, init);
-  if (!ok) {
-    throw new Error(error?.message || "Failed to get thread tools");
-  }
-  return data as ThreadTools;
-}
 
-export async function updateThreadTitle(
+export const updateThreadTitle = (
   workspace: string,
   threadId: string,
   title: string,
   init: RequestInit = {},
-): Promise<ThreadDetails> {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .THREADS_UPDATE_TITLE({ threadId, title }, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to update thread title");
-  }
-  return data as ThreadDetails;
-}
+): Promise<ThreadDetails> =>
+  MCPClient.forWorkspace(workspace)
+    .THREADS_UPDATE_TITLE({ threadId, title }, init) as Promise<ThreadDetails>;
 
-export async function updateThreadMetadata(
+export const updateThreadMetadata = (
   workspace: string,
   threadId: string,
   metadata: Record<string, unknown>,
   init: RequestInit = {},
-): Promise<ThreadDetails> {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .THREADS_UPDATE_METADATA({ threadId, metadata }, init);
-  if (!ok || !data) {
-    throw new Error(error?.message || "Failed to update thread metadata");
-  }
-  return data as ThreadDetails;
-}
+): Promise<ThreadDetails> =>
+  MCPClient.forWorkspace(workspace)
+    .THREADS_UPDATE_METADATA({ threadId, metadata }, init) as Promise<
+      ThreadDetails
+    >;

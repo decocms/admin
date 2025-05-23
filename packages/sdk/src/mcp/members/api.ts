@@ -9,7 +9,7 @@ import {
   bypass,
   canAccessTeamResource,
 } from "../assertions.ts";
-import { type AppContext, createApiHandler } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 import {
   checkAlreadyExistUserIdInTeam,
@@ -90,10 +90,10 @@ const mapMember = (
   roles: member_roles.map((memberRole) => memberRole.roles).filter(isRole),
 });
 
-export const getTeamMembers = createApiHandler({
+export const getTeamMembers = createTool({
   name: "TEAM_MEMBERS_GET",
   description: "Get all members of a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
@@ -158,10 +158,10 @@ export const getTeamMembers = createApiHandler({
   },
 });
 
-export const updateTeamMember = createApiHandler({
+export const updateTeamMember = createTool({
   name: "TEAM_MEMBERS_UPDATE",
   description: "Update a team member. Usefull for updating admin status.",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     memberId: z.number(),
     data: z.object({
@@ -204,10 +204,10 @@ export const updateTeamMember = createApiHandler({
   },
 });
 
-export const removeTeamMember = createApiHandler({
+export const removeTeamMember = createTool({
   name: "TEAM_MEMBERS_REMOVE",
   description: "Remove a member from a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
     memberId: z.number(),
   }),
@@ -273,10 +273,10 @@ export const removeTeamMember = createApiHandler({
   },
 });
 
-export const registerMemberActivity = createApiHandler({
+export const registerMemberActivity = createTool({
   name: "TEAM_MEMBER_ACTIVITY_REGISTER",
   description: "Register that the user accessed a team",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
   async canAccess(name, props, c) {
@@ -299,10 +299,10 @@ export const registerMemberActivity = createApiHandler({
 });
 
 // User's invites list handler
-export const getMyInvites = createApiHandler({
+export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: bypass,
   handler: async (_props, c) => {
     assertPrincipalIsUser(c);
@@ -357,11 +357,11 @@ export const getMyInvites = createApiHandler({
 });
 
 // New invite team member handler
-export const inviteTeamMembers = createApiHandler({
+export const inviteTeamMembers = createTool({
   name: "TEAM_MEMBERS_INVITE",
   description:
     "Invite users to join a team via email. When no specific roles are provided, use default role: { id: 1, name: 'owner' }",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.string(),
     invitees: z.array(z.object({
       email: z.string().email(),
@@ -484,10 +484,10 @@ export const inviteTeamMembers = createApiHandler({
 });
 
 // Accept invite handler
-export const acceptInvite = createApiHandler({
+export const acceptInvite = createTool({
   name: "TEAM_INVITE_ACCEPT",
   description: "Accept a team invitation",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
   canAccess: bypass,
@@ -618,10 +618,10 @@ export const acceptInvite = createApiHandler({
 });
 
 // Delete invite handler
-export const deleteInvite = createApiHandler({
+export const deleteInvite = createTool({
   name: "TEAM_INVITE_DELETE",
   description: "Delete a team invitation",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
   }),
   canAccess: bypass,
@@ -643,10 +643,10 @@ export const deleteInvite = createApiHandler({
   },
 });
 
-export const teamRolesList = createApiHandler({
+export const teamRolesList = createTool({
   name: "TEAM_ROLES_LIST",
   description: "Get all roles available for a team, including basic deco roles",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
   async canAccess(name, props, c) {

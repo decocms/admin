@@ -5,7 +5,7 @@ import {
   bypass,
   canAccessTeamResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createTool } from "../context.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -22,10 +22,10 @@ export const removeNameAccents = (name: string): string => {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
-export const getTeam = createApiHandler({
+export const getTeam = createTool({
   name: "TEAMS_GET",
   description: "Get a team by slug",
-  schema: z.object({
+  inputSchema: z.object({
     slug: z.string(),
   }),
   async canAccess(name, props, c) {
@@ -50,10 +50,10 @@ export const getTeam = createApiHandler({
   },
 });
 
-export const createTeam = createApiHandler({
+export const createTeam = createTool({
   name: "TEAMS_CREATE",
   description: "Create a new team",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string(),
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
@@ -134,12 +134,11 @@ export const createTeam = createApiHandler({
   },
 });
 
-export const updateTeam = createApiHandler({
+export const updateTeam = createTool({
   name: "TEAMS_UPDATE",
   description: "Update an existing team",
-  schema: z.object({
-    // team id
-    id: z.number(),
+  inputSchema: z.object({
+    id: z.number().describe("The id of the team to update"),
     data: z.object({
       name: z.string().optional(),
       slug: z.string().optional(),
@@ -186,10 +185,10 @@ export const updateTeam = createApiHandler({
   },
 });
 
-export const deleteTeam = createApiHandler({
+export const deleteTeam = createTool({
   name: "TEAMS_DELETE",
   description: "Delete a team by id",
-  schema: z.object({
+  inputSchema: z.object({
     teamId: z.number(),
   }),
   async canAccess(name, props, c) {
@@ -224,10 +223,10 @@ export const deleteTeam = createApiHandler({
   },
 });
 
-export const listTeams = createApiHandler({
+export const listTeams = createTool({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: bypass,
   handler: async (_, c) => {
     assertPrincipalIsUser(c);

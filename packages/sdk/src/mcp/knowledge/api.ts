@@ -7,18 +7,14 @@ import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import {
-  AppContext,
-  createApiHandler,
-  createApiHandlerFactory,
-} from "../context.ts";
+import { AppContext, createTool, createToolFactory } from "../context.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
 }
 export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
 export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
-const createKnowledgeBaseApiHandler = createApiHandlerFactory<
+const createKnowledgeBaseTool = createToolFactory<
   KnowledgeBaseContext
 >((c) => ({
   ...c,
@@ -50,10 +46,10 @@ async function getVector(c: AppContext) {
 
 const DEFAULT_DIMENSION = 1536;
 
-export const listKnowledgeBases = createApiHandler({
+export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
   description: "List all knowledge bases",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const vector = await getVector(c);
@@ -70,10 +66,10 @@ export const listKnowledgeBases = createApiHandler({
   },
 });
 
-export const deleteBase = createApiHandler({
+export const deleteBase = createTool({
   name: "KNOWLEDGE_BASE_DELETE",
   description: "Delete a knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string().describe("The name of the knowledge base"),
   }),
   canAccess: canAccessWorkspaceResource,
@@ -85,11 +81,10 @@ export const deleteBase = createApiHandler({
     };
   },
 });
-
-export const createBase = createApiHandler({
+export const createBase = createTool({
   name: "KNOWLEDGE_BASE_CREATE",
   description: "Create a knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     name: z.string()
       .regex(
         /^[a-z0-9-_]+$/,
@@ -113,10 +108,10 @@ export const createBase = createApiHandler({
   },
 });
 
-export const forget = createKnowledgeBaseApiHandler({
+export const forget = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_FORGET",
   description: "Forget something",
-  schema: z.object({
+  inputSchema: z.object({
     docId: z.string().describe("The id of the content to forget"),
   }),
   canAccess: canAccessWorkspaceResource,
@@ -129,10 +124,10 @@ export const forget = createKnowledgeBaseApiHandler({
   },
 });
 
-export const remember = createKnowledgeBaseApiHandler({
+export const remember = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_REMEMBER",
   description: "Remember something",
-  schema: z.object({
+  inputSchema: z.object({
     docId: z.string().optional().describe(
       "The id of the content being remembered",
     ),
@@ -166,10 +161,10 @@ export const remember = createKnowledgeBaseApiHandler({
   },
 });
 
-export const search = createKnowledgeBaseApiHandler({
+export const search = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_SEARCH",
   description: "Search the knowledge base",
-  schema: z.object({
+  inputSchema: z.object({
     query: z.string().describe("The query to search the knowledge base"),
     topK: z.number().describe("The number of results to return").optional(),
     content: z.boolean().describe("Whether to return the content").optional(),

@@ -1,120 +1,68 @@
-import { NotFoundError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import { type Integration, IntegrationSchema } from "../models/mcp.ts";
-
-export class IntegrationNotFoundError extends NotFoundError {
-  integrationId: string;
-
-  constructor(integrationId: string) {
-    super(`Integration ${integrationId} not found`);
-    this.integrationId = integrationId;
-  }
-}
 
 /**
  * Save an MCP to the file system
  * @param integration - The MCP to save
  */
-export const saveIntegration = async (
+export const saveIntegration = (
   workspace: string,
   integration: Integration,
-) => {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .INTEGRATIONS_UPDATE({
-      id: integration.id,
-      integration,
-    });
-
-  if (!ok) {
-    throw new Error(error?.message || "Failed to save integration");
-  }
-
-  return data;
-};
+) =>
+  MCPClient.forWorkspace(workspace).INTEGRATIONS_UPDATE({
+    id: integration.id,
+    integration,
+  });
 
 /**
  * Create a new MCP
  * @returns The new MCP
  */
-export const createIntegration = async (
+export const createIntegration = (
   workspace: string,
   template: Partial<Integration> = {},
-) => {
-  const integration: Integration = {
+) =>
+  MCPClient.forWorkspace(workspace).INTEGRATIONS_CREATE({
     id: crypto.randomUUID(),
     name: "New Integration",
     description: "A new multi-channel platform integration",
     icon: "",
     connection: { type: "HTTP", url: "https://example.com/mcp" },
     ...template,
-  };
-
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .INTEGRATIONS_CREATE(integration);
-
-  if (!ok) {
-    throw new Error(error?.message || "Failed to save integration");
-  }
-
-  return data;
-};
+  });
 
 /**
  * Load an MCP from the file system
  * @param mcpId - The id of the MCP to load
  * @returns The MCP
  */
-export const loadIntegration = async (
+export const loadIntegration = (
   workspace: string,
   mcpId: string,
   signal?: AbortSignal,
-): Promise<Integration> => {
-  const { data, error, ok, status } = await MCPClient.forWorkspace(workspace)
-    .INTEGRATIONS_GET({
-      id: mcpId,
-    }, { signal });
+): Promise<Integration> =>
+  MCPClient.forWorkspace(workspace).INTEGRATIONS_GET(
+    { id: mcpId },
+    { signal },
+  );
 
-  if (status === 404) {
-    throw new IntegrationNotFoundError(mcpId);
-  }
-
-  if (!ok) {
-    throw new Error(error?.message || "Failed to load integration");
-  }
-
-  return data as Integration;
-};
-
-export const listIntegrations = async (
+export const listIntegrations = (
   workspace: string,
   signal?: AbortSignal,
-): Promise<Integration[]> => {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .INTEGRATIONS_LIST({}, { signal });
-
-  if (!ok) {
-    throw new Error(error?.message || "Failed to list integrations");
-  }
-
-  return data as Integration[];
-};
+): Promise<Integration[]> =>
+  MCPClient.forWorkspace(workspace).INTEGRATIONS_LIST(
+    {},
+    { signal },
+  );
 
 /**
  * Delete an MCP from the file system
  * @param mcpId - The id of the MCP to delete
  */
-export const deleteIntegration = async (workspace: string, mcpId: string) => {
-  const { data, error, ok } = await MCPClient.forWorkspace(workspace)
-    .INTEGRATIONS_DELETE({
-      id: mcpId,
-    });
-
-  if (!ok) {
-    throw new Error(error?.message || "Failed to delete integration");
-  }
-
-  return data;
-};
+export const deleteIntegration = (workspace: string, mcpId: string) =>
+  MCPClient.forWorkspace(workspace).INTEGRATIONS_DELETE({
+    id: mcpId,
+  });
 
 /**
  * Validate an MCP against the Zod schema

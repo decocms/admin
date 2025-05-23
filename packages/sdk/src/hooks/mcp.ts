@@ -6,11 +6,11 @@ import {
 import {
   createIntegration,
   deleteIntegration,
-  IntegrationNotFoundError,
   listIntegrations,
   loadIntegration,
   saveIntegration,
 } from "../crud/mcp.ts";
+import { InternalServerError } from "../errors.ts";
 import type { Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
@@ -103,7 +103,7 @@ export const useIntegration = (id: string) => {
     queryKey: KEYS.INTEGRATION(workspace, id),
     queryFn: ({ signal }) => loadIntegration(workspace, id, signal),
     retry: (failureCount, error) =>
-      error instanceof IntegrationNotFoundError ? false : failureCount < 2,
+      error instanceof InternalServerError && failureCount < 2,
   });
 
   return data;
@@ -171,7 +171,7 @@ export const useInstallFromMarketplace = () => {
         }
         globalThis.location.href = redirectUrl;
         // just to make the type checker happy
-        return {} as Integration;
+        return null;
       }
 
       const result: { data: { installationId: string } } = await agentStub
@@ -180,6 +180,10 @@ export const useInstallFromMarketplace = () => {
       return loadIntegration(workspace, result.data.installationId);
     },
     onSuccess: (result) => {
+      if (!result) {
+        return;
+      }
+
       // update item
       const itemKey = KEYS.INTEGRATION(workspace, result.id);
       client.cancelQueries({ queryKey: itemKey });

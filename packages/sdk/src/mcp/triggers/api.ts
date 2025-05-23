@@ -24,7 +24,7 @@ import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { createApiHandler } from "../context.ts";
+import { createTool } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 
 const SELECT_TRIGGER_QUERY = `
@@ -73,10 +73,10 @@ export const buildWebhookUrl = (
   return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?${params.toString()}`;
 };
 
-export const listTriggers = createApiHandler({
+export const listTriggers = createTool({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
-  schema: z.object({ agentId: z.string().optional() }),
+  inputSchema: z.object({ agentId: z.string().optional() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId },
@@ -118,10 +118,10 @@ export const listTriggers = createApiHandler({
   },
 });
 
-export const createTrigger = createApiHandler({
+export const createTrigger = createTool({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
-  schema: z.object({ agentId: z.string(), data: TriggerSchema }),
+  inputSchema: z.object({ agentId: z.string(), data: TriggerSchema }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
@@ -211,10 +211,13 @@ export const createTrigger = createApiHandler({
   },
 });
 
-export const createCronTrigger = createApiHandler({
+export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
-  schema: z.object({ agentId: z.string(), data: CreateCronTriggerInputSchema }),
+  inputSchema: z.object({
+    agentId: z.string(),
+    data: CreateCronTriggerInputSchema,
+  }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
@@ -267,10 +270,10 @@ export const createCronTrigger = createApiHandler({
   },
 });
 
-export const createWebhookTrigger = createApiHandler({
+export const createWebhookTrigger = createTool({
   name: "TRIGGERS_CREATE_WEBHOOK",
   description: "Create a webhook trigger",
-  schema: z.object({
+  inputSchema: z.object({
     agentId: z.string(),
     data: CreateWebhookTriggerInputSchema,
   }),
@@ -331,10 +334,10 @@ export const createWebhookTrigger = createApiHandler({
     return mapTrigger(trigger, agentsById);
   },
 });
-export const deleteTrigger = createApiHandler({
+export const deleteTrigger = createTool({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
-  schema: z.object({ triggerId: z.string(), agentId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string(), agentId: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId, agentId },
@@ -363,10 +366,10 @@ export const deleteTrigger = createApiHandler({
   },
 });
 
-export const getWebhookTriggerUrl = createApiHandler({
+export const getWebhookTriggerUrl = createTool({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId },
@@ -396,10 +399,10 @@ export const getWebhookTriggerUrl = createApiHandler({
   },
 });
 
-export const getTrigger = createApiHandler({
+export const getTrigger = createTool({
   name: "TRIGGERS_GET",
   description: "Get a trigger by ID",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
     { id: triggerId },
@@ -433,10 +436,10 @@ export const getTrigger = createApiHandler({
   },
 });
 
-export const activateTrigger = createApiHandler({
+export const activateTrigger = createTool({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
@@ -499,10 +502,10 @@ export const activateTrigger = createApiHandler({
   },
 });
 
-export const deactivateTrigger = createApiHandler({
+export const deactivateTrigger = createTool({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
-  schema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ triggerId: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);

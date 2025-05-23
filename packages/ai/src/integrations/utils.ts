@@ -1,4 +1,8 @@
-import { DECO_CHAT_URL, type Integration } from "@deco/sdk";
+import {
+  CallToolResultSchema,
+  DECO_CHAT_URL,
+  type Integration,
+} from "@deco/sdk";
 import type { AIAgent } from "../agent.ts";
 import { createServerClient } from "../mcp.ts";
 
@@ -38,13 +42,10 @@ export const searchMarketplaceIntegations = async (
     const result = await client.callTool({
       name: "SEARCH",
       arguments: { query },
-    }) as { content: { text: string }[] };
+      // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+    }, CallToolResultSchema);
 
-    const list = JSON.parse(result.content[0].text) as (Integration & {
-      provider: string;
-    })[];
-
-    return list;
+    return result.structuredContent as (Integration & { provider: string })[];
   } finally {
     client.close();
   }

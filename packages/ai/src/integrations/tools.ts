@@ -9,7 +9,11 @@
  *
  * If you need to disable an integration, use INTEGRATION_DISABLE.
  */
-import { type Integration, IntegrationSchema } from "@deco/sdk";
+import {
+  CallToolResultSchema,
+  type Integration,
+  IntegrationSchema,
+} from "@deco/sdk";
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
@@ -147,10 +151,11 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
       const result = await client.callTool({
         name: "CONFIGURE",
         arguments: { id: context.id },
-      }) as { content: { text: string }[] };
+        // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+      }, CallToolResultSchema);
 
       const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
-        JSON.parse(result.content[0].text),
+        result.structuredContent,
       );
 
       const id = crypto.randomUUID();

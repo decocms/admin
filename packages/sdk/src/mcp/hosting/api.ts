@@ -5,7 +5,7 @@ import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { AppContext, createApiHandler, getEnv } from "../context.ts";
+import { AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
@@ -69,10 +69,10 @@ function getWorkspaceParams(c: AppContext, appSlug?: string) {
 }
 
 // 1. List apps for a given workspace
-export const listApps = createApiHandler({
+export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
@@ -205,7 +205,7 @@ const FileSchema = z.object({
 });
 
 // Update the schema in deployFiles
-export const deployFiles = createApiHandler({
+export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
     `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINT}.
@@ -250,7 +250,7 @@ Important Notes:
 - Use npm: or jsr: specifiers for dependencies
 - No package.json or deno.json needed
 - Dependencies are imported directly using npm: or jsr: specifiers`,
-  schema: z.object({
+  inputSchema: z.object({
     appSlug: z.string().describe("The slug identifier for the app"),
     files: z.array(FileSchema).describe(
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
@@ -295,10 +295,10 @@ Important Notes:
 });
 
 // Delete app (and worker)
-export const deleteApp = createApiHandler({
+export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
-  schema: AppInputSchema,
+  inputSchema: AppInputSchema,
   canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
     const cf = c.cf;
@@ -334,10 +334,10 @@ export const deleteApp = createApiHandler({
 });
 
 // Get app info (metadata, endpoint, etc)
-export const getAppInfo = createApiHandler({
+export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
-  schema: AppInputSchema,
+  inputSchema: AppInputSchema,
   canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
     const { workspace, slug } = getWorkspaceParams(c, appSlug);

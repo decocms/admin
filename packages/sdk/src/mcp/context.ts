@@ -1,15 +1,14 @@
-// deno-lint-ignore-file no-explicit-any
 import { ActorConstructor, StubFactory } from "@deco/actors";
 import { AIAgent, Trigger } from "@deco/ai/actors";
 import { Client } from "@deco/sdk/storage";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import { type User as SupaUser } from "@supabase/supabase-js";
 import Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-import { ForbiddenError } from "../errors.ts";
 import { JWTPayload } from "../auth/jwt.ts";
+import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+import { ForbiddenError, HttpError } from "../errors.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -49,19 +48,33 @@ export type AppContext = Vars & {
 const isErrorLike = (error: unknown): error is Error =>
   Boolean((error as Error)?.message);
 
-export const serializeError = (error: unknown): string => {
+const isHttpError = (error: unknown): error is HttpError =>
+  Boolean((error as HttpError)?.code) && Boolean((error as HttpError)?.message);
+
+export const serializeError = (error: unknown): Record<string, unknown> => {
   if (typeof error === "string") {
-    return error;
+    return { message: error };
+  }
+
+  if (isHttpError(error)) {
+    return {
+      message: error.message,
+      code: error.code,
+    };
   }
 
   if (isErrorLike(error)) {
-    return error.message;
+    return {
+      message: error.message,
+      stack: error.stack,
+    };
   }
 
   try {
-    return JSON.stringify(error);
-  } catch {
-    return "Unknown error";
+    return Object.fromEntries(Object.entries(error as Record<string, unknown>));
+  } catch (e) {
+    console.error(e);
+    return { message: "Unknown error" };
   }
 };
 
@@ -91,118 +104,103 @@ export const AUTH_URL = (ctx: AppContext) =>
     ? "http://localhost:3001"
     : "https://api.deco.chat";
 
-export const createAIHandler =
-  (cb: (...args: any[]) => Promise<any> | any) =>
-  async (...args: any[]): Promise<CallToolResult> => {
-    try {
-      const response = await cb(...args);
+type ToolCallResult<T> = {
+  structuredContent: T;
+  isError: boolean;
+};
 
-      return {
-        isError: false,
-        content: [{ type: "text", text: JSON.stringify(response) }],
-      };
-    } catch (error) {
-      console.error(error);
-
-      return {
-        isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
-      };
-    }
-  };
-
-export interface ApiHandlerDefinition<
+export interface ToolDefinition<
   TAppContext extends AppContext = AppContext,
   TName extends string = string,
-  T extends z.ZodType = z.ZodType,
-  R extends object | boolean = object,
-  THandler extends (
-    props: z.infer<T>,
-    c: TAppContext,
-  ) => Promise<R> | R = (
-    props: z.infer<T>,
-    c: TAppContext,
-  ) => Promise<R> | R,
-  CanAccessHandler extends (
-    name: TName,
-    props: z.infer<T>,
-    c: AppContext,
-  ) => Promise<boolean> = (
-    name: TName,
-    props: z.infer<T>,
-    c: AppContext,
-  ) => Promise<boolean>,
+  TInputSchema extends z.ZodType = z.ZodType,
+  TReturn extends object | null | boolean = object,
 > {
+  annotations?: ToolAnnotations;
   group?: string;
   name: TName;
   description: string;
-  schema: T;
-  handler: THandler;
-  canAccess: CanAccessHandler;
+  inputSchema: TInputSchema;
+  outputSchema?: z.ZodType<TReturn>;
+  handler: (
+    props: z.infer<TInputSchema>,
+    c: TAppContext,
+  ) => Promise<TReturn> | TReturn;
+  canAccess: (
+    name: TName,
+    props: z.infer<TInputSchema>,
+    c: AppContext,
+  ) => Promise<boolean>;
 }
 
-export interface ApiHandler<
+export interface Tool<
   TName extends string = string,
-  T extends z.ZodType = z.ZodType,
-  R extends object | boolean = object,
-  THandler extends (props: z.infer<T>) => Promise<R> | R = (
-    props: z.infer<T>,
-  ) => Promise<R> | R,
+  TInputSchema extends z.ZodType = z.ZodType,
+  TReturn extends object | null | boolean = object,
 > {
+  annotations?: ToolAnnotations;
   group?: string;
   name: TName;
   description: string;
-  schema: T;
-  handler: THandler;
+  inputSchema: TInputSchema;
+  outputSchema?: z.ZodType<TReturn>;
+  handler: (
+    props: z.infer<TInputSchema>,
+  ) => Promise<ToolCallResult<TReturn>> | ToolCallResult<TReturn>;
 }
-export const createApiHandlerFactory = <
+
+export const createToolFactory = <
   TAppContext extends AppContext = AppContext,
 >(contextFactory: (c: AppContext) => TAppContext, group?: string) =>
 <
   TName extends string = string,
-  T extends z.ZodType = z.ZodType,
-  R extends object | boolean = object | boolean,
-  THandler extends (props: z.infer<T>, c: TAppContext) => Promise<R> | R = (
-    props: z.infer<T>,
-    c: TAppContext,
-  ) => Promise<R> | R,
+  TInputSchema extends z.ZodType = z.ZodType,
+  TReturn extends object | null | boolean = object,
 >(
-  definition: ApiHandlerDefinition<TAppContext, TName, T, R, THandler>,
-): ApiHandler<
-  TName,
-  T,
-  R,
-  (props: Parameters<THandler>[0]) => Promise<Awaited<ReturnType<THandler>>>
-> => ({
+  def: ToolDefinition<TAppContext, TName, TInputSchema, TReturn>,
+): Tool<TName, TInputSchema, TReturn> => ({
   group,
-  ...definition,
+  ...def,
   handler: async (
-    props: Parameters<THandler>[0],
-  ): Promise<Awaited<ReturnType<THandler>>> => {
-    const context = contextFactory(State.getStore());
+    props: z.infer<TInputSchema>,
+  ): Promise<ToolCallResult<TReturn>> => {
+    try {
+      const context = contextFactory(State.getStore());
 
-    const hasAccess = await definition.canAccess?.(
-      definition.name,
-      props,
-      context,
-    );
-    if (!hasAccess) {
-      throw new ForbiddenError(
-        `User cannot access this tool ${definition.name}`,
+      const hasAccess = await def.canAccess?.(
+        def.name,
+        props,
+        context,
       );
-    }
 
-    return await definition.handler(props, context) as Awaited<
-      ReturnType<
-        THandler
-      >
-    >;
+      if (!hasAccess) {
+        throw new ForbiddenError(
+          `User cannot access this tool ${def.name}`,
+        );
+      }
+
+      const structuredContent = await def.handler(
+        props,
+        contextFactory(State.getStore()),
+      );
+
+      return {
+        isError: false,
+        structuredContent,
+      };
+    } catch (error) {
+      const structuredContent = serializeError(error) as unknown as TReturn;
+
+      return {
+        isError: true,
+        structuredContent,
+      };
+    }
   },
 });
 
-export const createApiHandler = createApiHandlerFactory<AppContext>((c) => c);
+export const createTool = createToolFactory<AppContext>((c) => c);
 
-export type MCPDefinition = ApiHandler[];
+export type MCPDefinition = Tool[];
 
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 

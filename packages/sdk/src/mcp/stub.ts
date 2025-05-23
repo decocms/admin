@@ -1,35 +1,23 @@
-// deno-lint-ignore-file no-explicit-any
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
 import { getErrorByStatusCode } from "../errors.ts";
-import type { ApiHandler, AppContext } from "./context.ts";
+import type { AppContext } from "./context.ts";
+import type { ToolLike } from "./index.ts";
 
-export type MCPClientStub<TDefinition extends readonly ApiHandler[]> = {
+export type MCPClientStub<TDefinition extends ToolLike> = {
   [K in TDefinition[number] as K["name"]]: (
     params: Parameters<K["handler"]>[0],
-  ) => Promise<Awaited<ReturnType<K["handler"]>>>;
+  ) => Promise<Awaited<ReturnType<K["handler"]>>["structuredContent"]>;
 };
 
-export type MCPClientFetchStub<TDefinition extends readonly ApiHandler[]> = {
+export type MCPClientFetchStub<TDefinition extends ToolLike> = {
   [K in TDefinition[number] as K["name"]]: (
     params: Parameters<K["handler"]>[0],
     init?: RequestInit,
-  ) => Promise<
-    {
-      data: Awaited<ReturnType<K["handler"]>>;
-      error?: undefined;
-      status: number;
-      ok: true;
-    } | {
-      data: undefined;
-      error: { message: string };
-      status: number;
-      ok: false;
-    }
-  >;
+  ) => Promise<Awaited<ReturnType<K["handler"]>>["structuredContent"]>;
 };
 
 export interface CreateStubHandlerOptions<
-  TDefinition extends readonly ApiHandler[],
+  TDefinition extends ToolLike,
 > {
   tools: TDefinition;
   context?: AppContext;
@@ -39,17 +27,17 @@ export interface CreateStubAPIOptions {
   workspace?: string;
 }
 
-export type CreateStubOptions<TDefinition extends readonly ApiHandler[]> =
+export type CreateStubOptions<TDefinition extends ToolLike> =
   | CreateStubHandlerOptions<TDefinition>
   | CreateStubAPIOptions;
 
-export function isStubHandlerOptions<TDefinition extends readonly ApiHandler[]>(
+export function isStubHandlerOptions<TDefinition extends ToolLike>(
   options?: CreateStubOptions<TDefinition>,
 ): options is CreateStubHandlerOptions<TDefinition> {
   return typeof options === "object" && "tools" in options;
 }
 
-export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
+export function createMCPFetchStub<TDefinition extends ToolLike>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
   return new Proxy<MCPClientFetchStub<TDefinition>>(
@@ -64,12 +52,7 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
           const traceDebugId = getTraceDebugId();
           const workspace = options?.workspace ?? "";
           const response = await fetch(
-            new URL(
-              `${workspace}/tools/call/${name}`.split("/").filter(Boolean).join(
-                "/",
-              ),
-              API_SERVER_URL,
-            ),
+            new URL(`${workspace}/tools/call/${name}`, API_SERVER_URL),
             {
               body: JSON.stringify(args),
               method: "POST",
@@ -77,26 +60,27 @@ export function createMCPFetchStub<TDefinition extends readonly ApiHandler[]>(
               ...init,
               headers: {
                 ...init?.headers,
+                "content-type": "application/json",
+                "accept": "application/json",
                 "x-trace-debug-id": traceDebugId,
               },
             },
           );
 
-          const data = await response.json() as any;
+          const { data, error } = await response.json() as {
+            data: Record<string, unknown>;
+            error: string | undefined;
+          };
 
           if (!response.ok) {
             throw getErrorByStatusCode(
               response.status,
-              data.error || "Internal Server Error",
+              error || "Internal Server Error",
               traceDebugId,
             );
           }
 
-          return {
-            ...data,
-            status: response.status,
-            ok: response.ok,
-          };
+          return data;
         };
       },
     },

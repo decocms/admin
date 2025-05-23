@@ -1,6 +1,6 @@
+import { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
-  AgentNotFoundError,
   AgentSchema,
   NEW_AGENT_TEMPLATE,
   WELL_KNOWN_AGENTS,
@@ -9,9 +9,8 @@ import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { AppContext, createApiHandler } from "../context.ts";
+import { AppContext, createTool } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
-import { PostgrestError } from "@supabase/supabase-js";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const NO_DATA_ERROR = "PGRST116";
@@ -53,10 +52,10 @@ export const getAgentsByIds = async (
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
-export const listAgents = createApiHandler({
+export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
-  schema: z.object({}),
+  inputSchema: z.object({}),
   canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -76,10 +75,10 @@ export const listAgents = createApiHandler({
   },
 });
 
-export const getAgent = createApiHandler({
+export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   async canAccess(name, props, c) {
     const hasAccess = await canAccessWorkspaceResource(name, props, c);
     if (hasAccess) {
@@ -113,7 +112,7 @@ export const getAgent = createApiHandler({
         .single();
 
     if ((error && error.code == NO_DATA_ERROR) || !data) {
-      throw new AgentNotFoundError(id);
+      throw new NotFoundError(id);
     }
 
     if (error) {
@@ -124,10 +123,10 @@ export const getAgent = createApiHandler({
   },
 });
 
-export const createAgent = createApiHandler({
+export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
-  schema: AgentSchema.partial(),
+  inputSchema: AgentSchema.partial(),
   canAccess: canAccessWorkspaceResource,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
@@ -152,11 +151,11 @@ export const createAgent = createApiHandler({
   },
 });
 
-export const createTempAgent = createApiHandler({
+export const createTempAgent = createTool({
   name: "AGENTS_CREATE_TEMP",
   description:
     "Inserts or updates a temp agent for the whatsapp integration based on userId",
-  schema: z.object({
+  inputSchema: z.object({
     agentId: z.string(),
     userId: z.string(),
   }),
@@ -186,10 +185,10 @@ export const createTempAgent = createApiHandler({
   },
 });
 
-export const updateAgent = createApiHandler({
+export const updateAgent = createTool({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
-  schema: z.object({
+  inputSchema: z.object({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
@@ -215,10 +214,10 @@ export const updateAgent = createApiHandler({
   },
 });
 
-export const deleteAgent = createApiHandler({
+export const deleteAgent = createTool({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
-  schema: z.object({ id: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
@@ -228,7 +227,7 @@ export const deleteAgent = createApiHandler({
       .eq("id", id);
 
     const triggers = await listTriggers.handler({ agentId: id });
-    for (const trigger of triggers.triggers) {
+    for (const trigger of triggers.structuredContent.triggers) {
       await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
     }
 
@@ -240,10 +239,10 @@ export const deleteAgent = createApiHandler({
   },
 });
 
-export const getTempAgent = createApiHandler({
+export const getTempAgent = createTool({
   name: "AGENTS_GET_TEMP",
   description: "Get the temp WhatsApp agent for the current user",
-  schema: z.object({ userId: z.string() }),
+  inputSchema: z.object({ userId: z.string() }),
   async canAccess(_name, _props, c) {
     return await canAccessWorkspaceResource("AGENTS_GET", _props, c);
   },
@@ -256,6 +255,7 @@ export const getTempAgent = createApiHandler({
     if (error) {
       throw new InternalServerError(error.message);
     }
+
     return data;
   },
 });

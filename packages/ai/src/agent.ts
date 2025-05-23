@@ -721,12 +721,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
   }
 
-  private async handleAudioTranscription(audio?: {
+  private async handleAudioTranscription(audio: {
     audioBase64?: string;
-    audioUrl?: string;
-  }): Promise<AIMessage[] | null> {
-    if (!audio?.audioBase64) {
-      return null;
+  }): Promise<string> {
+    if ("audioBase64" in audio && !audio.audioBase64) {
+      throw new Error("No audio base64 provided");
     }
 
     const audioStream = new ReadableStream({
@@ -740,28 +739,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const transcription = await this.getAudioTranscription(audioStream as any);
 
-    return [{
-      role: "user",
-      id: crypto.randomUUID(),
-      content: transcription,
-    }];
+    return transcription;
   }
 
   async generate(
     payload: AIMessage[],
     options?: GenerateOptions,
-    audio?: {
-      audioBase64?: string;
-      audioUrl?: string;
-    },
   ): Promise<GenerateTextResult<any, any>> {
     const toolsets = await this.withToolOverrides(options?.tools);
 
     const agent = this.withAgentOverrides(options);
 
-    const transcriptionMessages = await this.handleAudioTranscription(audio);
-
-    return agent.generate(transcriptionMessages ?? payload, {
+    return agent.generate(payload, {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
@@ -843,6 +832,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }, fn);
   }
 
+  private async convertToAIMessage(message: AIMessage): Promise<AIMessage> {
+    if (
+      "audioBase64" in message && message.audioBase64 &&
+      typeof message.audioBase64 === "string"
+    ) {
+      const transcription = await this.handleAudioTranscription({
+        audioBase64: message.audioBase64,
+      });
+
+      return {
+        role: "user",
+        id: crypto.randomUUID(),
+        content: transcription,
+      } as AIMessage;
+    }
+    return message;
+  }
+
   async onBeforeInvoke(
     opts: InvokeMiddlewareOptions,
     next: (opts: InvokeMiddlewareOptions) => Promise<Response>,
@@ -867,10 +874,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   async stream(
     payload: AIMessage[],
     options?: StreamOptions,
-    audio?: {
-      audioBase64?: string;
-      audioUrl?: string;
-    },
   ): Promise<Response> {
     const tracer = trace.getTracer("stream-tracer");
 
@@ -942,10 +945,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxLimit - this.maxTokens(),
     );
 
-    const transcriptionMessages = await this.handleAudioTranscription(audio);
+    const aiMessages = await Promise.all(
+      payload.map((msg) => this.convertToAIMessage(msg)),
+    );
 
     const response = await agent.stream(
-      transcriptionMessages ?? payload,
+      aiMessages,
       {
         ...this.thread,
         context,

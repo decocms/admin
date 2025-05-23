@@ -76,22 +76,29 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       ? args.messages
       : undefined;
 
-    const messages = messagesFromArgs ?? [
-      {
+    const messages = audioFromArgs
+      ? [{
+        audioBase64: audioFromArgs,
         id: crypto.randomUUID(),
         role: "user" as const,
-        content: `the webhook is triggered with the following messages:`,
-      },
-      ...(args
-        ? [
-          {
-            id: crypto.randomUUID(),
-            role: "user" as const,
-            content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
-          },
-        ]
-        : []),
-    ];
+        content: `I am sending you an audio message.`,
+      }]
+      : messagesFromArgs ?? [
+        {
+          id: crypto.randomUUID(),
+          role: "user" as const,
+          content: `the webhook is triggered with the following messages:`,
+        },
+        ...(args
+          ? [
+            {
+              id: crypto.randomUUID(),
+              role: "user" as const,
+              content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
+            },
+          ]
+          : []),
+      ];
 
     const outputTool = url?.searchParams.get("outputTool");
     if (outputTool) {
@@ -124,11 +131,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       }
     }
     return useStream
-      ? await agent.stream(messages, options, {
-        audioBase64: audioFromArgs,
-      })
-      : await agent.generate(messages, options, {
-        audioBase64: audioFromArgs,
-      });
+      ? await agent.stream(messages, options)
+      : await agent.generate(messages, options);
   },
 };

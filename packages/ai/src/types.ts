@@ -29,7 +29,11 @@ export interface Tool {
  * Represents possible message formats that can be sent in a thread
  * Can be a single string, array of strings, or array of CoreMessages
  */
-export type Message = AIMessage;
+export type Message = AIMessage | AudioMessage;
+
+export interface AudioMessage extends AIMessage {
+  base64Audio: string;
+}
 
 export interface ThreadQueryOptions {
   /**

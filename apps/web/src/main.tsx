@@ -136,10 +136,6 @@ function ErrorFallback() {
   const isUnauthorized = error instanceof UnauthorizedError;
 
   useEffect(() => {
-    import("./hooks/analytics.ts").then((mod) => mod.trackException(error));
-  }, []);
-
-  useEffect(() => {
     if (!isUnauthorized) {
       return;
     }
@@ -154,7 +150,6 @@ function ErrorFallback() {
     const next = new URL(location.pathname, globalThis.location.origin);
     navigate(`/login?next=${next}`, { replace: true });
   }, [isUnauthorized, location.pathname, reset, navigate]);
-  }, [isUnauthorized, pathname]);
 
   if (isUnauthorized) {
     return (
@@ -219,7 +214,7 @@ function ErrorFallback() {
       description={
         <>
           <div>
-            {(error as Error)?.message ??
+            {error?.message ??
               "Looks like we are facing some technical issues. Please try again."}
           </div>
           <div className="text-xs">
@@ -231,18 +226,6 @@ function ErrorFallback() {
         onClick: () => globalThis.location.reload(),
         children: "Retry",
       }}
-    />
-  );
-}
-
-// Inline wrapper for Chat with disabled messages
-function HomeChat() {
-  return (
-    <Chat
-      showThreadMessages={false}
-      agentId="teamAgent"
-      threadId={crypto.randomUUID()}
-      key="disabled-messages"
     />
   );
 }

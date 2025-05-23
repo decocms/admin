@@ -111,7 +111,7 @@ export const listTriggers = createTool({
       acc[agent.id] = agent;
       return acc;
     }, {} as Record<string, z.infer<typeof AgentSchema>>);
- 
+
     return {
       triggers: data.map((trigger) => mapTrigger(trigger, agentsById)),
     };

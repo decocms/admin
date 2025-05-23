@@ -12,6 +12,7 @@ import { WebhookDetails } from "./webhookDetails.tsx";
 import { TriggerToggle } from "./triggerToggle.tsx";
 import { z } from "zod";
 import { TriggerModal } from "./triggerModal.tsx";
+import { useState } from "react";
 
 const useTrigger = (agentId: string, triggerId: string) => {
   const { data, isLoading } = useListTriggersByAgentId(agentId);
@@ -30,6 +31,7 @@ export function TriggerDetails(
   const params = useParams();
   const agentId = _agentId || params.agentId;
   const triggerId = _triggerId || params.triggerId;
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!agentId || !triggerId) {
     return <div>No agent or trigger ID</div>;
@@ -65,6 +67,8 @@ export function TriggerDetails(
             <div className="ml-auto flex items-center gap-2">
               <TriggerModal
                 trigger={trigger}
+                isOpen={isEditModalOpen}
+                onOpenChange={setIsEditModalOpen}
                 triggerAction={
                   <Button variant="special">
                     <Icon name="edit" className="h-4 w-4 mr-2" />

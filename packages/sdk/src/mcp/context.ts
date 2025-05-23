@@ -170,7 +170,13 @@ export const createToolFactory = <
         def.name,
         props,
         context,
-      );
+      ).catch((error) => {
+        console.warn(
+          "Failed to authorize tool with the following error",
+          error,
+        );
+        return false;
+      });
 
       if (!hasAccess) {
         throw new ForbiddenError(
@@ -178,10 +184,7 @@ export const createToolFactory = <
         );
       }
 
-      const structuredContent = await def.handler(
-        props,
-        contextFactory(State.getStore()),
-      );
+      const structuredContent = await def.handler(props, context);
 
       return {
         isError: false,

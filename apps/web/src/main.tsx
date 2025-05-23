@@ -16,7 +16,6 @@ import {
   useRouteError,
 } from "react-router";
 import { EmptyState } from "./components/common/EmptyState.tsx";
-import { ErrorBoundary, useError } from "./ErrorBoundary.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -191,7 +190,7 @@ function ErrorFallback() {
         description={
           <>
             <div>
-              {(error as Error)?.message ??
+              {error?.message ??
                 "The resource you are looking for does not exist"}
             </div>
             <div className="text-xs">
@@ -214,7 +213,7 @@ function ErrorFallback() {
       description={
         <>
           <div>
-            {error?.message ??
+            {(error as Error)?.message ??
               "Looks like we are facing some technical issues. Please try again."}
           </div>
           <div className="text-xs">

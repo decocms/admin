@@ -150,7 +150,6 @@ export function createMCPToolsStub<TDefinition extends ToolLike>(
           return State.run(
             options?.context ?? State.getStore(),
             async (args) => {
-              // @ts-expect-error this should be fine
               const result = await tool.handler(args);
 
               if (result.isError) {

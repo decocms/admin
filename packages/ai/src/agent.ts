@@ -916,7 +916,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           this._configuration?.model ?? DEFAULT_MODEL,
         );
         wallet.computeLLMUsage({
-          userId: this.metadata?.principal?.id,
+          userId: this.metadata?.user?.id,
           usage: result.usage,
           threadId: this.thread.threadId,
           model,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AppContext, createApiHandler } from "../context.ts";
+import { AppContext, createTool } from "../context.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -9,7 +9,7 @@ import {
 import { ClientOf } from "@deco/sdk/http";
 import {
   assertHasWorkspace,
-  assertUserHasAccessToWorkspace,
+  canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 import { InternalServerError, UserInputError } from "../../errors.ts";
@@ -109,13 +109,13 @@ const AgentsUsage = {
   },
 };
 
-export const getWalletAccount = createApiHandler({
+export const getWalletAccount = createTool({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
-  schema: z.object({}),
+  inputSchema: z.object({}),
+  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
-    await assertUserHasAccessToWorkspace(c);
 
     const wallet = getWalletClient(c);
 
@@ -137,15 +137,15 @@ export const getWalletAccount = createApiHandler({
   },
 });
 
-export const getThreadsUsage = createApiHandler({
+export const getThreadsUsage = createTool({
   name: "GET_THREADS_USAGE",
   description: "Get the threads usage for the current tenant's wallet",
-  schema: z.object({
+  inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ range }, ctx) => {
     assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
 
@@ -158,15 +158,15 @@ export const getThreadsUsage = createApiHandler({
   },
 });
 
-export const getAgentsUsage = createApiHandler({
+export const getAgentsUsage = createTool({
   name: "GET_AGENTS_USAGE",
   description: "Get the agents usage for the current tenant's wallet",
-  schema: z.object({
+  inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ range }, ctx) => {
     assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
 
@@ -179,17 +179,17 @@ export const getAgentsUsage = createApiHandler({
   },
 });
 
-export const createCheckoutSession = createApiHandler({
+export const createCheckoutSession = createTool({
   name: "CREATE_CHECKOUT_SESSION",
   description: "Create a checkout session for the current tenant's wallet",
-  schema: z.object({
+  inputSchema: z.object({
     amountUSDCents: z.number(),
     successUrl: z.string(),
     cancelUrl: z.string(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
     assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
 
     const session = await createStripeCheckoutSession({
       successUrl,
@@ -200,8 +200,8 @@ export const createCheckoutSession = createApiHandler({
       },
       ctx,
       metadata: {
-        created_by_user_id: ctx.user.id,
-        created_by_user_email: ctx.user.email || "",
+        created_by_user_id: ctx.user.id as string,
+        created_by_user_email: (ctx.user.email || "") as string,
       },
     });
 
@@ -211,17 +211,17 @@ export const createCheckoutSession = createApiHandler({
   },
 });
 
-export const createWalletVoucher = createApiHandler({
+export const createWalletVoucher = createTool({
   name: "CREATE_VOUCHER",
   description: "Create a voucher with money from the current tenant's wallet",
-  schema: z.object({
+  inputSchema: z.object({
     amount: z.number().describe(
       "The amount of money to add to the voucher. Specified in USD dollars.",
     ),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ amount }, ctx) => {
     assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
     const id = crypto.randomUUID();
@@ -253,15 +253,15 @@ export const createWalletVoucher = createApiHandler({
   },
 });
 
-export const redeemWalletVoucher = createApiHandler({
+export const redeemWalletVoucher = createTool({
   name: "REDEEM_VOUCHER",
   description: "Redeem a voucher for the current tenant's wallet",
-  schema: z.object({
+  inputSchema: z.object({
     voucher: z.string(),
   }),
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ voucher }, ctx) => {
     assertHasWorkspace(ctx);
-    await assertUserHasAccessToWorkspace(ctx);
 
     const wallet = getWalletClient(ctx);
 

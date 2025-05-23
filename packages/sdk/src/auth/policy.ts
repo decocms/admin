@@ -139,6 +139,25 @@ export class PolicyClient {
     return policies;
   }
 
+  public async removeAllMemberPoliciesAtTeam(
+    { teamId, memberId }: { teamId: number; memberId: number },
+  ) {
+    if (!this.db) {
+      throw new Error("PolicyClient not initialized with database client");
+    }
+    const { error } = await this.db.from("member_roles").delete().eq(
+      "teamId",
+      teamId,
+    ).eq(
+      "memberId",
+      memberId,
+    );
+
+    if (error) throw error;
+
+    return true;
+  }
+
   /**
    * Get all roles for a team
    */

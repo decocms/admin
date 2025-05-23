@@ -13,7 +13,8 @@ export interface WebhookArgs {
 }
 
 const isAIMessage = (m: unknown | Message): m is Message => {
-  return typeof m === "object" && m !== null && "role" in m && "content" in m &&
+  return typeof m === "object" && m !== null && "role" in m &&
+    ("content" in m || "audioBase64" in m) &&
     "id" in m && typeof m.id === "string" && typeof m.role === "string";
 };
 
@@ -66,38 +67,27 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         resourceId: resourceId ?? data.id ?? undefined,
       });
 
-    const audioFromArgs = args && typeof args === "object" &&
-        "audioBase64" in args && typeof args.audioBase64 === "string"
-      ? args.audioBase64
-      : undefined;
-
     const messagesFromArgs = args && typeof args === "object" &&
         "messages" in args && isAIMessages(args.messages)
       ? args.messages
       : undefined;
 
-    const messages = audioFromArgs
-      ? [{
-        audioBase64: audioFromArgs,
+    const messages = messagesFromArgs ?? [
+      {
         id: crypto.randomUUID(),
         role: "user" as const,
-      }]
-      : messagesFromArgs ?? [
-        {
-          id: crypto.randomUUID(),
-          role: "user" as const,
-          content: `the webhook is triggered with the following messages:`,
-        },
-        ...(args
-          ? [
-            {
-              id: crypto.randomUUID(),
-              role: "user" as const,
-              content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
-            },
-          ]
-          : []),
-      ];
+        content: `the webhook is triggered with the following messages:`,
+      },
+      ...(args
+        ? [
+          {
+            id: crypto.randomUUID(),
+            role: "user" as const,
+            content: `\`\`\`json\n${JSON.stringify(args)}\`\`\``,
+          },
+        ]
+        : []),
+    ];
 
     const outputTool = url?.searchParams.get("outputTool");
     if (outputTool) {

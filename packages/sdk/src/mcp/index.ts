@@ -68,7 +68,6 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.getWebhookTriggerUrl,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
-  triggersAPI.updateTrigger,
   knowledgeAPI.createBase,
   knowledgeAPI.deleteBase,
   knowledgeAPI.forget,

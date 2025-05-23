@@ -178,6 +178,11 @@ export const createToolFactory = <
         );
       }
 
+      const structuredContent = await def.handler(
+        props,
+        contextFactory(State.getStore()),
+      );
+
       return {
         isError: false,
         structuredContent,

@@ -1,5 +1,5 @@
 -- Create the ENUM type for visibility
--- this is "CREATE " for TYPE
+-- this is "CREATE IF NOT EXISTS" for TYPE
 DO $$ BEGIN
     CREATE TYPE visibility_type AS ENUM ('PUBLIC', 'WORKSPACE', 'PRIVATE');
 EXCEPTION
@@ -8,4 +8,4 @@ END $$;
 
 -- Add the visibility column to the projects table
 ALTER TABLE deco_chat_agents
-ADD COLUMN  visibility visibility_type NOT NULL DEFAULT 'WORKSPACE';
+ADD COLUMN IF NOT EXISTS visibility visibility_type NOT NULL DEFAULT 'WORKSPACE';

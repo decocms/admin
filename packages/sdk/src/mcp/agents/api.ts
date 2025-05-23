@@ -80,15 +80,19 @@ export const getAgent = createTool({
   description: "Get an agent by id",
   inputSchema: z.object({ id: z.string() }),
   async canAccess(name, props, c) {
-    const hasAccess = await canAccessWorkspaceResource(name, props, c);
+    const hasAccess = await canAccessWorkspaceResource(name, props, c)
+      .catch(() => false);
+
     if (hasAccess) {
       return true;
     }
 
-    assertHasWorkspace(c);
-    const { data: agentData } = await c.db.from("deco_chat_agents").select(
-      "visibility",
-    ).eq("workspace", c.workspace.value).eq("id", props.id).single();
+    const { data: agentData } = await c.db
+      .from("deco_chat_agents")
+      .select("visibility")
+      .eq("workspace", c.workspace!.value)
+      .eq("id", props.id)
+      .single();
 
     // TODO: implement this using authorization system
     if (agentData?.visibility === "PUBLIC") {

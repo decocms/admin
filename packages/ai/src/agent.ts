@@ -721,15 +721,47 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
   }
 
+  private async handleAudioTranscription(audio?: {
+    audioBase64?: string;
+    audioUrl?: string;
+  }): Promise<AIMessage[] | null> {
+    if (!audio?.audioBase64) {
+      return null;
+    }
+
+    const audioStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new Uint8Array(Buffer.from(audio.audioBase64 ?? "", "base64")),
+        );
+        controller.close();
+      },
+    });
+
+    const transcription = await this.getAudioTranscription(audioStream as any);
+    
+    return [{
+      role: "user",
+      id: crypto.randomUUID(),
+      content: transcription,
+    }];
+  }
+
   async generate(
     payload: AIMessage[],
     options?: GenerateOptions,
+    audio?: {
+      audioBase64?: string;
+      audioUrl?: string;
+    }
   ): Promise<GenerateTextResult<any, any>> {
     const toolsets = await this.withToolOverrides(options?.tools);
 
     const agent = this.withAgentOverrides(options);
 
-    return agent.generate(payload, {
+    const transcriptionMessages = await this.handleAudioTranscription(audio);
+
+    return agent.generate(transcriptionMessages ?? payload, {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
@@ -835,7 +867,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   async stream(
     payload: AIMessage[],
     options?: StreamOptions,
-    audioBase64?: string,
+      audio?: {
+        audioBase64?: string;
+        audioUrl?: string;
+      }
   ): Promise<Response> {
     const tracer = trace.getTracer("stream-tracer");
 
@@ -907,28 +942,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxLimit - this.maxTokens(),
     );
 
-    const transcription = audioBase64
-      ? async () => {
-        const audioStream = new ReadableStream({
-          start(controller) {
-            controller.enqueue(
-              new Uint8Array(Buffer.from(audioBase64, "base64")),
-            );
-            controller.close();
-          },
-        });
-        return await this.getAudioTranscription(audioStream as any);
-      }
-      : undefined;
+    const transcriptionMessages = await this.handleAudioTranscription(audio);
 
     const response = await agent.stream(
-      transcription
-        ? [{
-          role: "user",
-          id: crypto.randomUUID(),
-          content: await transcription(),
-        }]
-        : payload,
+      transcriptionMessages ?? payload,
       {
         ...this.thread,
         context,

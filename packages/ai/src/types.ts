@@ -31,8 +31,8 @@ export interface Tool {
  */
 export type Message = AIMessage | AudioMessage;
 
-export interface AudioMessage extends Omit<AIMessage, 'content'> {
-  audioBase64: string
+export interface AudioMessage extends Omit<AIMessage, "content"> {
+  audioBase64: string;
 }
 
 export interface ThreadQueryOptions {

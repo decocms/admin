@@ -23,7 +23,7 @@ import type { Agent } from "../models/agent.ts";
 import { stub } from "../stub.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
+
 export const useCreateAgent = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();
@@ -89,9 +89,6 @@ export const useUpdateAgent = () => {
   const update = useMutation({
     mutationFn: (agent: Agent) => updateAgent(workspace, agent),
     onSuccess: (result) => updateAgentCache(result),
-    onError: (error) => {
-      toast.error(error.message);
-    },
   });
 
   return update;

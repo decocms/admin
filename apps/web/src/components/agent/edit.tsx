@@ -21,6 +21,7 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
@@ -171,9 +172,13 @@ export default function Page(props: Props) {
   }, [values, updateAgentCache]);
 
   const handleSubmit = form.handleSubmit(
-    (data: Agent) => {
-      updateAgent.mutateAsync(data);
-      form.reset(data);
+    async (data: Agent) => {
+      try {
+        await updateAgent.mutateAsync(data);
+        form.reset(data);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to update agent");
+      }
     },
   );
 

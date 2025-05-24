@@ -80,7 +80,7 @@ export function AuditListContent(
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
   const members = teamId !== null ? useTeamMembers(teamId).data : [];
 
-  const { data: auditData } = useAuditEvents({
+  const { data: auditData, isLoading } = useAuditEvents({
     agentId: optionsProp?.agentId ?? selectedAgent,
     resourceId: optionsProp?.resourceId ?? selectedUser,
     orderBy: optionsProp?.orderBy ?? sort,
@@ -123,6 +123,14 @@ export function AuditListContent(
         prevCursor && prevCursor.length > 0 ? prevCursor : undefined,
       );
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner />
+      </div>
+    );
   }
 
   return (

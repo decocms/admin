@@ -177,7 +177,9 @@ export default function Page(props: Props) {
         await updateAgent.mutateAsync(data);
         form.reset(data);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to update agent");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to update agent",
+        );
       }
     },
   );

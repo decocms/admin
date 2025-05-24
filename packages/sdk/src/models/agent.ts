@@ -56,23 +56,6 @@ export const AgentSchema = z.object({
   /** Visibility of the agent */
   visibility: z.enum(["PUBLIC", "WORKSPACE", "PRIVATE"])
     .describe("Visibility of the agent"),
-  /** Voice of the agent */
-  voice: z.object({
-    /** Text to speech settings */
-    textToSpeech: z.object({
-      /** Whether text to speech is enabled */
-      enabled: z.boolean().describe("Whether text to speech is enabled"),
-      /** Model to use for text to speech */
-      model: z.string().describe("Model to use for text to speech"),
-    }).optional().describe("Text to speech settings"),
-    /** Speech to text settings */
-    speechToText: z.object({
-      /** Whether speech to text is enabled */
-      enabled: z.boolean().describe("Whether speech to text is enabled"),
-      /** Model to use for speech to text */
-      model: z.string().describe("Model to use for speech to text"),
-    }).optional().describe("Speech to text settings"),
-  }).optional().describe("Voice of the agent"),
 });
 
 /**

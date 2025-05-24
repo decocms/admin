@@ -62,6 +62,8 @@
     "./mcp": "./src/mcp/index.ts",
     "./fetch": "./src/fetch.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./hooks/profile": "./src/hooks/profile.ts"
+    "./hooks/profile": "./src/hooks/profile.ts",
+    "./mcp/bindings": "./src/mcp/bindings/index.ts",
+    "./mcp/binder": "./src/mcp/bindings/binder.ts"
   }
 }

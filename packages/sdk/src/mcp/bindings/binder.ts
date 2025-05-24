@@ -1,0 +1,68 @@
+import { MCPConnection } from "../../models/mcp.ts";
+import { MCPClient, ToolBinder } from "../index.ts";
+import { MCPClientFetchStub } from "../stub.ts";
+import {
+  TRIGGER_INPUT_BINDING_DEFINITION,
+  TRIGGER_OUTPUT_BINDING_DEFINITION,
+} from "./trigger.ts";
+
+export type Binder<TDefinition extends readonly ToolBinder[]> = {
+  [K in keyof TDefinition]: TDefinition[K];
+};
+
+export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
+  binder: TDefinition,
+) => {
+  return {
+    implements: async (
+      connectionOrTools: MCPConnection | ToolBinder[],
+    ) => {
+      const listedTools = Array.isArray(connectionOrTools)
+        ? connectionOrTools
+        : await MCPClient.INTEGRATIONS_LIST_TOOLS({
+          connection: connectionOrTools,
+        }).then((r) => r.tools).catch(() => []);
+
+      return binder.every((tool) =>
+        (listedTools ?? []).some((t) => t.name === tool.name)
+      );
+    },
+    forConnection: (
+      mcpConnection: MCPConnection,
+    ): MCPClientFetchStub<TDefinition> => {
+      return new Proxy<MCPClientFetchStub<TDefinition>>(
+        {} as MCPClientFetchStub<TDefinition>,
+        {
+          get(_, name) {
+            if (typeof name !== "string") {
+              throw new Error("Name must be a string");
+            }
+
+            return (args: Record<string, unknown>) => {
+              return MCPClient.INTEGRATIONS_CALL_TOOL({
+                connection: mcpConnection,
+                params: {
+                  name,
+                  arguments: args,
+                },
+              });
+            };
+          },
+        },
+      );
+    },
+  };
+};
+
+export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
+  ReturnType<
+    T["forConnection"]
+  >;
+
+export const TriggerInputBinding = bindingClient(
+  TRIGGER_INPUT_BINDING_DEFINITION,
+);
+export const TriggerOutputBinding = bindingClient(
+  TRIGGER_OUTPUT_BINDING_DEFINITION,
+);
+export * from "./index.ts";

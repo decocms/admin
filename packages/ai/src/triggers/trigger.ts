@@ -6,13 +6,17 @@ import {
   AppContext,
   AuthorizationClient,
   fromWorkspaceString,
-  mcpBinding,
   MCPClient,
-  MCPClientFetchStub,
   MCPClientStub,
   PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
+import {
+  Callbacks,
+  MCPBindingClient,
+  TriggerInputBinding,
+  TriggerOutputBinding,
+} from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
@@ -20,7 +24,6 @@ import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { dirname } from "node:path/posix";
 import process from "node:process";
-import z from "zod";
 import { AIAgent } from "../agent.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
@@ -36,36 +39,6 @@ export const threadOf = (
     (resourceId ? crypto.randomUUID() : undefined); // generate a random threadId if resourceId exists.
   return { threadId, resourceId };
 };
-
-const callbacksSchema = z.object({
-  stream: z.string(),
-  generate: z.string(),
-  generateObject: z.string(),
-});
-
-const inputBindingSchema = z.object({
-  payload: z.any(),
-  callbacks: callbacksSchema,
-});
-
-const outputBindingSchema = z.object({
-  callbacks: callbacksSchema,
-});
-export type Callbacks = z.infer<typeof callbacksSchema>;
-export type OnWebhookMessageInput = z.infer<typeof inputBindingSchema>;
-export type ScheduledInput = z.infer<typeof outputBindingSchema>;
-
-const INPUT_BINDING = [{
-  name: "ON_AGENT_INPUT" as const,
-  inputSchema: inputBindingSchema,
-  outputSchema: z.any(),
-}] as const;
-
-const OUTPUT_BINDING = [{
-  name: "ON_AGENT_OUTPUT" as const,
-  inputSchema: outputBindingSchema,
-  outputSchema: z.any(),
-}] as const;
 
 export interface TriggerHooks<TData extends TriggerData = TriggerData> {
   type: TData["type"];
@@ -137,8 +110,8 @@ const buildInvokeUrl = (
 export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
-  public inputBinding?: MCPClientFetchStub<typeof INPUT_BINDING>;
-  public outputBinding?: MCPClientFetchStub<typeof OUTPUT_BINDING>;
+  public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
+  public outputBinding?: MCPBindingClient<typeof TriggerOutputBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
@@ -214,11 +187,11 @@ export class Trigger {
     const trigger = mapTriggerToTriggerData(triggerData);
     if (trigger.binding) {
       if (trigger.type === "webhook") {
-        this.inputBinding = mcpBinding(INPUT_BINDING).forConnection(
+        this.inputBinding = TriggerInputBinding.forConnection(
           trigger.binding.connection,
         );
       } else {
-        this.outputBinding = mcpBinding(OUTPUT_BINDING).forConnection(
+        this.outputBinding = TriggerOutputBinding.forConnection(
           trigger.binding.connection,
         );
       }

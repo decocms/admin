@@ -273,22 +273,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     views: _views,
     ...config
   }: Partial<Configuration>): Promise<Configuration> {
-    const parsed = await this.configuration();
-    const updatedConfig = {
-      ...parsed,
-      ...config,
-      avatar: config.avatar || parsed.avatar || pickCapybaraAvatar(),
-    };
+    try {
+      const parsed = await this.configuration();
+      const updatedConfig = {
+        ...parsed,
+        ...config,
+        avatar: config.avatar || parsed.avatar || pickCapybaraAvatar(),
+      };
 
-    await this.metadata?.mcpClient?.AGENTS_UPDATE({
-      agent: updatedConfig,
-      id: parsed.id,
-    });
+      await this.metadata?.mcpClient?.AGENTS_UPDATE({
+        agent: updatedConfig,
+        id: parsed.id,
+      });
 
-    await this.init(updatedConfig);
-    this._configuration = updatedConfig;
+      await this.init(updatedConfig);
+      this._configuration = updatedConfig;
 
-    return updatedConfig;
+      return updatedConfig;
+    } catch (error) {
+      console.error("Error configuring agent", error);
+      throw new Error(`Error configuring agent: ${error}`);
+    }
   }
 
   async listThreads(): Promise<StorageThreadType[]> {

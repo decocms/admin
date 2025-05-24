@@ -332,6 +332,7 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
     const getCommand = new GetObjectCommand({
       Bucket: bucketName,
       Key: s3Key,
+      ResponseContentType: contentType,
     });
 
     const getUrl = await getSignedUrl(s3Client, getCommand, {

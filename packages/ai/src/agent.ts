@@ -629,16 +629,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       model: DEFAULT_MODEL,
       views: [],
       visibility: "WORKSPACE",
-      voice: {
-        textToSpeech: {
-          enabled: false,
-          model: DEFAULT_TEXT_TO_SPEECH_MODEL,
-        },
-        speechToText: {
-          enabled: true,
-          model: DEFAULT_SPEECH_TO_TEXT_MODEL,
-        },
-      },
       ...manifest,
     };
 

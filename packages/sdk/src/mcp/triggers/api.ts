@@ -66,11 +66,7 @@ export const buildWebhookUrl = (
   passphrase?: string,
   outputTool?: string,
 ) => {
-  const params = new URLSearchParams();
-  if (passphrase) params.append("passphrase", passphrase);
-  params.append("deno_isolate_instance_id", triggerId);
-  if (outputTool) params.append("output_tool", outputTool);
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?${params.toString()}`;
+  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}&output_tool=${outputTool}`;
 };
 
 export const listTriggers = createTool({
@@ -138,11 +134,13 @@ export const upsertTrigger = createTool({
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
+    
+    const id = triggerId || crypto.randomUUID();
 
     const triggerPath = Path.resolveHome(
       join(
         Path.folders.Agent.root(agentId),
-        Path.folders.trigger(triggerId || crypto.randomUUID()),
+        Path.folders.trigger(id),
       ),
       workspace,
     ).path;
@@ -188,8 +186,6 @@ export const upsertTrigger = createTool({
       }
     }
 
-    const id = crypto.randomUUID();
-
     // Delete existing trigger if updating
     if (triggerId) {
       await stub(Trigger).new(triggerPath).delete();
@@ -199,7 +195,7 @@ export const upsertTrigger = createTool({
     await stub(Trigger).new(triggerPath).create(
       {
         ...data,
-        id: triggerId || id,
+        id,
         resourceId: userId,
       },
     );
@@ -207,7 +203,7 @@ export const upsertTrigger = createTool({
     // Update database
     const { data: trigger, error } = await db.from("deco_chat_triggers")
       .upsert({
-        id: triggerId || id,
+        id,
         workspace,
         agent_id: agentId,
         user_id: userId,

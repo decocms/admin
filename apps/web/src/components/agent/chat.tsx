@@ -151,7 +151,7 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem asChild>
-                    <WhatsAppButton isMobile />
+                    <WhatsAppButton />
                   </DropdownMenuItem>
                   {chat.messages.length !== 0 && (
                     <DropdownMenuItem

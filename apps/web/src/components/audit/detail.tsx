@@ -28,6 +28,10 @@ const TABS: Record<string, Tab> = {
   },
 };
 
+function truncate(title: string) {
+  return title.length > 20 ? title.slice(0, 20) + "..." : title;
+}
+
 function Page() {
   const id = useThreadId();
   const { data: thread } = useThread(id);
@@ -44,7 +48,7 @@ function Page() {
           <DefaultBreadcrumb
             items={[
               { label: "History", link: "/audits" },
-              ...(title ? [{ label: title, link: "" }] : []),
+              ...(title ? [{ label: truncate(title), link: "" }] : []),
             ]}
           />
         }

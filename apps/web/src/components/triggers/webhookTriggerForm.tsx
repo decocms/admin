@@ -113,7 +113,7 @@ export function WebhookTriggerForm({
     agentId,
   );
   const [open, setOpen] = useState(false);
-  
+
   const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
     agentId,
   );

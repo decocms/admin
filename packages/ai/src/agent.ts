@@ -143,7 +143,6 @@ function isAudioMessage(message: AIMessage): message is AudioMessage {
   return "audioBase64" in message && typeof message.audioBase64 === "string";
 }
 
-
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private _agent?: Agent;

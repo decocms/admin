@@ -1,15 +1,21 @@
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import type { Integration, MCPTool } from "@deco/sdk";
 import { useTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { TableCell, TableRow } from "@deco/ui/components/table.tsx";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@deco/ui/components/collapsible.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { IntegrationHeader } from "./header.tsx";
 import { IntegrationIcon } from "./icon.tsx";
 import { ToolList, useToolSelection } from "./selector.tsx";
@@ -141,44 +147,127 @@ export function Integration({
   );
 }
 
-export function IntegrationRow(props: IntegrationProps) {
-  const { integration } = props;
+type IntegrationToolName = string;
+interface ToolsMap {
+  [integrationId: string]: IntegrationToolName[];
+}
+
+export function IntegrationRow(
+  { data: integration, className, toolsSet, onSelectTools }: {
+    data: Integration;
+    className?: string;
+    toolsSet: ToolsMap;
+    onSelectTools: (tools: string[]) => void;
+  },
+) {
   const { data: toolsData } = useTools(
     integration.connection,
   );
-  const toolsSet = useMemo(
-    () => ({ [integration.id]: toolsData.tools.map((tool) => tool.name) }),
-    [integration.id, toolsData],
+  const selected = useMemo(
+    () => ({ [integration.id]: new Set(toolsSet[integration.id]) }),
+    [
+      toolsSet[integration.id],
+      integration.id,
+    ],
   );
-  const { selected, toggle } = useToolSelection(toolsSet, true);
+
+  const enabledToolsCount = toolsData?.tools?.length || 0;
+
+  const handleRemove = () => {
+    // TODO: Implement remove functionality
+    console.log("Remove integration:", integration.id);
+  };
+
+  const handleSetup = () => {
+    // TODO: Implement setup functionality
+    console.log("Setup integration:", integration.id);
+  };
+
   return (
     <Collapsible asChild>
-      <Fragment>
-        <TableRow as="div">
-          <CollapsibleTrigger asChild>
-            <TableCell as="div">
-              <span className="inline-flex items-center gap-2">
-                <IntegrationIcon
-                  icon={integration.icon}
-                  name={integration.name}
-                  className="h-8 w-8 shrink-0"
-                />
-                {props.integration.name}
+      <div className={cn("w-full", className)}>
+        <CollapsibleTrigger asChild>
+          <div className="w-full grid grid-cols-[32px_2fr_1fr_auto] gap-2 p-2 hover:bg-slate-50 group transition-colors">
+            {/* Column 1: Chevron Icon (68px) */}
+            <span className="flex items-center w-8">
+              <Icon
+                name="chevron_right"
+                className="text-slate-400 transition-transform group-data-[state=open]:rotate-90"
+                size={20}
+              />
+            </span>
+
+            {/* Column 2: Integration Info (2/3 of remaining space) */}
+            <div className="flex items-center gap-3 min-w-0 cursor-pointer">
+              <IntegrationIcon
+                icon={integration.icon}
+                name={integration.name}
+                className="h-8 w-8 shrink-0"
+              />
+              <span className="font-medium text-slate-900 truncate">
+                {integration.name}
               </span>
-            </TableCell>
-          </CollapsibleTrigger>
-        </TableRow>
-        <CollapsibleContent asChild>
-          <span className="block">
-            <ToolList
-              integration={integration}
-              selectedTools={selected}
-              toolsSet={toolsSet}
-              onToggle={toggle}
-            />
-          </span>
+            </div>
+
+            {/* Column 3: Tools Count (1/3 of remaining space) */}
+            <div className="flex items-center justify-end text-sm text-slate-500 cursor-pointer">
+              <span>
+                {toolsSet[integration.id]?.length} of {enabledToolsCount}{" "}
+                tools selected
+              </span>
+            </div>
+
+            {/* Column 4: More Actions Dropdown */}
+            <div className="flex items-center justify-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-slate-600"
+                  >
+                    <Icon name="more_horiz" size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                  <DropdownMenuItem onClick={handleSetup}>
+                    <Icon name="settings" size={16} className="mr-2" />
+                    Setup
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleRemove}
+                    className="text-red-600"
+                  >
+                    <Icon name="delete" size={16} className="mr-2" />
+                    Remove
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="grid grid-cols-[32px_2fr_1fr_auto] gap-2 p-2 w-full border-t border-slate-100">
+            <div className="col-span-2 col-start-2">
+              <ToolList
+                integration={integration}
+                selectedTools={selected}
+                toolsSet={toolsSet}
+                onToggle={(_, toolName, checked) => {
+                  const newTools = checked
+                    ? [...toolsSet[integration.id], toolName]
+                    : toolsSet[integration.id].filter((tName) =>
+                      tName !== toolName
+                    );
+                  onSelectTools(newTools);
+                }}
+                variant="body-only"
+              />
+            </div>
+          </div>
         </CollapsibleContent>
-      </Fragment>
+      </div>
     </Collapsible>
   );
 }

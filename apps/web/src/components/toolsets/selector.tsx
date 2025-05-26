@@ -171,11 +171,13 @@ export function ToolList({
   selectedTools,
   toolsSet,
   onToggle,
+  variant = "default",
 }: {
   integration: Integration;
   selectedTools: SelectedToolsMap;
   toolsSet: ToolsMap;
   onToggle: (integrationId: string, toolName: string, checked: boolean) => void;
+  variant?: "default" | "body-only";
 }) {
   const { data: toolsData, isLoading } = useTools(integration.connection);
   const allTools = toolsData?.tools || [];
@@ -186,6 +188,7 @@ export function ToolList({
     ).length;
   const isAll = enabledCount === allTools.length && allTools.length > 0;
   const isPartial = enabledCount > 0 && !isAll;
+  const showHeader = variant === "default";
 
   function handleAll(checked: boolean) {
     allTools.forEach((tool) => onToggle(integration.id, tool.name, checked));
@@ -203,7 +206,7 @@ export function ToolList({
 
   return (
     <div className="space-y-4">
-      {allTools.length > 0 && (
+      {showHeader && allTools.length > 0 && (
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -234,7 +237,10 @@ export function ToolList({
             <div
               key={tool.name}
               role="button"
-              className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 border border-slate-200 rounded-lg cursor-pointer"
+              className={cn(
+                "flex items-start gap-3 py-2 hover:bg-slate-50 rounded-lg cursor-pointer",
+                showHeader && "border border-slate-200 px-3",
+              )}
               onClick={() => onToggle(integration.id, tool.name, !selected)}
             >
               <Checkbox

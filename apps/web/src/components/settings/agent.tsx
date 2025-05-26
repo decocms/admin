@@ -1,8 +1,4 @@
-import {
-  type Integration as IntegrationType,
-  useSDK,
-  useWriteFile,
-} from "@deco/sdk";
+import { useSDK, useWriteFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -24,13 +20,6 @@ import {
   SelectValue,
 } from "@deco/ui/components/select.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@deco/ui/components/table.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
@@ -38,7 +27,7 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration, IntegrationRow } from "../toolsets/index.tsx";
+import { IntegrationRow } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
 
 // Token limits for Anthropic models
@@ -120,11 +109,6 @@ function SettingsTab() {
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<
     string | null
   >(null);
-
-  const handleIntegrationClick = (integration: IntegrationType) => {
-    setSelectedIntegrationId(integration.id);
-    setIsModalOpen(true);
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -399,42 +383,24 @@ function SettingsTab() {
                   <Icon name="add" />
                 </Button>
               </div>
-              <Table as="div">
-                <TableHeader as="div">
-                  <TableRow as="div">
-                    <TableHead as="div">""</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody as="div">
-                  {usedIntegrations.map((integration) => (
+              <div className="border border-slate-200 rounded-lg bg-white">
+                <div className="space-y-0">
+                  {usedIntegrations.map((integration, index) => (
                     <IntegrationRow
                       key={integration.id}
-                      integration={integration}
-                      setIntegrationTools={setIntegrationTools}
-                      enabledTools={toolsSet[integration.id] || []}
-                      onIntegrationClick={handleIntegrationClick}
+                      data={integration}
+                      className={cn(
+                        "border-b border-slate-200 last:border-b-0",
+                        index === 0 && "rounded-t-lg",
+                        index === usedIntegrations.length - 1 && "rounded-b-lg",
+                      )}
+                      toolsSet={toolsSet}
+                      onSelectTools={(tools: string[]) =>
+                        setIntegrationTools(integration.id, tools)}
                     />
                   ))}
-                </TableBody>
-              </Table>
-              {
-                /*
-<div className="flex-1">
-                <div className="flex flex-col gap-2">
-                  {usedIntegrations
-                    .map((integration) => (
-                      <Integration
-                        key={integration.id}
-                        integration={integration}
-                        setIntegrationTools={setIntegrationTools}
-                        enabledTools={toolsSet[integration.id] || []}
-                        onIntegrationClick={handleIntegrationClick}
-                      />
-                    ))}
                 </div>
               </div>
-              */
-              }
             </div>
           </form>
         </div>

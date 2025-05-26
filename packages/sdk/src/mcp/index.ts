@@ -13,6 +13,7 @@ import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
+import * as modelsAPI from "./models/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -79,6 +80,11 @@ export const WORKSPACE_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
+  modelsAPI.createModel,
+  modelsAPI.deleteModel,
+  modelsAPI.listModels,
+  modelsAPI.updateModel,
+  modelsAPI.getModel,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

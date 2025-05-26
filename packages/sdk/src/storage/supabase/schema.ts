@@ -1419,6 +1419,38 @@ export type Database = {
           },
         ];
       };
+      models: {
+        Row: {
+          id: string;
+          workspace: string;
+          label: string;
+          model: string;
+          api_key_hash: string | null;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace: string;
+          label: string;
+          model: string;
+          api_key_hash?: string | null;
+          is_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace?: string;
+          label?: string;
+          model?: string;
+          api_key_hash?: string | null;
+          is_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       pages: {
         Row: {
           created_at: string | null;

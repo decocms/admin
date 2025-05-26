@@ -41,6 +41,8 @@ export const KEYS = {
     teamId: number,
   ) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],
+  MODELS: (workspace: Workspace) => ["models", workspace],
+  MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,

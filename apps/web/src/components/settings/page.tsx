@@ -4,6 +4,7 @@ import BillingSettings from "./billing.tsx";
 import GeneralSettings from "./general.tsx";
 import MembersSettings from "./members.tsx";
 import UsageSettings from "./usage.tsx";
+import ModelsSettings from "./models.tsx";
 
 const TABS: Record<string, Tab> = {
   members: {
@@ -23,6 +24,10 @@ const TABS: Record<string, Tab> = {
   usage: {
     title: "Usage",
     Component: UsageSettings,
+  },
+  models: {
+    title: "Models",
+    Component: ModelsSettings,
   },
 };
 

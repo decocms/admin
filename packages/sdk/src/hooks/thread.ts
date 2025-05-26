@@ -77,6 +77,7 @@ export const useThreads = (userId: string) => {
         resourceId: userId,
         orderBy: "createdAt_desc",
         limit: 20,
+        uniqueByAgentId: true,
       }, { signal }),
   });
 };

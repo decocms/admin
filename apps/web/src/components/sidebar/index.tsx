@@ -1,6 +1,8 @@
 import {
+Agent,
   Thread,
   useAgents,
+  useCreateAgent,
   useDeleteThread,
   useIntegrations,
   useInvites,
@@ -8,6 +10,7 @@ import {
   useThreads,
   useUpdateThreadTitle,
   WELL_KNOWN_AGENT_IDS,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -28,7 +31,7 @@ import { Link, useMatch } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useFocusChat } from "../agents/hooks.ts";
+import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
@@ -53,6 +56,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { AgentAvatar } from "../common/Avatar.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -216,9 +220,10 @@ function ThreadActions({ thread, onEdit, className }: {
 }
 
 function SidebarThreadItem(
-  { thread, userId, onThreadClick }: {
+  { thread, userId, onThreadClick, agent }: {
     thread: Thread;
     userId: string;
+    agent: Agent;
     onThreadClick: (thread: Thread) => void;
   },
 ) {
@@ -318,7 +323,14 @@ function SidebarThreadItem(
                     to={buildThreadUrl(thread)}
                     onClick={() => onThreadClick(thread)}
                   >
-                    <span className="truncate">{thread.title}</span>
+                    {agent ? <AgentAvatar
+                      name={agent.name}
+                      avatar={agent.avatar}
+                      className="h-4 w-4 rounded-sm"
+                    /> : <div className="h-4 w-4 min-w-4 rounded-sm bg-[#2A9D90] flex items-center justify-center" >
+                      <Icon name="edit_square" className="text-white" size={12} />
+                      </div>}
+                    <span className="truncate">{agent ? agent.name : thread.title}</span>
                   </Link>
                 )}
             </SidebarMenuButton>
@@ -341,7 +353,7 @@ function SidebarThreadItem(
 }
 
 function SidebarThreadList(
-  { threads, userId }: { threads: Thread[]; userId: string },
+  { threads, userId, agents }: { threads: Thread[]; userId: string; agents: Agent[] },
 ) {
   const { isMobile, toggleSidebar } = useSidebar();
 
@@ -358,6 +370,7 @@ function SidebarThreadList(
     <SidebarThreadItem
       key={thread.id}
       thread={thread}
+      agent={agents.find((agent) => agent.id === thread.metadata?.agentId)}
       userId={userId}
       onThreadClick={handleThreadClick}
     />
@@ -378,7 +391,10 @@ function SidebarThreadsSkeleton() {
 
 function SidebarThreads() {
   const user = useUser();
+  const { data: agents } = useAgents();
   const { data } = useThreads(user?.id ?? "");
+  console.log("data", data);
+  console.log("agents", agents);
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (
@@ -390,6 +406,7 @@ function SidebarThreads() {
             <SidebarMenu className="gap-0.5">
               <SidebarThreadList
                 threads={groupedThreads.today}
+                agents={agents}
                 userId={user?.id ?? ""}
               />
             </SidebarMenu>
@@ -404,6 +421,7 @@ function SidebarThreads() {
             <SidebarMenu className="gap-0.5">
               <SidebarThreadList
                 threads={groupedThreads.yesterday}
+                agents={agents}
                 userId={user?.id ?? ""}
               />
             </SidebarMenu>
@@ -420,6 +438,7 @@ function SidebarThreads() {
                 <SidebarMenu className="gap-0.5">
                   <SidebarThreadList
                     threads={threads}
+                    agents={agents}
                     userId={user?.id ?? ""}
                   />
                 </SidebarMenu>
@@ -483,7 +502,26 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
-  const focusChat = useFocusChat();
+  const focusEditAgent = useEditAgent();
+
+  const handleOpenNewChat = () => {
+    try {
+
+      focusEditAgent(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), { history: false });
+
+      trackEvent("agent_create", {
+        success: true,
+        data: WELL_KNOWN_AGENTS.teamAgent,
+      });
+    } catch (error) {
+      console.error("Error creating new agent:", error);
+
+      trackEvent("agent_create", {
+        success: false,
+        error,
+      });
+    }
+  };
 
   return (
     <Sidebar variant="sidebar">
@@ -503,14 +541,7 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       className="cursor-pointer"
-                      onClick={() => {
-                        focusChat(
-                          WELL_KNOWN_AGENT_IDS.teamAgent,
-                          crypto.randomUUID(),
-                          { history: false },
-                        );
-                        isMobile && toggleSidebar();
-                      }}
+                      onClick={handleOpenNewChat}
                     >
                       <Icon name="edit_square" size={16} />
                       <span className="truncate">New chat</span>

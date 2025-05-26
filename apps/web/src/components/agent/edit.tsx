@@ -39,6 +39,8 @@ import Audit from "./audit.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import PromptTab from "../settings/prompt.tsx";
+import IntegrationsTab from "../settings/integrations.tsx";
 
 interface Props {
   agentId?: string;
@@ -93,12 +95,15 @@ const TABS: Record<string, Tab> = {
   triggers: {
     Component: AgentTriggers,
     title: "Agent Triggers",
-    initialOpen: true,
   },
   setup: {
     Component: AgentSettings,
-    title: "Setup",
-    initialOpen: "within",
+    title: "Settings",
+  },
+  integrations: {
+    Component: IntegrationsTab,
+    title: "Integrations",
+    initialOpen: "right",
   },
   audit: {
     Component: Audit,
@@ -107,8 +112,13 @@ const TABS: Record<string, Tab> = {
   },
   chat: {
     Component: Chat,
-    title: "Chat preview",
-    initialOpen: "within",
+    title: "Chat",
+    initialOpen: "left",
+  },
+  prompt: {
+    Component: PromptTab,
+    title: "System prompt",
+    initialOpen: "below",
   },
 };
 

@@ -150,10 +150,13 @@ export const openPanel = <T extends object>(
   );
 };
 
+type initialOpen = "right" | "within" | "below" | "above" | "left";
+export const initialOpenDirections: initialOpen[] = ["right", "within", "below", "above", "left"];
+
 export interface Tab {
   Component: ComponentType;
   title: string;
-  initialOpen?: boolean | "right" | "within";
+  initialOpen?: boolean | initialOpen;
   hideFromViews?: boolean;
 }
 
@@ -188,10 +191,7 @@ const addPanel = (
       minimumWidth: isMobile ? globalThis.innerWidth : 300,
       maximumWidth: isMobile ? globalThis.innerWidth : undefined,
       position: {
-        direction:
-          !targetGroup?.id || (position?.direction === "right" && !isMobile)
-            ? "right"
-            : "within",
+        direction: position?.direction || "within",
         referenceGroup: targetGroup?.id,
       },
       ...otherOptions,
@@ -253,8 +253,8 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
-          position: value.initialOpen === "right"
-            ? { direction: "right" }
+          position: initialOpenDirections.includes(value.initialOpen as initialOpen)
+            ? { direction: value.initialOpen }
             : undefined,
         },
         event.api,

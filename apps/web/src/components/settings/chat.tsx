@@ -14,7 +14,6 @@ import z from "zod";
 import { useTools } from "../../hooks/useTools.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { Integration } from "../toolsets/index.tsx";
-import { ToolsetSelector } from "../toolsets/selector.tsx";
 
 const ChatSchema = z.object({
   tools_set: AgentSchema.shape.tools_set,
@@ -128,21 +127,6 @@ function ThreadSettingsTab() {
 
           <div className="h-12" />
         </form>
-        <ToolsetSelector
-          open={isModalOpen}
-          onOpenChange={(open) => {
-            setIsModalOpen(open);
-            if (!open) {
-              setSelectedIntegrationId(null);
-            }
-          }}
-          installedIntegrations={installedIntegrations?.filter((i) =>
-            i.id !== agentId
-          ) || []}
-          toolsSet={toolsSet}
-          setIntegrationTools={setIntegrationTools}
-          initialSelectedIntegration={selectedIntegrationId}
-        />
       </Form>
     </ScrollArea>
   );

@@ -250,23 +250,6 @@ function SettingsTab() {
               )}
             />
 
-            <FormField
-              name="instructions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>System Prompt</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter the agent's system prompt"
-                      className="min-h-36 border-slate-200"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Visibility Section */}
             <FormField
               name="visibility"
@@ -370,58 +353,8 @@ function SettingsTab() {
               )}
             />
 
-            {/* Tools Section */}
-            <div className="space-y-2 mb-8">
-              <div className="flex items-center justify-between space-y-1">
-                <div className="flex flex-col gap-2">
-                  <FormLabel>Tools</FormLabel>
-                  <FormDescription className="text-xs text-slate-400">
-                    Extensions that expand the agent's abilities.
-                  </FormDescription>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  className="h-8 w-8 bg-slate-700 hover:bg-slate-600 rounded-lg"
-                  onClick={() => {
-                    setSelectedIntegrationId(null);
-                    setIsModalOpen(true);
-                  }}
-                  aria-label="Add tools"
-                >
-                  <Icon name="add" />
-                </Button>
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-col gap-2">
-                  {usedIntegrations
-                    .map((integration) => (
-                      <Integration
-                        key={integration.id}
-                        integration={integration}
-                        setIntegrationTools={setIntegrationTools}
-                        enabledTools={toolsSet[integration.id] || []}
-                        onIntegrationClick={handleIntegrationClick}
-                      />
-                    ))}
-                </div>
-              </div>
-            </div>
           </form>
         </div>
-        <ToolsetSelector
-          open={isModalOpen}
-          onOpenChange={(open) => {
-            setIsModalOpen(open);
-            if (!open) {
-              setSelectedIntegrationId(null);
-            }
-          }}
-          installedIntegrations={installedIntegrations}
-          toolsSet={toolsSet}
-          setIntegrationTools={setIntegrationTools}
-          initialSelectedIntegration={selectedIntegrationId}
-        />
       </Form>
     </ScrollArea>
   );

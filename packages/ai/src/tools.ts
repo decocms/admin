@@ -381,6 +381,35 @@ function getContentType(extension: string): string {
   return contentTypes[extension] || "application/octet-stream";
 }
 
+const WhoAmIOutputSchema = z.object({
+  agentId: z.string().describe("The ID of the current agent"),
+  agentName: z.string().describe("The name of the current agent"),
+  workspace: z.string().describe("The workspace path where the agent is running"),
+  model: z.string().optional().describe("The model used by the agent"),
+  instructions: z.string().optional().describe("The agent's instructions"),
+  visibility: z.string().optional().describe("The agent's visibility setting"),
+});
+
+export const WHO_AM_I = createInnateTool({
+  id: "WHO_AM_I",
+  description:
+    "Get information about the current agent, including agent ID, name, workspace, model, and configuration details.",
+  inputSchema: z.object({}),
+  outputSchema: WhoAmIOutputSchema,
+  execute: (agent) => async () => {
+    const config = await agent.configuration();
+    
+    return {
+      agentId: config.id,
+      agentName: agent.getAgentName(),
+      workspace: agent.workspace,
+      model: config.model,
+      instructions: config.instructions,
+      visibility: config.visibility,
+    };
+  },
+});
+
 export const tools = {
   FETCH,
   POLL_FOR_CONTENT,
@@ -388,4 +417,5 @@ export const tools = {
   SHOW_PICKER,
   CONFIRM,
   CREATE_PRESIGNED_URL,
+  WHO_AM_I,
 };

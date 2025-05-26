@@ -238,7 +238,7 @@ export const createTrigger = createTool({
   description: "Create a trigger",
   inputSchema: z.object({
     agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs",
+      "The ID of the agent(current) to create the trigger for, use only UUIDs",
     ),
     data: TriggerSchema,
   }),
@@ -260,7 +260,7 @@ export const updateTrigger = createTool({
   description: "Update a trigger",
   inputSchema: z.object({
     agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs",
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
     ),
     triggerId: z.string(),
     data: TriggerSchema,
@@ -283,7 +283,7 @@ export const createCronTrigger = createTool({
   description: "Create a cron trigger",
   inputSchema: z.object({
     agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs. If not provided, a random UUID will be generated",
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
     ),
     data: CreateCronTriggerInputSchema,
   }),
@@ -305,7 +305,7 @@ export const createWebhookTrigger = createTool({
   description: "Create a webhook trigger",
   inputSchema: z.object({
     agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs. If not provided, a random UUID will be generated",
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
     ),
     data: CreateWebhookTriggerInputSchema,
   }),

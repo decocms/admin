@@ -693,6 +693,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     jsonSchema: JSONSchema7,
   ): Promise<GenerateObjectResult<TObject>> {
+    const hasBalance = await this.wallet.canProceed();
+    if (!hasBalance) {
+      throw new Error("Insufficient funds");
+    }
+
     const aiMessages = await Promise.all(
       payload.map((msg) => this.convertToAIMessage(msg)),
     );
@@ -701,13 +706,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       output: jsonSchema,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
-    }) as any as Promise<GenerateObjectResult<TObject>>;
+    }) as GenerateObjectResult<TObject>;
+
     await this.memory.addMessage({
       ...this.thread,
       type: "text",
       role: "assistant",
       content: `\`\`\`json\n${JSON.stringify(result)}\`\`\``,
     });
+
+    const model = this.inferBestModel(
+      this._configuration?.model ?? DEFAULT_MODEL,
+    );
+
+    this.wallet.computeLLMUsage({
+      userId: this.metadata?.user?.id,
+      usage: result.usage,
+      threadId: this.thread.threadId,
+      model,
+      agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+    });
+
     return result;
   }
 
@@ -762,6 +781,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>> {
+    const hasBalance = await this.wallet.canProceed();
+    if (!hasBalance) {
+      throw new Error("Insufficient funds");
+    }
+
     const toolsets = await this.withToolOverrides(options?.tools);
 
     const agent = this.withAgentOverrides(options);
@@ -770,13 +794,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       payload.map((msg) => this.convertToAIMessage(msg)),
     );
 
-    return agent.generate(aiMessages, {
+    const result = await agent.generate(aiMessages, {
       ...this.thread,
       maxSteps: this.maxSteps(),
       maxTokens: this.maxTokens(),
       instructions: options?.instructions,
       toolsets,
-    }) as Promise<GenerateTextResult<any, any>>;
+    }) as GenerateTextResult<any, any>;
+
+    const model = this.inferBestModel(
+      this._configuration?.model ?? DEFAULT_MODEL,
+    );
+
+    this.wallet.computeLLMUsage({
+      userId: this.metadata?.user?.id,
+      usage: result.usage,
+      threadId: this.thread.threadId,
+      model,
+      agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+    });
+
+    return result;
   }
 
   private maxSteps(): number {

@@ -30,8 +30,8 @@ export class AgentWallet {
     "agent_wallet_funds",
     WebCache.MAX_SAFE_TTL,
   );
-  private userCreditsRegardsCache: WebCache<boolean> = new WebCache<boolean>(
-    "agent_wallet_user_credits_regards",
+  private userCreditsRewardsCache: WebCache<boolean> = new WebCache<boolean>(
+    "agent_wallet_user_credits_rewards",
     WebCache.MAX_SAFE_TTL,
   );
   private rewardPromise: Map<string, Promise<void>> = new Map();
@@ -185,7 +185,7 @@ export class AgentWallet {
   }
 
   async rewardFreeCreditsIfNeeded() {
-    const wasRewarded = await this.userCreditsRegardsCache.get(
+    const wasRewarded = await this.userCreditsRewardsCache.get(
       this.config.workspace,
     );
 
@@ -197,6 +197,6 @@ export class AgentWallet {
     await this.ensureCreditRewards();
 
     // Mark as rewarded
-    await this.userCreditsRegardsCache.set(this.config.workspace, true);
+    await this.userCreditsRewardsCache.set(this.config.workspace, true);
   }
 }

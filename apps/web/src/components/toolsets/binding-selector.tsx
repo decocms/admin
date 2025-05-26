@@ -4,7 +4,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
+  DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -12,6 +12,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 
 interface BindingSelectorProps {
@@ -121,31 +122,8 @@ export function BindingSelector({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-full max-w-full md:h-auto md:max-w-[900px] w-full p-0 gap-0 flex flex-col border-none rounded-none md:rounded-lg [&>button]:hidden">
+        <DialogTitle className="hidden">Bindings List</DialogTitle>
         <div className="flex flex-col">
-          <DialogHeader>
-            <div className="md:hidden relative flex items-center justify-between p-4 border-slate-200 text-base text-slate-700">
-              <span>Add tools</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 h-8 w-8"
-                aria-label="Close"
-                onClick={() => onOpenChange(false)}
-              >
-                <Icon name="close" size={16} />
-              </Button>
-            </div>
-          </DialogHeader>
-          <div
-            className={cn(
-              "p-2 border-b border-slate-200",
-              isMobile ? (selectedIntegration ? "hidden" : "block") : "block",
-            )}
-          >
-            <div className="bg-slate-100 rounded-lg px-4 py-2 text-slate-700 font-normal text-sm inline-block">
-              Available Tools
-            </div>
-          </div>
           <div
             className={cn(
               "flex flex-col md:hidden",
@@ -167,14 +145,16 @@ export function BindingSelector({
               <div className="p-4">
                 <div className="space-y-2">
                   {filtered.map((integration) => (
-                    <IntegrationListItem
-                      key={integration.id}
-                      integration={integration}
-                      selectedIntegration={selectedIntegration}
-                      onSelect={setSelectedIntegration}
-                      selectedItemRef={selectedItemRef}
-                      binder={binder}
-                    />
+                    <ErrorBoundary key={integration.id} fallback={null}>
+                      <IntegrationListItem
+                        key={integration.id}
+                        integration={integration}
+                        selectedIntegration={selectedIntegration}
+                        onSelect={setSelectedIntegration}
+                        selectedItemRef={selectedItemRef}
+                        binder={binder}
+                      />
+                    </ErrorBoundary>
                   ))}
                 </div>
               </div>

@@ -2,10 +2,11 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import Ajv from "ajv";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   TriggerOutputSchema,
   useCreateTrigger,
+  useIntegrations,
   useUpdateTrigger,
   WebhookTriggerSchema,
 } from "@deco/sdk";
@@ -24,6 +25,7 @@ import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { BindingSelector } from "../toolsets/binding-selector.tsx";
 import { TRIGGER_INPUT_BINDING_SCHEMA } from "@deco/sdk/mcp/bindings";
+import { IntegrationIcon } from "../integrations/list/common.tsx";
 
 function JsonSchemaInput({ value, onChange }: {
   value: string | undefined;
@@ -204,6 +206,15 @@ export function WebhookTriggerForm({
     }
   };
 
+  const { data: integrations = [] } = useIntegrations();
+
+  const selected = useMemo(() => {
+    const bindingId = form.watch("bindingId");
+    if (!bindingId) return null;
+    const integration = integrations.find((i) => i.id === bindingId);
+    return integration ? { integration } : null;
+  }, [form.watch("bindingId"), integrations]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -300,7 +311,7 @@ export function WebhookTriggerForm({
               <div className="flex gap-2 items-center">
                 <FormControl>
                   <div>
-                    {field.value
+                    {field.value || open
                       ? (
                         <BindingSelector
                           open={open}
@@ -314,11 +325,17 @@ export function WebhookTriggerForm({
                         <Button
                           type="button"
                           variant="outline"
+                          className="w-full justify-between truncate"
                           onClick={() => setOpen(true)}
-                          className="w-full justify-start"
                         >
-                          <Icon name="arrow_back" size={16} className="mr-2" />
-                          Select Binding
+                          <span className="text-slate-400">
+                            Select a binding...
+                          </span>
+                          <Icon
+                            name="expand_more"
+                            size={18}
+                            className="ml-2 text-slate-400"
+                          />
                         </Button>
                       )}
                   </div>
@@ -327,11 +344,20 @@ export function WebhookTriggerForm({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    className="p-1"
+                    className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
                     <Icon name="close" size={12} className="text-slate-400" />
+                    <span className="flex items-center gap-2">
+                      <IntegrationIcon
+                        icon={selected?.integration.icon}
+                        name={selected?.integration.name || ""}
+                        className="h-8 w-8"
+                      />
+                      <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
+                        {selected?.integration.name}
+                      </span>
+                    </span>
                   </Button>
                 )}
               </div>
@@ -364,11 +390,13 @@ export function WebhookTriggerForm({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    className="p-1"
+                    className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
                     <Icon name="close" size={12} className="text-slate-400" />
+                    <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
+                      {field.value}
+                    </span>
                   </Button>
                 )}
               </div>

@@ -363,15 +363,14 @@ Inspector.UI = ({ connection }: InspectorProps) => {
                   ? (
                     filteredTools.map((tool) => (
                       <div
-                        key={formatToolName(tool.name)}
+                        key={tool.name}
                         className={cn(
                           "p-4 rounded-lg border cursor-pointer transition-colors",
                           selectedTool === tool.name
                             ? "bg-primary/10 border-primary"
                             : "hover:bg-muted/50 border-border",
                         )}
-                        onClick={() =>
-                          handleSelectTool(formatToolName(tool.name))}
+                        onClick={() => handleSelectTool(tool.name)}
                       >
                         <div className="truncate font-medium">
                           {formatToolName(tool.name)}

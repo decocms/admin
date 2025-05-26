@@ -14,7 +14,7 @@
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "1.11.4",
     "cloudflare": "^4.2.0",
-    "@deco/actors": "npm:@jsr/deco__actors@0.33.0",
+    "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
     "@tanstack/react-query": "^5.72.0",
     "@zenfs/core": "^2.0.0",
     "ai": "^4.3.13",

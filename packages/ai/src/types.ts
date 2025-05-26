@@ -6,8 +6,6 @@ import type {
   GenerateObjectResult,
   GenerateTextResult,
   Message as AIMessage,
-  StreamTextResult,
-  TextStreamPart,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
 
@@ -92,15 +90,6 @@ export interface AIAgent extends Actor {
     payload: Message[],
     jsonSchema: JSONSchema7,
   ): Promise<GenerateObjectResult<TObject>>;
-
-  /**
-   * Streams a response based on the provided input
-   * @param payload - Input content as string, string array, or CoreMessage array
-   * @returns AsyncIterator that yields text stream parts and final result
-   */
-  streamText(
-    payload: Message[],
-  ): AsyncIterableIterator<TextStreamPart<any>, StreamTextResult<any, any>>;
 
   /**
    * Creates a new thread

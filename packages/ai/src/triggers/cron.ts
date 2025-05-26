@@ -46,7 +46,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
         resourceId: data.id,
       }];
       response = await trigger.outputBinding.ON_AGENT_OUTPUT({
-        callbacks: trigger.callbacks({ args }),
+        callbacks: trigger._callbacks({ args }),
       });
     } else {
       const agent = trigger.state.stub(AIAgent).new(trigger.agentId)

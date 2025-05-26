@@ -65,6 +65,7 @@ interface Props {
   /** Default initial thread message */
   initialMessage?: CreateMessage;
   uiOptions?: Partial<IContext["uiOptions"]>;
+  additionalContext?: string;
 }
 
 const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
@@ -88,6 +89,7 @@ export function ChatProvider({
   initialMessage,
   children,
   uiOptions,
+  additionalContext,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const invalidateAll = useInvalidateAll();
@@ -142,7 +144,7 @@ export function ChatProvider({
           model: options.showModelSelector // use the agent model if selector is not shown on the UI
             ? preferences.defaultModel
             : undefined,
-          instructions: overrides?.instructions,
+          instructions: additionalContext + "\n" + overrides?.instructions,
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,

@@ -294,6 +294,7 @@ export const createCronTrigger = createTool({
     { agentId, data },
     _c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;
@@ -316,6 +317,7 @@ export const createWebhookTrigger = createTool({
     { agentId, data },
     _c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;

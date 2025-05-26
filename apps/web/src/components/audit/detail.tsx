@@ -43,7 +43,7 @@ function Page() {
         breadcrumb={
           <DefaultBreadcrumb
             items={[
-              { label: "Chat logs", link: "/audits" },
+              { label: "History", link: "/audits" },
               ...(title ? [{ label: title, link: "" }] : []),
             ]}
           />

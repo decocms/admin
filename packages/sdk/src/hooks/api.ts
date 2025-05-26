@@ -1,4 +1,4 @@
-import { Options } from "../crud/thread.ts";
+import { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
 
 export const KEYS = {
@@ -23,7 +23,7 @@ export const KEYS = {
     agentId: string,
     threadId: string,
   ) => ["tools", workspace, agentId, threadId],
-  AUDITS: (workspace: Workspace, options: Options) => [
+  AUDITS: (workspace: Workspace, options: ThreadFilterOptions) => [
     "audit",
     workspace,
     options.agentId,

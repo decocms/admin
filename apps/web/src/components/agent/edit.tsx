@@ -20,8 +20,8 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
@@ -35,6 +35,7 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import AgentSettings from "../settings/agent.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
+import Audit from "./audit.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -103,6 +104,10 @@ const TABS: Record<string, Tab> = {
     Component: Chat,
     title: "Chat preview",
     initialOpen: "right",
+  },
+  audit: {
+    Component: Audit,
+    title: "History",
   },
 };
 

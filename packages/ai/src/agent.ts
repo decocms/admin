@@ -847,7 +847,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       });
       console.log("[AGENT] agent created");
     }
-    console.log("return agent");
+
     return agent;
   }
   private runWithContext<T>(fn: () => Promise<T>) {

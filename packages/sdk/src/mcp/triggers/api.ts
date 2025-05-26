@@ -134,7 +134,7 @@ export const upsertTrigger = createTool({
     const workspace = c.workspace.value;
     const user = c.user;
     const stub = c.stub;
-    
+
     const id = triggerId || crypto.randomUUID();
 
     const triggerPath = Path.resolveHome(

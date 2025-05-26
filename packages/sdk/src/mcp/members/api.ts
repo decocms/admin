@@ -252,6 +252,11 @@ export const removeTeamMember = createTool({
       }
     }
 
+    await c.policy.removeAllMemberPoliciesAtTeam({
+      teamId,
+      memberId: member.id,
+    });
+
     const currentTimestamp = new Date();
     const { error } = await c
       .db
@@ -566,23 +571,6 @@ export const acceptInvite = createTool({
       if (error) {
         throw error;
       }
-
-      // Apply roles
-      if (invite.invited_roles && Array.isArray(invite.invited_roles)) {
-        const rolePromises = invite.invited_roles.map(async (roleData) => {
-          const role = roleData as { id: number; name: string };
-          await c.policy.updateUserRole(invite.team_id, invite.invited_email, {
-            roleId: role.id,
-            action: "grant",
-          });
-        });
-        try {
-          await Promise.all(rolePromises);
-        } catch (error) {
-          console.error("Error assigning roles:", error);
-          // We'll continue even if role assignment fails
-        }
-      }
     } else {
       const { error } = await db.from("members").update({ deleted_at: null })
         .eq(
@@ -603,6 +591,23 @@ export const acceptInvite = createTool({
       userId: user.id,
       teamId: invite.team_id,
     });
+
+    try {
+      // Apply roles
+      if (invite.invited_roles && Array.isArray(invite.invited_roles)) {
+        const rolePromises = invite.invited_roles.map(async (roleData) => {
+          const role = roleData as { id: number; name: string };
+          await c.policy.updateUserRole(invite.team_id, invite.invited_email, {
+            roleId: role.id,
+            action: "grant",
+          });
+        });
+        await Promise.all(rolePromises);
+      }
+    } catch (error) {
+      console.error("Error assigning roles:", error);
+      // We'll continue even if role assignment fails
+    }
 
     // Delete the invite
     await db.from("invites").delete().eq("id", id);

@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { Combobox } from "@deco/ui/components/combobox.tsx";
 
 interface AuditFiltersProps {
   agents: Agent[];
@@ -32,25 +33,23 @@ export function AuditFilters({
       b.user_id;
     return nameA.localeCompare(nameB);
   });
+
   return (
     <div className="flex gap-4 items-end overflow-x-auto">
       <div className="flex flex-col gap-2 min-w-[180px]">
-        <Select
+        <Combobox
+          options={[
+            { value: "all", label: "All agents" },
+            ...agents.map((agent) => ({
+              value: agent.id,
+              label: agent.name,
+            })),
+          ]}
           value={selectedAgent ?? "all"}
-          onValueChange={onAgentChange}
-        >
-          <SelectTrigger id="agent-select" className="w-full">
-            <SelectValue placeholder="All agents" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All agents</SelectItem>
-            {agents?.map((agent) => (
-              <SelectItem key={agent.id} value={agent.id}>
-                {agent.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(value) => {
+            onAgentChange(value);
+          }}
+        />
       </div>
       {sortedMembers.length > 0 && (
         <div className="flex flex-col gap-2 min-w-[180px]">

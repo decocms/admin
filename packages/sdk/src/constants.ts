@@ -270,15 +270,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
   model: DEFAULT_MODEL,
   visibility: "WORKSPACE",
-  tools_set: {
-    DECO_INTEGRATIONS: [
-      "DECO_INTEGRATIONS_SEARCH",
-      "DECO_INTEGRATION_INSTALL",
-      "DECO_INTEGRATION_ENABLE",
-      "DECO_INTEGRATION_DISABLE",
-      "DECO_INTEGRATION_LIST_TOOLS",
-    ],
-  },
+  tools_set: {},
   views: [],
   instructions: "This agent has not been configured yet.",
   max_steps: 10,

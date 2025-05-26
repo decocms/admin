@@ -76,6 +76,7 @@ export const WORKSPACE_TOOLS = [
   walletAPI.createWalletVoucher,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
+  triggersAPI.updateTrigger,
   knowledgeAPI.createBase,
   knowledgeAPI.deleteBase,
   knowledgeAPI.forget,

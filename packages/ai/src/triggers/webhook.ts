@@ -13,7 +13,8 @@ export interface WebhookArgs {
 }
 
 const isAIMessage = (m: unknown | Message): m is Message => {
-  return typeof m === "object" && m !== null && "role" in m && "content" in m &&
+  return typeof m === "object" && m !== null && "role" in m &&
+    ("content" in m || "audioBase64" in m) &&
     "id" in m && typeof m.id === "string" && typeof m.role === "string";
 };
 

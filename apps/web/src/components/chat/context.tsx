@@ -3,6 +3,7 @@ import {
   API_SERVER_URL,
   getTraceDebugId,
   useAddOptimisticThread,
+  useAgent,
   useAgentRoot,
   useInvalidateAll,
   useThreadMessages,
@@ -16,7 +17,6 @@ import {
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { getAgentOverrides } from "../../hooks/useAgentOverrides.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
@@ -102,6 +102,7 @@ export function ChatProvider({
     : useThreadMessages(threadId);
 
   const { preferences } = useUserPreferences();
+  const { data: agent } = useAgent(agentId);
 
   const correlationIdRef = useRef<string | null>(null);
 
@@ -135,14 +136,13 @@ export function ChatProvider({
       }
 
       const bypassOpenRouter = !preferences.useOpenRouter;
-      const overrides = getAgentOverrides(agentId);
 
       return {
         args: [messagesWindow, {
           model: options.showModelSelector // use the agent model if selector is not shown on the UI
             ? preferences.defaultModel
-            : undefined,
-          instructions: overrides?.instructions,
+            : agent?.model,
+          instructions: agent?.instructions,
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,

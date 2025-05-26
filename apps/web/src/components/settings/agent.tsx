@@ -16,7 +16,6 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Select,
   SelectContent,
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
@@ -33,7 +33,6 @@ import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
-import { useOnAgentChangesDiscarded } from "../../hooks/useAgentOverrides.ts";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
@@ -80,20 +79,14 @@ function SettingsTab() {
   const {
     form,
     agent,
+    handleSubmit,
     installedIntegrations,
-    onMutationSuccess,
   } = useAgentSettingsForm();
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { generate: generateAvatarFilename } = useAvatarFilename();
   const [isUploading, setIsUploading] = useState(false);
-
-  useOnAgentChangesDiscarded(agent.id, () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  });
 
   const toolsSet = form.watch("tools_set");
   const setIntegrationTools = (
@@ -162,18 +155,12 @@ function SettingsTab() {
     fileInputRef.current?.click();
   };
 
-  const onSubmit = () => {
-    // The actual mutation is handled in the Page context's actionButtons
-    // This is just a placeholder to satisfy the form API
-    onMutationSuccess();
-  };
-
   return (
     <ScrollArea className="h-full w-full">
       <Form {...form}>
         <div className="h-full w-full p-4 max-w-3xl mx-auto">
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={handleSubmit}
             className="space-y-6 py-2 pb-16"
           >
             <FormField
@@ -348,8 +335,8 @@ function SettingsTab() {
                 <FormItem>
                   <FormLabel>About this agent</FormLabel>
                   <FormDescription className="text-xs text-slate-400">
-                    Used only for organization and search, it does not affect
-                    the agent's behaviour
+                    This appears on the agent card and helps others understand
+                    its use. It does not affect the agent's behavior
                   </FormDescription>
                   <FormControl>
                     <Textarea

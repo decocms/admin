@@ -2,11 +2,12 @@ import { MCPConnection } from "../../models/mcp.ts";
 import { MCPClient, ToolBinder } from "../index.ts";
 import { MCPClientFetchStub } from "../stub.ts";
 import {
-  TRIGGER_INPUT_BINDING_DEFINITION,
-  TRIGGER_OUTPUT_BINDING_DEFINITION,
+  TRIGGER_INPUT_BINDING_SCHEMA,
+  TRIGGER_OUTPUT_BINDING_SCHEMA,
 } from "./trigger.ts";
 
-export type Binder<TDefinition extends readonly ToolBinder[]> = {
+// deno-lint-ignore no-explicit-any
+export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
   [K in keyof TDefinition]: TDefinition[K];
 };
 
@@ -60,9 +61,9 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
   >;
 
 export const TriggerInputBinding = bindingClient(
-  TRIGGER_INPUT_BINDING_DEFINITION,
+  TRIGGER_INPUT_BINDING_SCHEMA,
 );
 export const TriggerOutputBinding = bindingClient(
-  TRIGGER_OUTPUT_BINDING_DEFINITION,
+  TRIGGER_OUTPUT_BINDING_SCHEMA,
 );
 export * from "./index.ts";

@@ -22,6 +22,8 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { BindingSelector } from "../toolsets/binding-selector.tsx";
+import { TRIGGER_INPUT_BINDING_SCHEMA } from "@deco/sdk/mcp/bindings";
 
 function JsonSchemaInput({ value, onChange }: {
   value: string | undefined;
@@ -110,6 +112,8 @@ export function WebhookTriggerForm({
   const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
     agentId,
   );
+  const [open, setOpen] = useState(false);
+  
   const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
     agentId,
   );
@@ -283,6 +287,60 @@ export function WebhookTriggerForm({
         />
         <FormField
           control={form.control}
+          name="bindingId"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex flex-col gap-1 px-1 justify-between">
+                <FormLabel>Binding</FormLabel>
+                <span className="text-xs text-slate-400">
+                  When selected, this webhook trigger will use the selected
+                  binding
+                </span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <FormControl>
+                  <div>
+                    {field.value
+                      ? (
+                        <BindingSelector
+                          open={open}
+                          onOpenChange={setOpen}
+                          onIntegrationSelected={field.onChange}
+                          initialSelectedIntegration={field.value || null}
+                          binder={TRIGGER_INPUT_BINDING_SCHEMA}
+                        />
+                      )
+                      : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setOpen(true)}
+                          className="w-full justify-start"
+                        >
+                          <Icon name="arrow_back" size={16} className="mr-2" />
+                          Select Binding
+                        </Button>
+                      )}
+                  </div>
+                </FormControl>
+                {field.value && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-1"
+                    onClick={() => field.onChange("")}
+                  >
+                    <Icon name="close" size={12} className="text-slate-400" />
+                  </Button>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="outputTool"
           render={({ field }) => (
             <FormItem>
@@ -295,10 +353,12 @@ export function WebhookTriggerForm({
               </div>
               <div className="flex gap-2 items-center">
                 <FormControl>
-                  <SingleToolSelector
-                    value={field.value || null}
-                    onChange={field.onChange}
-                  />
+                  <div>
+                    <SingleToolSelector
+                      value={field.value || null}
+                      onChange={field.onChange}
+                    />
+                  </div>
                 </FormControl>
                 {field.value && (
                   <Button

@@ -66,14 +66,12 @@ INSERT INTO "public"."policies" ("id", "created_at", "name", "statements", "desc
     '{"effect":"allow","resource":"AGENTS_LIST"}'::jsonb
 ], 'Allows access to view agents information.', null)
 ON CONFLICT (id) DO NOTHING;
-
 UPDATE "public"."policies" SET "statements" = ARRAY[
     '{"effect":"allow","resource":"deco-sites/admin/actions/teams/deleteTeam.ts"}'::jsonb,
     '{"effect":"allow","resource":"deco-sites/admin/actions/teams/renameTeam.ts"}'::jsonb,
     '{"effect":"allow","resource":"TEAMS_DELETE"}'::jsonb,
     '{"effect":"allow","resource":"TEAMS_UPDATE"}'::jsonb
 ] WHERE "id" = 3;
-
 UPDATE "public"."policies" SET "statements" = ARRAY[
     '{"effect":"allow","resource":"deco-sites/admin/actions/teams/inviteMembers.ts"}'::jsonb,
     '{"effect":"allow","resource":"deco-sites/admin/actions/invites/resendInviteEmail.ts"}'::jsonb,
@@ -84,7 +82,6 @@ UPDATE "public"."policies" SET "statements" = ARRAY[
     '{"effect":"allow","resource":"TEAM_MEMBERS_REMOVE"}'::jsonb,
     '{"effect":"allow","resource":"TEAM_MEMBERS_INVITE"}'::jsonb
 ] WHERE "id" = 2;
-
 UPDATE "public"."policies" SET "statements" = ARRAY[
     '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/loadTeamMembers.ts"}'::jsonb,
     '{"effect":"allow","resource":"deco-sites/admin/loaders/roles/listTeamRoles.ts"}'::jsonb,

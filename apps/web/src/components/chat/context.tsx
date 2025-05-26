@@ -146,10 +146,9 @@ export function ChatProvider({
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,
-          smoothStream: {
-            delayInMs: 20,
-            chunk: "word",
-          },
+          smoothStream: preferences.smoothStream
+            ? { delayInMs: 20, chunk: "word" }
+            : undefined,
         }],
         metadata: { threadId: threadId ?? agentId },
       };

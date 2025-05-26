@@ -54,6 +54,7 @@ function UserPreferencesModal({ open, onOpenChange }: {
     defaultValues: {
       defaultModel: preferences.defaultModel,
       useOpenRouter: preferences.useOpenRouter,
+      smoothStream: preferences.smoothStream,
     },
   });
   const { handleSubmit, formState: { isDirty } } = form;
@@ -102,7 +103,7 @@ function UserPreferencesModal({ open, onOpenChange }: {
               name="useOpenRouter"
               render={({ field }) => (
                 <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
                     <FormControl>
                       <Switch
                         id="openrouter-switch"
@@ -110,12 +111,41 @@ function UserPreferencesModal({ open, onOpenChange }: {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel htmlFor="openrouter-switch">
+                    <FormLabel
+                      htmlFor="openrouter-switch"
+                      className="cursor-pointer"
+                    >
                       Use OpenRouter
                     </FormLabel>
                   </div>
                   <FormDescription>
                     Improve availability of AI responses.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="smoothStream"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <FormControl>
+                      <Switch
+                        id="smoothStream"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="smoothStream"
+                      className="cursor-pointer"
+                    >
+                      Smooth Stream
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Smooth out the stream of AI responses.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

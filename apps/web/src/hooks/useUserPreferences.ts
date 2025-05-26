@@ -4,6 +4,7 @@ import { useLocalStorage } from "./useLocalStorage.ts";
 export interface UserPreferences {
   defaultModel: string;
   useOpenRouter: boolean;
+  smoothStream: boolean;
 }
 
 const USER_PREFERENCES_KEY = "user-preferences";
@@ -17,6 +18,7 @@ export function useUserPreferences() {
     defaultValue: {
       defaultModel: DEFAULT_MODEL,
       useOpenRouter: true,
+      smoothStream: true,
     },
   });
 

@@ -98,7 +98,7 @@ export function TriggerDetails(
             <h3 className="text-lg font-semibold mb-2">Logs</h3>
             <AuditListContent
               showFilters={false}
-              options={{ resourceId: trigger.id, agentId }}
+              filters={{ resourceId: trigger.id, agentId }}
             />
           </div>
         </div>

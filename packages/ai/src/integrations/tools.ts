@@ -114,10 +114,13 @@ export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
     integrationId: z.string().describe(
       "The id of the integration to start the OAuth flow for",
     ),
+    returnUrl: z.string().describe(
+      "The return URL for the OAuth flow. Will come with a query param including the mcp URL.",
+    ),
   }),
   execute: () => async ({ context }) => {
-    const { integrationId } = context;
-    const redirectUrl = await startOauthFlow(integrationId);
+    const { integrationId, returnUrl } = context;
+    const redirectUrl = await startOauthFlow(integrationId, returnUrl);
     return { redirectUrl };
   },
 });

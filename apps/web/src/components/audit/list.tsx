@@ -55,10 +55,8 @@ interface AuditListContentProps {
 }
 
 export function AuditListContent({
-  showFilters = true,
-  columnsDenyList,
-  filters,
-}: AuditListContentProps) {
+   showFilters = true, columnsDenyList, filters }: AuditListContentProps,
+) {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   );

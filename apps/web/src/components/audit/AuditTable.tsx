@@ -55,11 +55,9 @@ export function AuditTable(
     {
       id: "agent",
       header: "Agent",
-      accessor: (cell: Thread) => (
-        <AgentInfo
-          agentId={cell.metadata?.agentId}
-        />
-      ),
+      accessor: (cell: Thread) => <AgentInfo
+        agentId={cell.metadata?.agentId}
+      />,
     },
     {
       id: "user",

@@ -39,6 +39,9 @@ interface GeneralSettingsFormValues {
   workspaceEmailDomain: boolean;
   teamSystemPrompt: string;
   personalSystemPrompt: string;
+  openApiKey: string;
+  geminiApiKey: string;
+  anthropicApiKey: string;
 }
 
 const generalSettingsSchema = z.object({
@@ -52,6 +55,9 @@ const generalSettingsSchema = z.object({
   workspaceEmailDomain: z.boolean(),
   teamSystemPrompt: z.string(),
   personalSystemPrompt: z.string(),
+  openApiKey: z.string(),
+  geminiApiKey: z.string(),
+  anthropicApiKey: z.string(),
 });
 
 function DeleteTeamDialog({
@@ -259,6 +265,27 @@ export function GeneralSettings() {
                           This prompt is added at the start of all agent
                           messages for your team. Use it to set tone, context,
                           or rules.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="openApiKey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>OpenAI API Key</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder=""
+                            rows={6}
+                            readOnly={isReadOnly}
+                            type="password"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter your OpenAI API key to use OpenAI models.
                         </FormDescription>
                       </FormItem>
                     )}

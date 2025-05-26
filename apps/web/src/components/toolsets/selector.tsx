@@ -12,7 +12,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import { formatToolName } from "../chat/utils/formatToolName.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
 

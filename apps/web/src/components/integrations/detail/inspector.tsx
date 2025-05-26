@@ -16,7 +16,7 @@ import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
 import { ToolCallResult } from "./toolCallResult.tsx";
 import type { MCPToolCallResult } from "./types.ts";
-import { formatToolName } from "../../chat/utils/format-tool-name.ts";
+import { formatToolName } from "../../chat/utils/formatToolName.ts";
 interface InspectorProps {
   connection: MCPConnection;
 }

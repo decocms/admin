@@ -10,7 +10,7 @@ import { Picker } from "./Picker.tsx";
 import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
-import { formatToolName } from "./utils/format-tool-name.ts";
+import { formatToolName } from "./utils/formatToolName.ts";
 
 interface ConfirmOption {
   value: string;

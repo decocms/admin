@@ -115,8 +115,8 @@ export function DepositDialog() {
                 amountInDollars: formatCurrency(amount.toString()),
               });
               const result = await createCheckoutSession.mutateAsync(amount);
-              if (result.checkoutUrl) {
-                globalThis.location.href = result.checkoutUrl;
+              if (result.url) {
+                globalThis.location.href = result.url;
               }
             }}
           >

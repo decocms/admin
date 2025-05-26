@@ -100,14 +100,15 @@ const TABS: Record<string, Tab> = {
     title: "Setup",
     initialOpen: "within",
   },
-  chat: {
-    Component: Chat,
-    title: "Chat preview",
-    initialOpen: "right",
-  },
   audit: {
     Component: Audit,
     title: "History",
+    initialOpen: "right",
+  },
+  chat: {
+    Component: Chat,
+    title: "Chat preview",
+    initialOpen: "within",
   },
 };
 

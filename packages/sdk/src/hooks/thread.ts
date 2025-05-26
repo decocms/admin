@@ -35,6 +35,8 @@ export const useThreadMessages = (threadId: string) => {
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(workspace, threadId),
     queryFn: ({ signal }) => getThreadMessages(workspace, threadId, { signal }),
+    staleTime: 0,
+    gcTime: 0,
   });
 };
 

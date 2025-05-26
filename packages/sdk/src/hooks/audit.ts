@@ -9,5 +9,7 @@ export const useAuditEvents = (options: ThreadFilterOptions = {}) => {
   return useQuery({
     queryKey: KEYS.AUDITS(workspace, options),
     queryFn: ({ signal }) => listThreads(workspace, options, { signal }),
+    staleTime: 0,
+    gcTime: 0,
   });
 };

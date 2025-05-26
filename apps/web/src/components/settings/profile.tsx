@@ -11,13 +11,14 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Avatar } from "../common/Avatar.tsx";
-import countriesData from "../../utils/countries.json" with { type: "json" };
+import { countries } from "@deco/sdk/utils" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
 interface Country {
   code: string;
   name: string;
   flag: string;
   dial_code: string;
+  meta_code?: string;
   mask: (value: string) => string;
   validate: (value: string) => boolean;
   placeholder: string;
@@ -76,7 +77,7 @@ function getCountryConfig(country: any): Country {
   };
 }
 
-const COUNTRIES: Country[] = countriesData.map(getCountryConfig);
+const COUNTRIES: Country[] = countries.map(getCountryConfig);
 
 export function ProfileSettings(
   { open, onOpenChange, onPhoneSaved }: {

@@ -9,6 +9,7 @@ import * as integrationsAPI from "./integrations/api.ts";
 import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
+import * as whatsappAPI from "./whatsapp/api.ts";
 import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
@@ -33,6 +34,10 @@ export const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
+  whatsappAPI.sendWhatsAppTemplateMessage,
+  whatsappAPI.createWhatsAppInvite,
+  whatsappAPI.upsertWhatsAppUser,
+  whatsappAPI.getWhatsAppUser,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -40,10 +45,8 @@ export const WORKSPACE_TOOLS = [
   agentsAPI.getAgent,
   agentsAPI.deleteAgent,
   agentsAPI.createAgent,
-  agentsAPI.createTempAgent,
   agentsAPI.updateAgent,
   agentsAPI.listAgents,
-  agentsAPI.getTempAgent,
   integrationsAPI.getIntegration,
   integrationsAPI.createIntegration,
   integrationsAPI.updateIntegration,

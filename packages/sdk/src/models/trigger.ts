@@ -28,6 +28,7 @@ export const CronTriggerSchema = z.object({
   cronExp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
+  url: z.string().describe("The URL of the webhook").optional(),
   bindingId: z.string().optional().describe(
     "The id of the binding to use for the cron trigger",
   ),
@@ -52,6 +53,7 @@ export const WebhookTriggerSchema = z.object({
   whatsappEnabled: z.boolean().optional().describe(
     "Whether the webhook is enabled for WhatsApp",
   ),
+  url: z.string().describe("The URL of the webhook").optional(),
   bindingId: z.string().optional().describe(
     "The id of the binding to use for the webhook",
   ),

@@ -3,6 +3,7 @@
     "name": "Brazil",
     "flag": "🇧🇷",
     "code": "BR",
+    "meta_code": "pt_BR",
     "dial_code": "+55"
   },
   {
@@ -1407,6 +1408,7 @@
     "name": "United States",
     "flag": "🇺🇸",
     "code": "US",
+    "meta_code": "en_US",
     "dial_code": "+1"
   },
   {

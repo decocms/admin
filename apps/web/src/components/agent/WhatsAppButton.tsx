@@ -1,23 +1,31 @@
+import { useState } from "react";
 import {
   Agent,
   useAgent,
-  useCreateTempAgent,
   useCreateTrigger,
   useListTriggersByAgentId,
+  useSendAgentWhatsAppInvite,
+  useUpsertWhatsAppUser,
+  useWhatsAppUser,
 } from "@deco/sdk";
-import { useProfile, useTempWppAgent } from "@deco/sdk/hooks";
+import { useProfile } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { useProfileModal } from "../layout.tsx";
+import { WhatsAppInviteDialog } from "./WhatsAppInviteDialog.tsx";
 
 const getWhatsAppLink = (agent: Agent) => {
   const url = new URL("https://wa.me/11920902075");
@@ -27,41 +35,45 @@ const getWhatsAppLink = (agent: Agent) => {
   return url.href;
 };
 
-interface WhatsAppButtonProps {
-  isMobile?: boolean;
-}
-
-export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
+export function WhatsAppButton() {
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const { data: triggers } = useListTriggersByAgentId(agentId);
   const { mutate: createTrigger } = useCreateTrigger(agentId);
-  const { mutate: createTempAgent } = useCreateTempAgent();
-  const user = useUser();
-  const focusChat = useFocusChat();
   const { data: profile } = useProfile();
+  const { data: whatsappUser } = useWhatsAppUser(profile?.phone ?? "");
+  const focusChat = useFocusChat();
   const { openProfileModal } = useProfileModal();
-  const { data: tempWppAgent } = useTempWppAgent(user.id);
-  const whatsappTrigger = triggers?.triggers.find(
-    (trigger) =>
-      trigger.data.type === "webhook" &&
-      // deno-lint-ignore no-explicit-any
-      (trigger.data as any).whatsappEnabled,
-  );
+
+  // Find webhook triggers (WhatsApp uses webhook triggers)
+  const webhookTriggers =
+    triggers?.triggers?.filter((trigger) => trigger.type === "webhook") ?? [];
+  const whatsappTrigger =
+    webhookTriggers.find((trigger) =>
+      whatsappUser?.trigger_id === trigger.id
+    ) ?? webhookTriggers[0]; // Use first webhook trigger if no specific WhatsApp trigger found
+
+  const { mutate: upsertWhatsAppUser } = useUpsertWhatsAppUser({
+    phone: profile?.phone ?? "",
+    triggerUrl: whatsappTrigger?.data.url ?? "",
+    triggerId: whatsappTrigger?.id ?? "",
+  });
+  const { mutate: sendAgentWhatsAppInvite, isPending: isInvitePending } =
+    useSendAgentWhatsAppInvite(agentId, whatsappTrigger?.id ?? "");
 
   function runWhatsAppIntegration() {
-    !whatsappTrigger && createTrigger(
+    (!triggers?.triggers || triggers?.triggers.length === 0) && createTrigger(
       {
         title: "WhatsApp Integration",
-        description: "WhatsApp integration for this agent",
+        description: "A WhatsApp integration for this agent",
         type: "webhook",
         passphrase: crypto.randomUUID(),
-        whatsappEnabled: true,
       },
     );
 
-    createTempAgent(
-      { agentId, userId: user.id },
+    upsertWhatsAppUser(
+      undefined,
       {
         onSuccess: () => {
           toast.success("This agent is now available on WhatsApp.");
@@ -87,41 +99,152 @@ export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
     runWhatsAppIntegration();
   }
 
-  const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
-
-  const buttonContent = (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={enabled
-        ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
-        : handleWhatsAppClick}
-      className={isMobile ? "w-full justify-center gap-4" : ""}
-    >
-      <img
-        src="/img/zap.svg"
-        className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
-      />
-      <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
-        {!isMobile ? "" : enabled ? "Start chat" : "Enable WhatsApp"}
-      </span>
-    </Button>
-  );
-
-  // For mobile, return the button without tooltip
-  if (isMobile) {
-    return buttonContent;
+  function handleInviteClick() {
+    setIsInviteDialogOpen(true);
   }
 
-  // For desktop, wrap with tooltip
+  function handleInviteSubmit(phoneNumber: string, selectedTriggerId?: string) {
+    // If no trigger is selected and no triggers exist, create one first
+    if (!selectedTriggerId && webhookTriggers.length === 0) {
+      createTrigger(
+        {
+          title: "WhatsApp Integration",
+          description: "WhatsApp integration for this agent",
+          type: "webhook",
+          passphrase: crypto.randomUUID(),
+        },
+        {
+          onSuccess: (_newTrigger) => {
+            // Send invite with the newly created trigger
+            sendAgentWhatsAppInvite(
+              { to: phoneNumber },
+              {
+                onSuccess: () => {
+                  toast.success("WhatsApp invite sent successfully!");
+                  setIsInviteDialogOpen(false);
+                },
+                onError: (error) => {
+                  toast.error(`Failed to send invite: ${error.message}`);
+                },
+              },
+            );
+          },
+          onError: (error) => {
+            toast.error(`Failed to create trigger: ${error.message}`);
+          },
+        },
+      );
+      return;
+    }
+
+    // Use selected trigger or default to first available
+    const triggerToUse = selectedTriggerId || webhookTriggers[0]?.id;
+    if (!triggerToUse) {
+      toast.error("No trigger available for WhatsApp integration");
+      return;
+    }
+
+    sendAgentWhatsAppInvite(
+      { to: phoneNumber },
+      {
+        onSuccess: () => {
+          toast.success("WhatsApp invite sent successfully!");
+          setIsInviteDialogOpen(false);
+        },
+        onError: (error) => {
+          toast.error(`Failed to send invite: ${error.message}`);
+        },
+      },
+    );
+  }
+
+  function handleTalkInWhatsApp() {
+    if (agent) {
+      globalThis.open(getWhatsAppLink(agent), "_blank");
+    }
+  }
+
+  const isWhatsAppEnabled = whatsappUser?.trigger_id === whatsappTrigger?.id;
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {buttonContent}
-      </TooltipTrigger>
-      <TooltipContent>
-        Enable WhatsApp
-      </TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <img src="/img/zap.svg" className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isWhatsAppEnabled
+                ? (
+                  <DropdownMenuItem onClick={handleTalkInWhatsApp}>
+                    Talk in WhatsApp
+                  </DropdownMenuItem>
+                )
+                : (
+                  <DropdownMenuItem onClick={handleWhatsAppClick}>
+                    Use in WhatsApp
+                  </DropdownMenuItem>
+                )}
+              <DropdownMenuItem onClick={handleInviteClick}>
+                Invite
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TooltipTrigger>
+        <TooltipContent>
+          WhatsApp Options
+        </TooltipContent>
+      </Tooltip>
+
+      <WhatsAppInviteDialog
+        isOpen={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
+        onSubmit={handleInviteSubmit}
+        isLoading={isInvitePending}
+        triggers={webhookTriggers}
+      />
+    </>
   );
 }
+
+//   const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
+
+//   const buttonContent = (
+//     <Button
+//       variant="ghost"
+//       size="icon"
+//       onClick={enabled
+//         ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
+//         : handleWhatsAppClick}
+//       className={isMobile ? "w-full justify-center gap-4" : ""}
+//     >
+//       <img
+//         src="/img/zap.svg"
+//         className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
+//       />
+//       <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
+//         {!isMobile ? "" : enabled ? "Start chat" : "Enable WhatsApp"}
+//       </span>
+//     </Button>
+//   );
+
+//   // For mobile, return the button without tooltip
+//   if (isMobile) {
+//     return buttonContent;
+//   }
+
+//   // For desktop, wrap with tooltip
+//   return (
+//     <Tooltip>
+//       <TooltipTrigger asChild>
+//         {buttonContent}
+//       </TooltipTrigger>
+//       <TooltipContent>
+//         Enable WhatsApp
+//       </TooltipContent>
+//     </Tooltip>
+//   );
+// }

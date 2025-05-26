@@ -288,6 +288,7 @@ export class Trigger {
       );
       return runData.result;
     } catch (error) {
+      console.error("Error running trigger:", error);
       runData.error = JSON.stringify(error);
     } finally {
       await this._saveRun({

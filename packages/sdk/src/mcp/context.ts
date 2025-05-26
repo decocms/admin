@@ -95,6 +95,9 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().readonly(),
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
+  WHATSAPP_ACCESS_TOKEN: z.string().readonly(),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().readonly(),
+  WHATSAPP_API_VERSION: z.string().readonly(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

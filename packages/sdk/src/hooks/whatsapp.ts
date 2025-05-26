@@ -1,0 +1,92 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { MCPClient } from "../fetcher.ts";
+import { countries } from "../utils/index.ts";
+import { useProfile } from "./profile.ts";
+import { useAgent } from "./agent.ts";
+import {
+  createWhatsAppInvite,
+  getWhatsAppUser,
+  upsertWhatsAppUser,
+} from "../crud/whatsapp.ts";
+
+export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
+  const { data: profile } = useProfile();
+  const { data: agent } = useAgent(agentId);
+  return useMutation({
+    mutationFn: (props: { to: string }) => {
+      const countryCode = getMetaCountryCodeFromPhone(props.to);
+      const template = TEMPLATES.find((t) => t.language_code === countryCode);
+      if (!template) {
+        throw new Error("Template not found");
+      }
+
+      return MCPClient.WHATSAPP_SEND_TEMPLATE_MESSAGE({
+        to: props.to,
+        template_name: template.name,
+        language_code: template.language_code,
+        sender_phone: props.to,
+        sender_name: profile?.metadata?.full_name ??
+          profile?.metadata?.username ?? "Mlk",
+        agent_name: agent?.name ?? "38tao",
+      });
+    },
+    onSuccess: async (data) => {
+      await createWhatsAppInvite(
+        profile.id,
+        triggerId,
+        data.wppMessageId,
+        data.to,
+      );
+    },
+  });
+}
+
+export function useUpsertWhatsAppUser({
+  phone,
+  triggerUrl,
+  triggerId,
+}: {
+  phone: string;
+  triggerUrl: string;
+  triggerId: string;
+}) {
+  return useMutation({
+    mutationFn: () => upsertWhatsAppUser(phone, triggerUrl, triggerId),
+  });
+}
+
+export function useWhatsAppUser(phone: string) {
+  return useQuery({
+    queryKey: ["whatsappUser", phone],
+    queryFn: () => getWhatsAppUser(phone),
+  });
+}
+
+function getMetaCountryCodeFromPhone(phone: string): string {
+  // Remove any non-digit characters and ensure it starts with +
+  const cleanPhone = phone.startsWith("+") ? phone : `+${phone}`;
+
+  // Sort countries by dial_code length (longest first) to match more specific codes first
+  const sortedCountries = [...countries].sort((a, b) =>
+    b.dial_code.length - a.dial_code.length
+  );
+
+  // Find the first country whose dial_code matches the start of the phone number
+  const matchedCountry = sortedCountries.find((country) =>
+    cleanPhone.startsWith(country.dial_code)
+  );
+
+  // Return the meta_code if it exists, otherwise default to en_US
+  return matchedCountry?.meta_code || "en_US";
+}
+
+const TEMPLATES = [
+  {
+    name: "agent_invite",
+    language_code: "en_US",
+  },
+  {
+    name: "agent_invite_pt_br",
+    language_code: "pt_BR",
+  },
+];

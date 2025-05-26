@@ -1,4 +1,4 @@
-import { CreateMessage, useChat } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
   getTraceDebugId,
@@ -13,7 +13,6 @@ import {
   PropsWithChildren,
   RefObject,
   useContext,
-  useEffect,
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
@@ -62,8 +61,7 @@ const Context = createContext<IContext | null>(null);
 interface Props {
   agentId: string;
   threadId: string;
-  /** Default initial thread message */
-  initialMessage?: CreateMessage;
+  initialInput?: string;
   uiOptions?: Partial<IContext["uiOptions"]>;
 }
 
@@ -85,9 +83,9 @@ const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
 export function ChatProvider({
   agentId,
   threadId,
-  initialMessage,
-  children,
   uiOptions,
+  initialInput,
+  children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
   const invalidateAll = useInvalidateAll();
@@ -95,7 +93,6 @@ export function ChatProvider({
     addOptimisticThread,
   } = useAddOptimisticThread();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const onceRef = useRef(false);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
   const { data: initialMessages } = !options.showThreadMessages
     ? { data: undefined }
@@ -107,6 +104,7 @@ export function ChatProvider({
   const correlationIdRef = useRef<string | null>(null);
 
   const chat = useChat({
+    initialInput,
     initialMessages: initialMessages || [],
     credentials: "include",
     headers: {
@@ -233,16 +231,6 @@ export function ChatProvider({
     chat.handleSubmit(e, options);
     setAutoScroll(scrollRef.current, true);
   };
-
-  useEffect(() => {
-    if (
-      chat.messages.length === 0 && initialMessage &&
-      !onceRef.current
-    ) {
-      onceRef.current = true;
-      chat.append(initialMessage);
-    }
-  }, [initialMessage, chat.messages]);
 
   return (
     <Context.Provider

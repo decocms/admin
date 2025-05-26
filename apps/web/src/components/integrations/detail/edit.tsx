@@ -1,7 +1,10 @@
 import {
   type Integration,
   IntegrationSchema,
+  useAgent,
   useIntegration,
+  useTools,
+  useUpdateAgentCache,
   useUpdateIntegration,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
@@ -10,6 +13,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
@@ -60,12 +64,16 @@ const TABS: Record<string, Tab> = {
 };
 
 export default function Page() {
+  const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
+
   const { id } = useParams();
   const integrationId = id!;
-  const { data: integration } = useIntegration(integrationId);
-
-  const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
   const threadId = integrationId;
+
+  const { data: integration } = useIntegration(integrationId);
+  const { data: agent } = useAgent(agentId);
+  const tools = useTools(integration.connection);
+  const updateAgentCache = useUpdateAgentCache();
 
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
@@ -114,15 +122,22 @@ export default function Page() {
     }
   };
 
+  useEffect(() => {
+    if (tools.isLoading || !tools.data) {
+      return;
+    }
+
+    updateAgentCache({
+      ...agent,
+      tools_set: { [integrationId]: tools.data.tools.map((tool) => tool.name) },
+    });
+  }, [tools.data, tools.isLoading]);
+
   return (
     <ChatProvider
       agentId={agentId}
       threadId={threadId}
-      initialMessage={{
-        role: "user",
-        content:
-          `Please help me set up this new integration. Enable integration with installation ID: ${integrationId} and help me explore its tools`,
-      }}
+      initialInput={`Can you help me set up ${integration.name}?`}
     >
       <Context.Provider
         value={{ form, integration, onSubmit }}

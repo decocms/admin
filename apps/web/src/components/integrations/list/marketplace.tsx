@@ -2,7 +2,6 @@ import {
   type Integration,
   useInstallFromMarketplace,
   useMarketplaceIntegrations,
-  useSDK,
   useUpdateThreadMessages,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";

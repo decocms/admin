@@ -956,7 +956,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const experimentalTransform = options?.smoothStream
       ? smoothStream({
         delayInMs: options.smoothStream.delayInMs,
-        chunking: options.smoothStream.chunking,
+        chunking: (buffer) => buffer.slice(0, 5) || null,
       })
       : undefined;
 

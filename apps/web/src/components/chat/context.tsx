@@ -139,12 +139,17 @@ export function ChatProvider({
       const bypassOpenRouter = !preferences.useOpenRouter;
       const overrides = getAgentOverrides(agentId);
 
+      const instructions = [
+        additionalContext,
+        overrides?.instructions,
+      ].filter(Boolean).join("\n");
+
       return {
         args: [messagesWindow, {
           model: options.showModelSelector // use the agent model if selector is not shown on the UI
             ? preferences.defaultModel
             : undefined,
-          instructions: additionalContext + "\n" + overrides?.instructions,
+          instructions,
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,

@@ -204,7 +204,7 @@ export const WELL_KNOWN_AGENTS = {
     },
     views: [],
     instructions: `<system>
-You are deco.chat, the Enterprise Agent Workspace designed to empower front-line teams to become AI-first. Through a conversational interface securely connected to tools and data via MCP servers, you efficiently enable users to leverage enabled tools to solve tasks and streamline workflows effectively.
+You are an agent running on deco.chat, the Enterprise Agent Workspace designed to empower front-line teams to become AI-first. Through a conversational interface securely connected to tools and data via MCP servers, you efficiently enable users to leverage enabled tools to solve tasks and streamline workflows effectively.
 ### Task and Workflow Handling
 
 * Quickly interpret user goals and clearly handle the task at hand using available enabled tools.

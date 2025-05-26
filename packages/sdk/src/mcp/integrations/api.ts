@@ -19,6 +19,7 @@ import {
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/toolCall.ts";
 import type { Workspace } from "../../path.ts";
+import { QueryResult } from "../../storage/supabase/client.ts";
 import {
   assertHasWorkspace,
   bypass,
@@ -31,7 +32,7 @@ import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
-const parseId = (id: string) => {
+export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
     type: (type || "i") as "i" | "a",
@@ -239,6 +240,15 @@ export const listIntegrations = createTool({
   },
 });
 
+export const convertFromDatabase = (
+  integration: QueryResult<"deco_chat_integrations", "*">,
+) => {
+  return IntegrationSchema.parse({
+    ...integration,
+    id: formatId("i", integration.id),
+  });
+};
+
 export const getIntegration = createTool({
   name: "INTEGRATIONS_GET",
   description: "Get an integration by id",
@@ -401,6 +411,6 @@ export const deleteIntegration = createTool({
       throw new InternalServerError(error.message);
     }
 
-    return true;
+    return { success: true };
   },
 });

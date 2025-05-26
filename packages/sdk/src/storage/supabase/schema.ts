@@ -484,6 +484,7 @@ export type Database = {
         Row: {
           active: boolean;
           agent_id: string;
+          binding_id: string | null;
           created_at: string;
           id: string;
           metadata: Json;
@@ -495,6 +496,7 @@ export type Database = {
         Insert: {
           active?: boolean;
           agent_id: string;
+          binding_id?: string | null;
           created_at?: string;
           id?: string;
           metadata: Json;
@@ -506,6 +508,7 @@ export type Database = {
         Update: {
           active?: boolean;
           agent_id?: string;
+          binding_id?: string | null;
           created_at?: string;
           id?: string;
           metadata?: Json;
@@ -515,6 +518,13 @@ export type Database = {
           workspace?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "deco_chat_triggers_binding_id_fkey";
+            columns: ["binding_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_integrations";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "deco_chat_triggers_user_id_fkey";
             columns: ["user_id"];

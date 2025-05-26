@@ -11,6 +11,12 @@ import {
   PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
+import {
+  Callbacks,
+  MCPBindingClient,
+  TriggerInputBinding,
+  TriggerOutputBinding,
+} from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
@@ -18,6 +24,7 @@ import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { dirname } from "node:path/posix";
 import process from "node:process";
+import { AIAgent } from "../agent.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
@@ -55,15 +62,14 @@ export interface TriggerMetadata {
   reqUrl?: string | null;
   internalCall?: boolean;
 }
-function mapTriggerToTriggerData(
-  trigger: Awaited<
-    ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
-  >,
-): TriggerData | null {
-  if (!trigger) {
-    return null;
-  }
 
+function mapTriggerToTriggerData(
+  trigger: NonNullable<
+    Awaited<
+      ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
+    >
+  >,
+): TriggerData {
   return {
     id: trigger.id,
     resourceId: trigger.user.id,
@@ -75,22 +81,46 @@ function mapTriggerToTriggerData(
       email: trigger.user.metadata.email,
       avatar: trigger.user.metadata.avatar_url,
     },
+    binding: trigger.binding,
     ...trigger.data,
   } as TriggerData;
 }
+
+export interface InvokePayload {
+  args: unknown[];
+  metadata?: Record<string, unknown>;
+}
+const buildInvokeUrl = (
+  url: URL,
+  method: keyof Trigger,
+  payload?: InvokePayload,
+) => {
+  const invoke = new URL(url);
+  invoke.pathname = `/actors/${Trigger.name}/invoke/${method}`;
+  if (payload) {
+    invoke.searchParams.set(
+      "args",
+      encodeURIComponent(JSON.stringify(payload)),
+    );
+  }
+
+  return invoke;
+};
 
 @Actor()
 export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
+  public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
+  public outputBinding?: MCPBindingClient<typeof TriggerOutputBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
   private db: ReturnType<typeof createServerClient>;
-
-  constructor(public state: ActorState, protected env: any) {
+  private env: any;
+  constructor(public state: ActorState, protected actorEnv: any) {
     this.env = {
       ...process.env,
       ...this.env,
@@ -117,10 +147,12 @@ export class Trigger {
     });
   }
 
-  private createMCPClient() {
+  private createContext(): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
-    return MCPClient.forContext({
+    return {
+      // can be ignored for now.
+      user: null as unknown as AppContext["user"],
       envVars: this.env,
       db: this.db,
       isLocal: true,
@@ -130,9 +162,26 @@ export class Trigger {
       params: {},
       policy: policyClient,
       authorization: authorizationClient,
-    });
+    };
   }
 
+  private createMCPClient() {
+    return MCPClient.forContext(this.createContext());
+  }
+
+  public callbacks(
+    payload?: InvokePayload,
+  ): Callbacks {
+    if (!this.metadata?.reqUrl) {
+      throw new Error("Trigger does not have a reqUrl");
+    }
+    const url = new URL(this.metadata.reqUrl);
+    return {
+      stream: buildInvokeUrl(url, "stream", payload).href,
+      generate: buildInvokeUrl(url, "generate", payload).href,
+      generateObject: buildInvokeUrl(url, "generateObject", payload).href,
+    };
+  }
   private async loadData(): Promise<TriggerData | null> {
     const triggerData = await this.mcpClient.TRIGGERS_GET({
       id: this.getTriggerId(),
@@ -142,7 +191,22 @@ export class Trigger {
       return null;
     }
 
-    return mapTriggerToTriggerData(triggerData);
+    const trigger = mapTriggerToTriggerData(triggerData);
+    if (trigger.binding) {
+      const context = this.createContext();
+      if (trigger.type === "webhook") {
+        this.inputBinding = TriggerInputBinding.forConnection(
+          trigger.binding.connection,
+          context,
+        );
+      } else {
+        this.outputBinding = TriggerOutputBinding.forConnection(
+          trigger.binding.connection,
+          context,
+        );
+      }
+    }
+    return trigger;
   }
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
@@ -219,6 +283,36 @@ export class Trigger {
   async alarm() {
     console.log("[TRIGGER] alarm");
     await this.run();
+  }
+
+  assertsValidInvoke() {
+    if (!this.data) {
+      throw new Error("Trigger does not have a data");
+    }
+    if (!("passphrase" in this.data)) {
+      return;
+    }
+    if (this.data.passphrase !== this.metadata?.passphrase) {
+      throw new Error("Invalid passphrase");
+    }
+  }
+
+  generateObject(...args: Parameters<AIAgent["generateObject"]>) {
+    this.assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.generateObject(...args);
+  }
+
+  stream(...args: Parameters<AIAgent["stream"]>) {
+    this.assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.stream(...args);
+  }
+
+  generate(...args: Parameters<AIAgent["generate"]>) {
+    this.assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.generate(...args);
   }
 
   async create(data: TriggerData) {

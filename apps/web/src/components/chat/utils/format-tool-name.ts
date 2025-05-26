@@ -6,8 +6,6 @@
  * - Remove espaços extras
  */
 export function formatToolName(toolName: string): string {
-    if (!toolName) return '';
-
     return toolName
         .replace(/[_-]/g, ' ')
         .replace(/([a-z])([A-Z])/g, '$1 $2')

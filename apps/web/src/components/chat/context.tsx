@@ -19,6 +19,7 @@ import {
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
+import { formatToolName } from "./utils/format-tool-name.ts";
 
 const LAST_MESSAGES_COUNT = 10;
 interface FileData {
@@ -158,7 +159,7 @@ export function ChatProvider({
       console.error("Chat error:", error);
     },
     onToolCall: ({ toolCall }) => {
-      if (toolCall.toolName === "RENDER") {
+      if (formatToolName(toolCall.toolName) === "RENDER") {
         const { content, title } = toolCall.args as {
           content: string;
           title: string;

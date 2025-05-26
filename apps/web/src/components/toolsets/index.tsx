@@ -3,7 +3,7 @@ import { useTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { formatToolName } from "../../lib/format-tool-name.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationHeader } from "./header.tsx";
 
 /**

@@ -150,6 +150,9 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                   <Icon name="arrow_drop_down" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild>
+                    <WhatsAppButton isMobile />
+                  </DropdownMenuItem>
                   {chat.messages.length !== 0 && (
                     <DropdownMenuItem
                       className="flex items-center gap-4"

@@ -13,6 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
@@ -26,7 +27,11 @@ const getWhatsAppLink = (agent: Agent) => {
   return url.href;
 };
 
-export function WhatsAppButton() {
+interface WhatsAppButtonProps {
+  isMobile?: boolean;
+}
+
+export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
   const { data: triggers } = useListTriggersByAgentId(agentId);
@@ -37,7 +42,6 @@ export function WhatsAppButton() {
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
   const { data: tempWppAgent } = useTempWppAgent(user.id);
-
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
       trigger.data.type === "webhook" &&
@@ -83,34 +87,37 @@ export function WhatsAppButton() {
     runWhatsAppIntegration();
   }
 
-  // Show WhatsApp link if this agent is the temp agent and has a WhatsApp-enabled trigger
-  if (
-    tempWppAgent?.agent_id === agentId &&
-    whatsappTrigger
-  ) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a href={getWhatsAppLink(agent)} target="_blank">
-            <Button variant="ghost" size="icon">
-              <img src="/img/zap.svg" className="w-4 h-4" />
-            </Button>
-          </a>
-        </TooltipTrigger>
-        <TooltipContent>
-          Talk in WhatsApp
-        </TooltipContent>
-      </Tooltip>
-    );
+  const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
+
+  const buttonContent = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={enabled
+        ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
+        : handleWhatsAppClick}
+      className={isMobile ? "w-full justify-center gap-4" : ""}
+    >
+      <img
+        src="/img/zap.svg"
+        className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
+      />
+      <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
+        {!isMobile ? "" : enabled ? "Start chat" : "Enable WhatsApp"}
+      </span>
+    </Button>
+  );
+
+  // For mobile, return the button without tooltip
+  if (isMobile) {
+    return buttonContent;
   }
 
-  // Otherwise, show enable button
+  // For desktop, wrap with tooltip
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" onClick={handleWhatsAppClick}>
-          <img src="/img/zap.svg" className="w-4 h-4" />
-        </Button>
+        {buttonContent}
       </TooltipTrigger>
       <TooltipContent>
         Enable WhatsApp

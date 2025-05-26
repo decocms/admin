@@ -7,12 +7,8 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
   type: "cron",
   onCreated: async (data, trigger) => {
     const cron = new Cron(data.cronExp);
-    console.log("[CRON] onCreated", JSON.stringify(data, null, 2));
-    console.log("[CRON] cron", JSON.stringify(cron, null, 2));
     const dt = cron.nextRun();
-    console.log("[CRON] dt", JSON.stringify(dt, null, 2));
     if (dt) {
-      console.log("[CRON] setAlarm", dt.getTime());
       await trigger.state.storage.setAlarm(dt.getTime());
     }
   },
@@ -36,7 +32,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
       ? crypto.randomUUID()
       : undefined;
     const threadId = data.prompt.threadId ?? defaultThreadId;
-    console.log("[CRON] threadId", threadId);
+
     const messages = data.prompt.messages.map((message) => ({
       ...message,
       id: crypto.randomUUID(),
@@ -58,25 +54,13 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
           threadId,
           resourceId: data.id,
         });
-    console.log("[CRON] agent", JSON.stringify(agent, null, 2));
       response = await agent.generate(
         messages,
-    ).catch((error) => {
       );
     }
-      console.log("[CRON] error", JSON.stringify(error, null, 2));
-      return {
-        success: false,
-        message: "Error generating response",
-      };
-    });
-    console.log("[CRON] response", JSON.stringify(response, null, 2));
     const cron = new Cron(data.cronExp);
-    console.log("[CRON] cron", JSON.stringify(cron, null, 2));
     const dt = cron.nextRun();
-    console.log("[CRON] dt", JSON.stringify(dt, null, 2));
     if (dt) {
-      console.log("[CRON] setAlarm", dt.getTime());
       await trigger.state.storage.setAlarm(dt.getTime());
     }
     return response;

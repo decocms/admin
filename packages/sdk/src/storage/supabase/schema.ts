@@ -1423,30 +1423,33 @@ export type Database = {
         Row: {
           id: string;
           workspace: string;
-          label: string;
+          name: string;
           model: string;
           api_key_hash: string | null;
           is_enabled: boolean;
+          by_deco: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           workspace: string;
-          label: string;
+          name: string;
           model: string;
           api_key_hash?: string | null;
           is_enabled?: boolean;
+          by_deco?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           workspace?: string;
-          label?: string;
+          name?: string;
           model?: string;
           api_key_hash?: string | null;
           is_enabled?: boolean;
+          by_deco?: boolean;
           created_at?: string;
           updated_at?: string;
         };

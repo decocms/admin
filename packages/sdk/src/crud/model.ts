@@ -1,50 +1,39 @@
+import { Model } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
-
-export interface Model {
-  id: string;
-  label: string;
-  model: string;
-  api_key_hash: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
-  is_enabled: boolean;
-  endpoint: string;
-}
 
 export const listModels = (
   workspace: string,
+  options: { excludeDisabled?: boolean; excludeAuto?: boolean },
   init?: RequestInit,
-): Promise<Model[]> => MCPClient.forWorkspace(workspace).MODELS_LIST({}, init);
+) => MCPClient.forWorkspace(workspace).MODELS_LIST(options, init);
 
 export const getModel = (
   workspace: string,
   id: string,
   init?: RequestInit,
-): Promise<Model> => MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
+) => MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
 
 export interface CreateModelInput {
-  label: string;
+  name: string;
   model: string;
-  api_key: string;
-  endpoint: string;
+  apiKey?: string;
+  description?: string;
+  isEnabled: boolean;
+  byDeco: boolean;
+  workspace: string;
 }
 
 export const createModel = (
   workspace: string,
   input: CreateModelInput,
   init?: RequestInit,
-): Promise<Model> =>
-  MCPClient.forWorkspace(workspace).MODELS_CREATE(input, init) as Promise<
-    Model
-  >;
+) => MCPClient.forWorkspace(workspace).MODELS_CREATE(input, init);
 
 export interface UpdateModelInput {
   id: string;
   data: Partial<
-    Pick<Model, "label" | "model" | "endpoint" | "is_enabled"> & {
-      api_key?: string;
+    Pick<Model, "name" | "model" | "description" | "isEnabled"> & {
+      apiKey?: string;
     }
   >;
   [key: string]: unknown;
@@ -54,10 +43,7 @@ export const updateModel = (
   workspace: string,
   input: UpdateModelInput,
   init?: RequestInit,
-): Promise<Model> =>
-  MCPClient.forWorkspace(workspace).MODELS_UPDATE(input, init) as Promise<
-    Model
-  >;
+) => MCPClient.forWorkspace(workspace).MODELS_UPDATE(input, init);
 
 export const deleteModel = (
   workspace: string,

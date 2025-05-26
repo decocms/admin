@@ -41,7 +41,10 @@ export const KEYS = {
     teamId: number,
   ) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],
-  MODELS: (workspace: Workspace) => ["models", workspace],
+  MODELS: (
+    workspace: Workspace,
+    options?: { excludeDisabled?: boolean; excludeAuto?: boolean },
+  ) => ["models", workspace, options?.excludeDisabled, options?.excludeAuto],
   MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",

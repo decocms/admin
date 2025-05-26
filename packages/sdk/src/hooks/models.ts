@@ -16,11 +16,15 @@ import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
 
-export const useModels = () => {
+export type { CreateModelInput, UpdateModelInput };
+
+export const useModels = (
+  options: { excludeDisabled?: boolean; excludeAuto?: boolean } = {},
+) => {
   const { workspace } = useSDK();
   return useSuspenseQuery({
-    queryKey: KEYS.MODELS(workspace),
-    queryFn: ({ signal }) => listModels(workspace, { signal }),
+    queryKey: KEYS.MODELS(workspace, options),
+    queryFn: ({ signal }) => listModels(workspace, options, { signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });

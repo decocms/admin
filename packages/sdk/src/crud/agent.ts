@@ -92,4 +92,7 @@ export const validateAgent = (
 export const getTempAgent = (
   workspace: string,
   userId: string,
-) => MCPClient.forWorkspace(workspace).AGENTS_GET_TEMP({ userId });
+) =>
+  MCPClient.forWorkspace(workspace).AGENTS_GET_TEMP({ userId }).catch(() => {
+    return null;
+  });

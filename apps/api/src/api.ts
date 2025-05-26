@@ -21,11 +21,7 @@ import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import {
-  AppContext,
-  AppEnv,
-  State
-} from "./utils/context.ts";
+import { AppContext, AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 
 export const app = new Hono<AppEnv>();

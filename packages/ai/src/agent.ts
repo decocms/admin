@@ -1001,22 +1001,23 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         onChunk: () => {
           endTtfbSpan();
         },
-      onError: () => {
-        // TODO(@mcandeia): add error tracking with posthog
+        onError: () => {
+          // TODO(@mcandeia): add error tracking with posthog
+        },
+        onFinish: (result) => {
+          const model = this.inferBestModel(
+            this._configuration?.model ?? DEFAULT_MODEL,
+          );
+          wallet.computeLLMUsage({
+            userId: this.metadata?.user?.id,
+            usage: result.usage,
+            threadId: this.thread.threadId,
+            model,
+            agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+          });
+        },
       },
-      onFinish: (result) => {
-        const model = this.inferBestModel(
-          this._configuration?.model ?? DEFAULT_MODEL,
-        );
-        wallet.computeLLMUsage({
-          userId: this.metadata?.user?.id,
-          usage: result.usage,
-          threadId: this.thread.threadId,
-          model,
-          agentName: this._configuration?.name ?? ANONYMOUS_NAME,
-        });
-      },
-    });
+    );
     streamTiming.end();
 
     const dataStreamResponseTiming = timings.start("data-stream-response");

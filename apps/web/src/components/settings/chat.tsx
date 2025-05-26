@@ -1,8 +1,13 @@
-import { AgentSchema, useIntegrations, useUpdateThreadTools } from "@deco/sdk";
+import {
+  AgentSchema,
+  useAgent,
+  useIntegrations,
+  useUpdateAgentCache,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Form, FormDescription, FormLabel } from "@deco/ui/components/form.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -22,7 +27,8 @@ function ThreadSettingsTab() {
   const { agentId, threadId } = useChatContext();
   const tools_set = useTools(agentId, threadId);
   const { data: installedIntegrations } = useIntegrations();
-  const updateTools = useUpdateThreadTools(agentId, threadId);
+  const { data: agent } = useAgent(agentId);
+  const updateAgentCache = useUpdateAgentCache();
   const defaultValues = useMemo(() => ({ tools_set }), [tools_set]);
 
   const form = useForm<Chat>({
@@ -69,8 +75,8 @@ function ThreadSettingsTab() {
     setIsModalOpen(true);
   };
 
-  const onSubmit = async (data: Chat) => {
-    await updateTools.mutateAsync(data.tools_set);
+  const onSubmit = (data: Chat) => {
+    updateAgentCache({ ...agent, tools_set: data.tools_set });
     form.reset(data);
   };
 

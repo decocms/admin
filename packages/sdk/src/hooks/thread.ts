@@ -91,34 +91,6 @@ export const useThreads = (userId: string) => {
   });
 };
 
-export const useUpdateThreadTools = (agentId: string, threadId: string) => {
-  const { workspace } = useSDK();
-  const client = useQueryClient();
-  const agentStub = useAgentStub(agentId, threadId);
-
-  return useMutation({
-    mutationFn: async (toolset: Record<string, string[]>) => {
-      const response = await agentStub.updateThreadTools(toolset);
-
-      if (
-        response.success === false && response.message === "Thread not found"
-      ) {
-        return agentStub.createThread({
-          title: "New Thread",
-          id: threadId,
-          metadata: { tool_set: toolset },
-        });
-      }
-    },
-    onSuccess: (_, variables) => {
-      client.setQueryData(
-        KEYS.THREAD_TOOLS(workspace, threadId),
-        () => ({ tools_set: variables }),
-      );
-    },
-  });
-};
-
 export const useAddOptimisticThread = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();

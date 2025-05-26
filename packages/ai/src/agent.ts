@@ -796,18 +796,19 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private async withToolOverrides(
-    restrictedTools?: Record<string, string[]>,
+    tools?: Record<string, string[]>,
     timings?: ServerTimingsBuilder,
     thread = this.thread,
   ): Promise<ToolsetsInput> {
     const getThreadToolsTiming = timings?.start("get-thread-tools");
-    const tool_set = await this.getThreadTools(thread);
+    const tool_set = tools ?? await this.getThreadTools(thread);
     getThreadToolsTiming?.end();
+
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
     const toolsets = await this.pickCallableTools(tool_set, timings);
     pickCallableToolsTiming?.end();
-    const filtered = this.filterToolsets(toolsets, restrictedTools);
-    return filtered;
+
+    return toolsets;
   }
 
   private createVoiceConfig() {

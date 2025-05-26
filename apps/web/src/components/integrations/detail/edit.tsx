@@ -12,6 +12,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router";
+import { trackEvent } from "../../../hooks/analytics.ts";
 import { ChatInput } from "../../chat/ChatInput.tsx";
 import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
@@ -21,7 +22,6 @@ import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import { Inspector } from "./inspector.tsx";
-import { trackEvent } from "../../../hooks/analytics.ts";
 
 function MainChat() {
   return (

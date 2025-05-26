@@ -104,6 +104,14 @@ const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
 });
 
+export const createGlobalForContext = (
+  context?: AppContext,
+): typeof global => {
+  return createMCPToolsStub({
+    tools: GLOBAL_TOOLS,
+    context,
+  });
+};
 export const fromWorkspaceString = (
   _workspace: string,
 ): AppContext["workspace"] => {

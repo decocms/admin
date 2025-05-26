@@ -95,15 +95,16 @@ const buildInvokeUrl = (
   method: keyof Trigger,
   payload?: InvokePayload,
 ) => {
-  const stream = new URL(url);
-  stream.pathname = `/actors/${Trigger.name}/invoke/${method}`;
+  const invoke = new URL(url);
+  invoke.pathname = `/actors/${Trigger.name}/invoke/${method}`;
   if (payload) {
-    stream.searchParams.set(
+    invoke.searchParams.set(
       "args",
       encodeURIComponent(JSON.stringify(payload)),
     );
   }
-  return stream;
+
+  return invoke;
 };
 
 @Actor()
@@ -118,8 +119,8 @@ export class Trigger {
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
   private db: ReturnType<typeof createServerClient>;
-
-  constructor(public state: ActorState, protected env: any) {
+  private env: any;
+  constructor(public state: ActorState, protected actorEnv: any) {
     this.env = {
       ...process.env,
       ...this.env,
@@ -146,10 +147,12 @@ export class Trigger {
     });
   }
 
-  private createMCPClient() {
+  private createContext(): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
-    return MCPClient.forContext({
+    return {
+      // can be ignored for now.
+      user: null as unknown as AppContext["user"],
       envVars: this.env,
       db: this.db,
       isLocal: true,
@@ -159,7 +162,11 @@ export class Trigger {
       params: {},
       policy: policyClient,
       authorization: authorizationClient,
-    });
+    };
+  }
+
+  private createMCPClient() {
+    return MCPClient.forContext(this.createContext());
   }
 
   public callbacks(
@@ -186,13 +193,16 @@ export class Trigger {
 
     const trigger = mapTriggerToTriggerData(triggerData);
     if (trigger.binding) {
+      const context = this.createContext();
       if (trigger.type === "webhook") {
         this.inputBinding = TriggerInputBinding.forConnection(
           trigger.binding.connection,
+          context,
         );
       } else {
         this.outputBinding = TriggerOutputBinding.forConnection(
           trigger.binding.connection,
+          context,
         );
       }
     }
@@ -280,7 +290,7 @@ export class Trigger {
       throw new Error("Trigger does not have a data");
     }
     if (!("passphrase" in this.data)) {
-      throw new Error("Trigger does not have a passphrase");
+      return;
     }
     if (this.data.passphrase !== this.metadata?.passphrase) {
       throw new Error("Invalid passphrase");

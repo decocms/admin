@@ -215,7 +215,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return openai.embedding("text-embedding-3-small");
   }
 
-  createAppContext(metadata?: AgentMetadata): AppContext {
+  private createAppContext(metadata?: AgentMetadata): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     return {
       params: {},

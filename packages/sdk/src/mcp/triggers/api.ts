@@ -26,7 +26,7 @@ import {
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { convertFromDatabase } from "../integrations/api.ts";
+import { convertFromDatabase, parseId } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
 
 const SELECT_TRIGGER_QUERY = `
@@ -205,6 +205,7 @@ export const upsertTrigger = createTool({
         resourceId: userId,
       },
     );
+    const bindingId = data.bindingId ? parseId(data.bindingId).uuid : undefined;
 
     // Update database
     const { data: trigger, error } = await db.from("deco_chat_triggers")
@@ -213,6 +214,7 @@ export const upsertTrigger = createTool({
         workspace,
         agent_id: agentId,
         user_id: userId,
+        binding_id: bindingId,
         metadata: data as Json,
         whatsapp_enabled:
           (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })

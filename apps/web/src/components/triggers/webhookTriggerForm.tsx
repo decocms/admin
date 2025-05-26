@@ -129,6 +129,7 @@ export function WebhookTriggerForm({
   const form = useForm<WebhookTriggerFormType>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
+      bindingId: initialValues?.data.bindingId || "",
       title: initialValues?.data.title || "",
       description: initialValues?.data.description || "",
       passphrase: webhookData?.passphrase || "",
@@ -167,6 +168,7 @@ export function WebhookTriggerForm({
             passphrase: data.passphrase || undefined,
             schema: schemaObj as Record<string, unknown> | undefined,
             outputTool: data.outputTool || undefined,
+            bindingId: data.bindingId,
           },
         },
         {
@@ -190,6 +192,7 @@ export function WebhookTriggerForm({
           passphrase: data.passphrase || undefined,
           schema: schemaObj as Record<string, unknown> | undefined,
           outputTool: data.outputTool || undefined,
+          bindingId: data.bindingId,
         },
         {
           onSuccess: () => {

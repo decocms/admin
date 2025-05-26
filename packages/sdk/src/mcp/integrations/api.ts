@@ -32,7 +32,7 @@ import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
-const parseId = (id: string) => {
+export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
     type: (type || "i") as "i" | "a",

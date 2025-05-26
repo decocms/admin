@@ -1,5 +1,5 @@
 import { MCPConnection } from "../../models/mcp.ts";
-import { MCPClient, ToolBinder } from "../index.ts";
+import { AppContext, createGlobalForContext, ToolBinder } from "../index.ts";
 import { MCPClientFetchStub } from "../stub.ts";
 import {
   TRIGGER_INPUT_BINDING_SCHEMA,
@@ -17,10 +17,12 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
   return {
     implements: async (
       connectionOrTools: MCPConnection | ToolBinder[],
+      ctx?: AppContext,
     ) => {
+      const client = createGlobalForContext(ctx);
       const listedTools = Array.isArray(connectionOrTools)
         ? connectionOrTools
-        : await MCPClient.INTEGRATIONS_LIST_TOOLS({
+        : await client.INTEGRATIONS_LIST_TOOLS({
           connection: connectionOrTools,
         }).then((r) => r.tools).catch(() => []);
 
@@ -30,7 +32,9 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
     },
     forConnection: (
       mcpConnection: MCPConnection,
+      ctx?: AppContext,
     ): MCPClientFetchStub<TDefinition> => {
+      const client = createGlobalForContext(ctx);
       return new Proxy<MCPClientFetchStub<TDefinition>>(
         {} as MCPClientFetchStub<TDefinition>,
         {
@@ -40,7 +44,7 @@ export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
             }
 
             return (args: Record<string, unknown>) => {
-              return MCPClient.INTEGRATIONS_CALL_TOOL({
+              return client.INTEGRATIONS_CALL_TOOL({
                 connection: mcpConnection,
                 params: {
                   name,

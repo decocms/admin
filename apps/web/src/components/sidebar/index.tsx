@@ -555,16 +555,6 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="cursor-pointer"
-                      onClick={handleOpenNewChat}
-                    >
-                      <Icon name="edit_square" size={16} />
-                      <span className="truncate">New chat</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-
                   {STATIC_ITEMS.map((item) => {
                     const href = workspaceLink(item.url);
 

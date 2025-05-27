@@ -83,7 +83,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
               : (
                 <>
                   <Icon name="add" />
-                  <span className="hidden md:inline">Create Integration</span>
+                  <span className="hidden md:inline">New Integration</span>
                 </>
               )}
           </Button>

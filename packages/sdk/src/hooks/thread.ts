@@ -115,16 +115,6 @@ export const useAddOptimisticThread = () => {
   };
 };
 
-export const useInvalidateAll = () => {
-  const client = useQueryClient();
-
-  return useCallback(() => {
-    client.invalidateQueries({
-      predicate: (_query) => true,
-    });
-  }, [client]);
-};
-
 export const useUpdateThreadTitle = (threadId: string, userId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();

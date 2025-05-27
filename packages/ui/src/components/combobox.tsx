@@ -13,7 +13,6 @@ import {
   CommandList,
 } from "./command.tsx";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
-import { useState } from "react";
 
 export function Combobox({
   options,
@@ -24,15 +23,12 @@ export function Combobox({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={open}
           className="w-[200px] justify-between"
         >
           {value
@@ -50,23 +46,9 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.value}
                   onSelect={(currentValue) => {
-                    const selectedOption = options.find((opt) =>
-                      opt.label.toLowerCase() === currentValue.toLowerCase()
-                    );
-                    if (selectedOption) {
-                      // Close immediately
-                      setOpen(false);
-                      // Also ensure it stays closed with a slight delay
-                      setTimeout(() => setOpen(false), 0);
-                      // Then call onChange
-                      onChange(
-                        selectedOption.value === value
-                          ? ""
-                          : selectedOption.value,
-                      );
-                    }
+                    onChange(currentValue === value ? "" : currentValue);
                   }}
                 >
                   {option.label}

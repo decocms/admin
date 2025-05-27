@@ -5,7 +5,6 @@ import {
   useAddOptimisticThread,
   useAgent,
   useAgentRoot,
-  useInvalidateAll,
   useThreadMessages,
 } from "@deco/sdk";
 import {
@@ -88,7 +87,6 @@ export function ChatProvider({
   children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const invalidateAll = useInvalidateAll();
   const {
     addOptimisticThread,
   } = useAddOptimisticThread();
@@ -179,15 +177,6 @@ export function ChatProvider({
     },
     onResponse: (response) => {
       correlationIdRef.current = response.headers.get("x-trace-debug-id");
-    },
-    onFinish: (message) => {
-      const shouldInvalidate = message.toolInvocations?.some((tool) =>
-        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
-      );
-
-      if (shouldInvalidate) {
-        invalidateAll();
-      }
     },
   });
 

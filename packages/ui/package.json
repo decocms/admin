@@ -64,19 +64,5 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "tailwind": "^4.0.0"
-  },
-  "compilerOptions": {
-    "lib": [
-      "deno.window",
-      "dom",
-      "esnext",
-      "deno.ns",
-      "deno.unstable"
-    ],
-    "types": [
-      "@cloudflare/workers-types"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
   }
 }

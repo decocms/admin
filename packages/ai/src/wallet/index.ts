@@ -162,16 +162,29 @@ export class AgentWallet {
 
       await Promise.all(
         rewards.map(async (operation) => {
-          const response = await this.client["PUT /transactions/:id"](
-            { id: operation.transactionId },
-            { body: operation },
-          );
+          let retries = 3;
+          while (retries > 0) {
+            const response = await this.client["PUT /transactions/:id"](
+              { id: operation.transactionId },
+              { body: operation },
+            );
 
-          if (!response.ok && response.status !== 304) {
-            console.error("Failed to ensure pending operations are done", {
-              operation,
-              response,
-            });
+            if (response.ok || response.status === 304) {
+              break;
+            }
+
+            // retry on conflict
+            if (response.status === 409) {
+              retries--;
+              if (retries > 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                continue;
+              }
+            }
+
+            throw new Error(
+              `Failed to ensure pending operations are done: ${JSON.stringify(operation)}`,
+            );
           }
         }),
       );
@@ -194,9 +207,12 @@ export class AgentWallet {
       return;
     }
 
-    await this.ensureCreditRewards();
-
-    // Mark as rewarded
-    await this.userCreditsRewardsCache.set(this.config.workspace, true);
+    try {
+      await this.ensureCreditRewards();
+      // Mark as rewarded
+      await this.userCreditsRewardsCache.set(this.config.workspace, true);
+    } catch (error) {
+      console.error("Failed to ensure credit rewards", error);
+    }
   }
 }

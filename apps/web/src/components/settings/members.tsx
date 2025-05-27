@@ -4,6 +4,11 @@ import {
   useTeam,
   useTeamMembers,
 } from "@deco/sdk";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -38,6 +43,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
+import { Protect } from "../wallet/plan.tsx";
 
 function MemberTitle() {
   return (

@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { FeatureNotAvailableError, Feature } from "../index.ts";
+import { Feature, FeatureNotAvailableError } from "../index.ts";
 
 export const getWalletAccount = (workspace: string) =>
   MCPClient.forWorkspace(workspace)

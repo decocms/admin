@@ -53,7 +53,7 @@ function Item(
   return (
     <button
       className={cn(
-        "block text-left w-[90%] ",
+        "block text-left w-full",
         "text-sm font-normal",
         "truncate rounded-lg px-2 py-1.5 hover:bg-muted",
         "cursor-pointer",

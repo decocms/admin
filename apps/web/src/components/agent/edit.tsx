@@ -7,7 +7,7 @@ import {
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
-  WELL_KNOWN_AGENTS,
+  WELL_KNOWN_AGENTS
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -23,12 +23,13 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
+import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
 import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
+import { useEditAgent } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -39,10 +40,10 @@ import AgentSettings from "../settings/agent.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";
 import PromptTab from "../settings/prompt.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
-import Threads from "./threads.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./WhatsAppButton.tsx";
 
 interface Props {
@@ -151,6 +152,75 @@ export function useAgentSettingsForm() {
     );
   }
   return ctx;
+}
+
+function ActionButtons({
+  discardChanges,
+  numberOfChanges,
+  isWellKnownAgent,
+}: {
+  discardChanges: () => void;
+  numberOfChanges: number;
+  isWellKnownAgent: boolean;
+}) {
+  const { form, hasChanges, handleSubmit } = useAgentSettingsForm();
+  const { chat: { messages }, agentId } = useChatContext();
+  const focusChat = useEditAgent();
+
+  return (
+    <div className="flex items-center gap-2 bg-slate-50 transition-opacity">
+      {!isWellKnownAgent && (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={form.formState.isSubmitting}
+          onClick={discardChanges}
+          className={hasChanges ? "inline-flex" : "hidden"}
+        >
+          Discard
+        </Button>
+      )}
+
+      <Button
+        className={hasChanges ? "inline-flex" : "hidden"}
+        variant={isWellKnownAgent ? "default" : "special"}
+        onClick={handleSubmit}
+        disabled={!numberOfChanges ||
+          form.formState.isSubmitting}
+      >
+        {form.formState.isSubmitting
+          ? (
+            <>
+              <Spinner size="xs" />
+              <span>Saving...</span>
+            </>
+          )
+          : (
+            <span>
+              {isWellKnownAgent
+                ? "Save as Agent"
+                : `Save ${numberOfChanges} change${
+                  numberOfChanges > 1 ? "s" : ""
+                }`}
+            </span>
+          )}
+      </Button>
+
+      <Button
+        className={messages.length > 0 ? "inline-flex" : "hidden"}
+        variant="ghost"
+        onClick={() =>
+          focusChat(agentId, crypto.randomUUID(), {
+            history: false,
+          })}
+      >
+        <Icon name="add" size={16} />
+        New thread
+      </Button>
+
+      <WhatsAppButton />
+    </div>
+  );
 }
 
 function FormProvider(props: Props & { agentId: string; threadId: string }) {
@@ -262,48 +332,11 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
             tabs={TABS}
             key={agentId}
             actionButtons={
-              <div className="flex justify-between items-center">
-                <WhatsAppButton />
-                <div
-                  className={cn(
-                    "flex items-center gap-2 bg-slate-50",
-                    "transition-opacity",
-                    hasChanges ? "opacity-100" : "opacity-0 w-0",
-                  )}
-                >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={form.formState.isSubmitting}
-                    onClick={discardChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    variant={isWellKnownAgent ? "default" : "special"}
-                    onClick={handleSubmit}
-                    disabled={!numberOfChanges ||
-                      form.formState.isSubmitting}
-                  >
-                    {form.formState.isSubmitting
-                      ? (
-                        <>
-                          <Spinner size="xs" />
-                          <span>Saving...</span>
-                        </>
-                      )
-                      : (
-                        <span>
-                          {isWellKnownAgent
-                            ? "Save as Agent"
-                            : `Save ${numberOfChanges} change${
-                              numberOfChanges > 1 ? "s" : ""
-                            }`}
-                        </span>
-                      )}
-                  </Button>
-                </div>
-              </div>
+              <ActionButtons
+                discardChanges={discardChanges}
+                numberOfChanges={numberOfChanges}
+                isWellKnownAgent={isWellKnownAgent}
+              />
             }
             breadcrumb={
               <DefaultBreadcrumb

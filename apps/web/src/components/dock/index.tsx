@@ -163,10 +163,8 @@ export interface Tab {
   Component: ComponentType;
   title: string;
   initialOpen?: boolean | initialOpen;
-  maximumHeight?: number;
-  minimumHeight?: number;
-  maximumWidth?: number;
-  minimumWidth?: number;
+  initialHeight?: number;
+  initialWidth?: number;
   hideFromViews?: boolean;
 }
 
@@ -201,7 +199,7 @@ const addPanel = (
       minimumWidth: isMobile ? globalThis.innerWidth : 300,
       maximumWidth: isMobile ? globalThis.innerWidth : undefined,
       position: {
-        direction: position?.direction || "within",
+        direction: isMobile ? "within" : (position?.direction || "within"),
         referenceGroup: targetGroup?.id,
       },
       ...otherOptions,
@@ -263,10 +261,8 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
-          maximumHeight: value.maximumHeight,
-          minimumHeight: value.minimumHeight,
-          maximumWidth: value.maximumWidth,
-          minimumWidth: value.minimumWidth,
+          initialHeight: !isMobile ? value.initialHeight : undefined,
+          initialWidth: !isMobile ? value.initialWidth : undefined,
           position:
             initialOpenDirections.includes(value.initialOpen as initialOpen)
               ? { direction: value.initialOpen as initialOpen }

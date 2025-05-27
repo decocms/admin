@@ -12,13 +12,42 @@ import {
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
-import { InternalServerError, UserInputError } from "../../errors.ts";
+import {
+  FeatureNotAvailableError,
+  InternalServerError,
+  UserInputError,
+} from "../../errors.ts";
+import { Feature, Plan, PLANS_FEATURES } from "../../plan.ts";
 
 const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
     throw new InternalServerError("WALLET_API_KEY is not set");
   }
   return createWalletClient(c.envVars.WALLET_API_KEY, c.walletBinding);
+};
+
+export const getPlan = async (c: AppContext) => {
+  assertHasWorkspace(c);
+  const slug = c.workspace.slug;
+  const { data: team } = await c.db.from("teams").select("plan").eq(
+    "slug",
+    slug,
+  ).maybeSingle();
+  const plan = team?.plan as Plan || "free";
+  const features = PLANS_FEATURES[plan];
+  // handle the typecast
+  if (!features) {
+    throw new InternalServerError("Unknown plan");
+  }
+  return {
+    id: plan,
+    features,
+    assertHasFeature: (feature: Feature) => {
+      if (!features.includes(feature)) {
+        throw new FeatureNotAvailableError();
+      }
+    },
+  };
 };
 
 const Account = {
@@ -190,6 +219,8 @@ export const createCheckoutSession = createTool({
   canAccess: canAccessWorkspaceResource,
   handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
     assertHasWorkspace(ctx);
+    const plan = await getPlan(ctx);
+    plan.assertHasFeature("ai-wallet-deposit");
 
     const session = await createStripeCheckoutSession({
       successUrl,
@@ -300,4 +331,12 @@ export const redeemWalletVoucher = createTool({
       voucherId,
     };
   },
+});
+
+export const getWorkspacePlan = createTool({
+  name: "GET_WORKSPACE_PLAN",
+  description: "Get the plan for the current tenant's workspace",
+  inputSchema: z.object({}),
+  canAccess: canAccessWorkspaceResource,
+  handler: (_, ctx) => getPlan(ctx),
 });

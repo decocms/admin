@@ -42,6 +42,12 @@ import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { Protect } from "../wallet/plan.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 
 interface UserAvatarProps {
   member?: Member;
@@ -140,6 +146,26 @@ function AccountBalance() {
   return <p className="text-5xl font-bold">{account?.balance}</p>;
 }
 
+function DepositButtonFallback() {
+  return (
+    <Tooltip>
+      <TooltipTrigger className="w-full">
+        <Button
+          className="w-full"
+          size="lg"
+          disabled
+        >
+          <Icon name="add" size={16} className="mr-2" />
+          Add credits
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        Your plan doesn't allow you to deposit credits
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function BalanceCard() {
   const team = useCurrentTeam();
   const account = useWorkspaceWalletBalance();
@@ -176,7 +202,12 @@ function BalanceCard() {
           </Suspense>
         </div>
         <div className="flex flex-col items-center gap-2">
-          <DepositDialog />
+          <Protect
+            feature="ai-wallet-deposit"
+            fallback={<DepositButtonFallback />}
+          >
+            <DepositDialog />
+          </Protect>
           <VoucherDialog />
         </div>
       </CardContent>

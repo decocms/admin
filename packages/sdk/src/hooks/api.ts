@@ -70,4 +70,5 @@ export const KEYS = {
     workspace: Workspace,
     range: "day" | "week" | "month",
   ) => ["wallet-usage-threads", workspace, range],
+  WORKSPACE_PLAN: (workspace: Workspace) => ["workspace-plan", workspace],
 };

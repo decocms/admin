@@ -2,7 +2,9 @@ import {
   getAgentsUsage,
   getThreadsUsage,
   getWalletAccount,
+  getWorkspacePlan,
 } from "../crud/wallet.ts";
+import { Feature } from "../plan.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -50,4 +52,14 @@ export function useUsagePerThread({
   });
 
   return usage;
+}
+
+export function usePlanHasFeature(feature: Feature) {
+  const { workspace } = useSDK();
+  const { data: plan } = useSuspenseQuery({
+    queryKey: KEYS.WORKSPACE_PLAN(workspace),
+    queryFn: () => getWorkspacePlan(workspace),
+  });
+
+  return plan.features.includes(feature);
 }

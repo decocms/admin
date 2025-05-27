@@ -1,7 +1,11 @@
-import { AgentSchema, useIntegrations, useUpdateThreadTools } from "@deco/sdk";
+import {
+  AgentSchema,
+  useAgent,
+  useIntegrations,
+  useUpdateAgentCache,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Form, FormDescription, FormLabel } from "@deco/ui/components/form.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
@@ -9,7 +13,7 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { useTools } from "../../hooks/useTools.ts";
 import { useChatContext } from "../chat/context.tsx";
-import { getDiffCount, Integration } from "../toolsets/index.tsx";
+import { Integration } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
 
 const ChatSchema = z.object({
@@ -19,10 +23,11 @@ const ChatSchema = z.object({
 type Chat = z.infer<typeof ChatSchema>;
 
 function ThreadSettingsTab() {
-  const { agentId, threadId } = useChatContext();
-  const tools_set = useTools(agentId, threadId);
+  const { agentId } = useChatContext();
+  const tools_set = useTools(agentId);
   const { data: installedIntegrations } = useIntegrations();
-  const updateTools = useUpdateThreadTools(agentId, threadId);
+  const { data: agent } = useAgent(agentId);
+  const updateAgentCache = useUpdateAgentCache();
   const defaultValues = useMemo(() => ({ tools_set }), [tools_set]);
 
   const form = useForm<Chat>({
@@ -43,11 +48,6 @@ function ThreadSettingsTab() {
     )
     : [];
 
-  const numberOfChanges = (() => {
-    const { tools_set: _, ...rest } = form.formState.dirtyFields;
-    return Object.keys(rest).length + getDiffCount(toolsSet, tools_set);
-  })();
-
   const setIntegrationTools = (
     integrationId: string,
     tools: string[],
@@ -60,6 +60,7 @@ function ThreadSettingsTab() {
       delete newToolsSet[integrationId];
     }
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+    updateAgentCache({ ...agent, tools_set: newToolsSet });
   };
 
   const handleIntegrationClick = (
@@ -69,8 +70,7 @@ function ThreadSettingsTab() {
     setIsModalOpen(true);
   };
 
-  const onSubmit = async (data: Chat) => {
-    await updateTools.mutateAsync(data.tools_set);
+  const onSubmit = (data: Chat) => {
     form.reset(data);
   };
 
@@ -127,36 +127,6 @@ function ThreadSettingsTab() {
           </div>
 
           <div className="h-12" />
-
-          {numberOfChanges > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 bg-background border-t p-4 flex items-center justify-between gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  form.reset(defaultValues);
-                }}
-              >
-                Discard
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 gap-2"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting
-                  ? (
-                    <>
-                      <Spinner size="sm" /> Saving...
-                    </>
-                  )
-                  : `Save ${numberOfChanges} Change${
-                    numberOfChanges === 1 ? "" : "s"
-                  }`}
-              </Button>
-            </div>
-          )}
         </form>
         <ToolsetSelector
           open={isModalOpen}

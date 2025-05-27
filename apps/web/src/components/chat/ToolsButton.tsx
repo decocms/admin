@@ -61,8 +61,8 @@ ToolsButton.Skeleton = () => (
 );
 
 ToolsButton.UI = () => {
-  const { agentId, threadId } = useChatContext();
-  const tools_set = useTools(agentId, threadId);
+  const { agentId } = useChatContext();
+  const tools_set = useTools(agentId);
   const numberOfTools = useMemo(
     () => Object.values(tools_set).reduce((acc, tool) => acc + tool.length, 0),
     [tools_set],

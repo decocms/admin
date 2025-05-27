@@ -12,6 +12,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
 
@@ -249,7 +250,7 @@ function ToolList({
                     enabled && !selected && "text-slate-400",
                   )}
                 >
-                  {tool.name}
+                  {formatToolName(tool.name)}
                 </label>
                 {tool.description && (
                   <ExpandableDescription description={tool.description} />

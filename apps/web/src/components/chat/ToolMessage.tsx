@@ -10,6 +10,7 @@ import { Picker } from "./Picker.tsx";
 import { AgentCard } from "./tools/AgentCard.tsx";
 import { Preview } from "./tools/Preview.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
+import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface ConfirmOption {
   value: string;
@@ -73,7 +74,7 @@ function ToolStatus({
     if (tool.toolName.startsWith("HANDOFF_")) {
       return `Delegating to ${parseHandoffTool(tool.toolName)}`;
     }
-    return tool.toolName;
+    return formatToolName(tool.toolName);
   };
 
   const getToolJson = () => {

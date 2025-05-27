@@ -4,16 +4,15 @@ import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router";
+import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
+import { EmptyState } from "../common/EmptyState.tsx";
 import { PageLayout } from "../layout.tsx";
-import ThreadSettingsTab from "../settings/chat.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { EmptyState } from "../common/EmptyState.tsx";
 
 const MainChat = () => {
   return (
@@ -42,11 +41,6 @@ const TABS = {
   preview: {
     Component: AgentPreview,
     title: "Preview",
-    hideFromViews: true,
-  },
-  tools: {
-    Component: ThreadSettingsTab,
-    title: "Chat settings",
     hideFromViews: true,
   },
 };

@@ -85,11 +85,16 @@ const createMCPHandlerFor = (
         {
           annotations: tool.annotations,
           description: tool.description,
-          inputSchema: tool.inputSchema.shape,
-          // @ts-expect-error TODO: fix this
-          outputSchema: tool.outputSchema?.shape || z.any(),
+          inputSchema: "shape" in tool.inputSchema
+            ? (tool.inputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
+          outputSchema:
+            tool.outputSchema && typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
+              ? (tool.outputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
         },
-        // @ts-expect-error TODO: fix this
+        // @ts-expect-error: zod shape is not typed
         tool.handler,
       );
     }
@@ -117,7 +122,11 @@ const createMCPHandlerFor = (
  * UIs can call the tools without suffering the serialization
  * of the protocol.
  */
-const createToolCallHandlerFor = (tools: ToolLike) => {
+const createToolCallHandlerFor = <
+  TDefinition extends readonly ToolLike[] = readonly ToolLike[],
+>(
+  tools: TDefinition,
+) => {
   const toolMap = new Map(tools.map((t) => [t.name, t]));
 
   return async (c: Context) => {
@@ -125,7 +134,7 @@ const createToolCallHandlerFor = (tools: ToolLike) => {
     const tool = c.req.param("tool");
     const args = await c.req.json();
 
-    const t = toolMap.get(tool as ToolLike[number]["name"]);
+    const t = toolMap.get(tool as TDefinition[number]["name"]);
     if (!t) {
       throw new HTTPException(404, { message: "Tool not found" });
     }
@@ -138,10 +147,13 @@ const createToolCallHandlerFor = (tools: ToolLike) => {
     }
 
     startTime(c, tool);
+    const toolFn = client[tool as TDefinition[number]["name"]] as (
+      args: z.ZodType<TDefinition[number]["inputSchema"]>,
+    ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>;
+
     const result = await State.run(
       honoCtxToAppCtx(c),
-      // @ts-expect-error this should be fine
-      (args) => client[tool as ToolLike[number]["name"]](args),
+      (args) => toolFn(args),
       data,
     ).catch(mapMCPErrorToHTTPExceptionOrThrow);
     endTime(c, tool);

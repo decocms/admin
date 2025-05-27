@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import {
   saveIntegration,
 } from "../crud/mcp.ts";
 import { InternalServerError } from "../errors.ts";
-import type { Integration } from "../models/mcp.ts";
+import type { Binder, Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
@@ -109,6 +110,30 @@ export const useIntegration = (id: string) => {
   return data;
 };
 
+/** Hook for listing all bindings */
+export const useBindings = (binder: Binder) => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+
+  const data = useQuery({
+    queryKey: KEYS.BINDINGS(workspace, binder),
+    queryFn: async ({ signal }) => {
+      const items = await listIntegrations(workspace, { binder }, signal);
+
+      for (const item of items) {
+        const itemKey = KEYS.INTEGRATION(workspace, item.id);
+
+        client.cancelQueries({ queryKey: itemKey });
+        client.setQueryData<Integration>(itemKey, item);
+      }
+
+      return items;
+    },
+  });
+
+  return data;
+};
+
 /** Hook for listing all MCPs */
 export const useIntegrations = () => {
   const { workspace } = useSDK();
@@ -117,7 +142,7 @@ export const useIntegrations = () => {
   const data = useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace),
     queryFn: async ({ signal }) => {
-      const items = await listIntegrations(workspace, signal);
+      const items = await listIntegrations(workspace, {}, signal);
 
       for (const item of items) {
         const itemKey = KEYS.INTEGRATION(workspace, item.id);
@@ -151,7 +176,11 @@ export const useMarketplaceIntegrations = () => {
   });
 };
 
-const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = ["github", "googlesheets"];
+const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
+  "github",
+  "googlesheets",
+  "googlegmail",
+];
 
 export const useInstallFromMarketplace = () => {
   const agentStub = useAgentStub();
@@ -159,11 +188,20 @@ export const useInstallFromMarketplace = () => {
   const { workspace } = useSDK();
 
   const mutation = useMutation({
-    mutationFn: async (id: string) => {
-      if (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase())) {
+    mutationFn: async (
+      { id, returnUrl, provider }: {
+        id: string;
+        returnUrl: string;
+        provider: string;
+      },
+    ) => {
+      if (
+        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase()) &&
+        provider === "deco"
+      ) {
         const result = await agentStub.callTool(
           "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
-          { integrationId: id },
+          { integrationId: id, returnUrl },
         );
         const redirectUrl = result?.data?.redirectUrl;
         if (!redirectUrl) {

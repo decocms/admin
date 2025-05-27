@@ -1,4 +1,4 @@
-import type { Options } from "@deco/sdk";
+import type { ThreadFilterOptions } from "@deco/sdk";
 import { useAgents, useAuditEvents, useTeamMembers, useTeams } from "@deco/sdk";
 import {
   Alert,
@@ -50,12 +50,15 @@ function AuditListErrorFallback() {
 
 interface AuditListContentProps {
   showFilters?: boolean;
-  options?: Partial<Options>;
+  columnsDenyList?: Set<string>;
+  filters?: Partial<ThreadFilterOptions>;
 }
 
-export function AuditListContent(
-  { showFilters = true, options: optionsProp }: AuditListContentProps,
-) {
+export function AuditListContent({
+  showFilters = true,
+  columnsDenyList,
+  filters,
+}: AuditListContentProps) {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
     undefined,
   );
@@ -81,11 +84,11 @@ export function AuditListContent(
   const members = teamId !== null ? useTeamMembers(teamId).data : [];
 
   const { data: auditData, isLoading } = useAuditEvents({
-    agentId: optionsProp?.agentId ?? selectedAgent,
-    resourceId: optionsProp?.resourceId ?? selectedUser,
-    orderBy: optionsProp?.orderBy ?? sort,
-    cursor: optionsProp?.cursor ?? currentCursor,
-    limit: optionsProp?.limit ?? limit,
+    agentId: filters?.agentId ?? selectedAgent,
+    resourceId: filters?.resourceId ?? selectedUser,
+    orderBy: filters?.orderBy ?? sort,
+    cursor: filters?.cursor ?? currentCursor,
+    limit: filters?.limit ?? limit,
   });
 
   // Pagination logic
@@ -157,6 +160,7 @@ export function AuditListContent(
             <AuditTable
               threads={threads}
               sort={sort}
+              columnsDenyList={columnsDenyList}
               onSortChange={handleSortChange}
               onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
             />
@@ -226,7 +230,7 @@ function AuditList() {
 
 const TABS: Record<string, Tab> = {
   main: {
-    title: "Chat Logs",
+    title: "History",
     Component: AuditList,
     initialOpen: true,
   },
@@ -238,7 +242,7 @@ function Page() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "Chat logs", link: "/audits" }]} />
+        <DefaultBreadcrumb items={[{ label: "History", link: "/audits" }]} />
       }
     />
   );

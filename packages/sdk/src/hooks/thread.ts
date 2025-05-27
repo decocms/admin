@@ -11,7 +11,6 @@ import { useCallback } from "react";
 import {
   getThread,
   getThreadMessages,
-  getThreadTools,
   listThreads,
   updateThreadMetadata,
   updateThreadTitle,
@@ -35,15 +34,8 @@ export const useThreadMessages = (threadId: string) => {
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(workspace, threadId),
     queryFn: ({ signal }) => getThreadMessages(workspace, threadId, { signal }),
-  });
-};
-
-/** Hook for fetching tools_set from a thread */
-export const useThreadTools = (threadId: string) => {
-  const { workspace } = useSDK();
-  return useSuspenseQuery({
-    queryKey: KEYS.THREAD_TOOLS(workspace, threadId),
-    queryFn: ({ signal }) => getThreadTools(workspace, threadId, { signal }),
+    staleTime: 0,
+    gcTime: 0,
   });
 };
 
@@ -86,34 +78,6 @@ export const useThreads = (userId: string) => {
         orderBy: "createdAt_desc",
         limit: 20,
       }, { signal }),
-  });
-};
-
-export const useUpdateThreadTools = (agentId: string, threadId: string) => {
-  const { workspace } = useSDK();
-  const client = useQueryClient();
-  const agentStub = useAgentStub(agentId, threadId);
-
-  return useMutation({
-    mutationFn: async (toolset: Record<string, string[]>) => {
-      const response = await agentStub.updateThreadTools(toolset);
-
-      if (
-        response.success === false && response.message === "Thread not found"
-      ) {
-        return agentStub.createThread({
-          title: "New Thread",
-          id: threadId,
-          metadata: { tool_set: toolset },
-        });
-      }
-    },
-    onSuccess: (_, variables) => {
-      client.setQueryData(
-        KEYS.THREAD_TOOLS(workspace, threadId),
-        () => ({ tools_set: variables }),
-      );
-    },
   });
 };
 

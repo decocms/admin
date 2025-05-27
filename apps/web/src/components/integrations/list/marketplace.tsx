@@ -16,7 +16,10 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
+import {
+  useNavigateWorkspace,
+  useWorkspaceLink,
+} from "../../../hooks/useNavigateWorkspace.ts";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { Table, TableColumn } from "../../common/Table.tsx";
@@ -220,6 +223,7 @@ function MarketplaceTab() {
   const { mutate: installIntegration } = useInstallFromMarketplace();
   const navigateWorkspace = useNavigateWorkspace();
   const updateThreadMessages = useUpdateThreadMessages();
+  const buildWorkspaceUrl = useWorkspaceLink();
 
   const { data: marketplace } = useMarketplaceIntegrations();
 
@@ -251,7 +255,16 @@ function MarketplaceTab() {
   function handleConnect() {
     if (!selectedIntegration) return;
     setIsPending(true);
-    installIntegration(selectedIntegration.id, {
+    const returnUrl = new URL(
+      buildWorkspaceUrl("/integrations"),
+      globalThis.location.origin,
+    );
+
+    installIntegration({
+      id: selectedIntegration.id,
+      provider: selectedIntegration.provider,
+      returnUrl: returnUrl.toString(),
+    }, {
       onSuccess: (data) => {
         if (typeof data?.id !== "string") {
           setIsPending(false);

@@ -42,10 +42,10 @@ import {
   useReducer,
   useState,
 } from "react";
-import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
@@ -102,7 +102,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
 function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   const { data: integration } = useIntegration(toolSetId);
-  const navigate = useNavigate();
+  const navigateWorkspace = useNavigateWorkspace();
 
   if (!integration) {
     return null;
@@ -116,7 +116,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
         <TooltipTrigger
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/integration/${integration.id}`);
+            navigateWorkspace(`/integration/${integration.id}`);
           }}
           asChild
         >

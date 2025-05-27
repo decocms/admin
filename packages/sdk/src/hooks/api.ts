@@ -1,5 +1,6 @@
-import { Options } from "../crud/thread.ts";
+import { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
+import type { Binder } from "../models/mcp.ts";
 
 export const KEYS = {
   FILE: (
@@ -14,6 +15,10 @@ export const KEYS = {
     workspace: Workspace,
     integrationId?: string,
   ) => ["integration", workspace, integrationId],
+  BINDINGS: (
+    workspace: Workspace,
+    binder: Binder,
+  ) => ["bindings", workspace, binder],
   THREADS: (
     workspace: Workspace,
     threadId?: string,
@@ -23,7 +28,7 @@ export const KEYS = {
     agentId: string,
     threadId: string,
   ) => ["tools", workspace, agentId, threadId],
-  AUDITS: (workspace: Workspace, options: Options) => [
+  AUDITS: (workspace: Workspace, options: ThreadFilterOptions) => [
     "audit",
     workspace,
     options.agentId,

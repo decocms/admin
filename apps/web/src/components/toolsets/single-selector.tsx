@@ -8,6 +8,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import type { Integration } from "@deco/sdk";
 import type { MCPTool } from "@deco/sdk";
@@ -120,7 +121,7 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
               />
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="font-medium truncate">
-                  {integration.name} / {tool.name}
+                  {integration.name} / {formatToolName(tool.name)}
                 </span>
                 {tool.description && (
                   <span className="text-xs text-slate-500 truncate">

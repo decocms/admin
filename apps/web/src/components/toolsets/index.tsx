@@ -3,6 +3,7 @@ import { useTools } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationHeader } from "./header.tsx";
 
 /**
@@ -121,7 +122,7 @@ export function Integration({
                   className="text-muted-foreground"
                 />
                 <span className="text-xs truncate flex-1 min-w-0">
-                  {tool.name}
+                  {formatToolName(tool.name)}
                 </span>
               </div>
             );

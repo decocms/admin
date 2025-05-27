@@ -3,7 +3,7 @@ export * from "./assertions.ts";
 export * from "./context.ts";
 export * from "./wallet/stripe/webhook.ts";
 import * as agentsAPI from "./agents/api.ts";
-import { AppContext, State } from "./context.ts";
+import { AppContext, State, Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
@@ -15,6 +15,8 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+
+export * from "./bindings/binder.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -92,12 +94,35 @@ export const WORKSPACE_TOOLS = [
 
 export type GlobalTools = typeof GLOBAL_TOOLS;
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;
-export type ToolLike = GlobalTools | WorkspaceTools;
+export type ToolLike<
+  TName extends string = string,
+  // deno-lint-ignore no-explicit-any
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+> = Tool<TName, TInput, TReturn>;
+
+export type ToolBinder<
+  TName extends string = string,
+  // deno-lint-ignore no-explicit-any
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+> = Pick<
+  ToolLike<TName, TInput, TReturn>,
+  "name" | "inputSchema" | "outputSchema"
+>;
 
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
 });
 
+export const createGlobalForContext = (
+  context?: AppContext,
+): typeof global => {
+  return createMCPToolsStub({
+    tools: GLOBAL_TOOLS,
+    context,
+  });
+};
 export const fromWorkspaceString = (
   _workspace: string,
 ): AppContext["workspace"] => {
@@ -131,7 +156,7 @@ export const MCPClient = new Proxy(
 
 export { Entrypoint } from "./hosting/api.ts";
 
-export function createMCPToolsStub<TDefinition extends ToolLike>(
+export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
   options: CreateStubHandlerOptions<TDefinition>,
 ): MCPClientStub<TDefinition> {
   return new Proxy<MCPClientStub<TDefinition>>(
@@ -141,7 +166,7 @@ export function createMCPToolsStub<TDefinition extends ToolLike>(
         if (typeof name !== "string") {
           throw new Error("Name must be a string");
         }
-        const toolMap = new Map<string, ToolLike[number]>(
+        const toolMap = new Map<string, TDefinition[number]>(
           options.tools.map((h) => [h.name, h]),
         );
         return (props: unknown) => {
@@ -152,7 +177,8 @@ export function createMCPToolsStub<TDefinition extends ToolLike>(
           return State.run(
             options?.context ?? State.getStore(),
             async (args) => {
-              const result = await tool.handler(args);
+              // deno-lint-ignore no-explicit-any
+              const result = await tool.handler(args as any);
 
               if (result.isError) {
                 throw result.structuredContent;

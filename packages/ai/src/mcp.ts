@@ -91,7 +91,7 @@ const getMCPServerTools = async (
                   await innerClient.close();
                   return result;
                 } catch (error) {
-                  agent.resetCallableToolSet(mcpServer.id);
+                  agent._resetCallableToolSet(mcpServer.id);
                   throw error;
                 }
               },
@@ -185,7 +185,7 @@ export const mcpServerTools = async (
     mcpServer.connection = patchApiDecoChatTokenHTTPConnection(
       mcpServer.connection,
       agent.metadata?.userCookie ?? createSessionTokenCookie(
-        await agent.token(),
+        await agent._token(),
         new URL(mcpServer.connection.url).hostname,
       ),
     );

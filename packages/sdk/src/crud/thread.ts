@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 
-export interface Options {
+export interface ThreadFilterOptions {
   agentId?: string;
   resourceId?: string;
   orderBy?:
@@ -37,7 +37,7 @@ export interface Metadata {
 
 export const listThreads = (
   workspace: string,
-  options: Options,
+  options: ThreadFilterOptions,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).THREADS_LIST(options, init);
 

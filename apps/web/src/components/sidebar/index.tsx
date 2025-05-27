@@ -8,6 +8,7 @@ import {
   useMarketplaceIntegrations,
   useThreads,
   useUpdateThreadTitle,
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -49,6 +50,7 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useEditAgent } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
@@ -515,6 +517,7 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
+  const focusChat = useEditAgent();
 
   return (
     <Sidebar variant="sidebar">
@@ -531,6 +534,23 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="cursor-pointer"
+                      onClick={() => {
+                        focusChat(
+                          WELL_KNOWN_AGENT_IDS.teamAgent,
+                          crypto.randomUUID(),
+                          { history: false },
+                        );
+                        isMobile && toggleSidebar();
+                      }}
+                    >
+                      <Icon name="edit_square" size={16} />
+                      <span className="truncate">Chat</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
                   {STATIC_ITEMS.map((item) => {
                     const href = workspaceLink(item.url);
 

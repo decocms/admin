@@ -1,5 +1,11 @@
 import type { Agent } from "@deco/sdk";
-import { useAgents, useIntegration, useRemoveAgent, useSDK } from "@deco/sdk";
+import {
+  useAgents,
+  useIntegration,
+  useRemoveAgent,
+  useSDK,
+  WELL_KNOWN_AGENT_IDS,
+} from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -431,7 +437,7 @@ type Visibility = typeof VISIBILITIES[number];
 
 function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const { creating, handleCreate } = useContext(Context)!;
+  const { handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
@@ -514,8 +520,7 @@ function List() {
               ? "Agents shared with your team will show up here. Create one to start collaborating."
               : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
             buttonProps={{
-              disabled: creating,
-              children: creating ? "Creating..." : "Create Agent",
+              children: "Create Agent",
               onClick: handleCreate,
             }}
           />
@@ -533,34 +538,20 @@ const TABS: Record<string, Tab> = {
 };
 
 const Context = createContext<
-  {
-    creating: boolean;
-    handleCreate: () => void;
-  } | null
+  { handleCreate: () => void } | null
 >(null);
 
 export default function Page() {
-  const [creating, setCreating] = useState(false);
-  const createAgent = useCreateAgent();
+  const focusChat = useEditAgent();
 
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      await createAgent({}, { eventName: "agent_create" });
-    } catch (error) {
-      console.error("Error creating new agent:", error);
-
-      trackEvent("agent_create", {
-        success: false,
-        error,
-      });
-    } finally {
-      setCreating(false);
-    }
+  const handleCreate = () => {
+    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+      history: false,
+    });
   };
 
   return (
-    <Context.Provider value={{ creating, handleCreate }}>
+    <Context.Provider value={{ handleCreate }}>
       <PageLayout
         displayViewsTrigger={false}
         tabs={TABS}
@@ -570,23 +561,11 @@ export default function Page() {
         actionButtons={
           <Button
             onClick={handleCreate}
-            disabled={creating}
             variant="special"
             className="gap-2"
           >
-            {creating
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  <span>Creating...</span>
-                </>
-              )
-              : (
-                <>
-                  <Icon name="add" />
-                  <span className="hidden md:inline">Create Agent</span>
-                </>
-              )}
+            <Icon name="add" />
+            <span className="hidden md:inline">Create Agent</span>
           </Button>
         }
       />

@@ -52,14 +52,19 @@ function IntegrationListItem({
         isEmpty && "order-last",
       )}
     >
-      <div className="flex gap-4 px-4 py-4">
+      <label
+        htmlFor={`select-all-${integration.id}`}
+        className={cn(
+          "flex gap-4 px-4 py-4 a",
+          !isEmpty && "hover:bg-slate-50 cursor-pointer",
+        )}
+      >
         {!isEmpty && (
           <div>
             <Checkbox
-              id="select-all"
+              id={`select-all-${integration.id}`}
               className="cursor-pointer"
               checked={isAll}
-              data-state={undefined}
               onCheckedChange={handleAll}
             />
           </div>
@@ -79,7 +84,7 @@ function IntegrationListItem({
             <p className="text-sm">{integration.description}</p>
           )}
         </div>
-      </div>
+      </label>
       <div className="absolute right-4 top-4 text-slate-400 lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
@@ -226,6 +231,7 @@ function ToolList({
             >
               <Checkbox
                 checked={enabled}
+                className="cursor-pointer"
                 id={`${integration.id}-${tool.name}`}
                 onCheckedChange={handleCheckboxChange}
               />

@@ -10,7 +10,7 @@ interface AgentNavigationOptions {
 const getEditAgentPath = (agentId: string, threadId?: string): string =>
   `/agent/${agentId}/${threadId}`;
 const getChatPath = (agentId: string, threadId: string): string =>
-  `/chat/${agentId}/${threadId}`;
+  `/agent/${agentId}/${threadId}`;
 
 export const useEditAgent = () => {
   const navigateWorkspace = useNavigateWorkspace();

@@ -78,10 +78,6 @@ const AgentDetail = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
 );
 
-const Chat = lazy(
-  () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
-);
-
 const PublicChats = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
 );
@@ -230,14 +226,7 @@ function ErrorFallback() {
 }
 
 function HomeChat() {
-  return (
-    <Chat
-      showThreadMessages={false}
-      agentId="teamAgent"
-      threadId={crypto.randomUUID()}
-      key="disabled-messages"
-    />
-  );
+  return <h1>Hello</h1>;
 }
 
 const router = createBrowserRouter([
@@ -278,7 +267,13 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            Component: HomeChat,
+            loader: ({ params }) => {
+              const teamSlug = params.teamSlug;
+              globalThis.location.href = teamSlug
+                ? `/${teamSlug}/agents`
+                : "/agents";
+              return null;
+            },
           },
           { path: "wallet", Component: Wallet },
           { path: "agents", Component: AgentList },

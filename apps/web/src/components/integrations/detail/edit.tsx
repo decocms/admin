@@ -23,7 +23,6 @@ import { ChatMessages } from "../../chat/ChatMessages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
-import ThreadSettingsTab from "../../settings/chat.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import { Inspector } from "./inspector.tsx";
@@ -42,11 +41,6 @@ function MainChat() {
 }
 
 const TABS: Record<string, Tab> = {
-  tools: {
-    Component: ThreadSettingsTab,
-    title: "Tools",
-    hideFromViews: true,
-  },
   main: {
     Component: MainChat,
     title: "Chat setup",

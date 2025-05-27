@@ -223,8 +223,8 @@ export function ProfileSettings(
                   className="p-1 hover:bg-slate-100 rounded transition-colors"
                   aria-label="Copy user ID"
                 >
-                  <Icon 
-                    name={userIdCopied ? "check" : "content_copy"} 
+                  <Icon
+                    name={userIdCopied ? "check" : "content_copy"}
                     className="w-3 h-3"
                   />
                 </button>

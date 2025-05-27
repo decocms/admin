@@ -27,7 +27,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
-import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
 import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
 import { useEditAgent } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";

@@ -7,9 +7,7 @@ import {
   useInvites,
   useMarketplaceIntegrations,
   useThreads,
-  useUpdateThreadTitle,
-  WELL_KNOWN_AGENT_IDS,
-  WELL_KNOWN_AGENTS,
+  useUpdateThreadTitle
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -51,7 +49,6 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useEditAgent } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
@@ -518,27 +515,6 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
-  const focusEditAgent = useEditAgent();
-
-  const handleOpenNewChat = () => {
-    try {
-      focusEditAgent(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
-        history: false,
-      });
-
-      trackEvent("agent_create", {
-        success: true,
-        data: WELL_KNOWN_AGENTS.teamAgent,
-      });
-    } catch (error) {
-      console.error("Error creating new agent:", error);
-
-      trackEvent("agent_create", {
-        success: false,
-        error,
-      });
-    }
-  };
 
   return (
     <Sidebar variant="sidebar">

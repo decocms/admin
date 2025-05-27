@@ -75,8 +75,8 @@ const STATIC_ITEMS = [
   },
   {
     url: "/audits",
-    title: "Chat history",
-    icon: "manage_search",
+    title: "Activity",
+    icon: "forum",
   },
 ];
 

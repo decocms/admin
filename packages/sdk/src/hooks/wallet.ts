@@ -54,6 +54,16 @@ export function useUsagePerThread({
   return usage;
 }
 
+export function usePlan() {
+  const { workspace } = useSDK();
+  const { data: plan } = useSuspenseQuery({
+    queryKey: KEYS.WORKSPACE_PLAN(workspace),
+    queryFn: () => getWorkspacePlan(workspace),
+  });
+
+  return plan;
+}
+
 export function usePlanHasFeature(feature: Feature) {
   const { workspace } = useSDK();
   const { data: plan } = useSuspenseQuery({

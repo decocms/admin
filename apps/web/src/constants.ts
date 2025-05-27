@@ -130,3 +130,6 @@ export const POSTHOG_ORIGIN = "https://posthog.decocluster.com";
 
 export const POSTHOG_SHOULD_TRACK =
   globalThis.location.hostname !== "localhost";
+
+// TODO(camudo): fill this before merging
+export const CONTACT_US_URL = "";

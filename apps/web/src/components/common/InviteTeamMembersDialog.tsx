@@ -38,6 +38,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
+import { CONTACT_US_URL } from "../../constants.ts";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -83,7 +84,7 @@ function InviteTeamMembersDialogFeatureWall() {
         </DialogClose>
         <Button
           variant="default"
-          onClick={() => globalThis.open("https://deco.io/contact", "_blank")}
+          onClick={() => globalThis.open(CONTACT_US_URL, "_blank")}
           type="button"
         >
           Contact Us

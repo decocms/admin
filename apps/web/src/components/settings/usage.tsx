@@ -43,11 +43,6 @@ import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { Protect } from "../wallet/plan.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 
 interface UserAvatarProps {
   member?: Member;

@@ -416,11 +416,10 @@ Docked.ViewsTrigger = () => {
               component: DOCKED_VIEWS_TAB.id,
               title: DOCKED_VIEWS_TAB.title,
             })}
-          variant="ghost"
-          size="icon"
-          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "bg-accent" : ""}
+          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "opacity-70" : ""}
         >
           <Icon name="layers" />
+          Views
         </Button>
       </TooltipTrigger>
       <TooltipContent>

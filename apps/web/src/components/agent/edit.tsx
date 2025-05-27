@@ -183,7 +183,7 @@ function ActionButtons({
 
       <Button
         className={hasChanges ? "inline-flex" : "hidden"}
-        variant={isWellKnownAgent ? "default" : "special"}
+        variant={isWellKnownAgent ? "outline" : "special"}
         onClick={handleSubmit}
         disabled={!numberOfChanges ||
           form.formState.isSubmitting}

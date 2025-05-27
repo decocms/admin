@@ -2,7 +2,6 @@ import {
   Agent,
   Thread,
   useAgents,
-  useCreateAgent,
   useDeleteThread,
   useIntegrations,
   useInvites,
@@ -12,7 +11,24 @@ import {
   WELL_KNOWN_AGENT_IDS,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -26,37 +42,20 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
+import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
+import { useEditAgent } from "../agents/hooks.ts";
+import { AgentAvatar } from "../common/Avatar.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@deco/ui/components/form.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -409,8 +408,6 @@ function SidebarThreads() {
   const user = useUser();
   const { data: agents } = useAgents();
   const { data } = useThreads(user?.id ?? "");
-  console.log("data", data);
-  console.log("agents", agents);
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (

@@ -31,10 +31,12 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "../toolsets/index.tsx";
-import { ToolsetSelector } from "../toolsets/selector.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
+
+// Token limits for Anthropic models
+const ANTHROPIC_MIN_MAX_TOKENS = 4096;
+const ANTHROPIC_MAX_MAX_TOKENS = 64000;
 
 function CopyLinkButton(
   { className, link }: { className: string; link: string },
@@ -76,44 +78,12 @@ function SettingsTab() {
     form,
     agent,
     handleSubmit,
-    installedIntegrations,
   } = useAgentSettingsForm();
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { generate: generateAvatarFilename } = useAvatarFilename();
   const [isUploading, setIsUploading] = useState(false);
-
-  const toolsSet = form.watch("tools_set");
-  const setIntegrationTools = (
-    integrationId: string,
-    tools: string[],
-  ) => {
-    const toolsSet = form.getValues("tools_set");
-    const newToolsSet = { ...toolsSet };
-
-    if (tools.length > 0) {
-      newToolsSet[integrationId] = tools;
-    } else {
-      delete newToolsSet[integrationId];
-    }
-
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  const usedIntegrations = installedIntegrations.filter((integration) =>
-    !!toolsSet[integration.id]?.length
-  );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<
-    string | null
-  >(null);
-
-  const handleIntegrationClick = (integration: IntegrationType) => {
-    setSelectedIntegrationId(integration.id);
-    setIsModalOpen(true);
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,6 +195,26 @@ function SettingsTab() {
                       <FormMessage />
                     </div>
                   </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="max_tokens"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max Tokens</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      className="rounded-md border-slate-200"
+                      min={ANTHROPIC_MIN_MAX_TOKENS}
+                      max={ANTHROPIC_MAX_MAX_TOKENS}
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

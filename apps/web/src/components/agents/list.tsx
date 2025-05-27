@@ -1,12 +1,5 @@
 import type { Agent } from "@deco/sdk";
-import {
-  useAgents,
-  useCreateAgent,
-  useIntegration,
-  useRemoveAgent,
-  useSDK,
-  useUpdateThreadMessages,
-} from "@deco/sdk";
+import { useAgents, useIntegration, useRemoveAgent, useSDK } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +40,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
+import { useCreateAgent } from "../agent/edit.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";
@@ -59,7 +53,6 @@ import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
-  const focusEditAgent = useEditAgent();
   const createAgent = useCreateAgent();
 
   const duplicate = async () => {
@@ -67,7 +60,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
     try {
       setDuplicating(true);
-      const duplicatedAgent = await createAgent.mutateAsync({
+      const newAgent = {
         name: `${agent.name} (Copy)`,
         id: crypto.randomUUID(),
         description: agent.description,
@@ -76,15 +69,8 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         tools_set: agent.tools_set,
         model: agent.model,
         views: agent.views,
-      });
-      focusEditAgent(duplicatedAgent.id, crypto.randomUUID(), {
-        history: false,
-      });
-
-      trackEvent("agent_duplicate", {
-        success: true,
-        data: duplicatedAgent,
-      });
+      };
+      await createAgent(newAgent, { eventName: "agent_duplicate" });
     } catch (error) {
       console.error("Error duplicating agent:", error);
 
@@ -565,22 +551,13 @@ const Context = createContext<
 >(null);
 
 export default function Page() {
-  const focusEditAgent = useEditAgent();
   const [creating, setCreating] = useState(false);
   const createAgent = useCreateAgent();
-  const updateThreadMessages = useUpdateThreadMessages();
 
   const handleCreate = async () => {
     try {
       setCreating(true);
-      const agent = await createAgent.mutateAsync({});
-      updateThreadMessages(agent.id);
-      focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
-
-      trackEvent("agent_create", {
-        success: true,
-        data: agent,
-      });
+      await createAgent({}, { eventName: "agent_create" });
     } catch (error) {
       console.error("Error creating new agent:", error);
 

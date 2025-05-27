@@ -103,7 +103,6 @@ export const listThreads = createTool({
     { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
     c,
   ) => {
-    console.log("uniqueByAgentId", uniqueByAgentId);
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;

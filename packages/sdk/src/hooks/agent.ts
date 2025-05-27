@@ -24,7 +24,7 @@ import { stub } from "../stub.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
-export const useCreateAgent = () => {
+export const _useCreateAgent = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 

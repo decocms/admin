@@ -1,10 +1,10 @@
 import {
+  _useCreateAgent,
   type Agent,
   AgentSchema,
   Integration,
   NotFoundError,
   useAgent,
-  useCreateAgent,
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
@@ -154,6 +154,27 @@ export function useAgentSettingsForm() {
   return ctx;
 }
 
+export const useCreateAgent = () => {
+  const createAgent = _useCreateAgent();
+  const updateThreadMessages = useUpdateThreadMessages();
+  const focusEditAgent = useEditAgent();
+
+  const create = async (
+    agent: Partial<Agent>,
+    { eventName }: { eventName?: string },
+  ) => {
+    const createdAgent = await createAgent.mutateAsync(agent);
+    updateThreadMessages(createdAgent.id);
+    focusEditAgent(createdAgent.id, crypto.randomUUID(), { history: false });
+    trackEvent(eventName || "agent_create", {
+      success: true,
+      data: agent,
+    });
+  };
+
+  return create;
+};
+
 export default function Page(props: Props) {
   const params = useParams();
   const agentId = useMemo(
@@ -180,8 +201,6 @@ export default function Page(props: Props) {
   const updateAgent = useUpdateAgent();
   const updateAgentCache = useUpdateAgentCache();
   const createAgent = useCreateAgent();
-  const updateThreadMessages = useUpdateThreadMessages();
-  const focusEditAgent = useEditAgent();
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
@@ -213,16 +232,9 @@ export default function Page(props: Props) {
           ...data,
           id,
         };
-        createAgent.mutateAsync(agent);
+        createAgent(agent, {});
         blocked.proceed?.();
-        updateThreadMessages(id);
-        focusEditAgent(id, crypto.randomUUID(), { history: false });
         form.reset(agent);
-
-        trackEvent("agent_create", {
-          success: true,
-          data: agent,
-        });
         return;
       }
 

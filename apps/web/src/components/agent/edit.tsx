@@ -7,7 +7,7 @@ import {
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
-  WELL_KNOWN_AGENTS
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import {
   AlertDialog,

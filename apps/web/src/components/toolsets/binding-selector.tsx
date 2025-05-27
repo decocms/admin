@@ -10,7 +10,7 @@ import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -72,7 +72,8 @@ export function BindingSelector({
   initialSelectedIntegration,
   binder,
 }: BindingSelectorProps) {
-  const [search, setSearch] = useState("");
+  const [_search, setSearch] = useState("");
+  const search = useDeferredValue(_search);
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null,
   );
@@ -141,7 +142,7 @@ export function BindingSelector({
                       />
                       <Input
                         placeholder="Search integrations..."
-                        value={search}
+                        value={_search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-slate-500 bg-transparent px-2"
                       />
@@ -186,7 +187,7 @@ export function BindingSelector({
                 <div className="hidden md:block border-b border-slate-200">
                   <Input
                     placeholder="Search integrations..."
-                    value={search}
+                    value={_search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="rounded-none border-none focus-visible:ring-0 placeholder:text-slate-500"
                   />

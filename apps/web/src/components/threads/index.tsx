@@ -72,7 +72,8 @@ function Category({ children }: { children: React.ReactNode }) {
 }
 
 function App({ agentId }: { agentId: string }) {
-  const { data } = useThreads({ agentId });
+  const user = useUser();
+  const { data } = useThreads({ agentId, resourceId: user?.id ?? "" });
 
   const groupedThreads = groupThreadsByDate(data.threads ?? []);
   const olderDates = Object.keys(groupedThreads.older).sort((a, b) => {

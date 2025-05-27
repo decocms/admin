@@ -64,13 +64,6 @@ interface Props {
   uiOptions?: Partial<IContext["uiOptions"]>;
 }
 
-const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
-  "DECO_INTEGRATION_INSTALL",
-  "DECO_INTEGRATION_ENABLE",
-  "DECO_INTEGRATION_DISABLE",
-  "DECO_AGENT_CONFIGURE",
-]);
-
 const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
   showModelSelector: true,
   showThreadTools: true,

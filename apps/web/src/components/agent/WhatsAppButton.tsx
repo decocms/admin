@@ -96,7 +96,7 @@ export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
   const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
 
   if (isWellKnownAgent) {
-    return <></>;
+    return;
   }
 
   const buttonContent = (

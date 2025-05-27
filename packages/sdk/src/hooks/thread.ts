@@ -133,9 +133,9 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
       );
 
       // Optimistically update the thread in the threads list
-      // deno-lint-ignore no-explicit-any
       client.setQueryData(
         KEYS.THREADS(workspace, { resourceId: userId }),
+        // deno-lint-ignore no-explicit-any
         (old: any) => {
           if (!old) return old;
           // deno-lint-ignore no-explicit-any

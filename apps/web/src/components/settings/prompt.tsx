@@ -18,7 +18,7 @@ function PromptTab() {
   return (
     <ScrollArea className="h-full w-full">
       <Form {...form}>
-        <div className="h-full w-full p-4 mx-auto">
+        <div className="h-full w-full p-4 pt-2 mx-auto">
           <form
             onSubmit={handleSubmit}
             className="space-y-6"
@@ -30,7 +30,7 @@ function PromptTab() {
                   <FormControl>
                     <Textarea
                       placeholder="Guide your agent's behavior with custom instructions."
-                      className="min-h-[170px] h-[170px] border-slate-200"
+                      className="min-h-[170px] h-full border-slate-200"
                       {...field}
                     />
                   </FormControl>

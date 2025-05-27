@@ -121,24 +121,25 @@ const TABS: Record<string, Tab> = {
     Component: AgentSettings,
     title: "Settings",
     initialOpen: "right",
-    initialWidth: 300,
   },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
     initialOpen: "within",
-    initialWidth: 300,
+    // it is not the ideal solution
+    // but initialWidth is not working as expected
+    maximumWidth: 500,
   },
   prompt: {
     Component: PromptTab,
     title: "System prompt",
     initialOpen: "left",
+    maximumHeight: 260,
   },
   audit: {
     Component: Threads,
     title: "Threads",
     initialOpen: "above",
-    initialHeight: 530,
   },
   chat: {
     Component: Chat,

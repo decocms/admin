@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { CardContent, Card as UICard } from "@deco/ui/components/card.tsx";
+import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,

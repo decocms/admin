@@ -1,3 +1,6 @@
+/**
+ * @camudo: Changing this for a self-service flow soon
+ */
 import { useSDK } from "@deco/sdk";
 
 const getContactUsUrl = (workspace: string) => {

@@ -28,6 +28,7 @@ import { CronTriggerForm } from "./cronTriggerForm.tsx";
 import { WebhookTriggerForm } from "./webhookTriggerForm.tsx";
 import { TriggerOutputSchema } from "@deco/sdk";
 import { z } from "zod";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 
 function AgentSelect({
   agents,
@@ -94,6 +95,7 @@ export function TriggerModal(
   },
 ) {
   const { data: agents = [] } = useAgents();
+  const navigateWorkspace = useNavigateWorkspace();
   const [selectedAgentId, setSelectedAgentId] = useState<string>(
     trigger?.agent?.id || agentId || agents[0]?.id || "",
   );
@@ -122,7 +124,7 @@ export function TriggerModal(
               buttonProps={{
                 onClick: () => {
                   onOpenChange?.(false);
-                  globalThis.location.href = "/agents";
+                  navigateWorkspace("/agents");
                 },
                 variant: "special",
                 className: "mt-2",

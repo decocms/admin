@@ -53,7 +53,7 @@ function Item(
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-start w-full",
+        "block text-left w-[90%] ",
         "text-sm font-normal",
         "truncate rounded-lg px-2 py-1.5 hover:bg-muted",
         "cursor-pointer",
@@ -86,7 +86,7 @@ function App({ agentId }: { agentId: string }) {
 
   return (
     <div
-      className={cn("p-4 text-foreground w-full max-w-2xl mx-auto space-y-4")}
+      className={cn("p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block")}
     >
       {hasNoThreads
         ? (

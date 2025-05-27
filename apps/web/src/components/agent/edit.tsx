@@ -199,7 +199,7 @@ function ActionButtons({
 
       <Button
         className={hasChanges ? "inline-flex" : "hidden"}
-        variant={isWellKnownAgent ? "outline" : "special"}
+        variant="special"
         onClick={handleSubmit}
         disabled={!numberOfChanges ||
           form.formState.isSubmitting}
@@ -214,7 +214,7 @@ function ActionButtons({
           : (
             <span>
               {isWellKnownAgent
-                ? "Save as Agent"
+                ? "Save Agent"
                 : `Save ${numberOfChanges} change${
                   numberOfChanges > 1 ? "s" : ""
                 }`}
@@ -254,7 +254,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     return () => clearTimeout(timeout);
   }, [values, updateAgentCache]);
 
-  const blocked = useBlocker(hasChanges && !isWellKnownAgent);
+  const blocked = useBlocker(hasChanges);
 
   const handleSubmit = form.handleSubmit(
     async (data: Agent) => {
@@ -263,7 +263,10 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
           const id = crypto.randomUUID();
           const agent = { ...data, id };
           createAgent(agent, {});
-          form.reset(agent);
+          const wellKnownAgent =
+            WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS];
+          form.reset(wellKnownAgent);
+          updateAgentCache(wellKnownAgent);
           return;
         }
 

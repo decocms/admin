@@ -7,7 +7,7 @@ import {
   useInvites,
   useMarketplaceIntegrations,
   useThreads,
-  useUpdateThreadTitle
+  useUpdateThreadTitle,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { Chiplet } from "../common/ListPageHeader.tsx";
 import { IntegrationList } from "../toolsets/selector.tsx";
@@ -99,7 +99,7 @@ function IntegrationsTab() {
     return filteredIntegrations.sort((a, b) => {
       const aIsActive = activeIntegrations.includes(a);
       const bIsActive = activeIntegrations.includes(b);
-      
+
       if (aIsActive && !bIsActive) return -1;
       if (!aIsActive && bIsActive) return 1;
       return 0;

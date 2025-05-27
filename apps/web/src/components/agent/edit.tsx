@@ -127,12 +127,12 @@ const TABS: Record<string, Tab> = {
     Component: IntegrationsTab,
     title: "Integrations",
     initialOpen: "within",
-    initialWidth: 300
+    initialWidth: 300,
   },
   prompt: {
     Component: PromptTab,
     title: "System prompt",
-    initialOpen: "left"
+    initialOpen: "left",
   },
   audit: {
     Component: Threads,

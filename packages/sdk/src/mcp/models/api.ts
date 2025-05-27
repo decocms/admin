@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DEFAULT_MODEL, Model, MODELS } from "../../constants.ts";
 import { assertHasWorkspace, bypass } from "../assertions.ts";
 import { createTool } from "../context.ts";
+import { SupabaseLLMVault } from "./llmVault.ts";
 
 interface ModelRow {
   id: string;
@@ -13,14 +14,6 @@ interface ModelRow {
   created_at: string;
   updated_at: string;
   description: string;
-}
-
-/**
- * Hashes a token using SHA-256 and returns the base64 encoded string
- */
-export function hashToken(token: string): Promise<string> {
-  // TODO: hash method
-  return Promise.resolve(token);
 }
 
 const formatModelRow = (model: ModelRow): Model => {
@@ -61,7 +54,6 @@ export const createModel = createTool({
     const workspace = c.workspace.value;
 
     const { name, model, apiKey, byDeco, description, isEnabled } = props;
-    const hash = apiKey ? await hashToken(apiKey) : null;
 
     const { data, error } = await c
       .db
@@ -70,7 +62,7 @@ export const createModel = createTool({
         workspace,
         name,
         model,
-        api_key_hash: hash,
+        api_key_hash: null,
         is_enabled: isEnabled ?? true,
         by_deco: byDeco,
         description,
@@ -79,6 +71,14 @@ export const createModel = createTool({
       .single();
 
     if (error) throw error;
+
+    if (apiKey) {
+      const llmVault = new SupabaseLLMVault(
+        c.db,
+        c.envVars.API_KEY_ENCRYPTION_KEY,
+      );
+      await llmVault.storeApiKey(data.id, workspace, apiKey);
+    }
 
     return formatModelRow(data);
   },
@@ -98,6 +98,15 @@ export const updateModelSchema = z.object({
 
 export type UpdateModelInput = z.infer<typeof updateModelSchema>;
 
+const keyMap: Record<string, keyof ModelRow> = {
+  name: "name",
+  model: "model",
+  apiKey: "api_key_hash",
+  isEnabled: "is_enabled",
+  byDeco: "by_deco",
+  description: "description",
+};
+
 export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
@@ -110,28 +119,24 @@ export const updateModel = createTool({
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
 
-    if ("apiKey" in modelData) {
-      if (modelData.apiKey) {
-        updateData.api_key_hash = await hashToken(modelData.apiKey);
-      } else if (modelData.apiKey === null) {
-        updateData.api_key_hash = null;
+    for (const [key, value] of Object.entries(modelData)) {
+      if (key === "apiKey") {
+        if (typeof value === "string" || value === null) {
+          const llmVault = new SupabaseLLMVault(
+            c.db,
+            c.envVars.API_KEY_ENCRYPTION_KEY,
+          );
+
+          await llmVault.updateApiKey(id, workspace, value);
+        }
+
+        continue;
       }
-    }
 
-    if ("name" in modelData && typeof modelData.name === "string") {
-      updateData.name = modelData.name;
-    }
-
-    if ("model" in modelData && typeof modelData.model === "string") {
-      updateData.model = modelData.model;
-    }
-
-    if ("isEnabled" in modelData && typeof modelData.isEnabled === "boolean") {
-      updateData.is_enabled = modelData.isEnabled;
-    }
-
-    if ("byDeco" in modelData && typeof modelData.byDeco === "boolean") {
-      updateData.by_deco = modelData.byDeco;
+      if (typeof value === "string") {
+        // @ts-expect-error - we know that the key is a valid property
+        updateData[keyMap[key]] = value;
+      }
     }
 
     const { data, error } = await c

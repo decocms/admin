@@ -6,6 +6,8 @@ import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
   DEFAULT_MODEL,
+  DEFAULT_MODEL_ID,
+  DEFAULT_MODEL_PREFIX,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
@@ -74,6 +76,7 @@ import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
 import { Buffer } from "node:buffer";
 import { AudioMessage } from "./index.ts";
+import { SupabaseLLMVault } from "../../sdk/src/mcp/models/llmVault.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -107,6 +110,13 @@ export interface AgentMetadata extends AuthMetadata {
   userCookie?: string | null;
   timings?: ServerTimingsBuilder;
   mcpClient?: MCPClientStub<WorkspaceTools>;
+}
+
+interface LLMConfig {
+  model: string;
+  bypassGateway?: boolean;
+  bypassOpenRouter?: boolean;
+  apiKey?: string;
 }
 
 const normalizeMCPId = (mcpId: string) => {
@@ -538,11 +548,44 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
+  private async getLLMConfig(modelId: string): Promise<LLMConfig> {
+    let llmConfig: LLMConfig = {
+      model: modelId.replace(`${DEFAULT_MODEL_PREFIX}-`, ""),
+    };
+
+    if (
+      !modelId.startsWith(DEFAULT_MODEL_PREFIX) && modelId !== DEFAULT_MODEL
+    ) {
+      const llmVault = new SupabaseLLMVault(
+        this.db,
+        this.env.API_KEY_ENCRYPTION_KEY,
+      );
+      const data = await llmVault.getApiKey(
+        modelId,
+        this.workspace,
+      );
+
+      if (data) {
+        llmConfig = {
+          model: data.model,
+          apiKey: data.apiKey || undefined,
+          bypassOpenRouter: true,
+        };
+      }
+    }
+
+    console.log("llmConfig", llmConfig);
+    return llmConfig;
+  }
+
   private async initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
-    const { llm, tokenLimit } = this.createLLM({
-      model: config.model || DEFAULT_MODEL,
-    });
+
+    console.log("config", config);
+
+    const llmConfig = await this.getLLMConfig(config.model || DEFAULT_MODEL_ID);
+
+    const { llm, tokenLimit } = this.createLLM(llmConfig);
     await this.initMemory(memoryId, config, tokenLimit);
 
     this._agent = new Agent({
@@ -559,17 +602,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     await this.initAgent(config);
   }
 
-  private createLLM(
-    { model, bypassGateway, bypassOpenRouter }: {
-      model: string;
-      bypassGateway?: boolean;
-      bypassOpenRouter?: boolean;
-    },
-  ): { llm: LanguageModelV1; tokenLimit: number } {
+  private createLLM({
+    model,
+    bypassGateway,
+    bypassOpenRouter,
+    apiKey,
+  }: LLMConfig): { llm: LanguageModelV1; tokenLimit: number } {
+    if (model.startsWith(DEFAULT_MODEL_PREFIX)) {
+      model = model.replace(`${DEFAULT_MODEL_PREFIX}-`, "");
+    }
+
     // todo(@camudo): change this to a nice algorithm someday
     if (model === "auto") {
       model = "openai:gpt-4.1-mini";
     }
+
+    console.log("this.createLLM ----------------------------");
+    console.log("model", model);
+    console.log("apiKey", apiKey);
+    console.log("bypassOpenRouter", bypassOpenRouter);
+    console.log("bypassGateway", bypassGateway);
 
     const [provider, ...rest] = model.split(":");
     const providerModel = rest.join(":");
@@ -582,6 +634,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       gatewayId,
       provider,
       bypassGateway,
+      apiKey,
     })(providerModel);
   }
 
@@ -631,7 +684,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       tools_set: {},
       avatar: WELL_KNOWN_AGENTS.teamAgent.avatar,
       id: crypto.randomUUID(),
-      model: DEFAULT_MODEL,
+      model: DEFAULT_MODEL_ID,
       views: [],
       visibility: "WORKSPACE",
       ...manifest,
@@ -760,7 +813,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   ): Promise<GenerateTextResult<any, any>> {
     const toolsets = await this.withToolOverrides(options?.tools);
 
-    const agent = this.withAgentOverrides(options);
+    const agent = await this.withAgentOverrides(options);
 
     const aiMessages = await Promise.all(
       payload.map((msg) => this.convertToAIMessage(msg)),
@@ -820,17 +873,24 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
   }
 
-  private withAgentOverrides(options?: GenerateOptions): Agent {
+  private async withAgentOverrides(options?: GenerateOptions): Promise<Agent> {
     let agent = this.agent;
+
+    console.log("withAgentOverrides ----------------------------");
+    console.log("options", options);
 
     if (!options) {
       return agent;
     }
 
     if (options.model) {
+      const llmConfig = await this.getLLMConfig(
+        options.model || DEFAULT_MODEL_ID,
+      );
       const { llm } = this.createLLM({
-        model: options.model,
-        bypassOpenRouter: options.bypassOpenRouter,
+        ...llmConfig,
+        bypassOpenRouter: options.bypassOpenRouter ??
+          llmConfig.bypassOpenRouter,
       });
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
       agent = new Agent({
@@ -918,7 +978,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const toolsets = await this.withToolOverrides(options?.tools, timings);
     const agentOverridesTiming = timings.start("agent-overrides");
-    const agent = this.withAgentOverrides(options);
+    const agent = await this.withAgentOverrides(options);
     agentOverridesTiming.end();
 
     // if no wallet was initialized, let the stream proceed.

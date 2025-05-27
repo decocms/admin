@@ -22,6 +22,7 @@ interface AIGatewayOptions {
   envs: Record<string, string>;
   bypassOpenRouter?: boolean;
   bypassGateway?: boolean;
+  apiKey?: string;
 }
 
 const aiGatewayForProvider = (
@@ -125,9 +126,20 @@ export const createLLM: ProviderFactory = (opts) => {
 
   const supportsOpenRouter = provider.supportsOpenRouter !== false;
   const openRouterApiKey = opts.envs["OPENROUTER_API_KEY"];
-  if (!supportsOpenRouter || !openRouterApiKey || opts.bypassOpenRouter) {
+  console.log("createLLM ----------------------------");
+  console.log("provider", provider);
+  console.log("opts.provider", opts.provider);
+  console.log("key", opts.apiKey);
+  console.log("bypassOpenRouter", opts.bypassOpenRouter);
+  console.log("supportsOpenRouter", supportsOpenRouter);
+  // console.log("openRouterApiKey", openRouterApiKey);
+  // console.log("opts", opts);
+  if (
+    !supportsOpenRouter || !openRouterApiKey || opts.bypassOpenRouter ||
+    opts.apiKey
+  ) {
     const creator = provider.creator({
-      apiKey: opts.envs[provider.envVarName],
+      apiKey: opts.apiKey ?? opts.envs[provider.envVarName],
       baseURL: opts.bypassGateway ? undefined : aiGatewayForProvider(opts),
     });
     return (model: string) => {

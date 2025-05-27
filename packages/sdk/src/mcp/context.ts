@@ -94,6 +94,7 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().readonly(),
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
+  API_KEY_ENCRYPTION_KEY: z.any().optional().readonly(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

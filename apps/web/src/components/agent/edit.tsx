@@ -4,9 +4,12 @@ import {
   Integration,
   NotFoundError,
   useAgent,
+  useCreateAgent,
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
+  useUpdateThreadMessages,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -41,6 +44,8 @@ import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import PromptTab from "../settings/prompt.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";
+import { useEditAgent } from "../agents/hooks.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 interface Props {
   agentId?: string;
@@ -100,11 +105,13 @@ const TABS: Record<string, Tab> = {
     Component: AgentSettings,
     title: "Settings",
     initialOpen: "right",
+    maximumWidth: 500,
   },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
     initialOpen: "within",
+    maximumWidth: 500,
   },
   audit: {
     Component: Audit,
@@ -172,6 +179,13 @@ export default function Page(props: Props) {
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
   const updateAgentCache = useUpdateAgentCache();
+  const createAgent = useCreateAgent();
+  const updateThreadMessages = useUpdateThreadMessages();
+  const focusEditAgent = useEditAgent();
+
+  const isWellKnownAgent = Boolean(
+    WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
+  );
 
   const form = useForm<Agent>({
     defaultValues: agent,
@@ -189,8 +203,29 @@ export default function Page(props: Props) {
     return () => clearTimeout(timeout);
   }, [values, updateAgentCache]);
 
+  const blocked = useBlocker(hasChanges && !isWellKnownAgent);
+
   const handleSubmit = form.handleSubmit(
     async (data: Agent) => {
+      if (isWellKnownAgent) {
+        const id = crypto.randomUUID();
+        const agent = {
+          ...data,
+          id,
+        };
+        createAgent.mutateAsync(agent);
+        blocked.proceed?.();
+        updateThreadMessages(id);
+        focusEditAgent(id, crypto.randomUUID(), { history: false });
+        form.reset(agent);
+
+        trackEvent("agent_create", {
+          success: true,
+          data: agent,
+        });
+        return;
+      }
+
       try {
         await updateAgent.mutateAsync(data);
         form.reset(data);
@@ -201,8 +236,6 @@ export default function Page(props: Props) {
       }
     },
   );
-
-  const blocked = useBlocker(hasChanges);
 
   function handleCancel() {
     blocked.reset?.();
@@ -285,7 +318,7 @@ export default function Page(props: Props) {
                     Discard
                   </Button>
                   <Button
-                    variant="special"
+                    variant={isWellKnownAgent ? "default" : "special"}
                     onClick={handleSubmit}
                     disabled={!numberOfChanges ||
                       form.formState.isSubmitting}
@@ -299,8 +332,11 @@ export default function Page(props: Props) {
                       )
                       : (
                         <span>
-                          Save {numberOfChanges}{" "}
-                          change{numberOfChanges > 1 ? "s" : ""}
+                          {isWellKnownAgent
+                            ? "Save as Agent"
+                            : `Save ${numberOfChanges} change${
+                              numberOfChanges > 1 ? "s" : ""
+                            }`}
                         </span>
                       )}
                   </Button>

@@ -15,6 +15,8 @@ import { useEffect, useRef, useState } from "react";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 
 interface ToolsMap {
   [integrationId: string]: string[];
@@ -80,6 +82,7 @@ function IntegrationListItem({
 }) {
   const [openTools, setOpenTools] = useState();
   const { data: toolsData, isLoading } = useTools(integration.connection);
+  const navigateWorkspace = useNavigateWorkspace();
 
   const total = toolsData?.tools?.length ?? 0;
   const enabled = new Set([
@@ -96,7 +99,7 @@ function IntegrationListItem({
         toolsSet[integration.id]?.includes(tool.name)
     ).length;
   const isAll = enabledCount > 0;
-  const isEmpty = allTools.length === 0;
+  const isEmpty = !isLoading && allTools.length === 0;
 
   function handleAll(checked: boolean) {
     setIntegrationTools(
@@ -111,6 +114,7 @@ function IntegrationListItem({
       ref={selectedIntegration === integration.id ? selectedItemRef : undefined}
       className={cn(
         "w-full flex flex-col rounded-xl transition-colors border relative",
+        isEmpty && "order-last",
       )}
     >
       <div className="flex gap-4 px-4 py-4">
@@ -144,15 +148,38 @@ function IntegrationListItem({
       <div className="absolute right-4 top-4 text-slate-400 lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
+      {isEmpty && (
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            navigateWorkspace(`/integration/${integration.id}`);
+          }}
+          className={cn(
+            "flex gap-2 items-center justify-between px-4 py-4 border-t border-slate-200 cursor-pointer",
+            "hover:bg-slate-50",
+          )}
+        >
+          <div className="flex gap-2 items-center">
+            <Icon name="settings" size={16} />
+            <span className="text-xs font-medium">Setup Integration</span>
+          </div>
+          <Badge variant="destructive">
+            <Icon name="error" size={10} />
+            Error
+          </Badge>
+        </div>
+      )}
       {!isEmpty && (
         <div
-          onClick={() => setOpenTools(!openTools)}
           className={cn(
-            "flex flex-col items-start gap-1 min-w-0 px-4 py-4 border-t border-slate-200 cursor-pointer",
+            "flex flex-col items-start gap-1 min-w-0 px-4 border-t border-slate-200 cursor-pointer",
             !openTools && "hover:bg-slate-50",
           )}
         >
-          <span className="text-slate-500 text-sm">
+          <span
+            onClick={() => setOpenTools(!openTools)}
+            className="text-slate-500 text-sm py-4 w-full"
+          >
             {isLoading
               ? (
                 "Loading tools..."
@@ -203,7 +230,7 @@ export function IntegrationList({
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {integrations.map((integration) => (
         <IntegrationListItem
           key={integration.id}
@@ -256,34 +283,40 @@ function ToolList({
           const enabled = toolsSet[integration.id]?.includes(tool.name) ??
             false;
 
-          const toolsToUpdate = enabled
-            ? toolsSet[integration.id].filter((t) => t !== tool.name)
-            : [...(toolsSet[integration.id] || []), tool.name];
+          const handleCheckboxChange = (checked: boolean) => {
+            const withoutTool = toolsSet[integration.id]?.filter((t) =>
+              t !== tool.name
+            );
+            const withTool = [...(toolsSet[integration.id] || []), tool.name];
+            const toolsToUpdate = checked ? withTool : withoutTool;
+            setIntegrationTools(integration.id, toolsToUpdate);
+          };
+
           return (
-            <div
+            <label
               key={tool.name}
-              role="button"
               className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 rounded-lg cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                setIntegrationTools(integration.id, toolsToUpdate);
-              }}
+              htmlFor={`${integration.id}-${tool.name}`}
             >
+              <Checkbox
+                checked={enabled}
+                id={`${integration.id}-${tool.name}`}
+                onCheckedChange={handleCheckboxChange}
+              />
               <div className="flex flex-col min-w-0">
-                <label
+                <span
                   className={cn(
                     "text-sm truncate cursor-pointer text-slate-700",
                     enabled && !enabled && "text-slate-400",
                   )}
                 >
                   {beautifyToolName(tool.name)}
-                </label>
+                </span>
                 {tool.description && (
                   <ExpandableDescription description={tool.description} />
                 )}
               </div>
-            </div>
+            </label>
           );
         })}
       </div>

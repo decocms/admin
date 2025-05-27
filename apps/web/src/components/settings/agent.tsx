@@ -34,10 +34,6 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import { Integration } from "../toolsets/index.tsx";
 import { ToolsetSelector } from "../toolsets/selector.tsx";
 
-// Token limits for Anthropic models
-const ANTHROPIC_MIN_MAX_TOKENS = 4096;
-const ANTHROPIC_MAX_MAX_TOKENS = 64000;
-
 const AVATAR_FILE_PATH = "assets/avatars";
 
 function CopyLinkButton(
@@ -326,26 +322,6 @@ function SettingsTab() {
                       placeholder="Describe your agent's purpose"
                       className="min-h-18 border-slate-200"
                       {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              name="max_tokens"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Max Tokens</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      className="rounded-md border-slate-200"
-                      min={ANTHROPIC_MIN_MAX_TOKENS}
-                      max={ANTHROPIC_MAX_MAX_TOKENS}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />

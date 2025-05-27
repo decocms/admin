@@ -84,11 +84,11 @@ function IntegrationsTab() {
       shouldShow = true;
     }
 
-    if (filter === "Active") {
+    if (filter === "Active" && shouldShow) {
       shouldShow = usedIntegrations.includes(integration);
     }
 
-    if (filter === "Inactive") {
+    if (filter === "Inactive" && shouldShow) {
       shouldShow = !usedIntegrations.includes(integration);
     }
 

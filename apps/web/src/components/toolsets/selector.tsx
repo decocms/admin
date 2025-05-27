@@ -127,7 +127,7 @@ function IntegrationListItem({
               : (
                 <div className="flex items-center gap-4">
                   <Icon
-                    name={"chevron_right"}
+                    name="chevron_right"
                     filled
                     size={14}
                     className={cn(

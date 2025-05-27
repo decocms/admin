@@ -1,8 +1,4 @@
-import {
-  type Integration as IntegrationType,
-  useSDK,
-  useWriteFile,
-} from "@deco/sdk";
+import { useSDK, useWriteFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,

@@ -225,10 +225,6 @@ function ErrorFallback() {
   );
 }
 
-function HomeChat() {
-  return <h1>Hello</h1>;
-}
-
 const router = createBrowserRouter([
   {
     errorElement: <ErrorFallback />,

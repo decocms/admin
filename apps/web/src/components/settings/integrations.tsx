@@ -1,13 +1,7 @@
-import { type Integration as IntegrationType } from "@deco/sdk";
 import { Form, FormControl } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { IntegrationList } from "../toolsets/selector.tsx";
-import { Chiplet } from "../common/ListPageHeader.tsx";
 import {
   Select,
   SelectContent,
@@ -15,6 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { useState } from "react";
+import { useAgentSettingsForm } from "../agent/edit.tsx";
+import { Chiplet } from "../common/ListPageHeader.tsx";
+import { IntegrationList } from "../toolsets/selector.tsx";
 
 const tabs = [
   {

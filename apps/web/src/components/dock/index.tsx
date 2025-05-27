@@ -186,8 +186,6 @@ const addPanel = (
   const views = options.id === DOCKED_VIEWS_TAB.id;
   const { position, ...otherOptions } = options;
 
-  console.log(Boolean(views), otherOptions);
-
   const panelOptions: AddPanelOptions = views
     ? {
       maximumWidth: 288,
@@ -257,7 +255,6 @@ function Docked(
       }
 
       initialPanels.add(key);
-      console.log(value);
       addPanel(
         {
           id: key,

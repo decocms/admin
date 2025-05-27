@@ -135,10 +135,10 @@ const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =
     };
   };
 
-export const createTransactionFromStripeEvent = (
+export const createTransactionFromStripeEvent = async (
   c: AppContext,
   event: Stripe.Event,
-): Promise<Transaction> => {
+): Promise<{ transaction: Transaction; idempotentId: string }> => {
   // deno-lint-ignore no-explicit-any
   const handlers: Record<string, EventHandler<any>> = {
     "payment_intent.succeeded": paymentIntentSucceeded,
@@ -152,5 +152,10 @@ export const createTransactionFromStripeEvent = (
     );
   }
 
-  return handler(c, event);
+  const transaction = await handler(c, event);
+
+  return {
+    transaction,
+    idempotentId: event.id,
+  };
 };

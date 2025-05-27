@@ -23,10 +23,11 @@ export const handleStripeWebhook = async (c: Context) => {
       signature,
       appContext,
     );
-    const transaction = await createTransactionFromStripeEvent(
-      appContext,
-      event,
-    );
+    const { transaction, idempotentId } =
+      await createTransactionFromStripeEvent(
+        appContext,
+        event,
+      );
 
     if (!appContext.envVars.WALLET_API_KEY) {
       throw new Error("WALLET_API_KEY is not set");
@@ -37,7 +38,9 @@ export const handleStripeWebhook = async (c: Context) => {
       appContext.walletBinding,
     );
 
-    const response = await wallet["POST /transactions"]({}, {
+    const response = await wallet["PUT /transactions/:id"]({
+      id: idempotentId,
+    }, {
       body: transaction,
     });
 

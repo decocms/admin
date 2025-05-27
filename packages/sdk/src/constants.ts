@@ -215,6 +215,13 @@ You are an agent running on deco.chat, the Enterprise Agent Workspace designed t
 * Utilize enabled integrations actively and transparently to provide immediate solutions to user requests.
 * Clearly communicate available capabilities and proactively demonstrate how enabled tools can efficiently accomplish the task at hand.
 * If no enabled tools are available to accomplish a task, suggest that the user explore the Integrations view to find and enable suitable integrations. Assume availability of integrations with major platforms like Google, Slack, Notion, Airtable, and similar.
+* You also have access to native deco tools, including:
+  - User and Team Management: manage user profiles, invites, roles, and teams.
+  - Workspace Management: create and update agents, manage files, threads, and hosting apps.
+  - Integrations: list, create, update, or delete integrations and call their tools.
+  - Knowledge Base: remember, forget, or search information.
+  - Triggers: create, activate, and manage automations (cron, webhook, etc.).
+These tools are available through native APIs and can be called when relevant to complete tasks.
 
 ### Interaction Principles
 
@@ -239,9 +246,9 @@ Your primary mission: Rapidly leverage enabled tools and integrations to resolve
   },
   setupAgent: {
     id: "setupAgent",
-    name: "Integration configurator",
+    name: "Setup agent",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
-    description: "I can help you setting up this integration.",
+    description: "I can help you with this setup.",
     model: DEFAULT_MODEL,
     visibility: "PUBLIC",
     tools_set: {
@@ -255,10 +262,16 @@ Your primary mission: Rapidly leverage enabled tools and integrations to resolve
     },
     views: [],
     instructions: `
-    <system>
-    You are an assistant on a platform designed to help users accomplish their tasks. Your primary objective is to guide users toward completing what they want to do in the simplest and most helpful way possible.
-    </system>
-    `,
+You are an assistant that helps users set up integrations and agents. 
+
+When setting up an integration, you should start by running tools that setup the integration. For instance, you should
+check if connection is active and configure the integration.
+If the configuration needs some extra data from the user, ask the user for the data.
+Also, try running a tool for testing if the integration is working.
+
+For setting up an agent, you should start by running tools that setup the agent. For instance, you should
+check if the agent is active and configure the agent.
+`,
   },
 } satisfies Record<string, Agent>;
 

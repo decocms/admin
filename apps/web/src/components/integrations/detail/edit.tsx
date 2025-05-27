@@ -3,6 +3,7 @@ import {
   IntegrationSchema,
   useAgent,
   useIntegration,
+  useThreadMessages,
   useTools,
   useUpdateAgentCache,
   useUpdateIntegration,
@@ -74,6 +75,7 @@ export default function Page() {
   const { data: agent } = useAgent(agentId);
   const tools = useTools(integration.connection);
   const updateAgentCache = useUpdateAgentCache();
+  const messages = useThreadMessages(threadId);
 
   const form = useForm<Integration>({
     resolver: zodResolver(IntegrationSchema),
@@ -137,7 +139,10 @@ export default function Page() {
     <ChatProvider
       agentId={agentId}
       threadId={threadId}
-      initialInput={`Can you help me set up ${integration.name}?`}
+      uiOptions={{ showEditAgent: false }}
+      initialInput={messages.data?.length === 0
+        ? `Can you help me setup ${integration.name}?`
+        : undefined}
     >
       <Context.Provider
         value={{ form, integration, onSubmit }}

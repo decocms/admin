@@ -262,6 +262,7 @@ function MarketplaceTab() {
 
     installIntegration({
       id: selectedIntegration.id,
+      provider: selectedIntegration.provider,
       returnUrl: returnUrl.toString(),
     }, {
       onSuccess: (data) => {

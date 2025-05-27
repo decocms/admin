@@ -164,9 +164,16 @@ export const useInstallFromMarketplace = () => {
 
   const mutation = useMutation({
     mutationFn: async (
-      { id, returnUrl }: { id: string; returnUrl: string },
+      { id, returnUrl, provider }: {
+        id: string;
+        returnUrl: string;
+        provider: string;
+      },
     ) => {
-      if (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase())) {
+      if (
+        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase()) &&
+        provider === "deco"
+      ) {
         const result = await agentStub.callTool(
           "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
           { integrationId: id, returnUrl },

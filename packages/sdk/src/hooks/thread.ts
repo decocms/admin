@@ -40,15 +40,6 @@ export const useThreadMessages = (threadId: string) => {
   });
 };
 
-/** Hook for fetching tools_set from a thread */
-export const useThreadTools = (threadId: string) => {
-  const { workspace } = useSDK();
-  return useSuspenseQuery({
-    queryKey: KEYS.THREAD_TOOLS(workspace, threadId),
-    queryFn: ({ signal }) => getThreadTools(workspace, threadId, { signal }),
-  });
-};
-
 export const useUpdateThreadMessages = () => {
   const { workspace } = useSDK();
   const client = useQueryClient();

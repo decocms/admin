@@ -23,8 +23,8 @@ const ChatSchema = z.object({
 type Chat = z.infer<typeof ChatSchema>;
 
 function ThreadSettingsTab() {
-  const { agentId, threadId } = useChatContext();
-  const tools_set = useTools(agentId, threadId);
+  const { agentId } = useChatContext();
+  const tools_set = useTools(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const { data: agent } = useAgent(agentId);
   const updateAgentCache = useUpdateAgentCache();

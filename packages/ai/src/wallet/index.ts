@@ -135,12 +135,14 @@ export class AgentWallet {
       },
       generatedBy,
       vendor,
-      payer: plan === "trial" ? {
-        type: "wallet",
-        id: WellKnownWallets.build(
-          ...WellKnownWallets.workspace.trialCredits(this.config.workspace),
-        ),
-      } : undefined,
+      payer: plan === "trial"
+        ? {
+          type: "wallet",
+          id: WellKnownWallets.build(
+            ...WellKnownWallets.workspace.trialCredits(this.config.workspace),
+          ),
+        }
+        : undefined,
       metadata: {
         agentName,
         ...usageData,

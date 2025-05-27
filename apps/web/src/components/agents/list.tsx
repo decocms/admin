@@ -182,16 +182,6 @@ function Actions({ agent }: { agent: Agent }) {
             disabled={duplicating}
             onClick={(e) => {
               e.stopPropagation();
-              focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
-            }}
-          >
-            <Icon name="tune" className="mr-2" />
-            Edit agent
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={duplicating}
-            onClick={(e) => {
-              e.stopPropagation();
               duplicate();
             }}
           >
@@ -265,13 +255,13 @@ function Actions({ agent }: { agent: Agent }) {
 }
 
 function Card({ agent }: { agent: Agent }) {
-  const focusChat = useFocusChat();
+  const focusAgent = useEditAgent();
 
   return (
     <UICard
       className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
       onClick={() => {
-        focusChat(agent.id, crypto.randomUUID(), {
+        focusAgent(agent.id, crypto.randomUUID(), {
           history: false,
         });
       }}

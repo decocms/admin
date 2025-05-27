@@ -12,6 +12,14 @@ export const WellKnownWallets = {
     return { type, discriminator, category };
   },
   workspace: {
+    trialCredits: (
+      workspace: string,
+    ) =>
+      [
+        "user" as const,
+        `workspace-trial-credits-${workspace}`,
+        "expense" as const,
+      ] as const,
     genCredits: (
       workspace: string,
     ) =>

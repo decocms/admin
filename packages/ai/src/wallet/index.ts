@@ -8,12 +8,15 @@ import {
 } from "@deco/sdk/mcp/wallet";
 import type { LanguageModelUsage } from "ai";
 import { WebCache } from "@deco/sdk/cache";
+import { MCPClientStub, type WorkspaceTools } from "@deco/sdk/mcp";
+import type { Plan } from "@deco/sdk";
 
 export interface AgentWalletConfig {
   wallet: ClientOf<WalletAPI>;
   workspace: Workspace;
   agentId: string;
   agentPath: string;
+  mcpClient: MCPClientStub<WorkspaceTools>;
 }
 
 export interface ComputeAgentUsageOpts {
@@ -34,8 +37,18 @@ export class AgentWallet {
     "agent_wallet_user_credits_rewards",
     WebCache.MAX_SAFE_TTL,
   );
+  private plan: Plan | null = null;
   private rewardPromise: Map<string, Promise<void>> = new Map();
   constructor(private config: AgentWalletConfig) {}
+
+  async loadPlan() {
+    if (this.plan) {
+      return this.plan;
+    }
+    const plan = await this.config.mcpClient.GET_WORKSPACE_PLAN({});
+    this.plan = plan.id;
+    return this.plan;
+  }
 
   async updateBalanceCache() {
     const hasBalance = await this.hasBalance();
@@ -95,6 +108,7 @@ export class AgentWallet {
     userId,
   }: ComputeAgentUsageOpts) {
     const agentId = this.config.agentId;
+    const plan = await this.loadPlan();
 
     const usageData = {
       model,
@@ -121,6 +135,12 @@ export class AgentWallet {
       },
       generatedBy,
       vendor,
+      payer: plan === "trial" ? {
+        type: "wallet",
+        id: WellKnownWallets.build(
+          ...WellKnownWallets.workspace.trialCredits(this.config.workspace),
+        ),
+      } : undefined,
       metadata: {
         agentName,
         ...usageData,

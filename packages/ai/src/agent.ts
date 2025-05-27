@@ -183,12 +183,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...this.env,
     };
     this.workspace = getWorkspace(this.state.id);
-    this.wallet = new AgentWallet({
-      agentId: this.id,
-      agentPath: this.state.id,
-      workspace: this.workspace,
-      wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
-    });
     this.agentMemoryConfig = null as unknown as AgentMemoryConfig;
     this.agentId = this.state.id.split("/").pop() ?? "";
     this.db = createServerClient(
@@ -198,6 +192,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
 
     this.agentScoppedMcpClient = this._createMCPClient();
+    this.wallet = new AgentWallet({
+      agentId: this.id,
+      agentPath: this.state.id,
+      workspace: this.workspace,
+      wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
+      mcpClient: this.agentScoppedMcpClient,
+    });
     this.state.blockConcurrencyWhile(async () => {
       await this._runWithContext(async () => {
         await this._init();

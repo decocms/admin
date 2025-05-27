@@ -6,6 +6,7 @@ import {
 import { useEffect } from "react";
 import {
   acceptInvite,
+  autoJoinTeamForDecoUsers,
   getMyInvites,
   getTeamMembers,
   getTeamRoles,
@@ -127,4 +128,21 @@ export const useRegisterActivity = (teamId?: number) => {
 
     registerActivity(teamId);
   }, [teamId]);
+};
+
+/**
+ * Hook to auto-join team for @deco.cx users
+ * @returns Mutation function for auto-joining a team
+ */
+export const useAutoJoinTeam = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (teamSlug: string) => autoJoinTeamForDecoUsers(teamSlug),
+    onSuccess: () => {
+      // Invalidate teams and member queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: KEYS.TEAMS() });
+      queryClient.invalidateQueries({ queryKey: ["team_members"] });
+    },
+  });
 };

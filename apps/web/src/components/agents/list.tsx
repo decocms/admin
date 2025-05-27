@@ -154,7 +154,6 @@ const useCopyLink = (agentId: string) => {
 };
 
 function Actions({ agent }: { agent: Agent }) {
-  const focusEditAgent = useEditAgent();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

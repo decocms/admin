@@ -16,7 +16,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useFocusChat, useFocusChat } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";

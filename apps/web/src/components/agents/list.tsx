@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
+import { CardContent, Card as UICard } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +55,7 @@ import { Table } from "../common/Table.tsx";
 import { Tab } from "../dock/index.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useFocusChat, useFocusChat } from "./hooks.ts";
+import { useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);

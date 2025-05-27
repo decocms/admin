@@ -50,7 +50,7 @@ import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useEditAgent } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
@@ -517,7 +517,7 @@ export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
-  const focusChat = useEditAgent();
+  const focusChat = useFocusChat();
 
   return (
     <Sidebar variant="sidebar">

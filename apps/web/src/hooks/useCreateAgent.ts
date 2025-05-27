@@ -3,13 +3,13 @@ import {
   useCreateAgent as useCreateAgentSDK,
   useUpdateThreadMessages,
 } from "@deco/sdk";
-import { useEditAgent } from "../components/agents/hooks.ts";
+import { useFocusChat } from "../components/agents/hooks.ts";
 import { trackEvent } from "../hooks/analytics.ts";
 
 export const useCreateAgent = () => {
   const createAgent = useCreateAgentSDK();
   const updateThreadMessages = useUpdateThreadMessages();
-  const focusEditAgent = useEditAgent();
+  const focusEditAgent = useFocusChat();
 
   const create = async (
     agent: Partial<Agent>,

@@ -3,7 +3,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { useEditAgent } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { useChatContext } from "./context.tsx";
 
@@ -58,7 +58,7 @@ EmptyState.Skeleton = () => {
 EmptyState.UI = () => {
   const { agentId, uiOptions } = useChatContext();
   const { data: agent } = useAgent(agentId);
-  const editAgent = useEditAgent();
+  const editAgent = useFocusChat();
 
   return (
     <div className="h-full flex flex-col justify-between py-12">

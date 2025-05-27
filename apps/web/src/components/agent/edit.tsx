@@ -28,7 +28,7 @@ import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
-import { useEditAgent } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -55,7 +55,7 @@ const Chat = () => {
   const { data: agent } = useAgent(agentId);
   const { chat: { messages } } = useChatContext();
   const { hasChanges } = useAgentSettingsForm();
-  const focusChat = useEditAgent();
+  const focusChat = useFocusChat();
 
   return (
     <div className="flex flex-col h-full min-w-[320px]">

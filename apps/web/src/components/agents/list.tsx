@@ -55,7 +55,7 @@ import { Table } from "../common/Table.tsx";
 import { Tab } from "../dock/index.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useEditAgent, useFocusChat } from "./hooks.ts";
+import { useFocusChat, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -260,7 +260,7 @@ function Actions({ agent }: { agent: Agent }) {
 }
 
 function Card({ agent }: { agent: Agent }) {
-  const focusAgent = useEditAgent();
+  const focusAgent = useFocusChat();
 
   return (
     <UICard
@@ -542,7 +542,7 @@ const Context = createContext<
 >(null);
 
 export default function Page() {
-  const focusChat = useEditAgent();
+  const focusChat = useFocusChat();
 
   const handleCreate = () => {
     focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {

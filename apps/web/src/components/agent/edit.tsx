@@ -102,29 +102,30 @@ const TABS: Record<string, Tab> = {
     Component: AgentSettings,
     title: "Settings",
     initialOpen: "right",
-    maximumWidth: 500,
+    initialWidth: 500,
   },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
     initialOpen: "within",
-    maximumWidth: 500,
+    initialWidth: 500,
+  },
+  prompt: {
+    Component: PromptTab,
+    title: "System prompt",
+    initialOpen: "left",
+    initialHeight: 270,
   },
   audit: {
     Component: Threads,
     title: "History",
-    initialOpen: "left",
+    initialOpen: "above",
+    initialHeight: 510,
   },
   chat: {
     Component: Chat,
     title: "Chat",
     initialOpen: "within",
-  },
-  prompt: {
-    Component: PromptTab,
-    title: "System prompt",
-    initialOpen: "below",
-    initialHeight: 270,
   },
 };
 
@@ -356,7 +357,7 @@ export default function Page(props: Props) {
         agentId={agentId}
         threadId={threadId!}
         key={chatKey}
-      />;
+      />
     </Suspense>
   );
 }

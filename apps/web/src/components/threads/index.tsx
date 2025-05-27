@@ -86,7 +86,9 @@ function App({ agentId }: { agentId: string }) {
 
   return (
     <div
-      className={cn("p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block")}
+      className={cn(
+        "p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block",
+      )}
     >
       {hasNoThreads
         ? (

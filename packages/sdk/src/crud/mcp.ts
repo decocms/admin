@@ -1,5 +1,9 @@
 import { MCPClient } from "../fetcher.ts";
-import { type Integration, IntegrationSchema } from "../models/mcp.ts";
+import {
+  type Binder,
+  type Integration,
+  IntegrationSchema,
+} from "../models/mcp.ts";
 
 /**
  * Save an MCP to the file system
@@ -46,12 +50,17 @@ export const loadIntegration = (
     { signal },
   );
 
+export interface ListIntegrationsFilter {
+  binder?: Binder;
+}
+
 export const listIntegrations = (
   workspace: string,
+  filter?: ListIntegrationsFilter,
   signal?: AbortSignal,
 ): Promise<Integration[]> =>
   MCPClient.forWorkspace(workspace).INTEGRATIONS_LIST(
-    {},
+    { binder: filter?.binder },
     { signal },
   );
 

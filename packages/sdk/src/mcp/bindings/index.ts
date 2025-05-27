@@ -12,3 +12,5 @@ export const WellKnownBindings = {
   Input: TRIGGER_INPUT_BINDING_SCHEMA,
   Output: TRIGGER_OUTPUT_BINDING_SCHEMA,
 } as const;
+
+export type WellKnownBindingsName = keyof typeof WellKnownBindings;

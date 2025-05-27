@@ -5,7 +5,6 @@ import {
   useIntegrations,
   useUpdateTrigger,
 } from "@deco/sdk";
-import { WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -370,7 +369,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
                           onOpenChange={setOpen}
                           onIntegrationSelected={field.onChange}
                           initialSelectedIntegration={field.value || null}
-                          binder={WellKnownBindings.Output}
+                          binder="Output"
                         />
                       )
                       : (

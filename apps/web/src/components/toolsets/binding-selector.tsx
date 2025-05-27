@@ -1,5 +1,4 @@
-import { type Integration, useIntegrations, useTools } from "@deco/sdk";
-import { Binder, Binding } from "@deco/sdk/mcp/bindings";
+import { type Binder, type Integration, useBindings } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -14,6 +13,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 interface BindingSelectorProps {
   open: boolean;
@@ -28,7 +28,6 @@ function IntegrationListItem({
   selectedIntegration,
   onSelect,
   selectedItemRef,
-  binder,
 }: {
   integration: Integration;
   selectedIntegration: string | null;
@@ -36,12 +35,6 @@ function IntegrationListItem({
   selectedItemRef?: React.RefObject<HTMLDivElement | null>;
   binder: Binder;
 }) {
-  const { data: toolsData, isLoading } = useTools(integration.connection);
-  const isImplemented = Binding(binder).isImplementedBy(toolsData?.tools ?? []);
-  if (!isImplemented || isLoading) {
-    return null;
-  }
-
   return (
     <div
       key={integration.id}
@@ -83,7 +76,7 @@ export function BindingSelector({
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null,
   );
-  const { data: installedIntegrations = [] } = useIntegrations();
+  const { data: installedIntegrations = [], isLoading } = useBindings(binder);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 
@@ -110,6 +103,7 @@ export function BindingSelector({
 
   function handleUpdate() {
     if (selectedIntegration) {
+      onOpenChange(true);
       onIntegrationSelected(selectedIntegration);
       onOpenChange(false);
     }
@@ -124,85 +118,99 @@ export function BindingSelector({
       <DialogContent className="h-full max-w-full md:h-auto md:max-w-[900px] w-full p-0 gap-0 flex flex-col border-none rounded-none md:rounded-lg [&>button]:hidden">
         <DialogTitle className="hidden">Bindings List</DialogTitle>
         <div className="flex flex-col">
-          <div
-            className={cn(
-              "flex flex-col md:hidden",
-              selectedIntegration ? "hidden" : "block",
-            )}
-          >
-            <div className="border-b border-slate-200">
-              <div className="flex items-center h-14 px-4 gap-2">
-                <Icon name="search" size={20} className="text-slate-400" />
-                <Input
-                  placeholder="Search integrations..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-slate-500 bg-transparent px-2"
-                />
+          {isLoading
+            ? (
+              <div className="p-4 text-slate-400 flex items-center gap-2">
+                <Spinner size="xs" /> Loading integrations...
               </div>
-            </div>
-            <ScrollArea className="h-[calc(100vh-10rem)]">
-              <div className="p-4">
-                <div className="space-y-2">
-                  {filtered.map((integration) => (
-                    <ErrorBoundary key={integration.id} fallback={null}>
-                      <IntegrationListItem
-                        key={integration.id}
-                        integration={integration}
-                        selectedIntegration={selectedIntegration}
-                        onSelect={setSelectedIntegration}
-                        selectedItemRef={selectedItemRef}
-                        binder={binder}
+            )
+            : (
+              <>
+                <div
+                  className={cn(
+                    "flex flex-col md:hidden",
+                    selectedIntegration ? "hidden" : "block",
+                  )}
+                >
+                  <div className="border-b border-slate-200">
+                    <div className="flex items-center h-14 px-4 gap-2">
+                      <Icon
+                        name="search"
+                        size={20}
+                        className="text-slate-400"
                       />
-                    </ErrorBoundary>
-                  ))}
+                      <Input
+                        placeholder="Search integrations..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-slate-500 bg-transparent px-2"
+                      />
+                    </div>
+                  </div>
+                  <ScrollArea className="h-[calc(100vh-10rem)]">
+                    <div className="p-4">
+                      <div className="space-y-2">
+                        {filtered.map((integration) => (
+                          <ErrorBoundary key={integration.id} fallback={null}>
+                            <IntegrationListItem
+                              key={integration.id}
+                              integration={integration}
+                              selectedIntegration={selectedIntegration}
+                              onSelect={setSelectedIntegration}
+                              selectedItemRef={selectedItemRef}
+                              binder={binder}
+                            />
+                          </ErrorBoundary>
+                        ))}
+                      </div>
+                    </div>
+                  </ScrollArea>
                 </div>
-              </div>
-            </ScrollArea>
-          </div>
-          <div
-            className={cn(
-              "flex flex-col md:hidden",
-              selectedIntegration ? "block" : "hidden",
+                <div
+                  className={cn(
+                    "flex flex-col md:hidden",
+                    selectedIntegration ? "block" : "hidden",
+                  )}
+                >
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedIntegration(null)}
+                    >
+                      <Icon name="arrow_back" size={20} />
+                    </Button>
+                    <span className="text-slate-700">Back</span>
+                  </div>
+                </div>
+                <div className="hidden md:block border-b border-slate-200">
+                  <Input
+                    placeholder="Search integrations..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="rounded-none border-none focus-visible:ring-0 placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="hidden md:flex gap-6 p-4 h-[400px] overflow-hidden">
+                  <div className="w-[365px] flex-shrink-0 truncate h-full">
+                    <ScrollArea className="h-full">
+                      <div className="space-y-2">
+                        {filtered.map((integration) => (
+                          <IntegrationListItem
+                            key={integration.id}
+                            integration={integration}
+                            selectedIntegration={selectedIntegration}
+                            onSelect={setSelectedIntegration}
+                            selectedItemRef={selectedItemRef}
+                            binder={binder}
+                          />
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              </>
             )}
-          >
-            <div className="flex items-center gap-2 px-4 py-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedIntegration(null)}
-              >
-                <Icon name="arrow_back" size={20} />
-              </Button>
-              <span className="text-slate-700">Back</span>
-            </div>
-          </div>
-          <div className="hidden md:block border-b border-slate-200">
-            <Input
-              placeholder="Search integrations..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="rounded-none border-none focus-visible:ring-0 placeholder:text-slate-500"
-            />
-          </div>
-          <div className="hidden md:flex gap-6 p-4 h-[400px] overflow-hidden">
-            <div className="w-[365px] flex-shrink-0 truncate h-full">
-              <ScrollArea className="h-full">
-                <div className="space-y-2">
-                  {filtered.map((integration) => (
-                    <IntegrationListItem
-                      key={integration.id}
-                      integration={integration}
-                      selectedIntegration={selectedIntegration}
-                      onSelect={setSelectedIntegration}
-                      selectedItemRef={selectedItemRef}
-                      binder={binder}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-          </div>
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t mt-auto">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -211,7 +219,7 @@ export function BindingSelector({
           <Button
             onClick={handleUpdate}
             className="bg-slate-700 hover:bg-slate-600 rounded-lg font-normal"
-            disabled={selectedIntegration === null}
+            disabled={selectedIntegration === null || isLoading}
           >
             Select Integration
           </Button>

@@ -5,7 +5,6 @@ import {
   useUpdateTrigger,
   WebhookTriggerSchema,
 } from "@deco/sdk";
-import { WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -314,14 +313,14 @@ export function WebhookTriggerForm({
               <div className="flex gap-2 items-center">
                 <FormControl>
                   <div>
-                    {field.value || open
+                    {open
                       ? (
                         <BindingSelector
                           open={open}
                           onOpenChange={setOpen}
                           onIntegrationSelected={field.onChange}
                           initialSelectedIntegration={field.value || null}
-                          binder={WellKnownBindings.Input}
+                          binder="Input"
                         />
                       )
                       : (

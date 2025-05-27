@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
+import { AUTO_MODEL } from "../../constants.ts";
 
 export interface LLMVault {
   storeApiKey(
@@ -70,6 +71,28 @@ export class SupabaseLLMVault implements LLMVault {
       .eq("workspace", workspace);
 
     if (error) throw error;
+  }
+
+  async getDefaultApiKey(
+    workspace: string,
+  ): Promise<{ apiKey: string | null; model: string } | null> {
+    const { data, error } = await this.db
+      .from("models")
+      .select("api_key_hash, model")
+      .eq("model", AUTO_MODEL)
+      .eq("by_deco", true)
+      .eq("workspace", workspace)
+      .eq("is_enabled", true)
+      .single();
+
+    if (error) throw error;
+
+    if (!data?.api_key_hash) return null;
+
+    return {
+      apiKey: this.decrypt(data.api_key_hash),
+      model: data.model,
+    };
   }
 
   async getApiKey(

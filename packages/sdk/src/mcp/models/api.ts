@@ -119,7 +119,7 @@ export const updateModel = createTool({
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
 
-    for (const [key, value] of Object.entries(modelData)) {
+    for await (const [key, value] of Object.entries(modelData)) {
       if (key === "apiKey") {
         if (typeof value === "string" || value === null) {
           const llmVault = new SupabaseLLMVault(
@@ -133,10 +133,14 @@ export const updateModel = createTool({
         continue;
       }
 
-      if (typeof value === "string") {
+      if (typeof value === "string" || typeof value === "boolean") {
         // @ts-expect-error - we know that the key is a valid property
         updateData[keyMap[key]] = value;
       }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return await getModel.handler({ id });
     }
 
     const { data, error } = await c

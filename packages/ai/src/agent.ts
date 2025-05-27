@@ -5,6 +5,7 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
+  AUTO_MODEL,
   DEFAULT_MODEL,
   DEFAULT_MODEL_ID,
   DEFAULT_MODEL_PREFIX,
@@ -554,16 +555,21 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
 
     if (
-      !modelId.startsWith(DEFAULT_MODEL_PREFIX) && modelId !== DEFAULT_MODEL
+      (!modelId.startsWith(DEFAULT_MODEL_PREFIX) &&
+        modelId !== DEFAULT_MODEL) || modelId === DEFAULT_MODEL_ID
     ) {
       const llmVault = new SupabaseLLMVault(
         this.db,
         this.env.API_KEY_ENCRYPTION_KEY,
       );
-      const data = await llmVault.getApiKey(
-        modelId,
-        this.workspace,
-      );
+      const data = modelId === DEFAULT_MODEL_ID
+        ? await llmVault.getDefaultApiKey(
+          this.workspace,
+        )
+        : await llmVault.getApiKey(
+          modelId,
+          this.workspace,
+        );
 
       if (data) {
         llmConfig = {
@@ -580,8 +586,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   private async initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
-
-    console.log("config", config);
 
     const llmConfig = await this.getLLMConfig(config.model || DEFAULT_MODEL_ID);
 
@@ -614,7 +618,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     // todo(@camudo): change this to a nice algorithm someday
     if (model === "auto") {
-      model = "openai:gpt-4.1-mini";
+      model = AUTO_MODEL;
     }
 
     console.log("this.createLLM ----------------------------");

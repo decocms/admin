@@ -86,6 +86,8 @@ export const DEFAULT_MODEL_PREFIX = "DEFAULT";
 
 export const DEFAULT_MODEL_ID = `${DEFAULT_MODEL_PREFIX}-${DEFAULT_MODEL}`;
 
+export const AUTO_MODEL = "openai:gpt-4.1-mini";
+
 export const MODELS: Model[] = [
   {
     id: DEFAULT_MODEL_ID,

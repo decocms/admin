@@ -230,7 +230,7 @@ function AuditList() {
 
 const TABS: Record<string, Tab> = {
   main: {
-    title: "History",
+    title: "Activity",
     Component: AuditList,
     initialOpen: true,
   },
@@ -242,7 +242,7 @@ function Page() {
       displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
-        <DefaultBreadcrumb items={[{ label: "History", link: "/audits" }]} />
+        <DefaultBreadcrumb items={[{ label: "Activity", link: "/audits" }]} />
       }
     />
   );

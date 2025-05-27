@@ -95,7 +95,7 @@ function IntegrationListItem({
       selectedTools[integration.id]?.has(tool.name) ??
         toolsSet[integration.id]?.includes(tool.name)
     ).length;
-  const isAll = enabledCount === allTools.length && allTools.length > 0;
+  const isAll = enabledCount > 0;
   const isEmpty = allTools.length === 0;
 
   function handleAll(checked: boolean) {
@@ -103,10 +103,6 @@ function IntegrationListItem({
       integration.id,
       checked ? allTools.map((tool) => tool.name) : [],
     );
-  }
-
-  if (isEmpty) {
-    return <></>;
   }
 
   return (
@@ -118,15 +114,17 @@ function IntegrationListItem({
       )}
     >
       <div className="flex gap-4 px-4 py-4">
-        <div>
-          <Checkbox
-            id="select-all"
-            className="cursor-pointer"
-            checked={isAll}
-            data-state={undefined}
-            onCheckedChange={handleAll}
-          />
-        </div>
+        {!isEmpty && (
+          <div>
+            <Checkbox
+              id="select-all"
+              className="cursor-pointer"
+              checked={isAll}
+              data-state={undefined}
+              onCheckedChange={handleAll}
+            />
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <IntegrationIcon
@@ -138,49 +136,53 @@ function IntegrationListItem({
               {integration.name}
             </span>
           </div>
-          <p className="text-sm">{integration.description}</p>
+          {integration.description && (
+            <p className="text-sm">{integration.description}</p>
+          )}
         </div>
       </div>
       <div className="absolute right-4 top-4 text-slate-400 lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
-      <div
-        onClick={() => setOpenTools(!openTools)}
-        className={cn(
-          "flex flex-col items-start gap-1 min-w-0 px-4 py-4 border-t border-slate-200",
-          !openTools && "hover:bg-slate-50",
-        )}
-      >
-        <span className="text-slate-500 text-sm">
-          {isLoading
-            ? (
-              "Loading tools..."
-            )
-            : (
-              <div className="flex items-center gap-4">
-                <Icon
-                  name={"chevron_right"}
-                  filled
-                  size={14}
-                  className={cn(
-                    "inline-block mr-1 align-text-bottom text-slate-400",
-                    openTools && "rotate-90",
-                  )}
-                />
-                {`${enabled} of ${total} tools enabled`}
-              </div>
-            )}
-        </span>
-        {openTools && (
-          <ToolList
-            integration={integration}
-            toolsSet={toolsSet}
-            isLoading={isLoading}
-            allTools={allTools}
-            setIntegrationTools={setIntegrationTools}
-          />
-        )}
-      </div>
+      {!isEmpty && (
+        <div
+          onClick={() => setOpenTools(!openTools)}
+          className={cn(
+            "flex flex-col items-start gap-1 min-w-0 px-4 py-4 border-t border-slate-200 cursor-pointer",
+            !openTools && "hover:bg-slate-50",
+          )}
+        >
+          <span className="text-slate-500 text-sm">
+            {isLoading
+              ? (
+                "Loading tools..."
+              )
+              : (
+                <div className="flex items-center gap-4">
+                  <Icon
+                    name={"chevron_right"}
+                    filled
+                    size={14}
+                    className={cn(
+                      "inline-block mr-1 align-text-bottom text-slate-400",
+                      openTools && "rotate-90",
+                    )}
+                  />
+                  {`${enabled} of ${total} tools enabled`}
+                </div>
+              )}
+          </span>
+          {openTools && (
+            <ToolList
+              integration={integration}
+              toolsSet={toolsSet}
+              isLoading={isLoading}
+              allTools={allTools}
+              setIntegrationTools={setIntegrationTools}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -151,7 +151,13 @@ export const openPanel = <T extends object>(
 };
 
 type initialOpen = "right" | "within" | "below" | "above" | "left";
-export const initialOpenDirections: initialOpen[] = ["right", "within", "below", "above", "left"];
+export const initialOpenDirections: initialOpen[] = [
+  "right",
+  "within",
+  "below",
+  "above",
+  "left",
+];
 
 export interface Tab {
   Component: ComponentType;
@@ -253,9 +259,10 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
-          position: initialOpenDirections.includes(value.initialOpen as initialOpen)
-            ? { direction: value.initialOpen }
-            : undefined,
+          position:
+            initialOpenDirections.includes(value.initialOpen as initialOpen)
+              ? { direction: value.initialOpen }
+              : undefined,
         },
         event.api,
         isMobile,

@@ -99,11 +99,12 @@ const TABS: Record<string, Tab> = {
   setup: {
     Component: AgentSettings,
     title: "Settings",
+    initialOpen: "right",
   },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
-    initialOpen: "right",
+    initialOpen: "within",
   },
   audit: {
     Component: Audit,

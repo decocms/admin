@@ -1,5 +1,5 @@
 import {
-Agent,
+  Agent,
   Thread,
   useAgents,
   useCreateAgent,
@@ -323,14 +323,26 @@ function SidebarThreadItem(
                     to={buildThreadUrl(thread)}
                     onClick={() => onThreadClick(thread)}
                   >
-                    {agent ? <AgentAvatar
-                      name={agent.name}
-                      avatar={agent.avatar}
-                      className="h-4 w-4 rounded-sm"
-                    /> : <div className="h-4 w-4 min-w-4 rounded-sm bg-[#2A9D90] flex items-center justify-center" >
-                      <Icon name="edit_square" className="text-white" size={12} />
-                      </div>}
-                    <span className="truncate">{agent ? agent.name : thread.title}</span>
+                    {agent
+                      ? (
+                        <AgentAvatar
+                          name={agent.name}
+                          avatar={agent.avatar}
+                          className="h-4 w-4 rounded-sm"
+                        />
+                      )
+                      : (
+                        <div className="h-4 w-4 min-w-4 rounded-sm bg-[#2A9D90] flex items-center justify-center">
+                          <Icon
+                            name="edit_square"
+                            className="text-white"
+                            size={12}
+                          />
+                        </div>
+                      )}
+                    <span className="truncate">
+                      {agent ? agent.name : thread.title}
+                    </span>
                   </Link>
                 )}
             </SidebarMenuButton>
@@ -353,7 +365,11 @@ function SidebarThreadItem(
 }
 
 function SidebarThreadList(
-  { threads, userId, agents }: { threads: Thread[]; userId: string; agents: Agent[] },
+  { threads, userId, agents }: {
+    threads: Thread[];
+    userId: string;
+    agents: Agent[];
+  },
 ) {
   const { isMobile, toggleSidebar } = useSidebar();
 
@@ -506,8 +522,9 @@ export function AppSidebar() {
 
   const handleOpenNewChat = () => {
     try {
-
-      focusEditAgent(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), { history: false });
+      focusEditAgent(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+        history: false,
+      });
 
       trackEvent("agent_create", {
         success: true,

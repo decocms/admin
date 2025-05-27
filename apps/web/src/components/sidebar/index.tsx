@@ -103,7 +103,7 @@ const WithActive = (
 };
 
 function buildThreadUrl(thread: Thread): string {
-  return `chat/${thread.metadata?.agentId ?? ""}/${thread.id}`;
+  return `agent/${thread.metadata?.agentId ?? ""}/${thread.id}`;
 }
 
 function DeleteThreadModal(

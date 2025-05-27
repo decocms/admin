@@ -310,7 +310,7 @@ export function WebhookTriggerForm({
                   binding
                 </span>
               </div>
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-col gap-2 justify-center w-min">
                 <FormControl>
                   <div>
                     {open
@@ -379,7 +379,7 @@ export function WebhookTriggerForm({
                   the selected tool
                 </span>
               </div>
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-col gap-2 justify-center w-min">
                 <FormControl>
                   <div>
                     <SingleToolSelector

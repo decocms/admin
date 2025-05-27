@@ -10,9 +10,11 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import countriesData from "../../utils/countries.json" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
+import { useUser } from "../../hooks/data/useUser.ts";
 interface Country {
   code: string;
   name: string;
@@ -86,6 +88,7 @@ export function ProfileSettings(
   },
 ) {
   const { data: profile, isLoading, error: loadError } = useProfile();
+  const user = useUser();
   const updateProfile = useUpdateProfile();
   const [dialCode, setDialCode] = useState("+1"); // default to US/Canada
   const [localValue, setLocalValue] = useState(""); // masked local number for display
@@ -93,6 +96,7 @@ export function ProfileSettings(
   const [fullPhone, setFullPhone] = useState(""); // full international number for saving
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [userIdCopied, setUserIdCopied] = useState(false);
 
   // On dial code change: detect country and update flag/mask
   function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -152,6 +156,14 @@ export function ProfileSettings(
     );
   }
 
+  function handleCopyUserId() {
+    if (user?.id) {
+      navigator.clipboard.writeText(user.id);
+      setUserIdCopied(true);
+      setTimeout(() => setUserIdCopied(false), 3000);
+    }
+  }
+
   // On load, parse phone
   useEffect(() => {
     if (profile?.phone) {
@@ -203,6 +215,20 @@ export function ProfileSettings(
                 {profile?.metadata?.full_name || profile?.email}
               </div>
               <div className="text-sm text-slate-500">{profile?.email}</div>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>User ID: {user?.id}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyUserId}
+                  className="p-1 hover:bg-slate-100 rounded transition-colors"
+                  aria-label="Copy user ID"
+                >
+                  <Icon 
+                    name={userIdCopied ? "check" : "content_copy"} 
+                    className="w-3 h-3"
+                  />
+                </button>
+              </div>
               <div className="w-full max-w-xs flex flex-col gap-2">
                 <label
                   htmlFor="profile-phone"

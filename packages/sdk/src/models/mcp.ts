@@ -2,7 +2,7 @@ import { z } from "zod";
 import { WellKnownBindingsName } from "../mcp/index.ts";
 
 export const BindingsSchema = z.enum(
-  ["Input", "Output"] as const satisfies WellKnownBindingsName[],
+  ["Input"] as const satisfies WellKnownBindingsName[],
 );
 /**
  * Schema for different connection types

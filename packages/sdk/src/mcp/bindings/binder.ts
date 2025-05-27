@@ -64,8 +64,5 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
 export const TriggerInputBinding = bindingClient(
   WellKnownBindings.Input,
 );
-export const TriggerOutputBinding = bindingClient(
-  WellKnownBindings.Output,
-);
 
 export * from "./index.ts";

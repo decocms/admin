@@ -26,7 +26,6 @@ import {
   Callbacks,
   MCPBindingClient,
   TriggerInputBinding,
-  TriggerOutputBinding,
 } from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
@@ -124,7 +123,6 @@ export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
   public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
-  public outputBinding?: MCPBindingClient<typeof TriggerOutputBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
@@ -208,11 +206,6 @@ export class Trigger {
       const context = this._createContext();
       if (trigger.type === "webhook") {
         this.inputBinding = TriggerInputBinding.forConnection(
-          trigger.binding.connection,
-          context,
-        );
-      } else {
-        this.outputBinding = TriggerOutputBinding.forConnection(
           trigger.binding.connection,
           context,
         );

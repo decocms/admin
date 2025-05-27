@@ -207,7 +207,9 @@ function ActionButtons({
       </Button>
 
       <Button
-        className={messages.length > 0 ? "inline-flex" : "hidden"}
+        className={messages.length > 0 && !hasChanges
+          ? "inline-flex"
+          : "hidden"}
         variant="ghost"
         onClick={() =>
           focusChat(agentId, crypto.randomUUID(), {

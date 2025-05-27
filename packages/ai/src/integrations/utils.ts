@@ -48,14 +48,15 @@ export const searchMarketplaceIntegations = async (
 };
 
 export const startOauthFlow = async (
-  integrationId: string,
+  appName: string,
   returnUrl: string,
+  installId: string,
 ) => {
-  const installId = crypto.randomUUID();
   const url = new URL(`${DECO_REGISTRY_SERVER_URL}/oauth/start`);
   url.searchParams.set("installId", installId);
-  url.searchParams.set("appName", integrationId);
+  url.searchParams.set("appName", appName);
   url.searchParams.set("returnUrl", returnUrl);
+
   const response = await fetch(url.toString(), {
     redirect: "manual",
   });
@@ -66,5 +67,5 @@ export const startOauthFlow = async (
     throw new Error("No redirect URL found");
   }
 
-  return redirectUrl;
+  return { redirectUrl };
 };

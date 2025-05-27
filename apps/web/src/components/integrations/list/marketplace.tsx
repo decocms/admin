@@ -261,21 +261,25 @@ function MarketplaceTab() {
     );
 
     installIntegration({
-      id: selectedIntegration.id,
+      appName: selectedIntegration.id,
       provider: selectedIntegration.provider,
-      returnUrl: returnUrl.toString(),
+      returnUrl: returnUrl.href,
     }, {
-      onSuccess: (data) => {
-        if (typeof data?.id !== "string") {
+      onSuccess: ({ integration, redirectUrl }) => {
+        if (typeof integration?.id !== "string") {
           setIsPending(false);
           return;
         }
-        setCreatedIntegrationId(data.id);
+        setCreatedIntegrationId(integration.id);
         setIsPending(false);
         trackEvent("integration_install", {
           success: true,
           data: selectedIntegration,
         });
+
+        if (redirectUrl) {
+          globalThis.location.href = redirectUrl;
+        }
       },
       onError: (error) => {
         setIsPending(false);

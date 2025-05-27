@@ -5,7 +5,6 @@ import {
   useTeamMembersBySlug,
   useUsagePerAgent,
   useUsagePerThread,
-  useWorkspaceWalletBalance,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -35,14 +34,9 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
-import { DepositDialog } from "../wallet/DepositDialog.tsx";
-import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { Protect } from "../wallet/plan.tsx";
 
 interface UserAvatarProps {
   member?: Member;
@@ -136,60 +130,6 @@ function AgentAvatar({ agent, size = "md" }: AgentAvatarProps) {
   );
 }
 
-function AccountBalance() {
-  const account = useWorkspaceWalletBalance();
-  return <p className="text-5xl font-bold">{account?.balance}</p>;
-}
-
-function BalanceCard() {
-  const team = useCurrentTeam();
-  const account = useWorkspaceWalletBalance();
-
-  return (
-    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200 relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-2 top-2"
-        onClick={account.refetch}
-        disabled={account.isRefetching}
-      >
-        <Icon
-          name="refresh"
-          size={16}
-          className={account.isRefetching ? "animate-spin" : ""}
-        />
-      </Button>
-      <div className="w-full text-sm mb-8">
-        AI Usage Wallet
-      </div>
-      <CardContent className="flex flex-col items-center justify-center gap-2 p-0">
-        <div className="flex items-center gap-1 text-base mb-1">
-          {team.label}
-        </div>
-        <div className="mb-6">
-          <Suspense fallback={<Skeleton className="w-32 h-12" />}>
-            <ErrorBoundary
-              fallback={<p className="text-red-500">Error loading balance</p>}
-            >
-              <AccountBalance />
-            </ErrorBoundary>
-          </Suspense>
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <Protect
-            feature="ai-wallet-deposit"
-            fallback={null}
-          >
-            <DepositDialog />
-          </Protect>
-          <VoucherDialog />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function color(id: string) {
   const colors = [
     "#FF6B6B", // coral red
@@ -223,7 +163,7 @@ function color(id: string) {
   return colors[hash % colors.length];
 }
 
-function EmptyStateCard(
+export function EmptyStateCard(
   { title, description }: { title: string; description: string },
 ) {
   return (
@@ -262,7 +202,7 @@ function CreditsUsedPerAgentCard({
 
   if (enrichedAgents.length === 0) {
     return (
-      <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
+      <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
         <div className="w-full text-sm mb-8 flex justify-between items-center">
           <span>Credits Used Per Agent</span>
           <div className="flex items-center gap-2">
@@ -311,7 +251,7 @@ function CreditsUsedPerAgentCard({
   }));
 
   return (
-    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
+    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
       <div className="w-full text-sm mb-8 flex justify-between items-center">
         <span>Credits Used Per Agent</span>
         <div className="flex items-center gap-2">
@@ -422,7 +362,7 @@ function CreditsUsedPerAgentCard({
 }
 
 CreditsUsedPerAgentCard.Fallback = () => (
-  <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border border-slate-200">
+  <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
     <div className="w-full text-sm mb-8 flex justify-between items-center">
       <span>Credits Used Per Agent</span>
     </div>
@@ -454,10 +394,9 @@ function CreditsUsedPerThread({
   });
 
   return (
-    <Card className="w-full h-full flex flex-col rounded-md border border-slate-200 gap-0">
+    <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
       <div className="w-full text-sm p-4 border-b border-slate-200 flex justify-between items-center">
         <span>Credits Used Per Thread</span>
-
         <Select
           value={range}
           onValueChange={(value: "day" | "week" | "month") => setRange(value)}
@@ -475,7 +414,7 @@ function CreditsUsedPerThread({
         </Select>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-16 pt-3">
+      <div className="flex-1 overflow-y-auto px-3 pb-8 pt-3">
         {enrichedThreads.length === 0
           ? (
             <EmptyStateCard
@@ -523,7 +462,7 @@ function CreditsUsedPerThread({
 }
 
 CreditsUsedPerThread.Fallback = () => (
-  <Card className="w-full h-full flex flex-col rounded-md border border-slate-200 gap-0">
+  <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
     <div className="w-full text-sm p-4 border-b border-slate-200 flex justify-between items-center">
       <span>Credits Used Per Thread</span>
     </div>
@@ -659,7 +598,7 @@ function useMembers() {
   return members;
 }
 
-export default function UsageSettings() {
+export default function Usage() {
   const _agents = useAgents();
   const agents = {
     ..._agents,
@@ -673,19 +612,16 @@ export default function UsageSettings() {
   return (
     <div className="h-full text-slate-700">
       <SettingsMobileHeader currentPage="usage" />
-      <div className="flex flex-col md:flex-row gap-4 p-4 h-full md:h-[calc(100vh-64px)] overflow-y-auto">
-        <div className="flex flex-col h-full min-w-0 min-w-lg gap-4">
-          <BalanceCard />
+
+      <div className="flex flex-col items-center h-full gap-4 w-full">
+        <div className="w-full flex items-center justify-center">
           <Suspense fallback={<CreditsUsedPerAgentCard.Fallback />}>
             <CreditsUsedPerAgentCard agents={agents} />
           </Suspense>
         </div>
-        <div className="flex flex-col h-full min-w-0 w-full">
+        <div className="w-full h-full max-h-[400px]">
           <Suspense fallback={<CreditsUsedPerThread.Fallback />}>
-            <CreditsUsedPerThread
-              agents={agents}
-              teamMembers={members}
-            />
+            <CreditsUsedPerThread agents={agents} teamMembers={members} />
           </Suspense>
         </div>
       </div>

@@ -30,7 +30,7 @@ export function VoucherDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="lg" className="w-full">
+        <Button variant="outline" className="w-full">
           <Icon name="redeem" size={16} className="mr-2" />
           Redeem voucher
         </Button>

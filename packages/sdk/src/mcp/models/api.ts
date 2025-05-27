@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { DEFAULT_MODEL, Model, MODELS } from "../../constants.ts";
 import { assertHasWorkspace, bypass } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { DEFAULT_MODEL, Model, MODELS } from "../../constants.ts";
 
-interface ModelTable {
+interface ModelRow {
   id: string;
   name: string;
   model: string;
@@ -18,27 +18,49 @@ interface ModelTable {
 /**
  * Hashes a token using SHA-256 and returns the base64 encoded string
  */
-export async function hashToken(token: string): Promise<string> {
+export function hashToken(token: string): Promise<string> {
   // TODO: hash method
-  return token;
+  return Promise.resolve(token);
 }
+
+const formatModelRow = (model: ModelRow): Model => {
+  const defaultModel = MODELS.find((m) => m.model === model.model);
+
+  return {
+    id: model.id,
+    name: model.name,
+    model: model.model,
+    logo: defaultModel?.logo ?? "",
+    capabilities: defaultModel?.capabilities ?? [],
+    legacyId: defaultModel?.legacyId,
+    description: model.description || undefined,
+    byDeco: model.by_deco,
+    isEnabled: model.is_enabled,
+    hasCustomKey: !!model.api_key_hash,
+  };
+};
+
+export const createModelSchema = z.object({
+  name: z.string(),
+  model: z.string(),
+  apiKey: z.string().optional(),
+  description: z.string().optional(),
+  byDeco: z.boolean().optional(),
+  isEnabled: z.boolean().optional(),
+});
+
+export type CreateModelInput = z.infer<typeof createModelSchema>;
 
 export const createModel = createTool({
   name: "MODELS_CREATE",
   description: "Create a new model",
-  inputSchema: z.object({
-    name: z.string(),
-    model: z.string(),
-    apiKey: z.string().optional(),
-    byDeco: z.boolean().optional(),
-    description: z.string().optional(),
-  }),
+  inputSchema: createModelSchema,
   canAccess: bypass,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const { name, model, apiKey, byDeco, description } = props;
+    const { name, model, apiKey, byDeco, description, isEnabled } = props;
     const hash = apiKey ? await hashToken(apiKey) : null;
 
     const { data, error } = await c
@@ -49,7 +71,7 @@ export const createModel = createTool({
         name,
         model,
         api_key_hash: hash,
-        is_enabled: true,
+        is_enabled: isEnabled ?? true,
         by_deco: byDeco,
         description,
       })
@@ -58,31 +80,58 @@ export const createModel = createTool({
 
     if (error) throw error;
 
-    return data;
+    return formatModelRow(data);
   },
 });
+
+export const updateModelSchema = z.object({
+  id: z.string(),
+  data: z.object({
+    name: z.string().optional(),
+    model: z.string().optional(),
+    apiKey: z.string().nullable().optional(),
+    isEnabled: z.boolean().optional(),
+    byDeco: z.boolean().optional(),
+    description: z.string().optional(),
+  }),
+});
+
+export type UpdateModelInput = z.infer<typeof updateModelSchema>;
 
 export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
-  inputSchema: z.object({
-    id: z.string().describe("The id of the model to update"),
-    data: z.object({
-      label: z.string().optional(),
-      model: z.string().optional(),
-      api_key: z.string().optional(),
-      is_enabled: z.boolean().optional(),
-      by_deco: z.boolean().optional(),
-    }),
-  }),
+  inputSchema: updateModelSchema,
   canAccess: bypass,
   handler: async (props, c) => {
-    const { id, data: { api_key, ...modelData } } = props;
-    const updateData = { ...modelData };
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
 
-    if (api_key) {
-      // @ts-expect-error ignore for now
-      updateData.api_key_hash = await hashToken(api_key);
+    const { id, data: modelData } = props;
+    const updateData: Partial<ModelRow> = {};
+
+    if ("apiKey" in modelData) {
+      if (modelData.apiKey) {
+        updateData.api_key_hash = await hashToken(modelData.apiKey);
+      } else if (modelData.apiKey === null) {
+        updateData.api_key_hash = null;
+      }
+    }
+
+    if ("name" in modelData && typeof modelData.name === "string") {
+      updateData.name = modelData.name;
+    }
+
+    if ("model" in modelData && typeof modelData.model === "string") {
+      updateData.model = modelData.model;
+    }
+
+    if ("isEnabled" in modelData && typeof modelData.isEnabled === "boolean") {
+      updateData.is_enabled = modelData.isEnabled;
+    }
+
+    if ("byDeco" in modelData && typeof modelData.byDeco === "boolean") {
+      updateData.by_deco = modelData.byDeco;
     }
 
     const { data, error } = await c
@@ -90,6 +139,7 @@ export const updateModel = createTool({
       .from("models")
       .update(updateData)
       .eq("id", id)
+      .eq("workspace", workspace)
       .select(`
         id,
         name,
@@ -105,24 +155,31 @@ export const updateModel = createTool({
 
     if (error) throw error;
 
-    return data;
+    return formatModelRow(data);
   },
 });
+
+export const deleteModelSchema = z.object({
+  id: z.string(),
+});
+
+export type DeleteModelInput = z.infer<typeof deleteModelSchema>;
 
 export const deleteModel = createTool({
   name: "MODELS_DELETE",
   description: "Delete a model by id",
-  inputSchema: z.object({
-    id: z.string(),
-  }),
+  inputSchema: deleteModelSchema,
   canAccess: bypass,
   handler: async (props, c) => {
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
     const { id } = props;
 
     const { error } = await c.db
       .from("models")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("workspace", workspace);
 
     if (error) throw error;
 
@@ -130,13 +187,17 @@ export const deleteModel = createTool({
   },
 });
 
+export const listModelsSchema = z.object({
+  excludeDisabled: z.boolean().optional(),
+  excludeAuto: z.boolean().optional(),
+});
+
+export type ListModelsInput = z.infer<typeof listModelsSchema>;
+
 export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
-  inputSchema: z.object({
-    excludeDisabled: z.boolean().optional(),
-    excludeAuto: z.boolean().optional(),
-  }),
+  inputSchema: listModelsSchema,
   canAccess: bypass,
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -181,42 +242,35 @@ export const listModels = createTool({
 
     const dbModels = data.filter((m) => !m.by_deco);
 
-    const allModels = [...models, ...dbModels].map((m) => parseModel(m)).filter(
-      (m) => !excludeDisabled || m.isEnabled,
-    );
+    const allModels = [...models, ...dbModels]
+      .map((m) => formatModelRow(m))
+      .filter((m) => !excludeDisabled || m.isEnabled);
 
     return allModels;
   },
 });
 
-const parseModel = (model: ModelTable): Model => {
-  const defaultModel = MODELS.find((m) => m.model === model.model);
+export const getModelSchema = z.object({
+  id: z.string(),
+});
 
-  return {
-    id: model.id,
-    name: model.name,
-    model: model.model,
-    logo: defaultModel?.logo ?? "",
-    capabilities: defaultModel?.capabilities ?? [],
-    legacyId: defaultModel?.legacyId,
-    description: model.description,
-    byDeco: model.by_deco,
-    isEnabled: model.is_enabled,
-    hasCustomKey: !!model.api_key_hash,
-  };
-};
+export type GetModelInput = z.infer<typeof getModelSchema>;
 
 export const getModel = createTool({
   name: "MODELS_GET",
   description: "Get a model by id",
-  inputSchema: z.object({
-    id: z.string(),
-  }),
+  inputSchema: getModelSchema,
   canAccess: bypass,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
+
+    const defaultModel = MODELS.find((m) => m.id === id);
+
+    if (defaultModel) {
+      return defaultModel;
+    }
 
     const { data, error } = await c
       .db
@@ -238,6 +292,6 @@ export const getModel = createTool({
 
     if (error) throw error;
 
-    return parseModel(data);
+    return formatModelRow(data);
   },
 });

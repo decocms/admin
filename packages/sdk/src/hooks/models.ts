@@ -5,21 +5,32 @@ import {
 } from "@tanstack/react-query";
 import {
   createModel,
-  CreateModelInput,
   deleteModel,
   getModel,
   listModels,
   updateModel,
-  UpdateModelInput,
 } from "../crud/model.ts";
-import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
+import type {
+  CreateModelInput,
+  DeleteModelInput,
+  GetModelInput,
+  ListModelsInput,
+  UpdateModelInput,
+} from "../mcp/models/api.ts";
+import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
-export type { CreateModelInput, UpdateModelInput };
+export type {
+  CreateModelInput,
+  DeleteModelInput,
+  GetModelInput,
+  ListModelsInput,
+  UpdateModelInput,
+};
 
 export const useModels = (
-  options: { excludeDisabled?: boolean; excludeAuto?: boolean } = {},
+  options: ListModelsInput = {},
 ) => {
   const { workspace } = useSDK();
   return useSuspenseQuery({
@@ -46,8 +57,11 @@ export function useCreateModel() {
   return useMutation({
     mutationFn: (input: CreateModelInput) => createModel(workspace, input),
     onSuccess: (result) => {
-      client.invalidateQueries({ queryKey: KEYS.MODELS(workspace) });
+      client.invalidateQueries({
+        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+      });
       client.setQueryData(KEYS.MODELS(workspace), result);
+      client.setQueryData(KEYS.MODEL(workspace, result.id), result);
     },
   });
 }
@@ -58,7 +72,9 @@ export function useUpdateModel() {
   return useMutation({
     mutationFn: (input: UpdateModelInput) => updateModel(workspace, input),
     onSuccess: (result) => {
-      client.invalidateQueries({ queryKey: KEYS.MODELS(workspace) });
+      client.invalidateQueries({
+        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+      });
       client.setQueryData(KEYS.MODEL(workspace, result.id), result);
     },
   });
@@ -70,7 +86,9 @@ export function useDeleteModel() {
   return useMutation({
     mutationFn: (id: string) => deleteModel(workspace, id),
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: KEYS.MODELS(workspace) });
+      client.invalidateQueries({
+        queryKey: KEYS.MODELS(workspace).slice(0, 2),
+      });
     },
   });
 }

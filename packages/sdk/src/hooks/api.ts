@@ -1,4 +1,5 @@
 import { Options } from "../crud/thread.ts";
+import type { ListModelsInput } from "../crud/model.ts";
 import type { Workspace } from "../index.ts";
 
 export const KEYS = {
@@ -43,8 +44,13 @@ export const KEYS = {
   MY_INVITES: () => ["my_invites"],
   MODELS: (
     workspace: Workspace,
-    options?: { excludeDisabled?: boolean; excludeAuto?: boolean },
-  ) => ["models", workspace, options?.excludeDisabled, options?.excludeAuto],
+    options?: ListModelsInput,
+  ) => [
+    "models",
+    workspace,
+    options?.excludeDisabled || false,
+    options?.excludeAuto || false,
+  ],
   MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",

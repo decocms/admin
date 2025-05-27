@@ -1,9 +1,15 @@
 import { Model } from "../constants.ts";
 import { MCPClient } from "../fetcher.ts";
+import { CreateModelInput } from "../mcp/models/api.ts";
+
+export interface ListModelsInput {
+  excludeDisabled?: boolean;
+  excludeAuto?: boolean;
+}
 
 export const listModels = (
   workspace: string,
-  options: { excludeDisabled?: boolean; excludeAuto?: boolean },
+  options: ListModelsInput = {},
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).MODELS_LIST(options, init);
 
@@ -12,16 +18,6 @@ export const getModel = (
   id: string,
   init?: RequestInit,
 ) => MCPClient.forWorkspace(workspace).MODELS_GET({ id }, init);
-
-export interface CreateModelInput {
-  name: string;
-  model: string;
-  apiKey?: string;
-  description?: string;
-  isEnabled: boolean;
-  byDeco: boolean;
-  workspace: string;
-}
 
 export const createModel = (
   workspace: string,

@@ -43,6 +43,7 @@ import Threads from "./threads.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
+import { WhatsAppButton } from "./WhatsAppButton.tsx";
 
 interface Props {
   agentId?: string;
@@ -261,44 +262,47 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
             tabs={TABS}
             key={agentId}
             actionButtons={
-              <div
-                className={cn(
-                  "flex items-center gap-2 bg-slate-50",
-                  "transition-opacity",
-                  hasChanges ? "opacity-100" : "opacity-0",
-                )}
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={form.formState.isSubmitting}
-                  onClick={discardChanges}
+              <div className="flex justify-between items-center">
+                <WhatsAppButton />
+                <div
+                  className={cn(
+                    "flex items-center gap-2 bg-slate-50",
+                    "transition-opacity",
+                    hasChanges ? "opacity-100" : "opacity-0 w-0",
+                  )}
                 >
-                  Discard
-                </Button>
-                <Button
-                  variant={isWellKnownAgent ? "default" : "special"}
-                  onClick={handleSubmit}
-                  disabled={!numberOfChanges ||
-                    form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting
-                    ? (
-                      <>
-                        <Spinner size="xs" />
-                        <span>Saving...</span>
-                      </>
-                    )
-                    : (
-                      <span>
-                        {isWellKnownAgent
-                          ? "Save as Agent"
-                          : `Save ${numberOfChanges} change${
-                            numberOfChanges > 1 ? "s" : ""
-                          }`}
-                      </span>
-                    )}
-                </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={form.formState.isSubmitting}
+                    onClick={discardChanges}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    variant={isWellKnownAgent ? "default" : "special"}
+                    onClick={handleSubmit}
+                    disabled={!numberOfChanges ||
+                      form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting
+                      ? (
+                        <>
+                          <Spinner size="xs" />
+                          <span>Saving...</span>
+                        </>
+                      )
+                      : (
+                        <span>
+                          {isWellKnownAgent
+                            ? "Save as Agent"
+                            : `Save ${numberOfChanges} change${
+                              numberOfChanges > 1 ? "s" : ""
+                            }`}
+                        </span>
+                      )}
+                  </Button>
+                </div>
               </div>
             }
             breadcrumb={

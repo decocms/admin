@@ -7,7 +7,9 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useCallback } from "react";
+import type { UIMessage } from "ai";
+import { useCallback, useEffect } from "react";
+import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   getThread,
   getThreadMessages,
@@ -55,62 +57,80 @@ export const useUpdateThreadMessages = () => {
 };
 
 /** Hook for fetching all threads for the user */
-export const useThreads = (options: ThreadFilterOptions = {}) => {
-  const { workspace } = useSDK();
-
-  return useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace, options),
-    queryFn: ({ signal }) =>
-      listThreads(workspace, {
-        orderBy: "createdAt_desc",
-        limit: 20,
-        ...options,
-      }, { signal }),
-  });
-};
-
-export const useAddOptimisticThread = () => {
+export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
+  const options: ThreadFilterOptions = {
+    orderBy: "createdAt_desc",
+    limit: 20,
+    ...partialOptions,
+  };
+  const key = KEYS.THREADS(workspace, options);
 
-  const addOptimisticThread = useCallback(
-    (threadId: string, agentId: string) => {
-      // Add a "Loading..." titled thread to the threads query
-      client.setQueryData(
-        KEYS.THREADS(workspace),
+  const effect = useCallback(
+    ({ messages, threadId, agentId }: {
+      messages: UIMessage[];
+      threadId: string;
+      agentId: string;
+    }) => {
+      client.cancelQueries({ queryKey: key });
+      client.setQueryData<Awaited<ReturnType<typeof listThreads>>>(
+        key,
         (oldData) => {
-          debugger;
-          if (!oldData) return oldData;
-
-          // Check if the thread already exists
-          // deno-lint-ignore no-explicit-any
-          const threadExists = oldData.some((thread: any) =>
+          const exists = oldData?.threads.find((thread) =>
             thread.id === threadId
           );
 
-          if (!threadExists) {
-            return [
-              ...oldData,
-              {
-                id: threadId,
-                title: "New chat",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                metadata: {
-                  agentId,
-                },
-              },
-            ];
+          if (exists) {
+            return oldData;
           }
 
-          return oldData;
+          const newTitle = typeof messages[0]?.content === "string"
+            ? messages[0].content.slice(0, 20)
+            : "New chat";
+
+          const updated = {
+            pagination: oldData?.pagination ?? {
+              hasMore: false,
+              nextCursor: null,
+            },
+            threads: [
+              ...(oldData?.threads ?? []),
+              {
+                id: threadId,
+                title: newTitle,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                resourceId: agentId,
+                metadata: { agentId },
+              },
+            ],
+          };
+
+          // When uniqueyById, we should remove the agentId from the thread metadata
+          if (
+            options.uniqueByAgentId && !(agentId in WELL_KNOWN_AGENT_IDS)
+          ) {
+            updated.threads = updated.threads.filter(
+              (thread, index) =>
+                thread.metadata?.agentId !== agentId ||
+                index === updated.threads.length - 1,
+            );
+          }
+
+          return updated;
         },
       );
     },
-    [client, workspace],
+    [client, key, options.uniqueByAgentId],
   );
 
-  return addOptimisticThread;
+  useMessagesSentEffect(effect);
+
+  return useSuspenseQuery({
+    queryKey: key,
+    queryFn: ({ signal }) => listThreads(workspace, options, { signal }),
+  });
 };
 
 export const useUpdateThreadTitle = (threadId: string, userId: string) => {
@@ -185,4 +205,31 @@ export const useDeleteThread = (threadId: string, userId: string) => {
       });
     },
   });
+};
+
+const channel = new EventTarget();
+
+export interface Options {
+  messages: UIMessage[];
+  threadId: string;
+  agentId: string;
+}
+
+export const dispatchMessages = (options: Options) => {
+  channel.dispatchEvent(new CustomEvent("message", { detail: options }));
+};
+
+const useMessagesSentEffect = (cb: (options: Options) => void) => {
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const options = (event as CustomEvent).detail as Options;
+      cb(options);
+    };
+
+    channel.addEventListener("message", handler);
+
+    return () => {
+      channel.removeEventListener("message", handler);
+    };
+  }, [cb]);
 };

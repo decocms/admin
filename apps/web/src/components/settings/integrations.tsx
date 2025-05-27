@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { Chiplet } from "../common/ListPageHeader.tsx";
 import { IntegrationList } from "../toolsets/selector.tsx";
@@ -67,7 +67,7 @@ function IntegrationsTab() {
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
 
-  const usedIntegrations = installedIntegrations.filter((integration) =>
+  const activeIntegrations = installedIntegrations.filter((integration) =>
     !!toolsSet[integration.id]?.length
   );
 
@@ -85,27 +85,38 @@ function IntegrationsTab() {
     }
 
     if (filter === "Active" && shouldShow) {
-      shouldShow = usedIntegrations.includes(integration);
+      shouldShow = activeIntegrations.includes(integration);
     }
 
     if (filter === "Inactive" && shouldShow) {
-      shouldShow = !usedIntegrations.includes(integration);
+      shouldShow = !activeIntegrations.includes(integration);
     }
 
     return shouldShow;
   });
 
-  const toolsIntegrations = filteredIntegrations.filter((integration) =>
+  const orderedIntegrations = useMemo(() => {
+    return filteredIntegrations.sort((a, b) => {
+      const aIsActive = activeIntegrations.includes(a);
+      const bIsActive = activeIntegrations.includes(b);
+      
+      if (aIsActive && !bIsActive) return -1;
+      if (!aIsActive && bIsActive) return 1;
+      return 0;
+    });
+  }, [filter, search, activeTab]);
+
+  const toolsIntegrations = orderedIntegrations.filter((integration) =>
     !ADVANCED_INTEGRATIONS.includes(integration.id) &&
     integration.id.startsWith("i:")
   );
 
-  const agentsIntegrations = filteredIntegrations.filter((integration) =>
+  const agentsIntegrations = orderedIntegrations.filter((integration) =>
     !ADVANCED_INTEGRATIONS.includes(integration.id) &&
     integration.id.startsWith("a:")
   );
 
-  const advancedIntegrations = filteredIntegrations.filter((integration) =>
+  const advancedIntegrations = orderedIntegrations.filter((integration) =>
     ADVANCED_INTEGRATIONS.includes(integration.id)
   );
 
@@ -113,7 +124,6 @@ function IntegrationsTab() {
     "tools": toolsIntegrations,
     "agents": agentsIntegrations,
     "advanced": advancedIntegrations,
-    "active": usedIntegrations,
   };
 
   const tools = tabs.map((tab) => {

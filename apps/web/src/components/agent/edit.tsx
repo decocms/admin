@@ -121,25 +121,24 @@ const TABS: Record<string, Tab> = {
     Component: AgentSettings,
     title: "Settings",
     initialOpen: "right",
-    initialWidth: 500,
+    initialWidth: 300,
   },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
     initialOpen: "within",
-    initialWidth: 500,
+    initialWidth: 300
   },
   prompt: {
     Component: PromptTab,
     title: "System prompt",
-    initialOpen: "left",
-    initialHeight: 270,
+    initialOpen: "left"
   },
   audit: {
     Component: Threads,
     title: "Threads",
     initialOpen: "above",
-    initialHeight: 510,
+    initialHeight: 530,
   },
   chat: {
     Component: Chat,

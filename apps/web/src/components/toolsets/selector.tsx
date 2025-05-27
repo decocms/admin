@@ -55,7 +55,7 @@ function IntegrationListItem({
       <label
         htmlFor={`select-all-${integration.id}`}
         className={cn(
-          "flex gap-4 px-4 py-4 a",
+          "flex gap-4 px-4 py-4 rounded-t-xl",
           !isEmpty && "hover:bg-slate-50 cursor-pointer",
         )}
       >
@@ -96,7 +96,7 @@ function IntegrationListItem({
           }}
           className={cn(
             "flex gap-2 items-center justify-between px-4 py-4 border-t border-slate-200 cursor-pointer",
-            "hover:bg-slate-50",
+            "hover:bg-slate-50 rounded-b-xl",
           )}
         >
           <div className="flex gap-2 items-center">
@@ -113,7 +113,7 @@ function IntegrationListItem({
         <div
           className={cn(
             "flex flex-col items-start gap-1 min-w-0 px-4 border-t border-slate-200 cursor-pointer",
-            !openTools && "hover:bg-slate-50",
+            !openTools && "hover:bg-slate-50 rounded-b-xl",
           )}
         >
           <span

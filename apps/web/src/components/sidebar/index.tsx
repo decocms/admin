@@ -407,7 +407,7 @@ function SidebarThreadsSkeleton() {
 function SidebarThreads() {
   const user = useUser();
   const { data: agents } = useAgents();
-  const { data } = useThreads({ resourceId: user?.id ?? "" });
+  const { data } = useThreads({ resourceId: user?.id ?? "", uniqueByAgentId: true });
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (

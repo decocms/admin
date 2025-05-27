@@ -222,7 +222,7 @@ function SidebarThreadItem(
   { thread, userId, onThreadClick, agent }: {
     thread: Thread;
     userId: string;
-    agent: Agent;
+    agent?: Agent;
     onThreadClick: (thread: Thread) => void;
   },
 ) {

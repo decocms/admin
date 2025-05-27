@@ -1,103 +1,39 @@
-import { type Integration, useTools } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+import { type Integration, MCPTool, useTools } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useRef, useState } from "react";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import { useState } from "react";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 
 interface ToolsMap {
   [integrationId: string]: string[];
 }
 
-interface SelectedToolsMap {
-  [integrationId: string]: Set<string>;
-}
-
-interface ToolsetSelectorProps {
-  installedIntegrations: Integration[];
-  toolsSet: ToolsMap;
-  setIntegrationTools: (integrationId: string, tools: string[]) => void;
-  initialSelectedIntegration?: string | null;
-}
-
-function useToolSelection(toolsSet: ToolsMap, open: boolean) {
-  const [selected, setSelected] = useState<SelectedToolsMap>({});
-
-  useEffect(() => {
-    if (!open) {
-      setSelected({});
-      return;
-    }
-    const initial: SelectedToolsMap = {};
-    Object.entries(toolsSet).forEach(([id, tools]) => {
-      initial[id] = new Set(tools);
-    });
-    setSelected(initial);
-  }, [open, toolsSet]);
-
-  function toggle(integrationId: string, toolName: string, checked: boolean) {
-    console.log("toggle", integrationId, toolName, checked);
-    setSelected((prev) => {
-      const next = { ...prev };
-      if (!next[integrationId]) {
-        next[integrationId] = new Set(toolsSet[integrationId] || []);
-      }
-      checked
-        ? next[integrationId].add(toolName)
-        : next[integrationId].delete(toolName);
-      return next;
-    });
-  }
-
-  return { selected, toggle };
-}
-
 function IntegrationListItem({
   integration,
-  selectedIntegration,
   toolsSet,
-  selectedTools,
-  selectedItemRef,
   setIntegrationTools,
 }: {
   integration: Integration;
-  selectedIntegration: string | null;
   toolsSet: ToolsMap;
-  selectedTools: SelectedToolsMap;
-  selectedItemRef?: React.RefObject<HTMLDivElement | null>;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
 }) {
-  const [openTools, setOpenTools] = useState();
+  const [openTools, setOpenTools] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
   const navigateWorkspace = useNavigateWorkspace();
 
   const total = toolsData?.tools?.length ?? 0;
   const enabled = new Set([
     ...(toolsSet[integration.id] || []),
-    ...(selectedTools[integration.id]
-      ? Array.from(selectedTools[integration.id])
-      : []),
   ]).size;
 
   const allTools = toolsData?.tools || [];
   const enabledCount =
-    allTools.filter((tool) =>
-      selectedTools[integration.id]?.has(tool.name) ??
-        toolsSet[integration.id]?.includes(tool.name)
-    ).length;
+    allTools.filter((tool) => toolsSet[integration.id]?.includes(tool.name))
+      .length;
   const isAll = enabledCount > 0;
   const isEmpty = !isLoading && allTools.length === 0;
 
@@ -111,7 +47,6 @@ function IntegrationListItem({
   return (
     <div
       key={integration.id}
-      ref={selectedIntegration === integration.id ? selectedItemRef : undefined}
       className={cn(
         "w-full flex flex-col rounded-xl transition-colors border relative",
         isEmpty && "order-last",
@@ -216,17 +151,11 @@ function IntegrationListItem({
 
 export function IntegrationList({
   integrations,
-  selectedIntegration,
   toolsSet,
-  selectedTools,
-  selectedItemRef,
   setIntegrationTools,
 }: {
   integrations: Integration[];
-  selectedIntegration: string | null;
   toolsSet: ToolsMap;
-  selectedTools: SelectedToolsMap;
-  selectedItemRef?: React.RefObject<HTMLDivElement | null>;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
 }) {
   return (
@@ -235,10 +164,7 @@ export function IntegrationList({
         <IntegrationListItem
           key={integration.id}
           integration={integration}
-          selectedIntegration={selectedIntegration}
           toolsSet={toolsSet}
-          selectedTools={selectedTools}
-          selectedItemRef={selectedItemRef}
           setIntegrationTools={setIntegrationTools}
         />
       ))}
@@ -263,7 +189,7 @@ function ToolList({
   integration: Integration;
   toolsSet: ToolsMap;
   isLoading: boolean;
-  allTools: Tool[];
+  allTools: MCPTool[];
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
 }) {
   if (isLoading) {

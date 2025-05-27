@@ -76,11 +76,13 @@ function IntegrationsTab() {
   const filteredIntegrations = installedIntegrations.filter((integration) => {
     let shouldShow = false;
 
-    if (integration.name.toLowerCase().includes(search.toLowerCase())) {
+    if (integration?.name?.toLowerCase().includes(search.toLowerCase())) {
       shouldShow = true;
     }
 
-    if (integration.description.toLowerCase().includes(search.toLowerCase())) {
+    if (
+      integration?.description?.toLowerCase().includes(search.toLowerCase())
+    ) {
       shouldShow = true;
     }
 
@@ -183,9 +185,7 @@ function IntegrationsTab() {
                 <div className="flex flex-col gap-2">
                   <IntegrationList
                     integrations={toolsMap[activeTab as keyof typeof toolsMap]}
-                    selectedIntegration={null}
                     toolsSet={toolsSet}
-                    selectedTools={usedIntegrations}
                     setIntegrationTools={setIntegrationTools}
                   />
                 </div>

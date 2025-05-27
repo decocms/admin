@@ -269,7 +269,7 @@ function Docked(
           minimumWidth: value.minimumWidth,
           position:
             initialOpenDirections.includes(value.initialOpen as initialOpen)
-              ? { direction: value.initialOpen }
+              ? { direction: value.initialOpen as initialOpen }
               : undefined,
         },
         event.api,

@@ -163,6 +163,10 @@ export interface Tab {
   Component: ComponentType;
   title: string;
   initialOpen?: boolean | initialOpen;
+  maximumHeight?: number;
+  minimumHeight?: number;
+  maximumWidth?: number;
+  minimumWidth?: number;
   hideFromViews?: boolean;
 }
 
@@ -259,6 +263,10 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
+          maximumHeight: value.maximumHeight,
+          minimumHeight: value.minimumHeight,
+          maximumWidth: value.maximumWidth,
+          minimumWidth: value.minimumWidth,
           position:
             initialOpenDirections.includes(value.initialOpen as initialOpen)
               ? { direction: value.initialOpen }

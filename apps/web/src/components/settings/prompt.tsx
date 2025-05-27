@@ -30,7 +30,7 @@ function PromptTab() {
                   <FormControl>
                     <Textarea
                       placeholder="Guide your agent's behavior with custom instructions."
-                      className="min-h-36 border-slate-200"
+                      className="min-h-[170px] h-[170px] border-slate-200"
                       {...field}
                     />
                   </FormControl>

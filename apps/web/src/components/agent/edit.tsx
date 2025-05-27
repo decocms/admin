@@ -120,6 +120,7 @@ const TABS: Record<string, Tab> = {
     Component: PromptTab,
     title: "System prompt",
     initialOpen: "below",
+    maximumHeight: 270,
   },
 };
 

@@ -16,6 +16,7 @@ import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./toolCallForm.tsx";
 import { ToolCallResult } from "./toolCallResult.tsx";
 import type { MCPToolCallResult } from "./types.ts";
+import { formatToolName } from "../../chat/utils/format-tool-name.ts";
 interface InspectorProps {
   connection: MCPConnection;
 }
@@ -371,7 +372,9 @@ Inspector.UI = ({ connection }: InspectorProps) => {
                         )}
                         onClick={() => handleSelectTool(tool.name)}
                       >
-                        <div className="truncate font-medium">{tool.name}</div>
+                        <div className="truncate font-medium">
+                          {formatToolName(tool.name)}
+                        </div>
                         <p
                           className="text-sm text-muted-foreground mt-2 line-clamp-2"
                           title={tool.description}

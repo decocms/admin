@@ -10,6 +10,7 @@ import {
   Agent,
   AgentSchema,
   API_SERVER_URL,
+  BindingsSchema,
   INNATE_INTEGRATIONS,
   Integration,
   IntegrationSchema,
@@ -19,19 +20,20 @@ import {
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/toolCall.ts";
 import type { Workspace } from "../../path.ts";
+import { QueryResult } from "../../storage/supabase/client.ts";
 import {
   assertHasWorkspace,
   bypass,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { NotFoundError } from "../index.ts";
+import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
-const parseId = (id: string) => {
+export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
     type: (type || "i") as "i" | "a",
@@ -187,9 +189,11 @@ const virtualIntegrationsFor = (
 export const listIntegrations = createTool({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
-  inputSchema: z.object({}),
+  inputSchema: z.object({
+    binder: BindingsSchema.optional(),
+  }),
   canAccess: canAccessWorkspaceResource,
-  handler: async (_, c) => {
+  handler: async ({ binder }, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
@@ -235,9 +239,34 @@ export const listIntegrations = createTool({
       .map((i) => IntegrationSchema.safeParse(i)?.data)
       .filter((i) => !!i);
 
+    if (binder) {
+      const filtered: typeof result = [];
+      await Promise.all(result.map(async (integration) => {
+        const integrationTools = await listTools.handler({
+          connection: integration.connection,
+        });
+        if (integrationTools.isError) {
+          return;
+        }
+        const tools = integrationTools.structuredContent?.tools ?? [];
+        if (Binding(WellKnownBindings[binder]).isImplementedBy(tools)) {
+          filtered.push(integration);
+        }
+      }));
+      return filtered;
+    }
     return result;
   },
 });
+
+export const convertFromDatabase = (
+  integration: QueryResult<"deco_chat_integrations", "*">,
+) => {
+  return IntegrationSchema.parse({
+    ...integration,
+    id: formatId("i", integration.id),
+  });
+};
 
 export const getIntegration = createTool({
   name: "INTEGRATIONS_GET",
@@ -401,6 +430,6 @@ export const deleteIntegration = createTool({
       throw new InternalServerError(error.message);
     }
 
-    return true;
+    return { success: true };
   },
 });

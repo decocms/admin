@@ -26,7 +26,7 @@ export const SETTINGS_ITEMS = [
   },
   {
     url: "/settings/audit",
-    title: "Chat Logs",
+    title: "History",
     icon: "quick_reference_all",
   },
 ] as const;

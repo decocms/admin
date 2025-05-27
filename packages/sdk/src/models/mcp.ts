@@ -1,5 +1,9 @@
 import { z } from "zod";
+import { WellKnownBindingsName } from "../mcp/index.ts";
 
+export const BindingsSchema = z.enum(
+  ["Input", "Output"] as const satisfies WellKnownBindingsName[],
+);
 /**
  * Schema for different connection types
  */
@@ -71,3 +75,5 @@ export type MCPConnection =
   | InnateConnection
   | DecoConnection
   | HTTPConnection;
+
+export type Binder = z.infer<typeof BindingsSchema>;

@@ -6,18 +6,21 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 
+type Thread = {
+  id: string;
+  resourceId: string;
+  title: string;
+  metadata?: { agentId: string };
+  createdAt: string;
+  updatedAt: string;
+};
+
 interface AuditTableProps {
-  threads: Array<{
-    id: string;
-    resourceId: string;
-    title: string;
-    metadata?: { agentId: string };
-    createdAt: string;
-    updatedAt: string;
-  }>;
+  threads: Thread[];
   sort: string;
   onSortChange: (sort: string) => void;
   onRowClick?: (threadId: string) => void;
+  columnsDenyList?: Set<string>;
 }
 
 function getSortKeyAndDirection(
@@ -30,7 +33,7 @@ function getSortKeyAndDirection(
 }
 
 export function AuditTable(
-  { threads, sort, onSortChange, onRowClick }: AuditTableProps,
+  { threads, sort, onSortChange, onRowClick, columnsDenyList }: AuditTableProps,
 ) {
   const { key: sortKey, direction: sortDirection } = getSortKeyAndDirection(
     sort,
@@ -40,40 +43,44 @@ export function AuditTable(
     {
       id: "updatedAt",
       header: "Last updated",
-      accessor: (row) => <DateTimeCell value={row.updatedAt} />,
+      accessor: (cell: Thread) => <DateTimeCell value={cell.updatedAt} />,
       sortable: true,
     },
     {
       id: "createdAt",
       header: "Created at",
-      accessor: (row) => <DateTimeCell value={row.createdAt} />,
+      accessor: (cell: Thread) => <DateTimeCell value={cell.createdAt} />,
       sortable: true,
     },
     {
       id: "agent",
       header: "Agent",
-      accessor: (row) => <AgentInfo agentId={row.metadata?.agentId} />,
+      accessor: (cell: Thread) => (
+        <AgentInfo
+          agentId={cell.metadata?.agentId}
+        />
+      ),
     },
     {
       id: "user",
       header: "Used by",
-      accessor: (row) => <UserInfo userId={row.resourceId} />,
+      accessor: (cell: Thread) => <UserInfo userId={cell.resourceId} />,
     },
     {
       id: "title",
       header: "Thread name",
-      render: (row) => (
+      render: (cell: Thread) => (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="truncate block max-w-xs">{row.title}</span>
+            <span className="truncate block max-w-xs">{cell.title}</span>
           </TooltipTrigger>
           <TooltipContent className="whitespace-pre-line break-words max-w-xs">
-            {row.title}
+            {cell.title}
           </TooltipContent>
         </Tooltip>
       ),
     },
-  ];
+  ].filter((col) => !columnsDenyList?.has(col.id));
 
   function handleSort(colId: string) {
     if (colId === "updatedAt") {

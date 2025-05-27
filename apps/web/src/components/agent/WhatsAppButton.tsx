@@ -4,6 +4,7 @@ import {
   useCreateTempAgent,
   useCreateTrigger,
   useListTriggersByAgentId,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { useProfile, useTempWppAgent } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -42,6 +43,11 @@ export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
   const { data: profile } = useProfile();
   const { openProfileModal } = useProfileModal();
   const { data: tempWppAgent } = useTempWppAgent(user.id);
+
+  const isWellKnownAgent = Boolean(
+    WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
+  );
+
   const whatsappTrigger = triggers?.triggers.find(
     (trigger) =>
       trigger.data.type === "webhook" &&
@@ -89,6 +95,10 @@ export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
 
   const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
 
+  if (isWellKnownAgent) {
+    return;
+  }
+
   const buttonContent = (
     <Button
       variant="ghost"
@@ -102,9 +112,11 @@ export function WhatsAppButton({ isMobile = false }: WhatsAppButtonProps) {
         src="/img/zap.svg"
         className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
       />
-      <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
-        {!isMobile ? "" : enabled ? "Start chat" : "Enable WhatsApp"}
-      </span>
+      {isMobile && (
+        <span className={cn("text-sm font-normal")}>
+          {enabled ? "Start chat" : "Enable WhatsApp"}
+        </span>
+      )}
     </Button>
   );
 

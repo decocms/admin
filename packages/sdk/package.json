@@ -14,7 +14,7 @@
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "1.11.4",
     "cloudflare": "^4.2.0",
-    "@deco/actors": "npm:@jsr/deco__actors@0.33.0",
+    "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
     "@tanstack/react-query": "^5.72.0",
     "@zenfs/core": "^2.0.0",
     "ai": "^4.3.13",
@@ -28,6 +28,7 @@
     "@tursodatabase/api": "^1.9.0",
     "@supabase/supabase-js": "^2.49.4",
     "@supabase/ssr": "^0.6.1",
+    "@supabase/postgrest-js": "1.19.4",
     "@microlabs/otel-cf-workers": "^1.0.0-rc.49",
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/core": "^1.26.0",
@@ -61,6 +62,8 @@
     "./mcp": "./src/mcp/index.ts",
     "./fetch": "./src/fetch.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./hooks/profile": "./src/hooks/profile.ts"
+    "./hooks/profile": "./src/hooks/profile.ts",
+    "./mcp/bindings": "./src/mcp/bindings/index.ts",
+    "./mcp/binder": "./src/mcp/bindings/binder.ts"
   }
 }

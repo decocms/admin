@@ -1,4 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
+
+// NOTE:
+// Do not use private class fields or methods prefixed with '#'.
+// JavaScript's private syntax (#) is not compatible with Proxy objects,
+// as it enforces that 'this' must be the original instance, not a proxy.
+// This will cause runtime errors like:
+//   TypeError: Receiver must be an instance of class ...
+//
+// Instead, use a leading underscore (_) to indicate a method or property is private.
+// Also, visibility modifiers (like 'private' or 'protected') from TypeScript
+// are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
@@ -11,6 +22,12 @@ import {
   PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
+import {
+  Callbacks,
+  MCPBindingClient,
+  TriggerInputBinding,
+  TriggerOutputBinding,
+} from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
@@ -18,6 +35,7 @@ import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import { dirname } from "node:path/posix";
 import process from "node:process";
+import { AIAgent } from "../agent.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
@@ -53,17 +71,17 @@ const hooks: Record<TriggerData["type"], TriggerHooks<TriggerData>> = {
 export interface TriggerMetadata {
   passphrase?: string | null;
   reqUrl?: string | null;
+  reqHeaders?: Record<string, string>;
   internalCall?: boolean;
 }
-function mapTriggerToTriggerData(
-  trigger: Awaited<
-    ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
-  >,
-): TriggerData | null {
-  if (!trigger) {
-    return null;
-  }
 
+function mapTriggerToTriggerData(
+  trigger: NonNullable<
+    Awaited<
+      ReturnType<MCPClientStub<WorkspaceTools>["TRIGGERS_GET"]>
+    >
+  >,
+): TriggerData {
   return {
     id: trigger.id,
     resourceId: trigger.user.id,
@@ -75,25 +93,49 @@ function mapTriggerToTriggerData(
       email: trigger.user.metadata.email,
       avatar: trigger.user.metadata.avatar_url,
     },
+    binding: trigger.binding,
     ...trigger.data,
   } as TriggerData;
 }
+
+export interface InvokePayload {
+  args: unknown[];
+  metadata?: Record<string, unknown>;
+}
+const buildInvokeUrl = (
+  url: URL,
+  method: keyof Trigger,
+  payload?: InvokePayload,
+) => {
+  const invoke = new URL(url);
+  invoke.pathname = `/actors/${Trigger.name}/invoke/${method}`;
+  if (payload) {
+    invoke.searchParams.set(
+      "args",
+      encodeURIComponent(JSON.stringify(payload)),
+    );
+  }
+
+  return invoke;
+};
 
 @Actor()
 export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
+  public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
+  public outputBinding?: MCPBindingClient<typeof TriggerOutputBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
   private db: ReturnType<typeof createServerClient>;
-
-  constructor(public state: ActorState, protected env: any) {
+  private env: any;
+  constructor(public state: ActorState, protected actorEnv: any) {
     this.env = {
       ...process.env,
-      ...this.env,
+      ...actorEnv,
     };
     this.agentId = dirname(dirname(this.state.id)); // strip /triggers/$triggerId
     this.workspace = getTwoFirstSegments(this.state.id);
@@ -103,13 +145,13 @@ export class Trigger {
       { cookies: { getAll: () => [] } },
     );
 
-    this.mcpClient = this.createMCPClient();
+    this.mcpClient = this._createMCPClient();
 
     state.blockConcurrencyWhile(async () => {
       try {
-        const loadedData = await this.loadData();
+        const loadedData = await this._loadData();
         if (loadedData) {
-          this.setData(loadedData);
+          this._setData(loadedData);
         }
       } catch (error) {
         console.error("Error loading data from Supabase:", error);
@@ -117,10 +159,12 @@ export class Trigger {
     });
   }
 
-  private createMCPClient() {
+  private _createContext(): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
-    return MCPClient.forContext({
+    return {
+      // can be ignored for now.
+      user: null as unknown as AppContext["user"],
       envVars: this.env,
       db: this.db,
       isLocal: true,
@@ -130,41 +174,63 @@ export class Trigger {
       params: {},
       policy: policyClient,
       authorization: authorizationClient,
-    });
+    };
   }
 
-  private async loadData(): Promise<TriggerData | null> {
+  private _createMCPClient() {
+    return MCPClient.forContext(this._createContext());
+  }
+
+  public _callbacks(
+    payload?: InvokePayload,
+  ): Callbacks {
+    if (!this.metadata?.reqUrl) {
+      throw new Error("Trigger does not have a reqUrl");
+    }
+    const url = new URL(this.metadata.reqUrl);
+    return {
+      stream: buildInvokeUrl(url, "stream", payload).href,
+      generate: buildInvokeUrl(url, "generate", payload).href,
+      generateObject: buildInvokeUrl(url, "generateObject", payload).href,
+    };
+  }
+  private async _loadData(): Promise<TriggerData | null> {
     const triggerData = await this.mcpClient.TRIGGERS_GET({
-      id: this.getTriggerId(),
+      id: this._getTriggerId(),
     });
 
     if (!triggerData) {
       return null;
     }
 
-    return mapTriggerToTriggerData(triggerData);
+    const trigger = mapTriggerToTriggerData(triggerData);
+    if (trigger.binding) {
+      const context = this._createContext();
+      if (trigger.type === "webhook") {
+        this.inputBinding = TriggerInputBinding.forConnection(
+          trigger.binding.connection,
+          context,
+        );
+      } else {
+        this.outputBinding = TriggerOutputBinding.forConnection(
+          trigger.binding.connection,
+          context,
+        );
+      }
+    }
+    return trigger;
   }
 
-  enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
-    return {
-      passphrase: new URL(req.url).searchParams.get("passphrase"),
-      internalCall: req.headers.get("host") === null ||
-        getRuntimeKey() === "deno",
-      reqUrl: req.url,
-      ...metadata,
-    };
-  }
-
-  private setData(data: TriggerData) {
+  private _setData(data: TriggerData) {
     this.data = data;
     this.hooks = this.data ? hooks[this.data?.type ?? "cron"] : cron;
   }
 
-  private getTriggerId() {
+  private _getTriggerId() {
     return this.state.id.split("/").at(-1) || "";
   }
 
-  private async saveRun(run: Omit<TriggerRun, "id" | "timestamp">) {
+  private async _saveRun(run: Omit<TriggerRun, "id" | "timestamp">) {
     await this.db
       .from("deco_chat_trigger_runs")
       .insert({
@@ -175,6 +241,35 @@ export class Trigger {
       })
       .select("*")
       .single();
+  }
+
+  _assertsValidInvoke() {
+    if (!this.data) {
+      throw new Error("Trigger does not have a data");
+    }
+    if (!("passphrase" in this.data)) {
+      return;
+    }
+    if (this.data.passphrase !== this.metadata?.passphrase) {
+      throw new Error("Invalid passphrase");
+    }
+  }
+
+  /**
+   * Public method section all methods starting from here are publicly accessible
+   */
+
+  // PUBLIC METHODS
+
+  enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
+    return {
+      passphrase: new URL(req.url).searchParams.get("passphrase"),
+      internalCall: req.headers.get("host") === null ||
+        getRuntimeKey() === "deno",
+      reqUrl: req.url,
+      reqHeaders: Object.fromEntries(req.headers.entries()),
+      ...metadata,
+    };
   }
 
   async run(args?: unknown) {
@@ -195,8 +290,8 @@ export class Trigger {
     } catch (error) {
       runData.error = JSON.stringify(error);
     } finally {
-      await this.saveRun({
-        triggerId: this.getTriggerId(),
+      await this._saveRun({
+        triggerId: this._getTriggerId(),
         result: runData.result as Record<string, unknown> | null,
         status: runData.error ? "error" : "success",
         metadata: {
@@ -210,6 +305,24 @@ export class Trigger {
 
   async alarm() {
     await this.run();
+  }
+
+  generateObject(...args: Parameters<AIAgent["generateObject"]>) {
+    this._assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.generateObject(...args);
+  }
+
+  stream(...args: Parameters<AIAgent["stream"]>) {
+    this._assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.stream(...args);
+  }
+
+  generate(...args: Parameters<AIAgent["generate"]>) {
+    this._assertsValidInvoke();
+    const stub = this.state.stub(AIAgent).new(this.agentId);
+    return stub.generate(...args);
   }
 
   async create(data: TriggerData) {
@@ -228,7 +341,7 @@ export class Trigger {
     }
 
     try {
-      this.setData(data);
+      this._setData(data);
       await this.hooks?.onCreated?.(data, this);
 
       return {

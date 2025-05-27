@@ -43,7 +43,10 @@ export class LibSQLStore extends MastraLibSQLStore {
   override async saveThread(
     { thread }: { thread: StorageThreadType },
   ): Promise<StorageThreadType> {
-    await this.threadCache.delete(thread.id);
+    await this.threadCache.delete(thread.id).catch(() => {
+      // ignore saveThread error
+      // Error untracked: Unable to delete cached response
+    });
     return super.saveThread({ thread }).then(async () => {
       await this.threadCache.set(thread.id, thread);
       return thread;

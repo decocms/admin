@@ -1,11 +1,10 @@
 import type { Agent } from "@deco/sdk";
 import {
   useAgents,
-  useCreateAgent,
   useIntegration,
   useRemoveAgent,
   useSDK,
-  useUpdateThreadMessages,
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -42,10 +41,11 @@ import {
   useReducer,
   useState,
 } from "react";
-import { useNavigate } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
+import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
@@ -59,7 +59,6 @@ import { useEditAgent, useFocusChat } from "./hooks.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
-  const focusEditAgent = useEditAgent();
   const createAgent = useCreateAgent();
 
   const duplicate = async () => {
@@ -67,7 +66,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
     try {
       setDuplicating(true);
-      const duplicatedAgent = await createAgent.mutateAsync({
+      const newAgent = {
         name: `${agent.name} (Copy)`,
         id: crypto.randomUUID(),
         description: agent.description,
@@ -76,15 +75,8 @@ export const useDuplicateAgent = (agent: Agent | null) => {
         tools_set: agent.tools_set,
         model: agent.model,
         views: agent.views,
-      });
-      focusEditAgent(duplicatedAgent.id, crypto.randomUUID(), {
-        history: false,
-      });
-
-      trackEvent("agent_duplicate", {
-        success: true,
-        data: duplicatedAgent,
-      });
+      };
+      await createAgent(newAgent, { eventName: "agent_duplicate" });
     } catch (error) {
       console.error("Error duplicating agent:", error);
 
@@ -102,7 +94,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
 
 function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
   const { data: integration } = useIntegration(toolSetId);
-  const navigate = useNavigate();
+  const navigateWorkspace = useNavigateWorkspace();
 
   if (!integration) {
     return null;
@@ -116,7 +108,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
         <TooltipTrigger
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/integration/${integration.id}`);
+            navigateWorkspace(`/integration/${integration.id}`);
           }}
           asChild
         >
@@ -168,7 +160,6 @@ const useCopyLink = (agentId: string) => {
 };
 
 function Actions({ agent }: { agent: Agent }) {
-  const focusEditAgent = useEditAgent();
   const { duplicate, duplicating } = useDuplicateAgent(agent);
   const removeAgent = useRemoveAgent();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -192,16 +183,6 @@ function Actions({ agent }: { agent: Agent }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem
-            disabled={duplicating}
-            onClick={(e) => {
-              e.stopPropagation();
-              focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
-            }}
-          >
-            <Icon name="tune" className="mr-2" />
-            Edit agent
-          </DropdownMenuItem>
           <DropdownMenuItem
             disabled={duplicating}
             onClick={(e) => {
@@ -279,13 +260,13 @@ function Actions({ agent }: { agent: Agent }) {
 }
 
 function Card({ agent }: { agent: Agent }) {
-  const focusChat = useFocusChat();
+  const focusAgent = useEditAgent();
 
   return (
     <UICard
       className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col rounded-xl p-4 h-full"
       onClick={() => {
-        focusChat(agent.id, crypto.randomUUID(), {
+        focusAgent(agent.id, crypto.randomUUID(), {
           history: false,
         });
       }}
@@ -456,7 +437,7 @@ type Visibility = typeof VISIBILITIES[number];
 
 function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const { creating, handleCreate } = useContext(Context)!;
+  const { handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
@@ -539,8 +520,7 @@ function List() {
               ? "Agents shared with your team will show up here. Create one to start collaborating."
               : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
             buttonProps={{
-              disabled: creating,
-              children: creating ? "Creating..." : "Create Agent",
+              children: "New Agent",
               onClick: handleCreate,
             }}
           />
@@ -558,43 +538,20 @@ const TABS: Record<string, Tab> = {
 };
 
 const Context = createContext<
-  {
-    creating: boolean;
-    handleCreate: () => void;
-  } | null
+  { handleCreate: () => void } | null
 >(null);
 
 export default function Page() {
-  const focusEditAgent = useEditAgent();
-  const [creating, setCreating] = useState(false);
-  const createAgent = useCreateAgent();
-  const updateThreadMessages = useUpdateThreadMessages();
+  const focusChat = useEditAgent();
 
-  const handleCreate = async () => {
-    try {
-      setCreating(true);
-      const agent = await createAgent.mutateAsync({});
-      updateThreadMessages(agent.id);
-      focusEditAgent(agent.id, crypto.randomUUID(), { history: false });
-
-      trackEvent("agent_create", {
-        success: true,
-        data: agent,
-      });
-    } catch (error) {
-      console.error("Error creating new agent:", error);
-
-      trackEvent("agent_create", {
-        success: false,
-        error,
-      });
-    } finally {
-      setCreating(false);
-    }
+  const handleCreate = () => {
+    focusChat(WELL_KNOWN_AGENT_IDS.teamAgent, crypto.randomUUID(), {
+      history: false,
+    });
   };
 
   return (
-    <Context.Provider value={{ creating, handleCreate }}>
+    <Context.Provider value={{ handleCreate }}>
       <PageLayout
         displayViewsTrigger={false}
         tabs={TABS}
@@ -604,23 +561,11 @@ export default function Page() {
         actionButtons={
           <Button
             onClick={handleCreate}
-            disabled={creating}
             variant="special"
             className="gap-2"
           >
-            {creating
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  <span>Creating...</span>
-                </>
-              )
-              : (
-                <>
-                  <Icon name="add" />
-                  <span className="hidden md:inline">Create Agent</span>
-                </>
-              )}
+            <Icon name="add" />
+            <span className="hidden md:inline">New Agent</span>
           </Button>
         }
       />

@@ -89,6 +89,7 @@ export const listThreads = createTool({
     limit: z.number().min(1).max(20).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
+    uniqueByAgentId: z.boolean().default(false).optional(),
     orderBy: z.enum([
       "createdAt_desc",
       "createdAt_asc",
@@ -98,7 +99,10 @@ export const listThreads = createTool({
     cursor: z.string().optional(),
   }),
   canAccess: canAccessWorkspaceResource,
-  handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
+  handler: async (
+    { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
+    c,
+  ) => {
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -145,8 +149,14 @@ export const listThreads = createTool({
 
     limit ??= 10;
     const { data: result, error } = await safeExecute(client, {
-      sql:
-        `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+      sql: uniqueByAgentId
+        ? `WITH RankedThreads AS (
+            SELECT *,
+              ROW_NUMBER() OVER (PARTITION BY json_extract(metadata, '$.agentId') ORDER BY ${field} ${direction.toUpperCase()}) as rn
+            FROM mastra_threads ${whereClause}
+          )
+          SELECT * FROM RankedThreads WHERE rn = 1 ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`
+        : `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
       args: [...args, limit + 1], // Fetch one extra to determine if there are more
     });
 

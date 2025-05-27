@@ -16,7 +16,10 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
+import {
+  useNavigateWorkspace,
+  useWorkspaceLink,
+} from "../../../hooks/useNavigateWorkspace.ts";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { Table, TableColumn } from "../../common/Table.tsx";
@@ -220,6 +223,7 @@ function MarketplaceTab() {
   const { mutate: installIntegration } = useInstallFromMarketplace();
   const navigateWorkspace = useNavigateWorkspace();
   const updateThreadMessages = useUpdateThreadMessages();
+  const buildWorkspaceUrl = useWorkspaceLink();
 
   const { data: marketplace } = useMarketplaceIntegrations();
 
@@ -251,18 +255,31 @@ function MarketplaceTab() {
   function handleConnect() {
     if (!selectedIntegration) return;
     setIsPending(true);
-    installIntegration(selectedIntegration.id, {
-      onSuccess: (data) => {
-        if (typeof data?.id !== "string") {
+    const returnUrl = new URL(
+      buildWorkspaceUrl("/integrations"),
+      globalThis.location.origin,
+    );
+
+    installIntegration({
+      appName: selectedIntegration.id,
+      provider: selectedIntegration.provider,
+      returnUrl: returnUrl.href,
+    }, {
+      onSuccess: ({ integration, redirectUrl }) => {
+        if (typeof integration?.id !== "string") {
           setIsPending(false);
           return;
         }
-        setCreatedIntegrationId(data.id);
+        setCreatedIntegrationId(integration.id);
         setIsPending(false);
         trackEvent("integration_install", {
           success: true,
           data: selectedIntegration,
         });
+
+        if (redirectUrl) {
+          globalThis.location.href = redirectUrl;
+        }
       },
       onError: (error) => {
         setIsPending(false);

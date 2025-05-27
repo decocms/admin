@@ -21,7 +21,6 @@ import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -63,11 +62,6 @@ const TABS = {
   preview: {
     Component: AgentPreview,
     title: "Preview",
-    hideFromViews: true,
-  },
-  tools: {
-    Component: ThreadSettingsTab,
-    title: "Chat settings",
     hideFromViews: true,
   },
 };

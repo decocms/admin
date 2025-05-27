@@ -1,10 +1,10 @@
 import { AIAgent } from "../agent.ts";
 import type { Message, StreamOptions } from "../types.ts";
+import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
+import { handleOutputTool } from "./outputTool.ts";
 import type { TriggerData } from "./services.ts";
 import { threadOf } from "./tools.ts";
-import type { TriggerHooks } from "./trigger.ts";
-import { handleOutputTool } from "./outputTool.ts";
-import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
+import { type TriggerHooks } from "./trigger.ts";
 
 export interface WebhookArgs {
   threadId?: string;
@@ -40,10 +40,37 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         error: "Invalid passphrase",
       };
     }
-
     const url = trigger.metadata?.reqUrl
       ? new URL(trigger.metadata.reqUrl)
       : undefined;
+    const inputBinding = trigger.inputBinding;
+    if (inputBinding) {
+      const result = await inputBinding.ON_AGENT_INPUT({
+        callbacks: trigger._callbacks(),
+        payload: args,
+        url: trigger.metadata?.reqUrl ?? undefined,
+        headers: trigger.metadata?.reqHeaders,
+      });
+      // deno-lint-ignore no-explicit-any
+      const structuredContent: any = result?.structuredContent;
+      if (
+        typeof structuredContent === "object" && structuredContent !== null &&
+        "status" in structuredContent &&
+        typeof structuredContent.status === "number"
+      ) {
+        const [payload, contentType] = "message" in structuredContent
+          ? [structuredContent.message, "text/plain"]
+          : [JSON.stringify(structuredContent), "application/json"];
+
+        return new Response(payload, {
+          status: structuredContent.status,
+          headers: {
+            "Content-Type": contentType,
+          },
+        });
+      }
+      return result;
+    }
 
     const useStream = url?.searchParams.get("stream") === "true";
     const options: StreamOptions = {};

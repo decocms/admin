@@ -28,6 +28,9 @@ export const CronTriggerSchema = z.object({
   cronExp: z.string(),
   prompt: PromptSchema,
   type: z.literal("cron"),
+  bindingId: z.string().optional().describe(
+    "The id of the binding to use for the cron trigger",
+  ),
 });
 
 /**
@@ -48,6 +51,9 @@ export const WebhookTriggerSchema = z.object({
   ),
   whatsappEnabled: z.boolean().optional().describe(
     "Whether the webhook is enabled for WhatsApp",
+  ),
+  bindingId: z.string().optional().describe(
+    "The id of the binding to use for the webhook",
   ),
 });
 
@@ -95,7 +101,10 @@ export const DeleteTriggerInputSchema = z.object({
 /**
  * Output schema for trigger deletion results
  */
-export const DeleteTriggerOutputSchema = z.void();
+export const DeleteTriggerOutputSchema = z.object({
+  triggerId: z.string().describe("The trigger ID"),
+  agentId: z.string().describe("The agent ID"),
+});
 
 export const TriggerSchema = z.union([
   CreateCronTriggerInputSchema,

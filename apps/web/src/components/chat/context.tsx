@@ -1,12 +1,10 @@
-import { CreateMessage, useChat } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
+  dispatchMessages,
   getTraceDebugId,
-  useAddOptimisticThread,
   useAgent,
   useAgentRoot,
-  useInvalidateAll,
-  // useModels,
   useThreadMessages,
 } from "@deco/sdk";
 import {
@@ -14,7 +12,6 @@ import {
   PropsWithChildren,
   RefObject,
   useContext,
-  useEffect,
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
@@ -63,17 +60,9 @@ const Context = createContext<IContext | null>(null);
 interface Props {
   agentId: string;
   threadId: string;
-  /** Default initial thread message */
-  initialMessage?: CreateMessage;
+  initialInput?: string;
   uiOptions?: Partial<IContext["uiOptions"]>;
 }
-
-const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
-  "DECO_INTEGRATION_INSTALL",
-  "DECO_INTEGRATION_ENABLE",
-  "DECO_INTEGRATION_DISABLE",
-  "DECO_AGENT_CONFIGURE",
-]);
 
 const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
   showModelSelector: true,
@@ -86,17 +75,12 @@ const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
 export function ChatProvider({
   agentId,
   threadId,
-  initialMessage,
-  children,
   uiOptions,
+  initialInput,
+  children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const invalidateAll = useInvalidateAll();
-  const {
-    addOptimisticThread,
-  } = useAddOptimisticThread();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const onceRef = useRef(false);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
   const { data: initialMessages } = !options.showThreadMessages
     ? { data: undefined }
@@ -111,6 +95,7 @@ export function ChatProvider({
   const correlationIdRef = useRef<string | null>(null);
 
   const chat = useChat({
+    initialInput,
     initialMessages: initialMessages || [],
     credentials: "include",
     headers: {
@@ -119,9 +104,7 @@ export function ChatProvider({
     },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
-      if (messages.length === 1 && messages[0].role === "user") {
-        addOptimisticThread(threadId, agentId);
-      }
+      dispatchMessages({ messages, threadId, agentId });
 
       const messagesWindow = messages.slice(-LAST_MESSAGES_COUNT);
       const lastMessage = messagesWindow.at(-1);
@@ -154,10 +137,10 @@ export function ChatProvider({
           bypassOpenRouter,
           lastMessages: 0,
           sendReasoning: true,
-          smoothStream: {
-            delayInMs: 20,
-            chunk: "word",
-          },
+          tools: agent?.tools_set,
+          smoothStream: preferences.smoothStream !== false
+            ? { delayInMs: 25, chunk: "word" }
+            : undefined,
         }],
         metadata: { threadId: threadId ?? agentId },
       };
@@ -189,15 +172,6 @@ export function ChatProvider({
     },
     onResponse: (response) => {
       correlationIdRef.current = response.headers.get("x-trace-debug-id");
-    },
-    onFinish: (message) => {
-      const shouldInvalidate = message.toolInvocations?.some((tool) =>
-        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
-      );
-
-      if (shouldInvalidate) {
-        invalidateAll();
-      }
     },
   });
 
@@ -241,16 +215,6 @@ export function ChatProvider({
     chat.handleSubmit(e, options);
     setAutoScroll(scrollRef.current, true);
   };
-
-  useEffect(() => {
-    if (
-      chat.messages.length === 0 && initialMessage &&
-      !onceRef.current
-    ) {
-      onceRef.current = true;
-      chat.append(initialMessage);
-    }
-  }, [initialMessage, chat.messages]);
 
   return (
     <Context.Provider

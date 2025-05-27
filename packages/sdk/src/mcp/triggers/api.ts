@@ -8,6 +8,7 @@ import {
 } from "../../errors.ts";
 import { Hosts } from "../../hosts.ts";
 import { AgentSchema } from "../../models/agent.ts";
+import { IntegrationSchema } from "../../models/mcp.ts";
 import {
   CreateCronTriggerInputSchema,
   CreateTriggerOutputSchema,
@@ -18,17 +19,21 @@ import {
   TriggerSchema,
 } from "../../models/trigger.ts";
 import { Path } from "../../path.ts";
-import { Database, Json } from "../../storage/index.ts";
+import { Json, QueryResult } from "../../storage/index.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
+import { convertFromDatabase, parseId } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
 
 const SELECT_TRIGGER_QUERY = `
   *,
+  binding:deco_chat_integrations(
+    *
+  ),
   profile:profiles(
     metadata:users_meta_data_view(
       raw_user_meta_data
@@ -37,7 +42,7 @@ const SELECT_TRIGGER_QUERY = `
 `;
 
 function mapTrigger(
-  trigger: Database["public"]["Tables"]["deco_chat_triggers"]["Row"],
+  trigger: QueryResult<"deco_chat_triggers", typeof SELECT_TRIGGER_QUERY>,
   agentsById: Record<string, z.infer<typeof AgentSchema>>,
 ) {
   return {
@@ -58,6 +63,7 @@ function mapTrigger(
     workspace: trigger.workspace,
     active: trigger.active,
     data: trigger.metadata as z.infer<typeof TriggerSchema>,
+    binding: trigger.binding ? convertFromDatabase(trigger.binding) : null,
   };
 }
 
@@ -66,11 +72,7 @@ export const buildWebhookUrl = (
   passphrase?: string,
   outputTool?: string,
 ) => {
-  const params = new URLSearchParams();
-  if (passphrase) params.append("passphrase", passphrase);
-  params.append("deno_isolate_instance_id", triggerId);
-  if (outputTool) params.append("output_tool", outputTool);
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?${params.toString()}`;
+  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}&output_tool=${outputTool}`;
 };
 
 export const listTriggers = createTool({
@@ -139,10 +141,12 @@ export const upsertTrigger = createTool({
     const user = c.user;
     const stub = c.stub;
 
+    const id = triggerId || crypto.randomUUID();
+
     const triggerPath = Path.resolveHome(
       join(
         Path.folders.Agent.root(agentId),
-        Path.folders.trigger(triggerId || crypto.randomUUID()),
+        Path.folders.trigger(id),
       ),
       workspace,
     ).path;
@@ -188,8 +192,6 @@ export const upsertTrigger = createTool({
       }
     }
 
-    const id = crypto.randomUUID();
-
     // Delete existing trigger if updating
     if (triggerId) {
       await stub(Trigger).new(triggerPath).delete();
@@ -199,18 +201,20 @@ export const upsertTrigger = createTool({
     await stub(Trigger).new(triggerPath).create(
       {
         ...data,
-        id: triggerId || id,
+        id,
         resourceId: userId,
       },
     );
+    const bindingId = data.bindingId ? parseId(data.bindingId).uuid : undefined;
 
     // Update database
     const { data: trigger, error } = await db.from("deco_chat_triggers")
       .upsert({
-        id: triggerId || id,
+        id,
         workspace,
         agent_id: agentId,
         user_id: userId,
+        binding_id: bindingId,
         metadata: data as Json,
         whatsapp_enabled:
           (data as z.infer<typeof TriggerSchema> & { whatsappEnabled: boolean })
@@ -237,17 +241,17 @@ export const createTrigger = createTool({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
   inputSchema: z.object({
+    agentId: z.string().describe(
+      "The ID of the agent(current) to create the trigger for, use only UUIDs",
+    ),
     data: TriggerSchema,
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { data },
+    { agentId, data },
     _c,
   ) => {
-    const result = await upsertTrigger.handler({
-      agentId: crypto.randomUUID(),
-      data,
-    });
+    const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;
     }
@@ -260,7 +264,7 @@ export const updateTrigger = createTool({
   description: "Update a trigger",
   inputSchema: z.object({
     agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs",
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
     ),
     triggerId: z.string(),
     data: TriggerSchema,
@@ -282,17 +286,18 @@ export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
   inputSchema: z.object({
+    agentId: z.string().describe(
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
+    ),
     data: CreateCronTriggerInputSchema,
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { data },
+    { agentId, data },
     _c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
-    const result = await upsertTrigger.handler({
-      agentId: crypto.randomUUID(),
-      data,
-    });
+    agentId ??= crypto.randomUUID();
+    const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;
     }
@@ -304,17 +309,18 @@ export const createWebhookTrigger = createTool({
   name: "TRIGGERS_CREATE_WEBHOOK",
   description: "Create a webhook trigger",
   inputSchema: z.object({
+    agentId: z.string().describe(
+      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
+    ),
     data: CreateWebhookTriggerInputSchema,
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { data },
+    { agentId, data },
     _c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
-    const result = await upsertTrigger.handler({
-      agentId: crypto.randomUUID(),
-      data,
-    });
+    agentId ??= crypto.randomUUID();
+    const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;
     }
@@ -351,6 +357,10 @@ export const deleteTrigger = createTool({
     if (error) {
       throw new InternalServerError(error.message);
     }
+    return {
+      triggerId,
+      agentId,
+    };
   },
 });
 
@@ -395,7 +405,13 @@ export const getTrigger = createTool({
   handler: async (
     { id: triggerId },
     c,
-  ): Promise<z.infer<typeof CreateTriggerOutputSchema> | null> => {
+  ): Promise<
+    z.infer<
+      typeof CreateTriggerOutputSchema
+    > & {
+      binding: z.infer<typeof IntegrationSchema> | null;
+    }
+  > => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
@@ -411,7 +427,7 @@ export const getTrigger = createTool({
     }
 
     if (!trigger) {
-      return null;
+      throw new NotFoundError("Trigger not found");
     }
 
     const agents = await getAgentsByIds([trigger.agent_id], c);

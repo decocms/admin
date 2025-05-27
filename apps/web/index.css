@@ -44,6 +44,10 @@
       @apply p-0 md:p-1;
     }
 
+    .dv-view.visible {
+      @apply w-full;
+    }
+
     .dv-groupview {
       @apply md:rounded-xl md:shadow-md;
     }

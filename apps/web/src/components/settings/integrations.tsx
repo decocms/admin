@@ -157,7 +157,7 @@ function IntegrationsTab() {
                 );
               })}
             </div>
-            <span className="block text-sm text-slate-500 pb-2">
+            <span className="block text-sm text-muted-foreground pb-2">
               {tools.find((tab) => tab.id === activeTab)?.description}
             </span>
             <div className="flex gap-2 w-full">

@@ -109,12 +109,12 @@ const TABS: Record<string, Tab> = {
   audit: {
     Component: Audit,
     title: "History",
-    initialOpen: "right",
+    initialOpen: "left",
   },
   chat: {
     Component: Chat,
     title: "Chat",
-    initialOpen: "left",
+    initialOpen: "within",
   },
   prompt: {
     Component: PromptTab,

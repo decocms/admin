@@ -18,16 +18,20 @@ const tabs = [
   {
     id: "tools",
     label: "Tools",
+    description:
+      "Connect and configure integrations to extend your agent's capabilities with external services.",
   },
   {
     id: "agents",
     label: "Agents",
-    count: 0,
+    description:
+      "Enable your agent to communicate with other agents for collaborative workflows.",
   },
   {
     id: "advanced",
     label: "Advanced",
-    count: 0,
+    description:
+      "Access advanced controls for managing users, workspaces, integrations, memory, and automations.",
   },
 ];
 
@@ -153,6 +157,9 @@ function IntegrationsTab() {
                 );
               })}
             </div>
+            <span className="block text-sm text-slate-500 pb-2">
+              {tools.find((tab) => tab.id === activeTab)?.description}
+            </span>
             <div className="flex gap-2 w-full">
               <div className="border border-slate-200 rounded-lg w-full">
                 <div className="flex items-center h-10 px-4 gap-2">

@@ -5,7 +5,7 @@ import {
   getTraceDebugId,
   useAgent,
   useAgentRoot,
-  useThreadMessages
+  useThreadMessages,
 } from "@deco/sdk";
 import {
   createContext,

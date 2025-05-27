@@ -963,8 +963,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
 
     const toolsets = await this._withToolOverrides(
-      options?.tools, 
-      timings, 
+      options?.tools,
+      timings,
       thread,
     );
     const agentOverridesTiming = timings.start("agent-overrides");

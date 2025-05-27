@@ -1,9 +1,4 @@
-import {
-  FeatureFeatureError,
-  NotFoundError,
-  UnauthorizedError,
-} from "../errors.ts";
-import { GatedFeature, Plan, PLANS_FEATURES } from "../plan.ts";
+import { NotFoundError, UnauthorizedError } from "../errors.ts";
 import { Workspace } from "../path.ts";
 import { AppContext, UserPrincipal } from "./context.ts";
 

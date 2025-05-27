@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
+import { CardContent, Card as UICard } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,10 +37,10 @@ import {
 } from "react";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
-import { useCreateAgent } from "../agent/edit.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
 import { EmptyState } from "../common/EmptyState.tsx";

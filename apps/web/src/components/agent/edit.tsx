@@ -1,5 +1,4 @@
 import {
-  _useCreateAgent,
   type Agent,
   AgentSchema,
   Integration,
@@ -8,7 +7,6 @@ import {
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
-  useUpdateThreadMessages,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import {
@@ -30,6 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
+import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -37,15 +36,13 @@ import { AgentAvatar } from "../common/Avatar.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import AgentSettings from "../settings/agent.tsx";
+import IntegrationsTab from "../settings/integrations.tsx";
+import PromptTab from "../settings/prompt.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
-import Audit from "./audit.tsx";
+import Threads from "./threads.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import PromptTab from "../settings/prompt.tsx";
-import IntegrationsTab from "../settings/integrations.tsx";
-import { useEditAgent } from "../agents/hooks.ts";
-import { trackEvent } from "../../hooks/analytics.ts";
 
 interface Props {
   agentId?: string;
@@ -114,7 +111,7 @@ const TABS: Record<string, Tab> = {
     maximumWidth: 500,
   },
   audit: {
-    Component: Audit,
+    Component: Threads,
     title: "History",
     initialOpen: "left",
   },
@@ -154,48 +151,8 @@ export function useAgentSettingsForm() {
   return ctx;
 }
 
-export const useCreateAgent = () => {
-  const createAgent = _useCreateAgent();
-  const updateThreadMessages = useUpdateThreadMessages();
-  const focusEditAgent = useEditAgent();
-
-  const create = async (
-    agent: Partial<Agent>,
-    { eventName }: { eventName?: string },
-  ) => {
-    const createdAgent = await createAgent.mutateAsync(agent);
-    updateThreadMessages(createdAgent.id);
-    focusEditAgent(createdAgent.id, crypto.randomUUID(), { history: false });
-    trackEvent(eventName || "agent_create", {
-      success: true,
-      data: agent,
-    });
-  };
-
-  return create;
-};
-
-export default function Page(props: Props) {
-  const params = useParams();
-  const agentId = useMemo(
-    () => props.agentId || params.id,
-    [props.agentId, params.id],
-  );
-
-  if (!agentId) {
-    throw new NotFoundError("Agent not found");
-  }
-
-  const threadId = useMemo(
-    () => props.threadId || params.threadId || agentId,
-    [props.threadId, params.threadId, agentId],
-  );
-
-  const chatKey = useMemo(
-    () => `${agentId}-${threadId}`,
-    [agentId, threadId],
-  );
-
+function FormProvider(props: Props & { agentId: string; threadId: string }) {
+  const { agentId, threadId } = props;
   const { data: agent } = useAgent(agentId);
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
@@ -226,19 +183,15 @@ export default function Page(props: Props) {
 
   const handleSubmit = form.handleSubmit(
     async (data: Agent) => {
-      if (isWellKnownAgent) {
-        const id = crypto.randomUUID();
-        const agent = {
-          ...data,
-          id,
-        };
-        createAgent(agent, {});
-        blocked.proceed?.();
-        form.reset(agent);
-        return;
-      }
-
       try {
+        if (isWellKnownAgent) {
+          const id = crypto.randomUUID();
+          const agent = { ...data, id };
+          createAgent(agent, {});
+          form.reset(agent);
+          return;
+        }
+
         await updateAgent.mutateAsync(data);
         form.reset(data);
       } catch (error) {
@@ -282,97 +235,128 @@ export default function Page(props: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Suspense
-        key={chatKey}
-        fallback={
-          <div className="h-full w-full flex items-center justify-center">
-            <Spinner />
-          </div>
-        }
+
+      <ChatProvider
+        agentId={agentId}
+        threadId={threadId}
+        uiOptions={{
+          showThreadTools: false,
+          showEditAgent: false,
+          showModelSelector: false,
+        }}
       >
-        <ChatProvider
-          agentId={agentId}
-          threadId={threadId}
-          uiOptions={{
-            showThreadTools: false,
-            showEditAgent: false,
-            showModelSelector: false,
+        <AgentSettingsFormContext.Provider
+          value={{
+            form,
+            hasChanges: hasChanges,
+            handleSubmit,
+            installedIntegrations: installedIntegrations.filter(
+              (i) => !i.id.includes(agentId),
+            ),
+            agent,
           }}
         >
-          <AgentSettingsFormContext.Provider
-            value={{
-              form,
-              hasChanges: hasChanges,
-              handleSubmit,
-              installedIntegrations: installedIntegrations.filter(
-                (i) => !i.id.includes(agentId),
-              ),
-              agent,
-            }}
-          >
-            <PageLayout
-              tabs={TABS}
-              key={agentId}
-              actionButtons={
-                <div
-                  className={cn(
-                    "flex items-center gap-2 bg-slate-50",
-                    "transition-opacity",
-                    hasChanges ? "opacity-100" : "opacity-0",
-                  )}
+          <PageLayout
+            tabs={TABS}
+            key={agentId}
+            actionButtons={
+              <div
+                className={cn(
+                  "flex items-center gap-2 bg-slate-50",
+                  "transition-opacity",
+                  hasChanges ? "opacity-100" : "opacity-0",
+                )}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={form.formState.isSubmitting}
+                  onClick={discardChanges}
                 >
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={form.formState.isSubmitting}
-                    onClick={discardChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button
-                    variant={isWellKnownAgent ? "default" : "special"}
-                    onClick={handleSubmit}
-                    disabled={!numberOfChanges ||
-                      form.formState.isSubmitting}
-                  >
-                    {form.formState.isSubmitting
-                      ? (
-                        <>
-                          <Spinner size="xs" />
-                          <span>Saving...</span>
-                        </>
-                      )
-                      : (
-                        <span>
-                          {isWellKnownAgent
-                            ? "Save as Agent"
-                            : `Save ${numberOfChanges} change${
-                              numberOfChanges > 1 ? "s" : ""
-                            }`}
-                        </span>
-                      )}
-                  </Button>
-                </div>
-              }
-              breadcrumb={
-                <DefaultBreadcrumb
-                  items={[
-                    { link: "/agents", label: "Agents" },
-                    {
-                      label: (
-                        <AgentBreadcrumbSegment
-                          agentId={agentId}
-                          variant="summary"
-                        />
-                      ),
-                    },
-                  ]}
-                />
-              }
-            />
-          </AgentSettingsFormContext.Provider>
-        </ChatProvider>
-      </Suspense>
+                  Discard
+                </Button>
+                <Button
+                  variant={isWellKnownAgent ? "default" : "special"}
+                  onClick={handleSubmit}
+                  disabled={!numberOfChanges ||
+                    form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting
+                    ? (
+                      <>
+                        <Spinner size="xs" />
+                        <span>Saving...</span>
+                      </>
+                    )
+                    : (
+                      <span>
+                        {isWellKnownAgent
+                          ? "Save as Agent"
+                          : `Save ${numberOfChanges} change${
+                            numberOfChanges > 1 ? "s" : ""
+                          }`}
+                      </span>
+                    )}
+                </Button>
+              </div>
+            }
+            breadcrumb={
+              <DefaultBreadcrumb
+                items={[
+                  { link: "/agents", label: "Agents" },
+                  {
+                    label: (
+                      <AgentBreadcrumbSegment
+                        agentId={agentId}
+                        variant="summary"
+                      />
+                    ),
+                  },
+                ]}
+              />
+            }
+          />
+        </AgentSettingsFormContext.Provider>
+      </ChatProvider>
     </>
+  );
+}
+
+export default function Page(props: Props) {
+  const params = useParams();
+  const agentId = useMemo(
+    () => props.agentId || params.id,
+    [props.agentId, params.id],
+  );
+
+  const threadId = useMemo(
+    () => props.threadId || params.threadId || agentId,
+    [props.threadId, params.threadId, agentId],
+  );
+
+  const chatKey = useMemo(
+    () => `${agentId}-${threadId}`,
+    [agentId, threadId],
+  );
+
+  if (!agentId) {
+    throw new NotFoundError("Agent not found");
+  }
+
+  return (
+    <Suspense
+      fallback={
+        <div className="h-full w-full flex items-center justify-center">
+          <Spinner />
+        </div>
+      }
+    >
+      <FormProvider
+        {...props}
+        agentId={agentId}
+        threadId={threadId!}
+        key={chatKey}
+      />;
+    </Suspense>
   );
 }

@@ -128,16 +128,17 @@ export const upsertWhatsAppUser = createTool({
     phone: z.string(),
     triggerUrl: z.string(),
     triggerId: z.string(),
+    triggers: z.string().array(),
   }),
   canAccess: bypass,
-  handler: async ({ phone, triggerUrl, triggerId }, c) => {
-    console.log({ phone, triggerUrl, triggerId });
+  handler: async ({ phone, triggerUrl, triggerId, triggers }, c) => {
     const { error } = await c.db
       .from("deco_chat_temp_wpp_users")
       .upsert({
         phone: phone,
         trigger_url: triggerUrl,
         trigger_id: triggerId,
+        triggers: triggers,
       });
 
     if (error) {

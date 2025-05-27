@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MCPClient } from "../fetcher.ts";
 import { countries } from "../utils/index.ts";
 import { useProfile } from "./profile.ts";
@@ -8,6 +8,8 @@ import {
   getWhatsAppUser,
   upsertWhatsAppUser,
 } from "../crud/whatsapp.ts";
+import { KEYS } from "./index.ts";
+import { Workspace } from "./store.tsx";
 
 export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
   const { data: profile } = useProfile();
@@ -45,19 +47,33 @@ export function useUpsertWhatsAppUser({
   phone,
   triggerUrl,
   triggerId,
+  triggers,
+  workspace,
+  agentId,
 }: {
   phone: string;
   triggerUrl: string;
   triggerId: string;
+  triggers: string[];
+  workspace: Workspace;
+  agentId: string;
 }) {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => upsertWhatsAppUser(phone, triggerUrl, triggerId),
+    mutationFn: () =>
+      upsertWhatsAppUser(phone, triggerUrl, triggerId, triggers),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: KEYS.TRIGGERS(workspace, agentId),
+      });
+      queryClient.invalidateQueries({ queryKey: KEYS.WHATSAPP_USER(phone) });
+    },
   });
 }
 
 export function useWhatsAppUser(phone: string) {
   return useQuery({
-    queryKey: ["whatsappUser", phone],
+    queryKey: KEYS.WHATSAPP_USER(phone),
     queryFn: () => getWhatsAppUser(phone),
   });
 }

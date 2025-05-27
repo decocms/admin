@@ -4,6 +4,7 @@ import {
   useAgent,
   useCreateTrigger,
   useListTriggersByAgentId,
+  useSDK,
   useSendAgentWhatsAppInvite,
   useUpsertWhatsAppUser,
   useWhatsAppUser,
@@ -45,6 +46,7 @@ export function WhatsAppButton() {
   const { data: whatsappUser } = useWhatsAppUser(profile?.phone ?? "");
   const focusChat = useFocusChat();
   const { openProfileModal } = useProfileModal();
+  const { workspace } = useSDK();
 
   // Find webhook triggers (WhatsApp uses webhook triggers)
   const webhookTriggers =
@@ -58,6 +60,9 @@ export function WhatsAppButton() {
     phone: profile?.phone ?? "",
     triggerUrl: whatsappTrigger?.data.url ?? "",
     triggerId: whatsappTrigger?.id ?? "",
+    triggers: [...(whatsappUser?.triggers ?? []), whatsappTrigger?.id],
+    workspace: workspace,
+    agentId: agentId,
   });
   const { mutate: sendAgentWhatsAppInvite, isPending: isInvitePending } =
     useSendAgentWhatsAppInvite(agentId, whatsappTrigger?.id ?? "");

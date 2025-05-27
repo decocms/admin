@@ -4,7 +4,8 @@ export const upsertWhatsAppUser = (
   phone: string,
   triggerUrl: string,
   triggerId: string,
-) => MCPClient.WHATSAPP_UPSERT_USER({ phone, triggerUrl, triggerId });
+  triggers: string[],
+) => MCPClient.WHATSAPP_UPSERT_USER({ phone, triggerUrl, triggerId, triggers });
 
 export const createWhatsAppInvite = (
   userId: string,

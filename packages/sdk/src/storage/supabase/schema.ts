@@ -1512,6 +1512,45 @@ export type Database = {
           },
         ];
       };
+      models: {
+        Row: {
+          api_key_hash: string | null;
+          by_deco: boolean;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_enabled: boolean;
+          model: string;
+          name: string;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          api_key_hash?: string | null;
+          by_deco?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_enabled?: boolean;
+          model: string;
+          name: string;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          api_key_hash?: string | null;
+          by_deco?: boolean;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_enabled?: boolean;
+          model?: string;
+          name?: string;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
       pages: {
         Row: {
           created_at: string | null;
@@ -2313,6 +2352,7 @@ export type Database = {
           created_at: string | null;
           id: number;
           name: string;
+          plan: string | null;
           slug: string | null;
           stripe_subscription_id: string | null;
         };
@@ -2320,6 +2360,7 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name: string;
+          plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
         };
@@ -2327,6 +2368,7 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name?: string;
+          plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
         };

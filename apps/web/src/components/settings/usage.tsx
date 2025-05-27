@@ -223,14 +223,18 @@ function color(id: string) {
   return colors[hash % colors.length];
 }
 
-function EmptyStateCard({ title, description }: { title: string; description: string }) {
+function EmptyStateCard(
+  { title, description }: { title: string; description: string },
+) {
   return (
     <div className="flex flex-col items-center justify-center h-full w-full py-8">
       <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
         <Icon name="query_stats" size={24} className="text-slate-400" />
       </div>
       <h3 className="text-sm font-medium text-slate-900 mb-1">{title}</h3>
-      <p className="text-xs text-slate-500 text-center max-w-[200px]">{description}</p>
+      <p className="text-xs text-slate-500 text-center max-w-[200px]">
+        {description}
+      </p>
     </div>
   );
 }
@@ -264,7 +268,8 @@ function CreditsUsedPerAgentCard({
           <div className="flex items-center gap-2">
             <Select
               value={range}
-              onValueChange={(value: "day" | "week" | "month") => setRange(value)}
+              onValueChange={(value: "day" | "week" | "month") =>
+                setRange(value)}
             >
               <SelectTrigger className="!h-7 text-xs">
                 <SelectValue />
@@ -471,45 +476,47 @@ function CreditsUsedPerThread({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-16 pt-3">
-        {enrichedThreads.length === 0 ? (
-          <EmptyStateCard
-            title="No thread data"
-            description="There haven't been any threads created during this time period."
-          />
-        ) : (
-          enrichedThreads.map((thread) => (
-            <Dialog>
-              <DialogTrigger asChild>
-                <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <AgentAvatar agent={thread.agent} size="sm" />
-                    <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-900">
-                        {thread.agent?.name || "Unknown Agent"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <UserAvatar member={thread.member} size="sm" />
-                        <span className="text-xs text-slate-500">
-                          {thread.member?.profiles?.metadata?.full_name ||
-                            "Unknown User"}
+        {enrichedThreads.length === 0
+          ? (
+            <EmptyStateCard
+              title="No thread data"
+              description="There haven't been any threads created during this time period."
+            />
+          )
+          : (
+            enrichedThreads.map((thread) => (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-4">
+                      <AgentAvatar agent={thread.agent} size="sm" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium text-slate-900">
+                          {thread.agent?.name || "Unknown Agent"}
                         </span>
+                        <div className="flex items-center gap-2">
+                          <UserAvatar member={thread.member} size="sm" />
+                          <span className="text-xs text-slate-500">
+                            {thread.member?.profiles?.metadata?.full_name ||
+                              "Unknown User"}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-900">
+                        {thread.total}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-900">
-                      {thread.total}
-                    </span>
-                  </div>
-                </div>
-              </DialogTrigger>
-              <ThreadDetails
-                thread={thread}
-                withWorkpaceLink={withWorkpaceLink}
-              />
-            </Dialog>
-          ))
-        )}
+                </DialogTrigger>
+                <ThreadDetails
+                  thread={thread}
+                  withWorkpaceLink={withWorkpaceLink}
+                />
+              </Dialog>
+            ))
+          )}
       </div>
     </Card>
   );

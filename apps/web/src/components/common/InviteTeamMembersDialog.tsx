@@ -38,7 +38,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
-import { CONTACT_US_URL } from "../../constants.ts";
+import { useContactUsUrl } from "../../hooks/useContactUs.ts";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -55,6 +55,7 @@ const inviteMemberSchema = z.object({
 export type InviteMemberFormData = z.infer<typeof inviteMemberSchema>;
 
 function InviteTeamMembersDialogFeatureWall() {
+  const contactUsUrl = useContactUsUrl();
   return (
     <DialogContent className="sm:max-w-2xl">
       <DialogHeader>
@@ -84,7 +85,7 @@ function InviteTeamMembersDialogFeatureWall() {
         </DialogClose>
         <Button
           variant="default"
-          onClick={() => globalThis.open(CONTACT_US_URL, "_blank")}
+          onClick={() => globalThis.open(contactUsUrl, "_blank")}
           type="button"
         >
           Contact Us

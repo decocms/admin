@@ -12,7 +12,7 @@ import {
 import { useState } from "react";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { Protect } from "../wallet/plan.tsx";
-import { CONTACT_US_URL } from "../../constants.ts";
+import { useContactUsUrl } from "../../hooks/useContactUs.ts";
 
 const WELL_KNOWN_ERROR_MESSAGES = {
   InsufficientFunds: "Insufficient funds",
@@ -24,6 +24,7 @@ export function ChatError() {
   const insufficientFunds = error?.message.includes(
     WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds,
   );
+  const contactUsUrl = useContactUsUrl();
 
   useEffect(() => {
     if (insufficientFunds) {
@@ -73,7 +74,7 @@ export function ChatError() {
                   className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
                   asChild
                 >
-                  <Link to={CONTACT_US_URL}>
+                  <Link to={contactUsUrl}>
                     <Icon name="mail" className="mr-2" />
                     Contact Us
                   </Link>

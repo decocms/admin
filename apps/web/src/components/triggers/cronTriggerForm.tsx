@@ -359,7 +359,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
                   When selected, this cron trigger will use the selected binding
                 </span>
               </div>
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-col gap-2 justify-center w-min">
                 <FormControl>
                   <div>
                     {field.value || open

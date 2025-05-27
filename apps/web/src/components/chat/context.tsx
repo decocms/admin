@@ -5,7 +5,6 @@ import {
   useAddOptimisticThread,
   useAgent,
   useAgentRoot,
-  useInvalidateAll,
   useThreadMessages,
 } from "@deco/sdk";
 import {
@@ -65,13 +64,6 @@ interface Props {
   uiOptions?: Partial<IContext["uiOptions"]>;
 }
 
-const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
-  "DECO_INTEGRATION_INSTALL",
-  "DECO_INTEGRATION_ENABLE",
-  "DECO_INTEGRATION_DISABLE",
-  "DECO_AGENT_CONFIGURE",
-]);
-
 const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
   showModelSelector: true,
   showThreadTools: true,
@@ -88,7 +80,6 @@ export function ChatProvider({
   children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const invalidateAll = useInvalidateAll();
   const {
     addOptimisticThread,
   } = useAddOptimisticThread();
@@ -179,15 +170,6 @@ export function ChatProvider({
     },
     onResponse: (response) => {
       correlationIdRef.current = response.headers.get("x-trace-debug-id");
-    },
-    onFinish: (message) => {
-      const shouldInvalidate = message.toolInvocations?.some((tool) =>
-        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
-      );
-
-      if (shouldInvalidate) {
-        invalidateAll();
-      }
     },
   });
 

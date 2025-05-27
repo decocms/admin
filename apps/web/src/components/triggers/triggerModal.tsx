@@ -110,7 +110,7 @@ export function TriggerModal(
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit trigger" : "Create trigger"}
+            {isEditing ? "Edit trigger" : "New Trigger"}
           </DialogTitle>
         </DialogHeader>
         {!hasAgents
@@ -129,7 +129,7 @@ export function TriggerModal(
                 children: (
                   <>
                     <Icon name="add" />
-                    Create agent
+                    New Agent
                   </>
                 ),
               }}

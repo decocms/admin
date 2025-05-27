@@ -40,10 +40,7 @@ export function AuditFilters({
         <Combobox
           options={[
             { value: "all", label: "All agents" },
-            ...agents.map((agent) => ({
-              value: agent.id,
-              label: agent.name,
-            })),
+            ...agents.map((agent) => ({ value: agent.id, label: agent.name })),
           ]}
           value={selectedAgent ?? "all"}
           onChange={(value) => {

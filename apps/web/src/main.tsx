@@ -78,10 +78,6 @@ const AgentDetail = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
 );
 
-const Chat = lazy(
-  () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
-);
-
 const PublicChats = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
 );
@@ -225,17 +221,6 @@ function ErrorFallback() {
   );
 }
 
-function HomeChat() {
-  return (
-    <Chat
-      showThreadMessages={false}
-      agentId="teamAgent"
-      threadId={crypto.randomUUID()}
-      key="disabled-messages"
-    />
-  );
-}
-
 const router = createBrowserRouter([
   {
     errorElement: <ErrorFallback />,
@@ -274,11 +259,16 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            Component: HomeChat,
+            loader: ({ params }) => {
+              const teamSlug = params.teamSlug;
+              globalThis.location.href = teamSlug
+                ? `/${teamSlug}/agents`
+                : "/agents";
+              return null;
+            },
           },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "chat/:id/:threadId", Component: Chat },
           {
             path: "integrations/marketplace",
             Component: IntegrationMarketplace,

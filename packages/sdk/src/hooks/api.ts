@@ -21,8 +21,17 @@ export const KEYS = {
   ) => ["bindings", workspace, binder],
   THREADS: (
     workspace: Workspace,
-    threadId?: string,
-  ) => ["threads", workspace, threadId],
+    options?: ThreadFilterOptions,
+  ) => [
+    "threads",
+    workspace,
+    options?.agentId,
+    options?.resourceId,
+    options?.orderBy,
+    options?.cursor,
+    options?.limit,
+    options?.uniqueByAgentId,
+  ],
   TOOLS: (
     workspace: Workspace,
     agentId: string,

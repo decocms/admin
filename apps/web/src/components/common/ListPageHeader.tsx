@@ -24,7 +24,7 @@ interface ChipletProps {
   onClick: (item: Chiplet) => void;
 }
 
-function Chiplet(props: ChipletProps) {
+export function Chiplet(props: ChipletProps) {
   const { item, onClick } = props;
 
   return (
@@ -32,6 +32,7 @@ function Chiplet(props: ChipletProps) {
       variant={item.active ? "secondary" : "outline"}
       className="shadow-none items-center gap-2"
       onClick={() => onClick(item)}
+      type="button"
     >
       {item.label}
       <span className="text-xs text-slate-400">

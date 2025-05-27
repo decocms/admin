@@ -111,17 +111,20 @@ export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
   id: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
   inputSchema: z.object({
-    integrationId: z.string().describe(
+    appName: z.string().describe(
       "The id of the integration to start the OAuth flow for",
     ),
     returnUrl: z.string().describe(
       "The return URL for the OAuth flow. Will come with a query param including the mcp URL.",
     ),
+    installId: z.string().describe(
+      "The install id of the integration to start the OAuth flow for",
+    ),
   }),
   execute: () => async ({ context }) => {
-    const { integrationId, returnUrl } = context;
-    const redirectUrl = await startOauthFlow(integrationId, returnUrl);
-    return { redirectUrl };
+    const { appName, returnUrl, installId } = context;
+    const redirectUrl = await startOauthFlow(appName, returnUrl, installId);
+    return redirectUrl;
   },
 });
 
@@ -161,7 +164,14 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
         result.structuredContent,
       );
 
-      const id = crypto.randomUUID();
+      const pattern = new URLPattern({
+        pathname: "/apps/:appName/:installId/mcp/messages",
+      });
+      const match = parsed.data && "url" in parsed.data.connection &&
+          typeof parsed.data.connection.url === "string"
+        ? pattern.exec(parsed.data.connection.url)
+        : null;
+      const id = match?.pathname.groups.installId ?? crypto.randomUUID();
 
       const created = await agent.metadata?.mcpClient?.INTEGRATIONS_CREATE({
         id,

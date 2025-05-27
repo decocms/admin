@@ -150,10 +150,21 @@ export const openPanel = <T extends object>(
   );
 };
 
+type initialOpen = "right" | "within" | "below" | "above" | "left";
+export const initialOpenDirections: initialOpen[] = [
+  "right",
+  "within",
+  "below",
+  "above",
+  "left",
+];
+
 export interface Tab {
   Component: ComponentType;
   title: string;
-  initialOpen?: boolean | "right" | "within";
+  initialOpen?: boolean | initialOpen;
+  initialHeight?: number;
+  initialWidth?: number;
   hideFromViews?: boolean;
 }
 
@@ -188,10 +199,7 @@ const addPanel = (
       minimumWidth: isMobile ? globalThis.innerWidth : 300,
       maximumWidth: isMobile ? globalThis.innerWidth : undefined,
       position: {
-        direction:
-          !targetGroup?.id || (position?.direction === "right" && !isMobile)
-            ? "right"
-            : "within",
+        direction: isMobile ? "within" : (position?.direction || "within"),
         referenceGroup: targetGroup?.id,
       },
       ...otherOptions,
@@ -253,9 +261,12 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
-          position: value.initialOpen === "right"
-            ? { direction: "right" }
-            : undefined,
+          initialHeight: !isMobile ? value.initialHeight : undefined,
+          initialWidth: !isMobile ? value.initialWidth : undefined,
+          position:
+            initialOpenDirections.includes(value.initialOpen as initialOpen)
+              ? { direction: value.initialOpen as initialOpen }
+              : undefined,
         },
         event.api,
         isMobile,
@@ -405,11 +416,10 @@ Docked.ViewsTrigger = () => {
               component: DOCKED_VIEWS_TAB.id,
               title: DOCKED_VIEWS_TAB.title,
             })}
-          variant="ghost"
-          size="icon"
-          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "bg-accent" : ""}
+          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "opacity-70" : ""}
         >
           <Icon name="layers" />
+          Views
         </Button>
       </TooltipTrigger>
       <TooltipContent>

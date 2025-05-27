@@ -189,50 +189,60 @@ export const useInstallFromMarketplace = () => {
 
   const mutation = useMutation({
     mutationFn: async (
-      { id, returnUrl, provider }: {
-        id: string;
+      { appName, provider, returnUrl }: {
+        appName: string;
         returnUrl: string;
         provider: string;
       },
     ) => {
+      const result: { data: { installationId: string } } = await agentStub
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {
+          id: appName,
+        });
+
+      const integration = await loadIntegration(
+        workspace,
+        result.data.installationId,
+      );
+
+      let redirectUrl: string | null = null;
+
       if (
-        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(id.toLowerCase()) &&
+        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
         provider === "deco"
       ) {
         const result = await agentStub.callTool(
           "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
-          { integrationId: id, returnUrl },
+          {
+            appName: appName,
+            returnUrl,
+            installId: integration.id.split(":").pop()!,
+          },
         );
-        const redirectUrl = result?.data?.redirectUrl;
+        redirectUrl = result?.data?.redirectUrl;
         if (!redirectUrl) {
           throw new Error("No redirect URL found");
         }
-        globalThis.location.href = redirectUrl;
-        // just to make the type checker happy
-        return null;
       }
 
-      const result: { data: { installationId: string } } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", { id });
-
-      return loadIntegration(workspace, result.data.installationId);
+      return { integration, redirectUrl };
     },
-    onSuccess: (result) => {
-      if (!result) {
+    onSuccess: ({ integration }) => {
+      if (!integration) {
         return;
       }
 
       // update item
-      const itemKey = KEYS.INTEGRATION(workspace, result.id);
+      const itemKey = KEYS.INTEGRATION(workspace, integration.id);
       client.cancelQueries({ queryKey: itemKey });
-      client.setQueryData<Integration>(itemKey, result);
+      client.setQueryData<Integration>(itemKey, integration);
 
       // update list
       const listKey = KEYS.INTEGRATION(workspace);
       client.cancelQueries({ queryKey: listKey });
       client.setQueryData<Integration[]>(
         listKey,
-        (old) => !old ? [result] : [result, ...old],
+        (old) => !old ? [integration] : [integration, ...old],
       );
     },
   });

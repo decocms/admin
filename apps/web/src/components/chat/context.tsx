@@ -80,9 +80,7 @@ export function ChatProvider({
   children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const {
-    addOptimisticThread,
-  } = useAddOptimisticThread();
+  const addOptimisticThread = useAddOptimisticThread();
   const scrollRef = useRef<HTMLDivElement>(null);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
   const { data: initialMessages } = !options.showThreadMessages

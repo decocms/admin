@@ -78,8 +78,8 @@ export const useAddOptimisticThread = () => {
       // Add a "Loading..." titled thread to the threads query
       client.setQueryData(
         KEYS.THREADS(workspace),
-        // deno-lint-ignore no-explicit-any
-        (oldData: any) => {
+        (oldData) => {
+          debugger;
           if (!oldData) return oldData;
 
           // Check if the thread already exists
@@ -110,9 +110,7 @@ export const useAddOptimisticThread = () => {
     [client, workspace],
   );
 
-  return {
-    addOptimisticThread,
-  };
+  return addOptimisticThread;
 };
 
 export const useUpdateThreadTitle = (threadId: string, userId: string) => {

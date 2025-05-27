@@ -283,7 +283,6 @@ const router = createBrowserRouter([
           { path: "wallet", Component: Wallet },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "chat/:id/:threadId", Component: Chat },
           {
             path: "integrations/marketplace",
             Component: IntegrationMarketplace,

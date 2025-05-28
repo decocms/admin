@@ -1,12 +1,11 @@
 import {
-  DEFAULT_MODEL,
-  DEFAULT_MODEL_PREFIX,
+  isWellKnownModel,
   type Model,
-  MODELS,
   useCreateModel,
   useDeleteModel,
   useModels,
   useUpdateModel,
+  WELL_KNOWN_MODELS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -317,7 +316,7 @@ function TableView(
               return;
             }
 
-            const isInDatabase = !model.id.startsWith(DEFAULT_MODEL_PREFIX);
+            const isInDatabase = !isWellKnownModel(model.id);
 
             if (!isInDatabase) {
               createModel.mutate({
@@ -499,8 +498,9 @@ function TableView(
                         disabled={isMutating}
                         onValueChange={(value) => {
                           field.onChange(value);
-                          const logo = MODELS.find((m) => m.model === value)
-                            ?.logo;
+                          const logo = WELL_KNOWN_MODELS.find(
+                            (m) => m.model === value,
+                          )?.logo;
                           if (logo) {
                             setLogo(logo);
                           }
@@ -510,8 +510,7 @@ function TableView(
                           <SelectValue placeholder="Select Model" />
                         </SelectTrigger>
                         <SelectContent>
-                          {MODELS
-                            .filter((m) => m.model !== DEFAULT_MODEL)
+                          {WELL_KNOWN_MODELS
                             .map((model) => (
                               <SelectItem
                                 key={model.model.split(":")[1]}

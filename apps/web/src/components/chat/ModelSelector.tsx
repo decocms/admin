@@ -12,11 +12,11 @@ import {
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { DEFAULT_MODEL_ID, MODELS, useModels } from "@deco/sdk";
+import { AUTO_MODEL, useModels, WELL_KNOWN_MODELS } from "@deco/sdk";
 import { useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {
-  const model = MODELS.find((m) => m.legacyId === modelId);
+  const model = WELL_KNOWN_MODELS.find((m) => m.legacyId === modelId);
   return model ? model.id : modelId;
 };
 
@@ -79,8 +79,8 @@ function CapabilityBadge(
   );
 }
 
-function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
-  if (model.id === DEFAULT_MODEL_ID) {
+function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
+  if (model.id === AUTO_MODEL.id) {
     console.log("model", model);
     return (
       <div className="p-2 md:w-[400px] flex flex-col gap-1">
@@ -114,7 +114,9 @@ function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
   );
 }
 
-function SelectedModelDisplay({ model }: { model: typeof MODELS[0] }) {
+function SelectedModelDisplay(
+  { model }: { model: typeof WELL_KNOWN_MODELS[0] },
+) {
   return (
     <div className="flex items-center gap-1.5">
       {model.logo && <img src={model.logo} className="w-4 h-4" />}
@@ -130,13 +132,13 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({
-  model = DEFAULT_MODEL_ID,
+  model = AUTO_MODEL.id,
   onModelChange,
   variant = "borderless",
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { data: models } = useModels({ excludeDisabled: true });
-  const selectedModel = models.find((m) => m.id === model) || MODELS[0];
+  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {

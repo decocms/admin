@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { DEFAULT_MODEL, Model, MODELS } from "../../constants.ts";
+import { AUTO_MODEL, Model, WELL_KNOWN_MODELS } from "../../constants.ts";
 import { assertHasWorkspace, bypass } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { SupabaseLLMVault } from "./llmVault.ts";
+import { AppContext } from "../index.ts";
 
 interface ModelRow {
   id: string;
@@ -16,8 +17,8 @@ interface ModelRow {
   description: string;
 }
 
-const formatModelRow = (model: ModelRow): Model => {
-  const defaultModel = MODELS.find((m) => m.model === model.model);
+const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
+  const defaultModel = WELL_KNOWN_MODELS.find((m) => m.model === model.model);
 
   return {
     id: model.id,
@@ -30,6 +31,7 @@ const formatModelRow = (model: ModelRow): Model => {
     byDeco: model.by_deco,
     isEnabled: model.is_enabled,
     hasCustomKey: !!model.api_key_hash,
+    apiKeyEncrypted: showApiKey ? model.api_key_hash ?? undefined : undefined,
   };
 };
 
@@ -205,20 +207,22 @@ export const listModelsSchema = z.object({
 
 export type ListModelsInput = z.infer<typeof listModelsSchema>;
 
-export const listModels = createTool({
-  name: "MODELS_LIST",
-  description: "List models for the current user",
-  inputSchema: listModelsSchema,
-  canAccess: bypass,
-  handler: async (props, c) => {
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
-    const { excludeDisabled, excludeAuto } = props;
-
-    const { data, error } = await c
-      .db
-      .from("models")
-      .select(`
+export const listModelsForWorkspace = async ({
+  workspace,
+  db,
+  options,
+}: {
+  workspace: string;
+  db: AppContext["db"];
+  options?: {
+    excludeDisabled?: boolean;
+    excludeAuto?: boolean;
+    showApiKey?: boolean;
+  };
+}) => {
+  const { data, error } = await db
+    .from("models")
+    .select(`
         id,
         model,
         is_enabled,
@@ -229,35 +233,64 @@ export const listModels = createTool({
         name,
         description
       `)
-      .eq("workspace", workspace);
+    .eq("workspace", workspace);
 
-    if (error) throw error;
+  if (error) throw error;
 
-    const models = MODELS.filter((m) =>
-      !excludeAuto || m.model !== DEFAULT_MODEL
-    ).map((model) => {
-      const override = data.find((m) => m.model === model.model && m.by_deco);
+  const models = WELL_KNOWN_MODELS.map((model) => {
+    const override = data.find((m) => m.model === model.model && m.by_deco);
 
-      return {
-        id: override?.id ?? model.id,
-        name: override?.name ?? model.name,
-        model: override?.model ?? model.model,
-        api_key_hash: override?.api_key_hash,
-        description: override?.description || model.description,
-        by_deco: override?.by_deco ?? true,
-        is_enabled: override?.is_enabled ?? true,
-        created_at: override?.created_at ?? new Date().toISOString(),
-        updated_at: override?.updated_at ?? new Date().toISOString(),
-      };
+    return {
+      id: override?.id ?? model.id,
+      name: override?.name ?? model.name,
+      model: override?.model ?? model.model,
+      api_key_hash: override?.api_key_hash,
+      description: override?.description,
+      by_deco: override?.by_deco ?? true,
+      is_enabled: override?.is_enabled ?? true,
+      created_at: override?.created_at ?? new Date().toISOString(),
+      updated_at: override?.updated_at ?? new Date().toISOString(),
+    };
+  });
+
+  if (!options?.excludeAuto) {
+    models.unshift({
+      id: AUTO_MODEL.id,
+      name: AUTO_MODEL.name,
+      model: AUTO_MODEL.model,
+      description: AUTO_MODEL.description,
+      api_key_hash: null,
+      by_deco: true,
+      is_enabled: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
+  }
 
-    const dbModels = data.filter((m) => !m.by_deco);
+  const dbModels = data.filter((m) => !m.by_deco);
 
-    const allModels = [...models, ...dbModels]
-      .map((m) => formatModelRow(m))
-      .filter((m) => !excludeDisabled || m.isEnabled);
+  const allModels = [...models, ...dbModels]
+    .map((m) => formatModelRow(m, options?.showApiKey))
+    .filter((m) => !options?.excludeDisabled || m.isEnabled);
 
-    return allModels;
+  return allModels;
+};
+
+export const listModels = createTool({
+  name: "MODELS_LIST",
+  description: "List models for the current user",
+  inputSchema: listModelsSchema,
+  canAccess: bypass,
+  handler: async (props, c) => {
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
+    const { excludeDisabled = false, excludeAuto = false } = props;
+
+    return await listModelsForWorkspace({
+      workspace,
+      db: c.db,
+      options: { excludeDisabled, excludeAuto, showApiKey: false },
+    });
   },
 });
 
@@ -277,7 +310,7 @@ export const getModel = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    const defaultModel = MODELS.find((m) => m.id === id);
+    const defaultModel = WELL_KNOWN_MODELS.find((m) => m.id === id);
 
     if (defaultModel) {
       return defaultModel;

@@ -17,9 +17,9 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
-  DEFAULT_MODEL,
-  DEFAULT_MODEL_ID,
-  DEFAULT_MODEL_PREFIX,
+  AUTO_MODEL,
+  isWellKnownModel,
+  type Model,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
@@ -161,6 +161,11 @@ function isAudioMessage(message: AIMessage): message is AudioMessage {
   return "audioBase64" in message && typeof message.audioBase64 === "string";
 }
 
+type WorkspaceModels = Record<
+  string,
+  Model
+>;
+
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private _maybeAgent?: Agent;
@@ -181,7 +186,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   private llmVault: LLMVault;
-  private workspaceModels: Record<string, { model: string; apiKeyEncrypted: string }>;
+  private workspaceModels: WorkspaceModels;
   constructor(
     public readonly state: ActorState,
     protected actorEnv: any,
@@ -393,29 +398,43 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  private _getLLMConfig(_modelId: string): LLMConfig & { modelId: string } {
+  private _getLLMConfig(
+    _modelId: string = AUTO_MODEL.id,
+  ): LLMConfig & { modelId: string } {
     const modelId = this._processAutoModel(_modelId);
-    const isCustomModel = !modelId.startsWith(DEFAULT_MODEL_PREFIX);
 
     // don't await this here
     this._updateWorkspaceModels();
 
-    if (isCustomModel) {
-      const data = this.workspaceModels[modelId];
-
-      if (data) {
-        const apiKey = this.llmVault.decrypt(data.apiKeyEncrypted);
-        return {
-          model: data.model,
-          apiKey: apiKey,
-          bypassOpenRouter: true,
-          modelId,
-        };
-      }
+    if (isWellKnownModel(modelId)) {
+      return {
+        model: modelId,
+        modelId,
+      };
     }
 
+    const data = this.workspaceModels[modelId];
+
+    if (data.byDeco) {
+      return {
+        model: modelId,
+        modelId,
+      };
+    }
+
+    if (!data) {
+      throw new Error(`Model ${modelId} not found in workspace`);
+    }
+
+    if (!data.apiKeyEncrypted) {
+      throw new Error(`Model ${modelId} has no api key configured.`);
+    }
+
+    const apiKey = this.llmVault.decrypt(data.apiKeyEncrypted);
     return {
-      model: modelId.replace(`${DEFAULT_MODEL_PREFIX}-`, ""),
+      model: data.model,
+      apiKey: apiKey,
+      bypassOpenRouter: true,
       modelId,
     };
   }
@@ -425,14 +444,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.workspaceModels = models.reduce((acc, model) => {
       acc[model.id] = model;
       return acc;
-    }, {} as Record<string, { model: string; apiKeyEncrypted: string }>);
+    }, {} as WorkspaceModels);
   }
 
   private async _initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
 
     await this._updateWorkspaceModels();
-    const llmConfig = this._getLLMConfig(config.model || DEFAULT_MODEL_ID);
+    const llmConfig = this._getLLMConfig(config.model);
 
     const { llm, tokenLimit } = this._createLLM(llmConfig);
     await this._initMemory(memoryId, config, tokenLimit);
@@ -478,7 +497,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: ANONYMOUS_NAME,
       instructions: ANONYMOUS_INSTRUCTIONS,
       model: this._createLLM({
-        model: DEFAULT_MODEL,
+        model: AUTO_MODEL.id,
       }).llm,
     });
   }
@@ -546,13 +565,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   // todo(@camudo): change this to a nice algorithm someday
   private _processAutoModel(modelId: string) {
-    if (modelId !== DEFAULT_MODEL_ID) {
+    if (modelId !== AUTO_MODEL.id) {
       return modelId;
     }
 
     const possibleModels = Object.keys(this.workspaceModels);
 
-    // i think this is wrong because the default fallback thing is missing
     const autoModelFallbacks = [
       "openai:gpt-4.1-mini",
       "anthropic:claude-sonnet-4",
@@ -610,7 +628,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       const llmConfig = this._getLLMConfig(options.model);
       const { llm } = this._createLLM({
         ...llmConfig,
-        bypassOpenRouter: llmConfig.bypassOpenRouter ?? options.bypassOpenRouter,
+        bypassOpenRouter: llmConfig.bypassOpenRouter ??
+          options.bypassOpenRouter,
       });
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
       agent = new Agent({
@@ -870,7 +889,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       tools_set: {},
       avatar: WELL_KNOWN_AGENTS.teamAgent.avatar,
       id: crypto.randomUUID(),
-      model: DEFAULT_MODEL_ID,
+      model: AUTO_MODEL.id,
       views: [],
       visibility: "WORKSPACE",
       ...manifest,
@@ -951,7 +970,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     const { model, modelId } = this._getLLMConfig(
-      this._configuration?.model ?? DEFAULT_MODEL,
+      this._configuration?.model,
     );
 
     this.wallet.computeLLMUsage({
@@ -992,7 +1011,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }) as GenerateTextResult<any, any>;
 
     const { model, modelId } = this._getLLMConfig(
-      this._configuration?.model ?? DEFAULT_MODEL,
+      options?.model ?? this._configuration?.model,
     );
 
     this.wallet.computeLLMUsage({
@@ -1057,7 +1076,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       attributes: {
         "agent.id": this.state.id,
         model: options?.model ?? this._configuration?.model ??
-          DEFAULT_MODEL,
+          AUTO_MODEL.id,
         "thread.id": thread.threadId,
         "openrouter.bypass": `${options?.bypassOpenRouter ?? false}`,
       },
@@ -1125,7 +1144,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         },
         onFinish: (result) => {
           const { model, modelId } = this._getLLMConfig(
-            this._configuration?.model ?? DEFAULT_MODEL,
+            options?.model ?? this._configuration?.model,
           );
           wallet.computeLLMUsage({
             userId: this.metadata?.user?.id,

@@ -56,6 +56,7 @@ export interface Model {
   byDeco: boolean;
   isEnabled: boolean;
   hasCustomKey: boolean;
+  apiKeyEncrypted?: string;
 }
 
 const LOGOS = {
@@ -76,26 +77,22 @@ type Capability =
   | "file-upload"
   | "web-search";
 
-export const DEFAULT_MODEL_PREFIX = "DEFAULT";
+export const AUTO_MODEL: Model = {
+  id: "auto",
+  model: "auto",
+  name: "Auto",
+  description:
+    "deco.chat will automatically choose the best model for you, based on performance and speed.",
+  logo: "",
+  capabilities: ["reasoning", "image-upload", "file-upload"],
+  byDeco: true,
+  isEnabled: true,
+  hasCustomKey: false,
+};
 
-export const DEFAULT_MODEL = "auto";
-export const DEFAULT_MODEL_ID = "auto";
-
-export const MODELS: Model[] = [
+export const WELL_KNOWN_MODELS: Model[] = [
   {
-    id: DEFAULT_MODEL_ID,
-    model: DEFAULT_MODEL,
-    name: "Auto",
-    description:
-      "deco.chat will automatically choose the best model for you, based on performance and speed.",
-    logo: "",
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
-  },
-  {
-    id: `${DEFAULT_MODEL_PREFIX}-anthropic:claude-sonnet-4`,
+    id: "anthropic:claude-sonnet-4",
     model: "anthropic:claude-sonnet-4",
     name: "Claude Sonnet 4",
     logo: LOGOS.anthropic,
@@ -105,7 +102,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-anthropic:claude-3.7-sonnet:thinking`,
+    id: "anthropic:claude-3.7-sonnet:thinking",
     model: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude Sonnet 3.7",
     logo: LOGOS.anthropic,
@@ -116,7 +113,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-google:gemini-2.5-pro-preview`,
+    id: "google:gemini-2.5-pro-preview",
     model: "google:gemini-2.5-pro-preview",
     name: "Google Gemini Pro 2.5",
     logo: LOGOS.google,
@@ -127,7 +124,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-openai:gpt-4.1`,
+    id: "openai:gpt-4.1",
     model: "openai:gpt-4.1",
     name: "OpenAI GPT-4.1",
     logo: LOGOS.openai,
@@ -137,7 +134,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-openai:gpt-4.1-mini`,
+    id: "openai:gpt-4.1-mini",
     model: "openai:gpt-4.1-mini",
     name: "OpenAI GPT-4.1 mini",
     logo: LOGOS.openai,
@@ -147,7 +144,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-openai:gpt-4.1-nano`,
+    id: "openai:gpt-4.1-nano",
     model: "openai:gpt-4.1-nano",
     name: "OpenAI GPT-4.1 nano",
     logo: LOGOS.openai,
@@ -157,7 +154,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-openai:o3-mini-high`,
+    id: "openai:o3-mini-high",
     model: "openai:o3-mini-high",
     name: "OpenAI o3-mini",
     logo: LOGOS.openai,
@@ -167,7 +164,7 @@ export const MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: `${DEFAULT_MODEL_PREFIX}-x-ai:grok-3-beta`,
+    id: "x-ai:grok-3-beta",
     model: "x-ai:grok-3-beta",
     name: "Grok 3 Beta",
     logo: LOGOS.xai,
@@ -176,14 +173,11 @@ export const MODELS: Model[] = [
     isEnabled: true,
     hasCustomKey: false,
   },
-  // {
-  //   id: "deepseek:deepseek-r1-distill-llama-8b",
-  //   name: "DeepSeek R1 Distill Llama 8B",
-  //   logo:
-  //     "https://assets.decocache.com/webdraw/798dda7c-f79e-4622-bca7-05552560fd40/deepseek.svg",
-  //   capabilities: ["reasoning"],
-  // },
 ];
+
+export function isWellKnownModel(modelId: string): boolean {
+  return WELL_KNOWN_MODELS.some((m) => m.id === modelId);
+}
 
 /**
  * Gets the trace debug ID from the URL or generates a new one
@@ -227,7 +221,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description:
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
-  model: DEFAULT_MODEL,
+  model: AUTO_MODEL.id,
   visibility: "WORKSPACE",
   tools_set: {},
   views: [],
@@ -263,7 +257,7 @@ export const WELL_KNOWN_AGENTS = {
     name: "Setup agent",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you with this setup.",
-    model: DEFAULT_MODEL,
+    model: AUTO_MODEL.id,
     visibility: "PUBLIC",
     tools_set: {
       DECO_INTEGRATIONS: [

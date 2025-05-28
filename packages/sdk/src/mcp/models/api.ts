@@ -146,10 +146,6 @@ export const updateModel = createTool({
       }
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return await getModel.handler({ id });
-    }
-
     const { data, error } = await c
       .db
       .from("models")

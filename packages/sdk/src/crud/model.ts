@@ -29,7 +29,7 @@ export interface UpdateModelInput {
   id: string;
   data: Partial<
     Pick<Model, "name" | "model" | "description" | "isEnabled"> & {
-      apiKey?: string;
+      apiKey?: string | null;
     }
   >;
   [key: string]: unknown;

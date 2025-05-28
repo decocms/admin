@@ -24,6 +24,7 @@ export interface ComputeAgentUsageOpts {
   usage: LanguageModelUsage;
   threadId: string;
   model: string;
+  modelId: string;
   agentName: string;
 }
 
@@ -104,6 +105,7 @@ export class AgentWallet {
     usage,
     threadId,
     model,
+    modelId,
     agentName,
     userId,
   }: ComputeAgentUsageOpts) {
@@ -112,6 +114,7 @@ export class AgentWallet {
 
     const usageData = {
       model,
+      modelId,
       agentId,
       threadId,
       workspace: this.config.workspace,

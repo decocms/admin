@@ -76,8 +76,9 @@ export const createModel = createTool({
       const llmVault = new SupabaseLLMVault(
         c.db,
         c.envVars.API_KEY_ENCRYPTION_KEY,
+        workspace,
       );
-      await llmVault.storeApiKey(data.id, workspace, apiKey);
+      await llmVault.storeApiKey(data.id, apiKey);
     }
 
     return formatModelRow(data);
@@ -125,9 +126,10 @@ export const updateModel = createTool({
           const llmVault = new SupabaseLLMVault(
             c.db,
             c.envVars.API_KEY_ENCRYPTION_KEY,
+            workspace,
           );
 
-          await llmVault.updateApiKey(id, workspace, value);
+          await llmVault.updateApiKey(id, value);
         }
 
         continue;
@@ -241,7 +243,7 @@ export const listModels = createTool({
         name: override?.name ?? model.name,
         model: override?.model ?? model.model,
         api_key_hash: override?.api_key_hash,
-        description: override?.description,
+        description: override?.description || model.description,
         by_deco: override?.by_deco ?? true,
         is_enabled: override?.is_enabled ?? true,
         created_at: override?.created_at ?? new Date().toISOString(),

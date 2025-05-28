@@ -181,7 +181,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   private llmVault: LLMVault;
-  private workspaceModels: Awaited<ReturnType<LLMVault["listWorkspaceModels"]>>;
+  private workspaceModels: Record<string, { model: string; apiKeyEncrypted: string }>;
   constructor(
     public readonly state: ActorState,
     protected actorEnv: any,
@@ -207,7 +207,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.env.API_KEY_ENCRYPTION_KEY,
       this.workspace,
     );
-    this.workspaceModels = [];
+    this.workspaceModels = {};
 
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({
@@ -393,14 +393,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  private _getLLMConfig(modelId: string): LLMConfig {
+  private _getLLMConfig(_modelId: string): LLMConfig & { modelId: string } {
+    const modelId = this._processAutoModel(_modelId);
     const isCustomModel = !modelId.startsWith(DEFAULT_MODEL_PREFIX);
 
     // don't await this here
     this._updateWorkspaceModels();
 
     if (isCustomModel) {
-      const data = this.workspaceModels.find((model) => model.id === modelId);
+      const data = this.workspaceModels[modelId];
 
       if (data) {
         const apiKey = this.llmVault.decrypt(data.apiKeyEncrypted);
@@ -408,25 +409,30 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           model: data.model,
           apiKey: apiKey,
           bypassOpenRouter: true,
+          modelId,
         };
       }
     }
 
     return {
       model: modelId.replace(`${DEFAULT_MODEL_PREFIX}-`, ""),
+      modelId,
     };
   }
 
   private async _updateWorkspaceModels() {
-    this.workspaceModels = await this.llmVault.listWorkspaceModels();
+    const models = await this.llmVault.listWorkspaceModels();
+    this.workspaceModels = models.reduce((acc, model) => {
+      acc[model.id] = model;
+      return acc;
+    }, {} as Record<string, { model: string; apiKeyEncrypted: string }>);
   }
 
   private async _initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
 
     await this._updateWorkspaceModels();
-    const model = this._inferBestModel(config.model || DEFAULT_MODEL_ID);
-    const llmConfig = this._getLLMConfig(model);
+    const llmConfig = this._getLLMConfig(config.model || DEFAULT_MODEL_ID);
 
     const { llm, tokenLimit } = this._createLLM(llmConfig);
     await this._initMemory(memoryId, config, tokenLimit);
@@ -539,11 +545,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   // todo(@camudo): change this to a nice algorithm someday
-  private _inferBestModel(model: string) {
-    if (model === "auto") {
-      return "openai:gpt-4.1-mini";
+  private _processAutoModel(modelId: string) {
+    if (modelId !== DEFAULT_MODEL_ID) {
+      return modelId;
     }
-    return model;
+
+    const possibleModels = Object.keys(this.workspaceModels);
+
+    // i think this is wrong because the default fallback thing is missing
+    const autoModelFallbacks = [
+      "openai:gpt-4.1-mini",
+      "anthropic:claude-sonnet-4",
+    ];
+
+    for (const model of autoModelFallbacks) {
+      if (possibleModels.includes(model)) {
+        return model;
+      }
+    }
+
+    return possibleModels[0];
   }
 
   private async _withToolOverrides(
@@ -586,12 +607,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     if (options.model) {
-      const model = this._inferBestModel(options.model);
-      const llmConfig = this._getLLMConfig(model);
+      const llmConfig = this._getLLMConfig(options.model);
       const { llm } = this._createLLM({
         ...llmConfig,
-        bypassOpenRouter: options.bypassOpenRouter ??
-          llmConfig.bypassOpenRouter,
+        bypassOpenRouter: llmConfig.bypassOpenRouter ?? options.bypassOpenRouter,
       });
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
       agent = new Agent({
@@ -931,7 +950,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       content: `\`\`\`json\n${JSON.stringify(result)}\`\`\``,
     });
 
-    const model = this._inferBestModel(
+    const { model, modelId } = this._getLLMConfig(
       this._configuration?.model ?? DEFAULT_MODEL,
     );
 
@@ -940,6 +959,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       usage: result.usage,
       threadId: this.thread.threadId,
       model,
+      modelId,
       agentName: this._configuration?.name ?? ANONYMOUS_NAME,
     });
 
@@ -971,7 +991,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       toolsets,
     }) as GenerateTextResult<any, any>;
 
-    const model = this._inferBestModel(
+    const { model, modelId } = this._getLLMConfig(
       this._configuration?.model ?? DEFAULT_MODEL,
     );
 
@@ -980,6 +1000,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       usage: result.usage,
       threadId: this.thread.threadId,
       model,
+      modelId,
       agentName: this._configuration?.name ?? ANONYMOUS_NAME,
     });
 
@@ -1103,7 +1124,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           // TODO(@mcandeia): add error tracking with posthog
         },
         onFinish: (result) => {
-          const model = this._inferBestModel(
+          const { model, modelId } = this._getLLMConfig(
             this._configuration?.model ?? DEFAULT_MODEL,
           );
           wallet.computeLLMUsage({
@@ -1111,6 +1132,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             usage: result.usage,
             threadId: this.thread.threadId,
             model,
+            modelId,
             agentName: this._configuration?.name ?? ANONYMOUS_NAME,
           });
         },

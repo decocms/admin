@@ -69,8 +69,6 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
-export const DEFAULT_MODEL = "auto";
-
 // TODO(@camudo): Make native web search work
 type Capability =
   | "reasoning"
@@ -80,9 +78,8 @@ type Capability =
 
 export const DEFAULT_MODEL_PREFIX = "DEFAULT";
 
-export const DEFAULT_MODEL_ID = `${DEFAULT_MODEL_PREFIX}-${DEFAULT_MODEL}`;
-
-export const AUTO_MODEL = "openai:gpt-4.1-mini";
+export const DEFAULT_MODEL = "auto";
+export const DEFAULT_MODEL_ID = "auto";
 
 export const MODELS: Model[] = [
   {

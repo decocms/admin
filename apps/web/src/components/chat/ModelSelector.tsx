@@ -80,7 +80,8 @@ function CapabilityBadge(
 }
 
 function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
-  if (model.id === "auto") {
+  if (model.id === DEFAULT_MODEL_ID) {
+    console.log("model", model);
     return (
       <div className="p-2 md:w-[400px] flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">

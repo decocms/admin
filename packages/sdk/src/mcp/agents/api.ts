@@ -71,9 +71,10 @@ export const listAgents = createTool({
       throw new InternalServerError(error.message);
     }
 
-    const roles = c.workspace.root !== "users" &&
-      (await c.policy.getUserRoles(c.user.id, c.workspace.slug));
-    const userRoles = roles?.map((role) => role.roles.name);
+    const roles = c.workspace.root === "users"
+      ? []
+      : (await c.policy.getUserRoles(c.user.id as string, c.workspace.slug));
+    const userRoles: string[] = roles?.map((role) => role.name);
 
     const filteredAgents = data.filter((agent) =>
       !agent.access ||

@@ -1,9 +1,4 @@
-import {
-  type MCPConnection,
-  useTeam,
-  useTeamRoles,
-  useWriteFile,
-} from "@deco/sdk";
+import { type MCPConnection, useWriteFile } from "@deco/sdk";
 import {
   Form,
   FormControl,
@@ -26,7 +21,7 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef, useState } from "react";
-import { useCurrentTeam } from "../../sidebar/TeamSelector.tsx";
+import { useCurrentTeamRoles } from "../../settings/agent.tsx";
 import { IntegrationIcon } from "../list/common.tsx";
 import { useFormContext } from "./context.ts";
 
@@ -49,10 +44,7 @@ export function DetailForm() {
     onSubmit,
     form,
   } = useFormContext();
-  const { slug } = useCurrentTeam();
-  const { data: team } = useTeam(slug);
-  const teamId = team?.id;
-  const { data: roles = [] } = useTeamRoles(teamId);
+  const roles = useCurrentTeamRoles();
 
   const writeFileMutation = useWriteFile();
   const { generate: generateIconFilename } = useIconFilename();

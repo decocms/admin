@@ -39,6 +39,7 @@ export interface RoleWithPolicies extends Role {
 export interface MemberRole {
   member_id: number;
   role_id: number;
+  name: string;
   role?: Role;
 }
 
@@ -54,14 +55,14 @@ export class PolicyClient {
   private static instance: PolicyClient | null = null;
   private db: Client | null = null;
   private userPolicyCache: WebCache<Pick<Policy, "statements">[]>;
-  private userRolesCache: WebCache<Role[]>;
+  private userRolesCache: WebCache<MemberRole[]>;
   private teamRolesCache: WebCache<Role[]>;
   private teamSlugCache: WebCache<number>;
 
   private constructor() {
     // Initialize caches
     this.userPolicyCache = new WebCache<Policy[]>("user-policies", TWO_MIN_TTL);
-    this.userRolesCache = new WebCache<Role[]>("user-roles", TWO_MIN_TTL);
+    this.userRolesCache = new WebCache<MemberRole[]>("user-roles", TWO_MIN_TTL);
     this.teamRolesCache = new WebCache<Role[]>("team-role", TWO_MIN_TTL);
     this.teamSlugCache = new WebCache<number>("team-slug", TWO_MIN_TTL);
   }
@@ -77,7 +78,10 @@ export class PolicyClient {
     return PolicyClient.instance;
   }
 
-  public async getUserRoles(userId: string, teamIdOrSlug: number | string) {
+  public async getUserRoles(
+    userId: string,
+    teamIdOrSlug: number | string,
+  ): Promise<MemberRole[]> {
     const teamId = typeof teamIdOrSlug === "number"
       ? teamIdOrSlug
       : await this.getTeamIdBySlug(teamIdOrSlug);
@@ -97,7 +101,9 @@ export class PolicyClient {
       .eq("team_id", teamId)
       .single();
 
-    return data?.member_roles;
+    return data?.member_roles.map((memberRole: { roles: MemberRole }) =>
+      memberRole.roles
+    );
   }
 
   /**

@@ -70,16 +70,21 @@ const useAvatarFilename = () => {
   return { generate };
 };
 
+export const useCurrentTeamRoles = () => {
+  const { slug } = useCurrentTeam();
+  const { data: team } = useTeam(slug);
+  const teamId = team?.id;
+  const { data: roles = [] } = useTeamRoles(teamId);
+  return roles;
+};
+
 function SettingsTab() {
   const {
     form,
     agent,
     handleSubmit,
   } = useAgentSettingsForm();
-  const { slug } = useCurrentTeam();
-  const { data: team } = useTeam(slug);
-  const teamId = team?.id;
-  const { data: roles = [] } = useTeamRoles(teamId);
+  const roles = useCurrentTeamRoles();
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);

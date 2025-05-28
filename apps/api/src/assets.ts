@@ -2,10 +2,7 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { cache } from "hono/cache";
 import { getRuntimeKey } from "hono/adapter";
-import {
-  GetObjectCommand,
-  GetObjectCommandOutput,
-} from "@aws-sdk/client-s3";
+import { GetObjectCommand, GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import { typeByExtension } from "@std/media-types";
 import { AppEnv } from "./utils/context.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";

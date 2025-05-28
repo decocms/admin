@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { AUTO_MODEL, Model, WELL_KNOWN_MODELS } from "../../constants.ts";
-import { assertHasWorkspace, canAccessWorkspaceResource } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  canAccessWorkspaceResource,
+} from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { SupabaseLLMVault } from "./llmVault.ts";
 import { AppContext } from "../index.ts";

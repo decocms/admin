@@ -83,7 +83,6 @@ import type {
 import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
 import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
-import { getS3ServerClient } from "@deco/sdk/storage";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";

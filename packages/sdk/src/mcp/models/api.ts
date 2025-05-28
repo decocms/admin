@@ -13,11 +13,11 @@ interface ModelRow {
   name: string;
   model: string;
   is_enabled: boolean;
-  api_key_hash: string | null;
+  api_key_hash?: string | null;
   by_deco: boolean;
   created_at: string;
   updated_at: string;
-  description: string;
+  description: string | null;
 }
 
 const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
@@ -30,7 +30,7 @@ const formatModelRow = (model: ModelRow, showApiKey = false): Model => {
     logo: defaultModel?.logo ?? "",
     capabilities: defaultModel?.capabilities ?? [],
     legacyId: defaultModel?.legacyId,
-    description: model.description || undefined,
+    description: model.description ?? undefined,
     byDeco: model.by_deco,
     isEnabled: model.is_enabled,
     hasCustomKey: !!model.api_key_hash,

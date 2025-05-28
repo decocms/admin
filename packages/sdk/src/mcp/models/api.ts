@@ -17,7 +17,7 @@ interface ModelRow {
   by_deco: boolean;
   created_at: string;
   updated_at: string;
-  description: string | null;
+  description?: string | null;
 }
 
 const formatModelRow = (model: ModelRow, showApiKey = false): Model => {

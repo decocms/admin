@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AUTO_MODEL, Model, WELL_KNOWN_MODELS } from "../../constants.ts";
-import { assertHasWorkspace, bypass } from "../assertions.ts";
+import { assertHasWorkspace, canAccessWorkspaceResource } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { SupabaseLLMVault } from "./llmVault.ts";
 import { AppContext } from "../index.ts";
@@ -50,7 +50,7 @@ export const createModel = createTool({
   name: "MODELS_CREATE",
   description: "Create a new model",
   inputSchema: createModelSchema,
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -114,7 +114,7 @@ export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
   inputSchema: updateModelSchema,
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -182,7 +182,7 @@ export const deleteModel = createTool({
   name: "MODELS_DELETE",
   description: "Delete a model by id",
   inputSchema: deleteModelSchema,
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -280,7 +280,7 @@ export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
   inputSchema: listModelsSchema,
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -304,7 +304,7 @@ export const getModel = createTool({
   name: "MODELS_GET",
   description: "Get a model by id",
   inputSchema: getModelSchema,
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;

@@ -1099,9 +1099,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             },
           }
           : {}),
-        onChunk: () => {
-          endTtfbSpan();
-        },
+        onChunk: endTtfbSpan,
         onError: () => {
           // TODO(@mcandeia): add error tracking with posthog
         },

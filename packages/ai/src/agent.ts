@@ -85,7 +85,6 @@ import type {
 import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
 import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
-import { getS3ServerClient } from "../../sdk/src/storage/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -249,11 +248,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-      s3: getS3ServerClient({
-        accountId: this.env.CF_ACCOUNT_ID,
-        accessKeyId: this.env.CF_R2_ACCESS_KEY_ID,
-        secretAccessKey: this.env.CF_R2_SECRET_ACCESS_KEY,
-      }),
       policy: policyClient,
       authorization: new AuthorizationClient(policyClient),
     };

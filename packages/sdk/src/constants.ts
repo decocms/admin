@@ -77,6 +77,9 @@ type Capability =
   | "file-upload"
   | "web-search";
 
+/*
+ * TODO: remove duplicated ids, bydeco, enabled, etc. from here.
+ */
 export const AUTO_MODEL: Model = {
   id: "auto",
   model: "auto",

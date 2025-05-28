@@ -17,6 +17,7 @@ import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+import * as assetsAPI from "./assets/api.ts";
 
 export * from "./bindings/binder.ts";
 
@@ -93,8 +94,8 @@ export const WORKSPACE_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
-  fsAPI.writeAsset,
-  fsAPI.deleteAsset,
+  assetsAPI.writeAsset,
+  assetsAPI.deleteAsset,
   modelsAPI.createModel,
   modelsAPI.deleteModel,
   modelsAPI.listModels,

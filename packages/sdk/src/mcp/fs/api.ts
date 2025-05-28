@@ -6,142 +6,13 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
-import { WELL_KNOWN_ORIGINS } from "../../hosts.ts";
 import { getWorkspaceBucketName } from "../../storage/s3/utils.ts";
-import { PUBLIC_ASSETS_BUCKET } from "../../constants.ts";
 import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
-import { AppContext, createTool, getEnv } from "../context.ts";
-
-const ensureBucketExists = async (c: AppContext, bucketName: string) => {
-  const { cf } = c;
-  const env = getEnv(c);
-
-  try {
-    await cf.r2.buckets.get(bucketName, {
-      account_id: env.CF_ACCOUNT_ID,
-    });
-  } catch (error) {
-    if ((error as unknown as { status: number })?.status !== 404) {
-      throw error;
-    }
-
-    // Create bucket
-    await cf.r2.buckets.create({
-      name: bucketName,
-      account_id: env.CF_ACCOUNT_ID,
-    });
-
-    // Set cors
-    await cf.r2.buckets.cors.update(bucketName, {
-      account_id: env.CF_ACCOUNT_ID,
-      rules: [{
-        maxAgeSeconds: 3600,
-        exposeHeaders: ["etag"],
-        allowed: {
-          methods: ["GET", "PUT"],
-          origins: [...WELL_KNOWN_ORIGINS],
-          headers: ["origin", "content-type"],
-        },
-      }],
-    });
-  }
-};
-
-const writeFileToBucket = async ({
-  context,
-  bucketName,
-  path,
-  contentType,
-  metadata,
-  expiresIn = 60,
-}: {
-  context: AppContext;
-  bucketName: string;
-  path: string;
-  contentType: string;
-  metadata?: Record<string, string>;
-  expiresIn?: number;
-}) => {
-  await ensureBucketExists(context, bucketName);
-
-  const putCommand = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: path,
-    ContentType: contentType,
-    Metadata: metadata,
-  });
-
-  const url = await getSignedUrl(context.s3, putCommand, {
-    expiresIn,
-    signableHeaders: new Set(["content-type"]),
-  });
-
-  return { url };
-};
-
-const deleteFileFromBucket = async ({
-  context,
-  bucketName,
-  path,
-}: {
-  context: AppContext;
-  bucketName: string;
-  path: string;
-}) => {
-  await ensureBucketExists(context, bucketName);
-
-  const deleteCommand = new DeleteObjectCommand({
-    Bucket: bucketName,
-    Key: path,
-  });
-
-  return context.s3.send(deleteCommand);
-};
-
-export const writeAsset = createTool({
-  name: "FS_ASSET_WRITE",
-  description: "Get a secure temporary link to upload a public asset",
-  inputSchema: z.object({
-    path: z.string(),
-    expiresIn: z.number().optional().describe(
-      "Seconds until URL expires (default: 60)",
-    ),
-    contentType: z.string().describe(
-      "Content-Type for the asset. This is required.",
-    ),
-    metadata: z.record(z.string(), z.string()).optional().describe(
-      "Metadata to be added to the asset",
-    ),
-  }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
-    return await writeFileToBucket({
-      context: c,
-      bucketName: PUBLIC_ASSETS_BUCKET,
-      path,
-      contentType,
-      metadata,
-      expiresIn,
-    });
-  },
-});
-
-export const deleteAsset = createTool({
-  name: "FS_ASSET_DELETE",
-  description: "Delete a public asset",
-  inputSchema: z.object({ path: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ path }, c) => {
-    return await deleteFileFromBucket({
-      context: c,
-      bucketName: PUBLIC_ASSETS_BUCKET,
-      path,
-    });
-  },
-});
+import { createTool } from "../context.ts";
+import { ensureBucketExists } from "../utils.ts";
 
 export const listFiles = createTool({
   name: "FS_LIST",
@@ -235,17 +106,24 @@ export const writeFile = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
-    assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace!.value);
 
-    return await writeFileToBucket({
-      context: c,
-      bucketName,
-      path,
-      contentType,
-      metadata,
-      expiresIn,
+    assertHasWorkspace(c);
+    await ensureBucketExists(c, bucketName);
+
+    const putCommand = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: path,
+      ContentType: contentType,
+      Metadata: metadata,
     });
+
+    const url = await getSignedUrl(c.s3, putCommand, {
+      expiresIn,
+      signableHeaders: new Set(["content-type"]),
+    });
+
+    return { url };
   },
 });
 
@@ -255,13 +133,16 @@ export const deleteFile = createTool({
   inputSchema: z.object({ path: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
-    assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace!.value);
 
-    return await deleteFileFromBucket({
-      context: c,
-      bucketName,
-      path,
+    assertHasWorkspace(c);
+    await ensureBucketExists(c, bucketName);
+
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: path,
     });
+
+    return c.s3.send(deleteCommand);
   },
 });

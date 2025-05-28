@@ -1,8 +1,8 @@
 import { Client } from "@deco/sdk/storage";
 import { WebCache } from "../cache/index.ts";
 
-// Cache duration
-const TWO_MIN_TTL = 1000 * 60 * 2;
+// Cache duration in seconds (WebCache expects seconds)
+const TWO_MIN_TTL = 60 * 2;
 
 // Base roles
 export const BASE_ROLES_ID = {
@@ -61,7 +61,10 @@ export class PolicyClient {
 
   private constructor() {
     // Initialize caches
-    this.userPolicyCache = new WebCache<Policy[]>("user-policies", TWO_MIN_TTL);
+    this.userPolicyCache = new WebCache<Pick<Policy, "statements">[]>(
+      "user-policies",
+      TWO_MIN_TTL,
+    );
     this.userRolesCache = new WebCache<MemberRole[]>("user-roles", TWO_MIN_TTL);
     this.teamRolesCache = new WebCache<Role[]>("team-role", TWO_MIN_TTL);
     this.teamSlugCache = new WebCache<number>("team-slug", TWO_MIN_TTL);
@@ -189,7 +192,6 @@ export class PolicyClient {
     }
 
     // Cache the result
-    await this.userPolicyCache.delete(cacheKey);
     await this.userPolicyCache.set(
       cacheKey,
       this.filterValidPolicies(policies),
@@ -204,6 +206,14 @@ export class PolicyClient {
     if (!this.db) {
       throw new Error("PolicyClient not initialized with database client");
     }
+
+    // Get member's user_id for cache invalidation
+    const { data: member } = await this.db
+      .from("members")
+      .select("user_id")
+      .eq("id", memberId)
+      .single();
+
     const { error } = await this.db.from("member_roles").delete().eq(
       "teamId",
       teamId,
@@ -213,6 +223,18 @@ export class PolicyClient {
     );
 
     if (error) throw error;
+
+    // Invalidate caches if we have the user_id
+    if (member?.user_id) {
+      await Promise.all([
+        this.userPolicyCache.delete(
+          this.getUserPoliceCacheKey(member.user_id, teamId),
+        ),
+        this.userRolesCache.delete(
+          this.getUserRolesCacheKey(member.user_id, teamId),
+        ),
+      ]);
+    }
 
     return true;
   }
@@ -248,7 +270,6 @@ export class PolicyClient {
     }
 
     // Cache the result
-    await this.teamRolesCache.delete(this.getTeamRolesCacheKey(teamId));
     await this.teamRolesCache.set(this.getTeamRolesCacheKey(teamId), roles);
 
     return roles;
@@ -335,10 +356,15 @@ export class PolicyClient {
         .eq("role_id", params.roleId);
     }
 
-    // Invalidate cache for this user
-    await this.userPolicyCache.delete(
-      this.getUserPoliceCacheKey(profile.user_id, teamId),
-    );
+    // Invalidate all caches for this user
+    await Promise.all([
+      this.userPolicyCache.delete(
+        this.getUserPoliceCacheKey(profile.user_id, teamId),
+      ),
+      this.userRolesCache.delete(
+        this.getUserRolesCacheKey(profile.user_id, teamId),
+      ),
+    ]);
 
     return role;
   }
@@ -353,7 +379,6 @@ export class PolicyClient {
 
     if (!teamId) throw new Error(`Not found team id with slug: ${teamSlug}`);
 
-    await this.teamSlugCache.delete(teamSlug);
     await this.teamSlugCache.set(teamSlug, teamId);
     return teamId;
   }

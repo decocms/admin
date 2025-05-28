@@ -5,7 +5,7 @@ import {
   useModels,
   useUpdateModel,
 } from "@deco/sdk";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "../../../../../packages/ui/src/components/button.tsx";
 import { Icon } from "../../../../../packages/ui/src/components/icon.tsx";
 import { ScrollArea } from "../../../../../packages/ui/src/components/scroll-area.tsx";
@@ -19,6 +19,18 @@ import { cn } from "../../../../../packages/ui/src/lib/utils.ts";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { Table, TableColumn } from "../common/Table.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../../../packages/ui/src/components/dropdown-menu.tsx";
+
+const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
+
+type SortKey = typeof SORTABLE_KEYS[number];
+type SortDirection = "asc" | "desc";
 
 function Title() {
   return (
@@ -32,19 +44,152 @@ interface ModelCardProps {
   model: Model;
 }
 
-function ModelCard({ model }: ModelCardProps) {
+function Models() {
+  const { data: models } = useModels({ excludeAuto: true });
+  const navigateWorkspace = useNavigateWorkspace();
+
+  const newWorkspace = () => {
+    navigateWorkspace("/model/new");
+  };
+
+  return (
+    <ScrollArea className="h-full text-slate-700">
+      <SettingsMobileHeader currentPage="models" />
+      <Suspense fallback={<span>Loading...</span>}>
+        <div className="px-6 py-10 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <Title />
+            <Button
+              variant="default"
+              className="ml-auto"
+              onClick={newWorkspace}
+            >
+              <Icon name="add" className="mr-2 h-4 w-4" />
+              Add Model
+            </Button>
+          </div>
+
+          <div className="space-y-6">
+            <TableView models={models} />
+          </div>
+        </div>
+      </Suspense>
+    </ScrollArea>
+  );
+}
+
+const KeyCell = (
+  { model, onClick }: { model: Model; onClick: () => void },
+) => {
+  if (model.byDeco) {
+    return (
+      <Button variant="outline" onClick={onClick}>
+        Add Custom Key
+      </Button>
+    );
+  }
+  return (
+    <span className="flex items-center gap-2 px-4 py-2" onClick={onClick}>
+      <Icon name="key" /> Custom Key
+    </span>
+  );
+};
+
+const ModelActions = (
+  { model, editModel }: { model: Model; editModel: () => void },
+) => {
+  if (model.byDeco) {
+    return undefined;
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon name="more_vert" size={20} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            editModel();
+          }}
+        >
+          <Icon name="edit" className="h-4 w-4 mr-2" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-red-500"
+          onClick={(e) => {
+            e.stopPropagation();
+            // onOpenChange(true);
+          }}
+        >
+          <Icon name="delete" className="h-4 w-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+const ModelInfoCell = (
+  { model }: { model: Model },
+) => {
+  return (
+    <div className="flex items-center gap-2">
+      {model.logo && (
+        <div
+          className={cn(
+            "rounded-xl relative flex items-center justify-center p-2 h-10 w-10",
+            "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
+            "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+          )}
+        >
+          {model.logo
+            ? (
+              <Avatar
+                url={model.logo}
+                fallback={model.name}
+                fallbackClassName="!bg-transparent"
+                className="w-full h-full rounded-lg"
+                objectFit="contain"
+              />
+            )
+            : <Icon name="conversion_path" className="text-slate-600" />}
+        </div>
+      )}
+      <div>
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium line-clamp-1">{model.name}</h3>
+        </div>
+        <p className="text-sm text-slate-500">{model.model}</p>
+      </div>
+    </div>
+  );
+};
+
+function TableView(
+  { models }: { models: Model[] },
+) {
+  const [sortKey, setSortKey] = useState<SortKey>("active");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [openModalId, setOpenModalId] = useState<string | null>(null);
+  const navigateWorkspace = useNavigateWorkspace();
   const updateModel = useUpdateModel();
   const createModel = useCreateModel();
 
-  const navigateWorkspace = useNavigateWorkspace();
-
-  async function handleNavigation() {
+  async function handleNavigation(model: Model) {
     if (model.id.startsWith(DEFAULT_MODEL_PREFIX)) {
       const newModel = await createModel.mutateAsync({
         model: model.model,
-        name: model.name,
+        name: `${model.name} - Team`,
         description: model.description,
-        byDeco: true,
+        byDeco: false,
         isEnabled: true,
       });
 
@@ -54,51 +199,40 @@ function ModelCard({ model }: ModelCardProps) {
     }
   }
 
-  return (
-    <div
-      className="flex items-center justify-between p-4 border rounded-lg text-start cursor-pointer hover:shadow-md transition-shadow"
-      onClick={handleNavigation}
-    >
-      <div className="flex items-center gap-3">
-        {model.logo && (
-          <div
-            className={cn(
-              "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-              "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
-              "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
-            )}
-          >
-            {model.logo
-              ? (
-                <Avatar
-                  url={model.logo}
-                  fallback={model.name}
-                  fallbackClassName="!bg-transparent"
-                  className="w-full h-full rounded-lg"
-                  objectFit="contain"
-                />
-              )
-              : <Icon name="conversion_path" className="text-slate-600" />}
-          </div>
-        )}
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium line-clamp-1">{model.name}</h3>
-            {model.hasCustomKey && (
-              <Tooltip>
-                <TooltipTrigger className="flex">
-                  <Icon name="key" className="h-4 w-4 text-slate-500" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>This model has a custom API key</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          <p className="text-sm text-slate-500">{model.model}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
+  function handleSort(key: string) {
+    const k = key as SortKey;
+    if (sortKey === k) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(k);
+      setSortDirection("asc");
+    }
+  }
+
+  function getSortValue(
+    model: Model,
+    key: SortKey,
+  ): string {
+    if (key === "name") return model.name?.toLowerCase() || "";
+    if (key === "active") return model.isEnabled ? "1" : "0";
+    if (key === "APIKey") return model.hasCustomKey ? "1" : "0";
+    return "";
+  }
+
+  const sortedModels = [...models]
+    .sort((a, b) => {
+      const aVal = getSortValue(a, sortKey);
+      const bVal = getSortValue(b, sortKey);
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const columns: TableColumn<Model>[] = [
+    {
+      id: "active",
+      header: "",
+      render: (model) => (
         <Switch
           className="cursor-pointer"
           onClick={(e) => e.stopPropagation()}
@@ -117,46 +251,44 @@ function ModelCard({ model }: ModelCardProps) {
                 data: { isEnabled: checked },
               })}
         />
-      </div>
-    </div>
-  );
-}
-
-function Models() {
-  const { data: models, isLoading } = useModels({ excludeAuto: true });
-  const navigateWorkspace = useNavigateWorkspace();
+      ),
+    },
+    {
+      id: "name",
+      header: "Name",
+      accessor: (model) => <ModelInfoCell model={model} />,
+      sortable: true,
+    },
+    {
+      id: "APIKey",
+      header: "API Key",
+      render: (model) => (
+        <KeyCell
+          model={model}
+          onClick={() => handleNavigation(model)}
+        />
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      render: (model) => (
+        <ModelActions
+          model={model}
+          editModel={() => handleNavigation(model)}
+        />
+      ),
+    },
+  ];
 
   return (
-    <ScrollArea className="h-full text-slate-700">
-      <SettingsMobileHeader currentPage="models" />
-      <Suspense fallback={<span>Loading...</span>}>
-        <div className="px-6 py-10 flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <Title />
-            <Button
-              variant="default"
-              className="ml-auto"
-              onClick={() => navigateWorkspace("/model/new")}
-            >
-              <Icon name="add" className="mr-2 h-4 w-4" />
-              Add Model
-            </Button>
-          </div>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {isLoading ? <p>Loading custom models...</p> : models.length > 0
-                ? (
-                  models.map((model) => (
-                    <ModelCard key={model.id} model={model} />
-                  ))
-                )
-                : null}
-            </div>
-          </div>
-        </div>
-      </Suspense>
-    </ScrollArea>
+    <Table
+      columns={columns}
+      data={sortedModels}
+      sortKey={sortKey}
+      sortDirection={sortDirection}
+      onSort={handleSort}
+    />
   );
 }
 

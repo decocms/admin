@@ -5,8 +5,8 @@ import { getRuntimeKey } from "hono/adapter";
 import {
   GetObjectCommand,
   GetObjectCommandOutput,
-} from "npm:@aws-sdk/client-s3";
-import { typeByExtension } from "jsr:@std/media-types";
+} from "@aws-sdk/client-s3";
+import { typeByExtension } from "@std/media-types";
 import { AppEnv } from "./utils/context.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { PUBLIC_ASSETS_BUCKET } from "@deco/sdk";

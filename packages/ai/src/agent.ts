@@ -69,10 +69,8 @@ import {
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
-import { Buffer } from "node:buffer";
 import process from "node:process";
 import { pickCapybaraAvatar } from "./capybaras.ts";
-import { AudioMessage } from "./index.ts";
 import { mcpServerTools } from "./mcp.ts";
 import { createLLM } from "./models.ts";
 import type {
@@ -85,6 +83,8 @@ import type {
 import { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./wallet/index.ts";
 import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
+import { getS3ServerClient } from "@deco/sdk/storage";
+import { convertToAIMessage } from "./agent/ai-message.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -96,7 +96,6 @@ const ANONYMOUS_NAME = "Anonymous";
 const LOAD_TOOLS_TIMEOUT_MS = 5_000;
 const DEFAULT_TEXT_TO_SPEECH_MODEL = "tts-1";
 const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -156,9 +155,6 @@ const removeNonSerializableFields = (obj: any) => {
 interface ThreadLocator {
   threadId: string;
   resourceId: string;
-}
-function isAudioMessage(message: AIMessage): message is AudioMessage {
-  return "audioBase64" in message && typeof message.audioBase64 === "string";
 }
 
 type WorkspaceModels = Record<
@@ -504,16 +500,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return this._maybeAgent ?? this._anonymous;
   }
 
-  /**
-   * Get the audio transcription of the given audio stream
-   * @param audioStream - The audio stream to get the transcription of
-   * @returns The transcription of the audio stream
-   */
-  private async _getAudioTranscription(audioStream: ReadableStream) {
-    const transcription = await this._agent.voice.listen(audioStream as any);
-    return transcription as string;
-  }
-
   public get _memory(): AgentMemory {
     return new AgentMemory(this.agentMemoryConfig);
   }
@@ -525,27 +511,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       resourceId: this.metadata?.resourceId ?? this.metadata?.user?.id ??
         threadId,
     };
-  }
-
-  private async _handleAudioTranscription(audio: {
-    audioBase64: string;
-  }): Promise<string> {
-    const buffer = Buffer.from(audio.audioBase64, "base64");
-    if (buffer.length > MAX_AUDIO_SIZE) {
-      throw new Error("Audio size exceeds the maximum allowed size");
-    }
-    const audioStream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(
-          new Uint8Array(buffer),
-        );
-        controller.close();
-      },
-    });
-
-    const transcription = await this._getAudioTranscription(audioStream as any);
-
-    return transcription;
   }
 
   private _maxSteps(): number {
@@ -651,28 +616,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         props: {},
       },
     }, fn);
-  }
-
-  private async _convertToAIMessage(message: AIMessage): Promise<Message> {
-    if (isAudioMessage(message)) {
-      const transcription = await this._handleAudioTranscription({
-        audioBase64: message.audioBase64,
-      });
-
-      return {
-        role: "user",
-        id: crypto.randomUUID(),
-        content: transcription,
-      };
-    }
-
-    if (typeof message.content === "string" && message.content) {
-      const filteredParts = message.parts?.filter((part) =>
-        part.type !== "text"
-      ) ?? [];
-      message.parts = filteredParts.length > 0 ? filteredParts : undefined;
-    }
-    return message;
   }
 
   _token() {
@@ -966,7 +909,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
 
     const aiMessages = await Promise.all(
-      payload.map((msg) => this._convertToAIMessage(msg)),
+      payload.map((msg) =>
+        convertToAIMessage({ message: msg, agent: this._agent })
+      ),
     );
     const result = await this._agent.generate(aiMessages, {
       ...this.thread,
@@ -1012,7 +957,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const agent = this._withAgentOverrides(options);
 
     const aiMessages = await Promise.all(
-      payload.map((msg) => this._convertToAIMessage(msg)),
+      payload.map((msg) =>
+        convertToAIMessage({ message: msg, agent: this._agent })
+      ),
     );
 
     const result = await agent.generate(aiMessages, {
@@ -1118,7 +1065,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
 
     const aiMessages = await Promise.all(
-      payload.map((msg) => this._convertToAIMessage(msg)),
+      payload.map((msg) =>
+        convertToAIMessage({ message: msg, agent: this._agent })
+      ),
     );
 
     const response = await agent.stream(

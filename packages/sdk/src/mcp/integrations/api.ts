@@ -221,9 +221,8 @@ export const listIntegrations = createTool({
         error.message || "Failed to list integrations",
       );
     }
-    const roles = c.workspace.root === "users"
-      ? undefined
-      : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
+    const roles = c.workspace.root !== "users" &&
+      (await c.policy.getUserRoles(c.user.id, c.workspace.slug));
     const userRoles = roles?.map((role) => role?.roles?.name);
 
     // TODO: This is a temporary solution to filter integrations and agents by access.

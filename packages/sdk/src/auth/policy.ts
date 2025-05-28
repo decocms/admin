@@ -54,12 +54,14 @@ export class PolicyClient {
   private static instance: PolicyClient | null = null;
   private db: Client | null = null;
   private userPolicyCache: WebCache<Pick<Policy, "statements">[]>;
+  private userRolesCache: WebCache<Role[]>;
   private teamRolesCache: WebCache<Role[]>;
   private teamSlugCache: WebCache<number>;
 
   private constructor() {
     // Initialize caches
     this.userPolicyCache = new WebCache<Policy[]>("user-policies", TWO_MIN_TTL);
+    this.userRolesCache = new WebCache<Role[]>("user-roles", TWO_MIN_TTL);
     this.teamRolesCache = new WebCache<Role[]>("team-role", TWO_MIN_TTL);
     this.teamSlugCache = new WebCache<number>("team-slug", TWO_MIN_TTL);
   }
@@ -79,6 +81,14 @@ export class PolicyClient {
     const teamId = typeof teamIdOrSlug === "number"
       ? teamIdOrSlug
       : await this.getTeamIdBySlug(teamIdOrSlug);
+
+    const cacheKey = this.getUserRolesCacheKey(userId, teamId);
+
+    const cachedRoles = await this.userRolesCache.get(cacheKey);
+    if (cachedRoles) {
+      return cachedRoles;
+    }
+
     const { data } = await this.db.from("members")
       .select(`
         member_roles(roles(id, name))
@@ -325,6 +335,10 @@ export class PolicyClient {
   }
 
   private getUserPoliceCacheKey(userId: string, teamId: number) {
+    return `${userId}:${teamId}`;
+  }
+
+  private getUserRolesCacheKey(userId: string, teamId: number) {
     return `${userId}:${teamId}`;
   }
 

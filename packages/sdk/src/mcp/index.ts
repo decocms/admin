@@ -42,7 +42,6 @@ export const GLOBAL_TOOLS = [
 // Tools tied to an specific workspace
 export const WORKSPACE_TOOLS = [
   membersAPI.inviteTeamMembers,
-  membersAPI.removeTeamMember,
   agentsAPI.getAgent,
   agentsAPI.deleteAgent,
   agentsAPI.createAgent,

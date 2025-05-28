@@ -8,27 +8,23 @@ const callbacksSchema = z.object({
 });
 
 const inputBindingSchema = z.object({
-  payload: z.any(),
   callbacks: callbacksSchema,
-  headers: z.record(z.string(), z.string()).optional(),
-  url: z.string().optional(),
+  triggerId: z.string(),
+  workspace: z.string(),
 });
 
-const outputBindingSchema = z.object({
-  callbacks: callbacksSchema,
-});
 export type Callbacks = z.infer<typeof callbacksSchema>;
 export type InputBindingPayload = z.infer<typeof inputBindingSchema>;
-export type OutputBindingPayload = z.infer<typeof outputBindingSchema>;
 
 export const TRIGGER_INPUT_BINDING_SCHEMA = [{
-  name: "ON_AGENT_INPUT" as const,
-  inputSchema: inputBindingSchema,
+  name: "ON_BINDING_DELETED" as const,
+  inputSchema: z.object({
+    triggerId: z.string(),
+    workspace: z.string(),
+  }),
   outputSchema: z.any(),
-}] as const satisfies Binder;
-
-export const TRIGGER_OUTPUT_BINDING_SCHEMA = [{
-  name: "ON_AGENT_OUTPUT" as const,
-  inputSchema: outputBindingSchema,
+}, {
+  name: "ON_BINDING_CREATED" as const,
+  inputSchema: inputBindingSchema,
   outputSchema: z.any(),
 }] as const satisfies Binder;

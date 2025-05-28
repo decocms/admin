@@ -30,6 +30,7 @@ export interface Vars {
   authorization: AuthorizationClient;
   isLocal?: boolean;
   cf: Cloudflare;
+  walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
   stub: <
     Constructor extends
@@ -41,7 +42,6 @@ export interface Vars {
 }
 
 export type EnvVars = z.infer<typeof envSchema>;
-
 export type AppContext = Vars & {
   envVars: EnvVars;
 };
@@ -96,6 +96,15 @@ const envSchema = z.object({
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
   API_KEY_ENCRYPTION_KEY: z.any().optional().readonly(),
+
+  /**
+   * Only needed for locally testing wallet features.
+   */
+  WALLET_API_KEY: z.string().nullish(),
+  STRIPE_SECRET_KEY: z.string().nullish(),
+  STRIPE_WEBHOOK_SECRET: z.string().nullish(),
+  CURRENCY_API_KEY: z.string().nullish(),
+  TESTING_CUSTOMER_ID: z.string().nullish(),
 });
 
 export const getEnv = (ctx: AppContext): EnvVars =>

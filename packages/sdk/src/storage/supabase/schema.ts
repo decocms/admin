@@ -445,6 +445,89 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_temp_wpp_invites: {
+        Row: {
+          accept_message: string;
+          accepted_at: string | null;
+          created_at: string;
+          phone: string;
+          trigger_id: string;
+          updated_at: string | null;
+          user_id: string | null;
+          wpp_message_id: string;
+        };
+        Insert: {
+          accept_message: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          phone: string;
+          trigger_id: string;
+          updated_at?: string | null;
+          user_id?: string | null;
+          wpp_message_id: string;
+        };
+        Update: {
+          accept_message?: string;
+          accepted_at?: string | null;
+          created_at?: string;
+          phone?: string;
+          trigger_id?: string;
+          updated_at?: string | null;
+          user_id?: string | null;
+          wpp_message_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_temp_wpp_invites_trigger_id_fkey";
+            columns: ["trigger_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_triggers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deco_chat_temp_wpp_invites_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users_meta_data_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deco_chat_temp_wpp_users: {
+        Row: {
+          created_at: string;
+          phone: string;
+          trigger_id: string | null;
+          trigger_url: string;
+          triggers: string[];
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          phone: string;
+          trigger_id?: string | null;
+          trigger_url: string;
+          triggers?: string[];
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          phone?: string;
+          trigger_id?: string | null;
+          trigger_url?: string;
+          triggers?: string[];
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_temp_wpp_agents_trigger_id_fkey";
+            columns: ["trigger_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_triggers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_trigger_runs: {
         Row: {
           id: string;
@@ -2265,6 +2348,7 @@ export type Database = {
           created_at: string | null;
           id: number;
           name: string;
+          plan: string | null;
           slug: string | null;
           stripe_subscription_id: string | null;
         };
@@ -2272,6 +2356,7 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name: string;
+          plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
         };
@@ -2279,6 +2364,7 @@ export type Database = {
           created_at?: string | null;
           id?: number;
           name?: string;
+          plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
         };

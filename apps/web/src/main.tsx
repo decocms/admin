@@ -82,10 +82,6 @@ const PublicChats = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
 );
 
-const Wallet = lazy(
-  () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
-);
-
 const AuditList = lazy(
   () => wrapWithUILoadingFallback(import("./components/audit/list.tsx")),
 );
@@ -279,7 +275,6 @@ const router = createBrowserRouter([
               return null;
             },
           },
-          { path: "wallet", Component: Wallet },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           {

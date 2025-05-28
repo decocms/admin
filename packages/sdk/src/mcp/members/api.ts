@@ -19,6 +19,7 @@ import {
   sendInviteEmail,
   userBelongsToTeam,
 } from "./invitesUtils.ts";
+import { getPlan } from "../wallet/api.ts";
 
 export const updateActivityLog = async (c: AppContext, {
   teamId,
@@ -381,6 +382,8 @@ export const inviteTeamMembers = createTool({
   },
   handler: async (props, c) => {
     assertPrincipalIsUser(c);
+    const plan = await getPlan(c);
+    plan.assertHasFeature("invite-to-workspace");
 
     const { teamId, invitees } = props;
     const db = c.db;

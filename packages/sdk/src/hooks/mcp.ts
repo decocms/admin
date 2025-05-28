@@ -180,6 +180,8 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "github",
   "googlesheets",
   "googlegmail",
+  "airtable",
+  "slack",
 ];
 
 export const useInstallFromMarketplace = () => {

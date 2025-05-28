@@ -5,7 +5,6 @@ DO $$ BEGIN
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 -- Add the visibility column to the projects table
 ALTER TABLE deco_chat_agents
 ADD COLUMN IF NOT EXISTS visibility visibility_type NOT NULL DEFAULT 'WORKSPACE';

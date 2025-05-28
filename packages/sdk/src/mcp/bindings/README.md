@@ -34,8 +34,6 @@ TypeScript interfaces work.
 
 - **Input Binding (`ON_AGENT_INPUT`):**\
   Used for MCPs that handle incoming events, such as webhooks.
-- **Output Binding (`ON_AGENT_OUTPUT`):**\
-  Used for MCPs that handle outgoing events, such as scheduled (cron) jobs.
 
 These are defined in [`trigger.ts`](./trigger.ts) and exported for use.
 
@@ -50,8 +48,8 @@ These are defined in [`trigger.ts`](./trigger.ts) and exported for use.
   - `.forConnection(mcpConnection)` — Returns a type-safe client for calling the
     bound tools.
 
-- `TriggerInputBinding`, `TriggerOutputBinding`\
-  Predefined bindings for agent input/output triggers.
+- `TriggerInputBinding`\
+  Predefined binding for agent input triggers.
 
 ### utils.ts
 

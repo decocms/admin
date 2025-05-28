@@ -16,7 +16,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
@@ -69,7 +69,7 @@ const TABS = {
 function ActionsButtons() {
   const { agentId, chat } = useChatContext();
   const focusChat = useFocusChat();
-  const focusAgent = useEditAgent();
+  const focusAgent = useFocusChat();
 
   const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
   const displayNewChat = displaySettings && chat.messages.length !== 0;
@@ -127,7 +127,7 @@ function ActionsButtons() {
 function Breadcrumb({ agentId }: { agentId: string }) {
   const { chat } = useChatContext();
   const focusChat = useFocusChat();
-  const focusAgent = useEditAgent();
+  const focusAgent = useFocusChat();
 
   return (
     <DefaultBreadcrumb

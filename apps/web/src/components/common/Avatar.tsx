@@ -168,7 +168,7 @@ function AgentAvatarContent(
       >
         <Icon
           filled
-          name="domino_mask"
+          name="robot_2"
           className="text-slate-600"
         />
       </div>

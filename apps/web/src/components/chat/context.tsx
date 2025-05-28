@@ -85,9 +85,6 @@ export function ChatProvider({
   const { data: initialMessages } = !options.showThreadMessages
     ? { data: undefined }
     : useThreadMessages(threadId);
-  // const { data: models } = useModels({
-  //   excludeDisabled: true,
-  // });
 
   const { preferences } = useUserPreferences();
   const { data: agent } = useAgent(agentId);
@@ -123,15 +120,11 @@ export function ChatProvider({
       }
 
       const bypassOpenRouter = !preferences.useOpenRouter;
-      // const defaultModel = models.find((m) =>
-      //   m.id === preferences.defaultModel
-      // )?.model ||
-      //   preferences.defaultModel;
 
       return {
         args: [messagesWindow, {
           model: options.showModelSelector // use the agent model if selector is not shown on the UI
-            ? preferences.defaultModel // defaultModel
+            ? preferences.defaultModel
             : agent?.model,
           instructions: agent?.instructions,
           bypassOpenRouter,

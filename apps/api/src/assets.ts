@@ -43,9 +43,9 @@ app.get("/:root/:slug/*", async (c) => {
     }
 
     const bucketName = getWorkspaceBucketName(workspace);
-    
+
     const cacheKey = `${bucketName}:${imagePath}`;
-    
+
     const cachedAsset = await assetCache.get(cacheKey);
     if (cachedAsset) {
       return new Response(cachedAsset.bodyBytes, {
@@ -86,7 +86,7 @@ app.get("/:root/:slug/*", async (c) => {
       etag,
       contentLength,
     };
-    
+
     assetCache.set(cacheKey, assetData).catch((error) => {
       console.error("Failed to cache asset:", error);
     });

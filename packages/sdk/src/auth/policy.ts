@@ -214,16 +214,6 @@ export class PolicyClient {
       .eq("id", memberId)
       .single();
 
-    const { error } = await this.db.from("member_roles").delete().eq(
-      "teamId",
-      teamId,
-    ).eq(
-      "memberId",
-      memberId,
-    );
-
-    if (error) throw error;
-
     // Invalidate caches if we have the user_id
     if (member?.user_id) {
       await Promise.all([
@@ -235,6 +225,16 @@ export class PolicyClient {
         ),
       ]);
     }
+
+    const { error } = await this.db.from("member_roles").delete().eq(
+      "teamId",
+      teamId,
+    ).eq(
+      "memberId",
+      memberId,
+    );
+
+    if (error) throw error;
 
     return true;
   }
@@ -338,6 +338,16 @@ export class PolicyClient {
       }
     }
 
+    // Invalidate all caches for this user
+    await Promise.all([
+      this.userPolicyCache.delete(
+        this.getUserPoliceCacheKey(profile.user_id, teamId),
+      ),
+      this.userRolesCache.delete(
+        this.getUserRolesCacheKey(profile.user_id, teamId),
+      ),
+    ]);
+
     // Update the role assignment
     if (params.action === "grant") {
       // Add role to member
@@ -355,16 +365,6 @@ export class PolicyClient {
         .eq("member_id", member.id)
         .eq("role_id", params.roleId);
     }
-
-    // Invalidate all caches for this user
-    await Promise.all([
-      this.userPolicyCache.delete(
-        this.getUserPoliceCacheKey(profile.user_id, teamId),
-      ),
-      this.userRolesCache.delete(
-        this.getUserRolesCacheKey(profile.user_id, teamId),
-      ),
-    ]);
 
     return role;
   }

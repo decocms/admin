@@ -47,16 +47,11 @@ export const WELL_KNOWN_AGENT_IDS = {
 
 export interface Model {
   id: string;
-  model: string;
   name: string;
   logo: string;
   capabilities: Capability[];
   legacyId?: string;
   description?: string;
-  byDeco: boolean;
-  isEnabled: boolean;
-  hasCustomKey: boolean;
-  apiKeyEncrypted?: string;
 }
 
 const LOGOS = {
@@ -70,6 +65,8 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
+export const DEFAULT_MODEL = "auto";
+
 // TODO(@camudo): Make native web search work
 type Capability =
   | "reasoning"
@@ -77,110 +74,73 @@ type Capability =
   | "file-upload"
   | "web-search";
 
-/*
- * TODO: remove duplicated ids, bydeco, enabled, etc. from here.
- */
-export const AUTO_MODEL: Model = {
-  id: "auto",
-  model: "auto",
-  name: "Auto",
-  description:
-    "deco.chat will automatically choose the best model for you, based on performance and speed.",
-  logo: "",
-  capabilities: ["reasoning", "image-upload", "file-upload"],
-  byDeco: true,
-  isEnabled: true,
-  hasCustomKey: false,
-};
-
-export const WELL_KNOWN_MODELS: Model[] = [
+export const MODELS: Model[] = [
+  {
+    id: DEFAULT_MODEL,
+    name: "Auto",
+    description:
+      "deco.chat will automatically choose the best model for you, based on performance and speed.",
+    logo: "",
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+  },
   {
     id: "anthropic:claude-sonnet-4",
-    model: "anthropic:claude-sonnet-4",
     name: "Claude Sonnet 4",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "anthropic:claude-3.7-sonnet:thinking",
-    model: "anthropic:claude-3.7-sonnet:thinking",
     name: "Claude Sonnet 3.7",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "google:gemini-2.5-pro-preview",
-    model: "google:gemini-2.5-pro-preview",
     name: "Google Gemini Pro 2.5",
     logo: LOGOS.google,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "google:gemini-2.5-pro-preview-03-25",
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "openai:gpt-4.1",
-    model: "openai:gpt-4.1",
     name: "OpenAI GPT-4.1",
     logo: LOGOS.openai,
     capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "openai:gpt-4.1-mini",
-    model: "openai:gpt-4.1-mini",
     name: "OpenAI GPT-4.1 mini",
     logo: LOGOS.openai,
     capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "openai:gpt-4.1-nano",
-    model: "openai:gpt-4.1-nano",
     name: "OpenAI GPT-4.1 nano",
     logo: LOGOS.openai,
     capabilities: ["reasoning", "image-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
-  },
-  {
-    id: "openai:o3-mini-high",
-    model: "openai:o3-mini-high",
-    name: "OpenAI o3-mini",
-    logo: LOGOS.openai,
-    capabilities: ["reasoning"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
   {
     id: "x-ai:grok-3-beta",
-    model: "x-ai:grok-3-beta",
     name: "Grok 3 Beta",
     logo: LOGOS.xai,
     capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
   },
+  {
+    id: "openai:o3-mini-high",
+    name: "OpenAI o3-mini",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning"],
+  },
+  // {
+  //   id: "deepseek:deepseek-r1-distill-llama-8b",
+  //   name: "DeepSeek R1 Distill Llama 8B",
+  //   logo:
+  //     "https://assets.decocache.com/webdraw/798dda7c-f79e-4622-bca7-05552560fd40/deepseek.svg",
+  //   capabilities: ["reasoning"],
+  // },
 ];
-
-export function isWellKnownModel(modelId: string): boolean {
-  return WELL_KNOWN_MODELS.some((m) => m.id === modelId);
-}
 
 /**
  * Gets the trace debug ID from the URL or generates a new one
@@ -224,7 +184,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description:
     "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
-  model: AUTO_MODEL.id,
+  model: DEFAULT_MODEL,
   visibility: "WORKSPACE",
   tools_set: {},
   views: [],
@@ -260,7 +220,7 @@ export const WELL_KNOWN_AGENTS = {
     name: "Setup agent",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you with this setup.",
-    model: AUTO_MODEL.id,
+    model: DEFAULT_MODEL,
     visibility: "PUBLIC",
     tools_set: {
       DECO_INTEGRATIONS: [

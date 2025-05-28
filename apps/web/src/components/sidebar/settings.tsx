@@ -10,11 +10,6 @@ export const SETTINGS_ITEMS = [
     icon: "group",
   },
   {
-    url: "/settings/models",
-    title: "Models",
-    icon: "model",
-  },
-  {
     url: "/settings/wallet",
     title: "Wallet",
     icon: "wallet",
@@ -37,5 +32,4 @@ export type SettingsPage =
   | "members"
   | "wallet"
   | "usage"
-  | "audit"
-  | "models";
+  | "audit";

@@ -20,7 +20,6 @@ export * from "./hooks/trigger.ts";
 export * from "./hooks/members.ts";
 export * from "./hooks/audit.ts";
 export * from "./hooks/teams.ts";
-export * from "./hooks/models.ts";
 export * from "./hooks/wallet.ts";
 
 export * from "./models/agent.ts";

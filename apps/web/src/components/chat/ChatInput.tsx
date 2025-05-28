@@ -1,9 +1,8 @@
 import {
-  AUTO_MODEL,
+  MODELS,
   NotFoundError,
   readFile,
   useAgent,
-  useModels,
   useSDK,
   useWriteFile,
 } from "@deco/sdk";
@@ -125,9 +124,6 @@ ChatInput.UI = (
     chat: { stop, input, handleInputChange, handleSubmit, status },
     uiOptions: { showModelSelector, showThreadTools },
   } = useChatContext();
-  const { data: models } = useModels({
-    excludeDisabled: true,
-  });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
@@ -135,7 +131,7 @@ ChatInput.UI = (
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
+  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   const getAcceptedFileTypes = () => {
     const acceptTypes: string[] = [];

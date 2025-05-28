@@ -4,7 +4,6 @@ import GeneralSettings from "./general.tsx";
 import MembersSettings from "./members.tsx";
 import WalletSettings from "./wallet.tsx";
 import UsageSettings from "./usage.tsx";
-import ModelsSettings from "./models.tsx";
 
 const TABS: Record<string, Tab> = {
   general: {
@@ -26,10 +25,6 @@ const TABS: Record<string, Tab> = {
     title: "Wallet",
     Component: WalletSettings,
     initialOpen: true,
-  },
-  models: {
-    title: "Models",
-    Component: ModelsSettings,
   },
 };
 

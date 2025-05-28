@@ -12,11 +12,11 @@ import {
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { AUTO_MODEL, useModels, WELL_KNOWN_MODELS } from "@deco/sdk";
+import { DEFAULT_MODEL, MODELS } from "@deco/sdk";
 import { useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {
-  const model = WELL_KNOWN_MODELS.find((m) => m.legacyId === modelId);
+  const model = MODELS.find((m) => m.legacyId === modelId);
   return model ? model.id : modelId;
 };
 
@@ -79,8 +79,8 @@ function CapabilityBadge(
   );
 }
 
-function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
-  if (model.id === AUTO_MODEL.id) {
+function ModelItemContent({ model }: { model: typeof MODELS[0] }) {
+  if (model.id === "auto") {
     return (
       <div className="p-2 md:w-[400px] flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">
@@ -113,9 +113,7 @@ function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
   );
 }
 
-function SelectedModelDisplay(
-  { model }: { model: typeof WELL_KNOWN_MODELS[0] },
-) {
+function SelectedModelDisplay({ model }: { model: typeof MODELS[0] }) {
   return (
     <div className="flex items-center gap-1.5">
       {model.logo && <img src={model.logo} className="w-4 h-4" />}
@@ -131,13 +129,12 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({
-  model = AUTO_MODEL.id,
+  model = DEFAULT_MODEL,
   onModelChange,
   variant = "borderless",
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
-  const { data: models } = useModels({ excludeDisabled: true });
-  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
+  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {
@@ -164,7 +161,7 @@ export function ModelSelector({
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
       <ResponsiveSelectContent title="Select model">
-        {models.map((model) => (
+        {MODELS.map((model) => (
           <ResponsiveSelectItem
             key={model.id}
             value={model.id}

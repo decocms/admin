@@ -1,4 +1,4 @@
-import { AUTO_MODEL } from "@deco/sdk";
+import { DEFAULT_MODEL } from "@deco/sdk";
 import { useLocalStorage } from "./useLocalStorage.ts";
 
 export interface UserPreferences {
@@ -16,7 +16,7 @@ export function useUserPreferences() {
   } = useLocalStorage<UserPreferences>({
     key: USER_PREFERENCES_KEY,
     defaultValue: {
-      defaultModel: AUTO_MODEL.id,
+      defaultModel: DEFAULT_MODEL,
       useOpenRouter: true,
       smoothStream: true,
     },

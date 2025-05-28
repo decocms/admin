@@ -1,4 +1,3 @@
-import type { ListModelsInput } from "../crud/model.ts";
 import { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
 import type { Binder } from "../models/mcp.ts";
@@ -56,16 +55,6 @@ export const KEYS = {
     teamId: number,
   ) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],
-  MODELS: (
-    workspace: Workspace,
-    options?: ListModelsInput,
-  ) => [
-    "models",
-    workspace,
-    options?.excludeDisabled || false,
-    options?.excludeAuto || false,
-  ],
-  MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,

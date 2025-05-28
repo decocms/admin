@@ -76,18 +76,11 @@ export const listAgents = createTool({
       : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
     const userRoles = roles?.map((role) => role.roles.name);
 
-    const filteredAgents = data.filter((agent) => {
-      if (agent.access) {
-        if (
-          userRoles?.includes(agent.access) ||
-          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
-        ) {
-          return true;
-        }
-        return false;
-      }
-      return true;
-    });
+    const filteredAgents = data.filter((agent) =>
+      !agent.access ||
+      userRoles?.includes(agent.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
 
     return filteredAgents
       .map((item) => AgentSchema.safeParse(item)?.data)

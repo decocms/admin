@@ -226,31 +226,18 @@ export const listIntegrations = createTool({
       : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
     const userRoles = roles?.map((role) => role?.roles?.name);
 
-    const filteredIntegrations = integrations.data.filter((integration) => {
-      if (integration.access) {
-        if (
-          userRoles?.includes(integration.access) ||
-          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
-        ) {
-          return true;
-        }
-        return false;
-      }
-      return true;
-    });
+    // TODO: This is a temporary solution to filter integrations and agents by access.
+    const filteredIntegrations = integrations.data.filter((integration) =>
+      !integration.access ||
+      userRoles?.includes(integration.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
 
-    const filteredAgents = agents.data.filter((agent) => {
-      if (agent.access) {
-        if (
-          userRoles?.includes(agent.access) ||
-          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
-        ) {
-          return true;
-        }
-        return false;
-      }
-      return true;
-    });
+    const filteredAgents = agents.data.filter((agent) =>
+      !agent.access ||
+      userRoles?.includes(agent.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
 
     const result = [
       ...virtualIntegrationsFor(

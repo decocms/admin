@@ -1,6 +1,6 @@
 import type { Message as AIMessage } from "../types.ts";
 import type { Message } from "ai";
-import { isAudioMessage, transcriptBase64Audio } from "./audio.ts";
+import { isAudioMessage, transcribeBase64Audio } from "./audio.ts";
 import type { Agent as MastraAgent } from "@mastra/core/agent";
 
 export async function convertToAIMessage({
@@ -11,7 +11,7 @@ export async function convertToAIMessage({
   agent: MastraAgent;
 }): Promise<Message> {
   if (isAudioMessage(message)) {
-    const transcription = await transcriptBase64Audio({
+    const transcription = await transcribeBase64Audio({
       audio: message.audioBase64,
       agent,
     });

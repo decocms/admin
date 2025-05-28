@@ -14,7 +14,7 @@ export function isAudioMessage(message: Message): message is AudioMessage {
  * @param agent - The agent to use to get the transcription
  * @returns The transcription of the audio stream
  */
-export async function transcriptBase64Audio({
+export async function transcribeBase64Audio({
   audio,
   agent,
 }: {

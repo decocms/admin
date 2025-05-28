@@ -1,6 +1,9 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { z } from "zod";
-import { ensureBucketExists, getAssetUrl as getAssetUrlByKey } from "../utils.ts";
+import {
+  ensureBucketExists,
+  getAssetUrl as getAssetUrlByKey,
+} from "../utils.ts";
 import { PUBLIC_ASSETS_BUCKET } from "../../constants.ts";
 import { createTool } from "../context.ts";
 import { canAccessWorkspaceResource } from "../assertions.ts";

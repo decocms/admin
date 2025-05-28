@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 
-export const getAssetUrl = async ({  key }: {
+export const getAssetUrl = async ({ key }: {
   key: string;
 }) => {
   const { url } = await MCPClient

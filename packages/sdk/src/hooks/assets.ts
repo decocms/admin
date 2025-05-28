@@ -10,7 +10,9 @@ export const useAssetUrl = (key: string) => {
 
 export const useUploadAsset = () => {
   return useMutation({
-    mutationFn: (asset: { content: Uint8Array<ArrayBuffer>; contentType: string }) => uploadAsset(asset),
+    mutationFn: (
+      asset: { content: Uint8Array<ArrayBuffer>; contentType: string },
+    ) => uploadAsset(asset),
   });
 };
 

@@ -148,6 +148,16 @@ function AgentAvatarContent(
     className?: string;
   },
 ) {
+  if (avatar && isFilePath(avatar)) {
+    return (
+      <FileAvatar
+        path={avatar}
+        name={name ?? "Unknown"}
+        className={className}
+      />
+    );
+  }
+
   if (!name || name === "Anonymous") {
     return (
       <div
@@ -158,17 +168,12 @@ function AgentAvatarContent(
       >
         <Icon
           filled
-          name="domino_mask"
+          name="robot_2"
           className="text-slate-600"
         />
       </div>
     );
   }
-
-  if (avatar && isFilePath(avatar)) {
-    return <FileAvatar path={avatar} name={name} className={className} />;
-  }
-
   return (
     <Avatar
       url={avatar}

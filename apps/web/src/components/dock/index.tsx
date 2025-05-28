@@ -104,13 +104,10 @@ const TAB_COMPONENTS = {
     }
 
     return (
-      <div className="p-2 bg-background w-min">
+      <div className="w-min">
         <div
           data-active
-          className={cn(
-            "flex items-center justify-between gap-2 p-2",
-            "rounded-xl",
-          )}
+          className="flex items-center justify-between gap-1 p-2 px-3"
         >
           <p className="text-sm whitespace-nowrap">{props.api.title}</p>
           <Button
@@ -150,10 +147,23 @@ export const openPanel = <T extends object>(
   );
 };
 
+type initialOpen = "right" | "within" | "below" | "above" | "left";
+export const initialOpenDirections: initialOpen[] = [
+  "right",
+  "within",
+  "below",
+  "above",
+  "left",
+];
+
 export interface Tab {
   Component: ComponentType;
   title: string;
-  initialOpen?: boolean | "right" | "within";
+  initialOpen?: boolean | initialOpen;
+  initialHeight?: number;
+  initialWidth?: number;
+  maximumHeight?: number;
+  maximumWidth?: number;
   hideFromViews?: boolean;
 }
 
@@ -175,9 +185,9 @@ const addPanel = (
 
   const panelOptions: AddPanelOptions = views
     ? {
-      maximumWidth: 288,
-      minimumWidth: 288,
-      initialWidth: 288,
+      maximumWidth: 256,
+      minimumWidth: 256,
+      initialWidth: 256,
       position: isMobile && targetGroup?.id
         ? { direction: "within" }
         : { direction: "right" },
@@ -185,13 +195,8 @@ const addPanel = (
       floating: false,
     }
     : {
-      minimumWidth: isMobile ? globalThis.innerWidth : 300,
-      maximumWidth: isMobile ? globalThis.innerWidth : undefined,
       position: {
-        direction:
-          !targetGroup?.id || (position?.direction === "right" && !isMobile)
-            ? "right"
-            : "within",
+        direction: isMobile ? "within" : (position?.direction || "within"),
         referenceGroup: targetGroup?.id,
       },
       ...otherOptions,
@@ -220,7 +225,7 @@ function Docked(
 ) {
   const isMobile = useIsMobile();
   const [api, setApi] = useState<DockviewApi | null>(null);
-  const { setOpenPanels } = useDock();
+  const { setOpenPanels, totalTabs } = useDock();
   const wrappedTabs = useMemo(
     () => {
       const entries = Object.entries(tabs).map(([key, value]) => [
@@ -247,15 +252,19 @@ function Docked(
       }
 
       initialPanels.add(key);
-
       addPanel(
         {
           id: key,
           component: key,
           title: value.title,
-          position: value.initialOpen === "right"
-            ? { direction: "right" }
-            : undefined,
+          initialHeight: !isMobile ? value.initialHeight : undefined,
+          initialWidth: !isMobile ? value.initialWidth : undefined,
+          maximumHeight: !isMobile ? value.maximumHeight : undefined,
+          maximumWidth: !isMobile ? value.maximumWidth : undefined,
+          position:
+            initialOpenDirections.includes(value.initialOpen as initialOpen)
+              ? { direction: value.initialOpen as initialOpen }
+              : undefined,
         },
         event.api,
         isMobile,
@@ -314,7 +323,10 @@ function Docked(
         components={wrappedTabs}
         defaultTabComponent={TAB_COMPONENTS.default}
         onReady={handleReady}
-        className="h-full w-full dockview-theme-abyss deco-dockview-container"
+        className={cn(
+          "h-full w-full dockview-theme-abyss deco-dockview-container",
+          totalTabs === 1 && "one-tab",
+        )}
         singleTabMode="fullwidth"
         disableTabsOverflowList
         disableFloatingGroups
@@ -405,11 +417,10 @@ Docked.ViewsTrigger = () => {
               component: DOCKED_VIEWS_TAB.id,
               title: DOCKED_VIEWS_TAB.title,
             })}
-          variant="ghost"
-          size="icon"
-          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "bg-accent" : ""}
+          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "opacity-70" : ""}
         >
           <Icon name="layers" />
+          Views
         </Button>
       </TooltipTrigger>
       <TooltipContent>

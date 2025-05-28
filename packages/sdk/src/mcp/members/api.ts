@@ -19,6 +19,7 @@ import {
   sendInviteEmail,
   userBelongsToTeam,
 } from "./invitesUtils.ts";
+import { getPlan } from "../wallet/api.ts";
 
 export const updateActivityLog = async (c: AppContext, {
   teamId,
@@ -252,10 +253,14 @@ export const removeTeamMember = createTool({
       }
     }
 
-    await c.policy.removeAllMemberPoliciesAtTeam({
-      teamId,
-      memberId: member.id,
-    });
+    try {
+      await c.policy.removeAllMemberPoliciesAtTeam({
+        teamId,
+        memberId: member.id,
+      });
+    } catch (error) {
+      console.log("error", error);
+    }
 
     const currentTimestamp = new Date();
     const { error } = await c
@@ -381,6 +386,8 @@ export const inviteTeamMembers = createTool({
   },
   handler: async (props, c) => {
     assertPrincipalIsUser(c);
+    const plan = await getPlan(c);
+    plan.assertHasFeature("invite-to-workspace");
 
     const { teamId, invitees } = props;
     const db = c.db;

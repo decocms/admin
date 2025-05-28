@@ -29,6 +29,7 @@ import {
 import { createTool } from "../context.ts";
 import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
+import { IMPORTANT_ROLES } from "../agents/api.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -220,17 +221,34 @@ export const listIntegrations = createTool({
         error.message || "Failed to list integrations",
       );
     }
+    const roles = c.workspace.root === "users"
+      ? []
+      : (await c.policy.getUserRoles(c.user.id as string, c.workspace.slug));
+    const userRoles: string[] = roles?.map((role) => role?.name);
+
+    // TODO: This is a temporary solution to filter integrations and agents by access.
+    const filteredIntegrations = integrations.data.filter((integration) =>
+      !integration.access ||
+      userRoles?.includes(integration.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
+
+    const filteredAgents = agents.data.filter((agent) =>
+      !agent.access ||
+      userRoles?.includes(agent.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
 
     const result = [
       ...virtualIntegrationsFor(
         workspace,
         knowledgeBases.structuredContent?.names ?? [],
       ),
-      ...integrations.data.map((item) => ({
+      ...filteredIntegrations.map((item) => ({
         ...item,
         id: formatId("i", item.id),
       })),
-      ...agents.data
+      ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
         .map(agentAsIntegrationFor(workspace)),

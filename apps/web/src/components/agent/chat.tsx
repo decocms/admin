@@ -16,12 +16,11 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
-import { useEditAgent, useFocusChat } from "../agents/hooks.ts";
+import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import ThreadSettingsTab from "../settings/chat.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
@@ -65,17 +64,12 @@ const TABS = {
     title: "Preview",
     hideFromViews: true,
   },
-  tools: {
-    Component: ThreadSettingsTab,
-    title: "Chat settings",
-    hideFromViews: true,
-  },
 };
 
 function ActionsButtons() {
   const { agentId, chat } = useChatContext();
   const focusChat = useFocusChat();
-  const focusAgent = useEditAgent();
+  const focusAgent = useFocusChat();
 
   const displaySettings = agentId !== WELL_KNOWN_AGENT_IDS.teamAgent;
   const displayNewChat = displaySettings && chat.messages.length !== 0;
@@ -133,7 +127,7 @@ function ActionsButtons() {
 function Breadcrumb({ agentId }: { agentId: string }) {
   const { chat } = useChatContext();
   const focusChat = useFocusChat();
-  const focusAgent = useEditAgent();
+  const focusAgent = useFocusChat();
 
   return (
     <DefaultBreadcrumb

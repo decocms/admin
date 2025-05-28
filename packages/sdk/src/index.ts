@@ -1,4 +1,5 @@
 export * from "./constants.ts";
+export * from "./plan.ts";
 
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";
@@ -20,6 +21,8 @@ export * from "./hooks/members.ts";
 export * from "./hooks/audit.ts";
 export * from "./hooks/teams.ts";
 export * from "./hooks/whatsapp.ts";
+export * from "./hooks/models.ts";
+export * from "./hooks/wallet.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

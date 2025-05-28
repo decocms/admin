@@ -1,8 +1,4 @@
-import {
-  type Integration as IntegrationType,
-  useSDK,
-  useWriteFile,
-} from "@deco/sdk";
+import { useSDK, useTeam, useTeamRoles, useWriteFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -31,14 +27,13 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { Integration } from "../toolsets/index.tsx";
-import { ToolsetSelector } from "../toolsets/selector.tsx";
+import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+
+const AVATAR_FILE_PATH = "assets/avatars";
 
 // Token limits for Anthropic models
 const ANTHROPIC_MIN_MAX_TOKENS = 4096;
 const ANTHROPIC_MAX_MAX_TOKENS = 64000;
-
-const AVATAR_FILE_PATH = "assets/avatars";
 
 function CopyLinkButton(
   { className, link }: { className: string; link: string },
@@ -75,49 +70,26 @@ const useAvatarFilename = () => {
   return { generate };
 };
 
+export const useCurrentTeamRoles = () => {
+  const { slug } = useCurrentTeam();
+  const { data: team } = useTeam(slug);
+  const teamId = team?.id;
+  const { data: roles = [] } = useTeamRoles(teamId ?? null);
+  return roles;
+};
+
 function SettingsTab() {
   const {
     form,
     agent,
     handleSubmit,
-    installedIntegrations,
   } = useAgentSettingsForm();
+  const roles = useCurrentTeamRoles();
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { generate: generateAvatarFilename } = useAvatarFilename();
   const [isUploading, setIsUploading] = useState(false);
-
-  const toolsSet = form.watch("tools_set");
-  const setIntegrationTools = (
-    integrationId: string,
-    tools: string[],
-  ) => {
-    const toolsSet = form.getValues("tools_set");
-    const newToolsSet = { ...toolsSet };
-
-    if (tools.length > 0) {
-      newToolsSet[integrationId] = tools;
-    } else {
-      delete newToolsSet[integrationId];
-    }
-
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  const usedIntegrations = installedIntegrations.filter((integration) =>
-    !!toolsSet[integration.id]?.length
-  );
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<
-    string | null
-  >(null);
-
-  const handleIntegrationClick = (integration: IntegrationType) => {
-    setSelectedIntegrationId(integration.id);
-    setIsModalOpen(true);
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -234,6 +206,26 @@ function SettingsTab() {
             />
 
             <FormField
+              name="max_tokens"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max Tokens</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      className="rounded-md border-slate-200"
+                      min={ANTHROPIC_MIN_MAX_TOKENS}
+                      max={ANTHROPIC_MAX_MAX_TOKENS}
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
               name="model"
               render={({ field }) => (
                 <FormItem>
@@ -243,23 +235,6 @@ function SettingsTab() {
                       model={field.value}
                       onModelChange={(newValue) => field.onChange(newValue)}
                       variant="bordered"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              name="instructions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>System Prompt</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter the agent's system prompt"
-                      className="min-h-36 border-slate-200"
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -281,7 +256,7 @@ function SettingsTab() {
                       <div className="flex flex-col gap-2">
                         <FormLabel>Visibility</FormLabel>
                         <FormDescription className="text-xs text-slate-400">
-                          Control who can access and interact with this agent.
+                          Control who can interact with this agent.
                         </FormDescription>
                       </div>
 
@@ -329,18 +304,65 @@ function SettingsTab() {
               }}
             />
 
+            {/* Team Access Section */}
+            {roles.length > 0 && (
+              <FormField
+                name="access"
+                control={form.control}
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-2">
+                          <FormLabel>Access</FormLabel>
+                          <FormDescription className="text-xs text-slate-400">
+                            Control who can access with this agent by role.
+                          </FormDescription>
+                        </div>
+                      </div>
+
+                      <FormControl>
+                        <Select
+                          value={`${field.value}`}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roles.map((role) => (
+                              <SelectItem key={role.id} value={role.name}>
+                                <Icon
+                                  name={role.name === "owner"
+                                    ? "lock_person"
+                                    : "groups"}
+                                />
+                                {role.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
+
             <FormField
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>About this agent</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormDescription className="text-xs text-slate-400">
-                    This appears on the agent card and helps others understand
-                    its use. It does not affect the agent's behavior
+                    Used for search and organization, it does not affect agent
+                    behavior.
                   </FormDescription>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe your agent's purpose"
+                      placeholder="e.g. Helps write product descriptions for the online store"
                       className="min-h-18 border-slate-200"
                       {...field}
                     />
@@ -349,79 +371,8 @@ function SettingsTab() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              name="max_tokens"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Max Tokens</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      className="rounded-md border-slate-200"
-                      min={ANTHROPIC_MIN_MAX_TOKENS}
-                      max={ANTHROPIC_MAX_MAX_TOKENS}
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Tools Section */}
-            <div className="space-y-2 mb-8">
-              <div className="flex items-center justify-between space-y-1">
-                <div className="flex flex-col gap-2">
-                  <FormLabel>Tools</FormLabel>
-                  <FormDescription className="text-xs text-slate-400">
-                    Extensions that expand the agent's abilities.
-                  </FormDescription>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  className="h-8 w-8 bg-slate-700 hover:bg-slate-600 rounded-lg"
-                  onClick={() => {
-                    setSelectedIntegrationId(null);
-                    setIsModalOpen(true);
-                  }}
-                  aria-label="Add tools"
-                >
-                  <Icon name="add" />
-                </Button>
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-col gap-2">
-                  {usedIntegrations
-                    .map((integration) => (
-                      <Integration
-                        key={integration.id}
-                        integration={integration}
-                        setIntegrationTools={setIntegrationTools}
-                        enabledTools={toolsSet[integration.id] || []}
-                        onIntegrationClick={handleIntegrationClick}
-                      />
-                    ))}
-                </div>
-              </div>
-            </div>
           </form>
         </div>
-        <ToolsetSelector
-          open={isModalOpen}
-          onOpenChange={(open) => {
-            setIsModalOpen(open);
-            if (!open) {
-              setSelectedIntegrationId(null);
-            }
-          }}
-          installedIntegrations={installedIntegrations}
-          toolsSet={toolsSet}
-          setIntegrationTools={setIntegrationTools}
-          initialSelectedIntegration={selectedIntegrationId}
-        />
       </Form>
     </ScrollArea>
   );

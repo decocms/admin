@@ -1,3 +1,4 @@
+import type { ListModelsInput } from "../crud/model.ts";
 import { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
 import type { Binder } from "../models/mcp.ts";
@@ -21,8 +22,17 @@ export const KEYS = {
   ) => ["bindings", workspace, binder],
   THREADS: (
     workspace: Workspace,
-    threadId?: string,
-  ) => ["threads", workspace, threadId],
+    options?: ThreadFilterOptions,
+  ) => [
+    "threads",
+    workspace,
+    options?.agentId,
+    options?.resourceId,
+    options?.orderBy,
+    options?.cursor,
+    options?.limit,
+    options?.uniqueByAgentId,
+  ],
   TOOLS: (
     workspace: Workspace,
     agentId: string,
@@ -46,6 +56,16 @@ export const KEYS = {
     teamId: number,
   ) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],
+  MODELS: (
+    workspace: Workspace,
+    options?: ListModelsInput,
+  ) => [
+    "models",
+    workspace,
+    options?.excludeDisabled || false,
+    options?.excludeAuto || false,
+  ],
+  MODEL: (workspace: Workspace, id: string) => ["model", workspace, id],
   TRIGGERS: (workspace: Workspace, agentId = "") => [
     "triggers",
     workspace,
@@ -65,4 +85,16 @@ export const KEYS = {
   ) => ["thread-tools", workspace, threadId],
   PROFILE: () => ["profile"],
   WHATSAPP_USER: (phone: string) => ["whatsapp-user", phone],
+  WALLET: (
+    workspace: Workspace,
+  ) => ["wallet", workspace],
+  WALLET_USAGE_AGENTS: (
+    workspace: Workspace,
+    range: "day" | "week" | "month",
+  ) => ["wallet-usage-agents", workspace, range],
+  WALLET_USAGE_THREADS: (
+    workspace: Workspace,
+    range: "day" | "week" | "month",
+  ) => ["wallet-usage-threads", workspace, range],
+  WORKSPACE_PLAN: (workspace: Workspace) => ["workspace-plan", workspace],
 };

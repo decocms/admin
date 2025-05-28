@@ -52,6 +52,8 @@ export const getAgentsByIds = async (
     .filter((a): a is z.infer<typeof AgentSchema> => !!a);
 };
 
+export const IMPORTANT_ROLES = ["owner", "admin"];
+
 export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
@@ -69,7 +71,18 @@ export const listAgents = createTool({
       throw new InternalServerError(error.message);
     }
 
-    return data
+    const roles = c.workspace.root === "users"
+      ? []
+      : (await c.policy.getUserRoles(c.user.id as string, c.workspace.slug));
+    const userRoles: string[] = roles?.map((role) => role.name);
+
+    const filteredAgents = data.filter((agent) =>
+      !agent.access ||
+      userRoles?.includes(agent.access) ||
+      userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
+    );
+
+    return filteredAgents
       .map((item) => AgentSchema.safeParse(item)?.data)
       .filter((a) => !!a);
   },

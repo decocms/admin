@@ -94,8 +94,12 @@ export const inviteTeamMembers = (
     email: string;
     roles: Array<{ id: number; name: string }>;
   }>,
+  workspace: string,
 ): Promise<{ message: string }> =>
-  MCPClient.TEAM_MEMBERS_INVITE({ teamId: teamId.toString(), invitees });
+  MCPClient.forWorkspace(workspace).TEAM_MEMBERS_INVITE({
+    teamId: teamId.toString(),
+    invitees,
+  });
 
 /**
  * Remove a member from a team

@@ -1,4 +1,5 @@
 import {
+  Agent,
   Thread,
   useAgents,
   useDeleteThread,
@@ -9,7 +10,24 @@ import {
   useUpdateThreadTitle,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -23,36 +41,20 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
+import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
 import { useFocusChat } from "../agents/hooks.ts";
+import { AgentAvatar } from "../common/Avatar.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@deco/ui/components/form.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -72,8 +74,8 @@ const STATIC_ITEMS = [
   },
   {
     url: "/audits",
-    title: "Chat history",
-    icon: "manage_search",
+    title: "Activity",
+    icon: "forum",
   },
 ];
 
@@ -99,7 +101,7 @@ const WithActive = (
 };
 
 function buildThreadUrl(thread: Thread): string {
-  return `chat/${thread.metadata?.agentId ?? ""}/${thread.id}`;
+  return `agent/${thread.metadata?.agentId ?? ""}/${thread.id}`;
 }
 
 function DeleteThreadModal(
@@ -216,9 +218,10 @@ function ThreadActions({ thread, onEdit, className }: {
 }
 
 function SidebarThreadItem(
-  { thread, userId, onThreadClick }: {
+  { thread, userId, onThreadClick, agent }: {
     thread: Thread;
     userId: string;
+    agent?: Agent;
     onThreadClick: (thread: Thread) => void;
   },
 ) {
@@ -318,7 +321,26 @@ function SidebarThreadItem(
                     to={buildThreadUrl(thread)}
                     onClick={() => onThreadClick(thread)}
                   >
-                    <span className="truncate">{thread.title}</span>
+                    {agent
+                      ? (
+                        <AgentAvatar
+                          name={agent.name}
+                          avatar={agent.avatar}
+                          className="h-4 w-4 rounded-sm"
+                        />
+                      )
+                      : (
+                        <div className="h-4 w-4 min-w-4 rounded-sm bg-[#2A9D90] flex items-center justify-center">
+                          <Icon
+                            name="edit_square"
+                            className="text-white"
+                            size={12}
+                          />
+                        </div>
+                      )}
+                    <span className="truncate">
+                      {agent ? agent.name : thread.title}
+                    </span>
                   </Link>
                 )}
             </SidebarMenuButton>
@@ -341,7 +363,11 @@ function SidebarThreadItem(
 }
 
 function SidebarThreadList(
-  { threads, userId }: { threads: Thread[]; userId: string },
+  { threads, userId, agents }: {
+    threads: Thread[];
+    userId: string;
+    agents: Agent[];
+  },
 ) {
   const { isMobile, toggleSidebar } = useSidebar();
 
@@ -358,6 +384,7 @@ function SidebarThreadList(
     <SidebarThreadItem
       key={thread.id}
       thread={thread}
+      agent={agents.find((agent) => agent.id === thread.metadata?.agentId)}
       userId={userId}
       onThreadClick={handleThreadClick}
     />
@@ -378,7 +405,11 @@ function SidebarThreadsSkeleton() {
 
 function SidebarThreads() {
   const user = useUser();
-  const { data } = useThreads(user?.id ?? "");
+  const { data: agents } = useAgents();
+  const { data } = useThreads({
+    resourceId: user?.id ?? "",
+    uniqueByAgentId: true,
+  });
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (
@@ -390,6 +421,7 @@ function SidebarThreads() {
             <SidebarMenu className="gap-0.5">
               <SidebarThreadList
                 threads={groupedThreads.today}
+                agents={agents}
                 userId={user?.id ?? ""}
               />
             </SidebarMenu>
@@ -404,6 +436,7 @@ function SidebarThreads() {
             <SidebarMenu className="gap-0.5">
               <SidebarThreadList
                 threads={groupedThreads.yesterday}
+                agents={agents}
                 userId={user?.id ?? ""}
               />
             </SidebarMenu>
@@ -420,6 +453,7 @@ function SidebarThreads() {
                 <SidebarMenu className="gap-0.5">
                   <SidebarThreadList
                     threads={threads}
+                    agents={agents}
                     userId={user?.id ?? ""}
                   />
                 </SidebarMenu>
@@ -513,7 +547,7 @@ export function AppSidebar() {
                       }}
                     >
                       <Icon name="edit_square" size={16} />
-                      <span className="truncate">New chat</span>
+                      <span className="truncate">Chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

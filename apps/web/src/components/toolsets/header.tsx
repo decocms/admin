@@ -1,7 +1,7 @@
 import type { Integration } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { IntegrationIcon } from "./icon.tsx";
+import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
 import {
   Tooltip,
@@ -29,7 +29,7 @@ export function IntegrationHeader({
           <IntegrationIcon
             icon={integration.icon}
             name={integration.name}
-            className="h-4 w-4 rounded border-none"
+            className="h-5 w-5 rounded !border-none p-0"
           />
           <div className="font-medium text-sm text-slate-700 truncate">
             {integration?.name}

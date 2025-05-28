@@ -1,11 +1,10 @@
 import { useChat } from "@ai-sdk/react";
 import {
   API_SERVER_URL,
+  dispatchMessages,
   getTraceDebugId,
-  useAddOptimisticThread,
   useAgent,
   useAgentRoot,
-  useInvalidateAll,
   useThreadMessages,
 } from "@deco/sdk";
 import {
@@ -65,13 +64,6 @@ interface Props {
   uiOptions?: Partial<IContext["uiOptions"]>;
 }
 
-const THREAD_TOOLS_INVALIDATION_TOOL_CALL = new Set([
-  "DECO_INTEGRATION_INSTALL",
-  "DECO_INTEGRATION_ENABLE",
-  "DECO_INTEGRATION_DISABLE",
-  "DECO_AGENT_CONFIGURE",
-]);
-
 const DEFAULT_UI_OPTIONS: IContext["uiOptions"] = {
   showModelSelector: true,
   showThreadTools: true,
@@ -88,10 +80,6 @@ export function ChatProvider({
   children,
 }: PropsWithChildren<Props>) {
   const agentRoot = useAgentRoot(agentId);
-  const invalidateAll = useInvalidateAll();
-  const {
-    addOptimisticThread,
-  } = useAddOptimisticThread();
   const scrollRef = useRef<HTMLDivElement>(null);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
   const { data: initialMessages } = !options.showThreadMessages
@@ -113,9 +101,7 @@ export function ChatProvider({
     },
     api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
     experimental_prepareRequestBody: ({ messages }) => {
-      if (messages.length === 1 && messages[0].role === "user") {
-        addOptimisticThread(threadId, agentId);
-      }
+      dispatchMessages({ messages, threadId, agentId });
 
       const messagesWindow = messages.slice(-LAST_MESSAGES_COUNT);
       const lastMessage = messagesWindow.at(-1);
@@ -179,15 +165,6 @@ export function ChatProvider({
     },
     onResponse: (response) => {
       correlationIdRef.current = response.headers.get("x-trace-debug-id");
-    },
-    onFinish: (message) => {
-      const shouldInvalidate = message.toolInvocations?.some((tool) =>
-        THREAD_TOOLS_INVALIDATION_TOOL_CALL.has(tool.toolName)
-      );
-
-      if (shouldInvalidate) {
-        invalidateAll();
-      }
     },
   });
 

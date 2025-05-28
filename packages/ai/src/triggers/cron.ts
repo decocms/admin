@@ -38,26 +38,14 @@ export const hooks: TriggerHooks<TriggerData & { type: "cron" }> = {
       id: crypto.randomUUID(),
     }));
 
-    let response: unknown;
-
-    if (trigger.outputBinding) {
-      const args = [messages, {
+    const agent = trigger.state.stub(AIAgent).new(trigger.agentId)
+      .withMetadata({
         threadId,
         resourceId: data.id,
-      }];
-      response = await trigger.outputBinding.ON_AGENT_OUTPUT({
-        callbacks: trigger._callbacks({ args }),
       });
-    } else {
-      const agent = trigger.state.stub(AIAgent).new(trigger.agentId)
-        .withMetadata({
-          threadId,
-          resourceId: data.id,
-        });
-      response = await agent.generate(
-        messages,
-      );
-    }
+    const response = await agent.generate(
+      messages,
+    );
     const cron = new Cron(data.cronExp);
     const dt = cron.nextRun();
     if (dt) {

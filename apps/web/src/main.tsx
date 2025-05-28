@@ -20,7 +20,7 @@ import { EmptyState } from "./components/common/EmptyState.tsx";
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
 }>;
-const wrapWithUILoadingFallback = <P,>(
+export const wrapWithUILoadingFallback = <P,>(
   lazyComp: LazyComp<P>,
 ): LazyComp<P> =>
   lazyComp.then(({ default: Comp }) => ({
@@ -78,16 +78,8 @@ const AgentDetail = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/edit.tsx")),
 );
 
-const Chat = lazy(
-  () => wrapWithUILoadingFallback(import("./components/agent/chat.tsx")),
-);
-
 const PublicChats = lazy(
   () => wrapWithUILoadingFallback(import("./components/agent/chats.tsx")),
-);
-
-const Wallet = lazy(
-  () => wrapWithUILoadingFallback(import("./components/wallet/index.tsx")),
 );
 
 const AuditList = lazy(
@@ -229,17 +221,6 @@ function ErrorFallback() {
   );
 }
 
-function HomeChat() {
-  return (
-    <Chat
-      showThreadMessages={false}
-      agentId="teamAgent"
-      threadId={crypto.randomUUID()}
-      key="disabled-messages"
-    />
-  );
-}
-
 const router = createBrowserRouter([
   {
     errorElement: <ErrorFallback />,
@@ -278,12 +259,16 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            Component: HomeChat,
+            loader: ({ params }) => {
+              const teamSlug = params.teamSlug;
+              globalThis.location.href = teamSlug
+                ? `/${teamSlug}/agents`
+                : "/agents";
+              return null;
+            },
           },
-          { path: "wallet", Component: Wallet },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "chat/:id/:threadId", Component: Chat },
           {
             path: "integrations/marketplace",
             Component: IntegrationMarketplace,

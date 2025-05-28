@@ -24,6 +24,9 @@ import { ViewModeSwitcherProps } from "../../common/ViewModelSwitcher.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 
+const isUUID = (uuid: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const navigateWorkspace = useNavigateWorkspace();
   const [error, setError] = useState<string | null>(null);
@@ -31,24 +34,14 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const create = useCreateIntegration();
   const updateThreadMessages = useUpdateThreadMessages();
 
-  const handleCreateAuthenticatedIntegration = async (mcpUrl: string) => {
-    const result = await create.mutateAsync({
-      connection: {
-        type: "HTTP" as const,
-        url: mcpUrl,
-        token: "",
-      },
-    });
-    updateThreadMessages(result.id);
-    navigateWorkspace(`/integration/${result.id}`);
-  };
-
   useEffect(() => {
     const url = new URL(globalThis.location.href);
     const mcpUrl = url.searchParams.get("mcpUrl");
-    if (mcpUrl) {
-      handleCreateAuthenticatedIntegration(mcpUrl);
-      url.searchParams.delete("mcpUrl");
+
+    const uuid = mcpUrl?.split("/").at(-3);
+
+    if (typeof uuid === "string" && isUUID(uuid)) {
+      navigateWorkspace(`/integration/${uuid}`);
     }
   }, []);
 
@@ -90,7 +83,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
               : (
                 <>
                   <Icon name="add" />
-                  <span className="hidden md:inline">Create Integration</span>
+                  <span className="hidden md:inline">New Integration</span>
                 </>
               )}
           </Button>

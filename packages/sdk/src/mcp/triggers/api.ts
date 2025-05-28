@@ -197,14 +197,6 @@ export const upsertTrigger = createTool({
       await stub(Trigger).new(triggerPath).delete();
     }
 
-    // Create new trigger
-    await stub(Trigger).new(triggerPath).create(
-      {
-        ...data,
-        id,
-        resourceId: userId,
-      },
-    );
     const bindingId = data.bindingId ? parseId(data.bindingId).uuid : undefined;
 
     // Update database
@@ -226,6 +218,16 @@ export const upsertTrigger = createTool({
     if (error) {
       throw new InternalServerError(error.message);
     }
+
+    // Create new trigger
+    await stub(Trigger).new(triggerPath).create(
+      {
+        ...data,
+        id,
+        resourceId: userId,
+        binding: trigger.binding ? convertFromDatabase(trigger.binding) : null,
+      },
+    );
 
     const agents = await getAgentsByIds([agentId], c);
     const agentsById = agents.reduce((acc, agent) => {
@@ -454,7 +456,7 @@ export const activateTrigger = createTool({
 
     try {
       const { data, error: selectError } = await db.from("deco_chat_triggers")
-        .select("*")
+        .select(SELECT_TRIGGER_QUERY)
         .eq("id", triggerId)
         .eq("workspace", workspace)
         .single();
@@ -478,6 +480,7 @@ export const activateTrigger = createTool({
           ...data.metadata as z.infer<typeof TriggerSchema>,
           id: data.id,
           resourceId: typeof user.id === "string" ? user.id : undefined,
+          binding: data.binding ? convertFromDatabase(data.binding) : null,
         },
       );
 

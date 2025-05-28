@@ -1,6 +1,8 @@
 export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
+export * from "./wallet/stripe/webhook.ts";
+export * from "./models/llmVault.ts";
 import * as agentsAPI from "./agents/api.ts";
 import { AppContext, State, Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
@@ -14,7 +16,11 @@ import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
+import * as modelsAPI from "./models/api.ts";
+import * as walletAPI from "./wallet/api.ts";
+
 export * from "./bindings/binder.ts";
+
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
   teamsAPI.getTeam,
@@ -42,6 +48,7 @@ export const GLOBAL_TOOLS = [
 
 // Tools tied to an specific workspace
 export const WORKSPACE_TOOLS = [
+  membersAPI.inviteTeamMembers,
   agentsAPI.getAgent,
   agentsAPI.deleteAgent,
   agentsAPI.createAgent,
@@ -69,6 +76,13 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.createWebhookTrigger,
   triggersAPI.deleteTrigger,
   triggersAPI.getWebhookTriggerUrl,
+  walletAPI.getWalletAccount,
+  walletAPI.getThreadsUsage,
+  walletAPI.getAgentsUsage,
+  walletAPI.createCheckoutSession,
+  walletAPI.redeemWalletVoucher,
+  walletAPI.createWalletVoucher,
+  walletAPI.getWorkspacePlan,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
   triggersAPI.updateTrigger,
@@ -82,6 +96,11 @@ export const WORKSPACE_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
+  modelsAPI.createModel,
+  modelsAPI.deleteModel,
+  modelsAPI.listModels,
+  modelsAPI.updateModel,
+  modelsAPI.getModel,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

@@ -11,14 +11,11 @@ CREATE TABLE IF NOT EXISTS deco_chat_hosting_apps(
   files jsonb, -- the files that make up the app
   UNIQUE(slug)
 );
-
 -- Optional: index for fast lookup by workspace
 CREATE INDEX IF NOT EXISTS idx_hosting_apps_workspace
   ON deco_chat_hosting_apps (workspace);
-
 -- Optional: index for fast lookup by slug
 CREATE INDEX IF NOT EXISTS idx_hosting_apps_slug
   ON deco_chat_hosting_apps (slug);
-
 -- Enable Row Level Security
 ALTER TABLE deco_chat_hosting_apps ENABLE ROW LEVEL SECURITY;

@@ -55,6 +55,9 @@ const RenderInputSchema = z.object({
   content: z.string().describe(
     "The URL or HTML content to display in the preview",
   ),
+  mediaType: z.enum(["image", "video", "audio"]).optional().describe(
+    "The media type of the content. This is only required if type is 'url' and the content is the URL of a file.",
+  ),
 });
 
 const RETRY_CONFIG = {
@@ -68,7 +71,7 @@ const PollForContentInputSchema = z.object({
     "Maximum number of retry attempts (default: 20). Recommended to be 20 or more.",
   ),
   maxDelay: z.number().optional().describe(
-    "Maximum delay between retries in milliseconds (default: 10000).",
+    "Maximum delay between retries in milliseconds (default: 5000).",
   ),
 });
 

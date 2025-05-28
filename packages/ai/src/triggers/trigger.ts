@@ -13,6 +13,7 @@
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
+import { Hosts } from "@deco/sdk/hosts";
 import {
   AppContext,
   AuthorizationClient,
@@ -26,7 +27,6 @@ import {
   Callbacks,
   MCPBindingClient,
   TriggerInputBinding,
-  TriggerOutputBinding,
 } from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
@@ -103,12 +103,19 @@ export interface InvokePayload {
   metadata?: Record<string, unknown>;
 }
 const buildInvokeUrl = (
-  url: URL,
+  triggerId: string,
   method: keyof Trigger,
+  passphrase?: string | null,
   payload?: InvokePayload,
 ) => {
-  const invoke = new URL(url);
-  invoke.pathname = `/actors/${Trigger.name}/invoke/${method}`;
+  const invoke = new URL(
+    `https://${Hosts.API}/actors/${Trigger.name}/invoke/${method}`,
+  );
+  invoke.searchParams.set("deno_isolate_instance_id", triggerId);
+
+  if (passphrase) {
+    invoke.searchParams.set("passphrase", passphrase);
+  }
   if (payload) {
     invoke.searchParams.set(
       "args",
@@ -124,7 +131,6 @@ export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
   public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
-  public outputBinding?: MCPBindingClient<typeof TriggerOutputBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
@@ -184,14 +190,14 @@ export class Trigger {
   public _callbacks(
     payload?: InvokePayload,
   ): Callbacks {
-    if (!this.metadata?.reqUrl) {
-      throw new Error("Trigger does not have a reqUrl");
-    }
-    const url = new URL(this.metadata.reqUrl);
+    const urlFor = (method: keyof Trigger) =>
+      buildInvokeUrl(this.state.id, method, this.metadata?.passphrase, payload)
+        .href;
+
     return {
-      stream: buildInvokeUrl(url, "stream", payload).href,
-      generate: buildInvokeUrl(url, "generate", payload).href,
-      generateObject: buildInvokeUrl(url, "generateObject", payload).href,
+      stream: urlFor("stream"),
+      generate: urlFor("generate"),
+      generateObject: urlFor("generateObject"),
     };
   }
   private async _loadData(): Promise<TriggerData | null> {
@@ -204,25 +210,20 @@ export class Trigger {
     }
 
     const trigger = mapTriggerToTriggerData(triggerData);
-    if (trigger.binding) {
-      const context = this._createContext();
-      if (trigger.type === "webhook") {
-        this.inputBinding = TriggerInputBinding.forConnection(
-          trigger.binding.connection,
-          context,
-        );
-      } else {
-        this.outputBinding = TriggerOutputBinding.forConnection(
-          trigger.binding.connection,
-          context,
-        );
-      }
-    }
     return trigger;
   }
 
   private _setData(data: TriggerData) {
     this.data = data;
+    if (data.binding) {
+      const context = this._createContext();
+      if (data.type === "webhook") {
+        this.inputBinding = TriggerInputBinding.forConnection(
+          data.binding.connection,
+          context,
+        );
+      }
+    }
     this.hooks = this.data ? hooks[this.data?.type ?? "cron"] : cron;
   }
 
@@ -331,13 +332,6 @@ export class Trigger {
       return {
         success: false,
         message: "Trigger is not allowed to be created from external sources",
-      };
-    }
-
-    if (this.data) {
-      return {
-        success: true,
-        message: "Trigger already exists",
       };
     }
 

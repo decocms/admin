@@ -10,9 +10,14 @@ export const SETTINGS_ITEMS = [
     icon: "group",
   },
   {
-    url: "/settings/billing",
-    title: "Billing",
-    icon: "payments",
+    url: "/settings/models",
+    title: "Models",
+    icon: "model",
+  },
+  {
+    url: "/settings/wallet",
+    title: "Wallet",
+    icon: "wallet",
   },
   {
     url: "/settings/usage",
@@ -30,6 +35,7 @@ export type SettingsPage =
   | (typeof SETTINGS_ITEMS)[number]["title"]
   | "general"
   | "members"
-  | "billing"
+  | "wallet"
   | "usage"
-  | "audit";
+  | "audit"
+  | "models";

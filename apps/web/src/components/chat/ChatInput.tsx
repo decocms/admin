@@ -1,8 +1,9 @@
 import {
-  MODELS,
+  AUTO_MODEL,
   NotFoundError,
   readFile,
   useAgent,
+  useModels,
   useSDK,
   useWriteFile,
 } from "@deco/sdk";
@@ -124,6 +125,9 @@ ChatInput.UI = (
     chat: { stop, input, handleInputChange, handleSubmit, status },
     uiOptions: { showModelSelector, showThreadTools },
   } = useChatContext();
+  const { data: models } = useModels({
+    excludeDisabled: true,
+  });
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoading = status === "submitted" || status === "streaming";
@@ -131,7 +135,7 @@ ChatInput.UI = (
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
+  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
 
   const getAcceptedFileTypes = () => {
     const acceptTypes: string[] = [];
@@ -305,7 +309,7 @@ ChatInput.UI = (
   const isDragging = useGlobalDrop(handleFileDrop);
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
       <form
         onSubmit={onSubmit}

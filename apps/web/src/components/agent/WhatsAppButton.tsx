@@ -8,6 +8,7 @@ import {
   useSendAgentWhatsAppInvite,
   useUpsertWhatsAppUser,
   useWhatsAppUser,
+  WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { useProfile } from "@deco/sdk/hooks";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -23,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { useProfileModal } from "../layout.tsx";
@@ -36,7 +38,7 @@ const getWhatsAppLink = (agent: Agent) => {
   return url.href;
 };
 
-export function WhatsAppButton() {
+export function WhatsAppButton({ isMobile }: { isMobile: boolean }) {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
@@ -46,6 +48,11 @@ export function WhatsAppButton() {
   const { data: whatsappUser } = useWhatsAppUser(profile?.phone ?? "");
   const focusChat = useFocusChat();
   const { openProfileModal } = useProfileModal();
+
+  const isWellKnownAgent = Boolean(
+    WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
+  );
+
   const { workspace } = useSDK();
 
   // Find webhook triggers (WhatsApp uses webhook triggers)
@@ -171,6 +178,35 @@ export function WhatsAppButton() {
 
   const isWhatsAppEnabled = whatsappUser?.trigger_id === whatsappTrigger?.id;
 
+  if (isWellKnownAgent) {
+    return;
+  }
+
+  const buttonContent = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={isWhatsAppEnabled
+        ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
+        : handleWhatsAppClick}
+      className={isMobile ? "w-full justify-center gap-4" : ""}
+    >
+      <img
+        src="/img/zap.svg"
+        className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
+      />
+      <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
+        {!isMobile ? "" : isWhatsAppEnabled ? "Start chat" : "Enable WhatsApp"}
+      </span>
+    </Button>
+  );
+
+  // For mobile, return the button without tooltip
+  if (isMobile) {
+    return buttonContent;
+  }
+
+  // For desktop, wrap with tooltip
   return (
     <>
       <Tooltip>
@@ -214,42 +250,3 @@ export function WhatsAppButton() {
     </>
   );
 }
-
-//   const enabled = tempWppAgent?.agent_id === agentId && whatsappTrigger;
-
-//   const buttonContent = (
-//     <Button
-//       variant="ghost"
-//       size="icon"
-//       onClick={enabled
-//         ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
-//         : handleWhatsAppClick}
-//       className={isMobile ? "w-full justify-center gap-4" : ""}
-//     >
-//       <img
-//         src="/img/zap.svg"
-//         className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd
-//       />
-//       <span className={cn(isMobile ? "text-sm" : "text-base", "font-normal")}>
-//         {!isMobile ? "" : enabled ? "Start chat" : "Enable WhatsApp"}
-//       </span>
-//     </Button>
-//   );
-
-//   // For mobile, return the button without tooltip
-//   if (isMobile) {
-//     return buttonContent;
-//   }
-
-//   // For desktop, wrap with tooltip
-//   return (
-//     <Tooltip>
-//       <TooltipTrigger asChild>
-//         {buttonContent}
-//       </TooltipTrigger>
-//       <TooltipContent>
-//         Enable WhatsApp
-//       </TooltipContent>
-//     </Tooltip>
-//   );
-// }

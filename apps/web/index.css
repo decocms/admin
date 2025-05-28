@@ -48,6 +48,30 @@
       @apply w-full;
     }
 
+    .dv-void-container {
+      @apply bg-muted border-b;
+    }
+
+    .dv-tab {
+      @apply border-b;
+    }
+
+    .dv-inactive-tab .dv-react-part {
+      @apply border-b-0;
+    }
+
+    .dv-tabs-container {
+      @apply bg-muted;
+    }
+
+    .dv-inactive-group {
+      @apply bg-muted;
+    }
+
+    .dv-groupview {
+      @apply border;
+    }
+
     .dv-groupview {
       @apply md:rounded-xl md:shadow-md;
     }
@@ -61,7 +85,12 @@
     }
 
     .dv-active-tab [data-active="true"] {
-      @apply bg-slate-100;
+      @apply bg-white! rounded-t-xl! border border-b-2 border-b-white m-[-1px]
+        mr-0 mb-[-2px];
+    }
+
+    .one-tab .dv-scrollable {
+      @apply grow-0!;
     }
   }
 }

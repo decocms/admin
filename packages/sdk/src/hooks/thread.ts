@@ -7,15 +7,17 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useCallback } from "react";
+import type { UIMessage } from "ai";
+import { useCallback, useEffect } from "react";
+import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   getThread,
   getThreadMessages,
   listThreads,
+  ThreadFilterOptions,
   updateThreadMetadata,
   updateThreadTitle,
 } from "../crud/thread.ts";
-import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
@@ -54,87 +56,81 @@ export const useUpdateThreadMessages = () => {
   );
 };
 
-/** Hook for fetching threads from an agent */
-/** TODO: Merge this with useThreads into a single hook */
-export const useAgentThreads = (agentId: string) => {
-  const { workspace } = useSDK();
-  const agentStub = useAgentStub(agentId);
-
-  return useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace, agentId),
-    queryFn: () => agentStub.listThreads(),
-  });
-};
-
 /** Hook for fetching all threads for the user */
-export const useThreads = (userId: string) => {
-  const { workspace } = useSDK();
-
-  return useSuspenseQuery({
-    queryKey: KEYS.THREADS(workspace, userId),
-    queryFn: ({ signal }) =>
-      listThreads(workspace, {
-        resourceId: userId,
-        orderBy: "createdAt_desc",
-        limit: 20,
-      }, { signal }),
-  });
-};
-
-export const useAddOptimisticThread = () => {
+export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
+  const options: ThreadFilterOptions = {
+    orderBy: "createdAt_desc",
+    limit: 20,
+    ...partialOptions,
+  };
+  const key = KEYS.THREADS(workspace, options);
 
-  const addOptimisticThread = useCallback(
-    (threadId: string, agentId: string) => {
-      // Add a "Loading..." titled thread to the threads query
-      client.setQueryData(
-        KEYS.THREADS(workspace),
-        // deno-lint-ignore no-explicit-any
-        (oldData: any) => {
-          if (!oldData) return oldData;
-
-          // Check if the thread already exists
-          // deno-lint-ignore no-explicit-any
-          const threadExists = oldData.some((thread: any) =>
+  const effect = useCallback(
+    ({ messages, threadId, agentId }: {
+      messages: UIMessage[];
+      threadId: string;
+      agentId: string;
+    }) => {
+      client.cancelQueries({ queryKey: key });
+      client.setQueryData<Awaited<ReturnType<typeof listThreads>>>(
+        key,
+        (oldData) => {
+          const exists = oldData?.threads.find((thread) =>
             thread.id === threadId
           );
 
-          if (!threadExists) {
-            return [
-              ...oldData,
-              {
-                id: threadId,
-                title: "New chat",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                metadata: {
-                  agentId,
-                },
-              },
-            ];
+          if (exists) {
+            return oldData;
           }
 
-          return oldData;
+          const newTitle = typeof messages[0]?.content === "string"
+            ? messages[0].content.slice(0, 20)
+            : "New chat";
+
+          const updated = {
+            pagination: oldData?.pagination ?? {
+              hasMore: false,
+              nextCursor: null,
+            },
+            threads: [
+              ...(oldData?.threads ?? []),
+              {
+                id: threadId,
+                title: newTitle,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                resourceId: agentId,
+                metadata: { agentId },
+              },
+            ],
+          };
+
+          // When uniqueyById, we should remove the agentId from the thread metadata
+          if (
+            options.uniqueByAgentId && !(agentId in WELL_KNOWN_AGENT_IDS)
+          ) {
+            updated.threads = updated.threads.filter(
+              (thread, index) =>
+                thread.metadata?.agentId !== agentId ||
+                index === updated.threads.length - 1,
+            );
+          }
+
+          return updated;
         },
       );
     },
-    [client, workspace],
+    [client, key, options.uniqueByAgentId],
   );
 
-  return {
-    addOptimisticThread,
-  };
-};
+  useMessagesSentEffect(effect);
 
-export const useInvalidateAll = () => {
-  const client = useQueryClient();
-
-  return useCallback(() => {
-    client.invalidateQueries({
-      predicate: (_query) => true,
-    });
-  }, [client]);
+  return useSuspenseQuery({
+    queryKey: key,
+    queryFn: ({ signal }) => listThreads(workspace, options, { signal }),
+  });
 };
 
 export const useUpdateThreadTitle = (threadId: string, userId: string) => {
@@ -146,22 +142,27 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
       return await updateThreadTitle(workspace, threadId, newTitle);
     },
     onMutate: async (newTitle: string) => {
-      await client.cancelQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+      await client.cancelQueries({
+        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+      });
 
       const previousThreads = client.getQueryData(
-        KEYS.THREADS(workspace, userId),
+        KEYS.THREADS(workspace, { resourceId: userId }),
       );
 
       // Optimistically update the thread in the threads list
-      // deno-lint-ignore no-explicit-any
-      client.setQueryData(KEYS.THREADS(workspace, userId), (old: any) => {
-        if (!old) return old;
+      client.setQueryData(
+        KEYS.THREADS(workspace, { resourceId: userId }),
         // deno-lint-ignore no-explicit-any
-        const newThreads = old.threads.map((thread: any) =>
-          thread.id === threadId ? { ...thread, title: newTitle } : thread
-        );
-        return { ...old, threads: newThreads };
-      });
+        (old: any) => {
+          if (!old) return old;
+          // deno-lint-ignore no-explicit-any
+          const newThreads = old.threads.map((thread: any) =>
+            thread.id === threadId ? { ...thread, title: newTitle } : thread
+          );
+          return { ...old, threads: newThreads };
+        },
+      );
 
       // Return a context object with the snapshotted value
       return { previousThreads };
@@ -171,7 +172,7 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousThreads) {
         client.setQueryData(
-          KEYS.THREADS(workspace, userId),
+          KEYS.THREADS(workspace, { resourceId: userId }),
           context.previousThreads,
         );
       }
@@ -179,7 +180,9 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
     onSettled: () => {
       // Always refetch after error or success to ensure data is in sync
       client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
-      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+      client.invalidateQueries({
+        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+      });
     },
   });
 };
@@ -197,7 +200,36 @@ export const useDeleteThread = (threadId: string, userId: string) => {
     onSuccess: () => {
       // Invalidate both the thread and threads list queries
       client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
-      client.invalidateQueries({ queryKey: KEYS.THREADS(workspace, userId) });
+      client.invalidateQueries({
+        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+      });
     },
   });
+};
+
+const channel = new EventTarget();
+
+export interface Options {
+  messages: UIMessage[];
+  threadId: string;
+  agentId: string;
+}
+
+export const dispatchMessages = (options: Options) => {
+  channel.dispatchEvent(new CustomEvent("message", { detail: options }));
+};
+
+const useMessagesSentEffect = (cb: (options: Options) => void) => {
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const options = (event as CustomEvent).detail as Options;
+      cb(options);
+    };
+
+    channel.addEventListener("message", handler);
+
+    return () => {
+      channel.removeEventListener("message", handler);
+    };
+  }, [cb]);
 };

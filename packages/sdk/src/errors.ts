@@ -46,6 +46,20 @@ export class InternalServerError extends HttpError {
   }
 }
 
+export class FeatureNotAvailableError extends HttpError {
+  override code = 403;
+  constructor(message: string = "Feature not available", traceId?: string) {
+    super(message, traceId);
+  }
+}
+
+export class WebhookEventIgnoredError extends HttpError {
+  override code = 400;
+  constructor(message: string = "Event ignored", traceId?: string) {
+    super(message, traceId);
+  }
+}
+
 export const getErrorByStatusCode = (
   statusCode: number,
   message?: string,

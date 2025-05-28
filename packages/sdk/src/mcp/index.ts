@@ -94,7 +94,7 @@ export const WORKSPACE_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
-  assetsAPI.writeAsset,
+  assetsAPI.uploadAsset,
   assetsAPI.deleteAsset,
   modelsAPI.createModel,
   modelsAPI.deleteModel,

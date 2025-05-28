@@ -1,3 +1,4 @@
+import { ASSETS_URL } from "../constants.ts";
 import { WELL_KNOWN_ORIGINS } from "../hosts.ts";
 import { AppContext, getEnv } from "./context.ts";
 
@@ -34,4 +35,8 @@ export const ensureBucketExists = async (c: AppContext, bucketName: string) => {
       }],
     });
   }
+};
+
+export const getAssetUrl = (key: string) => {
+  return `${ASSETS_URL}/public/${key.replace(/^\/+/, "")}`;
 };

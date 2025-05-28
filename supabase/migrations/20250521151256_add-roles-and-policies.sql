@@ -66,43 +66,88 @@ INSERT INTO "public"."policies" ("id", "created_at", "name", "statements", "desc
     '{"effect":"allow","resource":"AGENTS_LIST"}'::jsonb
 ], 'Allows access to view agents information.', null)
 ON CONFLICT (id) DO NOTHING;
-UPDATE "public"."policies" SET "statements" = ARRAY[
-    '{"effect":"allow","resource":"deco-sites/admin/actions/teams/deleteTeam.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/teams/renameTeam.ts"}'::jsonb,
+
+WITH current AS (
+  SELECT id, statements
+  FROM public.policies
+  WHERE id = 3
+),
+to_add AS (
+  SELECT unnest(ARRAY[
     '{"effect":"allow","resource":"TEAMS_DELETE"}'::jsonb,
     '{"effect":"allow","resource":"TEAMS_UPDATE"}'::jsonb
-] WHERE "id" = 3;
-UPDATE "public"."policies" SET "statements" = ARRAY[
-    '{"effect":"allow","resource":"deco-sites/admin/actions/teams/inviteMembers.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/invites/resendInviteEmail.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/invites/delete.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/roles/updateUserRole.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/teams/removeMember.ts"}'::jsonb,
+  ]) AS new_statement
+),
+missing AS (
+  SELECT current.id, current.statements, array_agg(to_add.new_statement) AS new_statements
+  FROM current
+  JOIN to_add
+    ON NOT EXISTS (
+      SELECT 1
+      FROM unnest(current.statements) AS stmt
+      WHERE stmt = to_add.new_statement
+    )
+  GROUP BY current.id, current.statements
+)
+UPDATE public.policies
+SET statements = array_cat(missing.statements, missing.new_statements)
+FROM missing
+WHERE public.policies.id = missing.id;
+
+WITH current AS (
+  SELECT id, statements
+  FROM public.policies
+  WHERE id = 2
+),
+to_add AS (
+  SELECT unnest(ARRAY[
     '{"effect":"allow","resource":"TEAM_MEMBERS_UPDATE"}'::jsonb,
     '{"effect":"allow","resource":"TEAM_MEMBERS_REMOVE"}'::jsonb,
     '{"effect":"allow","resource":"TEAM_MEMBERS_INVITE"}'::jsonb
-] WHERE "id" = 2;
-UPDATE "public"."policies" SET "statements" = ARRAY[
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/loadTeamMembers.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/roles/listTeamRoles.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/roles/listTeamRolesWithCount.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/roles/listAllPolicies.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/loadTeamSites.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/roles/getRoleById.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/isOwner.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/getTeamBySitename.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/teamBillingWM.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/teamBilling.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/loadTeamMenu.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/getTeam.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/teams/removeMember.ts","matchProps":{"prop":"email","__resolveType":"deco-sites/admin/matchers/user/reqUser.ts"}}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/invites/loadInvites.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/getTeamOwnerId.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/loadTeamOptions.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/actions/sites/duplicate.ts"}'::jsonb,
-    '{"effect":"allow","resource":"deco-sites/admin/loaders/teams/hasGivenRole.ts"}'::jsonb,
+  ]) AS new_statement
+),
+missing AS (
+  SELECT current.id, current.statements, array_agg(to_add.new_statement) AS new_statements
+  FROM current
+  JOIN to_add
+    ON NOT EXISTS (
+      SELECT 1
+      FROM unnest(current.statements) AS stmt
+      WHERE stmt = to_add.new_statement
+    )
+  GROUP BY current.id, current.statements
+)
+UPDATE public.policies
+SET statements = array_cat(missing.statements, missing.new_statements)
+FROM missing
+WHERE public.policies.id = missing.id;
+
+WITH current AS (
+  SELECT id, statements
+  FROM public.policies
+  WHERE id = 4
+),
+to_add AS (
+  SELECT unnest(ARRAY[
     '{"effect":"allow","resource":"TEAMS_GET"}'::jsonb
-] WHERE "id" = 4;
+  ]) AS new_statement
+),
+missing AS (
+  SELECT current.id, current.statements, array_agg(to_add.new_statement) AS new_statements
+  FROM current
+  JOIN to_add
+    ON NOT EXISTS (
+      SELECT 1
+      FROM unnest(current.statements) AS stmt
+      WHERE stmt = to_add.new_statement
+    )
+  GROUP BY current.id, current.statements
+)
+UPDATE public.policies
+SET statements = array_cat(missing.statements, missing.new_statements)
+FROM missing
+WHERE public.policies.id = missing.id;
+
 INSERT INTO "public"."role_policies" ("id", "created_at", "role_id", "policy_id") VALUES 
 ('288', '2025-05-21 12:42:16.393913+00', '4', '43'), 
 ('287', '2025-05-21 12:42:11.460812+00', '3', '43'),

@@ -55,6 +55,7 @@ const RenderInputSchema = z.object({
   content: z.string().describe(
     "The URL or HTML content to display in the preview",
   ),
+  mediaType: z.enum(["image", "video", "audio"]).optional().describe("The media type of the content. This is only required if type is 'url' and the content is the URL of a file."),
 });
 
 const RETRY_CONFIG = {

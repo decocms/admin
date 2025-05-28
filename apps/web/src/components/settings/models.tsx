@@ -32,22 +32,23 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createContext, Suspense, useContext, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Input } from "../../../../../packages/ui/src/components/input.tsx";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../../packages/ui/src/components/select.tsx";
-import { Textarea } from "../../../../../packages/ui/src/components/textarea.tsx";
+} from "@deco/ui/components/select.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { Switch } from "@deco/ui/components/switch.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createContext, Suspense, useContext, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Avatar } from "../common/Avatar.tsx";
 import { Table, TableColumn } from "../common/Table.tsx";
 import Logo from "../model/common/Logo.tsx";
@@ -172,6 +173,7 @@ const ModelActions = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem
+          className="cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onEditClick();
@@ -181,7 +183,7 @@ const ModelActions = ({
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-red-500"
+          className="text-red-500 cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClick();
@@ -269,7 +271,12 @@ function TableView(
   }
 
   async function handleModelDelete(model: Model) {
-    if (model.id.startsWith(DEFAULT_MODEL_PREFIX)) {
+    if (model.byDeco) {
+      return;
+    }
+
+    if (models.filter((m) => m.isEnabled).length === 1) {
+      toast.error("You must have at least one enabled model");
       return;
     }
 
@@ -304,19 +311,30 @@ function TableView(
           className="cursor-pointer"
           onClick={(e) => e.stopPropagation()}
           checked={model.isEnabled}
-          onCheckedChange={(checked: boolean) =>
-            model.id.startsWith(DEFAULT_MODEL_PREFIX)
-              ? createModel.mutate({
+          onCheckedChange={(checked: boolean) => {
+            if (!checked && models.filter((m) => m.isEnabled).length === 1) {
+              toast.error("You must have at least one enabled model");
+              return;
+            }
+
+            const isInDatabase = !model.id.startsWith(DEFAULT_MODEL_PREFIX);
+
+            if (!isInDatabase) {
+              createModel.mutate({
                 model: model.model,
                 name: model.name,
                 description: model.description,
                 byDeco: true,
                 isEnabled: checked,
-              })
-              : updateModel.mutate({
-                id: model.id,
-                data: { isEnabled: checked },
-              })}
+              });
+              return;
+            }
+
+            updateModel.mutate({
+              id: model.id,
+              data: { isEnabled: checked },
+            });
+          }}
         />
       ),
     },
@@ -367,7 +385,7 @@ function TableView(
       return;
     }
 
-    const isDefaultModel = !!model?.id.startsWith(DEFAULT_MODEL_PREFIX);
+    const isDefaultModel = !!model?.byDeco;
 
     modalForm.reset({
       name: isDefaultModel ? `${model.name} - Team` : model.name,
@@ -380,9 +398,7 @@ function TableView(
   }
 
   async function onSubmit(data: ModelForm) {
-    const isDefaultModel = modelRef.current?.id.startsWith(
-      DEFAULT_MODEL_PREFIX,
-    );
+    const isDefaultModel = modelRef.current?.byDeco;
 
     if (isDefaultModel || !modelRef.current) {
       await createModel.mutateAsync({

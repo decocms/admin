@@ -74,13 +74,13 @@ export const listAgents = createTool({
     const roles = c.workspace.root === "users"
       ? undefined
       : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
-    const stringRoles = roles?.map((role) => role.roles.name);
+    const userRoles = roles?.map((role) => role.roles.name);
 
     const filteredAgents = data.filter((agent) => {
       if (agent.access) {
         if (
-          stringRoles?.includes(agent.access) ||
-          IMPORTANT_ROLES.includes(agent.access)
+          userRoles?.includes(agent.access) ||
+          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
         ) {
           return true;
         }

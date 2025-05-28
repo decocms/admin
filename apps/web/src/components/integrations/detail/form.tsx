@@ -211,7 +211,7 @@ export function DetailForm() {
             />
           </div>
 
-          {/* Visibility Section */}
+          {/* Team Access Section */}
           {team && (
             <FormField
               name="access"

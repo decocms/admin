@@ -224,14 +224,13 @@ export const listIntegrations = createTool({
     const roles = c.workspace.root === "users"
       ? undefined
       : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
-    const stringRoles = roles?.map((role) => role?.roles?.name);
-    console.log("stringRoles", stringRoles);
+    const userRoles = roles?.map((role) => role?.roles?.name);
 
     const filteredIntegrations = integrations.data.filter((integration) => {
       if (integration.access) {
         if (
-          stringRoles?.includes(integration.access) ||
-          IMPORTANT_ROLES.includes(integration.access)
+          userRoles?.includes(integration.access) ||
+          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
         ) {
           return true;
         }
@@ -243,8 +242,8 @@ export const listIntegrations = createTool({
     const filteredAgents = agents.data.filter((agent) => {
       if (agent.access) {
         if (
-          stringRoles?.includes(agent.access) ||
-          IMPORTANT_ROLES.includes(agent.access)
+          userRoles?.includes(agent.access) ||
+          userRoles?.find((role) => IMPORTANT_ROLES.includes(role))
         ) {
           return true;
         }

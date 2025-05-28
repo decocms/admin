@@ -299,7 +299,7 @@ function SettingsTab() {
               }}
             />
 
-            {/* Team Visibility Section */}
+            {/* Team Access Section */}
             {team && (
               <FormField
                 name="access"

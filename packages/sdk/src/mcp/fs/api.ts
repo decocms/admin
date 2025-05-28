@@ -22,9 +22,9 @@ export const listFiles = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ prefix: root }, c) => {
-    const bucketName = getWorkspaceBucketName(c.workspace!.value);
-
     assertHasWorkspace(c);
+    const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
 
     const listCommand = new ListObjectsCommand({
@@ -47,9 +47,9 @@ export const readFile = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60 }, c) => {
-    const bucketName = getWorkspaceBucketName(c.workspace!.value);
-
     assertHasWorkspace(c);
+    const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
 
     const getCommand = new GetObjectCommand({
@@ -71,9 +71,9 @@ export const readFileMetadata = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
-    const bucketName = getWorkspaceBucketName(c.workspace!.value);
-
     assertHasWorkspace(c);
+    const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
 
     const getCommand = new GetObjectCommand({
@@ -106,9 +106,9 @@ export const writeFile = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
-    const bucketName = getWorkspaceBucketName(c.workspace!.value);
-
     assertHasWorkspace(c);
+    const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
 
     const putCommand = new PutObjectCommand({
@@ -133,9 +133,9 @@ export const deleteFile = createTool({
   inputSchema: z.object({ path: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ path }, c) => {
-    const bucketName = getWorkspaceBucketName(c.workspace!.value);
-
     assertHasWorkspace(c);
+    const bucketName = getWorkspaceBucketName(c.workspace.value);
+
     await ensureBucketExists(c, bucketName);
 
     const deleteCommand = new DeleteObjectCommand({

@@ -223,12 +223,12 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description:
-    "Your AI agent is still a blank slate. Give it a role, a goal, or just a cool name to get started.",
+    "",
   model: AUTO_MODEL.id,
   visibility: "WORKSPACE",
   tools_set: {},
   views: [],
-  instructions: "This agent has not been configured yet.",
+  instructions: "",
   max_steps: 10,
   max_tokens: 4096,
   memory: {

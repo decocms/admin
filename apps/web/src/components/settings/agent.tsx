@@ -355,14 +355,13 @@ function SettingsTab() {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>About this agent</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormDescription className="text-xs text-slate-400">
-                    This appears on the agent card and helps others understand
-                    its use. It does not affect the agent's behavior
+                    Used for search and organization, it does not affect agent behavior. 
                   </FormDescription>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe your agent's purpose"
+                      placeholder="e.g. Helps write product descriptions for the online store"
                       className="min-h-18 border-slate-200"
                       {...field}
                     />

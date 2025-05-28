@@ -141,7 +141,7 @@ function IntegrationsTab() {
   return (
     <ScrollArea className="h-full w-full">
       <Form {...form}>
-        <div className="h-full w-full px-4 py-2 max-w-3xl mx-auto">
+        <div className="h-full w-full p-4 max-w-3xl mx-auto">
           <form
             onSubmit={handleSubmit}
             className="space-y-2"

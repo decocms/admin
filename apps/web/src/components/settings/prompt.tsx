@@ -29,7 +29,7 @@ function PromptTab() {
                 <FormItem>
                   <FormControl>
                     <Textarea
-                      placeholder="Guide your agent's behavior with custom instructions."
+                      placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
                       className="min-h-[170px] h-full border-slate-200"
                       {...field}
                     />

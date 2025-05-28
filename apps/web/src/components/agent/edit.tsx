@@ -61,7 +61,7 @@ const Chat = () => {
   return (
     <div className="flex flex-col h-full min-w-[320px]">
       <div className="flex-none p-4">
-        <div className="justify-self-start flex items-center gap-3 text-slate-700 py-1 w-full">
+        <div className="justify-self-start flex items-center gap-3 text-slate-700 w-full">
           {chat.messages.length > 0 && (
             <div className="flex justify-between items-center gap-2 w-full">
               <div className="flex items-center gap-2 w-full">
@@ -78,7 +78,7 @@ const Chat = () => {
               </div>
               <Button
                 className={messages.length > 0 && !hasChanges
-                  ? "inline-flex absolute top-4 right-4 text-xs"
+                  ? "inline-flex text-xs"
                   : "hidden"}
                 variant="outline"
                 size="sm"
@@ -127,6 +127,11 @@ const TABS: Record<string, Tab> = {
     title: "Settings",
     initialOpen: "right",
   },
+  prompt: {
+    Component: PromptTab,
+    title: "System prompt",
+    initialOpen: "within",
+  },
   integrations: {
     Component: IntegrationsTab,
     title: "Integrations",
@@ -135,21 +140,14 @@ const TABS: Record<string, Tab> = {
     // but initialWidth is not working as expected
     maximumWidth: 500,
   },
-  prompt: {
-    Component: PromptTab,
-    title: "System prompt",
-    initialOpen: "left",
-    maximumHeight: 260,
-  },
   audit: {
     Component: Threads,
     title: "Threads",
-    initialOpen: "above",
   },
   chat: {
     Component: Chat,
     title: "Chat",
-    initialOpen: "within",
+    initialOpen: "left",
   },
 };
 

@@ -309,7 +309,7 @@ ChatInput.UI = (
   const isDragging = useGlobalDrop(handleFileDrop);
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
       <form
         onSubmit={onSubmit}

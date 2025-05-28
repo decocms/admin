@@ -104,13 +104,10 @@ const TAB_COMPONENTS = {
     }
 
     return (
-      <div className="p-2 bg-background w-min">
+      <div className="w-min">
         <div
           data-active
-          className={cn(
-            "flex items-center justify-between gap-2 p-2",
-            "rounded-xl",
-          )}
+          className="flex items-center justify-between gap-1 p-2 px-3"
         >
           <p className="text-sm whitespace-nowrap">{props.api.title}</p>
           <Button
@@ -188,9 +185,9 @@ const addPanel = (
 
   const panelOptions: AddPanelOptions = views
     ? {
-      maximumWidth: 288,
-      minimumWidth: 288,
-      initialWidth: 288,
+      maximumWidth: 256,
+      minimumWidth: 256,
+      initialWidth: 256,
       position: isMobile && targetGroup?.id
         ? { direction: "within" }
         : { direction: "right" },
@@ -228,7 +225,7 @@ function Docked(
 ) {
   const isMobile = useIsMobile();
   const [api, setApi] = useState<DockviewApi | null>(null);
-  const { setOpenPanels } = useDock();
+  const { setOpenPanels, totalTabs } = useDock();
   const wrappedTabs = useMemo(
     () => {
       const entries = Object.entries(tabs).map(([key, value]) => [
@@ -326,7 +323,7 @@ function Docked(
         components={wrappedTabs}
         defaultTabComponent={TAB_COMPONENTS.default}
         onReady={handleReady}
-        className="h-full w-full dockview-theme-abyss deco-dockview-container"
+        className={cn("h-full w-full dockview-theme-abyss deco-dockview-container", totalTabs === 1 && "one-tab")}
         singleTabMode="fullwidth"
         disableTabsOverflowList
         disableFloatingGroups

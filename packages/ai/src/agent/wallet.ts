@@ -2,13 +2,13 @@ import type { ClientOf } from "@deco/sdk/http";
 import type { Workspace } from "@deco/sdk/path";
 import {
   MicroDollar,
+  type Transaction,
   type WalletAPI,
   WellKnownTransactions,
   WellKnownWallets,
 } from "@deco/sdk/mcp/wallet";
 import type { LanguageModelUsage } from "ai";
 import { WebCache } from "@deco/sdk/cache";
-import { MCPClientStub, type WorkspaceTools } from "@deco/sdk/mcp";
 import type { Plan } from "@deco/sdk";
 
 export interface AgentWalletConfig {
@@ -16,7 +16,12 @@ export interface AgentWalletConfig {
   workspace: Workspace;
   agentId: string;
   agentPath: string;
-  mcpClient: MCPClientStub<WorkspaceTools>;
+}
+
+interface KV<T> {
+  get: (key: string) => Promise<T | null>;
+  set: (key: string, value: T) => Promise<void>;
+  delete: (key: string) => Promise<void>;
 }
 
 export interface ComputeAgentUsageOpts {
@@ -25,7 +30,65 @@ export interface ComputeAgentUsageOpts {
   threadId: string;
   model: string;
   modelId: string;
-  agentName: string;
+  plan: Plan;
+}
+
+interface CreateUsageTransactionOpts extends ComputeAgentUsageOpts {
+  agentId: string;
+  agentPath: string;
+  workspace: string;
+}
+
+function createAgentUsageTransaction({
+  usage,
+  threadId,
+  model,
+  modelId,
+  userId,
+  agentId,
+  agentPath,
+  workspace,
+  plan,
+}: CreateUsageTransactionOpts): Transaction {
+  const usageData = {
+    model,
+    modelId,
+    agentId,
+    threadId,
+    workspace,
+    agentPath,
+  };
+  const vendor = {
+    type: "vendor" as const,
+    id: workspace,
+  };
+  const generatedBy = {
+    type: "user" as const,
+    id: userId || "unknown",
+  };
+
+  return {
+    type: "AgentGeneration" as const,
+    usage: {
+      usage,
+      ...usageData,
+    },
+    generatedBy,
+    vendor,
+    payer: plan === "trial"
+      ? {
+        type: "wallet" as const,
+        id: WellKnownWallets.build(
+          ...WellKnownWallets.workspace.trialCredits(workspace),
+        ),
+      }
+      : undefined,
+    metadata: {
+      ...usageData,
+      ...usage,
+    },
+    timestamp: new Date(),
+  };
 }
 
 export class AgentWallet {
@@ -38,18 +101,8 @@ export class AgentWallet {
     "agent_wallet_user_credits_rewards",
     WebCache.MAX_SAFE_TTL,
   );
-  private plan: Plan | null = null;
   private rewardPromise: Map<string, Promise<void>> = new Map();
   constructor(private config: AgentWalletConfig) {}
-
-  async loadPlan() {
-    if (this.plan) {
-      return this.plan;
-    }
-    const plan = await this.config.mcpClient.GET_WORKSPACE_PLAN({});
-    this.plan = plan.id;
-    return this.plan;
-  }
 
   async updateBalanceCache() {
     const hasBalance = await this.hasBalance();
@@ -106,52 +159,22 @@ export class AgentWallet {
     threadId,
     model,
     modelId,
-    agentName,
     userId,
+    plan,
   }: ComputeAgentUsageOpts) {
     const agentId = this.config.agentId;
-    const plan = await this.loadPlan();
 
-    const usageData = {
+    const operation = createAgentUsageTransaction({
+      usage,
+      threadId,
       model,
       modelId,
+      userId,
       agentId,
-      threadId,
-      workspace: this.config.workspace,
       agentPath: this.config.agentPath,
-    };
-    const vendor = {
-      type: "vendor",
-      id: this.config.workspace,
-    };
-    const generatedBy = {
-      type: "user",
-      id: userId || "unknown",
-    };
-
-    const operation = {
-      type: "AgentGeneration" as const,
-      description: `Generation on agent ${agentName}`,
-      usage: {
-        usage,
-        ...usageData,
-      },
-      generatedBy,
-      vendor,
-      payer: plan === "trial"
-        ? {
-          type: "wallet",
-          id: WellKnownWallets.build(
-            ...WellKnownWallets.workspace.trialCredits(this.config.workspace),
-          ),
-        }
-        : undefined,
-      metadata: {
-        agentName,
-        ...usageData,
-        ...usage,
-      },
-    };
+      workspace: this.config.workspace,
+      plan,
+    });
 
     const response = await this.client["POST /transactions"]({}, {
       body: operation,

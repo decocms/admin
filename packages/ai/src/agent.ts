@@ -58,11 +58,11 @@ import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
-import { OpenAIVoice } from "@mastra/voice-openai";
 import { createServerClient } from "@supabase/ssr";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
+  LanguageModelUsage,
   type LanguageModelV1,
   type Message,
   smoothStream,
@@ -81,9 +81,10 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
-import { AgentWallet } from "./wallet/index.ts";
 import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
+import { AgentWallet } from "./agent/wallet.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
+import { createAgentOpenAIVoice } from "./agent/audio.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -93,8 +94,6 @@ const ANONYMOUS_INSTRUCTIONS =
 
 const ANONYMOUS_NAME = "Anonymous";
 const LOAD_TOOLS_TIMEOUT_MS = 5_000;
-const DEFAULT_TEXT_TO_SPEECH_MODEL = "tts-1";
-const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";
 
 export interface Env {
   ANTHROPIC_API_KEY: string;
@@ -215,7 +214,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       agentPath: this.state.id,
       workspace: this.workspace,
       wallet: createWalletClient(this.env.WALLET_API_KEY, actorEnv?.WALLET),
-      mcpClient: this.agentScoppedMcpClient,
     });
     this.state.blockConcurrencyWhile(async () => {
       await this._runWithContext(async () => {
@@ -455,7 +453,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: config.name,
       instructions: config.instructions,
       model: llm,
-      voice: this._createVoiceConfig(),
+      voice: this.env.OPENAI_API_KEY
+        ? createAgentOpenAIVoice({
+          apiKey: this.env.OPENAI_API_KEY,
+        })
+        : undefined,
     });
   }
 
@@ -563,23 +565,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return toolsets;
   }
 
-  private _createVoiceConfig() {
-    if (!this.env.OPENAI_API_KEY) {
-      return undefined;
-    }
-
-    return new OpenAIVoice({
-      listeningModel: {
-        apiKey: this.env.OPENAI_API_KEY,
-        name: DEFAULT_SPEECH_TO_TEXT_MODEL as any,
-      },
-      speechModel: {
-        apiKey: this.env.OPENAI_API_KEY,
-        name: DEFAULT_TEXT_TO_SPEECH_MODEL as any,
-      },
-    });
-  }
-
   private _withAgentOverrides(options?: GenerateOptions): Agent {
     let agent = this._agent;
     if (!options) {
@@ -600,7 +585,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         instructions: this._configuration?.instructions ??
           ANONYMOUS_INSTRUCTIONS,
         model: llm,
-        voice: this._createVoiceConfig(),
+        voice: this.env.OPENAI_API_KEY
+          ? createAgentOpenAIVoice({
+            apiKey: this.env.OPENAI_API_KEY,
+          })
+          : undefined,
       });
     }
 
@@ -621,6 +610,33 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return JwtIssuer.forSecret(this.env.ISSUER_JWT_SECRET).create({
       sub: `agent:${this.id}`,
       aud: this.workspace,
+    });
+  }
+
+  async _handleGenerationFinish({
+    threadId,
+    usedModelId,
+    usage,
+  }: {
+    threadId: string;
+    usedModelId?: string;
+    usage: LanguageModelUsage;
+  }) {
+    if (!this.metadata?.mcpClient) {
+      console.error("No MCP client found, skipping usage tracking");
+      return;
+    }
+    const userId = this.metadata.user?.id;
+    const plan = await this.metadata.mcpClient.GET_WORKSPACE_PLAN({});
+    const { model, modelId } = this._getLLMConfig(usedModelId);
+
+    await this.wallet.computeLLMUsage({
+      userId,
+      usage,
+      threadId,
+      model,
+      modelId,
+      plan: plan.id,
     });
   }
 
@@ -926,17 +942,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       content: `\`\`\`json\n${JSON.stringify(result)}\`\`\``,
     });
 
-    const { model, modelId } = this._getLLMConfig(
-      this._configuration?.model,
-    );
-
-    this.wallet.computeLLMUsage({
-      userId: this.metadata?.user?.id,
-      usage: result.usage,
+    this._handleGenerationFinish({
       threadId: this.thread.threadId,
-      model,
-      modelId,
-      agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+      usedModelId: this._configuration?.model,
+      usage: result.usage,
     });
 
     return result;
@@ -969,17 +978,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       toolsets,
     }) as GenerateTextResult<any, any>;
 
-    const { model, modelId } = this._getLLMConfig(
-      options?.model ?? this._configuration?.model,
-    );
-
-    this.wallet.computeLLMUsage({
-      userId: this.metadata?.user?.id,
-      usage: result.usage,
+    this._handleGenerationFinish({
       threadId: this.thread.threadId,
-      model,
-      modelId,
-      agentName: this._configuration?.name ?? ANONYMOUS_NAME,
+      usedModelId: options?.model ?? this._configuration?.model,
+      usage: result.usage,
     });
 
     return result;
@@ -1104,16 +1106,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           // TODO(@mcandeia): add error tracking with posthog
         },
         onFinish: (result) => {
-          const { model, modelId } = this._getLLMConfig(
-            options?.model ?? this._configuration?.model,
-          );
-          wallet.computeLLMUsage({
-            userId: this.metadata?.user?.id,
+          this._handleGenerationFinish({
+            threadId: thread.threadId,
+            usedModelId: options?.model ?? this._configuration?.model,
             usage: result.usage,
-            threadId: this.thread.threadId,
-            model,
-            modelId,
-            agentName: this._configuration?.name ?? ANONYMOUS_NAME,
           });
         },
       },

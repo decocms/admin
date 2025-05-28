@@ -1,6 +1,7 @@
 import type { AudioMessage, Message } from "../types.ts";
 import { Buffer } from "node:buffer";
 import type { Agent as MastraAgent } from "@mastra/core/agent";
+import { OpenAIVoice } from "@mastra/voice-openai";
 
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 
@@ -38,4 +39,24 @@ export async function transcribeBase64Audio({
   // deno-lint-ignore no-explicit-any
   const transcription = await agent.voice.listen(stream as any);
   return transcription as string;
+}
+
+const DEFAULT_TEXT_TO_SPEECH_MODEL = "tts-1";
+const DEFAULT_SPEECH_TO_TEXT_MODEL = "whisper-1";
+
+export function createAgentOpenAIVoice({
+  apiKey,
+}: {
+  apiKey: string;
+}) {
+  return new OpenAIVoice({
+    listeningModel: {
+      apiKey,
+      name: DEFAULT_SPEECH_TO_TEXT_MODEL,
+    },
+    speechModel: {
+      apiKey,
+      name: DEFAULT_TEXT_TO_SPEECH_MODEL,
+    },
+  });
 }

@@ -71,7 +71,7 @@ export class PolicyClient {
 
   private constructor() {
     // Initialize caches
-     this.userPolicyCache = new WebCache<Pick<Policy, "statements">[]>(
+    this.userPolicyCache = new WebCache<Pick<Policy, "statements">[]>(
       "user-policies",
       TWO_MIN_TTL,
     );

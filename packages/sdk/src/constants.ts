@@ -45,6 +45,8 @@ export const WELL_KNOWN_AGENT_IDS = {
   setupAgent: "setupAgent",
 } as const;
 
+export const PUBLIC_ASSETS_BUCKET = "public";
+
 export interface Model {
   id: string;
   model: string;

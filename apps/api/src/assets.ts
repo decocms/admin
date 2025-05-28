@@ -1,68 +1,49 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { cache } from "hono/cache";
+import { getRuntimeKey } from "hono/adapter";
 import {
   GetObjectCommand,
   GetObjectCommandOutput,
 } from "npm:@aws-sdk/client-s3";
-import {
-  getContentTypeFromPath,
-  getWorkspaceBucketName,
-} from "@deco/sdk/storage";
+import { typeByExtension } from "jsr:@std/media-types";
 import { AppEnv } from "./utils/context.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
+import { PUBLIC_ASSETS_BUCKET } from "@deco/sdk";
 
 export const app = new Hono<AppEnv>();
 
 app.use(withContextMiddleware);
 
 app.use(
-  "/:root/:slug/*",
+  "/public/:path{.+}",
   cache({
     cacheName: "assets",
     cacheControl: "public, max-age=31536000", // 1 year cache
-    wait: true, // Required for Deno environment
-  })
+    wait: getRuntimeKey() === "deno", // Only required for Deno environment
+  }),
 );
 
-app.get("/:root/:slug/*", async (c) => {
+app.get("/public/:path{.+}", async (c) => {
   try {
-    if (!c.req.param("root") || !c.req.param("slug")) {
-      throw new HTTPException(400, { message: "Workspace not found" });
-    }
-
-    const workspace = `/${c.req.param("root")}/${c.req.param("slug")}/`;
-
-    const prefixIndex = c.req.path.indexOf(workspace);
-    const imagePath = c.req.path.substring(prefixIndex + workspace.length);
-
-    if (!imagePath) {
-      throw new HTTPException(400, { message: "Image path is required" });
-    }
-
-    if (!imagePath.startsWith("public/")) {
-      throw new HTTPException(403, { message: "Asset is not public" });
-    }
-
-    const bucketName = getWorkspaceBucketName(workspace);
+    const imagePath = c.req.param("path");
 
     const getCommand = new GetObjectCommand({
-      Bucket: bucketName,
+      Bucket: PUBLIC_ASSETS_BUCKET,
       Key: imagePath,
     });
 
-    // deno-lint-ignore no-explicit-any
-    const response = await (c.var as any).s3.send(getCommand) as GetObjectCommandOutput;
+    const response = await c.var.s3.send(getCommand) as GetObjectCommandOutput;
 
     if (!response.Body) {
-      throw new HTTPException(404, { message: "Image not found" });
+      throw new HTTPException(404, { message: "Asset not found" });
     }
 
     const bodyBytes = await response.Body.transformToByteArray();
 
     const contentType = response.ContentType ||
       response.Metadata?.["content-type"] ||
-      getContentTypeFromPath(imagePath || "") ||
+      typeByExtension(imagePath?.split(".").pop() || "") ||
       "application/octet-stream";
 
     const etag = response.ETag || "";

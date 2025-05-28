@@ -142,7 +142,6 @@ export const deleteFile = createTool({
       Bucket: bucketName,
       Key: path,
     });
-
     return c.s3.send(deleteCommand);
   },
 });

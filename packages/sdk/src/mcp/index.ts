@@ -40,6 +40,9 @@ export const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
+  assetsAPI.uploadAsset,
+  assetsAPI.getAssetUrl,
+  assetsAPI.deleteAsset,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -94,8 +97,6 @@ export const WORKSPACE_TOOLS = [
   fsAPI.readFileMetadata,
   fsAPI.writeFile,
   fsAPI.deleteFile,
-  assetsAPI.uploadAsset,
-  assetsAPI.deleteAsset,
   modelsAPI.createModel,
   modelsAPI.deleteModel,
   modelsAPI.listModels,

@@ -48,27 +48,27 @@
       @apply w-full;
     }
 
-    .dv-void-container{
+    .dv-void-container {
       @apply bg-muted border-b;
     }
 
-    .dv-tab{
+    .dv-tab {
       @apply border-b;
     }
 
-    .dv-inactive-tab .dv-react-part{
+    .dv-inactive-tab .dv-react-part {
       @apply border-b-0;
     }
 
-    .dv-tabs-container{
+    .dv-tabs-container {
       @apply bg-muted;
     }
 
-    .dv-inactive-group{
+    .dv-inactive-group {
       @apply bg-muted;
     }
 
-    .dv-groupview{
+    .dv-groupview {
       @apply border;
     }
 
@@ -85,10 +85,11 @@
     }
 
     .dv-active-tab [data-active="true"] {
-      @apply bg-white! rounded-t-xl! border-x border-t border-b-2 border-b-white m-[-1px] mr-0 mb-[-2px];
+      @apply bg-white! rounded-t-xl! border border-b-2 border-b-white m-[-1px]
+        mr-0 mb-[-2px];
     }
 
-    .one-tab .dv-scrollable{
+    .one-tab .dv-scrollable {
       @apply grow-0!;
     }
   }

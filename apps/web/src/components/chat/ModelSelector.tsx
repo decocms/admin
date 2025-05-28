@@ -81,7 +81,6 @@ function CapabilityBadge(
 
 function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
   if (model.id === AUTO_MODEL.id) {
-    console.log("model", model);
     return (
       <div className="p-2 md:w-[400px] flex flex-col gap-1">
         <div className="flex items-center justify-between gap-4">

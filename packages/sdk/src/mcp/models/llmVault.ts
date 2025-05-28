@@ -30,7 +30,6 @@ export class SupabaseLLMVault implements LLMVault {
     encryptionKey: string,
     workspace: string,
   ) {
-    // console.log("encryptionKey", encryptionKey);
     if (encryptionKey.length !== 32) {
       throw new Error("Encryption key must be 32 characters long for AES-256");
     }

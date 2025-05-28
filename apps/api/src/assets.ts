@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { cache } from "hono/cache";
 import {
   GetObjectCommand,
   GetObjectCommandOutput,
@@ -8,20 +9,21 @@ import {
   getContentTypeFromPath,
   getWorkspaceBucketName,
 } from "@deco/sdk/storage";
-import { WebCache } from "@deco/sdk/cache";
 import { AppEnv } from "./utils/context.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
-
-const assetCache = new WebCache<{
-  bodyBytes: Uint8Array;
-  contentType: string;
-  etag: string;
-  contentLength: string;
-}>("assets", 31536000); // 1 year cache (365 * 24 * 60 * 60)
 
 export const app = new Hono<AppEnv>();
 
 app.use(withContextMiddleware);
+
+app.use(
+  "/:root/:slug/*",
+  cache({
+    cacheName: "assets",
+    cacheControl: "public, max-age=31536000", // 1 year cache
+    wait: true, // Required for Deno environment
+  })
+);
 
 app.get("/:root/:slug/*", async (c) => {
   try {
@@ -44,27 +46,13 @@ app.get("/:root/:slug/*", async (c) => {
 
     const bucketName = getWorkspaceBucketName(workspace);
 
-    const cacheKey = `${bucketName}:${imagePath}`;
-
-    const cachedAsset = await assetCache.get(cacheKey);
-    if (cachedAsset) {
-      return new Response(cachedAsset.bodyBytes, {
-        headers: {
-          "Content-Type": cachedAsset.contentType,
-          "Cache-Control": "public, max-age=31536000", // 1 year cache
-          "ETag": cachedAsset.etag,
-          "Content-Length": cachedAsset.contentLength,
-          "X-Cache": "HIT",
-        },
-      });
-    }
-
     const getCommand = new GetObjectCommand({
       Bucket: bucketName,
       Key: imagePath,
     });
 
-    const response = await c.var.s3.send(getCommand) as GetObjectCommandOutput;
+    // deno-lint-ignore no-explicit-any
+    const response = await (c.var as any).s3.send(getCommand) as GetObjectCommandOutput;
 
     if (!response.Body) {
       throw new HTTPException(404, { message: "Image not found" });
@@ -80,24 +68,11 @@ app.get("/:root/:slug/*", async (c) => {
     const etag = response.ETag || "";
     const contentLength = String(bodyBytes?.length || 0);
 
-    const assetData = {
-      bodyBytes,
-      contentType,
-      etag,
-      contentLength,
-    };
-
-    assetCache.set(cacheKey, assetData).catch((error) => {
-      console.error("Failed to cache asset:", error);
-    });
-
     return new Response(bodyBytes, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000", // 1 year cache
         "ETag": etag,
         "Content-Length": contentLength,
-        "X-Cache": "MISS",
       },
     });
   } catch (error) {

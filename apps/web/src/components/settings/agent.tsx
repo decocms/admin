@@ -74,7 +74,7 @@ export const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
   const { data: team } = useTeam(slug);
   const teamId = team?.id;
-  const { data: roles = [] } = useTeamRoles(teamId);
+  const { data: roles = [] } = useTeamRoles(teamId ?? null);
   return roles;
 };
 
@@ -305,7 +305,7 @@ function SettingsTab() {
             />
 
             {/* Team Access Section */}
-            {team && (
+            {roles.length > 0 && (
               <FormField
                 name="access"
                 control={form.control}
@@ -323,7 +323,7 @@ function SettingsTab() {
 
                       <FormControl>
                         <Select
-                          value={field.value}
+                          value={`${field.value}`}
                           onValueChange={field.onChange}
                         >
                           <SelectTrigger className="w-full">

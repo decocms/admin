@@ -82,6 +82,10 @@ export class PolicyClient {
     userId: string,
     teamIdOrSlug: number | string,
   ): Promise<MemberRole[]> {
+    if (!this.db) {
+      throw new Error("PolicyClient not initialized with database client");
+    }
+
     const teamId = typeof teamIdOrSlug === "number"
       ? teamIdOrSlug
       : await this.getTeamIdBySlug(teamIdOrSlug);
@@ -95,15 +99,39 @@ export class PolicyClient {
 
     const { data } = await this.db.from("members")
       .select(`
-        member_roles(roles(id, name))
+        id,
+        member_roles(
+          role_id,
+          roles(
+            id,
+            name
+          )
+        )
       `)
       .eq("user_id", userId)
       .eq("team_id", teamId)
       .single();
 
-    return data?.member_roles.map((memberRole: { roles: MemberRole }) =>
-      memberRole.roles
-    );
+    if (!data?.member_roles) {
+      return [];
+    }
+
+    const roles: MemberRole[] = data.member_roles.map((
+      mr: { role_id: number; roles: { id: number; name: string } },
+    ) => ({
+      member_id: data.id,
+      role_id: mr.role_id,
+      name: mr.roles.name,
+      role: {
+        ...mr.roles,
+        team_id: teamId,
+      },
+    }));
+
+    // Cache the result
+    await this.userRolesCache.set(cacheKey, roles);
+
+    return roles;
   }
 
   /**

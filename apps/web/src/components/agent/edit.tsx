@@ -35,7 +35,6 @@ import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import AgentSettings from "../settings/agent.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";
 import PromptTab from "../settings/prompt.tsx";
 import { AgentTriggers } from "../triggers/agentTriggers.tsx";
@@ -44,6 +43,8 @@ import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./WhatsAppButton.tsx";
+import { lazy } from "react";
+import { wrapWithUILoadingFallback } from "../../main.tsx";
 
 interface Props {
   agentId?: string;
@@ -101,6 +102,10 @@ const Chat = () => {
     </div>
   );
 };
+
+const AgentSettings = lazy(() =>
+  wrapWithUILoadingFallback(import("../settings/agent.tsx"))
+);
 
 const TABS: Record<string, Tab> = {
   chatView: {

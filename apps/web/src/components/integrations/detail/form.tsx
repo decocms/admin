@@ -204,7 +204,7 @@ export function DetailForm() {
           </div>
 
           {/* Team Access Section */}
-          {team && (
+          {roles.length > 0 && (
             <FormField
               name="access"
               control={form.control}
@@ -223,7 +223,7 @@ export function DetailForm() {
 
                     <FormControl>
                       <Select
-                        value={field.value}
+                        value={`${field.value}`}
                         onValueChange={field.onChange}
                       >
                         <SelectTrigger className="w-full">

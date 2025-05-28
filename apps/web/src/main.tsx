@@ -20,7 +20,7 @@ import { EmptyState } from "./components/common/EmptyState.tsx";
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
 }>;
-const wrapWithUILoadingFallback = <P,>(
+export const wrapWithUILoadingFallback = <P,>(
   lazyComp: LazyComp<P>,
 ): LazyComp<P> =>
   lazyComp.then(({ default: Comp }) => ({

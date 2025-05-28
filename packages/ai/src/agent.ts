@@ -17,7 +17,6 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
-  AUTO_MODEL,
   DEFAULT_MODEL,
   DEFAULT_MODEL_ID,
   DEFAULT_MODEL_PREFIX,

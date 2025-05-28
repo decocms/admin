@@ -114,14 +114,6 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
 );
 
-const ModelDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/model/detail/edit.tsx"))
-);
-
-const ModelCreate = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/model/new/index.tsx"))
-);
-
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -288,8 +280,6 @@ const router = createBrowserRouter([
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
-          { path: "model/new", Component: ModelCreate },
-          { path: "model/:id", Component: ModelDetail },
         ],
       },
       { path: "*", Component: NotFound },

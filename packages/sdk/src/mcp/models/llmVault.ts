@@ -95,7 +95,9 @@ export class SupabaseLLMVault implements LLMVault {
     if (error) throw error;
   }
 
-  async getDefaultApiKey(): Promise<{ apiKey: string | null; model: string } | null> {
+  async getDefaultApiKey(): Promise<
+    { apiKey: string | null; model: string } | null
+  > {
     const { data, error } = await this.db
       .from("models")
       .select("api_key_hash, model")

@@ -209,7 +209,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
     this.llmVault = new SupabaseLLMVault(
       this.db,
-      this.env.API_KEY_ENCRYPTION_KEY,
+      this.env.LLMS_ENCRYPTION_KEY,
       this.workspace,
     );
     this.workspaceModels = {};

@@ -69,7 +69,7 @@
     }
 
     .dv-groupview{
-      @apply border
+      @apply border;
     }
 
     .dv-groupview {

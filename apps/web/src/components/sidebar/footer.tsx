@@ -33,9 +33,9 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
-import { Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useMatch } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
@@ -43,6 +43,10 @@ import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
+import InvitesLink from "./InvitesLink.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
+
+const Notification = lazy(() => import("./UserNotifications.tsx"));
 
 function UserPreferencesModal({ open, onOpenChange }: {
   open: boolean;
@@ -170,6 +174,8 @@ function UserPreferencesModal({ open, onOpenChange }: {
 function LoggedUser() {
   const user = useUser();
   const location = useLocation();
+  const href = "/invites";
+  const match = useMatch(href);
   const { data: stars } = useGitHubStars();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -190,6 +196,12 @@ function LoggedUser() {
     ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars)
     : null;
 
+  const handleClickInvite = () => {
+    trackEvent("sidebar_navigation_click", {
+      item: "Invites",
+    });
+  };
+
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
@@ -199,7 +211,13 @@ function LoggedUser() {
             fallback={userName}
             className="w-6 h-6"
           />
-          <span className="text-xs">{user.metadata?.full_name}</span>
+          <span className="text-xs grow">{user.metadata?.full_name}</span>
+
+          <Suspense fallback={null}>
+            <div className="size-3 flex items-center">
+              <Notification className="justify-end" />
+            </div>
+          </Suspense>
         </SidebarMenuButton>
       </ResponsiveDropdownTrigger>
       <ResponsiveDropdownContent
@@ -234,6 +252,20 @@ function LoggedUser() {
             <Icon name="person" />
             Profile
           </button>
+        </ResponsiveDropdownItem>
+        <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
+          <Link
+            to={href}
+            onClick={handleClickInvite}
+            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
+          >
+            <Icon name="mail" filled={!!match} />
+            <span className="truncate">Invites</span>
+
+            <Suspense fallback={null}>
+              <InvitesLink />
+            </Suspense>
+          </Link>
         </ResponsiveDropdownItem>
         <ResponsiveDropdownSeparator />
         <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>

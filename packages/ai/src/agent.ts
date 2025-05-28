@@ -415,15 +415,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const data = this.workspaceModels[modelId];
 
-    if (!data) {
-      throw new Error(`Model ${modelId} not found in workspace`);
-    }
-
     if (data.byDeco) {
       return {
         model: data.model,
         modelId,
       };
+    }
+
+    if (!data) {
+      throw new Error(`Model ${modelId} not found in workspace`);
     }
 
     if (!data.apiKeyEncrypted) {
@@ -450,6 +450,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private async _initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
 
+    await this._updateWorkspaceModels();
     const llmConfig = this._getLLMConfig(config.model);
 
     const { llm, tokenLimit } = this._createLLM(llmConfig);
@@ -878,7 +879,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   // Warning: This method also updates the configuration in memory
   async configuration(): Promise<Configuration> {
-    await this._updateWorkspaceModels();
     const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const manifest = this.agentId in WELL_KNOWN_AGENTS
       ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
@@ -900,13 +900,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       visibility: "WORKSPACE",
       ...manifest,
     };
-
-    if (
-      merged.model && !this.workspaceModels[merged.model] &&
-      !isWellKnownModel(merged.model)
-    ) {
-      merged.model = AUTO_MODEL.id;
-    }
 
     this._configuration = merged;
 

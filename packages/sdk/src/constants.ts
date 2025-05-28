@@ -222,8 +222,7 @@ export const INNATE_INTEGRATIONS = {
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
-  description:
-    "",
+  description: "",
   model: AUTO_MODEL.id,
   visibility: "WORKSPACE",
   tools_set: {},

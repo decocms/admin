@@ -323,7 +323,10 @@ function Docked(
         components={wrappedTabs}
         defaultTabComponent={TAB_COMPONENTS.default}
         onReady={handleReady}
-        className={cn("h-full w-full dockview-theme-abyss deco-dockview-container", totalTabs === 1 && "one-tab")}
+        className={cn(
+          "h-full w-full dockview-theme-abyss deco-dockview-container",
+          totalTabs === 1 && "one-tab",
+        )}
         singleTabMode="fullwidth"
         disableTabsOverflowList
         disableFloatingGroups

@@ -357,7 +357,8 @@ function SettingsTab() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormDescription className="text-xs text-slate-400">
-                    Used for search and organization, it does not affect agent behavior. 
+                    Used for search and organization, it does not affect agent
+                    behavior.
                   </FormDescription>
                   <FormControl>
                     <Textarea

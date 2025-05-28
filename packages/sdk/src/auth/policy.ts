@@ -75,6 +75,21 @@ export class PolicyClient {
     return PolicyClient.instance;
   }
 
+  public async getUserRoles(userId: string, teamIdOrSlug: number | string) {
+    const teamId = typeof teamIdOrSlug === "number"
+      ? teamIdOrSlug
+      : await this.getTeamIdBySlug(teamIdOrSlug);
+    const { data } = await this.db.from("members")
+      .select(`
+        member_roles(roles(id, name))
+      `)
+      .eq("user_id", userId)
+      .eq("team_id", teamId)
+      .single();
+
+    return data?.member_roles;
+  }
+
   /**
    * Get all policies for a user in a specific team
    */

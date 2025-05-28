@@ -18,6 +18,7 @@ import {
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 import { useTeams } from "./teams.ts";
+import { useSDK } from "../index.ts";
 
 /**
  * Hook to fetch team members
@@ -94,6 +95,7 @@ export const useAcceptInvite = () => {
  */
 export const useInviteTeamMember = () => {
   const queryClient = useQueryClient();
+  const { workspace } = useSDK();
 
   return useMutation({
     mutationFn: ({
@@ -105,7 +107,7 @@ export const useInviteTeamMember = () => {
         email: string;
         roles: Array<{ id: number; name: string }>;
       }>;
-    }) => inviteTeamMembers(teamId, invitees),
+    }) => inviteTeamMembers(teamId, invitees, workspace),
     onSuccess: (_, { teamId }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
       queryClient.invalidateQueries({ queryKey: membersKey });

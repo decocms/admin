@@ -56,6 +56,9 @@ export const AgentSchema = z.object({
   /** Visibility of the agent */
   visibility: z.enum(["PUBLIC", "WORKSPACE", "PRIVATE"])
     .describe("Visibility of the agent"),
+  access: z.string().optional().nullable().describe(
+    "Access control by role",
+  ),
 });
 
 /**

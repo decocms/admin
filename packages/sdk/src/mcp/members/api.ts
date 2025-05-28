@@ -253,10 +253,14 @@ export const removeTeamMember = createTool({
       }
     }
 
-    await c.policy.removeAllMemberPoliciesAtTeam({
-      teamId,
-      memberId: member.id,
-    });
+    try {
+      await c.policy.removeAllMemberPoliciesAtTeam({
+        teamId,
+        memberId: member.id,
+      });
+    } catch (error) {
+      console.log("error", error);
+    }
 
     const currentTimestamp = new Date();
     const { error } = await c

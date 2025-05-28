@@ -83,6 +83,7 @@ export default function Page() {
         url: "https://example.com/sse",
         token: "",
       },
+      access: integration.access || null,
     },
   });
 

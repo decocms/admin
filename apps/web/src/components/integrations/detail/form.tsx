@@ -1,7 +1,13 @@
-import { type MCPConnection, useWriteFile } from "@deco/sdk";
+import {
+  type MCPConnection,
+  useTeam,
+  useTeamRoles,
+  useWriteFile,
+} from "@deco/sdk";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,11 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef, useState } from "react";
-import { useFormContext } from "./context.ts";
+import { useCurrentTeam } from "../../sidebar/TeamSelector.tsx";
 import { IntegrationIcon } from "../list/common.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { useFormContext } from "./context.ts";
 
 const ICON_FILE_PATH = "assets/integrations";
 
@@ -42,6 +49,10 @@ export function DetailForm() {
     onSubmit,
     form,
   } = useFormContext();
+  const { slug } = useCurrentTeam();
+  const { data: team } = useTeam(slug);
+  const teamId = team?.id;
+  const { data: roles = [] } = useTeamRoles(teamId);
 
   const writeFileMutation = useWriteFile();
   const { generate: generateIconFilename } = useIconFilename();
@@ -199,6 +210,55 @@ export function DetailForm() {
               )}
             />
           </div>
+
+          {/* Visibility Section */}
+          {team && (
+            <FormField
+              name="access"
+              control={form.control}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2">
+                        <FormLabel>Access</FormLabel>
+                        <FormDescription className="text-xs text-slate-400">
+                          Control who can access and interact with this
+                          integration.
+                        </FormDescription>
+                      </div>
+                    </div>
+
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles.map((role) => (
+                            <SelectItem key={role.id} value={role.name}>
+                              <Icon
+                                name={role.name === "owner"
+                                  ? "lock_person"
+                                  : "groups"}
+                              />
+                              {role.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+          )}
+
           <FormField
             control={form.control}
             name="description"

@@ -29,6 +29,7 @@ import {
 import { createTool } from "../context.ts";
 import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
+import { IMPORTANT_ROLES } from "../agents/api.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -220,17 +221,48 @@ export const listIntegrations = createTool({
         error.message || "Failed to list integrations",
       );
     }
+    const roles = c.workspace.root === "users"
+      ? undefined
+      : await c.policy.getUserRoles(c.user.id, c.workspace.slug);
+    const stringRoles = roles?.map((role) => role?.roles?.name);
+    console.log("stringRoles", stringRoles);
+
+    const filteredIntegrations = integrations.data.filter((integration) => {
+      if (integration.access) {
+        if (
+          stringRoles?.includes(integration.access) ||
+          IMPORTANT_ROLES.includes(integration.access)
+        ) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+
+    const filteredAgents = agents.data.filter((agent) => {
+      if (agent.access) {
+        if (
+          stringRoles?.includes(agent.access) ||
+          IMPORTANT_ROLES.includes(agent.access)
+        ) {
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
 
     const result = [
       ...virtualIntegrationsFor(
         workspace,
         knowledgeBases.structuredContent?.names ?? [],
       ),
-      ...integrations.data.map((item) => ({
+      ...filteredIntegrations.map((item) => ({
         ...item,
         id: formatId("i", item.id),
       })),
-      ...agents.data
+      ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
         .map(agentAsIntegrationFor(workspace)),

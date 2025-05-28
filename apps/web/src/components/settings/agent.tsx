@@ -1,4 +1,4 @@
-import { useSDK, useWriteFile } from "@deco/sdk";
+import { useSDK, useTeam, useTeamRoles, useWriteFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -27,6 +27,7 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
+import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
 
@@ -75,6 +76,10 @@ function SettingsTab() {
     agent,
     handleSubmit,
   } = useAgentSettingsForm();
+  const { slug } = useCurrentTeam();
+  const { data: team } = useTeam(slug);
+  const teamId = team?.id;
+  const { data: roles = [] } = useTeamRoles(teamId);
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,7 +251,7 @@ function SettingsTab() {
                       <div className="flex flex-col gap-2">
                         <FormLabel>Visibility</FormLabel>
                         <FormDescription className="text-xs text-slate-400">
-                          Control who can access and interact with this agent.
+                          Control who can interact with this agent.
                         </FormDescription>
                       </div>
 
@@ -293,6 +298,53 @@ function SettingsTab() {
                 );
               }}
             />
+
+            {/* Team Visibility Section */}
+            {team && (
+              <FormField
+                name="access"
+                control={form.control}
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-2">
+                          <FormLabel>Access</FormLabel>
+                          <FormDescription className="text-xs text-slate-400">
+                            Control who can access with this agent by role.
+                          </FormDescription>
+                        </div>
+                      </div>
+
+                      <FormControl>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roles.map((role) => (
+                              <SelectItem key={role.id} value={role.name}>
+                                <Icon
+                                  name={role.name === "owner"
+                                    ? "lock_person"
+                                    : "groups"}
+                                />
+                                {role.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
 
             <FormField
               name="description"

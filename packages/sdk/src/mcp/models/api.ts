@@ -6,7 +6,7 @@ import {
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { SupabaseLLMVault } from "./llmVault.ts";
-import { AppContext } from "../index.ts";
+import { AppContext, bypass } from "../index.ts";
 
 interface ModelRow {
   id: string;
@@ -279,11 +279,19 @@ export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
   inputSchema: listModelsSchema,
-  canAccess: canAccessWorkspaceResource,
+  // TODO: Handle public agents authorization
+  canAccess: bypass,
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { excludeDisabled = false, excludeAuto = false } = props;
+
+    // TODO: move this auth to canAccess wheen handle public agents authorization
+    try {
+      await canAccessWorkspaceResource("MODELS_LIST", props, c);
+    } catch (_) {
+      return [];
+    }
 
     return await listModelsForWorkspace({
       workspace,

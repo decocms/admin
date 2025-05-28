@@ -1,11 +1,12 @@
 WITH current AS (
   SELECT id, statements
   FROM public.policies
+  -- manage_member policy id
   WHERE id = 2
 ),
 to_add AS (
   SELECT unnest(ARRAY[
-    '{"effect":"allow","resource":"TEAM_MEMBERS_UPDATE_ROLE"}'::jsonb,
+    '{"effect":"allow","resource":"TEAM_MEMBERS_UPDATE_ROLE"}'::jsonb
   ]) AS new_statement
 ),
 missing AS (
@@ -20,7 +21,7 @@ missing AS (
   GROUP BY current.id, current.statements
 )
 UPDATE public.policies
-SET statements = array_cat(statements, missing.new_statements)
+SET statements = array_cat(missing.statements, missing.new_statements)
 FROM missing
 WHERE public.policies.id = missing.id;
 

@@ -579,9 +579,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
     }
 
-    if (typeof message.content === "string" && message.content) { 
-      const filteredParts = message.parts?.filter((part) => part.type !== "text") ?? []
-      message.parts = filteredParts.length > 0 ? filteredParts : undefined
+    if (typeof message.content === "string" && message.content) {
+      const filteredParts = message.parts?.filter((part) =>
+        part.type !== "text"
+      ) ?? [];
+      message.parts = filteredParts.length > 0 ? filteredParts : undefined;
     }
     return message;
   }

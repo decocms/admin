@@ -1,9 +1,8 @@
 import { Button } from "@deco/ui/components/button.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -47,6 +46,7 @@ export function RolesDropdown({
 
   const handleRoleClick = (role: Role, e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const checked = isRoleSelected(role);
 
     // Don't allow removing the last role unless allowEmpty is true
@@ -81,21 +81,16 @@ export function RolesDropdown({
         {roles.map((role) => {
           const checked = isRoleSelected(role);
           return (
-            <DropdownMenuItem key={role.id} asChild>
-              <div
-                className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
-                onClick={(e) => handleRoleClick(role, e)}
-              >
-                <Checkbox
-                  checked={checked}
-                  className="h-4 w-4"
-                  disabled={disabled}
-                />
-                <span className="capitalize">
-                  {role.name}
-                </span>
-              </div>
-            </DropdownMenuItem>
+            <DropdownMenuCheckboxItem
+              checked={checked}
+              disabled={disabled}
+              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => handleRoleClick(role, e)}
+            >
+              <span className="capitalize">
+                {role.name}
+              </span>
+            </DropdownMenuCheckboxItem>
           );
         })}
       </DropdownMenuContent>

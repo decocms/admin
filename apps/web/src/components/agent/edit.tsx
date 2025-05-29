@@ -223,7 +223,7 @@ function ActionButtons({
             </span>
           )}
       </Button>
-      <WhatsAppButton />
+      <WhatsAppButton isMobile={false} />
     </div>
   );
 }

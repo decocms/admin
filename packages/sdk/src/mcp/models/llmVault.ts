@@ -6,15 +6,13 @@ export interface LLMVault {
   readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;
   storeApiKey(
     modelId: string,
-    workspace: string,
     apiKey: string,
   ): Promise<void>;
   updateApiKey(
     modelId: string,
-    workspace: string,
     apiKey: string | null,
   ): Promise<void>;
-  removeApiKey(modelId: string, workspace: string): Promise<void>;
+  removeApiKey(modelId: string): Promise<void>;
 }
 
 export class SupabaseLLMVault implements LLMVault {

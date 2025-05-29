@@ -80,7 +80,7 @@ function ActionsButtons() {
 
   return (
     <div className="hidden md:flex items-center gap-2">
-      <WhatsAppButton isMobile={false} />
+      <WhatsAppButton />
 
       {displayNewChat && (
         <Tooltip>

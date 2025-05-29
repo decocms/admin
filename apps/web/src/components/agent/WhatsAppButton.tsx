@@ -38,7 +38,7 @@ const getWhatsAppLink = (agent: Agent) => {
   return url.href;
 };
 
-export function WhatsAppButton({ isMobile }: { isMobile: boolean }) {
+export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);

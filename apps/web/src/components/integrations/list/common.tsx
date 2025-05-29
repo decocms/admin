@@ -20,7 +20,7 @@ function FileIcon({ path, fallback, className, variant }: {
         fallback={
           <Skeleton
             className={cn(
-              "rounded-2xl w-16 h-16 border border-slate-200",
+              "rounded-2xl w-16 h-16 border border-border",
             )}
           />
         }
@@ -43,7 +43,7 @@ function FileIcon({ path, fallback, className, variant }: {
       fallback={
         <Skeleton
           className={cn(
-            "rounded-2xl w-16 h-16 border border-slate-200",
+            "rounded-2xl w-16 h-16 border border-border",
           )}
         />
       }
@@ -51,7 +51,7 @@ function FileIcon({ path, fallback, className, variant }: {
       <div
         className={cn(
           "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-          "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
+          "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
           "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
           className,
         )}
@@ -71,7 +71,9 @@ function FileIcon({ path, fallback, className, variant }: {
 function IntegrationIconContent(
   { icon, className, variant = "default" }: Props,
 ) {
-  const fallback = <Icon name="conversion_path" className="text-slate-600" />;
+  const fallback = (
+    <Icon name="conversion_path" className="text-muted-foreground" />
+  );
 
   if (icon && isFilePath(icon)) {
     return (
@@ -111,7 +113,7 @@ function IntegrationIconContent(
     <div
       className={cn(
         "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
+        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
         "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
         className,
       )}
@@ -144,7 +146,7 @@ export function IntegrationIcon(props: Props) {
       fallback={
         <Skeleton
           className={cn(
-            "rounded-2xl w-16 h-16 border border-slate-200",
+            "rounded-2xl w-16 h-16 border border-border",
             props.variant === "default" ? "p-2" : "",
             props.className,
           )}

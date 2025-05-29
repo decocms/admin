@@ -4,7 +4,6 @@ import {
   useAgents,
   useDeleteThread,
   useIntegrations,
-  useInvites,
   useMarketplaceIntegrations,
   useThreads,
   useUpdateThreadTitle,
@@ -176,7 +175,11 @@ function ThreadActions({ thread, onEdit, className }: {
               e.stopPropagation();
             }}
           >
-            <Icon name="more_vert" className="text-slate-500" size={16} />
+            <Icon
+              name="more_vert"
+              size={16}
+              className="text-muted-foreground"
+            />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -199,7 +202,7 @@ function ThreadActions({ thread, onEdit, className }: {
                 setOpen(false);
                 setShowDeleteModal(true);
               }}
-              className="text-red-500 focus:text-red-500"
+              className="text-destructive focus:text-destructive"
             >
               <Icon name="delete" className="mr-2" size={16} />
               Delete
@@ -477,42 +480,6 @@ function PrefetchAgents() {
   return null;
 }
 
-function InvitesLink() {
-  const { data: invites = [] } = useInvites();
-  const href = "/invites";
-  const match = useMatch(href);
-
-  // If no invites, don't show the link
-  if (!invites.length) {
-    return null;
-  }
-
-  const handleClick = () => {
-    trackEvent("sidebar_navigation_click", {
-      item: "Invites",
-    });
-  };
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        isActive={!!match}
-        tooltip="Invites"
-        className="h-9 relative"
-      >
-        <Link to={href} onClick={handleClick}>
-          <Icon name="mail" filled={!!match} />
-          <span className="truncate">Invites</span>
-          <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-            {invites.length}
-          </span>
-        </Link>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-}
-
 export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -531,7 +498,7 @@ export function AppSidebar() {
       <SidebarContent className="flex flex-col h-full overflow-x-hidden">
         <div className="flex flex-col h-full">
           <div className="flex-none">
-            <SidebarGroup>
+            <SidebarGroup className="font-medium">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
                   <SidebarMenuItem>
@@ -546,8 +513,12 @@ export function AppSidebar() {
                         isMobile && toggleSidebar();
                       }}
                     >
-                      <Icon name="edit_square" size={16} />
-                      <span className="truncate">Chat</span>
+                      <Icon
+                        name="edit_square"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
+                      <span className="truncate">New chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
@@ -572,7 +543,11 @@ export function AppSidebar() {
                                   isMobile && toggleSidebar();
                                 }}
                               >
-                                <Icon name={item.icon} filled={isActive} />
+                                <Icon
+                                  name={item.icon}
+                                  filled={isActive}
+                                  className="text-muted-foreground"
+                                />
                                 <span className="truncate">{item.title}</span>
                               </Link>
                             </SidebarMenuButton>
@@ -581,9 +556,6 @@ export function AppSidebar() {
                       </SidebarMenuItem>
                     );
                   })}
-                  <Suspense fallback={null}>
-                    <InvitesLink />
-                  </Suspense>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -591,7 +563,7 @@ export function AppSidebar() {
 
           {!isCollapsed && (
             <>
-              <SidebarSeparator />
+              <SidebarSeparator className="!w-[224px]" />
               <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 <Suspense fallback={<SidebarThreadsSkeleton />}>
                   <SidebarThreads />

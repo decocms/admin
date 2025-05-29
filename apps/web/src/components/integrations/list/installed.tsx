@@ -78,7 +78,7 @@ function IntegrationCard({
 }) {
   return (
     <Card
-      className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-slate-200"
+      className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
       onClick={() => onConfigure(integration)}
     >
       <CardContent className="p-4">

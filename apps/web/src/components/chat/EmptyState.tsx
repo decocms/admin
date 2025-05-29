@@ -14,10 +14,10 @@ export function EmptyState() {
     return (
       <div className="py-10">
         <div className="flex flex-col items-center justify-center gap-2">
-          <div className="text-2xl font-medium leading-loose text-slate-700">
+          <div className="text-2xl font-medium leading-loose text-foreground">
             What can I help with?
           </div>
-          <div className="text-sm font-normal text-slate-500 max-w-[510px] text-center">
+          <div className="text-sm font-normal text-muted-foreground max-w-[510px] text-center">
             Use this chat to ask questions, generate content, execute tasks or
             <br />
             <span className="italic font-crimson-pro text-base">
@@ -48,9 +48,9 @@ EmptyState.Fallback = () => {
 EmptyState.Skeleton = () => {
   return (
     <div className="h-full flex flex-col items-center justify-center animate-pulse gap-4 py-10">
-      <div className="bg-slate-100 w-2/3 rounded-xl h-10 ml-auto" />
-      <div className="bg-slate-100 w-2/3 rounded-xl h-10 mr-auto" />
-      <div className="bg-slate-100 w-2/3 rounded-xl h-10 ml-auto" />
+      <div className="bg-muted w-2/3 rounded-xl h-10 ml-auto" />
+      <div className="bg-muted w-2/3 rounded-xl h-10 mr-auto" />
+      <div className="bg-muted w-2/3 rounded-xl h-10 ml-auto" />
     </div>
   );
 };
@@ -73,13 +73,13 @@ EmptyState.UI = () => {
           </div>
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-3xl font-medium text-slate-800">
+              <h2 className="text-3xl font-medium text-foreground">
                 {agent?.name
                   ? agent.name
                   : "Tell me who I am and how I should be"}
               </h2>
             </div>
-            <p className="text-slate-500 mx-6 text-center">
+            <p className="text-muted-foreground mx-6 text-center">
               {agent?.description ?? "The more you share, the better I get."}
             </p>
             {uiOptions.showEditAgent && (

@@ -162,14 +162,14 @@ function AgentAvatarContent(
     return (
       <div
         className={cn(
-          "w-full h-full bg-gradient-to-b from-white to-slate-200 flex items-center justify-center border border-slate-200 overflow-hidden",
+          "w-full h-full bg-gradient-to-b from-white to-muted flex items-center justify-center border border-border overflow-hidden",
           className,
         )}
       >
         <Icon
           filled
           name="robot_2"
-          className="text-slate-600"
+          className="text-muted-foreground"
         />
       </div>
     );
@@ -179,7 +179,7 @@ function AgentAvatarContent(
       url={avatar}
       fallback={name.substring(0, 2)}
       className={cn(
-        "w-full h-full",
+        "w-full h-full rounded-lg",
         className,
       )}
     />

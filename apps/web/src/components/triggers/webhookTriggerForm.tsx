@@ -56,10 +56,10 @@ function JsonSchemaInput({ value, onChange }: {
         value={value || ""}
         onChange={handleChange}
         rows={5}
-        className={error ? "border-red-500" : ""}
+        className={error ? "border-destructive" : ""}
       />
-      {error && <div className="text-xs text-red-500 mt-1">{error}</div>}
-      <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-700">
+      {error && <div className="text-xs text-destructive mt-1">{error}</div>}
+      <div className="bg-muted border border-border rounded p-3 text-xs text-foreground">
         <div className="font-semibold mb-1">How to fill the Output Schema:</div>
         <ul className="list-disc pl-4 mb-2">
           <li>
@@ -245,7 +245,7 @@ export function WebhookTriggerForm({
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Description</FormLabel>
-                <span className="text-xs text-slate-400">Optional</span>
+                <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <FormControl>
                 <Textarea
@@ -265,7 +265,7 @@ export function WebhookTriggerForm({
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Passphrase</FormLabel>
-                <span className="text-xs text-slate-400">Optional</span>
+                <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <FormControl>
                 <Input
@@ -286,7 +286,7 @@ export function WebhookTriggerForm({
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Output Schema</FormLabel>
-                <span className="text-xs text-slate-400">Optional</span>
+                <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <FormControl>
                 <JsonSchemaInput
@@ -305,7 +305,7 @@ export function WebhookTriggerForm({
             <FormItem>
               <div className="flex flex-col gap-1 px-1 justify-between">
                 <FormLabel>Binding</FormLabel>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   When selected, this webhook trigger will use the selected
                   binding
                 </span>
@@ -330,13 +330,13 @@ export function WebhookTriggerForm({
                           className="w-full justify-between truncate"
                           onClick={() => setOpen(true)}
                         >
-                          <span className="text-slate-400">
+                          <span className="text-muted-foreground">
                             Select a binding...
                           </span>
                           <Icon
                             name="expand_more"
                             size={18}
-                            className="ml-2 text-slate-400"
+                            className="ml-2 text-muted-foreground"
                           />
                         </Button>
                       )}
@@ -349,7 +349,11 @@ export function WebhookTriggerForm({
                     className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
-                    <Icon name="close" size={12} className="text-slate-400" />
+                    <Icon
+                      name="close"
+                      size={12}
+                      className="text-muted-foreground"
+                    />
                     <span className="flex items-center gap-2">
                       <IntegrationIcon
                         icon={selected?.integration.icon}
@@ -374,7 +378,7 @@ export function WebhookTriggerForm({
             <FormItem>
               <div className="flex flex-col gap-1 px-1 justify-between">
                 <FormLabel>Output Tool</FormLabel>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-muted-foreground">
                   When selected, this webhook trigger will always end calling
                   the selected tool
                 </span>
@@ -395,7 +399,11 @@ export function WebhookTriggerForm({
                     className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
-                    <Icon name="close" size={12} className="text-slate-400" />
+                    <Icon
+                      name="close"
+                      size={12}
+                      className="text-muted-foreground"
+                    />
                     <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
                       {field.value}
                     </span>
@@ -407,7 +415,7 @@ export function WebhookTriggerForm({
           )}
         />
         {form.formState.errors.root && (
-          <div className="text-xs text-red-500 mt-1">
+          <div className="text-xs text-destructive mt-1">
             {form.formState.errors.root.message}
           </div>
         )}

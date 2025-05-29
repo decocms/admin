@@ -81,7 +81,7 @@ export function AuditListContent({
   const { data: teams } = useTeams();
   const resolvedTeamSlug = params.teamSlug;
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
-  const members = teamId !== null ? useTeamMembers(teamId).data : [];
+  const members = teamId !== null ? useTeamMembers(teamId).data.members : [];
 
   const { data: auditData, isLoading } = useAuditEvents({
     agentId: filters?.agentId ?? selectedAgent,
@@ -212,7 +212,7 @@ export function AuditListContent({
 
 function AuditList() {
   return (
-    <div className="h-full text-slate-700 px-6 py-6 overflow-x-auto w-full">
+    <div className="h-full text-foreground px-6 py-6 overflow-x-auto w-full">
       <ErrorBoundary fallback={<AuditListErrorFallback />}>
         <Suspense
           fallback={

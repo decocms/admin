@@ -40,10 +40,14 @@ function IntegrationList(
   );
 
   if (isLoading) {
-    return <div className="p-4 text-slate-400">Loading integrations...</div>;
+    return (
+      <div className="p-4 text-muted-foreground">Loading integrations...</div>
+    );
   }
   if (filtered.length === 0) {
-    return <div className="p-4 text-slate-400">No integrations found.</div>;
+    return (
+      <div className="p-4 text-muted-foreground">No integrations found.</div>
+    );
   }
   return (
     <>
@@ -51,7 +55,7 @@ function IntegrationList(
         <button
           type="button"
           key={integration.id}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left cursor-pointer"
           onClick={() => onSelect(integration)}
         >
           <IntegrationIcon
@@ -62,7 +66,7 @@ function IntegrationList(
           <div className="flex flex-col min-w-0">
             <span className="font-medium truncate">{integration.name}</span>
             {integration.description && (
-              <span className="text-xs text-slate-500 truncate">
+              <span className="text-xs text-muted-foreground truncate">
                 {integration.description}
               </span>
             )}
@@ -101,16 +105,16 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
   return (
     <>
       {isLoading
-        ? <div className="p-4 text-slate-400">Loading tools...</div>
+        ? <div className="p-4 text-muted-foreground">Loading tools...</div>
         : filtered.length === 0
-        ? <div className="p-4 text-slate-400">No tools found.</div>
+        ? <div className="p-4 text-muted-foreground">No tools found.</div>
         : (
           filtered.map((tool) => (
             <button
               type="button"
               key={tool.name}
-              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left ${
-                value === `${integration.id}/${tool.name}` ? "bg-slate-100" : ""
+              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${
+                value === `${integration.id}/${tool.name}` ? "bg-muted" : ""
               }`}
               onClick={() => onSelect(tool)}
             >
@@ -124,7 +128,7 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
                   {integration.name} / {formatToolName(tool.name)}
                 </span>
                 {tool.description && (
-                  <span className="text-xs text-slate-500 truncate">
+                  <span className="text-xs text-muted-foreground truncate">
                     {tool.description}
                   </span>
                 )}
@@ -133,7 +137,7 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
                 <Icon
                   name="check"
                   size={18}
-                  className="ml-auto text-slate-500"
+                  className="ml-auto text-muted-foreground"
                 />
               )}
             </button>
@@ -180,12 +184,12 @@ function SelectorDialog(
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="max-w-md w-full p-0 gap-0">
         <DialogHeader>
-          <div className="flex items-center justify-between p-3 border-b border-slate-200">
+          <div className="flex items-center justify-between p-3 border-b border-border">
             <div className="flex flex-col gap-2">
               {selectedIntegration && (
                 <button
                   type="button"
-                  className="flex text-xs h-6 items-center gap-2 px-2 text-slate-500 hover:text-slate-700 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors"
+                  className="flex text-xs h-6 items-center gap-2 px-2 text-muted-foreground hover:text-foreground bg-muted/50 rounded-xl hover:bg-muted transition-colors"
                   onClick={() => {
                     setSelectedIntegration(null);
                     setSearch("");
@@ -199,18 +203,18 @@ function SelectorDialog(
             </div>
           </div>
         </DialogHeader>
-        <div className="border-b border-slate-200">
+        <div className="border-b border-border">
           <Input
             placeholder={selectedIntegration
               ? `Search ${selectedIntegration.name} tools...`
               : "Search integrations..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border-none focus-visible:ring-0 placeholder:text-slate-500"
+            className="w-full border-none focus-visible:ring-0 placeholder:text-muted-foreground"
           />
         </div>
         <div className="max-h-96 overflow-y-auto">
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {!selectedIntegration
               ? (
                 <IntegrationList
@@ -274,8 +278,12 @@ export function SingleToolSelector(
               </span>
             </span>
           )
-          : <span className="text-slate-400">Select a tool...</span>}
-        <Icon name="expand_more" size={18} className="ml-2 text-slate-400" />
+          : <span className="text-muted-foreground">Select a tool...</span>}
+        <Icon
+          name="expand_more"
+          size={18}
+          className="ml-2 text-muted-foreground"
+        />
       </Button>
       <SelectorDialog
         open={open}

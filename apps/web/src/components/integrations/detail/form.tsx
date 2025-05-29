@@ -119,7 +119,7 @@ export function DetailForm() {
   };
 
   return (
-    <ScrollArea className="h-full w-full p-6 text-slate-700">
+    <ScrollArea className="h-full w-full p-6 text-foreground">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -167,7 +167,7 @@ export function DetailForm() {
                             </>
                           )
                           : (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-slate-100 rounded-lg p-2 border border-slate-200">
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-muted rounded-lg p-2 border border-border">
                               <Icon
                                 name="upload"
                                 className="text-muted-foreground/70 text-xl"
@@ -214,7 +214,7 @@ export function DetailForm() {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-2">
                         <FormLabel>Access</FormLabel>
-                        <FormDescription className="text-xs text-slate-400">
+                        <FormDescription className="text-xs text-muted-foreground">
                           Control who can access and interact with this
                           integration.
                         </FormDescription>

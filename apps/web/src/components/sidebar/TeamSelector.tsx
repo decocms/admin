@@ -81,7 +81,7 @@ function CurrentTeamDropdownTrigger() {
 
   return (
     <ResponsiveDropdownTrigger asChild>
-      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! gap-3">
+      <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! gap-3 md:pl-2">
         <Avatar
           url={avatarUrl}
           fallback={label}
@@ -91,7 +91,11 @@ function CurrentTeamDropdownTrigger() {
           <span className="text-sm font-medium truncate min-w-0">
             {label}
           </span>
-          <Icon name="unfold_more" className="text-xs" size={16} />
+          <Icon
+            name="unfold_more"
+            className="text-muted-foreground"
+            size={16}
+          />
         </div>
       </SidebarMenuButton>
     </ResponsiveDropdownTrigger>
@@ -100,35 +104,19 @@ function CurrentTeamDropdownTrigger() {
 
 function CurrentTeamDropdownOptions() {
   const buildWorkspaceLink = useWorkspaceLink();
-  const { avatarUrl, slug, label, id: teamId } = useCurrentTeam();
-  const url = slug ? `/${slug}` : "/";
+  const { id: teamId } = useCurrentTeam();
 
   return (
     <>
       <ResponsiveDropdownItem asChild>
         <Link
-          to={url}
-          className="w-full flex items-center gap-4 cursor-pointer"
-        >
-          <Avatar
-            className="rounded-full w-6 h-6"
-            url={avatarUrl}
-            fallback={label}
-          />
-          <span className="md:text-xs flex-grow justify-self-start">
-            {label}
-          </span>
-        </Link>
-      </ResponsiveDropdownItem>
-      <ResponsiveDropdownItem asChild>
-        <Link
           to={buildWorkspaceLink("/settings")}
-          className="w-full flex items-center gap-4 cursor-pointer"
+          className="w-full flex items-center gap-2 cursor-pointer"
         >
           <span className="grid place-items-center p-1">
-            <Icon name="settings" size={18} />
+            <Icon name="settings" size={16} className="text-muted-foreground" />
           </span>
-          <span className="md:text-xs">
+          <span className="md:text-sm">
             Settings
           </span>
         </Link>
@@ -137,17 +125,21 @@ function CurrentTeamDropdownOptions() {
         teamId={typeof teamId === "number" ? teamId : undefined}
         trigger={
           <ResponsiveDropdownItem
-            className="gap-4 cursor-pointer"
+            className="gap-2 cursor-pointer"
             onClick={(e) => {
               // Prevent event from bubbling up to parent elements
               e.stopPropagation();
             }}
           >
             <span className="grid place-items-center p-1">
-              <Icon name="person_add" size={18} />
+              <Icon
+                name="person_add"
+                size={16}
+                className="text-muted-foreground"
+              />
             </span>
-            <span className="md:text-xs flex-grow justify-self-start">
-              Add team member
+            <span className="md:text-sm flex-grow justify-self-start">
+              Invite members
             </span>
           </ResponsiveDropdownItem>
         }
@@ -157,10 +149,13 @@ function CurrentTeamDropdownOptions() {
 }
 
 CurrentTeamDropdownOptions.Skeleton = () => (
-  <div className="flex flex-col gap-2 h-36 overflow-y-auto">
-    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
-    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
-    <div className="h-6 w-full bg-muted-foreground/10 rounded-md" />
+  <div className="flex flex-col gap-2 h-full overflow-y-auto">
+    {Array.from({ length: 5 }).map((_, index) => (
+      <div
+        key={index}
+        className="h-9 w-full bg-muted-foreground/10 rounded-xl"
+      />
+    ))}
   </div>
 );
 
@@ -192,8 +187,8 @@ function SwitchTeam(
 
   return (
     <>
-      <div className="flex justify-between items-center px-2">
-        <span className="md:text-[10px] text-xs font-medium">
+      <div className="flex justify-between items-center px-2 h-8">
+        <span className="text-xs font-medium text-muted-foreground">
           Switch team
         </span>
         <Button
@@ -202,7 +197,7 @@ function SwitchTeam(
           className="h-6 w-6"
           onClick={toggleSearch}
         >
-          <Icon name="search" size={16} />
+          <Icon name="search" size={16} className="text-muted-foreground" />
         </Button>
       </div>
 
@@ -213,7 +208,7 @@ function SwitchTeam(
             value={searchQuery}
             onChange={handleSearchChange}
             onKeyDown={(e) => e.stopPropagation()}
-            className="h-8 text-xs md:text-xs"
+            className="h-8 text-sm"
             autoFocus
           />
         </div>
@@ -226,14 +221,14 @@ function SwitchTeam(
               <ResponsiveDropdownItem asChild key={team.slug}>
                 <Link
                   to={`/${team.slug}`}
-                  className="w-full flex items-center gap-4 cursor-pointer"
+                  className="w-full flex items-center gap-2 cursor-pointer"
                 >
                   <Avatar
                     className="w-6 h-6"
                     url={team.avatarUrl}
                     fallback={team.label}
                   />
-                  <span className="md:text-xs">
+                  <span className="md:text-sm">
                     {team.label}
                   </span>
                 </Link>
@@ -242,7 +237,7 @@ function SwitchTeam(
           </div>
         )
         : (
-          <div className="text-xs text-center py-2 text-muted-foreground">
+          <div className="text-sm text-center py-2 text-muted-foreground">
             No teams found
           </div>
         )}
@@ -254,20 +249,20 @@ function SwitchTeam(
             value={searchQuery}
             onChange={handleSearchChange}
             onKeyDown={(e) => e.stopPropagation()}
-            className="h-8 text-xs md:text-xs"
+            className="h-8 text-sm"
             autoFocus
           />
         </div>
       )}
 
       <ResponsiveDropdownItem
-        className="gap-4 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
+        className="gap-2 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
         onClick={onRequestCreateTeam}
       >
         <span className="grid place-items-center p-1">
-          <Icon name="add" size={18} />
+          <Icon name="add" size={16} className="text-muted-foreground" />
         </span>
-        <span className="md:text-xs">
+        <span className="md:text-sm">
           Create team
         </span>
       </ResponsiveDropdownItem>
@@ -283,7 +278,7 @@ export function TeamSelector() {
         <Suspense fallback={<CurrentTeamDropdownTrigger />}>
           <CurrentTeamDropdownTrigger />
         </Suspense>
-        <ResponsiveDropdownContent align="start">
+        <ResponsiveDropdownContent align="start" className="md:w-[240px]">
           <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
             <CurrentTeamDropdownOptions />
           </Suspense>

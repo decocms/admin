@@ -11,7 +11,7 @@ export default function Logo({ logo, name }: Props) {
     <div
       className={cn(
         "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-slate-300 before:to-slate-100",
+        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
         "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
       )}
     >

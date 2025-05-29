@@ -61,7 +61,7 @@ const Chat = () => {
   return (
     <div className="flex flex-col h-full min-w-[320px]">
       <div className="flex-none p-4">
-        <div className="justify-self-start flex items-center gap-3 text-slate-700 w-full">
+        <div className="justify-self-start flex items-center gap-3 text-muted-foreground w-full">
           {chat.messages.length > 0 && (
             <div className="flex justify-between items-center gap-2 w-full">
               <div className="flex items-center gap-2 w-full">
@@ -186,7 +186,7 @@ function ActionButtons({
   const { form, hasChanges, handleSubmit } = useAgentSettingsForm();
 
   return (
-    <div className="flex items-center gap-2 bg-slate-50 transition-opacity">
+    <div className="flex items-center gap-2 bg-sidebar transition-opacity">
       {!isWellKnownAgent && (
         <Button
           type="button"

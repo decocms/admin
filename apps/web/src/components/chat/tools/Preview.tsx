@@ -18,8 +18,7 @@ interface PreviewProps {
 }
 
 const BUTTON_STYLES = {
-  base:
-    "h-8 w-8 rounded-full bg-slate-900/10 hover:bg-slate-900/20 duration-200",
+  base: "h-8 w-8 rounded-full bg-primary/10 hover:bg-primary/20 duration-200",
   icon: "text-sm text-white",
 } as const;
 

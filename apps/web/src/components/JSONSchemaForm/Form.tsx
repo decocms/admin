@@ -1,6 +1,7 @@
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { FormEvent, type ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
+import { ArrayField } from "./components/ArrayField.tsx";
 import { BooleanField } from "./components/BooleanField.tsx";
 import { JsonTextField } from "./components/JsonTextField.tsx";
 import { NumberField } from "./components/NumberField.tsx";
@@ -132,8 +133,10 @@ function Field<T extends FieldValues = Record<string, unknown>>({
     ? schema.type.find((prop) => prop !== "null") ?? "null"
     : schema.type;
   const description = schema.description as string | undefined;
+  // Extract just the property name from the full path for cleaner titles
+  const propertyName = name.split(".").pop() || name;
   const title = (schema.title as string | undefined) ||
-    formatPropertyName(name);
+    formatPropertyName(propertyName);
 
   switch (type) {
     case "string":
@@ -190,10 +193,15 @@ function Field<T extends FieldValues = Record<string, unknown>>({
     case "object":
       if (schema.properties) {
         return (
-          <div key={name} className="border rounded-md p-4">
-            <h3 className="text-md font-medium mb-2">{title}</h3>
+          <div
+            key={name}
+            className="object-field border rounded-md p-4 [.array-field-content_&]:border-none [.array-field-content_&]:rounded-none"
+          >
+            <h3 className="text-md font-medium mb-2 [.array-field-content_&]:hidden">
+              {title}
+            </h3>
             {description && (
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4 [.array-field-content_&]:hidden">
                 {description}
               </p>
             )}
@@ -232,10 +240,27 @@ function Field<T extends FieldValues = Record<string, unknown>>({
           disabled={disabled}
         />
       );
-    case "array":
-      // For simplicity, render arrays as JSON text fields
+    case "array": {
+      // Create a RenderItem component for this specific array field
+      const RenderItem = (
+        { name: itemName, schema: itemSchema, title: itemTitle }: {
+          name: string;
+          index: number;
+          schema: JSONSchema7;
+          title?: string;
+        },
+      ) => (
+        <Field<T>
+          name={itemName}
+          schema={{ ...itemSchema, title: itemTitle }}
+          form={form}
+          isRequired={false}
+          disabled={disabled}
+        />
+      );
+
       return (
-        <JsonTextField<T>
+        <ArrayField<T>
           key={name}
           name={name}
           title={title}
@@ -243,8 +268,11 @@ function Field<T extends FieldValues = Record<string, unknown>>({
           form={form}
           isRequired={isRequired}
           disabled={disabled}
+          schema={schema}
+          RenderItem={RenderItem}
         />
       );
+    }
     default:
       return (
         <div key={name} className="text-sm text-muted-foreground">

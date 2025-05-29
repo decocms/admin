@@ -65,12 +65,12 @@ function UserAvatar({ member, size = "md" }: UserAvatarProps) {
     <div
       className={`${
         sizeClasses[size]
-      } rounded-md flex items-center justify-center bg-gray-200`}
+      } rounded-md flex items-center justify-center bg-muted`}
     >
       <Icon
         name="person"
         size={size === "sm" ? 12 : size === "md" ? 16 : 24}
-        className="text-gray-500"
+        className="text-muted-foreground"
       />
     </div>
   );
@@ -114,11 +114,11 @@ export function EmptyStateCard(
 ) {
   return (
     <div className="flex flex-col items-center justify-center h-full w-full py-8">
-      <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-        <Icon name="query_stats" size={24} className="text-slate-400" />
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Icon name="query_stats" size={24} className="text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-medium text-slate-900 mb-1">{title}</h3>
-      <p className="text-xs text-slate-500 text-center max-w-[200px]">
+      <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground text-center max-w-[200px]">
         {description}
       </p>
     </div>
@@ -341,7 +341,7 @@ function CreditsUsedPerThread({
 
   return (
     <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
-      <div className="w-full text-sm p-4 border-b border-slate-200 flex justify-between items-center">
+      <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
         <span>Credits Used Per Thread</span>
         <Select
           value={range}
@@ -372,7 +372,7 @@ function CreditsUsedPerThread({
             enrichedThreads.map((thread) => (
               <Dialog>
                 <DialogTrigger asChild>
-                  <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">
                       <AgentAvatar
                         name={thread.agent?.name}
@@ -380,12 +380,12 @@ function CreditsUsedPerThread({
                         className="w-10 h-10 rounded-sm"
                       />
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium text-slate-900">
+                        <span className="text-sm font-medium text-foreground">
                           {thread.agent?.name || "Unknown Agent"}
                         </span>
                         <div className="flex items-center gap-2">
                           <UserAvatar member={thread.member} size="sm" />
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             {thread.member?.profiles?.metadata?.full_name ||
                               "Unknown User"}
                           </span>
@@ -393,7 +393,7 @@ function CreditsUsedPerThread({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-slate-900">
+                      <span className="text-sm font-medium text-foreground">
                         {thread.total}
                       </span>
                     </div>
@@ -413,12 +413,12 @@ function CreditsUsedPerThread({
 
 CreditsUsedPerThread.Fallback = () => (
   <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
-    <div className="w-full text-sm p-4 border-b border-slate-200 flex justify-between items-center">
+    <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
       <span>Credits Used Per Thread</span>
     </div>
     <CardContent className="flex flex-col items-center justify-center gap-2 p-3 overflow-y-auto">
       {Array.from({ length: 10 }).map((_, index) => (
-        <div key={index} className="w-full h-[72px] bg-slate-100 rounded-md" />
+        <div key={index} className="w-full h-[72px] bg-muted rounded-md" />
       ))}
     </CardContent>
   </Card>
@@ -453,7 +453,7 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
             className="w-12 h-12 rounded-sm"
           />
           <div className="flex flex-col justify-center">
-            <span className="text-base font-semibold text-gray-900">
+            <span className="text-base font-semibold text-foreground">
               {thread.agent?.name || "Unknown Agent"}
             </span>
             <span className="text-sm text-muted-foreground mt-1">
@@ -462,7 +462,7 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
           </div>
         </div>
 
-        <div className="border-t border-slate-100" />
+        <div className="border-t border-border" />
 
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground mb-1">
@@ -470,32 +470,32 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
           </span>
           <div className="flex items-center gap-3">
             <UserAvatar member={thread.member} size="md" />
-            <span className="text-sm text-gray-900">
+            <span className="text-sm text-foreground">
               {thread.member?.profiles?.metadata?.full_name || "Unknown User"}
             </span>
           </div>
         </div>
 
-        <div className="border-t border-slate-100" />
+        <div className="border-t border-border" />
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground mb-1">
             Token Usage
           </span>
           <div className="grid grid-cols-3 gap-4">
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-foreground">
                 {thread.tokens?.totalTokens || 0}
               </span>
               <span className="text-xs text-muted-foreground">Total</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-foreground">
                 {thread.tokens?.promptTokens || 0}
               </span>
               <span className="text-xs text-muted-foreground">Prompt</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-foreground">
                 {thread.tokens?.completionTokens || 0}
               </span>
               <span className="text-xs text-muted-foreground">Completion</span>
@@ -540,7 +540,9 @@ function userToMember(user: ReturnType<typeof useUser>): Member {
 
 function useMembers() {
   const { teamSlug } = useParams();
-  const { data: _members } = useTeamMembersBySlug(teamSlug ?? null);
+  const { data: { members: _members } } = useTeamMembersBySlug(
+    teamSlug ?? null,
+  );
   const user = useUser();
 
   const members = useMemo(() => {
@@ -564,7 +566,7 @@ export default function Usage() {
   const members = useMembers();
 
   return (
-    <div className="h-full text-slate-700">
+    <div className="h-full text-foreground">
       <SettingsMobileHeader currentPage="usage" />
 
       <div className="flex flex-col items-center h-full gap-4 w-full">

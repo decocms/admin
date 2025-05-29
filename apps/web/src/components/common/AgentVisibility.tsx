@@ -15,7 +15,7 @@ const DESCRIPTIONS = {
 
 export function AgentVisibility({ agent }: { agent: Agent }) {
   return (
-    <div className="flex gap-1 items-center text-xs text-slate-500 px-2 py-1 bg-slate-100 rounded-xl">
+    <div className="flex gap-1 items-center text-xs text-muted-foreground px-2 py-1 bg-muted rounded-xl">
       <AgentVisibility.Icon agent={agent} size={12} />
       {DESCRIPTIONS[agent.visibility]}
     </div>

@@ -17,12 +17,16 @@ export function EmptyState({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 relative">
       <div className="absolute flex items-center justify-center mb-80">
-        <div className="p-6 rounded-full border border-slate-50">
-          <div className="p-4 rounded-full border border-slate-100">
-            <div className="p-3.5 rounded-full border border-slate-100">
-              <div className="p-3 rounded-full border border-slate-100">
-                <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center p-4">
-                  <Icon name={icon} className="text-slate-300" size={36} />
+        <div className="p-6 rounded-full border border-muted">
+          <div className="p-4 rounded-full border border-border">
+            <div className="p-3.5 rounded-full border border-border">
+              <div className="p-3 rounded-full border border-border">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center p-4">
+                  <Icon
+                    name={icon}
+                    className="text-muted-foreground"
+                    size={36}
+                  />
                 </div>
               </div>
             </div>

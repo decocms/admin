@@ -104,41 +104,48 @@ function ConnectIntegrationModal({
 
 function CardsView(
   { integrations, onRowClick }: {
-    integrations: MarketplaceIntegration[];
+    integrations: Record<string, MarketplaceIntegration[]>;
     onRowClick: (integration: MarketplaceIntegration) => void;
   },
 ) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-      {integrations.map((integration) => (
-        <Card
-          key={integration.id}
-          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer"
-          onClick={() => onRowClick(integration)}
-        >
-          <CardContent className="p-4">
-            <div className="grid grid-cols-[min-content_1fr] gap-4">
-              <IntegrationIcon
-                icon={integration.icon}
-                name={integration.name}
-                className="h-16 w-16"
-              />
-              <div className="grid grid-cols-1 gap-1">
-                <div className="text-base font-semibold truncate">
-                  {integration.name}
-                </div>
-                <div className="text-sm text-muted-foreground line-clamp-2">
-                  {integration.description}
-                </div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-xs px-2 py-1 bg-secondary rounded-full">
-                {integration.provider}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col gap-6">
+      {Object.entries(integrations).map(([category, categoryIntegrations]) => (
+        <div key={category}>
+          <h3 className="text-lg font-semibold mb-3">{category}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {categoryIntegrations.map((integration) => (
+              <Card
+                key={integration.id}
+                className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer"
+                onClick={() => onRowClick(integration)}
+              >
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-[min-content_1fr] gap-4">
+                    <IntegrationIcon
+                      icon={integration.icon}
+                      name={integration.name}
+                      className="h-16 w-16"
+                    />
+                    <div className="grid grid-cols-1 gap-1">
+                      <div className="text-base font-semibold truncate">
+                        {integration.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground line-clamp-2">
+                        {integration.description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-xs px-2 py-1 bg-secondary rounded-full">
+                      {integration.provider}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -146,7 +153,7 @@ function CardsView(
 
 function TableView(
   { integrations, onConfigure }: {
-    integrations: MarketplaceIntegration[];
+    integrations: Record<string, MarketplaceIntegration[]>;
     onConfigure: (integration: MarketplaceIntegration) => void;
   },
 ) {
@@ -158,13 +165,6 @@ function TableView(
     if (key === "description") return row.description?.toLowerCase() || "";
     return row.name?.toLowerCase() || "";
   }
-  const sortedIntegrations = [...integrations].sort((a, b) => {
-    const aVal = getSortValue(a, sortKey);
-    const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
 
   const columns: TableColumn<MarketplaceIntegration>[] = [
     {
@@ -198,14 +198,31 @@ function TableView(
   }
 
   return (
-    <Table
-      columns={columns}
-      data={sortedIntegrations}
-      sortKey={sortKey}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onRowClick={onConfigure}
-    />
+    <div className="flex flex-col gap-6">
+      {Object.entries(integrations).map(([category, categoryIntegrations]) => {
+        const sortedIntegrations = [...categoryIntegrations].sort((a, b) => {
+          const aVal = getSortValue(a, sortKey);
+          const bVal = getSortValue(b, sortKey);
+          if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+          if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+          return 0;
+        });
+
+        return (
+          <div key={category}>
+            <h3 className="text-lg font-semibold mb-3">{category}</h3>
+            <Table
+              columns={columns}
+              data={sortedIntegrations}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onRowClick={onConfigure}
+            />
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -230,13 +247,30 @@ function MarketplaceTab() {
   const filteredRegistryIntegrations = useMemo(() => {
     const searchTerm = registryFilter.toLowerCase();
     const integrations = marketplace?.integrations ?? [];
-    return registryFilter
+
+    const filtered = registryFilter
       ? integrations.filter((integration: MarketplaceIntegration) =>
         integration.name.toLowerCase().includes(searchTerm) ||
         (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
         integration.provider.toLowerCase().includes(searchTerm)
       )
       : integrations;
+
+    // Categorize integrations
+    const categorized: Record<string, MarketplaceIntegration[]> = {
+      "First Party Integrations": [],
+      "Third Party Integrations": [],
+    };
+
+    filtered.forEach((integration: MarketplaceIntegration) => {
+      if (integration.provider === "deco") {
+        categorized["First Party Integrations"].push(integration);
+      } else {
+        categorized["Third Party Integrations"].push(integration);
+      }
+    });
+
+    return categorized;
   }, [marketplace, registryFilter]);
 
   function handleOpenModal(integration: MarketplaceIntegration) {

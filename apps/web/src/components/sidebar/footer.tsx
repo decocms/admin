@@ -1,4 +1,4 @@
-import { AUTH_URL, UnauthorizedError } from "@deco/sdk";
+import { AUTH_URL, UnauthorizedError, useInvites } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -35,7 +35,8 @@ import {
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useLocation } from "react-router";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { Link, useLocation, useMatch } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
@@ -43,6 +44,34 @@ import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
+import { trackEvent } from "../../hooks/analytics.ts";
+
+/** Wrapped component to be suspended */
+function NotificationDot({ className }: { className?: string }) {
+  const { data: invites = [] } = useInvites();
+
+  if (!invites.length) return null;
+
+  return (
+    <span className={cn("relative flex size-2", className)}>
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+      <span className="relative inline-flex size-2 rounded-full bg-destructive" />
+    </span>
+  );
+}
+
+/** Wrapped component to be suspended */
+function InvitesCount() {
+  const { data: invites = [] } = useInvites();
+
+  if (!invites.length) return null;
+
+  return (
+    <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
+      {invites.length}
+    </span>
+  );
+}
 
 function UserPreferencesModal({ open, onOpenChange }: {
   open: boolean;
@@ -170,6 +199,8 @@ function UserPreferencesModal({ open, onOpenChange }: {
 function LoggedUser() {
   const user = useUser();
   const location = useLocation();
+  const href = "/invites";
+  const match = useMatch(href);
   const { data: stars } = useGitHubStars();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -190,6 +221,12 @@ function LoggedUser() {
     ? (stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars)
     : null;
 
+  const handleClickInvite = () => {
+    trackEvent("sidebar_navigation_click", {
+      item: "Invites",
+    });
+  };
+
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
@@ -199,52 +236,101 @@ function LoggedUser() {
             fallback={userName}
             className="w-6 h-6"
           />
-          <span className="text-xs">{user.metadata?.full_name}</span>
+          <span className="text-xs grow">{user.metadata?.full_name}</span>
+
+          <Suspense fallback={null}>
+            <div className="size-3 flex items-center">
+              <NotificationDot className="justify-end" />
+            </div>
+          </Suspense>
         </SidebarMenuButton>
       </ResponsiveDropdownTrigger>
       <ResponsiveDropdownContent
         side="top"
         align="start"
-        className="md:w-[200px] text-slate-700"
+        className="md:w-[240px]"
       >
-        <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
+        <ResponsiveDropdownItem asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            onClick={() => setProfileOpen(true)}
+          >
+            <Icon name="account_circle" className="text-muted-foreground" />
+            Profile
+          </button>
+        </ResponsiveDropdownItem>
+        <ResponsiveDropdownItem asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+            onClick={() => setPreferencesOpen(true)}
+          >
+            <Icon name="tune" className="text-muted-foreground" />
+            Preferences
+          </button>
+        </ResponsiveDropdownItem>
+        <ResponsiveDropdownItem asChild>
+          <Link
+            to={href}
+            onClick={handleClickInvite}
+            className="flex items-center gap-2 text-sm w-full cursor-pointer"
+          >
+            <Icon
+              name="mail"
+              filled={!!match}
+              className="text-muted-foreground"
+            />
+            <span className="truncate">Invites</span>
+
+            <Suspense fallback={null}>
+              <InvitesCount />
+            </Suspense>
+          </Link>
+        </ResponsiveDropdownItem>
+
+        <ResponsiveDropdownSeparator />
+
+        <ResponsiveDropdownItem asChild>
           <a
             href="https://github.com/deco-cx/chat"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 leading-relaxed text-sm sm:text-xs"
+            className="flex w-full items-center gap-2 text-sm cursor-pointer"
           >
-            <img src="/img/github.svg" alt="GitHub" className="w-4 h-4" />
+            <img
+              src="/img/github.svg"
+              alt="GitHub"
+              className="w-4 h-4 text-muted-foreground"
+            />
             deco-cx/chat
             {formattedStars && (
-              <span className="ml-auto text-slate-400">
+              <span className="text-xs ml-auto text-muted-foreground">
                 {formattedStars} stars
               </span>
             )}
+            <Icon
+              name="arrow_outward"
+              size={16}
+              className="text-muted-foreground"
+            />
           </a>
         </ResponsiveDropdownItem>
-
-        <ResponsiveDropdownSeparator />
-        <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
-            onClick={() => setProfileOpen(true)}
+        <ResponsiveDropdownItem asChild>
+          <a
+            href="/about"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center gap-2 text-sm cursor-pointer"
           >
-            <Icon name="person" />
-            Profile
-          </button>
-        </ResponsiveDropdownItem>
-        <ResponsiveDropdownSeparator />
-        <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
-          <button
-            type="button"
-            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
-            onClick={() => setPreferencesOpen(true)}
-          >
-            <Icon name="settings" />
-            Preferences
-          </button>
+            <Icon name="language" className="text-muted-foreground" />
+            Homepage
+            <Icon
+              name="arrow_outward"
+              size={16}
+              className="ml-auto text-muted-foreground"
+            />
+          </a>
         </ResponsiveDropdownItem>
 
         <ResponsiveDropdownSeparator />
@@ -252,9 +338,9 @@ function LoggedUser() {
         <ResponsiveDropdownItem asChild>
           <a
             href={logoutUrl}
-            className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs"
+            className="flex items-center gap-2 text-sm cursor-pointer"
           >
-            <Icon name="logout" size={16} />
+            <Icon name="logout" size={16} className="text-muted-foreground" />
             Log out
           </a>
         </ResponsiveDropdownItem>
@@ -288,7 +374,7 @@ function AnonymouseUser() {
 function Skeleton() {
   return (
     <SidebarMenuButton>
-      <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-slate-100 hover:text-slate-900 h-8 px-4 py-2 gap-2">
+      <div className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted hover:text-foreground h-8 px-4 py-2 gap-2">
         <span className="w-24 h-8"></span>
       </div>
     </SidebarMenuButton>

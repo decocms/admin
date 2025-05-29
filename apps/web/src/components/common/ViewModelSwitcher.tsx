@@ -17,12 +17,14 @@ export function ViewModeSwitcher({
         size="icon"
         aria-label="Card view"
         onClick={() => onChange("cards")}
-        className={viewMode === "cards" ? "bg-slate-100" : ""}
+        className={viewMode === "cards" ? "bg-muted" : ""}
       >
         <Icon
           name="grid_view"
           size={16}
-          className={viewMode === "cards" ? "text-primary" : "text-slate-500"}
+          className={viewMode === "cards"
+            ? "text-primary"
+            : "text-muted-foreground"}
         />
       </Button>
       <Button
@@ -30,12 +32,14 @@ export function ViewModeSwitcher({
         size="icon"
         aria-label="Table view"
         onClick={() => onChange("table")}
-        className={viewMode === "table" ? "bg-slate-100" : ""}
+        className={viewMode === "table" ? "bg-muted" : ""}
       >
         <Icon
           name="menu"
           size={16}
-          className={viewMode === "table" ? "text-primary" : "text-slate-500"}
+          className={viewMode === "table"
+            ? "text-primary"
+            : "text-muted-foreground"}
         />
       </Button>
     </div>

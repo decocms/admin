@@ -46,7 +46,7 @@ export function TriggerActions(
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="text-red-500"
+            className="text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               onOpenChange(true);

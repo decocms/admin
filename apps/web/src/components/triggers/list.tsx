@@ -35,7 +35,7 @@ function ListTriggersSkeleton() {
       </div>
       <div className="overflow-x-auto">
         <div>
-          <div className="flex flex-col divide-y divide-slate-100">
+          <div className="flex flex-col divide-y divide-border">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-6 py-4">
                 <Skeleton className="w-64 h-6 rounded" />

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 export interface Props {
   /**
    * @description Social media links

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 import CTA from "./CTA.tsx";
 import Features from "./Features.tsx";
 import Footer from "./Footer.tsx";

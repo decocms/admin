@@ -75,8 +75,8 @@ const TAB_COMPONENTS = {
 
     if (props.api.component === DOCKED_VIEWS_TAB.id) {
       return (
-        <div className="flex items-center justify-between gap-2 py-3 px-2 bg-slate-50">
-          <Icon name="layers" size={16} className="text-slate-700 p-1" />
+        <div className="flex items-center justify-between gap-2 py-3 px-2 bg-sidebar">
+          <Icon name="layers" size={16} className="text-muted-foreground p-1" />
           <span className="flex-1 text-sm">Views</span>
           <Button
             variant="ghost"
@@ -365,7 +365,7 @@ Docked.Views = () => {
     : openPanels.size <= 1;
 
   return (
-    <div className="h-full flex flex-col gap-2 p-2 bg-slate-50">
+    <div className="h-full flex flex-col gap-2 p-2 bg-sidebar">
       {Object.entries(tabs)
         .filter(([_id, tab]) => !tab.hideFromViews)
         .map(([id, tab]) => {
@@ -382,8 +382,8 @@ Docked.Views = () => {
                 "flex items-center justify-between gap-3",
                 "p-2 rounded-xl",
                 "cursor-pointer disabled:cursor-not-allowed",
-                "hover:bg-slate-100 text-slate-700",
-                isActive && "bg-slate-100 ",
+                "hover:bg-muted text-foreground",
+                isActive && "bg-muted",
               )}
             >
               <span className="flex-1 truncate text-sm text-left">

@@ -9,9 +9,9 @@ export function CronDetails(
 ) {
   const triggerData = trigger.data as z.infer<typeof CronTriggerSchema>;
   return (
-    <div className="space-y-4 border p-4 rounded-md bg-slate-50">
+    <div className="space-y-4 border p-4 rounded-md bg-muted">
       <div className="flex items-center gap-2">
-        <Icon name="calendar_today" className="h-5 w-5 text-green-500" />
+        <Icon name="calendar_today" className="h-5 w-5 text-special" />
         <h4 className="font-medium">Schedule Details</h4>
       </div>
 

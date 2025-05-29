@@ -175,8 +175,8 @@ export function GeneralSettings() {
   const isReadOnly = isPersonalTeam;
 
   return (
-    <ScrollArea className="h-full text-slate-700">
-      <div className="container h-full max-w-7xl text-slate-700">
+    <ScrollArea className="h-full text-foreground">
+      <div className="container h-full max-w-7xl text-foreground">
         <SettingsMobileHeader currentPage="general" />
         <div className="h-full overflow-auto py-20 md:px-[120px]">
           <div className="flex flex-col gap-6 w-full">
@@ -185,7 +185,7 @@ export function GeneralSettings() {
             </div>
             <div className="max-w-2xl mx-auto space-y-8">
               <div className="flex flex-col items-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mb-4">
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
                   <Avatar
                     fallback={currentTeamName}
                     url={avatarUrl}
@@ -287,7 +287,7 @@ export function GeneralSettings() {
                       </FormItem>
                     )}
                   />
-                  <div className="p-6 bg-slate-50 rounded-lg">
+                  <div className="p-6 bg-muted rounded-lg">
                     <div className="flex flex-col gap-2">
                       <h3 className="font-semibold">Delete Team</h3>
                       <p className="text-xs text-muted-foreground">

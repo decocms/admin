@@ -158,7 +158,7 @@ const MemoizedMarkdownBlock = memo(
               {...props}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
+              className="text-primary hover:underline"
             />
           ),
           ul: (props) => (
@@ -171,13 +171,13 @@ const MemoizedMarkdownBlock = memo(
           code: (props) => (
             <code
               {...props}
-              className="px-1 py-0.5 bg-gray-100 rounded text-sm font-mono"
+              className="px-1 py-0.5 bg-muted rounded text-sm font-mono"
             />
           ),
           pre: (props) => (
             <pre
               {...props}
-              className="flex max-w-[calc(640px-64px)] my-4 bg-gray-100 rounded"
+              className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded"
             >
               <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
                 {props.children}

@@ -57,19 +57,19 @@ export type InviteMemberFormData = z.infer<typeof inviteMemberSchema>;
 function InviteTeamMembersDialogFeatureWall() {
   const contactUsUrl = useContactUsUrl();
   return (
-    <DialogContent className="sm:max-w-2xl">
+    <DialogContent className="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Invite Team Members</DialogTitle>
+        <DialogTitle>Invite members</DialogTitle>
       </DialogHeader>
       <div className="flex flex-col items-center justify-center gap-6 py-8">
-        <div className="rounded-full bg-slate-100 p-4 w-16 h-16 flex items-center justify-center">
-          <Icon name="lock" className="text-slate-400" size={24} />
+        <div className="rounded-full bg-muted p-4 w-16 h-16 flex items-center justify-center">
+          <Icon name="lock" className="text-muted-foreground" size={24} />
         </div>
         <div className="text-center">
-          <h3 className="text-lg font-medium text-slate-900">
+          <h3 className="text-lg font-medium text-foreground">
             Upgrade Required
           </h3>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             Inviting team members is only available on paid workspaces
           </p>
         </div>
@@ -306,7 +306,7 @@ export function InviteTeamMembersDialog({
                   </Button>
                 </div>
 
-                <div className="text-sm text-slate-500 mt-4 border-t pt-4">
+                <div className="text-sm text-muted-foreground mt-4 border-t pt-4">
                   Users will receive an invite email to join this team.
                 </div>
 

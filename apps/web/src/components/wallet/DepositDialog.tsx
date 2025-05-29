@@ -93,12 +93,12 @@ export function DepositDialog() {
               onChange={handleAmountChange}
             />
             {amountError && (
-              <p className="text-sm text-red-500">{amountError}</p>
+              <p className="text-sm text-destructive">{amountError}</p>
             )}
           </div>
           {createCheckoutSession.error
             ? (
-              <p className="text-red-500 text-sm">
+              <p className="text-destructive text-sm">
                 We could not create a checkout session for you now.<br />Please
                 try again later.
               </p>

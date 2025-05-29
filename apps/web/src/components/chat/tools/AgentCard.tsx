@@ -38,14 +38,14 @@ export function AgentCard(
   }
 
   return (
-    <Card className="w-full max-w-64 bg-gradient-to-b from-white to-slate-50 border-zinc-200 shadow-sm rounded-2xl my-4">
+    <Card className="w-full max-w-64 bg-gradient-to-b from-white to-muted/50 border-border shadow-sm rounded-2xl my-4">
       <CardHeader className="flex flex-col items-center space-y-4 px-4 pt-6 pb-0 relative">
         {onEdit && (
           <Button
             variant="secondary"
             size="icon"
             onClick={onEdit}
-            className="absolute right-4 top-4 bg-zinc-100 hover:bg-zinc-200"
+            className="absolute right-4 top-4 bg-muted hover:bg-muted/90"
           >
             <Icon name="edit" />
           </Button>
@@ -57,13 +57,13 @@ export function AgentCard(
           </Avatar>
         </div>
         <div className="flex flex-col items-center justify-center gap-1">
-          <CardTitle className="text-xl font-medium leading-relaxed text-slate-800 text-center">
+          <CardTitle className="text-xl font-medium leading-relaxed text-foreground text-center">
             {name}
           </CardTitle>
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-6 pt-2 flex flex-col gap-2 items-center">
-        <p className="text-sm leading-relaxed text-slate-600 text-center">
+        <p className="text-sm leading-relaxed text-muted-foreground text-center">
           {description}
         </p>
         {displayLink && (

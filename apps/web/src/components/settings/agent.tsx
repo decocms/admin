@@ -155,14 +155,14 @@ function SettingsTab() {
                             />
                             <FormControl>
                               <div
-                                className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                                className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                                 onClick={triggerFileInput}
                               >
                                 {isUploading
                                   ? (
                                     <Skeleton
                                       className={cn(
-                                        "w-full h-full rounded-lg",
+                                        "w-full h-full rounded-xl",
                                       )}
                                     />
                                   )
@@ -171,7 +171,6 @@ function SettingsTab() {
                                       <AgentAvatar
                                         name={agent.name}
                                         avatar={field.value || agent.avatar}
-                                        className="rounded-lg"
                                       />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                         <Icon
@@ -193,7 +192,6 @@ function SettingsTab() {
                       <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input
-                          className="rounded-md"
                           placeholder="Enter agent name"
                           {...field}
                         />
@@ -213,7 +211,6 @@ function SettingsTab() {
                   <FormControl>
                     <Input
                       type="number"
-                      className="rounded-md border-slate-200"
                       min={ANTHROPIC_MIN_MAX_TOKENS}
                       max={ANTHROPIC_MAX_MAX_TOKENS}
                       {...field}
@@ -255,7 +252,7 @@ function SettingsTab() {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-2">
                         <FormLabel>Visibility</FormLabel>
-                        <FormDescription className="text-xs text-slate-400">
+                        <FormDescription className="text-xs text-muted-foreground">
                           Control who can interact with this agent.
                         </FormDescription>
                       </div>
@@ -315,7 +312,7 @@ function SettingsTab() {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-2">
                           <FormLabel>Access</FormLabel>
-                          <FormDescription className="text-xs text-slate-400">
+                          <FormDescription className="text-xs text-muted-foreground">
                             Control who can access with this agent by role.
                           </FormDescription>
                         </div>
@@ -356,14 +353,14 @@ function SettingsTab() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
-                  <FormDescription className="text-xs text-slate-400">
+                  <FormDescription className="text-xs text-muted-foreground">
                     Used for search and organization, it does not affect agent
                     behavior.
                   </FormDescription>
                   <FormControl>
                     <Textarea
                       placeholder="e.g. Helps write product descriptions for the online store"
-                      className="min-h-18 border-slate-200"
+                      className="min-h-18 border-border"
                       {...field}
                     />
                   </FormControl>

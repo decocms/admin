@@ -17,7 +17,7 @@ export function SettingsMobileHeader(
   ) || SETTINGS_ITEMS[0];
 
   return (
-    <div className="md:hidden flex items-center justify-between w-full h-14 px-4 bg-slate-100 text-slate-700">
+    <div className="md:hidden flex items-center justify-between w-full h-14 px-4 bg-muted text-muted-foreground">
       <Button
         variant="ghost"
         size="icon"

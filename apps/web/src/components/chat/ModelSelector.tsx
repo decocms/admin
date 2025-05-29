@@ -47,8 +47,8 @@ const CAPABILITY_CONFIGS = {
   },
   mixed: {
     icon: "cyclone",
-    bg: "bg-slate-100",
-    text: "text-slate-700",
+    bg: "bg-muted",
+    text: "text-foreground",
     label: "Mixed capabilities",
   },
 } as const;
@@ -90,7 +90,7 @@ function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
           </div>
         </div>
         {model.description && (
-          <p className="text-[10px] max-w-[250px] text-gray-500">
+          <p className="text-[10px] max-w-[250px] text-muted-foreground">
             {model.description}
           </p>
         )}
@@ -155,7 +155,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "!h-8 text-xs hover:bg-slate-100 py-0 px-2 shadow-none",
+          "!h-8 text-xs hover:bg-muted py-0 px-2 shadow-none",
           variant === "borderless" && "md:border-none",
         )}
       >
@@ -170,8 +170,8 @@ export function ModelSelector({
             value={model.id}
             hideCheck
             className={cn(
-              "p-0 focus:bg-slate-100 focus:text-foreground",
-              model.id === selectedModel?.id && "bg-slate-50",
+              "p-0 focus:bg-muted focus:text-foreground",
+              model.id === selectedModel?.id && "bg-muted/50",
             )}
           >
             <ModelItemContent model={model} />

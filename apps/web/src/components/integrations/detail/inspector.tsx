@@ -29,7 +29,7 @@ export function Inspector() {
   return (
     <ErrorBoundary fallback={<Inspector.ErrorFallback />}>
       <Suspense fallback={<Inspector.Skeleton />}>
-        <ScrollArea className="h-full w-full p-6 text-slate-700">
+        <ScrollArea className="h-full w-full p-6 text-foreground">
           <Inspector.UI connection={connection} />
         </ScrollArea>
       </Suspense>

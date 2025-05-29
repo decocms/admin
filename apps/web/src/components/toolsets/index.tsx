@@ -81,7 +81,7 @@ export function Integration({
           tools={toolsData.tools.map((tool: MCPTool) => tool.name)}
           enabledTools={enabledTools}
         />
-        <div className="p-4 flex items-center space-x-2 text-slate-400">
+        <div className="p-4 flex items-center space-x-2 text-muted-foreground">
           <Icon name="info" />
           <p className="text-xs">
             No tools enabled for this integration.
@@ -94,7 +94,7 @@ export function Integration({
   return (
     <div
       onClick={() => onIntegrationClick?.(integration)}
-      className="cursor-pointer group hover:bg-slate-50 transition-colors rounded-lg"
+      className="cursor-pointer group hover:bg-muted transition-colors rounded-lg"
     >
       <IntegrationHeader
         integration={integration}

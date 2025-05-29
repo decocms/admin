@@ -74,7 +74,9 @@ function UserInfo({
   // If userId matches current user, use user data directly
   const isCurrentUser = userId && user && userId === user.id;
 
-  const { data: teamMembers = [] } = useTeamMembers(teamId ?? null);
+  const { data: { members: teamMembers = [] } } = useTeamMembers(
+    teamId ?? null,
+  );
   const members = (!isCurrentUser && teamId !== null) ? teamMembers : [];
   const member = useMemo(
     () => members.find((m) => m.user_id === userId),
@@ -107,10 +109,10 @@ function UserInfo({
               showDetails ? "hidden md:flex" : "flex"
             }`}
           >
-            <span className="truncate max-w-[120px] block text-xs font-medium text-slate-800">
+            <span className="truncate max-w-[120px] block text-xs font-medium text-foreground">
               {name || "Unknown"}
             </span>
-            <span className="truncate max-w-[120px] block text-xs font-normal text-slate-500">
+            <span className="truncate max-w-[120px] block text-xs font-normal text-muted-foreground">
               {email || ""}
             </span>
           </div>
@@ -151,10 +153,10 @@ export function DateTimeCell({
     <div
       className={`flex flex-col items-start text-left leading-tight ${className}`}
     >
-      <span className="font-medium text-slate-800">
+      <span className="font-medium text-foreground">
         {format(dateObj, dateFormat)}
       </span>
-      <span className="font-normal text-slate-500">
+      <span className="font-normal text-muted-foreground">
         {format(dateObj, timeFormat)}
       </span>
     </div>

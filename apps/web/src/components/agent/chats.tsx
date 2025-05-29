@@ -115,7 +115,7 @@ function Page() {
                 "--sidebar-width-mobile": "14rem",
               } as Record<string, string>}
             >
-              <SidebarInset className=" bg-slate-50">
+              <SidebarInset>
                 <PageLayout tabs={TABS} breadcrumb={<ChatHeader />} />
               </SidebarInset>
             </SidebarProvider>

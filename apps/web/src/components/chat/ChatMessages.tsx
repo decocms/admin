@@ -104,7 +104,7 @@ export function ChatMessages() {
             className={cn(
               "absolute bottom-36 sm:bottom-6 md:bottom-0 md:-translate-y-1/2 left-1/2 transform -translate-x-1/2",
               "w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center",
-              "cursor-pointer hover:bg-slate-50 transition-colors z-50 border border-slate-200",
+              "cursor-pointer hover:bg-sidebar transition-colors z-50 border border-border",
               `[[data-disable-auto-scroll="false"]_&]:opacity-0 opacity-100 transition-opacity`,
               `[[data-disable-auto-scroll="false"]_&]:pointer-events-none`,
             )}

@@ -51,13 +51,13 @@ export function ChatError() {
               <Protect
                 feature="ai-wallet-deposit"
                 fallback={
-                  <p className="text-xs text-slate-700 pr-2">
+                  <p className="text-xs text-foreground pr-2">
                     This workspace has reached its usage limit. Upgrade your
                     plan to continue using AI.
                   </p>
                 }
               >
-                <p className="text-xs text-slate-700 pr-2">
+                <p className="text-xs text-foreground pr-2">
                   Your workspace wallet has reached its limit. Add more funds to
                   continue using AI.
                 </p>
@@ -106,7 +106,7 @@ export function ChatError() {
         <div className="flex flex-col">
           <p>An error occurred while generating the response.</p>
           {correlationIdRef?.current && (
-            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <span className="select-none">
                 Error Id:
               </span>

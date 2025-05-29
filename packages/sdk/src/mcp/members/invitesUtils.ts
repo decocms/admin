@@ -49,7 +49,7 @@ export function generateEmailBody(
   <!-- Logo Row -->
   <tr>
     <td style="padding: 24px;">
-      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://drive.google.com/uc?export=view&id=1s9sphIlB7ZyKzlFtYAw9Karhh0ARIgFh" alt="deco.chat logo"/>
+      <img width="144px" height="40px" style="width:144px;height:40px;" src="https://deco.chat/img/deco-chat-logo.png" alt="deco.chat logo"/>
     </td>
   </tr>
 

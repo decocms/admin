@@ -25,7 +25,7 @@ export function CodeBlock({ children, className }: {
     <div className="relative group">
       <pre
         className={cn(
-          "rounded-md bg-slate-100 p-2 text-xs font-mono whitespace-pre-wrap pr-10",
+          "rounded-md bg-muted p-2 text-xs font-mono whitespace-pre-wrap pr-10",
           className,
         )}
       >

@@ -48,7 +48,6 @@ const PageviewTrackerLayout = lazy(
 );
 
 const Login = lazy(() => import("./components/login/index.tsx"));
-const About = lazy(() => import("./components/about/index.tsx"));
 
 /**
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
@@ -233,10 +232,6 @@ const router = createBrowserRouter([
       {
         path: "/login/magiclink",
         Component: MagicLink,
-      },
-      {
-        path: "/about",
-        Component: About,
       },
       {
         path: "/invites",

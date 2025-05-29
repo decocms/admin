@@ -335,7 +335,7 @@ export type Database = {
           max_steps?: number | null;
           max_tokens?: number | null;
           memory?: Json | null;
-          model?: string;
+          model: string;
           name: string;
           tools_set: Json;
           views: Json;

@@ -10,7 +10,13 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import type { JSONSchema7 } from "json-schema";
-import type { ArrayPath, FieldArray, FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
+import type {
+  ArrayPath,
+  FieldArray,
+  FieldPath,
+  FieldValues,
+  UseFormReturn,
+} from "react-hook-form";
 import { useFieldArray } from "react-hook-form";
 import { generateDefaultValue } from "../utils/index.ts";
 
@@ -89,30 +95,32 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                       <div className="bg-muted text-muted-foreground text-xs px-2 py-1 rounded font-medium">
                         #{index + 1}
                       </div>
-                      
+
                       <div className="flex gap-1 bg-background">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleMoveUp(index)}
+                          onClick={() =>
+                            handleMoveUp(index)}
                           disabled={disabled || index === 0}
                           className="w-8"
                         >
                           <Icon name="keyboard_arrow_up" size={20} />
                         </Button>
-                        
+
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleMoveDown(index)}
+                          onClick={() =>
+                            handleMoveDown(index)}
                           disabled={disabled || index === fields.length - 1}
                           className="w-8"
                         >
                           <Icon name="keyboard_arrow_down" size={20} />
                         </Button>
-                        
+
                         <Button
                           type="button"
                           variant="ghost"
@@ -125,7 +133,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                         </Button>
                       </div>
                     </div>
-                    
+
                     {/* Content area */}
                     <div className="array-field-content">
                       <RenderItem
@@ -138,7 +146,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                   </CardContent>
                 </Card>
               ))}
-              
+
               <Button
                 type="button"
                 variant="outline"

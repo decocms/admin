@@ -18,7 +18,7 @@ function ThreadView({ agentId, threadId }: Props) {
       <div className="flex items-center justify-between p-4">
         <ChatHeader />
       </div>
-      <ScrollArea className="h-full w-full p-6 text-slate-700">
+      <ScrollArea className="h-full w-full p-6 text-foreground">
         <ChatMessages />
       </ScrollArea>
     </ChatProvider>

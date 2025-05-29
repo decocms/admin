@@ -200,7 +200,7 @@ export function ProfileSettings(
           )
           : loadError
           ? (
-            <div className="py-8 text-center text-red-500">
+            <div className="py-8 text-center text-destructive">
               {String(loadError.message)}
             </div>
           )
@@ -214,13 +214,13 @@ export function ProfileSettings(
               <div className="text-lg font-semibold">
                 {profile?.metadata?.full_name || profile?.email}
               </div>
-              <div className="text-sm text-slate-500">{profile?.email}</div>
-              <div className="flex items-center gap-2 text-xs text-slate-500">
+              <div className="text-sm text-muted-foreground">{profile?.email}</div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>User ID: {user?.id}</span>
                 <button
                   type="button"
                   onClick={handleCopyUserId}
-                  className="p-1 hover:bg-slate-100 rounded transition-colors"
+                  className="p-1 hover:bg-muted rounded transition-colors"
                   aria-label="Copy user ID"
                 >
                   <Icon
@@ -232,7 +232,7 @@ export function ProfileSettings(
               <div className="w-full max-w-xs flex flex-col gap-2">
                 <label
                   htmlFor="profile-phone"
-                  className="text-sm font-medium text-slate-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Phone Number
                 </label>
@@ -268,10 +268,10 @@ export function ProfileSettings(
                   />
                 </div>
                 {error && (
-                  <span className="text-red-500 text-xs mt-1">{error}</span>
+                  <span className="text-destructive text-xs mt-1">{error}</span>
                 )}
                 {success && (
-                  <span className="text-green-600 text-xs mt-1">Saved!</span>
+                  <span className="text-special text-xs mt-1">Saved!</span>
                 )}
               </div>
             </div>

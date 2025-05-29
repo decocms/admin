@@ -30,7 +30,7 @@ function PromptTab() {
                   <FormControl>
                     <Textarea
                       placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
-                      className="min-h-[170px] h-full border-slate-200"
+                      className="min-h-[170px] h-full border-border"
                       {...field}
                     />
                   </FormControl>

@@ -68,7 +68,7 @@ export function AuditFilters({
                     <span>
                       {name}
                       {email && email !== name && (
-                        <span className="ml-2 text-xs text-slate-400">
+                        <span className="ml-2 text-xs text-muted-foreground">
                           {email}
                         </span>
                       )}

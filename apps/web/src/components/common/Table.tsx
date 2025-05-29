@@ -37,13 +37,13 @@ export function Table<T>({
 }: TableProps<T>) {
   function renderSortIcon(key: string) {
     if (!sortKey || sortKey !== key) {
-      return <Icon name="arrow_upward" size={16} className="text-slate-300" />;
+      return <Icon name="arrow_upward" size={16} className="text-muted-foreground/50" />;
     }
     return (
       <Icon
         name={sortDirection === "asc" ? "arrow_upward" : "arrow_downward"}
         size={16}
-        className="text-slate-700"
+        className="text-muted-foreground"
       />
     );
   }

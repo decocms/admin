@@ -1,4 +1,4 @@
-import { AUTH_URL, UnauthorizedError } from "@deco/sdk";
+import { AUTH_URL, UnauthorizedError, useInvites } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -33,8 +33,9 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
-import { lazy, Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { Link, useLocation, useMatch } from "react-router";
 import { ErrorBoundary } from "../../ErrorBoundary.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
@@ -43,10 +44,32 @@ import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
-import InvitesLink from "./InvitesLink.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 
-const Notification = lazy(() => import("./UserNotifications.tsx"));
+/** Wrapped component to be suspended */
+function NotificationDot({ className }: { className?: string }) {
+  const { data: invites = [] } = useInvites();
+
+  if (!invites.length) return null;
+
+  return (
+    <span className={cn("relative flex size-2", className)}>
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+      <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+    </span>
+  );
+}
+
+/** Wrapped component to be suspended */
+function InvitesCount() {
+  const { data: invites = [] } = useInvites();
+
+  return (
+    <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+      {invites.length}
+    </span>
+  );
+}
 
 function UserPreferencesModal({ open, onOpenChange }: {
   open: boolean;
@@ -215,7 +238,7 @@ function LoggedUser() {
 
           <Suspense fallback={null}>
             <div className="size-3 flex items-center">
-              <Notification className="justify-end" />
+              <NotificationDot className="justify-end" />
             </div>
           </Suspense>
         </SidebarMenuButton>
@@ -263,7 +286,7 @@ function LoggedUser() {
             <span className="truncate">Invites</span>
 
             <Suspense fallback={null}>
-              <InvitesLink />
+              <InvitesCount />
             </Suspense>
           </Link>
         </ResponsiveDropdownItem>

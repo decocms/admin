@@ -41,8 +41,8 @@ import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { RolesDropdown } from "../common/RolesDropdown.tsx";
 
 function MemberTitle() {
   return (
@@ -253,8 +253,12 @@ function MembersViewContent() {
       toast.success(
         checked ? "Role assigned successfully" : "Role removed successfully",
       );
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update role");
+    } catch (error) {
+      toast.error(
+        // deno-lint-ignore no-explicit-any
+        typeof error === "object" && (error as any)?.message ||
+          "Failed to update role",
+      );
       console.error("Failed to update member role:", error);
     }
   };
@@ -411,66 +415,18 @@ function MembersViewContent() {
                               {role.name}
                             </Badge>
                           ))}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-5.5 w-5.5 p-0 rounded-md"
-                              >
-                                <Icon name="add" size={14} />
-                                <span className="sr-only">Manage roles</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="start"
-                              className="w-56 p-2"
-                            >
-                              <div className="text-xs font-medium px-2 py-1.5">
-                                Roles
-                              </div>
-                              {roles.map((role) => {
-                                const checked = member.roles.some((
-                                  memberRole,
-                                ) =>
-                                  memberRole.id === role.id
-                                );
-                                return (
-                                  <DropdownMenuItem key={role.id} asChild>
-                                    <div
-                                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        // Don't allow removing the last role
-                                        if (
-                                          checked && member.roles.length <= 1
-                                        ) {
-                                          toast.error(
-                                            "Member must have at least one role",
-                                          );
-                                          return;
-                                        }
-                                        handleUpdateMemberRole(
-                                          member.user_id,
-                                          role,
-                                          !checked,
-                                        );
-                                      }}
-                                    >
-                                      <Checkbox
-                                        checked={checked}
-                                        className="h-4 w-4"
-                                        disabled={updateRoleMutation.isPending}
-                                      />
-                                      <span className="capitalize">
-                                        {role.name}
-                                      </span>
-                                    </div>
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <RolesDropdown
+                            roles={roles}
+                            selectedRoles={member.roles}
+                            onRoleClick={(role, checked) => {
+                              handleUpdateMemberRole(
+                                member.user_id,
+                                role,
+                                checked,
+                              );
+                            }}
+                            disabled={updateRoleMutation.isPending}
+                          />
                         </span>
                       </TableCell>
 

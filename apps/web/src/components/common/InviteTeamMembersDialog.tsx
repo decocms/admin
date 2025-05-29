@@ -29,24 +29,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { useContactUsUrl } from "../../hooks/useContactUs.ts";
-import { Badge } from "../../../../../packages/ui/src/components/badge.tsx";
-import { Checkbox } from "../../../../../packages/ui/src/components/checkbox.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../../../../packages/ui/src/components/dropdown-menu.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { RolesDropdown } from "./RolesDropdown.tsx";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -241,7 +228,7 @@ export function InviteTeamMembersDialog({
                           name={`invitees.${index}.email`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email</FormLabel>
+                              <FormLabel className="shrink-0">Email</FormLabel>
                               <FormControl>
                                 <Input
                                   placeholder="Enter email address"
@@ -260,76 +247,40 @@ export function InviteTeamMembersDialog({
                           name={`invitees.${index}.roleId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Role</FormLabel>
-                              <span className="inline-flex gap-2 items-center">
-                                {field.value.map((role: any) => (
-                                  <Badge variant="outline" key={role.id}>
-                                    {role}
-                                  </Badge>
-                                ))}
-                              </span>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-5.5 w-5.5 p-0 rounded-md"
-                                  >
-                                    <Icon name="add" size={14} />
-                                    <span className="sr-only">
-                                      Manage roles
-                                    </span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="start"
-                                  className="w-56 p-2"
-                                >
-                                  <div className="text-xs font-medium px-2 py-1.5">
-                                    Roles
-                                  </div>
-                                  {roles.map((role) => {
-                                    const checked = field.value.some((
-                                      memberRole,
-                                    ) => memberRole === role.id.toString());
-                                    return (
-                                      <DropdownMenuItem key={role.id} asChild>
-                                        <div
-                                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            // Don't allow removing the last role
-                                            if (
-                                              checked &&
-                                              field.value.length <= 1
-                                            ) {
-                                              toast.error(
-                                                "Member must have at least one role",
-                                              );
-                                              return;
-                                            }
-                                            // handleUpdateMemberRole(
-                                            //   member.user_id,
-                                            //   role.id,
-                                            //   !checked,
-                                            // );
-                                          }}
-                                        >
-                                          <Checkbox
-                                            checked={checked}
-                                            className="h-4 w-4"
-                                            disabled={inviteMemberMutation
-                                              .isPending}
-                                          />
-                                          <span className="capitalize">
-                                            {role.name}
-                                          </span>
-                                        </div>
-                                      </DropdownMenuItem>
-                                    );
+                              <FormLabel className="shrink-0">Role</FormLabel>
+                              <FormControl>
+                                <div className="flex items-center gap-2 h-10">
+                                <span className="inline-flex gap-2 items-center">
+                                  {field.value.slice(0,3).map((roleId) => {
+                                    const role = roles.find(r => r.id.toString() === roleId);
+                                    return role ? (
+                                      <Badge variant="outline" key={roleId}>
+                                        {role.name}
+                                      </Badge>
+                                    ) : null;
                                   })}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                </span>
+                                <RolesDropdown
+                                  roles={roles}
+                                  selectedRoles={field.value}
+                                  onRoleClick={(role, checked) => {
+                                    const currentRoles = field.value || [];
+                                    const roleIdStr = role.id.toString();
+                                    
+                                    if (checked) {
+                                      // Add role if not already present
+                                      if (!currentRoles.includes(roleIdStr)) {
+                                        field.onChange([...currentRoles, roleIdStr]);
+                                      }
+                                    } else {
+                                      // Remove role
+                                      field.onChange(currentRoles.filter(id => id !== roleIdStr));
+                                    }
+                                  }}
+                                  disabled={inviteMemberMutation.isPending}
+                                />
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}

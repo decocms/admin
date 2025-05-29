@@ -1,5 +1,5 @@
 import {
-  AUTO_MODEL,
+  DEFAULT_MODEL,
   NotFoundError,
   readFile,
   useAgent,
@@ -135,7 +135,7 @@ ChatInput.UI = (
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
+  const selectedModel = models.find((m) => m.id === model) || DEFAULT_MODEL;
 
   const getAcceptedFileTypes = () => {
     const acceptTypes: string[] = [];

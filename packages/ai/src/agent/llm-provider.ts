@@ -118,7 +118,7 @@ const providers: Record<
 const modelLimit = (provider: Provider, model: string) =>
   provider.tokenLimit?.[model] ?? provider.tokenLimit?.default ?? 200_000;
 
-export const createLLM: ProviderFactory = (opts) => {
+export const createLLMProvider: ProviderFactory = (opts) => {
   const provider = providers[opts.provider];
   if (!provider) {
     throw new Error(`Provider ${opts.provider} not supported`);

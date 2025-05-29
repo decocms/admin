@@ -12,7 +12,12 @@ import {
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { AUTO_MODEL, useModels, WELL_KNOWN_MODELS } from "@deco/sdk";
+import {
+  DEFAULT_MODEL,
+  type Model,
+  useModels,
+  WELL_KNOWN_MODELS,
+} from "@deco/sdk";
 import { useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {
@@ -45,12 +50,6 @@ const CAPABILITY_CONFIGS = {
     text: "text-amber-700",
     label: "Can search the web to answer questions",
   },
-  mixed: {
-    icon: "cyclone",
-    bg: "bg-muted",
-    text: "text-foreground",
-    label: "Mixed capabilities",
-  },
 } as const;
 
 function CapabilityBadge(
@@ -79,25 +78,7 @@ function CapabilityBadge(
   );
 }
 
-function ModelItemContent({ model }: { model: typeof WELL_KNOWN_MODELS[0] }) {
-  if (model.id === AUTO_MODEL.id) {
-    return (
-      <div className="p-2 md:w-[400px] flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-normal font-medium">Auto</span>
-          <div className="flex items-center gap-2 ml-auto">
-            <CapabilityBadge capability="mixed" />
-          </div>
-        </div>
-        {model.description && (
-          <p className="text-[10px] max-w-[250px] text-muted-foreground">
-            {model.description}
-          </p>
-        )}
-      </div>
-    );
-  }
-
+function ModelItemContent({ model }: { model: Model }) {
   return (
     <div className="p-2 md:w-[400px] flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">
@@ -131,13 +112,13 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({
-  model = AUTO_MODEL.id,
+  model = DEFAULT_MODEL.id,
   onModelChange,
   variant = "borderless",
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { data: models } = useModels({ excludeDisabled: true });
-  const selectedModel = models.find((m) => m.id === model) || AUTO_MODEL;
+  const selectedModel = models.find((m) => m.id === model) || DEFAULT_MODEL;
 
   const handleModelChange = (model: string) => {
     if (onModelChange) {

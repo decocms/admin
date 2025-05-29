@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTO_MODEL } from "../constants.ts";
+import { DEFAULT_MODEL } from "../constants.ts";
 
 /**
  * Zod schema for an AI Agent
@@ -33,8 +33,8 @@ export const AgentSchema = z.object({
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */
-  model: z.string().default(AUTO_MODEL.id)
-    .describe("Model to use for the agent").optional(),
+  model: z.string().default(DEFAULT_MODEL.id)
+    .describe("Model to use for the agent"),
   /** Memory to use for the agent */
   memory: z.object({
     discriminator: z.string().optional().describe(

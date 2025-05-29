@@ -1,12 +1,9 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
-import { listModelsForWorkspace } from "./api.ts";
-import type { Model } from "../../constants.ts";
 
 export interface LLMVault {
-  listWorkspaceModels(): Promise<Model[]>;
-  decrypt(apiKeyEncrypted: string): string;
+  readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;
   storeApiKey(
     modelId: string,
     workspace: string,
@@ -45,12 +42,22 @@ export class SupabaseLLMVault implements LLMVault {
     return iv.toString("hex") + ":" + encrypted;
   }
 
-  listWorkspaceModels(): Promise<Model[]> {
-    return listModelsForWorkspace({
-      workspace: this.workspace,
-      db: this.db,
-      options: { excludeDisabled: true, excludeAuto: true, showApiKey: true },
-    });
+  async readApiKey(
+    modelId: string,
+  ): Promise<{ model: string; apiKey: string }> {
+    const { data, error } = await this.db
+      .from("models")
+      .select("model, api_key_hash")
+      .eq("id", modelId)
+      .eq("workspace", this.workspace)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      model: data.model,
+      apiKey: this.decrypt(data.api_key_hash),
+    };
   }
 
   decrypt(encryptedText: string): string {

@@ -250,35 +250,46 @@ export function InviteTeamMembersDialog({
                               <FormLabel className="shrink-0">Role</FormLabel>
                               <FormControl>
                                 <div className="flex items-center gap-2 h-10">
-                                <span className="inline-flex gap-2 items-center">
-                                  {field.value.slice(0,3).map((roleId) => {
-                                    const role = roles.find(r => r.id.toString() === roleId);
-                                    return role ? (
-                                      <Badge variant="outline" key={roleId}>
-                                        {role.name}
-                                      </Badge>
-                                    ) : null;
-                                  })}
-                                </span>
-                                <RolesDropdown
-                                  roles={roles}
-                                  selectedRoles={field.value}
-                                  onRoleClick={(role, checked) => {
-                                    const currentRoles = field.value || [];
-                                    const roleIdStr = role.id.toString();
-                                    
-                                    if (checked) {
-                                      // Add role if not already present
-                                      if (!currentRoles.includes(roleIdStr)) {
-                                        field.onChange([...currentRoles, roleIdStr]);
+                                  <span className="inline-flex gap-2 items-center">
+                                    {field.value.slice(0, 3).map((roleId) => {
+                                      const role = roles.find((r) =>
+                                        r.id.toString() === roleId
+                                      );
+                                      return role
+                                        ? (
+                                          <Badge variant="outline" key={roleId}>
+                                            {role.name}
+                                          </Badge>
+                                        )
+                                        : null;
+                                    })}
+                                  </span>
+                                  <RolesDropdown
+                                    roles={roles}
+                                    selectedRoles={field.value}
+                                    onRoleClick={(role, checked) => {
+                                      const currentRoles = field.value || [];
+                                      const roleIdStr = role.id.toString();
+
+                                      if (checked) {
+                                        // Add role if not already present
+                                        if (!currentRoles.includes(roleIdStr)) {
+                                          field.onChange([
+                                            ...currentRoles,
+                                            roleIdStr,
+                                          ]);
+                                        }
+                                      } else {
+                                        // Remove role
+                                        field.onChange(
+                                          currentRoles.filter((id) =>
+                                            id !== roleIdStr
+                                          ),
+                                        );
                                       }
-                                    } else {
-                                      // Remove role
-                                      field.onChange(currentRoles.filter(id => id !== roleIdStr));
-                                    }
-                                  }}
-                                  disabled={inviteMemberMutation.isPending}
-                                />
+                                    }}
+                                    disabled={inviteMemberMutation.isPending}
+                                  />
                                 </div>
                               </FormControl>
                               <FormMessage />

@@ -34,10 +34,12 @@ export function RolesDropdown({
   const isRoleSelected = (role: Role) => {
     if (Array.isArray(selectedRoles) && selectedRoles.length > 0) {
       // Handle both Role objects and string IDs
-      if (typeof selectedRoles[0] === 'string') {
+      if (typeof selectedRoles[0] === "string") {
         return (selectedRoles as string[]).includes(role.id.toString());
       } else {
-        return (selectedRoles as Role[]).some(selectedRole => selectedRole.id === role.id);
+        return (selectedRoles as Role[]).some((selectedRole) =>
+          selectedRole.id === role.id
+        );
       }
     }
     return false;
@@ -46,13 +48,13 @@ export function RolesDropdown({
   const handleRoleClick = (role: Role, e: React.MouseEvent) => {
     e.preventDefault();
     const checked = isRoleSelected(role);
-    
+
     // Don't allow removing the last role unless allowEmpty is true
     if (checked && selectedRoles.length <= 1) {
       toast.error("Member must have at least one role");
       return;
     }
-    
+
     onRoleClick(role, !checked);
   };
 

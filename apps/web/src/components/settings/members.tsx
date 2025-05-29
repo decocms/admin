@@ -454,7 +454,8 @@ function MembersViewContent() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               variant="destructive"
-                              onClick={() => handleRemoveMember(member.id)}
+                              onClick={() =>
+                                handleRemoveMember(member.id)}
                               disabled={removeMemberMutation.isPending}
                             >
                               <Icon name="delete" />

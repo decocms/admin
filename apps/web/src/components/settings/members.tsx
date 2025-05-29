@@ -250,7 +250,7 @@ function MembersViewContent() {
         action: checked ? "grant" : "revoke",
       });
       toast.success(
-        checked ? "Role assigned successfully" : "Role removed successfully"
+        checked ? "Role assigned successfully" : "Role removed successfully",
       );
     } catch (error: any) {
       toast.error(error.message || "Failed to update role");
@@ -456,27 +456,34 @@ function MembersViewContent() {
                               <span className="sr-only">Manage roles</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-56 p-2">
-                            <div className="text-xs font-medium px-2 py-1.5">Roles</div>
+                          <DropdownMenuContent
+                            align="start"
+                            className="w-56 p-2"
+                          >
+                            <div className="text-xs font-medium px-2 py-1.5">
+                              Roles
+                            </div>
                             {roles.map((role) => {
-                              const checked = member.roles.some((memberRole) => 
+                              const checked = member.roles.some((memberRole) =>
                                 memberRole.id === role.id
                               );
                               return (
                                 <DropdownMenuItem key={role.id} asChild>
-                                  <div 
+                                  <div
                                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
                                     onClick={(e) => {
                                       e.preventDefault();
                                       // Don't allow removing the last role
                                       if (checked && member.roles.length <= 1) {
-                                        toast.error("Member must have at least one role");
+                                        toast.error(
+                                          "Member must have at least one role",
+                                        );
                                         return;
                                       }
                                       handleUpdateMemberRole(
                                         member.user_id,
                                         role.id,
-                                        !checked
+                                        !checked,
                                       );
                                     }}
                                   >
@@ -485,7 +492,9 @@ function MembersViewContent() {
                                       className="h-4 w-4"
                                       disabled={updateRoleMutation.isPending}
                                     />
-                                    <span className="capitalize">{role.name}</span>
+                                    <span className="capitalize">
+                                      {role.name}
+                                    </span>
                                   </div>
                                 </DropdownMenuItem>
                               );

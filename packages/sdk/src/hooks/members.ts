@@ -193,7 +193,7 @@ export const useUpdateMemberRole = () => {
     }) => updateMemberRole(teamId, userId, roleId, action),
     onSuccess: (_, { teamId, userId, roleId, action }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
-      const membersData = queryClient.getQueryData<Member[]>(membersKey);
+      const membersData = queryClient.getQueryData<Member[]>(membersKey); 
 
       if (!membersData) return;
 

@@ -39,6 +39,14 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { useContactUsUrl } from "../../hooks/useContactUs.ts";
+import { Badge } from "../../../../../packages/ui/src/components/badge.tsx";
+import { Checkbox } from "../../../../../packages/ui/src/components/checkbox.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../../../packages/ui/src/components/dropdown-menu.tsx";
 
 // Form validation schema
 const inviteMemberSchema = z.object({
@@ -47,7 +55,7 @@ const inviteMemberSchema = z.object({
       email: z.string().email({
         message: "Please enter a valid email address",
       }),
-      roleId: z.string().min(1, { message: "Please select a role" }),
+      roleId: z.array(z.string()).min(1, { message: "Please select a role" }),
     }),
   ).min(1),
 });
@@ -130,13 +138,13 @@ export function InviteTeamMembersDialog({
   const form = useForm<InviteMemberFormData>({
     resolver: zodResolver(inviteMemberSchema),
     defaultValues: {
-      invitees: [{ email: "", roleId: ownerRoleId || "" }],
+      invitees: [{ email: "", roleId: ownerRoleId ? [ownerRoleId] : [] }],
     },
   });
 
   useEffect(() => {
     if (ownerRoleId) {
-      form.setValue("invitees.0.roleId", ownerRoleId);
+      form.setValue("invitees.0.roleId", [ownerRoleId]);
     }
   }, [ownerRoleId, form]);
 
@@ -147,7 +155,7 @@ export function InviteTeamMembersDialog({
 
   // Add new invitee
   const handleAddInvitee = () => {
-    append({ email: "", roleId: ownerRoleId });
+    append({ email: "", roleId: ownerRoleId ? [ownerRoleId] : [] });
   };
 
   // Remove invitee
@@ -164,10 +172,12 @@ export function InviteTeamMembersDialog({
       // Transform data for API call
       const invitees = data.invitees.map(({ email, roleId }) => ({
         email,
-        roles: [{
-          id: Number(roleId),
-          name: roles.find((r) => r.id === Number(roleId))?.name || "",
-        }],
+        roles: roleId.map((id) => (
+          {
+            id: Number(id),
+            name: roles.find((r) => r.id === Number(id))?.name || "",
+          }
+        )),
       }));
 
       // Call API to invite members
@@ -251,28 +261,75 @@ export function InviteTeamMembersDialog({
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Role</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                                disabled={inviteMemberMutation.isPending}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a role" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {roles.map((role) => (
-                                    <SelectItem
-                                      key={role.id}
-                                      value={role.id.toString()}
-                                    >
-                                      {role.name.charAt(0).toUpperCase() +
-                                        role.name.slice(1)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <span className="inline-flex gap-2 items-center">
+                                {field.value.map((role: any) => (
+                                  <Badge variant="outline" key={role.id}>
+                                    {role}
+                                  </Badge>
+                                ))}
+                              </span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-5.5 w-5.5 p-0 rounded-md"
+                                  >
+                                    <Icon name="add" size={14} />
+                                    <span className="sr-only">
+                                      Manage roles
+                                    </span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="start"
+                                  className="w-56 p-2"
+                                >
+                                  <div className="text-xs font-medium px-2 py-1.5">
+                                    Roles
+                                  </div>
+                                  {roles.map((role) => {
+                                    const checked = field.value.some((
+                                      memberRole,
+                                    ) => memberRole === role.id.toString());
+                                    return (
+                                      <DropdownMenuItem key={role.id} asChild>
+                                        <div
+                                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            // Don't allow removing the last role
+                                            if (
+                                              checked &&
+                                              field.value.length <= 1
+                                            ) {
+                                              toast.error(
+                                                "Member must have at least one role",
+                                              );
+                                              return;
+                                            }
+                                            // handleUpdateMemberRole(
+                                            //   member.user_id,
+                                            //   role.id,
+                                            //   !checked,
+                                            // );
+                                          }}
+                                        >
+                                          <Checkbox
+                                            checked={checked}
+                                            className="h-4 w-4"
+                                            disabled={inviteMemberMutation
+                                              .isPending}
+                                          />
+                                          <span className="capitalize">
+                                            {role.name}
+                                          </span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               <FormMessage />
                             </FormItem>
                           )}

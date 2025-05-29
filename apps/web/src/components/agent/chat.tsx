@@ -80,7 +80,7 @@ function ActionsButtons() {
 
   return (
     <div className="hidden md:flex items-center gap-2">
-      <WhatsAppButton />
+      <WhatsAppButton isMobile={false} />
 
       {displayNewChat && (
         <Tooltip>
@@ -145,7 +145,7 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem asChild>
-                    <WhatsAppButton />
+                    <WhatsAppButton isMobile />
                   </DropdownMenuItem>
                   {chat.messages.length !== 0 && (
                     <DropdownMenuItem

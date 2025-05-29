@@ -151,7 +151,7 @@ export const createAgent = createTool({
     const [{ data, error }] = await Promise.all([
       c.db
         .from("deco_chat_agents")
-        // @ts-ignore
+        // @ts-ignore - @Camudo push your code
         .insert({
           ...NEW_AGENT_TEMPLATE,
           ...agent,

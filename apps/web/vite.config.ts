@@ -7,27 +7,27 @@ const BLOG_URL = "https://decochatweb.deco.site";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react() as PluginOption[], tailwindcss() as PluginOption[]],
-  server: { 
-    port: 3000, 
+  server: {
+    port: 3000,
     allowedHosts: [".deco.host"],
     proxy: {
-      '/about': {
+      "/about": {
         target: BLOG_URL,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/about/, '')
+        rewrite: (path: string) => path.replace(/^\/about/, ""),
       },
-      '/styles.css': {
+      "/styles.css": {
         target: BLOG_URL,
-        changeOrigin: true
+        changeOrigin: true,
       },
       "/live/invoke": {
         target: BLOG_URL,
-        changeOrigin: true
+        changeOrigin: true,
       },
       "/blog": {
         target: BLOG_URL,
-        changeOrigin: true
-      }
-    }
+        changeOrigin: true,
+      },
+    },
   },
 });

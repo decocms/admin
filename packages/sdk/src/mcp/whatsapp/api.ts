@@ -1,6 +1,7 @@
 import { bypass } from "../assertions.ts";
 import { createTool, getEnv } from "../context.ts";
 import { z } from "zod";
+import { NotFoundError } from "../index.ts";
 
 export const sendWhatsAppTemplateMessage = createTool({
   name: "WHATSAPP_SEND_TEMPLATE_MESSAGE",
@@ -168,6 +169,10 @@ export const getWhatsAppUser = createTool({
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new NotFoundError("Whatsapp user not found");
     }
 
     return data;

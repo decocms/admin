@@ -1,4 +1,3 @@
-
 const BANNED_CLASS_NAMES_CONTAIN_VALUES = [
   "50",
   "100",
@@ -55,7 +54,8 @@ function handleLiteral({
     if (!isValidDesignSystemToken(className)) {
       context.report({
         range,
-        message: `Class "${className}" does not use design system tokens. Please use tokens from the design system.`,
+        message:
+          `Class "${className}" does not use design system tokens. Please use tokens from the design system.`,
       });
     }
   }
@@ -80,7 +80,6 @@ const ensureTailwindDesignSystemTokens: Deno.lint.Plugin = {
               }
 
               if (node.value?.type === "JSXExpressionContainer") {
-                
                 if (node.value.expression.type === "CallExpression") {
                   const args = node.value.expression.arguments;
                   for (const arg of args) {

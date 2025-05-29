@@ -22,7 +22,11 @@ export function EmptyState({
             <div className="p-3.5 rounded-full border border-border">
               <div className="p-3 rounded-full border border-border">
                 <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center p-4">
-                  <Icon name={icon} className="text-muted-foreground" size={36} />
+                  <Icon
+                    name={icon}
+                    className="text-muted-foreground"
+                    size={36}
+                  />
                 </div>
               </div>
             </div>

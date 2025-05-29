@@ -349,7 +349,11 @@ export function WebhookTriggerForm({
                     className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
-                    <Icon name="close" size={12} className="text-muted-foreground" />
+                    <Icon
+                      name="close"
+                      size={12}
+                      className="text-muted-foreground"
+                    />
                     <span className="flex items-center gap-2">
                       <IntegrationIcon
                         icon={selected?.integration.icon}
@@ -395,7 +399,11 @@ export function WebhookTriggerForm({
                     className="flex items-center gap-2 px-2 py-1 h-auto"
                     onClick={() => field.onChange("")}
                   >
-                    <Icon name="close" size={12} className="text-muted-foreground" />
+                    <Icon
+                      name="close"
+                      size={12}
+                      className="text-muted-foreground"
+                    />
                     <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
                       {field.value}
                     </span>

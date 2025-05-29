@@ -202,7 +202,7 @@ function ThreadActions({ thread, onEdit, className }: {
                 setOpen(false);
                 setShowDeleteModal(true);
               }}
-              className="text-red-500 focus:text-red-500"
+              className="text-destructive focus:text-destructive"
             >
               <Icon name="delete" className="mr-2" size={16} />
               Delete

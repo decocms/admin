@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 import CTA from "./CTA.tsx";
 import Features from "./Features.tsx";
 import Footer from "./Footer.tsx";
@@ -15,7 +16,6 @@ export default function About() {
   } = DECO_CHAT_PAGE_CONTENT;
 
   return (
-    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     <div className="bg-dc-50">
       <Hero {...hero} />
       <Features {...features} />

@@ -214,7 +214,9 @@ export function ProfileSettings(
               <div className="text-lg font-semibold">
                 {profile?.metadata?.full_name || profile?.email}
               </div>
-              <div className="text-sm text-muted-foreground">{profile?.email}</div>
+              <div className="text-sm text-muted-foreground">
+                {profile?.email}
+              </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>User ID: {user?.id}</span>
                 <button

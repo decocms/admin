@@ -31,18 +31,18 @@ export function IntegrationHeader({
             name={integration.name}
             className="h-5 w-5 rounded !border-none p-0"
           />
-          <div className="font-medium text-sm text-slate-700 truncate">
+          <div className="font-medium text-sm text-foreground truncate">
             {integration?.name}
           </div>
           {numberOfEnabledTools > 0 && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-muted-foreground">
               {numberOfEnabledTools} tools
             </span>
           )}
         </div>
         <div className="flex items-center gap-4">
           {variant === "error" && (
-            <div className="flex items-center gap-2 bg-red-50 rounded-full px-2 py-1 text-xs">
+            <div className="flex items-center gap-2 bg-destructive/10 rounded-full px-2 py-1 text-xs">
               <Icon
                 name="warning"
                 filled
@@ -63,10 +63,10 @@ export function IntegrationHeader({
                   e.stopPropagation();
                   navigateWorkspace(`/integration/${integration.id}`);
                 }}
-                className="h-6 w-6 rounded hover:bg-slate-100 transition-colors"
+                className="h-6 w-6 rounded hover:bg-muted transition-colors"
                 aria-label="Manage Integration"
               >
-                <Icon name="settings" className=" text-slate-500" />
+                <Icon name="settings" className=" text-muted-foreground" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Manage Integration</TooltipContent>

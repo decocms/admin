@@ -155,7 +155,7 @@ export default function Page() {
               <Button
                 type="button"
                 variant="outline"
-                className="text-slate-700"
+                className="text-foreground"
                 onClick={handleDiscard}
               >
                 Discard

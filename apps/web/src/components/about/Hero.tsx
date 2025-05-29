@@ -1,4 +1,4 @@
-// deno-lint-ignore-file ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+// deno-lint-ignore-file
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";

@@ -42,11 +42,11 @@ function IntegrationListItem({
       onClick={() => onSelect(integration.id)}
       className={cn(
         "w-full flex flex-col gap-2 p-4 lg:px-3 lg:py-2 rounded-xl transition-colors cursor-pointer border relative",
-        "hover:bg-slate-50",
-        selectedIntegration === integration.id && "bg-slate-100",
+        "hover:bg-muted/50",
+        selectedIntegration === integration.id && "bg-muted",
       )}
     >
-      <div className="absolute right-4 top-4 text-slate-400 lg:hidden">
+      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
       <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export function BindingSelector({
         <div className="flex flex-col">
           {isLoading
             ? (
-              <div className="p-4 text-slate-400 flex items-center gap-2">
+              <div className="p-4 text-muted-foreground flex items-center gap-2">
                 <Spinner size="xs" /> Loading integrations...
               </div>
             )
@@ -133,18 +133,18 @@ export function BindingSelector({
                     selectedIntegration ? "hidden" : "block",
                   )}
                 >
-                  <div className="border-b border-slate-200">
+                  <div className="border-b border-border">
                     <div className="flex items-center h-14 px-4 gap-2">
                       <Icon
                         name="search"
                         size={20}
-                        className="text-slate-400"
+                        className="text-muted-foreground"
                       />
                       <Input
                         placeholder="Search integrations..."
                         value={_search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-slate-500 bg-transparent px-2"
+                        className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
                       />
                     </div>
                   </div>
@@ -181,15 +181,15 @@ export function BindingSelector({
                     >
                       <Icon name="arrow_back" size={20} />
                     </Button>
-                    <span className="text-slate-700">Back</span>
+                    <span className="text-muted-foreground">Back</span>
                   </div>
                 </div>
-                <div className="hidden md:block border-b border-slate-200">
+                <div className="hidden md:block border-b border-border">
                   <Input
                     placeholder="Search integrations..."
                     value={_search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="rounded-none border-none focus-visible:ring-0 placeholder:text-slate-500"
+                    className="rounded-none border-none focus-visible:ring-0 placeholder:text-muted-foreground"
                   />
                 </div>
                 <div className="hidden md:flex gap-6 p-4 h-[400px] overflow-hidden">
@@ -219,7 +219,7 @@ export function BindingSelector({
           </Button>
           <Button
             onClick={handleUpdate}
-            className="bg-slate-700 hover:bg-slate-600 rounded-lg font-normal"
+            className="bg-primary hover:bg-primary/90 rounded-lg font-normal"
             disabled={selectedIntegration === null || isLoading}
           >
             Select Integration

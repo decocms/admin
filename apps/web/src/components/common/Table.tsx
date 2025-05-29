@@ -37,7 +37,13 @@ export function Table<T>({
 }: TableProps<T>) {
   function renderSortIcon(key: string) {
     if (!sortKey || sortKey !== key) {
-      return <Icon name="arrow_upward" size={16} className="text-muted-foreground/50" />;
+      return (
+        <Icon
+          name="arrow_upward"
+          size={16}
+          className="text-muted-foreground/50"
+        />
+      );
     }
     return (
       <Icon

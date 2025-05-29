@@ -109,10 +109,10 @@ function CronSelectInput({ value, onChange, required, error }: {
         />
       )}
       {(localError || error) && (
-        <span className="text-xs text-red-500">{localError || error}</span>
+        <span className="text-xs text-destructive">{localError || error}</span>
       )}
       {selected === "custom" && (
-        <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-700 mb-2">
+        <div className="bg-muted border border-border rounded p-3 text-xs text-foreground mb-2">
           <div className="font-semibold mb-1">How to fill the Frequency:</div>
 
           <ul className="list-disc pl-4 mb-2">
@@ -135,7 +135,7 @@ function CronSelectInput({ value, onChange, required, error }: {
                 href="https://crontab.guru"
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 underline"
+                className="text-primary underline"
               >
                 Use this generator to create and test expressions
               </a>.
@@ -143,7 +143,7 @@ function CronSelectInput({ value, onChange, required, error }: {
           </ul>
 
           <div className="font-semibold mb-1">Example:</div>
-          <pre className="bg-white border rounded p-2 text-xs overflow-x-auto">
+          <pre className="bg-muted border rounded p-2 text-xs overflow-x-auto">
 {`0 9 * * *     (every day at 9am UTC)
 0 17 * * *    (every day at 5pm UTC)
 */5 * * * *   (every 5 minutes)`}
@@ -261,7 +261,6 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
                 <Input
                   {...field}
                   placeholder="Send birthday message"
-                  className="rounded-md"
                   required
                 />
               </FormControl>
@@ -276,7 +275,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
             <FormItem>
               <div className="flex items-center justify-between">
                 <FormLabel>Description</FormLabel>
-                <span className="text-xs text-slate-400">Optional</span>
+                <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <FormControl>
                 <Textarea
@@ -335,7 +334,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
           )}
         />
         {form.formState.errors.root && (
-          <div className="text-xs text-red-500 mt-1">
+          <div className="text-xs text-destructive mt-1">
             {form.formState.errors.root.message}
           </div>
         )}

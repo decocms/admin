@@ -85,7 +85,7 @@ function IntegrationListItem({
           )}
         </div>
       </label>
-      <div className="absolute right-4 top-4 text-slate-400 lg:hidden">
+      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
       {isEmpty && (
@@ -95,8 +95,8 @@ function IntegrationListItem({
             navigateWorkspace(`/integration/${integration.id}`);
           }}
           className={cn(
-            "flex gap-2 items-center justify-between px-4 py-4 border-t border-slate-200 cursor-pointer",
-            "hover:bg-slate-50 rounded-b-xl",
+            "flex gap-2 items-center justify-between px-4 py-4 border-t border-border cursor-pointer",
+            "hover:bg-muted rounded-b-xl",
           )}
         >
           <div className="flex gap-2 items-center">
@@ -112,13 +112,13 @@ function IntegrationListItem({
       {!isEmpty && (
         <div
           className={cn(
-            "flex flex-col items-start gap-1 min-w-0 px-4 border-t border-slate-200 cursor-pointer",
-            !openTools && "hover:bg-slate-50 rounded-b-xl",
+            "flex flex-col items-start gap-1 min-w-0 px-4 border-t border-border cursor-pointer",
+            !openTools && "hover:bg-muted rounded-b-xl",
           )}
         >
           <span
             onClick={() => setOpenTools(!openTools)}
-            className="text-slate-500 text-sm py-4 w-full"
+            className="text-muted-foreground text-sm py-4 w-full"
           >
             {isLoading
               ? (
@@ -131,7 +131,7 @@ function IntegrationListItem({
                     filled
                     size={14}
                     className={cn(
-                      "inline-block mr-1 align-text-bottom text-slate-400",
+                      "inline-block mr-1 align-text-bottom text-muted-foreground",
                       openTools && "rotate-90",
                     )}
                   />
@@ -201,7 +201,7 @@ function ToolList({
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-6 bg-slate-100 animate-pulse rounded" />
+          <div key={i} className="h-6 bg-muted animate-pulse rounded" />
         ))}
       </div>
     );
@@ -226,7 +226,7 @@ function ToolList({
           return (
             <label
               key={tool.name}
-              className="flex items-start gap-3 py-2 px-3 hover:bg-slate-50 rounded-lg cursor-pointer"
+              className="flex items-start gap-3 py-2 px-3 hover:bg-muted rounded-xl cursor-pointer"
               htmlFor={`${integration.id}-${tool.name}`}
             >
               <Checkbox
@@ -238,8 +238,8 @@ function ToolList({
               <div className="flex flex-col min-w-0">
                 <span
                   className={cn(
-                    "text-sm truncate cursor-pointer text-slate-700",
-                    enabled && !enabled && "text-slate-400",
+                    "text-sm truncate cursor-pointer text-foreground",
+                    enabled && !enabled && "text-muted-foreground",
                   )}
                 >
                   {beautifyToolName(tool.name)}

@@ -54,8 +54,8 @@ function NotificationDot({ className }: { className?: string }) {
 
   return (
     <span className={cn("relative flex size-2", className)}>
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-      <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+      <span className="relative inline-flex size-2 rounded-full bg-destructive" />
     </span>
   );
 }
@@ -67,7 +67,7 @@ function InvitesCount() {
   if (!invites.length) return null;
 
   return (
-    <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
+    <span className="absolute right-2 top-1/2 -mt-2 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
       {invites.length}
     </span>
   );

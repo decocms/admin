@@ -39,7 +39,9 @@ function BalanceCard() {
         <div className="mb-6">
           <Suspense fallback={<Skeleton className="w-32 h-12" />}>
             <ErrorBoundary
-              fallback={<p className="text-destructive">Error loading balance</p>}
+              fallback={
+                <p className="text-destructive">Error loading balance</p>
+              }
             >
               <AccountBalance />
             </ErrorBoundary>

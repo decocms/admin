@@ -117,6 +117,8 @@ function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
 
+const DEFAULT_PATH = "/agents";
+
 function ErrorFallback() {
   const { pathname } = useLocation();
   const error = useRouteError();
@@ -131,7 +133,7 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === "/") {
+    if (pathname === DEFAULT_PATH) {
       globalThis.location.href = "/about";
 
       return;
@@ -257,8 +259,8 @@ const router = createBrowserRouter([
             loader: ({ params }) => {
               const teamSlug = params.teamSlug;
               globalThis.location.href = teamSlug
-                ? `/${teamSlug}/agents`
-                : "/agents";
+                ? `/${teamSlug}${DEFAULT_PATH}`
+                : DEFAULT_PATH;
               return null;
             },
           },

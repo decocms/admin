@@ -15,6 +15,7 @@ export default function About() {
   } = DECO_CHAT_PAGE_CONTENT;
 
   return (
+    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     <div className="bg-dc-50">
       <Hero {...hero} />
       <Features {...features} />

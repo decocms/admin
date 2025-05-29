@@ -39,7 +39,7 @@ function BalanceCard() {
         <div className="mb-6">
           <Suspense fallback={<Skeleton className="w-32 h-12" />}>
             <ErrorBoundary
-              fallback={<p className="text-red-500">Error loading balance</p>}
+              fallback={<p className="text-destructive">Error loading balance</p>}
             >
               <AccountBalance />
             </ErrorBoundary>
@@ -81,7 +81,7 @@ function RecentTransactions() {
 
 export default function Wallet() {
   return (
-    <div className="h-full text-slate-700">
+    <div className="h-full text-foreground">
       <SettingsMobileHeader currentPage="wallet" />
 
       <div className="flex flex-col items-center h-full gap-4 w-full mt-12">

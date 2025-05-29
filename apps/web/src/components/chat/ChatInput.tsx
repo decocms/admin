@@ -354,7 +354,7 @@ ChatInput.UI = (
                         variant="ghost"
                         size="icon"
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-8 w-8 border hover:bg-slate-100"
+                        className="h-8 w-8 border hover:bg-muted"
                         title="Attach files"
                       >
                         <Icon className="text-sm" name="add" />
@@ -428,7 +428,7 @@ function FileDropOverlay({ display }: { display: boolean }) {
           "absolute bottom-2 left-0 right-0 z-50",
           "flex flex-col items-center justify-center gap-2",
           "pointer-events-none animate-fade-in",
-          "p-8 shadow-2xl rounded-2xl border border-slate-200 bg-background/95",
+          "p-8 shadow-2xl rounded-2xl border border-border bg-background/95",
         )}
       >
         <Icon name="upload" size={48} className="text-foreground" />
@@ -459,21 +459,21 @@ function FilePreviewItem(
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute -top-2 -right-2 h-5 w-5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-slate-700 text-slate-50 hover:bg-slate-600 hover:text-slate-50"
+        className="absolute -top-2 -right-2 h-5 w-5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
         onClick={removeFile}
         title="Remove file"
       >
         <Icon name="close" />
       </Button>
 
-      <div className="flex items-center justify-center size-16 rounded-xl group-hover:ring ring-offset-2 ring-slate-300 overflow-hidden bg-slate-100">
+      <div className="flex items-center justify-center size-16 rounded-xl group-hover:ring ring-offset-2 ring-border overflow-hidden bg-muted">
         {status === "uploading"
           ? <Spinner size="xs" />
           : status === "error"
           ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Icon name="error" size={32} className="text-red-500" />
+                <Icon name="error" size={32} className="text-destructive" />
               </TooltipTrigger>
               <TooltipContent className="flex flex-col items-center">
                 Error uploading file {error?.toString()}

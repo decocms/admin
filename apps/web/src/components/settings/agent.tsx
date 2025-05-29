@@ -213,7 +213,7 @@ function SettingsTab() {
                   <FormControl>
                     <Input
                       type="number"
-                      className="rounded-md border-slate-200"
+                      className="rounded-md border-border"
                       min={ANTHROPIC_MIN_MAX_TOKENS}
                       max={ANTHROPIC_MAX_MAX_TOKENS}
                       {...field}
@@ -255,7 +255,7 @@ function SettingsTab() {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-2">
                         <FormLabel>Visibility</FormLabel>
-                        <FormDescription className="text-xs text-slate-400">
+                        <FormDescription className="text-xs text-muted-foreground">
                           Control who can interact with this agent.
                         </FormDescription>
                       </div>
@@ -315,7 +315,7 @@ function SettingsTab() {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-2">
                           <FormLabel>Access</FormLabel>
-                          <FormDescription className="text-xs text-slate-400">
+                          <FormDescription className="text-xs text-muted-foreground">
                             Control who can access with this agent by role.
                           </FormDescription>
                         </div>
@@ -356,14 +356,14 @@ function SettingsTab() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
-                  <FormDescription className="text-xs text-slate-400">
+                  <FormDescription className="text-xs text-muted-foreground">
                     Used for search and organization, it does not affect agent
                     behavior.
                   </FormDescription>
                   <FormControl>
                     <Textarea
                       placeholder="e.g. Helps write product descriptions for the online store"
-                      className="min-h-18 border-slate-200"
+                      className="min-h-18 border-border"
                       {...field}
                     />
                   </FormControl>

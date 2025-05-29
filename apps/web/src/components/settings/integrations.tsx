@@ -161,14 +161,14 @@ function IntegrationsTab() {
               {tools.find((tab) => tab.id === activeTab)?.description}
             </span>
             <div className="flex gap-2 w-full">
-              <div className="border border-slate-200 rounded-lg w-full">
+              <div className="border border-border rounded-lg w-full">
                 <div className="flex items-center h-10 px-4 gap-2">
-                  <Icon name="search" size={20} className="text-slate-400" />
+                  <Icon name="search" size={20} className="text-muted-foreground" />
                   <Input
                     placeholder="Search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-slate-500 bg-transparent px-2"
+                    className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
                   />
                 </div>
               </div>

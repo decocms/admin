@@ -62,9 +62,9 @@ function ToolStatus({
       case "call":
         return <Spinner size="xs" variant="default" />;
       case "result":
-        return <Icon name="check" className="text-slate-500" />;
+        return <Icon name="check" className="text-muted-foreground" />;
       case "error":
-        return <Icon name="close" className="text-slate-500" />;
+        return <Icon name="close" className="text-muted-foreground" />;
       default:
         return "•";
     }
@@ -164,13 +164,13 @@ function ToolStatus({
           <div className="relative flex flex-col items-center min-h-[20px]">
             <div
               className={cn(
-                "w-5 h-5 rounded-full border flex items-center justify-center bg-slate-200",
+                "w-5 h-5 rounded-full border flex items-center justify-center bg-muted",
               )}
             >
               {getIcon(tool.state)}
             </div>
             {!isLast && !isExpanded && (
-              <div className="w-[1px] h-[150%] bg-slate-200 absolute top-5 left-1/2 transform -translate-x-1/2" />
+              <div className="w-[1px] h-[150%] bg-muted absolute top-5 left-1/2 transform -translate-x-1/2" />
             )}
           </div>
           <div className="flex-1">
@@ -187,7 +187,7 @@ function ToolStatus({
             {isExpanded && (
               <div
                 ref={contentRef}
-                className="text-left mt-2 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden w-full relative"
+                className="text-left mt-2 rounded-lg bg-accent border border-border overflow-hidden w-full relative"
                 onClick={(e) => e.stopPropagation()}
               >
                 {showCopyButton && (
@@ -198,12 +198,12 @@ function ToolStatus({
                       e.stopPropagation();
                       handleCopy();
                     }}
-                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-zinc-800 transition-colors"
+                    className="absolute top-2 right-2 p-1 rounded-full hover:bg-accent transition-colors"
                     title="Copy tool details"
                   >
                     <Icon
                       name="content_copy"
-                      className="w-4 h-4 text-zinc-400"
+                      className="w-4 h-4 text-muted-foreground"
                     />
                   </Button>
                 )}
@@ -211,7 +211,7 @@ function ToolStatus({
                   className="p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <code className="text-zinc-100 select-text cursor-auto">
+                  <code className="text-primary-foreground select-text cursor-auto">
                     {getToolJson()}
                   </code>
                 </pre>
@@ -309,7 +309,7 @@ export function ToolMessage({
       {timelineTools.length > 0 && (
         <div
           className={cn(
-            "flex flex-col gap-2 w-full border border-slate-200 rounded-2xl",
+            "flex flex-col gap-2 w-full border border-border rounded-2xl",
             timelineTools.length > 1 && "p-2",
           )}
         >

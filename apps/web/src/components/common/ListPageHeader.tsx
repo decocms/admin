@@ -35,7 +35,7 @@ export function Chiplet(props: ChipletProps) {
       type="button"
     >
       {item.label}
-      <span className="text-xs text-slate-400">
+      <span className="text-xs text-muted-foreground">
         {item.count}
       </span>
     </Button>

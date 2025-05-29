@@ -51,7 +51,7 @@ export function AgentTriggers() {
             placeholder="Search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full py-2 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+            className="w-full py-2 border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
           />
         </div>
         <TriggerModalButton
@@ -97,10 +97,10 @@ export function ListTriggersEmpty() {
   const { agentId } = useChatContext();
   return (
     <div className="mx-2 p-4 mt-4 m-4 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
-      <div className="bg-slate-100 rounded-full p-3 mb-4 h-10">
+      <div className="bg-muted rounded-full p-3 mb-4 h-10">
         <Icon
           name="notifications_active"
-          className="text-slate-500"
+          className="text-muted-foreground"
         />
       </div>
       <h3 className="text-lg font-medium mb-2">No triggers configured</h3>

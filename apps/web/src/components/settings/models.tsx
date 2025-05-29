@@ -94,7 +94,7 @@ function useModal() {
 function Models() {
   return (
     <ModalProvider>
-      <ScrollArea className="h-full text-slate-700">
+      <ScrollArea className="h-full text-foreground">
         <SettingsMobileHeader currentPage="models" />
         <Suspense fallback={<span>Loading...</span>}>
           <ModelsView />
@@ -182,7 +182,7 @@ const ModelActions = ({
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-red-500 cursor-pointer"
+          className="text-destructive cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClick();
@@ -219,14 +219,14 @@ const ModelInfoCell = (
                 objectFit="contain"
               />
             )
-            : <Icon name="conversion_path" className="text-slate-600" />}
+            : <Icon name="conversion_path" className="text-muted-foreground" />}
         </div>
       )}
       <div>
         <div className="flex items-center gap-2">
           <h3 className="font-medium line-clamp-1">{model.name}</h3>
         </div>
-        <p className="text-sm text-slate-500">{model.model}</p>
+        <p className="text-sm text-muted-foreground">{model.model}</p>
       </div>
     </div>
   );

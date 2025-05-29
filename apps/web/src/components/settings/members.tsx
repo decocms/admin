@@ -142,7 +142,7 @@ function TableHeadSort(
   const hasAsc = hasBothArrows || mode === "asc";
   const hasDesc = hasBothArrows || mode === "desc";
   return (
-    <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-slate-700 text-sm h-10">
+    <TableHead className="px-2 text-left bg-muted font-semibold text-foreground text-sm h-10">
       <button
         type="button"
         className="flex items-center gap-1 cursor-pointer select-none"
@@ -161,7 +161,7 @@ function TableHeadSort(
               size={16}
               className={cn(
                 "transition-colors",
-                sort === "asc" ? "text-slate-700" : "text-slate-300",
+                sort === "asc" ? "text-foreground" : "text-muted-foreground",
               )}
             />
           )}
@@ -171,8 +171,8 @@ function TableHeadSort(
               name="arrow_upward"
               size={16}
               className={cn(
-                "transition-colors rotate-180 text-slate-300",
-                sort === "desc" ? "text-slate-700" : "text-slate-300",
+                "transition-colors rotate-180 text-muted-foreground",
+                sort === "desc" ? "text-foreground" : "text-muted-foreground",
               )}
             />
           )}
@@ -268,7 +268,7 @@ function MembersViewContent() {
                     Last active
                   </TableHeadSort>
                 )}
-              <TableHead className="px-2 text-left bg-[#F8FAFC] font-semibold text-slate-700 text-sm h-10 w-12.5">
+              <TableHead className="px-2 text-left bg-muted font-semibold text-foreground text-sm h-10 w-12.5">
                 <AddTeamMemberButton teamId={teamId} />
               </TableHead>
             </TableRow>
@@ -279,7 +279,7 @@ function MembersViewContent() {
                 <TableRow>
                   <TableCell
                     colSpan={5}
-                    className="text-center py-8 text-slate-700 "
+                    className="text-center py-8 text-muted-foreground "
                   >
                     No members found. Add team members to get started.
                   </TableCell>
@@ -296,7 +296,7 @@ function MembersViewContent() {
                             <span className="font-semibold text-xs truncate">
                               {invite.email}
                             </span>
-                            <span className="text-[10px] leading-3.5 text-slate-500 truncate">
+                            <span className="text-[10px] leading-3.5 text-muted-foreground truncate">
                               Pending
                             </span>
                           </span>
@@ -367,7 +367,7 @@ function MembersViewContent() {
                             <span className="font-semibold text-xs truncate">
                               {getMemberName(member)}
                             </span>
-                            <span className="text-[10px] leading-3.5 text-slate-500 truncate">
+                            <span className="text-[10px] leading-3.5 text-muted-foreground truncate">
                               {member.profiles.email || "N/A"}
                             </span>
                           </span>
@@ -435,7 +435,7 @@ function MembersViewContent() {
 
 export default function MembersSettings() {
   return (
-    <ScrollArea className="h-full text-slate-700">
+    <ScrollArea className="h-full text-foreground">
       <SettingsMobileHeader currentPage="members" />
       <Suspense fallback={<MembersViewLoading />}>
         <MembersViewContent />

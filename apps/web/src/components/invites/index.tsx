@@ -218,7 +218,7 @@ function InvitesViewContent() {
 
 export default function InvitesList() {
   return (
-    <div className="h-full text-slate-700 max-w-5xl mx-auto">
+    <div className="h-full text-foreground max-w-5xl mx-auto">
       <Suspense fallback={<InvitesViewLoading />}>
         <InvitesViewContent />
       </Suspense>

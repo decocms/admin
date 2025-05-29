@@ -10,9 +10,9 @@ export function WebhookDetails(
     typeof WebhookTriggerOutputSchema
   >;
   return (
-    <div className="space-y-4 border p-4 rounded-md bg-slate-50">
+    <div className="space-y-4 border p-4 rounded-md bg-muted">
       <div className="flex items-center gap-2">
-        <Icon name="webhook" className="h-5 w-5 text-blue-500" />
+        <Icon name="webhook" className="h-5 w-5 text-special" />
         <h4 className="font-medium">Webhook Details</h4>
       </div>
 

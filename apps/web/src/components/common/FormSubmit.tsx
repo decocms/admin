@@ -33,7 +33,7 @@ export function FormSubmitControls({
       <Button
         type="button"
         variant="outline"
-        className="text-slate-700"
+        className="text-foreground"
         onClick={onDiscard}
       >
         Discard

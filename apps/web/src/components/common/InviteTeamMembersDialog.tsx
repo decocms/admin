@@ -306,7 +306,7 @@ export function InviteTeamMembersDialog({
                   </Button>
                 </div>
 
-                <div className="text-sm text-slate-500 mt-4 border-t pt-4">
+                <div className="text-sm text-muted-foreground mt-4 border-t pt-4">
                   Users will receive an invite email to join this team.
                 </div>
 

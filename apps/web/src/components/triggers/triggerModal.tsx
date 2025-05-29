@@ -48,7 +48,7 @@ function AgentSelect({
       onValueChange={onChange}
       disabled={disabled || agents.length === 0}
     >
-      <SelectTrigger className="w-full h-12 rounded-full border border-slate-200 bg-slate-50 text-left px-4">
+      <SelectTrigger className="w-full h-12 rounded-full border border-border bg-muted text-left px-4">
         <SelectValue>
           {selectedAgent
             ? (
@@ -151,7 +151,7 @@ export function TriggerModal(
                 value={triggerType}
                 onValueChange={(v) => setTriggerType(v as "webhook" | "cron")}
               >
-                <TabsList className="mb-2 w-full bg-slate-100 rounded-full">
+                <TabsList className="mb-2 w-full bg-muted rounded-full">
                   <TabsTrigger
                     value="webhook"
                     className="flex-1 cursor-pointer rounded-full"

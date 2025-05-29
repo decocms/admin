@@ -38,27 +38,27 @@ export function ReasoningPart({
   };
 
   return (
-    <div className="flex flex-col border border-slate-200 rounded-2xl overflow-hidden">
+    <div className="flex flex-col border border-border rounded-2xl overflow-hidden">
       <button
         type="button"
         onClick={handleToggle}
         className={cn(
           "flex items-center justify-between p-4 transition-colors",
-          isStreaming ? "bg-slate-50 animate-pulse" : "hover:bg-slate-50",
+          isStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
         )}
       >
         <div className="flex items-center gap-2">
           <Icon
             name="psychology"
-            className="text-slate-500"
+            className="text-muted-foreground"
           />
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-foreground">
             Agent thinking
           </span>
         </div>
         <Icon
           name={isExpanded ? "expand_less" : "expand_more"}
-          className="text-slate-500 transition-transform duration-200"
+          className="text-muted-foreground transition-transform duration-200"
         />
       </button>
       <div
@@ -70,13 +70,13 @@ export function ReasoningPart({
         <div
           className={cn(
             "p-4 border-t",
-            isStreaming && "bg-slate-50",
+            isStreaming && "bg-muted",
           )}
         >
           <div
             className={cn(
               "prose prose-sm max-w-none text-sm",
-              isStreaming && "text-xs text-slate-600",
+              isStreaming && "text-xs text-muted-foreground",
             )}
           >
             <MemoizedMarkdown

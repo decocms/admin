@@ -47,7 +47,7 @@ AgentBreadcrumbSegment.UI = (
           className="w-6 h-6"
         />
       )}
-      <h1 className="text-sm font-medium tracking-tight text-slate-700 text-nowrap">
+      <h1 className="text-sm font-medium tracking-tight text-foreground text-nowrap">
         {agent.name}
       </h1>
       <AgentVisibility agent={agent} />

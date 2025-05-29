@@ -23,20 +23,20 @@ export function TriggerCard({ trigger, onClick }: {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <TriggerToggle trigger={trigger} />
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-foreground">
               {trigger.data.title}
             </h3>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <TriggerType trigger={trigger} />
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-slate-200">
+          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-muted">
             <img
               src={trigger.user?.metadata?.avatar_url ||
                 "https://ui-avatars.com/api/?name=User"}
@@ -44,10 +44,10 @@ export function TriggerCard({ trigger, onClick }: {
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-muted-foreground">
             {trigger.user?.metadata?.full_name || "Anonymous"}
           </span>
-          <span className="text-sm text-slate-400 ml-auto">
+          <span className="text-sm text-muted-foreground/50 ml-auto">
             {timeAgo(new Date(trigger.createdAt || ""))}
           </span>
         </div>

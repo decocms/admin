@@ -146,7 +146,7 @@ function ToolStatus({
     <div
       className={cn(
         "flex flex-col relative",
-        isSingle && "p-4 hover:bg-slate-50 rounded-2xl",
+        isSingle && "p-4 hover:bg-accent rounded-2xl",
       )}
       onClick={isSingle ? onClick : undefined}
       onMouseEnter={() => setShowCopyButton(true)}
@@ -158,7 +158,7 @@ function ToolStatus({
           onClick={isSingle ? undefined : onClick}
           className={cn(
             "w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
-            !isSingle && "hover:bg-slate-50 rounded-lg p-2",
+            !isSingle && "hover:bg-accent rounded-lg p-2",
           )}
         >
           <div className="relative flex flex-col items-center min-h-[20px]">

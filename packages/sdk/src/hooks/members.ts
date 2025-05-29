@@ -31,10 +31,12 @@ export const useTeamMembers = (
 ) => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM_MEMBERS(teamId ?? -1),
-    queryFn: ({ signal }) =>
-      typeof teamId === "number"
-        ? getTeamMembers({ teamId, withActivity }, signal)
-        : ([] as unknown as Awaited<ReturnType<typeof getTeamMembers>>),
+    queryFn: ({ signal }) => {
+      if (teamId === null) {
+        return { members: [], invites: [] };
+      }
+      return getTeamMembers({ teamId, withActivity }, signal);
+    },
   });
 };
 

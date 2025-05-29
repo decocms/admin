@@ -317,11 +317,17 @@ export class PolicyClient {
     if (params.roleId === BASE_ROLES_ID.OWNER) {
       if (params.action === "revoke") {
         // Check if this would remove the last owner
-        const { count } = await this.db
-          .from("member_roles")
-          .select("role_id", { count: "exact" })
-          .eq("role_id", BASE_ROLES_ID.OWNER)
-          .eq("member_id", memberWithProfile.id);
+        const { count } = await await this.db
+        .from("members")
+        .select(`
+          id,
+          team_id,
+          member_roles!inner(
+            role_id
+          )
+        `, { count: "exact" })
+        .eq("team_id", teamId)
+        .eq("member_roles.role_id", BASE_ROLES_ID.OWNER)
 
         if (count === 1) {
           throw new Error("Cannot remove the last owner of the team");
@@ -348,7 +354,7 @@ export class PolicyClient {
           member_id: memberWithProfile.id,
           role_id: params.roleId,
         });
-    } else {
+    } else {  
       // Remove role from member
       await this.db
         .from("member_roles")

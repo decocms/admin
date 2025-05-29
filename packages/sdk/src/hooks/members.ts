@@ -22,6 +22,8 @@ import { KEYS } from "./api.ts";
 import { useTeams } from "./teams.ts";
 import { useSDK } from "../index.ts";
 
+type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
+
 /**
  * Hook to fetch team members
  * @param teamId - The ID of the team to fetch members for
@@ -32,9 +34,9 @@ export const useTeamMembers = (
 ) => {
   return useSuspenseQuery({
     queryKey: KEYS.TEAM_MEMBERS(teamId ?? -1),
-    queryFn: ({ signal }) => {
+    queryFn: ({ signal }): Promise<TeamMembers> => {
       if (teamId === null) {
-        return { members: [], invites: [] };
+        return Promise.resolve({ members: [], invites: [] });
       }
       return getTeamMembers({ teamId, withActivity }, signal);
     },
@@ -189,23 +191,28 @@ export const useUpdateMemberRole = () => {
       teamId: number;
       userId: string;
       roleId: number;
+      roleName: string;
       action: "grant" | "revoke";
     }) => updateMemberRole(teamId, userId, roleId, action),
-    onSuccess: (_, { teamId, userId, roleId, action }) => {
+    onSuccess: (_, { teamId, userId, roleId, action, roleName }) => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
-      const membersData = queryClient.getQueryData<Member[]>(membersKey); 
+      const membersData = queryClient.getQueryData<TeamMembers>(membersKey);
 
       if (!membersData) return;
+      const { members } = membersData;
 
-      const membersWithChangedRole = membersData.map((member) => {
+      const membersWithChangedRole = members.map((member) => {
         if (member.user_id !== userId) return member;
 
         const newRoles = action === "grant"
-          ? [...member.roles, { id: roleId, name: "" }]
+          ? [...member.roles, { id: roleId, name: roleName }]
           : member.roles.filter((r) => r.id !== roleId);
         return { ...member, roles: newRoles };
       });
-      queryClient.setQueryData(membersKey, membersWithChangedRole);
+      queryClient.setQueryData<TeamMembers>(membersKey, {
+        ...membersData,
+        members: membersWithChangedRole,
+      });
     },
   });
 };

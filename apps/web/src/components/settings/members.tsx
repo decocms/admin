@@ -238,7 +238,7 @@ function MembersViewContent() {
   // Update member role
   const handleUpdateMemberRole = async (
     userId: string,
-    roleId: number,
+    role: { id: number; name: string },
     checked: boolean,
   ) => {
     if (!teamId) return;
@@ -246,7 +246,8 @@ function MembersViewContent() {
       await updateRoleMutation.mutateAsync({
         teamId,
         userId,
-        roleId,
+        roleId: role.id,
+        roleName: role.name,
         action: checked ? "grant" : "revoke",
       });
       toast.success(
@@ -315,46 +316,10 @@ function MembersViewContent() {
                 </TableRow>
               )
               : (
-<<<<<<< HEAD
                 <>
                   {invites.map((invite) => (
                     <TableRow key={invite.id} className="px-4 py-1.5">
                       {/* Profile */}
-=======
-                sortMembers.map((member) => (
-                  <TableRow key={member.id} className="px-4 py-1.5">
-                    <TableCell>
-                      <span className="flex gap-2 items-center w-43 md:w-56">
-                        <span>
-                          <Avatar
-                            url={member.profiles.metadata.avatar_url}
-                            fallback={member.profiles.metadata.full_name}
-                            className="w-8 h-8"
-                          />
-                        </span>
-
-                        <span className="flex flex-col gap-1 min-w-0">
-                          <span className="font-semibold text-xs truncate">
-                            {getMemberName(member)}
-                          </span>
-                          <span className="text-[10px] leading-3.5 text-slate-500 truncate">
-                            {member.profiles.email || "N/A"}
-                          </span>
-                        </span>
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex gap-2 items-center">
-                        {member.roles.map((role) => (
-                          <Badge variant="outline" key={role.id}>
-                            {role.name}
-                          </Badge>
-                        ))}
-                        
-                      </span>
-                    </TableCell>
-                    {!isMobile && (
->>>>>>> 769cca24 (add update role members)
                       <TableCell>
                         <span className="flex gap-2 items-center w-43 md:w-56">
                           <span className="flex flex-col gap-1 min-w-0">
@@ -445,63 +410,67 @@ function MembersViewContent() {
                             <Badge variant="outline" key={role.id}>
                               {role.name}
                             </Badge>
-                            <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-5.5 w-5.5 p-0 rounded-md"
-                            >
-                              <Icon name="add" size={14} />
-                              <span className="sr-only">Manage roles</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="start"
-                            className="w-56 p-2"
-                          >
-                            <div className="text-xs font-medium px-2 py-1.5">
-                              Roles
-                            </div>
-                            {roles.map((role) => {
-                              const checked = member.roles.some((memberRole) =>
-                                memberRole.id === role.id
-                              );
-                              return (
-                                <DropdownMenuItem key={role.id} asChild>
-                                  <div
-                                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      // Don't allow removing the last role
-                                      if (checked && member.roles.length <= 1) {
-                                        toast.error(
-                                          "Member must have at least one role",
-                                        );
-                                        return;
-                                      }
-                                      handleUpdateMemberRole(
-                                        member.user_id,
-                                        role.id,
-                                        !checked,
-                                      );
-                                    }}
-                                  >
-                                    <Checkbox
-                                      checked={checked}
-                                      className="h-4 w-4"
-                                      disabled={updateRoleMutation.isPending}
-                                    />
-                                    <span className="capitalize">
-                                      {role.name}
-                                    </span>
-                                  </div>
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                           ))}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-5.5 w-5.5 p-0 rounded-md"
+                              >
+                                <Icon name="add" size={14} />
+                                <span className="sr-only">Manage roles</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="start"
+                              className="w-56 p-2"
+                            >
+                              <div className="text-xs font-medium px-2 py-1.5">
+                                Roles
+                              </div>
+                              {roles.map((role) => {
+                                const checked = member.roles.some((
+                                  memberRole,
+                                ) =>
+                                  memberRole.id === role.id
+                                );
+                                return (
+                                  <DropdownMenuItem key={role.id} asChild>
+                                    <div
+                                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        // Don't allow removing the last role
+                                        if (
+                                          checked && member.roles.length <= 1
+                                        ) {
+                                          toast.error(
+                                            "Member must have at least one role",
+                                          );
+                                          return;
+                                        }
+                                        handleUpdateMemberRole(
+                                          member.user_id,
+                                          role,
+                                          !checked,
+                                        );
+                                      }}
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        className="h-4 w-4"
+                                        disabled={updateRoleMutation.isPending}
+                                      />
+                                      <span className="capitalize">
+                                        {role.name}
+                                      </span>
+                                    </div>
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </span>
                       </TableCell>
 
@@ -529,8 +498,7 @@ function MembersViewContent() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               variant="destructive"
-                              onClick={() =>
-                                handleRemoveMember(member.id)}
+                              onClick={() => handleRemoveMember(member.id)}
                               disabled={removeMemberMutation.isPending}
                             >
                               <Icon name="delete" />

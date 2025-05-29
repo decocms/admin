@@ -91,7 +91,11 @@ function CurrentTeamDropdownTrigger() {
           <span className="text-sm font-medium truncate min-w-0">
             {label}
           </span>
-          <Icon name="unfold_more" className="text-muted-foreground" size={16} />
+          <Icon
+            name="unfold_more"
+            className="text-muted-foreground"
+            size={16}
+          />
         </div>
       </SidebarMenuButton>
     </ResponsiveDropdownTrigger>
@@ -128,7 +132,11 @@ function CurrentTeamDropdownOptions() {
             }}
           >
             <span className="grid place-items-center p-1">
-              <Icon name="person_add" size={16} className="text-muted-foreground" />
+              <Icon
+                name="person_add"
+                size={16}
+                className="text-muted-foreground"
+              />
             </span>
             <span className="md:text-sm flex-grow justify-self-start">
               Invite members
@@ -143,7 +151,10 @@ function CurrentTeamDropdownOptions() {
 CurrentTeamDropdownOptions.Skeleton = () => (
   <div className="flex flex-col gap-2 h-full overflow-y-auto">
     {Array.from({ length: 5 }).map((_, index) => (
-      <div key={index} className="h-9 w-full bg-muted-foreground/10 rounded-xl" />
+      <div
+        key={index}
+        className="h-9 w-full bg-muted-foreground/10 rounded-xl"
+      />
     ))}
   </div>
 );

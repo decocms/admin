@@ -276,7 +276,11 @@ function LoggedUser() {
             onClick={handleClickInvite}
             className="flex items-center gap-2 leading-relaxed text-sm sm:text-xs w-full"
           >
-            <Icon name="mail" filled={!!match} className="text-muted-foreground" />
+            <Icon
+              name="mail"
+              filled={!!match}
+              className="text-muted-foreground"
+            />
             <span className="truncate">Invites</span>
 
             <Suspense fallback={null}>
@@ -294,14 +298,22 @@ function LoggedUser() {
             rel="noopener noreferrer"
             className="flex w-full items-center gap-2 leading-relaxed text-sm sm:text-xs"
           >
-            <img src="/img/github.svg" alt="GitHub" className="w-4 h-4 text-muted-foreground" />
+            <img
+              src="/img/github.svg"
+              alt="GitHub"
+              className="w-4 h-4 text-muted-foreground"
+            />
             deco-cx/chat
             {formattedStars && (
               <span className="ml-auto text-muted-foreground">
                 {formattedStars} stars
               </span>
             )}
-            <Icon name="arrow_outward" size={16} className="text-muted-foreground" />
+            <Icon
+              name="arrow_outward"
+              size={16}
+              className="text-muted-foreground"
+            />
           </a>
         </ResponsiveDropdownItem>
         <ResponsiveDropdownItem className="p-0 md:px-2 md:py-1.5" asChild>
@@ -313,7 +325,11 @@ function LoggedUser() {
           >
             <Icon name="language" className="text-muted-foreground" />
             Homepage
-            <Icon name="arrow_outward" size={16} className="ml-auto text-muted-foreground" />
+            <Icon
+              name="arrow_outward"
+              size={16}
+              className="ml-auto text-muted-foreground"
+            />
           </a>
         </ResponsiveDropdownItem>
 

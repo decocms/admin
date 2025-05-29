@@ -175,7 +175,11 @@ function ThreadActions({ thread, onEdit, className }: {
               e.stopPropagation();
             }}
           >
-            <Icon name="more_vert" size={16} className="text-muted-foreground" />
+            <Icon
+              name="more_vert"
+              size={16}
+              className="text-muted-foreground"
+            />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -509,7 +513,11 @@ export function AppSidebar() {
                         isMobile && toggleSidebar();
                       }}
                     >
-                      <Icon name="edit_square" size={16} className="text-muted-foreground" />
+                      <Icon
+                        name="edit_square"
+                        size={16}
+                        className="text-muted-foreground"
+                      />
                       <span className="truncate">New chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

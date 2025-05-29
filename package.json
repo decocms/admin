@@ -50,5 +50,10 @@
   ],
   "devDependencies": {
     "supabase": "^2.22.12"
+  },
+  "lint": {
+    "plugins": [
+      "./plugins/ensure-tailwind-design-system-tokens.ts"
+    ]
   }
 }

@@ -410,7 +410,7 @@ function MembersViewContent() {
                       {/* Roles */}
                       <TableCell>
                         <span className="inline-flex gap-2">
-                          {member.roles.map((role) => (
+                          {member.roles.slice(0, 3).map((role) => (
                             <Badge variant="outline" key={role.id}>
                               {role.name}
                             </Badge>

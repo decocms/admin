@@ -179,7 +179,7 @@ function AgentAvatarContent(
       url={avatar}
       fallback={name.substring(0, 2)}
       className={cn(
-        "w-full h-full",
+        "w-full h-full rounded-lg",
         className,
       )}
     />

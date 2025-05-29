@@ -155,14 +155,14 @@ function SettingsTab() {
                             />
                             <FormControl>
                               <div
-                                className="w-16 h-16 group aspect-square rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                                className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                                 onClick={triggerFileInput}
                               >
                                 {isUploading
                                   ? (
                                     <Skeleton
                                       className={cn(
-                                        "w-full h-full rounded-lg",
+                                        "w-full h-full rounded-xl",
                                       )}
                                     />
                                   )
@@ -171,7 +171,6 @@ function SettingsTab() {
                                       <AgentAvatar
                                         name={agent.name}
                                         avatar={field.value || agent.avatar}
-                                        className="rounded-lg"
                                       />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                         <Icon
@@ -193,7 +192,6 @@ function SettingsTab() {
                       <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input
-                          className="rounded-md"
                           placeholder="Enter agent name"
                           {...field}
                         />
@@ -213,7 +211,6 @@ function SettingsTab() {
                   <FormControl>
                     <Input
                       type="number"
-                      className="rounded-md border-border"
                       min={ANTHROPIC_MIN_MAX_TOKENS}
                       max={ANTHROPIC_MAX_MAX_TOKENS}
                       {...field}

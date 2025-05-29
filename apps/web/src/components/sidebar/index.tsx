@@ -175,7 +175,7 @@ function ThreadActions({ thread, onEdit, className }: {
               e.stopPropagation();
             }}
           >
-            <Icon name="more_vert" className="text-slate-500" size={16} />
+            <Icon name="more_vert" size={16} className="text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -494,7 +494,7 @@ export function AppSidebar() {
       <SidebarContent className="flex flex-col h-full overflow-x-hidden">
         <div className="flex flex-col h-full">
           <div className="flex-none">
-            <SidebarGroup>
+            <SidebarGroup className="font-medium">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
                   <SidebarMenuItem>
@@ -509,8 +509,8 @@ export function AppSidebar() {
                         isMobile && toggleSidebar();
                       }}
                     >
-                      <Icon name="edit_square" size={16} />
-                      <span className="truncate">Chat</span>
+                      <Icon name="edit_square" size={16} className="text-muted-foreground" />
+                      <span className="truncate">New chat</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
@@ -535,7 +535,11 @@ export function AppSidebar() {
                                   isMobile && toggleSidebar();
                                 }}
                               >
-                                <Icon name={item.icon} filled={isActive} />
+                                <Icon
+                                  name={item.icon}
+                                  filled={isActive}
+                                  className="text-muted-foreground"
+                                />
                                 <span className="truncate">{item.title}</span>
                               </Link>
                             </SidebarMenuButton>
@@ -551,7 +555,7 @@ export function AppSidebar() {
 
           {!isCollapsed && (
             <>
-              <SidebarSeparator />
+              <SidebarSeparator className="!w-[224px]" />
               <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 <Suspense fallback={<SidebarThreadsSkeleton />}>
                   <SidebarThreads />

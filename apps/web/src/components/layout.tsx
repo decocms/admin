@@ -90,7 +90,7 @@ export function RouteLayout() {
           setDefaultOpen(open);
           setOpen(open);
         }}
-        className="h-full bg-slate-50"
+        className="h-full bg-sidebar"
         style={{
           "--sidebar-width": "16rem",
           "--sidebar-width-mobile": "14rem",
@@ -98,7 +98,7 @@ export function RouteLayout() {
       >
         <SDKProvider workspace={rootContext}>
           <AppSidebar />
-          <SidebarInset className="h-full flex-col bg-slate-50">
+          <SidebarInset className="h-full flex-col bg-sidebar">
             <Outlet />
           </SidebarInset>
           <ProfileSettings
@@ -133,7 +133,7 @@ export function PageLayout({
     <Docked.Provider tabs={tabs}>
       <div
         className={cn(
-          "bg-slate-50",
+          "bg-sidebar",
           "grid grid-cols-3 md:grid-cols-2 px-2",
         )}
       >
@@ -179,7 +179,7 @@ export function PageLayout({
               variant="ghost"
               className="p-1 size-8"
             >
-              <Icon name="dock_to_right" />
+              <Icon name="dock_to_right" className="text-muted-foreground" />
             </Button>
           </div>
         )}
@@ -209,7 +209,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
           onClick={() => toggleSidebar()}
           className={cn(isMobile && "hidden", "size-8")}
         >
-          <Icon name="dock_to_right" />
+          <Icon name="dock_to_right" className="text-muted-foreground" />
         </Button>
       )}
 

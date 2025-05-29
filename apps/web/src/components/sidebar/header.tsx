@@ -13,7 +13,7 @@ export function Header() {
   const { toggleSidebar, open, isMobile } = useSidebar();
 
   return (
-    <SidebarHeader className="md:h-14 h-12 py-0 flex flex-row items-center px-4 md:px-2">
+    <SidebarHeader className="md:h-14 h-12 py-0 flex flex-row items-center px-4 md:px-3">
       <SidebarMenu>
         <SidebarMenuItem className="flex items-center justify-between">
           <TeamSelector />
@@ -26,7 +26,11 @@ export function Header() {
               onClick={toggleSidebar}
               className="size-8"
             >
-              <Icon name={isMobile ? "menu" : "dock_to_right"} size={16} />
+              <Icon
+                name={isMobile ? "menu" : "dock_to_right"}
+                size={16}
+                className="text-muted-foreground"
+              />
             </Button>
           </SidebarMenuButton>
         </SidebarMenuItem>

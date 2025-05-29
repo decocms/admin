@@ -1,4 +1,4 @@
-import { bypass } from "../assertions.ts";
+import { canAccessWorkspaceResource } from "../assertions.ts";
 import { createTool, getEnv } from "../context.ts";
 import { z } from "zod";
 import { NotFoundError } from "../index.ts";
@@ -14,7 +14,7 @@ export const sendWhatsAppTemplateMessage = createTool({
     sender_name: z.string(),
     agent_name: z.string(),
   }),
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async (
     { to, template_name, language_code, sender_phone, sender_name, agent_name },
     c,
@@ -83,7 +83,7 @@ export const createWhatsAppInvite = createTool({
     wppMessageId: z.string(),
     phone: z.string(),
   }),
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ userId, triggerId, wppMessageId, phone }, c) => {
     console.log({ userId, triggerId, wppMessageId, phone });
     const db = c.db;
@@ -131,7 +131,7 @@ export const upsertWhatsAppUser = createTool({
     triggerId: z.string(),
     triggers: z.string().array(),
   }),
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ phone, triggerUrl, triggerId, triggers }, c) => {
     const { error } = await c.db
       .from("deco_chat_temp_wpp_users")
@@ -159,7 +159,7 @@ export const getWhatsAppUser = createTool({
   inputSchema: z.object({
     phone: z.string(),
   }),
-  canAccess: bypass,
+  canAccess: canAccessWorkspaceResource,
   handler: async ({ phone }, c) => {
     const { data, error } = await c.db
       .from("deco_chat_temp_wpp_users")

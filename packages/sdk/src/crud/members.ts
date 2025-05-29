@@ -135,22 +135,16 @@ export const registerActivity = (teamId: number) => {
  * @param action - Whether to grant or revoke the role
  * @returns Success status
  */
-export const updateMemberRole = async (
+export const updateMemberRole = (
   teamId: number,
   userId: string,
   roleId: number,
   action: "grant" | "revoke",
 ): Promise<{ success: boolean }> => {
-  const { data, error, ok } = await MCPClient.TEAM_MEMBERS_UPDATE_ROLE({
+  return MCPClient.TEAM_MEMBERS_UPDATE_ROLE({
     teamId,
     userId,
     roleId,
     action,
   });
-
-  if (!ok || !data) {
-    throw new Error(error?.message ?? "Failed to update member role");
-  }
-
-  return data;
 };

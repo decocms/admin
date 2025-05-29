@@ -66,7 +66,6 @@ export const sendWhatsAppTemplateMessage = createTool({
       throw new Error("Failed to send whatsapp message");
     }
     const data = await response.json() as { messages: { id: string }[] };
-    console.log({ data });
     return {
       wppMessageId: data.messages[0].id,
       to: to,
@@ -85,7 +84,6 @@ export const createWhatsAppInvite = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ userId, triggerId, wppMessageId, phone }, c) => {
-    console.log({ userId, triggerId, wppMessageId, phone });
     const db = c.db;
 
     const { data: alreadyInvited, error: alreadyInvitedError } = await db.from(

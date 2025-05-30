@@ -15,7 +15,7 @@ import {
   useLocation,
   useRouteError,
 } from "react-router";
-import { EmptyState } from "./components/common/EmptyState.tsx";
+import { EmptyState } from "./components/common/empty-state.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;

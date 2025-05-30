@@ -37,12 +37,12 @@ import {
   useState,
 } from "react";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { Avatar } from "../common/Avatar.tsx";
+import { Avatar } from "../common/avatar.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
-import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
+import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
-import { RolesDropdown } from "../common/RolesDropdown.tsx";
+import { RolesDropdown } from "../common/roles-dropdown.tsx";
 
 function MemberTitle() {
   return (

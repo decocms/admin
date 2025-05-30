@@ -33,7 +33,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { RolesDropdown } from "./RolesDropdown.tsx";
+import { RolesDropdown } from "./roles-dropdown.tsx";
 
 // Form validation schema
 const inviteMemberSchema = z.object({

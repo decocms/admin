@@ -8,7 +8,7 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
-import { EmptyState } from "../common/EmptyState.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 import { PageLayout } from "../layout.tsx";
 import { ChatHeader } from "./ChatHeader.tsx";
 import AgentPreview from "./preview.tsx";

@@ -48,8 +48,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Avatar } from "../common/Avatar.tsx";
-import { Table, TableColumn } from "../common/Table.tsx";
+import { Avatar } from "../common/avatar.tsx";
+import { Table, TableColumn } from "../common/table.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 
 interface ModelLogoProps {

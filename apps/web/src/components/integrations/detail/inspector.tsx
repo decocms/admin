@@ -10,7 +10,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, useError } from "../../../error-boundary.tsx";
-import { EmptyState } from "../../common/EmptyState.tsx";
+import { EmptyState } from "../../common/empty-state.tsx";
 import { ConnStatus } from "./conn-status.tsx";
 import { useFormContext } from "./context.ts";
 import { ToolCallForm } from "./tool-call-form.tsx";

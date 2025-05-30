@@ -22,8 +22,8 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { useState } from "react";
-import { AgentAvatar } from "../common/Avatar.tsx";
-import { EmptyState } from "../common/EmptyState.tsx";
+import { AgentAvatar } from "../common/avatar.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 import { CronTriggerForm } from "./cron-trigger-form.tsx";
 import { WebhookTriggerForm } from "./webhook-trigger-form.tsx";
 import { TriggerOutputSchema } from "@deco/sdk";

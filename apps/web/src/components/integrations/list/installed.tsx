@@ -26,9 +26,9 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type MouseEvent, useReducer, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../../common/EmptyState.tsx";
-import { Table, TableColumn } from "../../common/Table.tsx";
-import { IntegrationInfo } from "../../common/TableCells.tsx";
+import { EmptyState } from "../../common/empty-state.tsx";
+import { Table, TableColumn } from "../../common/table.tsx";
+import { IntegrationInfo } from "../../common/table-cells.tsx";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 

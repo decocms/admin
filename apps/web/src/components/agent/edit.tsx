@@ -32,7 +32,7 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
+import { AgentAvatar } from "../common/avatar.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";

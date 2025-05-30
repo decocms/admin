@@ -22,8 +22,8 @@ import {
 } from "../../../hooks/use-navigate-workspace.ts";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
-import { Table, TableColumn } from "../../common/Table.tsx";
-import { IntegrationInfo } from "../../common/TableCells.tsx";
+import { Table, TableColumn } from "../../common/table.tsx";
+import { IntegrationInfo } from "../../common/table-cells.tsx";
 
 interface MarketplaceIntegration extends Integration {
   provider: string;

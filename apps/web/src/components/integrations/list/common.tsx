@@ -2,7 +2,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Avatar } from "../../common/Avatar.tsx";
+import { Avatar } from "../../common/avatar.tsx";
 import { Suspense } from "react";
 import { isFilePath } from "../../../utils/path.ts";
 

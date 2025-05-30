@@ -27,7 +27,7 @@ import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/data/useUser.ts";
 import { useWorkspaceLink } from "../hooks/useNavigateWorkspace.ts";
-import RegisterActivity from "./common/RegisterActivity.tsx";
+import RegisterActivity from "./common/register-activity.tsx";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { useLocalStorage } from "../hooks/use-local-storage.ts";

@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Avatar } from "../common/Avatar.tsx";
+import { Avatar } from "../common/avatar.tsx";
 import countriesData from "../../utils/countries.json" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
 import { useUser } from "../../hooks/use-user.ts";

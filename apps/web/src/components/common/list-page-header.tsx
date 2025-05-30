@@ -1,7 +1,7 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import type { ComponentProps, InputHTMLAttributes, ReactNode } from "react";
-import { ViewModeSwitcher } from "./ViewModelSwitcher.tsx";
+import { ViewModeSwitcher } from "./view-mode-switcher.tsx";
 
 interface Props {
   filter?: {

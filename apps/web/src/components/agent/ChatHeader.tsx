@@ -3,7 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
+import { AgentAvatar } from "../common/avatar.tsx";
 
 export function ChatHeader() {
   return (

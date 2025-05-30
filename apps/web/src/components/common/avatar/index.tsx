@@ -8,7 +8,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { isFilePath } from "../../utils/path.ts";
+import { isFilePath } from "../../../utils/path.ts";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [

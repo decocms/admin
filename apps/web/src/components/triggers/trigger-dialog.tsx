@@ -22,7 +22,7 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { useState } from "react";
-import { AgentAvatar } from "../common/avatar.tsx";
+import { AgentAvatar } from "../common/avatar/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { CronTriggerForm } from "./cron-trigger-form.tsx";
 import { WebhookTriggerForm } from "./webhook-trigger-form.tsx";

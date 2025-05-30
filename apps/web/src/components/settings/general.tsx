@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Avatar } from "../common/avatar.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 

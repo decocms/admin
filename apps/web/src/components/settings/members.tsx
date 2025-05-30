@@ -37,7 +37,7 @@ import {
   useState,
 } from "react";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { Avatar } from "../common/avatar.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";

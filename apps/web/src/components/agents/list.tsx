@@ -48,7 +48,7 @@ import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { AgentAvatar, Avatar } from "../common/avatar.tsx";
+import { AgentAvatar, Avatar } from "../common/avatar/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";

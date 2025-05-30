@@ -1,7 +1,7 @@
 import { NotFoundError, useAgent } from "@deco/sdk";
 import { Suspense } from "react";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { AgentAvatar } from "../common/avatar.tsx";
+import { AgentAvatar } from "../common/avatar/index.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 
 interface Props {

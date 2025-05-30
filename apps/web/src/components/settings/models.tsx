@@ -48,7 +48,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Avatar } from "../common/avatar.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 

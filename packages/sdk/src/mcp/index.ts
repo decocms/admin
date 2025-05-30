@@ -41,10 +41,6 @@ export const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
-  whatsappAPI.sendWhatsAppTemplateMessage,
-  whatsappAPI.createWhatsAppInvite,
-  whatsappAPI.upsertWhatsAppUser,
-  whatsappAPI.getWhatsAppUser,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -102,6 +98,10 @@ export const WORKSPACE_TOOLS = [
   modelsAPI.listModels,
   modelsAPI.updateModel,
   modelsAPI.getModel,
+  whatsappAPI.sendWhatsAppTemplateMessage,
+  whatsappAPI.createWhatsAppInvite,
+  whatsappAPI.upsertWhatsAppUser,
+  whatsappAPI.getWhatsAppUser,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

@@ -57,6 +57,8 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
 
   const { workspace } = useSDK();
 
+  const isDecoTeam = workspace as string === "shared/deco.cx";
+
   // Find webhook triggers (WhatsApp uses webhook triggers)
   const webhookTriggers =
     triggers?.triggers?.filter((trigger) => trigger.type === "webhook") ?? [];
@@ -66,11 +68,6 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
     ) ?? webhookTriggers[0]; // Use first webhook trigger if no specific WhatsApp trigger found
 
   const { mutate: upsertWhatsAppUser } = useUpsertWhatsAppUser({
-    phone: profile?.phone ?? "",
-    triggerUrl: whatsappTrigger?.data.url ?? "",
-    triggerId: whatsappTrigger?.id ?? "",
-    triggers: [...(whatsappUser?.triggers ?? []), whatsappTrigger?.id],
-    workspace: workspace,
     agentId: agentId,
   });
   const { mutate: sendAgentWhatsAppInvite, isPending: isInvitePending } =
@@ -86,8 +83,17 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
       },
     );
 
+    if (!whatsappTrigger?.data.url || !whatsappTrigger?.id) {
+      toast.error("No trigger available for WhatsApp integration");
+      return;
+    }
+
     upsertWhatsAppUser(
-      undefined,
+      {
+        triggerUrl: whatsappTrigger?.data.url,
+        triggerId: whatsappTrigger?.id,
+        triggers: [...(whatsappUser?.triggers ?? [])],
+      },
       {
         onSuccess: () => {
           toast.success("This agent is now available on WhatsApp.");
@@ -117,14 +123,13 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
     setIsInviteDialogOpen(true);
   }
 
-  function handleInviteSubmit(phoneNumber: string, selectedTriggerId?: string) {
-    if (workspace as string !== "deco.cx") {
+  function handleInviteSubmit(phoneNumber: string) {
+    if (!isDecoTeam) {
       toast.error("This feature is only available for the deco.cx team.");
       return;
     }
 
-    // If no trigger is selected and no triggers exist, create one first
-    if (!selectedTriggerId && webhookTriggers.length === 0) {
+    if (!whatsappTrigger && webhookTriggers.length === 0) {
       createTrigger(
         {
           title: "WhatsApp Integration",
@@ -133,7 +138,7 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
           passphrase: crypto.randomUUID(),
         },
         {
-          onSuccess: (_newTrigger) => {
+          onSuccess: () => {
             // Send invite with the newly created trigger
             sendAgentWhatsAppInvite(
               { to: phoneNumber },
@@ -156,9 +161,7 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
       return;
     }
 
-    // Use selected trigger or default to first available
-    const triggerToUse = selectedTriggerId || webhookTriggers[0]?.id;
-    if (!triggerToUse) {
+    if (!whatsappTrigger) {
       toast.error("No trigger available for WhatsApp integration");
       return;
     }
@@ -236,11 +239,12 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
                     Use in WhatsApp
                   </DropdownMenuItem>
                 )}
-              {workspace as string === "deco.cx" && (
-                <DropdownMenuItem onClick={handleInviteClick}>
-                  Invite
-                </DropdownMenuItem>
-              )}
+              {isDecoTeam &&
+                (
+                  <DropdownMenuItem onClick={handleInviteClick}>
+                    Invite
+                  </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipTrigger>
@@ -254,7 +258,6 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
         onOpenChange={setIsInviteDialogOpen}
         onSubmit={handleInviteSubmit}
         isLoading={isInvitePending}
-        triggers={webhookTriggers}
       />
     </>
   );

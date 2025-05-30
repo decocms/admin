@@ -15,7 +15,7 @@ import { Avatar } from "../common/Avatar.tsx";
 import { countries } from "@deco/sdk/utils" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
 import { useUser } from "../../hooks/data/useUser.ts";
-interface Country {
+export interface Country {
   code: string;
   name: string;
   flag: string;
@@ -99,51 +99,7 @@ export function ProfileSettings(
   const [success, setSuccess] = useState(false);
   const [userIdCopied, setUserIdCopied] = useState(false);
 
-  // On dial code change: detect country and update flag/mask
-  function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-    const formattedRaw = !raw.startsWith("+")
-      ? "+" + raw.replace(/\D/g, "")
-      : raw;
-    setDialCode(formattedRaw);
-    const match = COUNTRIES?.find((c) =>
-      formattedRaw === c.dial_code || formattedRaw.startsWith(c.dial_code)
-    );
-
-    setCountry(match || null);
-    // Reset local value if country changes
-    setLocalValue("");
-    setFullPhone(formattedRaw);
-    setError("");
-  }
-
-  // On local number change: mask and update full phone
-  function handleLocalChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-    const digits = raw.replace(/\D/g, "");
-    const masked = country ? country.mask(digits) : raw;
-    setLocalValue(masked);
-    setFullPhone(dialCode + digits);
-    setError("");
-  }
-
-  function validatePhone() {
-    if (!country) {
-      setError(
-        "Please enter a valid international phone number (e.g. +5511910000000)",
-      );
-      return false;
-    }
-    if (!country.validate(fullPhone)) {
-      setError(`Please enter a valid phone number for ${country.name}`);
-      return false;
-    }
-    setError("");
-    return true;
-  }
-
   function handleSave() {
-    if (!validatePhone()) return;
     updateProfile.mutate(
       { phone: fullPhone },
       {
@@ -232,51 +188,24 @@ export function ProfileSettings(
                   />
                 </button>
               </div>
-              <div className="w-full max-w-xs flex flex-col gap-2">
-                <label
-                  htmlFor="profile-phone"
-                  className="text-sm font-medium text-muted-foreground"
-                >
-                  Phone Number
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{country?.flag ?? "🌐"}</span>
-                  <input
-                    id="profile-dialcode"
-                    type="text"
-                    className="border rounded px-2 py-2 text-sm w-20 text-center"
-                    placeholder="+55"
-                    value={dialCode}
-                    onChange={handleDialCodeChange}
-                    maxLength={5}
-                    inputMode="tel"
-                    autoComplete="tel-country-code"
-                    disabled={updateProfile.isPending}
-                  />
-                  <input
-                    id="profile-local"
-                    type="tel"
-                    className="border rounded px-3 py-2 text-sm flex-1"
-                    placeholder={country?.placeholder?.replace(
-                      country.dial_code,
-                      "",
-                    ) ?? "11910000000"}
-                    value={localValue}
-                    onChange={handleLocalChange}
-                    onBlur={validatePhone}
-                    maxLength={20}
-                    inputMode="tel"
-                    autoComplete="tel-local"
-                    disabled={updateProfile.isPending}
-                  />
-                </div>
-                {error && (
-                  <span className="text-destructive text-xs mt-1">{error}</span>
-                )}
-                {success && (
-                  <span className="text-special text-xs mt-1">Saved!</span>
-                )}
-              </div>
+              <PhoneInput
+                dialCode={dialCode}
+                country={country}
+                localValue={localValue}
+                setDialCode={setDialCode}
+                setCountry={setCountry}
+                setLocalValue={setLocalValue}
+                setFullPhone={setFullPhone}
+                setError={setError}
+                isDisabled={updateProfile.isPending}
+                fullPhone={fullPhone}
+              />
+              {error && (
+                <span className="text-destructive text-xs mt-1">{error}</span>
+              )}
+              {success && (
+                <span className="text-special text-xs mt-1">Saved!</span>
+              )}
             </div>
           )}
         <DialogFooter>
@@ -296,5 +225,112 @@ export function ProfileSettings(
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function PhoneInput({
+  setDialCode,
+  setCountry,
+  setLocalValue,
+  setFullPhone,
+  setError,
+  dialCode,
+  country,
+  localValue,
+  fullPhone,
+  isDisabled,
+}: {
+  setDialCode: (dialCode: string) => void;
+  setCountry: (country: Country | null) => void;
+  setLocalValue: (localValue: string) => void;
+  setFullPhone: (fullPhone: string) => void;
+  setError: (error: string) => void;
+  dialCode: string;
+  country: Country | null;
+  localValue: string;
+  fullPhone: string;
+  isDisabled: boolean;
+}) {
+  function validatePhone() {
+    if (!country) {
+      setError(
+        "Please enter a valid international phone number (e.g. +5511910000000)",
+      );
+      return false;
+    }
+    if (!country.validate(fullPhone)) {
+      setError(`Please enter a valid phone number for ${country.name}`);
+      return false;
+    }
+    setError("");
+    return true;
+  }
+
+  function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    const formattedRaw = !raw.startsWith("+")
+      ? "+" + raw.replace(/\D/g, "")
+      : raw;
+    setDialCode(formattedRaw);
+    const match = COUNTRIES?.find((c) =>
+      formattedRaw === c.dial_code || formattedRaw.startsWith(c.dial_code)
+    );
+
+    setCountry(match || null);
+    // Reset local value if country changes
+    setLocalValue("");
+    setFullPhone(formattedRaw);
+    setError("");
+  }
+
+  function handleLocalChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    const digits = raw.replace(/\D/g, "");
+    const masked = country ? country.mask(digits) : raw;
+    setLocalValue(masked);
+    setFullPhone(dialCode + digits);
+    setError("");
+  }
+
+  return (
+    <div className="w-full max-w-xs flex flex-col gap-2">
+      <label
+        htmlFor="profile-phone"
+        className="text-sm font-medium text-muted-foreground"
+      >
+        Phone Number
+      </label>
+      <div className="flex items-center gap-2">
+        <span className="text-2xl">{country?.flag ?? "🌐"}</span>
+        <input
+          id="profile-dialcode"
+          type="text"
+          className="border rounded px-2 py-2 text-sm w-20 text-center"
+          placeholder="+55"
+          value={dialCode}
+          onChange={handleDialCodeChange}
+          maxLength={5}
+          inputMode="tel"
+          autoComplete="tel-country-code"
+          disabled={isDisabled}
+        />
+        <input
+          id="profile-local"
+          type="tel"
+          className="border rounded px-3 py-2 text-sm flex-1"
+          placeholder={country?.placeholder?.replace(
+            country.dial_code,
+            "",
+          ) ?? "11910000000"}
+          value={localValue}
+          onChange={handleLocalChange}
+          onBlur={validatePhone}
+          maxLength={20}
+          inputMode="tel"
+          autoComplete="tel-local"
+          disabled={isDisabled}
+        />
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,13 @@
-import { canAccessWorkspaceResource } from "../assertions.ts";
+import {
+  assertHasWorkspace,
+  bypass,
+  canAccessWorkspaceResource,
+} from "../assertions.ts";
 import { createTool, getEnv } from "../context.ts";
 import { z } from "zod";
 import { NotFoundError } from "../index.ts";
+
+const ALLOWED_WORKSPACES = ["/shared/deco.cx"];
 
 export const sendWhatsAppTemplateMessage = createTool({
   name: "WHATSAPP_SEND_TEMPLATE_MESSAGE",
@@ -14,11 +20,16 @@ export const sendWhatsAppTemplateMessage = createTool({
     sender_name: z.string(),
     agent_name: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
+  canAccess: bypass,
   handler: async (
     { to, template_name, language_code, sender_phone, sender_name, agent_name },
     c,
   ) => {
+    const workspace = c.workspace;
+    if (!workspace?.value || !ALLOWED_WORKSPACES.includes(workspace.value)) {
+      throw new Error("Workspace not allowed");
+    }
+
     const env = getEnv(c);
     const response = await fetch(
       `https://graph.facebook.com/${env.WHATSAPP_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -63,7 +74,9 @@ export const sendWhatsAppTemplateMessage = createTool({
     );
 
     if (!response.ok) {
-      throw new Error("Failed to send whatsapp message");
+      throw new Error(
+        `Failed to send whatsapp message: ${response.statusText}`,
+      );
     }
     const data = await response.json() as { messages: { id: string }[] };
     return {
@@ -84,10 +97,16 @@ export const createWhatsAppInvite = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ userId, triggerId, wppMessageId, phone }, c) => {
+    assertHasWorkspace(c);
+    const workspace = c.workspace;
+    if (!workspace?.value || !ALLOWED_WORKSPACES.includes(workspace.value)) {
+      throw new Error("Workspace not allowed");
+    }
+
     const db = c.db;
 
     const { data: alreadyInvited, error: alreadyInvitedError } = await db.from(
-      "deco_chat_temp_wpp_invites",
+      "deco_chat_wpp_invites",
     )
       .select("wpp_message_id").eq("phone", phone).eq("user_id", userId).eq(
         "trigger_id",
@@ -102,7 +121,7 @@ export const createWhatsAppInvite = createTool({
       throw new Error("User already invited to this trigger");
     }
 
-    const { error } = await db.from("deco_chat_temp_wpp_invites").insert({
+    const { error } = await db.from("deco_chat_wpp_invites").insert({
       phone: phone,
       trigger_id: triggerId,
       wpp_message_id: wppMessageId,
@@ -122,7 +141,7 @@ export const createWhatsAppInvite = createTool({
 export const upsertWhatsAppUser = createTool({
   name: "WHATSAPP_UPSERT_USER",
   description:
-    "Inserts or updates a whatsapp user for the whatsapp integration based on userId",
+    "Inserts or updates a whatsapp user for the whatsapp integration based on phone number",
   inputSchema: z.object({
     phone: z.string(),
     triggerUrl: z.string(),
@@ -131,13 +150,21 @@ export const upsertWhatsAppUser = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ phone, triggerUrl, triggerId, triggers }, c) => {
+    assertHasWorkspace(c);
+
+    const alreadyHasTrigger = triggers.includes(triggerId);
+
+    if (!alreadyHasTrigger) {
+      triggers.push(triggerId);
+    }
+
     const { error } = await c.db
-      .from("deco_chat_temp_wpp_users")
+      .from("deco_chat_wpp_users")
       .upsert({
         phone: phone,
         trigger_url: triggerUrl,
         trigger_id: triggerId,
-        triggers: triggers,
+        triggers: [...triggers],
         updated_at: new Date().toISOString(),
       });
 
@@ -154,14 +181,16 @@ export const upsertWhatsAppUser = createTool({
 export const getWhatsAppUser = createTool({
   name: "WHATSAPP_GET_USER",
   description:
-    "Get a whatsapp user for the whatsapp integration based on userId",
+    "Get a whatsapp user for the whatsapp integration based on phone number",
   inputSchema: z.object({
     phone: z.string(),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async ({ phone }, c) => {
+    assertHasWorkspace(c);
+
     const { data, error } = await c.db
-      .from("deco_chat_temp_wpp_users")
+      .from("deco_chat_wpp_users")
       .select("*")
       .eq("phone", phone)
       .maybeSingle();

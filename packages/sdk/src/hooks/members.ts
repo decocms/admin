@@ -155,9 +155,13 @@ export const useRemoveTeamMember = () => {
       const membersKey = KEYS.TEAM_MEMBERS(teamId);
 
       queryClient.cancelQueries({ queryKey: membersKey });
-      queryClient.setQueryData<Member[]>(
+      queryClient.setQueryData<{ members: Member[] }>(
         membersKey,
-        (old) => old?.filter((member) => member.id !== memberId) ?? [],
+        (old) => ({
+          ...old,
+          members: old?.members?.filter((member) => member.id !== memberId) ??
+            [],
+        }),
       );
     },
   });

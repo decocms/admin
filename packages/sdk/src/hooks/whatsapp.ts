@@ -9,11 +9,12 @@ import {
   upsertWhatsAppUser,
 } from "../crud/whatsapp.ts";
 import { KEYS } from "./index.ts";
-import { Workspace } from "./store.tsx";
+import { useSDK } from "./store.tsx";
 
 export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
   const { data: profile } = useProfile();
   const { data: agent } = useAgent(agentId);
+  const { workspace } = useSDK();
   return useMutation({
     mutationFn: (props: { to: string }) => {
       const countryCode = getMetaCountryCodeFromPhone(props.to);
@@ -22,7 +23,7 @@ export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
         throw new Error("Template not found");
       }
 
-      return MCPClient.WHATSAPP_SEND_TEMPLATE_MESSAGE({
+      return MCPClient.forWorkspace(workspace).WHATSAPP_SEND_TEMPLATE_MESSAGE({
         to: props.to,
         template_name: template.name,
         language_code: template.language_code,
@@ -34,6 +35,7 @@ export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
     },
     onSuccess: async (data) => {
       await createWhatsAppInvite(
+        workspace,
         profile.id,
         triggerId,
         data.wppMessageId,
@@ -44,37 +46,52 @@ export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
 }
 
 export function useUpsertWhatsAppUser({
-  phone,
-  triggerUrl,
-  triggerId,
-  triggers,
-  workspace,
   agentId,
 }: {
-  phone: string;
-  triggerUrl: string;
-  triggerId: string;
-  triggers: string[];
-  workspace: Workspace;
   agentId: string;
 }) {
+  const { workspace } = useSDK();
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
   return useMutation({
-    mutationFn: () =>
-      upsertWhatsAppUser(phone, triggerUrl, triggerId, triggers),
+    mutationFn: ({
+      triggerUrl,
+      triggerId,
+      triggers,
+    }: {
+      triggerUrl: string;
+      triggerId: string;
+      triggers: string[];
+    }) => {
+      if (!profile?.phone) {
+        throw new Error("Profile phone is required");
+      }
+
+      return upsertWhatsAppUser(
+        workspace,
+        profile.phone,
+        triggerUrl,
+        triggerId,
+        triggers,
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: KEYS.TRIGGERS(workspace, agentId),
       });
-      queryClient.invalidateQueries({ queryKey: KEYS.WHATSAPP_USER(phone) });
+      queryClient.invalidateQueries({
+        queryKey: KEYS.WHATSAPP_USER(workspace, profile.phone as string),
+      });
     },
   });
 }
 
 export function useWhatsAppUser(phone: string) {
+  const { workspace } = useSDK();
   return useQuery({
-    queryKey: KEYS.WHATSAPP_USER(phone),
-    queryFn: () => getWhatsAppUser(phone),
+    queryKey: KEYS.WHATSAPP_USER(workspace, phone),
+    queryFn: () => getWhatsAppUser(workspace, phone),
   });
 }
 

@@ -1,7 +1,7 @@
 import { NotFoundError, useAgent } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 

@@ -27,7 +27,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { AudioButton } from "./AudioButton.tsx";
 import { useChatContext } from "./context.tsx";

@@ -9,7 +9,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { ErrorBoundary, useError } from "../../../ErrorBoundary.tsx";
+import { ErrorBoundary, useError } from "../../../error-boundary.tsx";
 import { EmptyState } from "../../common/EmptyState.tsx";
 import { ConnStatus } from "./connStatus.tsx";
 import { useFormContext } from "./context.ts";

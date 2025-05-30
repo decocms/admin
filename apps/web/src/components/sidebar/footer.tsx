@@ -37,7 +37,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Link, useLocation, useMatch } from "react-router";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useUser } from "../../hooks/data/useUser.ts";
 import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";

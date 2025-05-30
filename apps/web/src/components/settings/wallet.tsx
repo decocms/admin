@@ -4,7 +4,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { DepositDialog } from "../wallet/DepositDialog.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { VoucherDialog } from "../wallet/VoucherDialog.tsx";

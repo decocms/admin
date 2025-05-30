@@ -41,7 +41,7 @@ import {
   useReducer,
   useState,
 } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
 import { useLocalStorage } from "../../hooks/useLocalStorage.ts";

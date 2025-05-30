@@ -11,7 +11,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 

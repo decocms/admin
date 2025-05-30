@@ -2,7 +2,7 @@ import { NotFoundError, useAgent, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/Avatar.tsx";
 import { useChatContext } from "./context.tsx";

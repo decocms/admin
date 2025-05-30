@@ -4,7 +4,7 @@ import { SidebarInset, SidebarProvider } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "react-router";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ChatInput } from "../chat/ChatInput.tsx";
 import { ChatMessages } from "../chat/ChatMessages.tsx";
 import { ChatProvider } from "../chat/context.tsx";

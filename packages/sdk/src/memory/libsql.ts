@@ -58,7 +58,9 @@ export class LibSQLStore extends MastraLibSQLStore {
     { messages }: { messages: MessageType[] },
   ): Promise<MessageType[]> {
     return super.saveMessages({ messages }).then(async (messages) => {
-      const thread = await this.getThreadById({ threadId: messages[0].threadId });
+      const thread = await this.getThreadById({
+        threadId: messages[0].threadId,
+      });
       if (!thread) {
         throw new Error(`Thread ${messages[0].threadId} not found`);
       }
@@ -189,7 +191,6 @@ export class LibSQLFactory {
         authToken,
       },
     });
-  
 
     // On turso create, the database is not ready to be used.
     // So we need to wait for it to be ready.

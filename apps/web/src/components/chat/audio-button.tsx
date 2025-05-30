@@ -4,7 +4,7 @@ import type {
   SpeechRecognition,
   SpeechRecognitionError,
   SpeechRecognitionEvent,
-} from "../../types/speech.js";
+} from "../../types/speech.d.ts";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface AudioButtonProps {

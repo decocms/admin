@@ -32,7 +32,6 @@ export class LibSQLStore extends MastraLibSQLStore {
       id: string;
       title: string;
       metadata: Record<string, unknown>;
-      updatedAt: Date;
     },
   ): Promise<StorageThreadType> {
     await this.threadCache.delete(args.id);

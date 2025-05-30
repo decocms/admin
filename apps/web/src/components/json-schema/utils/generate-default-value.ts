@@ -1,5 +1,5 @@
 import { JSONSchema7 } from "json-schema";
-import { SchemaType } from "../Form.tsx";
+import { SchemaType } from "../index.tsx";
 import {
   doesSchemaTypeMatchValue,
   getDetectedType,

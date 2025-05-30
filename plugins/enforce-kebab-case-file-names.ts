@@ -13,7 +13,12 @@ const plugin: Deno.lint.Plugin = {
           Program(node) {
             if (context.filename) {
               // Get the filename without extension
-              const filename = context.filename.split("/").pop()?.split(".")[0];
+              let filename = context.filename.split("/").pop()?.split(".")[0];
+
+              // allow test files to be named with _test suffix
+              if (filename?.endsWith("_test")) {
+                filename = filename.slice(0, -5);
+              }
 
               if (filename) {
                 // Check if filename matches kebab-case pattern

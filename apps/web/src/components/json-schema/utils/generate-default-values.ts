@@ -1,6 +1,6 @@
 import { JSONSchema7 } from "json-schema";
-import { SchemaType } from "../Form.tsx";
-import { generateDefaultValue } from "./generateDefaultValue.ts";
+import { SchemaType } from "../index.tsx";
+import { generateDefaultValue } from "./generate-default-value.ts";
 import { selectAnyOfSchema } from "./schema.ts";
 
 // Generate default values based on schema

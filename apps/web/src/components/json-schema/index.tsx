@@ -1,12 +1,12 @@
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { FormEvent, type ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
-import { ArrayField } from "./components/ArrayField.tsx";
-import { BooleanField } from "./components/BooleanField.tsx";
-import { JsonTextField } from "./components/JsonTextField.tsx";
-import { NumberField } from "./components/NumberField.tsx";
-import { SelectField } from "./components/SelectField.tsx";
-import { StringField } from "./components/StringField.tsx";
+import { ArrayField } from "./components/array-field.tsx";
+import { BooleanField } from "./components/boolean-field.tsx";
+import { JsonTextField } from "./components/json-text-field.tsx";
+import { NumberField } from "./components/number-field.tsx";
+import { SelectField } from "./components/select-field.tsx";
+import { StringField } from "./components/string-field.tsx";
 
 import { formatPropertyName, selectAnyOfSchema } from "./utils/index.ts";
 

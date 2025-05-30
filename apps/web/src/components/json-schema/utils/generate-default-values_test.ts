@@ -1,5 +1,5 @@
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { generateDefaultValues } from "./generateDefaultValues.ts";
+import { generateDefaultValues } from "./generate-default-values.ts";
 import { JSONSchema7 } from "json-schema";
 
 Deno.test("generateDefaultValues - empty or invalid schema", () => {

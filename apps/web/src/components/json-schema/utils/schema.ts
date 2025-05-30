@@ -1,6 +1,6 @@
 import { JSONSchema7 } from "json-schema";
-import { SchemaType } from "../Form.tsx";
-import { generateDefaultValues } from "./generateDefaultValues.ts";
+import { SchemaType } from "../index.tsx";
+import { generateDefaultValues } from "./generate-default-values.ts";
 import { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 // Format property name for display

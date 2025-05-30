@@ -1,6 +1,6 @@
 import { useUpdateThreadMessages } from "@deco/sdk";
 import { useCallback } from "react";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 interface AgentNavigationOptions {
   message?: string;

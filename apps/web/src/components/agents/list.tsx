@@ -43,9 +43,9 @@ import {
 } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
-import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useCreateAgent } from "../../hooks/use-create-agent.ts";
+import { useLocalStorage } from "../../hooks/use-local-storage.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/AgentVisibility.tsx";
 import { AgentAvatar, Avatar } from "../common/Avatar.tsx";

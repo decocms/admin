@@ -4,7 +4,7 @@ import {
   useUpdateThreadMessages,
 } from "@deco/sdk";
 import { useFocusChat } from "../components/agents/hooks.ts";
-import { trackEvent } from "../hooks/analytics.ts";
+import { trackEvent } from "./analytics.ts";
 
 export const useCreateAgent = () => {
   const createAgent = useCreateAgentSDK();

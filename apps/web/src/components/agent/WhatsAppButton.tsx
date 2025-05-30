@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { useProfileModal } from "../layout.tsx";

@@ -10,9 +10,9 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useState } from "react";
-import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Protect } from "../wallet/plan.tsx";
-import { useContactUsUrl } from "../../hooks/useContactUs.ts";
+import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
 
 const WELL_KNOWN_ERROR_MESSAGES = {
   InsufficientFunds: "Insufficient funds",

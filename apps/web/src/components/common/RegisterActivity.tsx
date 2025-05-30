@@ -1,4 +1,4 @@
-import { useRegisterActivity } from "../../hooks/useRegisterActivity.ts";
+import { useRegisterActivity } from "../../hooks/use-register-activity.ts";
 
 interface Props {
   teamSlug?: string;

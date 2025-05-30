@@ -28,7 +28,7 @@ import { CronTriggerForm } from "./cronTriggerForm.tsx";
 import { WebhookTriggerForm } from "./webhookTriggerForm.tsx";
 import { TriggerOutputSchema } from "@deco/sdk";
 import { z } from "zod";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 function AgentSelect({
   agents,

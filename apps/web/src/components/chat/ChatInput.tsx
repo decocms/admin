@@ -28,7 +28,7 @@ import {
   useState,
 } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { AudioButton } from "./AudioButton.tsx";
 import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./ModelSelector.tsx";

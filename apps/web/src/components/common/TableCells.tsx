@@ -12,7 +12,7 @@ import {
 import { useMemo } from "react";
 import { useParams } from "react-router";
 import { AgentAvatar } from "./Avatar.tsx";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { format } from "date-fns";
 

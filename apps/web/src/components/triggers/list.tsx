@@ -1,7 +1,7 @@
 import { useListTriggers } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/ListPageHeader.tsx";
 import { Table, TableColumn } from "../common/Table.tsx";
 import { AgentInfo, DateTimeCell, UserInfo } from "../common/TableCells.tsx";

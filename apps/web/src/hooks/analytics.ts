@@ -4,7 +4,7 @@ import {
   POSTHOG_PROJECT_API_KEY,
   POSTHOG_SHOULD_TRACK,
 } from "../constants.ts";
-import { onUserChange } from "./data/useUser.ts";
+import { onUserChange } from "./use-user.ts";
 
 export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY, {
   api_host: POSTHOG_ORIGIN,

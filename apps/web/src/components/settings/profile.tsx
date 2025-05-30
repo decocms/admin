@@ -14,7 +14,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Avatar } from "../common/Avatar.tsx";
 import countriesData from "../../utils/countries.json" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
 interface Country {
   code: string;
   name: string;

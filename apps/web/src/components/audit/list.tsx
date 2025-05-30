@@ -16,7 +16,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState } from "react";
 import { useParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AuditFilters } from "./AuditFilters.tsx";

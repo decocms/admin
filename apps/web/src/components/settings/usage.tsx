@@ -34,8 +34,8 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
-import { useUser } from "../../hooks/data/useUser.ts";
-import { useWorkspaceLink } from "../../hooks/useNavigateWorkspace.ts";
+import { useUser } from "../../hooks/use-user.ts";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 

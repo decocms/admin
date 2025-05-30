@@ -11,7 +11,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { createWalletCheckoutSession, useSDK } from "@deco/sdk";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents

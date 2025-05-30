@@ -31,7 +31,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Protect } from "../wallet/plan.tsx";
-import { useContactUsUrl } from "../../hooks/useContactUs.ts";
+import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { RolesDropdown } from "./RolesDropdown.tsx";
 

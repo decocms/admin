@@ -30,7 +30,7 @@ import { useWorkspaceLink } from "../hooks/useNavigateWorkspace.ts";
 import RegisterActivity from "./common/RegisterActivity.tsx";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
-import { useLocalStorage } from "../hooks/useLocalStorage.ts";
+import { useLocalStorage } from "../hooks/use-local-storage.ts";
 import { ProfileSettings } from "./settings/profile.tsx";
 
 // Context for profile modal

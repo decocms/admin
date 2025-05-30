@@ -2,7 +2,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { ComponentProps, ReactNode, Suspense, useMemo } from "react";
-import { useTools } from "../../hooks/useTools.ts";
+import { useTools } from "../../hooks/use-tools.ts";
 import { togglePanel, useDock } from "../dock/index.tsx";
 import { useChatContext } from "./context.tsx";
 

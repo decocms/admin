@@ -1,5 +1,5 @@
 import { DEFAULT_MODEL } from "@deco/sdk";
-import { useLocalStorage } from "./useLocalStorage.ts";
+import { useLocalStorage } from "./use-local-storage.ts";
 
 export interface UserPreferences {
   defaultModel: string;

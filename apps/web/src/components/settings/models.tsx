@@ -77,7 +77,6 @@ export function ModelLogo({ logo, name }: ModelLogoProps) {
   );
 }
 
-
 const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
 
 type SortKey = typeof SORTABLE_KEYS[number];

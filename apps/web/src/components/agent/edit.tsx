@@ -1,6 +1,7 @@
 import {
   type Agent,
   AgentSchema,
+  DEFAULT_MODEL,
   Integration,
   NotFoundError,
   useAgent,
@@ -8,7 +9,6 @@ import {
   useUpdateAgent,
   useUpdateAgentCache,
   WELL_KNOWN_AGENTS,
-  DEFAULT_MODEL,
 } from "@deco/sdk";
 import {
   AlertDialog,

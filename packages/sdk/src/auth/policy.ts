@@ -12,6 +12,8 @@ export const BASE_ROLES_ID = {
   ADMIN: 4,
 };
 
+const BLOCKED_ROLES = new Set([BASE_ROLES_ID.PUBLISHER]);
+
 // Typed interfaces
 export interface Statement {
   effect: "allow" | "deny";
@@ -270,7 +272,10 @@ export class PolicyClient {
     }
 
     // Cache the result
-    await this.teamRolesCache.set(this.getTeamRolesCacheKey(teamId), roles);
+    await this.teamRolesCache.set(
+      this.getTeamRolesCacheKey(teamId),
+      this.filterTeamRoles(roles),
+    );
 
     return roles;
   }
@@ -287,36 +292,22 @@ export class PolicyClient {
       throw new Error("PolicyClient not initialized with database client");
     }
 
-    // Get user by email
-    const { data: profile } = await this.db
-      .from("profiles")
-      .select("user_id")
-      .eq("email", email)
-      .single();
+    const [{ data: memberWithProfile }, roles] = await Promise.all([
+      this.db.from("members").select("id, profiles!inner(email, user_id)")
+        .eq("team_id", teamId).eq("profiles.email", email).single(),
+      this.getTeamRoles(teamId),
+    ]);
+
+    const profile = memberWithProfile?.profiles;
+    const role = roles.find((r) => r.id === params.roleId);
 
     if (!profile) {
       throw new Error("User not found");
     }
 
-    // Get member by user ID and team ID
-    const { data: member } = await this.db
-      .from("members")
-      .select("id")
-      .eq("user_id", profile.user_id)
-      .eq("team_id", teamId)
-      .is("deleted_at", null)
-      .single();
-
-    if (!member) {
+    if (!memberWithProfile) {
       throw new Error("Member not found");
     }
-
-    // Get role details
-    const { data: role } = await this.db
-      .from("roles")
-      .select("*")
-      .eq("id", params.roleId)
-      .single();
 
     if (!role) {
       throw new Error("Role not found");
@@ -326,11 +317,20 @@ export class PolicyClient {
     if (params.roleId === BASE_ROLES_ID.OWNER) {
       if (params.action === "revoke") {
         // Check if this would remove the last owner
-        const { count } = await this.db
-          .from("member_roles")
-          .select("role_id", { count: "exact" })
-          .eq("role_id", BASE_ROLES_ID.OWNER)
-          .eq("member_id", member.id);
+        const { count } = await await this.db
+          .from("members")
+          .select(
+            `
+          id,
+          team_id,
+          member_roles!inner(
+            role_id
+          )
+        `,
+            { count: "exact" },
+          )
+          .eq("team_id", teamId)
+          .eq("member_roles.role_id", BASE_ROLES_ID.OWNER);
 
         if (count === 1) {
           throw new Error("Cannot remove the last owner of the team");
@@ -354,7 +354,7 @@ export class PolicyClient {
       await this.db
         .from("member_roles")
         .upsert({
-          member_id: member.id,
+          member_id: memberWithProfile.id,
           role_id: params.roleId,
         });
     } else {
@@ -362,7 +362,7 @@ export class PolicyClient {
       await this.db
         .from("member_roles")
         .delete()
-        .eq("member_id", member.id)
+        .eq("member_id", memberWithProfile.id)
         .eq("role_id", params.roleId);
     }
 
@@ -391,6 +391,10 @@ export class PolicyClient {
       // filter admin policies
       statements: policy.statements.filter((r) => !r.resource.endsWith(".ts")),
     }));
+  }
+
+  public filterTeamRoles<R extends Pick<Role, "id">>(roles: R[]): R[] {
+    return roles.filter((r) => !BLOCKED_ROLES.has(r.id));
   }
 
   private getUserPoliceCacheKey(userId: string, teamId: number) {

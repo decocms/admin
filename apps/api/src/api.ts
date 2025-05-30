@@ -18,7 +18,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
-import { withActorsStubMiddleware } from "./middlewares/actorsStub.ts";
+import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { AppContext, AppEnv, State } from "./utils/context.ts";

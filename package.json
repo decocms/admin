@@ -16,7 +16,7 @@
     "db:migration:create": "supabase migration new",
     "npm:build": "npm run build --workspace=apps/web",
     "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
-    "rolesCLI": "deno run --env-file=./apps/web/.env -A scripts/roleAndPolicyCLI.ts"
+    "rolesCLI": "deno run --env-file=./apps/web/.env -A scripts/role-and-policy-cli.ts"
   },
   "workspaces": [
     "apps/*",
@@ -53,7 +53,8 @@
   },
   "lint": {
     "plugins": [
-      "./plugins/ensure-tailwind-design-system-tokens.ts"
+      "./plugins/ensure-tailwind-design-system-tokens.ts",
+      "./plugins/enforce-kebab-case-file-names.ts"
     ]
   }
 }

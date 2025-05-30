@@ -1,6 +1,6 @@
 import { type Thread, useThreads } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 
 interface GroupedThreads {

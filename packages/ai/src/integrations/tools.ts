@@ -17,7 +17,7 @@ import {
 import { z } from "zod";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";
-import { createInnateTool } from "../utils/createTool.ts";
+import { createInnateTool } from "../utils/create-tool.ts";
 import {
   getDecoRegistryServerClient,
   searchInstalledIntegations,

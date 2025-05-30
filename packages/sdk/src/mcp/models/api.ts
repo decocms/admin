@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { AUTO_MODEL, Model, WELL_KNOWN_MODELS } from "../../constants.ts";
+import { Model, WELL_KNOWN_MODELS } from "../../constants.ts";
 import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { SupabaseLLMVault } from "./llmVault.ts";
+import { SupabaseLLMVault } from "./llm-vault.ts";
 import { AppContext, bypass } from "../index.ts";
 
 interface ModelRow {
@@ -146,6 +146,25 @@ export const updateModel = createTool({
       }
     }
 
+    // User is re-enabling a managed model, so we can just remove the db entry
+    if (updateData.by_deco && updateData.is_enabled) {
+      const wellKnownModel = WELL_KNOWN_MODELS.find((knownModel) =>
+        knownModel.model === updateData.model
+      );
+
+      if (!wellKnownModel) {
+        throw new Error(`Model ${updateData.model} not found`);
+      }
+
+      await c.db
+        .from("models")
+        .delete()
+        .eq("id", id)
+        .eq("workspace", workspace);
+
+      return wellKnownModel;
+    }
+
     const { data, error } = await c
       .db
       .from("models")
@@ -215,8 +234,6 @@ export const listModelsForWorkspace = async ({
   db: AppContext["db"];
   options?: {
     excludeDisabled?: boolean;
-    excludeAuto?: boolean;
-    showApiKey?: boolean;
   };
 }) => {
   const { data, error } = await db
@@ -225,7 +242,6 @@ export const listModelsForWorkspace = async ({
         id,
         model,
         is_enabled,
-        api_key_hash,
         created_at,
         updated_at,
         by_deco,
@@ -243,7 +259,6 @@ export const listModelsForWorkspace = async ({
       id: override?.id ?? model.id,
       name: override?.name ?? model.name,
       model: override?.model ?? model.model,
-      api_key_hash: override?.api_key_hash,
       description: override?.description,
       by_deco: override?.by_deco ?? true,
       is_enabled: override?.is_enabled ?? true,
@@ -252,24 +267,10 @@ export const listModelsForWorkspace = async ({
     };
   });
 
-  if (!options?.excludeAuto) {
-    models.unshift({
-      id: AUTO_MODEL.id,
-      name: AUTO_MODEL.name,
-      model: AUTO_MODEL.model,
-      description: AUTO_MODEL.description,
-      api_key_hash: null,
-      by_deco: true,
-      is_enabled: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-  }
-
   const dbModels = data.filter((m) => !m.by_deco);
 
   const allModels = [...models, ...dbModels]
-    .map((m) => formatModelRow(m, options?.showApiKey))
+    .map((m) => formatModelRow(m))
     .filter((m) => !options?.excludeDisabled || m.isEnabled);
 
   return allModels;
@@ -284,7 +285,7 @@ export const listModels = createTool({
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
-    const { excludeDisabled = false, excludeAuto = false } = props;
+    const { excludeDisabled = false } = props;
 
     // TODO: move this auth to canAccess wheen handle public agents authorization
     try {
@@ -296,7 +297,7 @@ export const listModels = createTool({
     return await listModelsForWorkspace({
       workspace,
       db: c.db,
-      options: { excludeDisabled, excludeAuto, showApiKey: false },
+      options: { excludeDisabled },
     });
   },
 });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createInnateTool } from "./utils/createTool.ts";
+import { createInnateTool } from "./utils/create-tool.ts";
 import type { Agent } from "@deco/sdk";
 import {
   GetObjectCommand,

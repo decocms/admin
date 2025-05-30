@@ -3,6 +3,6 @@ export {
   type Transaction,
   type WalletAPI,
 } from "./client.ts";
-export { WellKnownTransactions, WellKnownWallets } from "./wellKnown.ts";
+export { WellKnownTransactions, WellKnownWallets } from "./well-known.ts";
 export { MicroDollar } from "./microdollar.ts";
-export { createCurrencyClient } from "./currencyApi.ts";
+export { createCurrencyClient } from "./currency-api.ts";

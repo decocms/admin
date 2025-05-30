@@ -4,6 +4,8 @@ import {
   useRemoveTeamMember,
   useTeam,
   useTeamMembers,
+  useTeamRoles,
+  useUpdateMemberRole,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -34,11 +36,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import { timeAgo } from "../../utils/timeAgo.ts";
-import { Avatar } from "../common/Avatar.tsx";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
-import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
+import { timeAgo } from "../../utils/time-ago.ts";
+import { Avatar } from "../common/avatar/index.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
+import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { RolesDropdown } from "../common/roles-dropdown.tsx";
 
 function MemberTitle() {
   return (
@@ -189,8 +193,10 @@ function MembersViewContent() {
   const { data: { members, invites } } = useTeamMembers(teamId ?? null, {
     withActivity: true,
   });
+  const { data: roles = [] } = useTeamRoles(teamId ?? null);
   const removeMemberMutation = useRemoveTeamMember();
   const rejectInvite = useRejectInvite();
+  const updateRoleMutation = useUpdateMemberRole();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("name_asc");
   const deferredQuery = useDeferredValue(query);
@@ -226,6 +232,34 @@ function MembersViewContent() {
       });
     } catch (error) {
       console.error("Failed to remove team member:", error);
+    }
+  };
+
+  // Update member role
+  const handleUpdateMemberRole = async (
+    userId: string,
+    role: { id: number; name: string },
+    checked: boolean,
+  ) => {
+    if (!teamId) return;
+    try {
+      await updateRoleMutation.mutateAsync({
+        teamId,
+        userId,
+        roleId: role.id,
+        roleName: role.name,
+        action: checked ? "grant" : "revoke",
+      });
+      toast.success(
+        checked ? "Role assigned successfully" : "Role removed successfully",
+      );
+    } catch (error) {
+      toast.error(
+        // deno-lint-ignore no-explicit-any
+        typeof error === "object" && (error as any)?.message ||
+          "Failed to update role",
+      );
+      console.error("Failed to update member role:", error);
     }
   };
 
@@ -376,11 +410,23 @@ function MembersViewContent() {
                       {/* Roles */}
                       <TableCell>
                         <span className="inline-flex gap-2">
-                          {member.roles.map((role) => (
+                          {member.roles.slice(0, 3).map((role) => (
                             <Badge variant="outline" key={role.id}>
                               {role.name}
                             </Badge>
                           ))}
+                          <RolesDropdown
+                            roles={roles}
+                            selectedRoles={member.roles}
+                            onRoleClick={(role, checked) => {
+                              handleUpdateMemberRole(
+                                member.user_id,
+                                role,
+                                checked,
+                              );
+                            }}
+                            disabled={updateRoleMutation.isPending}
+                          />
                         </span>
                       </TableCell>
 

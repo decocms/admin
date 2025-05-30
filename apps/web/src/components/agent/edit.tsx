@@ -25,24 +25,24 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
-import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
+import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useFocusChat } from "../agents/hooks.ts";
-import { ChatInput } from "../chat/ChatInput.tsx";
-import { ChatMessages } from "../chat/ChatMessages.tsx";
+import { ChatInput } from "../chat/chat-input.tsx";
+import { ChatMessages } from "../chat/chat-messages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
-import { AgentAvatar } from "../common/Avatar.tsx";
+import { AgentAvatar } from "../common/avatar/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";
 import PromptTab from "../settings/prompt.tsx";
-import { AgentTriggers } from "../triggers/agentTriggers.tsx";
-import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
+import { AgentTriggers } from "../triggers/agent-triggers.tsx";
+import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
-import { WhatsAppButton } from "./WhatsAppButton.tsx";
+import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { lazy } from "react";
 import { wrapWithUILoadingFallback } from "../../main.tsx";
 
@@ -240,7 +240,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
   );
 
-  const form = useForm<Agent>({
+  const form = useForm({
     defaultValues: agent,
     resolver: zodResolver(AgentSchema),
   });
@@ -251,7 +251,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   // Use deferred values for better UX - updates cache at lower priority
   const values = form.watch();
   useEffect(() => {
-    const timeout = setTimeout(() => updateAgentCache(values), 200);
+    const timeout = setTimeout(() => updateAgentCache(values as Agent), 200);
 
     return () => clearTimeout(timeout);
   }, [values, updateAgentCache]);
@@ -288,7 +288,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
 
   function discardChanges() {
     form.reset();
-    updateAgentCache(form.getValues());
+    updateAgentCache(form.getValues() as Agent);
     blocked.proceed?.();
   }
 
@@ -327,7 +327,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
       >
         <AgentSettingsFormContext.Provider
           value={{
-            form,
+            form: form as UseFormReturn<Agent>,
             hasChanges: hasChanges,
             handleSubmit,
             installedIntegrations: installedIntegrations.filter(

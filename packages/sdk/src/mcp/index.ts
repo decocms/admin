@@ -2,7 +2,7 @@ export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
 export * from "./wallet/stripe/webhook.ts";
-export * from "./models/llmVault.ts";
+export * from "./models/llm-vault.ts";
 import * as agentsAPI from "./agents/api.ts";
 import { AppContext, State, Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
@@ -37,6 +37,7 @@ export const GLOBAL_TOOLS = [
   membersAPI.deleteInvite,
   membersAPI.inviteTeamMembers,
   membersAPI.teamRolesList,
+  membersAPI.updateMemberRole,
   profilesAPI.getProfile,
   profilesAPI.updateProfile,
   integrationsAPI.callTool,

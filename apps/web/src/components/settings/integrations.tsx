@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { useMemo, useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { Chiplet } from "../common/ListPageHeader.tsx";
+import { Chiplet } from "../common/list-page-header.tsx";
 import { IntegrationList } from "../toolsets/selector.tsx";
 
 const tabs = [

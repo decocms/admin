@@ -4,11 +4,11 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { DepositDialog } from "../wallet/DepositDialog.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
+import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { Protect } from "../wallet/plan.tsx";
-import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { EmptyStateCard } from "./usage.tsx";
 
 function AccountBalance() {

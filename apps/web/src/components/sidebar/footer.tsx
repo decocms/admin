@@ -37,12 +37,12 @@ import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Link, useLocation, useMatch } from "react-router";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
-import { useUser } from "../../hooks/data/useUser.ts";
-import { useGitHubStars } from "../../hooks/useGitHubStars.ts";
-import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
-import { ModelSelector } from "../chat/ModelSelector.tsx";
-import { Avatar } from "../common/Avatar.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
+import { useUser } from "../../hooks/use-user.ts";
+import { useGitHubStars } from "../../hooks/use-github-stars.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { ModelSelector } from "../chat/model-selector.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 

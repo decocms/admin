@@ -77,29 +77,25 @@ type Capability =
   | "file-upload"
   | "web-search";
 
-/*
- * TODO: remove duplicated ids, bydeco, enabled, etc. from here.
- */
-export const AUTO_MODEL: Model = {
-  id: "auto",
-  model: "auto",
-  name: "Auto",
-  description:
-    "deco.chat will automatically choose the best model for you, based on performance and speed.",
-  logo: "",
-  capabilities: ["reasoning", "image-upload", "file-upload"],
-  byDeco: true,
-  isEnabled: true,
-  hasCustomKey: false,
-};
-
+// First one is the default model for agents, so choose wisely.
 export const WELL_KNOWN_MODELS: Model[] = [
+  {
+    id: "openai:gpt-4.1-mini",
+    model: "openai:gpt-4.1-mini",
+    name: "OpenAI GPT-4.1 mini",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
   {
     id: "anthropic:claude-sonnet-4",
     model: "anthropic:claude-sonnet-4",
     name: "Claude Sonnet 4",
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
+    // TODO: remove duplicated ids, bydeco, enabled, etc. from here.
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
@@ -137,16 +133,6 @@ export const WELL_KNOWN_MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
-    id: "openai:gpt-4.1-mini",
-    model: "openai:gpt-4.1-mini",
-    name: "OpenAI GPT-4.1 mini",
-    logo: LOGOS.openai,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
-  },
-  {
     id: "openai:gpt-4.1-nano",
     model: "openai:gpt-4.1-nano",
     name: "OpenAI GPT-4.1 nano",
@@ -177,6 +163,8 @@ export const WELL_KNOWN_MODELS: Model[] = [
     hasCustomKey: false,
   },
 ];
+
+export const DEFAULT_MODEL = WELL_KNOWN_MODELS[0];
 
 export function isWellKnownModel(modelId: string): boolean {
   return WELL_KNOWN_MODELS.some((m) => m.id === modelId);
@@ -223,7 +211,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
   description: "",
-  model: AUTO_MODEL.id,
+  model: DEFAULT_MODEL.id,
   visibility: "WORKSPACE",
   tools_set: {},
   views: [],
@@ -259,7 +247,7 @@ export const WELL_KNOWN_AGENTS = {
     name: "Setup agent",
     avatar: "https://assets.webdraw.app/uploads/capy-5.png",
     description: "I can help you with this setup.",
-    model: AUTO_MODEL.id,
+    model: DEFAULT_MODEL.id,
     visibility: "PUBLIC",
     tools_set: {
       DECO_INTEGRATIONS: [

@@ -15,7 +15,7 @@ import {
   useLocation,
   useRouteError,
 } from "react-router";
-import { EmptyState } from "./components/common/EmptyState.tsx";
+import { EmptyState } from "./components/common/empty-state.tsx";
 
 type LazyComp<P> = Promise<{
   default: React.ComponentType<P>;
@@ -44,11 +44,10 @@ const RouteLayout = lazy(() =>
 );
 
 const PageviewTrackerLayout = lazy(
-  () => import("./components/analytics/PageviewTracker.tsx"),
+  () => import("./components/analytics/pageview-tracker.tsx"),
 );
 
 const Login = lazy(() => import("./components/login/index.tsx"));
-const About = lazy(() => import("./components/about/index.tsx"));
 
 /**
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
@@ -91,7 +90,7 @@ const AuditDetail = lazy(
 );
 
 const MagicLink = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/login/magicLink.tsx"))
+  wrapWithUILoadingFallback(import("./components/login/magic-link.tsx"))
 );
 
 const Settings = lazy(() =>
@@ -103,7 +102,7 @@ const TriggerList = lazy(() =>
 );
 
 const TriggerDetails = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/triggers/triggerDetails.tsx"))
+  wrapWithUILoadingFallback(import("./components/triggers/trigger-details.tsx"))
 );
 
 const InvitesList = lazy(() =>
@@ -117,6 +116,8 @@ const SalesDeck = lazy(() =>
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
+
+const DEFAULT_PATH = "/agents";
 
 function ErrorFallback() {
   const { pathname } = useLocation();
@@ -132,7 +133,7 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === "/") {
+    if (pathname === DEFAULT_PATH) {
       globalThis.location.href = "/about";
 
       return;
@@ -235,10 +236,6 @@ const router = createBrowserRouter([
         Component: MagicLink,
       },
       {
-        path: "/about",
-        Component: About,
-      },
-      {
         path: "/invites",
         Component: RouteLayout,
         children: [
@@ -262,8 +259,8 @@ const router = createBrowserRouter([
             loader: ({ params }) => {
               const teamSlug = params.teamSlug;
               globalThis.location.href = teamSlug
-                ? `/${teamSlug}/agents`
-                : "/agents";
+                ? `/${teamSlug}${DEFAULT_PATH}`
+                : DEFAULT_PATH;
               return null;
             },
           },

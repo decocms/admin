@@ -41,17 +41,17 @@ import {
   useReducer,
   useState,
 } from "react";
-import { ErrorBoundary } from "../../ErrorBoundary.tsx";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useCreateAgent } from "../../hooks/useCreateAgent.ts";
-import { useLocalStorage } from "../../hooks/useLocalStorage.ts";
-import { useNavigateWorkspace } from "../../hooks/useNavigateWorkspace.ts";
+import { useCreateAgent } from "../../hooks/use-create-agent.ts";
+import { useLocalStorage } from "../../hooks/use-local-storage.ts";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
-import { AgentVisibility } from "../common/AgentVisibility.tsx";
-import { AgentAvatar, Avatar } from "../common/Avatar.tsx";
-import { EmptyState } from "../common/EmptyState.tsx";
-import { ListPageHeader } from "../common/ListPageHeader.tsx";
-import { Table } from "../common/Table.tsx";
+import { AgentVisibility } from "../common/agent-visibility.tsx";
+import { AgentAvatar, Avatar } from "../common/avatar/index.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
+import { ListPageHeader } from "../common/list-page-header.tsx";
+import { Table } from "../common/table/index.tsx";
 import { Tab } from "../dock/index.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";

@@ -44,12 +44,12 @@
     "./actors": "./src/actors.ts",
     "./mcp": "./src/mcp.ts",
     "./tools": "./src/tools.ts",
-    "./memory": "./src/memory/memory.ts",
-    "./storage": "./src/storage/index.ts",
-    "./storage/fs": "./src/storage/options/fsStorage.ts",
-    "./storage/supabase": "./src/storage/options/supabaseStorage.ts",
     "./agent": "./src/agent.ts",
-    "./integrations": "./src/models/integrations.ts",
     "./triggers": "./src/triggers/services.ts"
+  },
+  "lint": {
+    "plugins": [
+      "./plugins/enforce-kebab-case-file-names.ts"
+    ]
   }
 }

@@ -1,7 +1,7 @@
-import { ChatMessages } from "../chat/ChatMessages.tsx";
+import { ChatMessages } from "../chat/chat-messages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { ChatHeader } from "./ChatHeader.tsx";
+import { ChatHeader } from "./chat-header.tsx";
 
 interface Props {
   agentId?: string;

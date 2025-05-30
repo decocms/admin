@@ -2,7 +2,7 @@ import type { Integration } from "@deco/sdk";
 import { INNATE_INTEGRATIONS } from "@deco/sdk";
 import type { AIAgent, Env } from "../agent.ts";
 import { createHandoffToolsFor } from "../agents/handoff.ts";
-import { createTool } from "../utils/createTool.ts";
+import { createTool } from "../utils/create-tool.ts";
 import { INNATE_TOOLS } from "./constants.ts";
 export { INNATE_TOOLS } from "./constants.ts";
 

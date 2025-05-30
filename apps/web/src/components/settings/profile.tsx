@@ -11,10 +11,11 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Avatar } from "../common/Avatar.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { countries } from "@deco/sdk/utils" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
-import { useUser } from "../../hooks/data/useUser.ts";
+import { useUser } from "../../hooks/use-user.ts";
+
 export interface Country {
   code: string;
   name: string;

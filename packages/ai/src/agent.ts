@@ -17,9 +17,7 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
-  AUTO_MODEL,
-  isWellKnownModel,
-  type Model,
+  DEFAULT_MODEL,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
@@ -63,7 +61,6 @@ import {
   type GenerateObjectResult,
   type GenerateTextResult,
   LanguageModelUsage,
-  type LanguageModelV1,
   type Message,
   smoothStream,
 } from "ai";
@@ -72,7 +69,6 @@ import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
-import { createLLM } from "./models.ts";
 import type {
   AIAgent as IIAgent,
   Message as AIMessage,
@@ -85,10 +81,13 @@ import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
 import { AgentWallet } from "./agent/wallet.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
+import {
+  createLLMInstance,
+  DEFAULT_ACCOUNT_ID,
+  getLLMConfig,
+} from "./agent/llm.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
-const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
-const DEFAULT_GATEWAY_ID = "deco-ai";
 const ANONYMOUS_INSTRUCTIONS =
   "You should help users to configure yourself. Users should give you your name, instructions, and optionally a model (leave it default if the user don't mention it, don't force they to set it). This is your only task for now. Tell the user that you are ready to configure yourself when you have all the information.";
 
@@ -117,13 +116,6 @@ export interface AgentMetadata extends AuthMetadata {
   mcpClient?: MCPClientStub<WorkspaceTools>;
 }
 
-interface LLMConfig {
-  model: string;
-  bypassGateway?: boolean;
-  bypassOpenRouter?: boolean;
-  apiKey?: string;
-}
-
 const normalizeMCPId = (mcpId: string) => {
   return mcpId.startsWith("i:") || mcpId.startsWith("a:")
     ? mcpId.slice(2)
@@ -150,15 +142,18 @@ const removeNonSerializableFields = (obj: any) => {
   return newObj;
 };
 
+const assertConfiguration: (
+  config: Configuration | undefined,
+) => asserts config is Configuration = (config) => {
+  if (!config) {
+    throw new Error("Agent is not initialized");
+  }
+};
+
 interface ThreadLocator {
   threadId: string;
   resourceId: string;
 }
-
-type WorkspaceModels = Record<
-  string,
-  Model
->;
 
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
@@ -180,7 +175,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   private llmVault: LLMVault;
-  private workspaceModels: WorkspaceModels;
   constructor(
     public readonly state: ActorState,
     protected actorEnv: any,
@@ -206,7 +200,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.env.LLMS_ENCRYPTION_KEY,
       this.workspace,
     );
-    this.workspaceModels = {};
 
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({
@@ -391,61 +384,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
 
-  private _getLLMConfig(
-    _modelId: string = AUTO_MODEL.id,
-  ): LLMConfig & { modelId: string } {
-    const modelId = this._processAutoModel(_modelId);
-
-    // don't await this here
-    this._updateWorkspaceModels();
-
-    if (isWellKnownModel(modelId)) {
-      return {
-        model: modelId,
-        modelId,
-      };
-    }
-
-    const data = this.workspaceModels[modelId];
-
-    if (!data) {
-      throw new Error(`Model ${modelId} not found in workspace`);
-    }
-
-    if (data.byDeco) {
-      return {
-        model: data.model,
-        modelId,
-      };
-    }
-
-    if (!data.apiKeyEncrypted) {
-      throw new Error(`Model ${modelId} has no api key configured.`);
-    }
-
-    const apiKey = this.llmVault.decrypt(data.apiKeyEncrypted);
-    return {
-      model: data.model,
-      apiKey: apiKey,
-      bypassOpenRouter: true,
-      modelId,
-    };
-  }
-
-  private async _updateWorkspaceModels() {
-    const models = await this.llmVault.listWorkspaceModels();
-    this.workspaceModels = models.reduce((acc, model) => {
-      acc[model.id] = model;
-      return acc;
-    }, {} as WorkspaceModels);
-  }
-
   private async _initAgent(config: Configuration) {
     const memoryId = buildMemoryId(this.workspace, config.id);
 
-    const llmConfig = this._getLLMConfig(config.model);
+    const llmConfig = await getLLMConfig({
+      modelId: config.model,
+      llmVault: this.llmVault,
+    });
 
-    const { llm, tokenLimit } = this._createLLM(llmConfig);
+    const { llm, tokenLimit } = createLLMInstance({
+      ...llmConfig,
+      envs: this.env,
+    });
     await this._initMemory(memoryId, config, tokenLimit);
 
     this._maybeAgent = new Agent({
@@ -466,34 +416,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     await this._initAgent(config);
   }
 
-  private _createLLM({
-    model,
-    bypassGateway,
-    bypassOpenRouter,
-    apiKey,
-  }: LLMConfig): { llm: LanguageModelV1; tokenLimit: number } {
-    const [provider, ...rest] = model.split(":");
-    const providerModel = rest.join(":");
-    const accountId = this.env?.ACCOUNT_ID ?? DEFAULT_ACCOUNT_ID;
-    const gatewayId = this.env?.GATEWAY_ID ?? DEFAULT_GATEWAY_ID;
-    return createLLM({
-      bypassOpenRouter,
-      envs: this.env,
-      accountId,
-      gatewayId,
-      provider,
-      bypassGateway,
-      apiKey,
-    })(providerModel);
-  }
-
   private get _anonymous(): Agent {
     return new Agent({
       memory: this._memory as unknown as MastraMemory,
       name: ANONYMOUS_NAME,
       instructions: ANONYMOUS_INSTRUCTIONS,
-      model: this._createLLM({
-        model: AUTO_MODEL.id,
+      model: createLLMInstance({
+        model: DEFAULT_MODEL.id,
+        envs: this.env,
       }).llm,
     });
   }
@@ -528,27 +458,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
   }
 
-  // todo(@camudo): change this to a nice algorithm someday
-  private _processAutoModel(modelId: string) {
-    if (modelId !== AUTO_MODEL.id) {
-      return modelId;
-    }
-
-    const autoModelFallbacks = [
-      "openai:gpt-4.1-mini",
-      "anthropic:claude-sonnet-4",
-    ];
-
-    for (const [modelId, model] of Object.entries(this.workspaceModels)) {
-      if (autoModelFallbacks.includes(model.model)) {
-        return modelId;
-      }
-    }
-
-    const firstModel = Object.values(this.workspaceModels)[0];
-    return firstModel.id;
-  }
-
   private async _withToolOverrides(
     tools?: Record<string, string[]>,
     timings?: ServerTimingsBuilder,
@@ -565,18 +474,20 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return toolsets;
   }
 
-  private _withAgentOverrides(options?: GenerateOptions): Agent {
+  private async _withAgentOverrides(options?: GenerateOptions): Promise<Agent> {
     let agent = this._agent;
     if (!options) {
       return agent;
     }
 
     if (options.model) {
-      const llmConfig = this._getLLMConfig(options.model);
-      const { llm } = this._createLLM({
+      const llmConfig = await getLLMConfig({
+        modelId: options.model,
+        llmVault: this.llmVault,
+      });
+      const { llm } = createLLMInstance({
         ...llmConfig,
-        bypassOpenRouter: llmConfig.bypassOpenRouter ??
-          options.bypassOpenRouter,
+        envs: this.env,
       });
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
       agent = new Agent({
@@ -619,7 +530,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     usage,
   }: {
     threadId: string;
-    usedModelId?: string;
+    usedModelId: string;
     usage: LanguageModelUsage;
   }) {
     if (!this.metadata?.mcpClient) {
@@ -628,7 +539,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
     const userId = this.metadata.user?.id;
     const plan = await this.metadata.mcpClient.GET_WORKSPACE_PLAN({});
-    const { model, modelId } = this._getLLMConfig(usedModelId);
+    const { model, modelId } = await getLLMConfig({
+      modelId: usedModelId,
+      llmVault: this.llmVault,
+    });
 
     await this.wallet.computeLLMUsage({
       userId,
@@ -836,7 +750,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   // Warning: This method also updates the configuration in memory
   async configuration(): Promise<Configuration> {
-    await this._updateWorkspaceModels();
     const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const manifest = this.agentId in WELL_KNOWN_AGENTS
       ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
@@ -853,18 +766,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       tools_set: {},
       avatar: WELL_KNOWN_AGENTS.teamAgent.avatar,
       id: crypto.randomUUID(),
-      model: AUTO_MODEL.id,
+      model: DEFAULT_MODEL.id,
       views: [],
       visibility: "WORKSPACE",
       ...manifest,
     };
-
-    if (
-      merged.model && !this.workspaceModels[merged.model] &&
-      !isWellKnownModel(merged.model)
-    ) {
-      merged.model = AUTO_MODEL.id;
-    }
 
     this._configuration = merged;
 
@@ -942,9 +848,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       content: `\`\`\`json\n${JSON.stringify(result)}\`\`\``,
     });
 
+    assertConfiguration(this._configuration);
     this._handleGenerationFinish({
       threadId: this.thread.threadId,
-      usedModelId: this._configuration?.model,
+      usedModelId: this._configuration.model,
       usage: result.usage,
     });
 
@@ -962,7 +869,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const toolsets = await this._withToolOverrides(options?.tools);
 
-    const agent = this._withAgentOverrides(options);
+    const agent = await this._withAgentOverrides(options);
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
@@ -978,9 +885,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       toolsets,
     }) as GenerateTextResult<any, any>;
 
+    assertConfiguration(this._configuration);
     this._handleGenerationFinish({
       threadId: this.thread.threadId,
-      usedModelId: options?.model ?? this._configuration?.model,
+      usedModelId: options?.model ?? this._configuration.model,
       usage: result.usage,
     });
 
@@ -1021,7 +929,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       thread,
     );
     const agentOverridesTiming = timings.start("agent-overrides");
-    const agent = this._withAgentOverrides(options);
+    const agent = await this._withAgentOverrides(options);
     agentOverridesTiming.end();
 
     const wallet = this.wallet;
@@ -1036,8 +944,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const ttfbSpan = tracer.startSpan("stream-ttfb", {
       attributes: {
         "agent.id": this.state.id,
-        model: options?.model ?? this._configuration?.model ??
-          AUTO_MODEL.id,
+        model: options?.model ?? this._configuration?.model,
         "thread.id": thread.threadId,
         "openrouter.bypass": `${options?.bypassOpenRouter ?? false}`,
       },
@@ -1104,9 +1011,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           // TODO(@mcandeia): add error tracking with posthog
         },
         onFinish: (result) => {
+          assertConfiguration(this._configuration);
           this._handleGenerationFinish({
             threadId: thread.threadId,
-            usedModelId: options?.model ?? this._configuration?.model,
+            usedModelId: options?.model ?? this._configuration.model,
             usage: result.usage,
           });
         },

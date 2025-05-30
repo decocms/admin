@@ -18,9 +18,9 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect, useState } from "react";
 import { useMatch } from "react-router";
-import { useNavigateWorkspace } from "../../../hooks/useNavigateWorkspace.ts";
-import { ListPageHeader } from "../../common/ListPageHeader.tsx";
-import { ViewModeSwitcherProps } from "../../common/ViewModelSwitcher.tsx";
+import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
+import { ListPageHeader } from "../../common/list-page-header.tsx";
+import { ViewModeSwitcherProps } from "../../common/view-mode-switcher.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 

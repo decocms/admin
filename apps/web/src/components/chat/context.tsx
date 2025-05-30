@@ -15,7 +15,7 @@ import {
   useRef,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
 
 const LAST_MESSAGES_COUNT = 10;

@@ -18,7 +18,7 @@ import {
   insertInvites,
   sendInviteEmail,
   userBelongsToTeam,
-} from "./invitesUtils.ts";
+} from "./invites-utils.ts";
 import { getPlan } from "../wallet/api.ts";
 
 export const updateActivityLog = async (c: AppContext, {

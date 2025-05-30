@@ -5,7 +5,7 @@ import {
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { SupabaseLLMVault } from "./llmVault.ts";
+import { SupabaseLLMVault } from "./llm-vault.ts";
 import { AppContext, bypass } from "../index.ts";
 
 interface ModelRow {

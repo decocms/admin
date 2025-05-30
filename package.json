@@ -53,8 +53,7 @@
   },
   "lint": {
     "plugins": [
-      "./plugins/ensure-tailwind-design-system-tokens.ts",
-      "./plugins/file-name.ts"
+      "./plugins/ensure-tailwind-design-system-tokens.ts"
     ]
   }
 }

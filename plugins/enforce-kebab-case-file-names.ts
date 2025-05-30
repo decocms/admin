@@ -1,6 +1,6 @@
 const plugin: Deno.lint.Plugin = {
   // The name of your plugin. Will be shown in error output
-  name: "file-name",
+  name: "enforce-kebab-case-file-names",
   // Object with rules. The property name is the rule name and
   // will be shown in the error output as well.
   rules: {

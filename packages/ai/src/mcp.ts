@@ -20,9 +20,9 @@ import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/webso
 import type { AIAgent, Env } from "./agent.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
-import { createTool } from "./utils/createTool.ts";
-import { jsonSchemaToModel } from "./utils/jsonSchemaToModel.ts";
-import { mapToolEntries } from "./utils/toolEntries.ts";
+import { createTool } from "./utils/create-tool.ts";
+import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
+import { mapToolEntries } from "./utils/tool-entries.ts";
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",

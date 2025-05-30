@@ -3,7 +3,7 @@ import { Path } from "@deco/sdk/path";
 import z from "zod";
 import { AIAgent } from "../agent.ts";
 import { INNATE_TOOLS } from "../storage/tools.ts";
-import { createInnateTool } from "../utils/createTool.ts";
+import { createInnateTool } from "../utils/create-tool.ts";
 
 const descriptionFrom = (integration: Integration) => `
 Asks agent ${integration.name} for help with the current task. This agent ${integration.description}.

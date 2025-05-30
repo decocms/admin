@@ -25,8 +25,8 @@ import {
 } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
-import { useUser } from "../hooks/data/useUser.ts";
-import { useWorkspaceLink } from "../hooks/useNavigateWorkspace.ts";
+import { useUser } from "../hooks/use-user.ts";
+import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
 import RegisterActivity from "./common/register-activity.tsx";
 import Docked, { Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";

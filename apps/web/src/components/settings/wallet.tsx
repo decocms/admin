@@ -5,9 +5,9 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { DepositDialog } from "../wallet/DepositDialog.tsx";
+import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { Protect } from "../wallet/plan.tsx";
-import { VoucherDialog } from "../wallet/VoucherDialog.tsx";
+import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { EmptyStateCard } from "./usage.tsx";
 

@@ -11,10 +11,10 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ErrorBoundary, useError } from "../../../error-boundary.tsx";
 import { EmptyState } from "../../common/EmptyState.tsx";
-import { ConnStatus } from "./connStatus.tsx";
+import { ConnStatus } from "./conn-status.tsx";
 import { useFormContext } from "./context.ts";
-import { ToolCallForm } from "./toolCallForm.tsx";
-import { ToolCallResult } from "./toolCallResult.tsx";
+import { ToolCallForm } from "./tool-call-form.tsx";
+import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
 import { formatToolName } from "../../chat/utils/format-tool-name.ts";
 interface InspectorProps {

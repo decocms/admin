@@ -37,7 +37,7 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import IntegrationsTab from "../settings/integrations.tsx";
 import PromptTab from "../settings/prompt.tsx";
-import { AgentTriggers } from "../triggers/agentTriggers.tsx";
+import { AgentTriggers } from "../triggers/agent-triggers.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";

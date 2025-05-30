@@ -6,13 +6,13 @@ import { ListPageHeader } from "../common/ListPageHeader.tsx";
 import { Table, TableColumn } from "../common/Table.tsx";
 import { AgentInfo, DateTimeCell, UserInfo } from "../common/TableCells.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { TriggerModal } from "./triggerModal.tsx";
-import { TriggerActions } from "./triggerActions.tsx";
-import { TriggerCard } from "./triggerCard.tsx";
-import { TriggerType } from "./triggerType.tsx";
+import { TriggerModal } from "./trigger-dialog.tsx";
+import { TriggerActions } from "./trigger-actions.tsx";
+import { TriggerCard } from "./trigger-card.tsx";
+import { TriggerType } from "./trigger-type.tsx";
 import { TriggerOutputSchema } from "@deco/sdk";
 import { z } from "zod";
-import { TriggerToggle } from "./triggerToggle.tsx";
+import { TriggerToggle } from "./trigger-toggle.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 

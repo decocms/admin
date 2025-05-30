@@ -3,9 +3,9 @@ import { z } from "zod";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { useState } from "react";
-import { TriggerActions } from "./triggerActions.tsx";
-import { TriggerType } from "./triggerType.tsx";
-import { TriggerToggle } from "./triggerToggle.tsx";
+import { TriggerActions } from "./trigger-actions.tsx";
+import { TriggerType } from "./trigger-type.tsx";
+import { TriggerToggle } from "./trigger-toggle.tsx";
 
 type Trigger = z.infer<typeof TriggerOutputSchema>;
 

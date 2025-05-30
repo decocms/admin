@@ -8,8 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { DeleteTriggerModal } from "./deleteTriggerModal.tsx";
-import { TriggerModal } from "./triggerModal.tsx";
+import { DeleteTriggerModal } from "./delete-trigger-dialog.tsx";
+import { TriggerModal } from "./trigger-dialog.tsx";
 import { useState } from "react";
 
 interface TriggerActionsProps {

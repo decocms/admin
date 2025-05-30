@@ -6,9 +6,9 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { z } from "zod";
 import { useChatContext } from "../chat/context.tsx";
-import { TriggerModal as TriggerModalButton } from "./triggerModal.tsx";
-import { TriggerCard } from "./triggerCard.tsx";
-import { TriggerDetails } from "./triggerDetails.tsx";
+import { TriggerModal as TriggerModalButton } from "./trigger-dialog.tsx";
+import { TriggerCard } from "./trigger-card.tsx";
+import { TriggerDetails } from "./trigger-details.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 
 export function AgentTriggers() {

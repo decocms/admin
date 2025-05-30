@@ -7,11 +7,11 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useParams } from "react-router";
 import { AuditListContent } from "../audit/list.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { CronDetails } from "./cronDetails.tsx";
-import { WebhookDetails } from "./webhookDetails.tsx";
-import { TriggerToggle } from "./triggerToggle.tsx";
+import { CronDetails } from "./cron-details.tsx";
+import { WebhookDetails } from "./webhook-details.tsx";
+import { TriggerToggle } from "./trigger-toggle.tsx";
 import { z } from "zod";
-import { TriggerModal } from "./triggerModal.tsx";
+import { TriggerModal } from "./trigger-dialog.tsx";
 import { useState } from "react";
 
 const useTrigger = (agentId: string, triggerId: string) => {

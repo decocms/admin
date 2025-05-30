@@ -102,7 +102,7 @@ const TriggerList = lazy(() =>
 );
 
 const TriggerDetails = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/triggers/triggerDetails.tsx"))
+  wrapWithUILoadingFallback(import("./components/triggers/trigger-details.tsx"))
 );
 
 const InvitesList = lazy(() =>

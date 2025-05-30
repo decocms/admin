@@ -138,6 +138,7 @@ export const upsertWhatsAppUser = createTool({
         trigger_url: triggerUrl,
         trigger_id: triggerId,
         triggers: triggers,
+        updated_at: new Date().toISOString(),
       });
 
     if (error) {

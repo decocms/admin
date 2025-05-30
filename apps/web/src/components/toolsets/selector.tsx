@@ -59,37 +59,36 @@ function IntegrationListItem({
           !isEmpty && "hover:bg-muted cursor-pointer",
         )}
       >
-          <div className="flex gap-4 items-start justify-between w-full">
-            <div className="p-2 rounded-xl border border-border">
-              <IntegrationIcon
-                icon={integration.icon}
-                name={integration.name}
-                variant="small"
-                className="h-8 w-8 p-0 rounded-none"
-              />
-            </div>
-            <div className="flex flex-col gap-1 w-full">
-              <span className="text-sm font-semibold text-left truncate">
-                {integration.name}
-              </span>
-              {integration.description && (
-                <p className="text-sm text-muted-foreground">
-                  {integration.description}
-                </p>
-              )}
-            </div>
-            {!isEmpty && (
-              <div>
-                <Checkbox
-                  id={`select-all-${integration.id}`}
-                  className="cursor-pointer"
-                  checked={isAll}
-                  onCheckedChange={handleAll}
-                />
-              </div>
+        <div className="flex gap-4 items-start justify-between w-full">
+          <div className="p-2 rounded-xl border border-border">
+            <IntegrationIcon
+              icon={integration.icon}
+              name={integration.name}
+              variant="small"
+              className="h-8 w-8 p-0 rounded-none"
+            />
+          </div>
+          <div className="flex flex-col gap-1 w-full">
+            <span className="text-sm font-semibold text-left truncate">
+              {integration.name}
+            </span>
+            {integration.description && (
+              <p className="text-sm text-muted-foreground">
+                {integration.description}
+              </p>
             )}
           </div>
-        
+          {!isEmpty && (
+            <div>
+              <Checkbox
+                id={`select-all-${integration.id}`}
+                className="cursor-pointer"
+                checked={isAll}
+                onCheckedChange={handleAll}
+              />
+            </div>
+          )}
+        </div>
       </label>
       <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
         <Icon name="chevron_right" size={16} />
@@ -124,7 +123,10 @@ function IntegrationListItem({
         >
           <span
             onClick={() => setOpenTools(!openTools)}
-            className={cn("text-muted-foreground text-sm py-4 w-full hover:bg-muted px-4", !openTools && "rounded-b-xl")}
+            className={cn(
+              "text-muted-foreground text-sm py-4 w-full hover:bg-muted px-4",
+              !openTools && "rounded-b-xl",
+            )}
           >
             {isLoading
               ? (
@@ -224,13 +226,15 @@ function ToolList({
           htmlFor={`select-all-${integration.id}`}
         >
           <Checkbox
-            checked={allTools.every((tool) => toolsSet[integration.id]?.includes(tool.name))}
+            checked={allTools.every((tool) =>
+              toolsSet[integration.id]?.includes(tool.name)
+            )}
             className="cursor-pointer"
             id={`select-all-${integration.id}`}
             onCheckedChange={(checked) => {
               setIntegrationTools(
                 integration.id,
-                checked ? allTools.map((tool) => tool.name) : []
+                checked ? allTools.map((tool) => tool.name) : [],
               );
             }}
           />

@@ -17,8 +17,8 @@ import {
 import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
-import { ChatInput } from "../chat/ChatInput.tsx";
-import { ChatMessages } from "../chat/ChatMessages.tsx";
+import { ChatInput } from "../chat/chat-input.tsx";
+import { ChatMessages } from "../chat/chat-messages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AgentBreadcrumbSegment } from "./BreadcrumbSegment.tsx";

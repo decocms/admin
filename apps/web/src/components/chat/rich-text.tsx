@@ -4,7 +4,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect } from "react";
 import { Markdown } from "tiptap-markdown";
-import { NoNewLine } from "./extensions/NoNewLine.ts";
+import { NoNewLine } from "./extensions/no-new-line.ts";
 
 export interface Mention {
   id: string;

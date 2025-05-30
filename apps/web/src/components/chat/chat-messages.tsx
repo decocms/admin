@@ -1,10 +1,10 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useLayoutEffect } from "react";
-import { ChatError } from "./ChatError.tsx";
+import { ChatError } from "./chat-error.tsx";
 import { useChatContext } from "./context.tsx";
-import { EmptyState } from "./EmptyState.tsx";
-import { ChatMessage } from "./Message.tsx";
+import { EmptyState } from "./empty-state.tsx";
+import { ChatMessage } from "./chat-message.tsx";
 
 function Dots() {
   const { chat: { status } } = useChatContext();

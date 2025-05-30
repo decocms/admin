@@ -29,11 +29,11 @@ import {
 } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { AudioButton } from "./AudioButton.tsx";
+import { AudioButton } from "./audio-button.tsx";
 import { useChatContext } from "./context.tsx";
-import { ModelSelector } from "./ModelSelector.tsx";
-import { RichTextArea } from "./RichText.tsx";
-import ToolsButton from "./ToolsButton.tsx";
+import { ModelSelector } from "./model-selector.tsx";
+import { RichTextArea } from "./rich-text.tsx";
+import ToolsButton from "./tools-button.tsx";
 
 export function ChatInput() {
   return (

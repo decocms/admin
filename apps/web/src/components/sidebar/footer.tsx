@@ -41,7 +41,7 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useUser } from "../../hooks/use-user.ts";
 import { useGitHubStars } from "../../hooks/use-github-stars.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-import { ModelSelector } from "../chat/ModelSelector.tsx";
+import { ModelSelector } from "../chat/model-selector.tsx";
 import { Avatar } from "../common/avatar.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";

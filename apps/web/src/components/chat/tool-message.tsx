@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
 import { useChatContext } from "./context.tsx";
 import { Picker } from "./Picker.tsx";
-import { AgentCard } from "./tools/AgentCard.tsx";
-import { Preview } from "./tools/Preview.tsx";
+import { AgentCard } from "./tools/agent-card.tsx";
+import { Preview } from "./tools/render-preview.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";
 import { formatToolName } from "./utils/format-tool-name.ts";
 

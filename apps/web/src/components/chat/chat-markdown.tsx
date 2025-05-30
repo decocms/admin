@@ -7,7 +7,7 @@ import { lazy, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
-const LazyHighlighter = lazy(() => import("./LazyHighlighter.tsx"));
+const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 
 function LazyHighlighterFallback() {
   const lines = [85, 70];

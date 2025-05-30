@@ -3,9 +3,9 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo } from "react";
-import { MemoizedMarkdown } from "./Markdown.tsx";
-import { ToolMessage } from "./ToolMessage.tsx";
-import { ReasoningPart } from "./ReasoningPart.tsx";
+import { MemoizedMarkdown } from "./chat-markdown.tsx";
+import { ToolMessage } from "./tool-message.tsx";
+import { ReasoningPart } from "./reasoning-part.tsx";
 
 interface ChatMessageProps {
   message: Message;

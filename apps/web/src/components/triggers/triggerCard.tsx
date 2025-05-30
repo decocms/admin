@@ -1,7 +1,7 @@
 import { TriggerOutputSchema } from "@deco/sdk";
 import { z } from "zod";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { timeAgo } from "../../utils/timeAgo.ts";
+import { timeAgo } from "../../utils/time-ago.ts";
 import { useState } from "react";
 import { TriggerActions } from "./triggerActions.tsx";
 import { TriggerType } from "./triggerType.tsx";

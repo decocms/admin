@@ -36,7 +36,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { timeAgo } from "../../utils/timeAgo.ts";
+import { timeAgo } from "../../utils/time-ago.ts";
 import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";

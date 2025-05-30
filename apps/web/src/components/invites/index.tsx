@@ -25,7 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { timeAgo } from "../../utils/timeAgo.ts";
+import { timeAgo } from "../../utils/time-ago.ts";
 
 function InvitesTitle() {
   return (

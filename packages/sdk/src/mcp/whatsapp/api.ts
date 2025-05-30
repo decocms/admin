@@ -31,6 +31,11 @@ export const sendWhatsAppTemplateMessage = createTool({
     }
 
     const env = getEnv(c);
+
+    if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID || !env.WHATSAPP_API_VERSION) {
+      throw new Error("Missing WhatsApp environment variables");
+    }
+
     const response = await fetch(
       `https://graph.facebook.com/${env.WHATSAPP_API_VERSION}/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {

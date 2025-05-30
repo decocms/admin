@@ -50,8 +50,33 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/Avatar.tsx";
 import { Table, TableColumn } from "../common/Table.tsx";
-import Logo from "../model/common/Logo.tsx";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
+
+interface ModelLogoProps {
+  logo: string;
+  name: string;
+}
+
+export function ModelLogo({ logo, name }: ModelLogoProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
+        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
+        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+      )}
+    >
+      <Avatar
+        url={logo}
+        fallback={name}
+        fallbackClassName="!bg-transparent"
+        className="w-full h-full rounded-lg"
+        objectFit="contain"
+      />
+    </div>
+  );
+}
+
 
 const SORTABLE_KEYS = ["name", "active", "APIKey"] as const;
 
@@ -445,7 +470,7 @@ function TableView(
               className="space-y-6"
             >
               <div className="flex items-center gap-6">
-                <Logo
+                <ModelLogo
                   logo={logo || modelRef.current?.logo || ""}
                   name={modalForm.getValues("name")}
                 />

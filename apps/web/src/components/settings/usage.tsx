@@ -36,7 +36,7 @@ import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
 
 interface UserAvatarProps {

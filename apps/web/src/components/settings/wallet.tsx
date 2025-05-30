@@ -8,7 +8,7 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { EmptyStateCard } from "./usage.tsx";
 
 function AccountBalance() {

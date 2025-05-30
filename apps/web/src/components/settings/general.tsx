@@ -31,7 +31,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/Avatar.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
+import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;

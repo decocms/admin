@@ -39,7 +39,7 @@ export function WhatsAppInviteDialog({
   onOpenChange,
   onSubmit,
   isLoading = false,
-  triggers,
+  _triggers,
 }: WhatsAppInviteDialogProps) {
   const form = useForm<PhoneFormData>({
     resolver: zodResolver(phoneSchema),
@@ -87,12 +87,6 @@ export function WhatsAppInviteDialog({
                 </FormItem>
               )}
             />
-
-            <div className="space-y-4">
-              {triggers.map((trigger) => (
-                <div key={trigger.id}>{trigger.data.title}</div>
-              ))}
-            </div>
 
             <DialogFooter>
               <Button

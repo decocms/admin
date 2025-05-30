@@ -30,8 +30,10 @@ import { useChatContext } from "../chat/context.tsx";
 import { useProfileModal } from "../layout.tsx";
 import { WhatsAppInviteDialog } from "./WhatsAppInviteDialog.tsx";
 
+const PHONE_NUMBER = "11920902075";
+
 const getWhatsAppLink = (agent: Agent) => {
-  const url = new URL("https://wa.me/11920902075");
+  const url = new URL(`https://wa.me/${PHONE_NUMBER}`);
 
   url.searchParams.set("text", `Hey, is that ${agent.name}?`);
 
@@ -116,6 +118,11 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
   }
 
   function handleInviteSubmit(phoneNumber: string, selectedTriggerId?: string) {
+    if (workspace as string !== "deco.cx") {
+      toast.error("This feature is only available for the deco.cx team.");
+      return;
+    }
+
     // If no trigger is selected and no triggers exist, create one first
     if (!selectedTriggerId && webhookTriggers.length === 0) {
       createTrigger(
@@ -229,9 +236,11 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
                     Use in WhatsApp
                   </DropdownMenuItem>
                 )}
-              <DropdownMenuItem onClick={handleInviteClick}>
-                Invite
-              </DropdownMenuItem>
+              {workspace as string === "deco.cx" && (
+                <DropdownMenuItem onClick={handleInviteClick}>
+                  Invite
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipTrigger>

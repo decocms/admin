@@ -28,8 +28,8 @@ export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
         language_code: template.language_code,
         sender_phone: props.to,
         sender_name: profile?.metadata?.full_name ??
-          profile?.metadata?.username ?? "Mlk",
-        agent_name: agent?.name ?? "38tao",
+          profile?.metadata?.username ?? "Unknown name",
+        agent_name: agent.name,
       });
     },
     onSuccess: async (data) => {

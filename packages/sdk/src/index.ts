@@ -26,6 +26,6 @@ export * from "./hooks/wallet.ts";
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";
 export * from "./models/trigger.ts";
-export * from "./models/toolCall.ts";
+export * from "./models/tool-call.ts";
 
 export * from "./errors.ts";

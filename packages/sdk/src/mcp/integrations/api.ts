@@ -18,7 +18,7 @@ import {
   NEW_INTEGRATION_TEMPLATE,
   UserInputError,
 } from "../../index.ts";
-import { CallToolResultSchema } from "../../models/toolCall.ts";
+import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";
 import { QueryResult } from "../../storage/supabase/client.ts";
 import {

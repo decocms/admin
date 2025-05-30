@@ -6,7 +6,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
 import { useChatContext } from "./context.tsx";
-import { Picker } from "./Picker.tsx";
+import { Picker } from "./chat-picker.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
 import { Preview } from "./tools/render-preview.tsx";
 import { parseHandoffTool } from "./utils/parse.ts";

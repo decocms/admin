@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 /**
  * State labels can be strings
  */

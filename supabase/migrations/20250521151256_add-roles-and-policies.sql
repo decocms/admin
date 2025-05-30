@@ -66,6 +66,7 @@ INSERT INTO "public"."policies" ("id", "created_at", "name", "statements", "desc
     '{"effect":"allow","resource":"AGENTS_LIST"}'::jsonb
 ], 'Allows access to view agents information.', null)
 ON CONFLICT (id) DO NOTHING;
+
 WITH current AS (
   SELECT id, statements
   FROM public.policies
@@ -92,6 +93,7 @@ UPDATE public.policies
 SET statements = array_cat(missing.statements, missing.new_statements)
 FROM missing
 WHERE public.policies.id = missing.id;
+
 WITH current AS (
   SELECT id, statements
   FROM public.policies
@@ -119,6 +121,7 @@ UPDATE public.policies
 SET statements = array_cat(missing.statements, missing.new_statements)
 FROM missing
 WHERE public.policies.id = missing.id;
+
 WITH current AS (
   SELECT id, statements
   FROM public.policies
@@ -144,6 +147,7 @@ UPDATE public.policies
 SET statements = array_cat(missing.statements, missing.new_statements)
 FROM missing
 WHERE public.policies.id = missing.id;
+
 INSERT INTO "public"."role_policies" ("id", "created_at", "role_id", "policy_id") VALUES 
 ('288', '2025-05-21 12:42:16.393913+00', '4', '43'), 
 ('287', '2025-05-21 12:42:11.460812+00', '3', '43'),

@@ -84,11 +84,6 @@ export const KEYS = {
     threadId: string,
   ) => ["thread-tools", workspace, threadId],
   PROFILE: () => ["profile"],
-  WHATSAPP_USER: (workspace: Workspace, phone: string) => [
-    "whatsapp-user",
-    workspace,
-    phone,
-  ],
   WALLET: (
     workspace: Workspace,
   ) => ["wallet", workspace],

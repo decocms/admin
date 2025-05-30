@@ -151,7 +151,6 @@ export const createAgent = createTool({
     const [{ data, error }] = await Promise.all([
       c.db
         .from("deco_chat_agents")
-        // @ts-ignore - @Camudo push your code
         .insert({
           ...NEW_AGENT_TEMPLATE,
           ...agent,
@@ -166,6 +165,40 @@ export const createAgent = createTool({
     }
 
     return AgentSchema.parse(data);
+  },
+});
+
+export const createTempAgent = createTool({
+  name: "AGENTS_CREATE_TEMP",
+  description:
+    "Inserts or updates a temp agent for the whatsapp integration based on userId",
+  inputSchema: z.object({
+    agentId: z.string(),
+    userId: z.string(),
+  }),
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_CREATE", _props, c);
+  },
+  handler: async ({ agentId, userId }, c) => {
+    const [{ data, error }] = await Promise.all([
+      c.db
+        .from("temp_wpp_agents")
+        .upsert({
+          agent_id: agentId,
+          user_id: userId,
+        }, {
+          onConflict: "user_id",
+          ignoreDuplicates: false,
+        })
+        .select()
+        .maybeSingle(),
+    ]);
+
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+
+    return data || { agent_id: agentId, user_id: userId };
   },
 });
 
@@ -220,5 +253,31 @@ export const deleteAgent = createTool({
     }
 
     return { deleted: true };
+  },
+});
+
+export const getTempAgent = createTool({
+  name: "AGENTS_GET_TEMP",
+  description: "Get the temp WhatsApp agent for the current user",
+  inputSchema: z.object({ userId: z.string() }),
+  async canAccess(_name, _props, c) {
+    return await canAccessWorkspaceResource("AGENTS_GET", _props, c);
+  },
+  handler: async ({ userId }, c) => {
+    const { data, error } = await c.db
+      .from("temp_wpp_agents")
+      .select("agent_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+
+    if (!data) {
+      throw new NotFoundError("Temp agent not found");
+    }
+
+    return data;
   },
 });

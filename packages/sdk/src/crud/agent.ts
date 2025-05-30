@@ -33,6 +33,12 @@ export const createAgent = (
     ...template,
   });
 
+export const createTempAgent = (
+  workspace: string,
+  agentId: string,
+  userId: string,
+) => MCPClient.forWorkspace(workspace).AGENTS_CREATE_TEMP({ agentId, userId });
+
 /**
  * Load an agent from the file system
  * @param agentId - The id of the agent to load
@@ -82,3 +88,11 @@ export const validateAgent = (
     return [null, error instanceof Error ? error : new Error("Invalid agent")];
   }
 };
+
+export const getTempAgent = (
+  workspace: string,
+  userId: string,
+) =>
+  MCPClient.forWorkspace(workspace).AGENTS_GET_TEMP({ userId }).catch(() => {
+    return null;
+  });

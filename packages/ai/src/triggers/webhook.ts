@@ -137,7 +137,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         throw error;
       }
     }
-
     return useStream
       ? await agent.stream(messages, options)
       : await agent.generate(messages, options);

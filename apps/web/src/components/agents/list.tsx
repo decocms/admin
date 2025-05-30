@@ -51,7 +51,7 @@ import { AgentVisibility } from "../common/agent-visibility.tsx";
 import { AgentAvatar, Avatar } from "../common/avatar.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table } from "../common/table.tsx";
+import { Table } from "../common/table/index.tsx";
 import { Tab } from "../dock/index.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";

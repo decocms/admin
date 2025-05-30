@@ -1,5 +1,5 @@
-import { Table, TableColumn } from "../common/table.tsx";
-import { AgentInfo, DateTimeCell, UserInfo } from "../common/table-cells.tsx";
+import { Table, TableColumn } from "../common/table/index.tsx";
+import { AgentInfo, DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
 import {
   Tooltip,
   TooltipContent,

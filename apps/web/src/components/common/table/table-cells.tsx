@@ -11,9 +11,9 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { AgentAvatar } from "./avatar.tsx";
-import { useUser } from "../../hooks/use-user.ts";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { AgentAvatar } from "../avatar.tsx";
+import { useUser } from "../../../hooks/use-user.ts";
+import { IntegrationIcon } from "../../integrations/list/common.tsx";
 import { format } from "date-fns";
 
 interface AgentInfoProps {

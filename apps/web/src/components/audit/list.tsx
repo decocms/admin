@@ -20,7 +20,7 @@ import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AuditFilters } from "./AuditFilters.tsx";
-import { AuditTable } from "./AuditTable.tsx";
+import { AuditTable } from "./audit-table.tsx";
 
 type AuditOrderBy =
   | "createdAt_desc"

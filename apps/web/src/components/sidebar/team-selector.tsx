@@ -16,7 +16,7 @@ import { Link, useParams } from "react-router";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/Avatar.tsx";
-import { CreateTeamDialog } from "./CreateTeamDialog.tsx";
+import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
 
 interface CurrentTeam {

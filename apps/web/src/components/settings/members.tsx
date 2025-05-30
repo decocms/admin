@@ -38,7 +38,7 @@ import {
 } from "react";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { Avatar } from "../common/Avatar.tsx";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { SettingsMobileHeader } from "./SettingsMobileHeader.tsx";
 import { InviteTeamMembersDialog } from "../common/InviteTeamMembersDialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";

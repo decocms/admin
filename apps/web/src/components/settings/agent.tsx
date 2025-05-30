@@ -27,7 +27,7 @@ import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/ModelSelector.tsx";
 import { AgentAvatar } from "../common/Avatar.tsx";
-import { useCurrentTeam } from "../sidebar/TeamSelector.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
 

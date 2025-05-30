@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
-import { TeamSelector } from "./TeamSelector.tsx";
+import { TeamSelector } from "./team-selector.tsx";
 
 export function Header() {
   const { toggleSidebar, open, isMobile } = useSidebar();

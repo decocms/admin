@@ -90,7 +90,7 @@ const AuditDetail = lazy(
 );
 
 const MagicLink = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/login/magicLink.tsx"))
+  wrapWithUILoadingFallback(import("./components/login/magic-link.tsx"))
 );
 
 const Settings = lazy(() =>

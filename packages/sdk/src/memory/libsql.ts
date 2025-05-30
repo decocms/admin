@@ -1,7 +1,7 @@
 import { WebCache } from "@deco/sdk/cache";
 import { singleFlight } from "@deco/sdk/common";
 import { createClient } from "@libsql/client";
-import type { StorageThreadType } from "@mastra/core";
+import type { MessageType, StorageThreadType } from "@mastra/core";
 import type { TABLE_NAMES } from "@mastra/core/storage";
 import {
   type LibSQLConfig,
@@ -32,6 +32,7 @@ export class LibSQLStore extends MastraLibSQLStore {
       id: string;
       title: string;
       metadata: Record<string, unknown>;
+      updatedAt: Date;
     },
   ): Promise<StorageThreadType> {
     await this.threadCache.delete(args.id);
@@ -50,6 +51,25 @@ export class LibSQLStore extends MastraLibSQLStore {
     return super.saveThread({ thread }).then(async () => {
       await this.threadCache.set(thread.id, thread);
       return thread;
+    });
+  }
+
+  override saveMessages(
+    { messages }: { messages: MessageType[] },
+  ): Promise<MessageType[]> {
+    return super.saveMessages({ messages }).then(async (messages) => {
+      const thread = await this.getThreadById({ threadId: messages[0].threadId });
+      if (!thread) {
+        throw new Error(`Thread ${messages[0].threadId} not found`);
+      }
+
+      await this.saveThread({
+        thread: {
+          ...thread,
+          updatedAt: new Date(),
+        },
+      });
+      return messages;
     });
   }
 
@@ -169,6 +189,7 @@ export class LibSQLFactory {
         authToken,
       },
     });
+  
 
     // On turso create, the database is not ready to be used.
     // So we need to wait for it to be ready.

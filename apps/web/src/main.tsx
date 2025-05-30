@@ -44,7 +44,7 @@ const RouteLayout = lazy(() =>
 );
 
 const PageviewTrackerLayout = lazy(
-  () => import("./components/analytics/PageviewTracker.tsx"),
+  () => import("./components/analytics/pageview-tracker.tsx"),
 );
 
 const Login = lazy(() => import("./components/login/index.tsx"));

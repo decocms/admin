@@ -1,7 +1,6 @@
 import {
   type Agent,
   AgentSchema,
-  DEFAULT_MODEL,
   Integration,
   NotFoundError,
   useAgent,

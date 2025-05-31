@@ -54,6 +54,8 @@ import { AgentAvatar } from "../common/avatar/index.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { useTheme } from "../theme.tsx";
+import { TeamSelector } from "./team-selector.tsx";
 
 const STATIC_ITEMS = [
   {
@@ -469,6 +471,8 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
   const focusChat = useFocusChat();
+  const { data: theme } = useTheme();
+  const hasPicture = !!theme?.picture;
 
   return (
     <Sidebar variant="sidebar">
@@ -485,6 +489,11 @@ export function AppSidebar() {
             <SidebarGroup className="font-medium">
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
+                  {hasPicture ? (
+                    <SidebarMenuItem>
+                      <TeamSelector />
+                    </SidebarMenuItem>
+                  ) : null}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       className="cursor-pointer"

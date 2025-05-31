@@ -11,6 +11,7 @@ import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
+  Navigate,
   RouterProvider,
   useLocation,
   useRouteError,
@@ -223,11 +224,7 @@ function ErrorFallback() {
 }
 
 function Home() {
-  useEffect(() => {
-    globalThis.location.href = DEFAULT_PATH;
-  }, []);
-
-  return;
+  return <Navigate to={DEFAULT_PATH} replace />;
 }
 
 const router = createBrowserRouter([

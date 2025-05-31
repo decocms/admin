@@ -133,7 +133,7 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === DEFAULT_PATH) {
+    if (pathname === "/") {
       globalThis.location.href = "/about";
 
       return;
@@ -222,6 +222,14 @@ function ErrorFallback() {
   );
 }
 
+function Home() {
+  useEffect(() => {
+    globalThis.location.href = DEFAULT_PATH;
+  }, []);
+
+  return;
+}
+
 const router = createBrowserRouter([
   {
     errorElement: <ErrorFallback />,
@@ -256,13 +264,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            loader: ({ params }) => {
-              const teamSlug = params.teamSlug;
-              globalThis.location.href = teamSlug
-                ? `/${teamSlug}${DEFAULT_PATH}`
-                : DEFAULT_PATH;
-              return null;
-            },
+            Component: Home,
           },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },

@@ -95,6 +95,7 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().readonly(),
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
+  ELEVENLABS_API_KEY: z.any().optional().readonly(),
   WHATSAPP_ACCESS_TOKEN: z.string().optional().readonly(),
   WHATSAPP_PHONE_NUMBER_ID: z.string().optional().readonly(),
   WHATSAPP_API_VERSION: z.string().optional().readonly(),

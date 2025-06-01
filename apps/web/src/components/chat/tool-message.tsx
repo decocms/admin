@@ -248,7 +248,6 @@ function CustomToolUI({ tool, isLastMessage }: {
         <audio
           src={audioUrl}
           controls
-          autoPlay
         />
       );
     }

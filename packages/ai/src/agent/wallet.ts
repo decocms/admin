@@ -194,7 +194,7 @@ export class AgentWallet {
       const rewards = [
         {
           type: "WorkspaceGenCreditReward" as const,
-          amount: "10_000000",
+          amount: "2_000000",
           workspace: this.config.workspace,
           transactionId: WellKnownTransactions.freeTwoDollars(
             encodeURIComponent(this.config.workspace),

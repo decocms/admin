@@ -70,11 +70,11 @@ export const getWorkspacePlan = async (workspace: string) => {
     .GET_WORKSPACE_PLAN({});
 
   // recreate the assertHasFeature method, that cannot be serialized
-  // plan.assertHasFeature = (feature: Feature) => {
-  //   if (!plan.features.includes(feature)) {
-  //     throw new FeatureNotAvailableError();
-  //   }
-  // };
+  plan.assertHasFeature = (feature: Feature) => {
+    if (!plan.features.includes(feature)) {
+      throw new FeatureNotAvailableError();
+    }
+  };
 
   return plan;
 };

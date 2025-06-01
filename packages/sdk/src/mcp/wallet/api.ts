@@ -43,9 +43,9 @@ export const getPlan = async (c: AppContext) => {
     id: plan,
     features,
     assertHasFeature: (feature: Feature) => {
-      // if (!features.includes(feature)) {
-      //   throw new FeatureNotAvailableError();
-      // }
+      if (!features.includes(feature)) {
+        throw new FeatureNotAvailableError();
+      }
     },
   };
 };

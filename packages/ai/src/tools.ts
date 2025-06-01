@@ -7,6 +7,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Buffer } from "node:buffer";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
@@ -415,6 +416,238 @@ export const WHO_AM_I = createInnateTool({
   },
 });
 
+const SpeakInputSchema = z.object({
+  text: z.string().describe("The text to speak using the agent's voice"),
+  emotion: z.enum(["neutral", "excited", "calm", "serious", "friendly"])
+    .optional().catch("neutral").describe(
+      "The emotional tone to use when speaking (optional)",
+    ),
+  speed: z.enum(["slow", "normal", "fast"]).optional().catch("normal").describe(
+    "The speed at which to speak (optional)",
+  ),
+  voice: z.enum([
+    "alloy",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "shimmer",
+    "ash",
+    "sage",
+    "coral",
+  ]).optional().catch("nova").describe(
+    "The voice to use for speech synthesis (optional, defaults to agent's configured voice)",
+  ),
+});
+
+const SpeakOutputSchema = z.object({
+  success: z.boolean().describe(
+    "Whether the speech was successfully generated",
+  ),
+  message: z.string().describe("Status message about the speech generation"),
+  audioUrl: z.string().optional().describe("URL to the generated audio file"),
+  duration: z.number().optional().describe(
+    "Duration of the generated audio in seconds",
+  ),
+});
+
+export const SPEAK = createInnateTool({
+  id: "SPEAK",
+  description:
+    "Use the agent's voice to speak text aloud. This tool converts text to speech using the agent's configured voice model. " +
+    "Use this when you want to provide audio responses, when the user specifically requests voice output, " +
+    "or when you want to create more engaging interactions. You can optionally generate an audio file that can be shared or played later. " +
+    "This is perfect for creating voice-enabled conversations, reading content aloud, or providing audio feedback. " +
+    "Use the audioUrl in markdown to display the audio file in the chat. " +
+    "For example: ![audio]({audioUrl})",
+  inputSchema: SpeakInputSchema,
+  outputSchema: SpeakOutputSchema,
+  execute: (agent, env) => async ({ context }) => {
+    try {
+      const { text, emotion, speed, voice } = context;
+
+      // Add emotional context to the text if specified
+      let enhancedText = text;
+      if (emotion && emotion !== "neutral") {
+        enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
+      }
+
+      // Use the agent's speak method with voice and speed options
+      const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
+      const speakOptions = {
+        voice,
+        speed: speed ? speedMap[speed] : undefined,
+      };
+
+      const readableStream = await agent.speak(enhancedText, speakOptions);
+
+      // Check if we got a valid ReadableStream
+      if (!readableStream) {
+        return {
+          success: false,
+          message: "Voice synthesis is not available for this agent",
+        };
+      }
+
+      // Convert ReadableStream to ArrayBuffer, then to base64
+      let audioBase64: string = "";
+      let duration: number | undefined;
+
+      try {
+        // Check if it's a Node.js stream (has 'read' method)
+        if (
+          readableStream && typeof readableStream === "object" &&
+          "read" in readableStream
+        ) {
+          // It's a Node.js stream - read all data from it
+          const chunks: Buffer[] = [];
+
+          // Convert to async iterator or use events
+          // deno-lint-ignore no-explicit-any
+          const stream = readableStream as any;
+
+          // Read existing data from the buffer if available
+          if (
+            stream._readableState && stream._readableState.buffer &&
+            stream._readableState.length > 0
+          ) {
+            // Read all available data
+            let chunk;
+            while ((chunk = stream.read()) !== null) {
+              if (chunk instanceof Buffer) {
+                chunks.push(chunk);
+              }
+            }
+          }
+
+          // Listen for additional data if stream is still readable
+          if (!stream.readableEnded) {
+            await new Promise<void>((resolve, reject) => {
+              stream.on("data", (chunk: Buffer) => {
+                chunks.push(chunk);
+              });
+
+              stream.on("end", () => {
+                resolve();
+              });
+
+              stream.on("error", (error: Error) => {
+                reject(error);
+              });
+
+              // Force end if stream is already ended
+              if (stream.readableEnded) {
+                resolve();
+              }
+            });
+          }
+
+          const totalLength = chunks.reduce(
+            (sum, chunk) => sum + chunk.length,
+            0,
+          );
+
+          if (totalLength === 0) {
+            return {
+              success: false,
+              message: "No audio data received from voice synthesis",
+            };
+          }
+
+          // Combine all chunks into a single buffer
+          const combinedBuffer = Buffer.concat(chunks);
+          audioBase64 = combinedBuffer.toString("base64");
+        } else {
+          // Fallback: assume it's already base64 or convert to string
+          audioBase64 = String(readableStream);
+        }
+
+        // Estimate duration based on text length (rough approximation)
+        const wordCount = text.split(/\s+/).length;
+        duration = Math.ceil((wordCount / 150) * 60); // ~150 words per minute
+      } catch (streamError) {
+        return {
+          success: false,
+          message: `Failed to process audio stream: ${
+            streamError instanceof Error ? streamError.message : "Unknown error"
+          }`,
+        };
+      }
+
+      let audioUrl: string | undefined;
+
+      // If audio file generation is requested, upload the audio and create a presigned URL
+      if (true && env) {
+        try {
+          // Generate a unique filename for the audio
+          const timestamp = Date.now();
+          const audioFileName = `audio/speech-${timestamp}.mp3`;
+
+          // Use the existing FS API to upload the audio
+          const { workspace } = agent;
+          const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
+          const region = env.AWS_REGION ?? "us-east-2";
+
+          const s3Client = new S3Client({
+            region,
+            credentials: {
+              accessKeyId: env.AWS_ACCESS_KEY_ID!,
+              secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+            },
+          });
+
+          const s3Key = `${workspace}/${audioFileName}`;
+
+          // Convert base64 to buffer for upload
+          const audioBuffer = Buffer.from(audioBase64, "base64");
+
+          // Upload the audio file
+          const putCommand = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: s3Key,
+            Body: audioBuffer,
+            ContentType: "audio/mpeg",
+          });
+
+          await s3Client.send(putCommand);
+
+          // Now create a presigned URL for downloading
+          const getCommand = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: s3Key,
+            ResponseContentType: "audio/mpeg",
+          });
+
+          audioUrl = await getSignedUrl(s3Client, getCommand, {
+            expiresIn: 3600 * 24, // 24 hours
+          });
+        } catch (error) {
+          console.error("💥 Error in SPEAK tool:", error);
+        }
+      }
+
+      const result = {
+        success: true,
+        message: `Successfully generated speech for: "${text.substring(0, 50)}${
+          text.length > 50 ? "..." : ""
+        }"`,
+        audioUrl,
+        duration,
+      };
+
+      return result;
+    } catch (error) {
+      console.error("💥 Error in SPEAK tool:", error);
+      return {
+        success: false,
+        message: `Failed to generate speech: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+    }
+  },
+});
+
 export const tools = {
   FETCH,
   POLL_FOR_CONTENT,
@@ -423,4 +656,5 @@ export const tools = {
   CONFIRM,
   CREATE_PRESIGNED_URL,
   WHO_AM_I,
+  SPEAK,
 };

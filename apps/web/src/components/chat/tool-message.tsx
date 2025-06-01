@@ -26,6 +26,7 @@ interface ToolMessageProps {
 const CUSTOM_UI_TOOLS = [
   "HOSTING_APP_DEPLOY",
   "RENDER",
+  "SPEAK",
   "SHOW_PICKER",
   "CONFIRM",
   "CONFIGURE",
@@ -238,6 +239,16 @@ function CustomToolUI({ tool, isLastMessage }: {
         <Preview
           content={tool.result.data.content as "url" | "html"}
           title={tool.result.data.title as string}
+        />
+      );
+    }
+    case "SPEAK": {
+      const audioUrl = tool.result.data.audioUrl as string;
+      return (
+        <audio
+          src={audioUrl}
+          controls
+          autoPlay
         />
       );
     }

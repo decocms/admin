@@ -85,19 +85,30 @@ function processMessageContent(
   message: MessageType,
   toolResults: Map<string, unknown>,
 ): Message | null {
-  if (typeof message.content === "string") {
-    return createStringMessage(message);
-  }
-
-  if (typeof message.content === "number") {
-    return createNumberMessage(message);
-  }
-
-  if (Array.isArray(message.content)) {
-    return createArrayMessage(message, toolResults);
-  }
-
   if (message.role === "user") {
+    if (typeof message.content === "string") {
+      return createStringMessage(message);
+    }
+    if (typeof message.content === "number") {
+      return createNumberMessage(message);
+    }
+    if (Array.isArray(message.content)) {
+      return createArrayMessage(message, toolResults);
+    }
+
+    return createUserObjectMessage(message);
+  }
+
+  if (message.role === "assistant") {
+    if (typeof message.content === "string") {
+      return createStringMessage(message);
+    }
+    if (typeof message.content === "number") {
+      return createNumberMessage(message);
+    }
+    if (Array.isArray(message.content)) {
+      return createArrayMessage(message, toolResults);
+    }
     return createUserObjectMessage(message);
   }
 

@@ -174,7 +174,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private wallet: AgentWallet;
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
-  private llmVault?: LLMVault;
+  private llmVault: LLMVault;
   constructor(
     public readonly state: ActorState,
     protected actorEnv: any,
@@ -195,13 +195,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.env.SUPABASE_SERVER_TOKEN,
       { cookies: { getAll: () => [] } },
     );
-    this.llmVault = this.env.LLMS_ENCRYPTION_KEY
-      ? new SupabaseLLMVault(
-        this.db,
-        this.env.LLMS_ENCRYPTION_KEY,
-        this.workspace,
-      )
-      : undefined;
+    this.llmVault = new SupabaseLLMVault(
+      this.db,
+      this.env.LLMS_ENCRYPTION_KEY,
+      this.workspace,
+    );
 
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({

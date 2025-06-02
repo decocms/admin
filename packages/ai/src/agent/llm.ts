@@ -26,16 +26,13 @@ export async function getLLMConfig({
   llmVault,
 }: {
   modelId: string;
-  llmVault?: LLMVault;
+  llmVault: LLMVault;
 }): Promise<LLMConfigWithModelId> {
   if (isWellKnownModel(modelId)) {
     return {
       model: modelId,
       modelId: modelId,
     };
-  }
-  if (!llmVault) {
-    throw new Error("LLM vault not found");
   }
 
   // TODO(@camudo): cache for custom models, so we don't read the api key every time.

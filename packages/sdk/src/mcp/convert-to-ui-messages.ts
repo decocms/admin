@@ -52,70 +52,6 @@ const toParts = (results: Map<string, unknown>) =>
   return item;
 };
 
-function createStringMessage(message: MessageType): Message {
-  return message as unknown as Message;
-}
-
-function createNumberMessage(message: MessageType): Message {
-  return {
-    ...message,
-    content: String(message.content),
-  } as unknown as Message;
-}
-
-function createArrayMessage(
-  message: MessageType,
-  toolResults: Map<string, unknown>,
-): Message {
-  return {
-    ...message,
-    content: "",
-    parts: (message.content as Array<unknown>).map(toParts(toolResults)),
-  } as unknown as Message;
-}
-
-function createUserObjectMessage(message: MessageType): Message {
-  return {
-    ...message,
-    content: `\`\`\`json\n${JSON.stringify(message.content, null, 2)}`,
-  } as unknown as Message;
-}
-
-function processMessageContent(
-  message: MessageType,
-  toolResults: Map<string, unknown>,
-): Message | null {
-  if (message.role === "user") {
-    if (typeof message.content === "string") {
-      return createStringMessage(message);
-    }
-    if (typeof message.content === "number") {
-      return createNumberMessage(message);
-    }
-    if (Array.isArray(message.content)) {
-      return createArrayMessage(message, toolResults);
-    }
-
-    return createUserObjectMessage(message);
-  }
-
-  if (message.role === "assistant") {
-    if (typeof message.content === "string") {
-      return createStringMessage(message);
-    }
-    if (typeof message.content === "number") {
-      return createNumberMessage(message);
-    }
-    if (Array.isArray(message.content)) {
-      return createArrayMessage(message, toolResults);
-    }
-    return createUserObjectMessage(message);
-  }
-
-  // Preserve original behavior: skip messages that don't match any condition
-  return null;
-}
-
 export function convertToUIMessages(messages: MessageType[]): Message[] {
   const toolResults = new Map<string, unknown>();
 
@@ -146,9 +82,24 @@ export function convertToUIMessages(messages: MessageType[]): Message[] {
       continue;
     }
 
-    const uiMessage = processMessageContent(message, toolResults);
-    if (uiMessage !== null) {
-      uiMessages.push(uiMessage);
+    if (typeof message.content === "string") {
+      uiMessages.push(message as unknown as Message);
+    } else if (typeof message.content === "number") {
+      uiMessages.push({
+        ...message,
+        content: String(message.content),
+      } as unknown as Message);
+    } else if (Array.isArray(message.content)) {
+      uiMessages.push({
+        ...message,
+        content: "",
+        parts: message.content.map(toParts(toolResults)),
+      } as unknown as Message);
+    } else if (message.role === "user") {
+      uiMessages.push({
+        ...message,
+        content: `\`\`\`json\n${JSON.stringify(message.content, null, 2)}`,
+      } as unknown as Message);
     }
   }
 

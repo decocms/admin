@@ -5,11 +5,15 @@ import { AIAgent } from "../agent.ts";
 import { INNATE_TOOLS } from "../storage/tools.ts";
 import { createInnateTool } from "../utils/create-tool.ts";
 
-const descriptionFrom = (integration: Integration) => `
+const descriptionFrom = (
+  integration: Pick<Integration, "name" | "description">,
+) => `
 Asks agent ${integration.name} for help with the current task. This agent ${integration.description}.
 `;
 
-export const createHandoffToolsFor = (integration: Integration) => ({
+export const createHandoffToolsFor = (
+  integration: Pick<Integration, "id" | "name" | "description">,
+) => ({
   HANDOFF_AGENT: createInnateTool({
     id: "HANDOFF_AGENT",
     description: descriptionFrom(integration),

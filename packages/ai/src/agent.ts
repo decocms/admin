@@ -982,7 +982,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const experimentalTransform = options?.smoothStream
       ? smoothStream({
         delayInMs: options.smoothStream.delayInMs,
-        chunking: options.smoothStream.chunking,
+        // The default chunking breaks cloudflare due to using too much CPU.
+        // This is a simpler function that does the job.
+        chunking: (buffer) => buffer.slice(0, 5) || null,
       })
       : undefined;
 

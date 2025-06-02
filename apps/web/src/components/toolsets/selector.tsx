@@ -1,4 +1,5 @@
 import { type Integration, MCPTool, useTools } from "@deco/sdk";
+import { useProfile } from "@deco/sdk/hooks";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -193,6 +194,12 @@ function beautifyToolName(text: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// @franca: temporary, leandro wants a talking agent in vtex day
+const clientHiddenTools = ["SPEAK"];
+const hideFor = (email: string) => {
+  return !email.endsWith("@deco.cx");
+};
+
 function ToolList({
   className,
   integration,
@@ -208,6 +215,10 @@ function ToolList({
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
   className?: string;
 }) {
+  const { data: profile } = useProfile();
+  const filteredTools = allTools.filter((tool) =>
+    !(clientHiddenTools.includes(tool.name) && hideFor(profile?.email))
+  );
   if (isLoading) {
     return (
       <div className={cn("space-y-2", className)}>
@@ -244,7 +255,7 @@ function ToolList({
             </span>
           </div>
         </label>
-        {allTools?.map((tool) => {
+        {filteredTools?.map((tool) => {
           const enabled = toolsSet[integration.id]?.includes(tool.name) ??
             false;
 

@@ -319,6 +319,11 @@ export const getIntegration = createTool({
     }
     assertHasWorkspace(c);
 
+    const selectPromise = c.db
+      .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
+      .select("*")
+      .eq("id", uuid)
+      .single().then((r) => r);
     const knowledgeBases = await listKnowledgeBases.handler({});
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
@@ -332,11 +337,7 @@ export const getIntegration = createTool({
       });
     }
 
-    const { data, error } = await c.db
-      .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-      .select("*")
-      .eq("id", uuid)
-      .single();
+    const { data, error } = await selectPromise;
 
     if (!data) {
       throw new NotFoundError("Integration not found");

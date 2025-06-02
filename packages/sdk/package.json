@@ -52,6 +52,7 @@
     "./memory": "./src/memory/memory.ts",
     "./actors": "./src/actors/index.ts",
     "./cache": "./src/cache/index.ts",
+    "./cache/swr": "./src/cache/swr.ts",
     "./common": "./src/common/index.ts",
     "./hosts": "./src/hosts.ts",
     "./path": "./src/path.ts",

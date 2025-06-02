@@ -90,9 +90,12 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             : "New chat";
 
           const updated = {
-            pagination: oldData?.pagination ?? {
+            pagination: {
               hasMore: false,
               nextCursor: null,
+              hasPrev: false,
+              prevCursor: null,
+              ...oldData?.pagination,
             },
             threads: [
               ...(oldData?.threads ?? []),

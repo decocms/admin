@@ -27,7 +27,7 @@ export async function convertToAIMessage({
       content: transcription,
     };
   }
-  if (isPartsMessage(message)) {
+  if (isPartsMessage(message) && !message.content) {
     return {
       ...message,
       content: message.parts

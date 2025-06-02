@@ -60,12 +60,12 @@ function IntegrationListItem({
         )}
       >
         <div className="flex gap-4 items-start justify-between w-full">
-          <div className="p-2 rounded-xl border border-border">
+          <div className="p-1 rounded-xl border border-border">
             <IntegrationIcon
               icon={integration.icon}
               name={integration.name}
               variant="small"
-              className="h-8 w-8 p-0 rounded-none"
+              className="h-9 w-9 p-0 rounded-lg"
             />
           </div>
           <div className="flex flex-col gap-1 w-full">

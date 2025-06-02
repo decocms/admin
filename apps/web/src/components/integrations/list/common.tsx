@@ -30,7 +30,10 @@ function FileIcon({ path, fallback, className, variant }: {
             url={typeof fileUrl === "string" ? fileUrl : undefined}
             fallback={fallback}
             fallbackClassName="!bg-transparent"
-            className="w-full h-full rounded-none"
+            className={cn(
+              "w-full h-full rounded-none",
+              className,
+            )}
             objectFit="contain"
           />
         </div>
@@ -100,7 +103,10 @@ function IntegrationIconContent(
               url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className="w-full h-full rounded-none"
+              className={cn(
+                "w-full h-full rounded-none",
+                className,
+              )}
               objectFit="contain"
             />
           )

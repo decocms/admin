@@ -697,10 +697,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     try {
       const readableStream = await this._maybeAgent.voice.speak(text, {
-        speaker: options?.voice || "echo", 
+        speaker: options?.voice || "echo",
         properties: {
           speed: options?.speed || 1.0,
-          pitch: "default", 
+          pitch: "default",
         },
       });
 

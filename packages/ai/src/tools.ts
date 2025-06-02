@@ -460,6 +460,10 @@ export const SPEAK = createInnateTool({
   inputSchema: SpeakInputSchema,
   outputSchema: SpeakOutputSchema,
   execute: (agent, env) => async ({ context }) => {
+    let s3Client: S3Client | null = null;
+    // deno-lint-ignore no-explicit-any
+    let readableStream: any = null;
+
     try {
       const { text, emotion, speed, voice } = context;
 
@@ -476,7 +480,7 @@ export const SPEAK = createInnateTool({
         speed: speed ? speedMap[speed] : undefined,
       };
 
-      const readableStream = await agent.speak(enhancedText, speakOptions);
+      readableStream = await agent.speak(enhancedText, speakOptions);
 
       // Check if we got a valid ReadableStream
       if (!readableStream) {
@@ -486,165 +490,53 @@ export const SPEAK = createInnateTool({
         };
       }
 
-      // Convert ReadableStream to ArrayBuffer, then to base64
-      let audioBase64: string = "";
-
-      try {
-        // Check if it's a Node.js stream (has 'read' method)
-        if (
-          readableStream && typeof readableStream === "object" &&
-          "read" in readableStream
-        ) {
-          // It's a Node.js stream - read all data from it
-          const chunks: Buffer[] = [];
-
-          // Convert to async iterator or use events
-          // deno-lint-ignore no-explicit-any
-          const stream = readableStream as any;
-
-          // Read existing data from the buffer if available
-          if (
-            stream._readableState && stream._readableState.buffer &&
-            stream._readableState.length > 0
-          ) {
-            // Read all available data
-            let chunk;
-            while ((chunk = stream.read()) !== null) {
-              if (chunk instanceof Buffer) {
-                chunks.push(chunk);
-              }
-            }
-          }
-
-          // Listen for additional data if stream is still readable
-          if (!stream.readableEnded) {
-            await new Promise<void>((resolve, reject) => {
-              stream.on("data", (chunk: Buffer) => {
-                chunks.push(chunk);
-              });
-
-              stream.on("end", () => {
-                resolve();
-              });
-
-              stream.on("error", (error: Error) => {
-                reject(error);
-              });
-
-              // Force end if stream is already ended
-              if (stream.readableEnded) {
-                resolve();
-              }
-            });
-          }
-
-          const totalLength = chunks.reduce(
-            (sum, chunk) => sum + chunk.length,
-            0,
-          );
-
-          if (totalLength === 0) {
-            return {
-              success: false,
-              message: "No audio data received from voice synthesis",
-            };
-          }
-
-          // Combine all chunks into a single buffer
-          const combinedBuffer = Buffer.concat(chunks);
-          audioBase64 = combinedBuffer.toString("base64");
-        } else {
-          // Fallback: assume it's already base64 or convert to string
-          audioBase64 = String(readableStream);
-        }
-      } catch (streamError) {
-        return {
-          success: false,
-          message: `Failed to process audio stream: ${
-            streamError instanceof Error ? streamError.message : "Unknown error"
-          }`,
-        };
-      }
-
       const {
         DECO_CHAT_DATA_BUCKET_NAME,
         AWS_REGION,
         AWS_ACCESS_KEY_ID,
         AWS_SECRET_ACCESS_KEY,
       } = env ?? {};
-      const uploadAudio = true;
+
       let audioUrl: string | undefined;
 
-      // If audio file generation is requested, upload the audio and create a presigned URL
-      if (uploadAudio) {
-        if (
-          !DECO_CHAT_DATA_BUCKET_NAME ||
-          !AWS_REGION ||
-          !AWS_ACCESS_KEY_ID ||
-          !AWS_SECRET_ACCESS_KEY
-        ) {
-          throw new Error(
-            "Missing required environment variables for file upload",
-          );
-        }
-
+      if (
+        DECO_CHAT_DATA_BUCKET_NAME &&
+        AWS_REGION &&
+        AWS_ACCESS_KEY_ID &&
+        AWS_SECRET_ACCESS_KEY
+      ) {
         try {
-          // Generate a unique filename for the audio
-          const timestamp = Date.now();
-          const audioFileName = `audio/speech-${timestamp}.mp3`;
-
-          // Use the existing FS API to upload the audio
-          const { workspace } = agent;
-          const bucketName = DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
-          const region = AWS_REGION ?? "us-east-2";
-
-          const s3Client = new S3Client({
-            region,
+          s3Client = new S3Client({
+            region: AWS_REGION,
             credentials: {
-              accessKeyId: AWS_ACCESS_KEY_ID!,
-              secretAccessKey: AWS_SECRET_ACCESS_KEY!,
+              accessKeyId: AWS_ACCESS_KEY_ID,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY,
             },
           });
 
+          const timestamp = Date.now();
+          const audioFileName = `audio/speech-${timestamp}.mp3`;
+          const { workspace } = agent;
           const s3Key = `${workspace}/${audioFileName}`;
 
-          // Convert base64 to buffer for upload
-          const audioBuffer = Buffer.from(audioBase64, "base64");
-
-          // Upload the audio file
-          const putCommand = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-            Body: audioBuffer,
-            ContentType: "audio/mpeg",
-          });
-
-          await s3Client.send(putCommand);
-
-          // Now create a presigned URL for downloading
-          const getCommand = new GetObjectCommand({
-            Bucket: bucketName,
-            Key: s3Key,
-            ResponseContentType: "audio/mpeg",
-          });
-
-          audioUrl = await getSignedUrl(s3Client, getCommand, {
-            expiresIn: 3600 * 24, // 24 hours
-          });
-        } catch (error) {
-          console.error("💥 Error in SPEAK tool:", error);
+          audioUrl = await processAudioStream(
+            readableStream,
+            s3Client,
+            DECO_CHAT_DATA_BUCKET_NAME,
+            s3Key,
+          );
+        } catch (uploadError) {
+          console.error("💥 Error uploading audio:", uploadError);
         }
       }
 
-      const result = {
+      return {
         success: true,
         message: `Successfully generated speech for: "${text.substring(0, 50)}${
           text.length > 50 ? "..." : ""
         }"`,
         audioUrl,
       };
-
-      return result;
     } catch (error) {
       console.error("💥 Error in SPEAK tool:", error);
       return {
@@ -653,9 +545,210 @@ export const SPEAK = createInnateTool({
           error instanceof Error ? error.message : "Unknown error"
         }`,
       };
+    } finally {
+      // Cleanup resources
+      await cleanupResources(readableStream, s3Client);
     }
   },
 });
+
+// Helper function to process audio stream with memory efficiency
+async function processAudioStream(
+  // deno-lint-ignore no-explicit-any
+  readableStream: any,
+  s3Client: S3Client,
+  bucketName: string,
+  s3Key: string,
+): Promise<string> {
+  const MAX_MEMORY_BUFFER = 50 * 1024 * 1024; // 50MB limit
+  let totalSize = 0;
+  const chunks: Buffer[] = [];
+
+  try {
+    // Handle different stream types with better error recovery
+    if (readableStream && typeof readableStream === "object") {
+      // Check if it's a Node.js readable stream
+      if ("read" in readableStream || "on" in readableStream) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Stream processing timeout after 30 seconds"));
+          }, 30000);
+
+          const cleanup = () => {
+            clearTimeout(timeout);
+          };
+
+          if (readableStream._readableState?.length > 0) {
+            let chunk;
+            while ((chunk = readableStream.read()) !== null) {
+              if (chunk instanceof Buffer) {
+                totalSize += chunk.length;
+                if (totalSize > MAX_MEMORY_BUFFER) {
+                  cleanup();
+                  reject(
+                    new Error(
+                      `Audio file too large (>${
+                        MAX_MEMORY_BUFFER / 1024 / 1024
+                      }MB)`,
+                    ),
+                  );
+                  return;
+                }
+                chunks.push(chunk);
+              }
+            }
+          }
+
+          readableStream.on("data", (chunk: Buffer) => {
+            totalSize += chunk.length;
+            if (totalSize > MAX_MEMORY_BUFFER) {
+              cleanup();
+              reject(
+                new Error(
+                  `Audio file too large (>${
+                    MAX_MEMORY_BUFFER / 1024 / 1024
+                  }MB)`,
+                ),
+              );
+              return;
+            }
+            chunks.push(chunk);
+          });
+
+          readableStream.on("end", () => {
+            cleanup();
+            resolve();
+          });
+
+          readableStream.on("error", (error: Error) => {
+            cleanup();
+            reject(new Error(`Stream error: ${error.message}`));
+          });
+
+          if (readableStream.readableEnded || readableStream.destroyed) {
+            cleanup();
+            resolve();
+          }
+        });
+      } else if (readableStream instanceof ArrayBuffer) {
+        const buffer = Buffer.from(readableStream);
+        if (buffer.length > MAX_MEMORY_BUFFER) {
+          throw new Error(
+            `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
+          );
+        }
+        chunks.push(buffer);
+      } else if (typeof readableStream === "string") {
+        const buffer = Buffer.from(readableStream, "base64");
+        if (buffer.length > MAX_MEMORY_BUFFER) {
+          throw new Error(
+            `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
+          );
+        }
+        chunks.push(buffer);
+      } else {
+        throw new Error("Unsupported stream type");
+      }
+    } else {
+      throw new Error("Invalid stream object");
+    }
+
+    if (chunks.length === 0) {
+      throw new Error("No audio data received from voice synthesis");
+    }
+
+    const audioBuffer = Buffer.concat(chunks);
+
+    await uploadWithRetry(s3Client, bucketName, s3Key, audioBuffer);
+
+    const getCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+      ResponseContentType: "audio/mpeg",
+    });
+
+    return await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 3600 * 24, // 24 hours
+    });
+  } finally {
+    chunks.length = 0;
+  }
+}
+
+// Helper function to upload with retry logic
+async function uploadWithRetry(
+  s3Client: S3Client,
+  bucketName: string,
+  s3Key: string,
+  audioBuffer: Buffer,
+  maxRetries: number = 3,
+): Promise<void> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const putCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: audioBuffer,
+        ContentType: "audio/mpeg",
+        ContentLength: audioBuffer.length,
+      });
+
+      await s3Client.send(putCommand);
+      return; // Success
+    } catch (error) {
+      lastError = error instanceof Error
+        ? error
+        : new Error("Unknown upload error");
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to upload after ${maxRetries} attempts: ${lastError?.message}`,
+  );
+}
+
+// Helper function to cleanup resources
+function cleanupResources(
+  // deno-lint-ignore no-explicit-any
+  readableStream: any,
+  s3Client: S3Client | null,
+): void {
+  try {
+    if (readableStream && typeof readableStream === "object") {
+      if (
+        "destroy" in readableStream &&
+        typeof readableStream.destroy === "function"
+      ) {
+        readableStream.destroy();
+      } else if (
+        "close" in readableStream && typeof readableStream.close === "function"
+      ) {
+        readableStream.close();
+      }
+    }
+  } catch (error) {
+    console.warn("Warning: Failed to cleanup stream resources:", error);
+  }
+
+  try {
+    if (
+      s3Client && "destroy" in s3Client &&
+      typeof s3Client.destroy === "function"
+    ) {
+      s3Client.destroy();
+    }
+  } catch (error) {
+    console.warn("Warning: Failed to cleanup S3 client resources:", error);
+  }
+}
 
 export const tools = {
   FETCH,

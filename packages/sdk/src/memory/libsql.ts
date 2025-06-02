@@ -6,8 +6,8 @@ import type { TABLE_NAMES } from "@mastra/core/storage";
 import {
   type LibSQLConfig,
   LibSQLStore as MastraLibSQLStore,
-} from "@mastra/core/storage/libsql";
-import { LibSQLVector } from "@mastra/core/vector/libsql";
+  LibSQLVector,
+} from "@mastra/libsql";
 import { createClient as createTursoAPIClient } from "@tursodatabase/api";
 import * as uuid from "uuid";
 
@@ -20,7 +20,7 @@ export interface TokenStorage {
 export class LibSQLStore extends MastraLibSQLStore {
   private threadCache: WebCache<StorageThreadType>;
   constructor(config: { config: LibSQLConfig; memoryId: string }) {
-    super(config);
+    super(config.config);
     this.threadCache = new WebCache<StorageThreadType>(
       `${config.memoryId}-threads`,
       WebCache.MAX_SAFE_TTL,

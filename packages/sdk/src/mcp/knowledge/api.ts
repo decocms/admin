@@ -75,7 +75,7 @@ export const deleteBase = createTool({
   canAccess: canAccessWorkspaceResource,
   handler: async ({ name }, c) => {
     const vector = await getVector(c);
-    await vector.deleteIndex(name);
+    await vector.deleteIndex({ indexName: name });
     return {
       name,
     };
@@ -117,7 +117,7 @@ export const forget = createKnowledgeBaseTool({
   canAccess: canAccessWorkspaceResource,
   handler: async ({ docId }, c) => {
     const vector = await getVector(c);
-    await vector.deleteIndexById(c.name, docId);
+    await vector.deleteVector({ indexName: c.name, id: docId });
     return {
       docId,
     };
@@ -150,10 +150,14 @@ export const remember = createKnowledgeBaseTool({
       model: embedder,
       value: content,
     });
-    await vector.upsert(c.name, [embedding], [{
-      id: docId,
-      metadata: { ...metadata ?? {}, content },
-    }]);
+    await vector.upsert({
+      indexName: c.name,
+      vectors: [embedding],
+      metadata: [{
+        id: docId,
+        metadata: { ...metadata ?? {}, content },
+      }],
+    });
 
     return {
       docId,

@@ -84,6 +84,12 @@ const getMCPServerTools = async (
               id: slug,
               description: tool.description! ?? "",
               inputSchema: jsonSchemaToModel(tool.inputSchema),
+              outputSchema: jsonSchemaToModel(
+                tool.outputSchema ?? {
+                  type: "object",
+                  additionalProperties: true,
+                },
+              ),
               execute: async ({ context }) => {
                 const innerClient = await createServerClient(mcpServer).catch(
                   console.error,

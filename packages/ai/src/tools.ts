@@ -435,7 +435,7 @@ const SpeakInputSchema = z.object({
     "ash",
     "sage",
     "coral",
-  ]).optional().catch("nova").describe(
+  ]).optional().catch("echo").describe(
     "The voice to use for speech synthesis (optional, defaults to agent's configured voice)",
   ),
 });
@@ -446,9 +446,6 @@ const SpeakOutputSchema = z.object({
   ),
   message: z.string().describe("Status message about the speech generation"),
   audioUrl: z.string().optional().describe("URL to the generated audio file"),
-  duration: z.number().optional().describe(
-    "Duration of the generated audio in seconds",
-  ),
 });
 
 export const SPEAK = createInnateTool({
@@ -491,7 +488,6 @@ export const SPEAK = createInnateTool({
 
       // Convert ReadableStream to ArrayBuffer, then to base64
       let audioBase64: string = "";
-      let duration: number | undefined;
 
       try {
         // Check if it's a Node.js stream (has 'read' method)
@@ -561,10 +557,6 @@ export const SPEAK = createInnateTool({
           // Fallback: assume it's already base64 or convert to string
           audioBase64 = String(readableStream);
         }
-
-        // Estimate duration based on text length (rough approximation)
-        const wordCount = text.split(/\s+/).length;
-        duration = Math.ceil((wordCount / 150) * 60); // ~150 words per minute
       } catch (streamError) {
         return {
           success: false,
@@ -650,7 +642,6 @@ export const SPEAK = createInnateTool({
           text.length > 50 ? "..." : ""
         }"`,
         audioUrl,
-        duration,
       };
 
       return result;

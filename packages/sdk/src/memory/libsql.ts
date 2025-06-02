@@ -1,14 +1,12 @@
 import { WebCache } from "@deco/sdk/cache";
 import { singleFlight } from "@deco/sdk/common";
 import { createClient } from "@libsql/client";
-import type {
-  StorageThreadType
-} from "@mastra/core";
+import type { StorageThreadType } from "@mastra/core";
 import type { TABLE_NAMES } from "@mastra/core/storage";
 import {
   type LibSQLConfig,
-  LibSQLVector,
   LibSQLStore as MastraLibSQLStore,
+  LibSQLVector,
 } from "@mastra/libsql";
 import { createClient as createTursoAPIClient } from "@tursodatabase/api";
 import * as uuid from "uuid";

@@ -574,10 +574,28 @@ export const SPEAK = createInnateTool({
         };
       }
 
+      const {
+        DECO_CHAT_DATA_BUCKET_NAME,
+        AWS_REGION,
+        AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY,
+      } = env ?? {};
+      const uploadAudio = true;
       let audioUrl: string | undefined;
 
       // If audio file generation is requested, upload the audio and create a presigned URL
-      if (true && env) {
+      if (uploadAudio) {
+        if (
+          !DECO_CHAT_DATA_BUCKET_NAME ||
+          !AWS_REGION ||
+          !AWS_ACCESS_KEY_ID ||
+          !AWS_SECRET_ACCESS_KEY
+        ) {
+          throw new Error(
+            "Missing required environment variables for file upload",
+          );
+        }
+
         try {
           // Generate a unique filename for the audio
           const timestamp = Date.now();
@@ -585,14 +603,14 @@ export const SPEAK = createInnateTool({
 
           // Use the existing FS API to upload the audio
           const { workspace } = agent;
-          const bucketName = env.DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
-          const region = env.AWS_REGION ?? "us-east-2";
+          const bucketName = DECO_CHAT_DATA_BUCKET_NAME ?? "deco-chat-fs";
+          const region = AWS_REGION ?? "us-east-2";
 
           const s3Client = new S3Client({
             region,
             credentials: {
-              accessKeyId: env.AWS_ACCESS_KEY_ID!,
-              secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+              accessKeyId: AWS_ACCESS_KEY_ID!,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY!,
             },
           });
 

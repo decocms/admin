@@ -164,9 +164,8 @@ export function ChatMessage(
     return false;
   }, [message.parts, isStreaming]);
 
-
   const showTimestamp = useMemo(() => {
-    return !mergedParts[0]?.content?.startsWith('![audio]');
+    return !mergedParts[0]?.content?.startsWith("![audio]");
   }, [mergedParts]);
 
   return (
@@ -182,9 +181,11 @@ export function ChatMessage(
           isUser ? "items-end max-w-[70%]" : "w-full items-start",
         )}
       >
-        {showTimestamp && <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{timestamp}</span>
-        </div>}
+        {showTimestamp && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{timestamp}</span>
+          </div>
+        )}
 
         <div
           className={cn(
@@ -213,7 +214,9 @@ export function ChatMessage(
                     );
                   } else if (part.type === "text") {
                     // Skip rendering text content if there's a SPEAK tool present
-                    const shouldSkipTextForAudio = part.content?.startsWith('![audio]');
+                    const shouldSkipTextForAudio = part.content?.startsWith(
+                      "![audio]",
+                    );
                     if (shouldSkipTextForAudio) {
                       return null;
                     }

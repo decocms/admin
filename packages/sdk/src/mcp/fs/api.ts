@@ -114,13 +114,11 @@ export const listFiles = createTool({
       assertWorkspaceResourceAccess(c.tool.name, c),
     ]);
 
-    const s3Client = getS3Client(c);
-    const listCommand = new ListObjectsCommand({
-      Bucket: bucketName,
-      Prefix: root,
-    });
+    const { data: assets } = await c.db.from("deco_chat_assets").select(
+      "file_url, metadata",
+    ).eq("workspace", c.workspace.value);
 
-    return s3Client.send(listCommand);
+    return assets;
   },
 });
 
@@ -212,13 +210,26 @@ export const writeFile = createTool({
       Bucket: bucketName,
       Key: path,
       ContentType: contentType,
-      Metadata: metadata,
     });
 
     const url = await getSignedUrl(s3Client, putCommand, {
       expiresIn,
       signableHeaders: new Set(["content-type"]),
     });
+
+    const { data: newFile, error } = await c.db.from("deco_chat_assets").insert(
+      {
+        file_url: url,
+        workspace: c.workspace.value,
+        metadata,
+      },
+    ).select().single();
+
+    if (!newFile || error) {
+      await deleteFile.handler({ path });
+
+      return {};
+    }
 
     return { url };
   },

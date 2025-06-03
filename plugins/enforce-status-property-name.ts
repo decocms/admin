@@ -6,10 +6,13 @@ const plugin: Deno.lint.Plugin = {
         return {
           Identifier(node) {
             // Skip if this is a property access (e.g. toast.success)
-            if (node.parent?.type === "MemberExpression" && node.parent.property === node) {
+            if (
+              node.parent?.type === "MemberExpression" &&
+              node.parent.property === node
+            ) {
               return;
             }
-            
+
             if (node.name === "success") {
               context.report({
                 node,

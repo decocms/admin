@@ -367,6 +367,7 @@ export type Database = {
           agent_id: string | null;
           created_at: string;
           deleted_at: string | null;
+          discriminator: string;
           id: string;
           integration_id: string | null;
           name: string;
@@ -378,7 +379,8 @@ export type Database = {
           agent_id?: string | null;
           created_at?: string;
           deleted_at?: string | null;
-          id: string;
+          discriminator: string;
+          id?: string;
           integration_id?: string | null;
           name: string;
           updated_at?: string;
@@ -390,6 +392,7 @@ export type Database = {
           created_at?: string;
           deleted_at?: string | null;
           id?: string;
+          discriminator?: string;
           integration_id?: string | null;
           name?: string;
           updated_at?: string;

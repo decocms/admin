@@ -9,7 +9,7 @@ const callbacksSchema = z.object({
 
 const channelIdSchema = z.object({
   workspace: z.string(),
-  channelId: z.string(),
+  discriminator: z.string(),
 });
 
 const channelBindingSchema = channelIdSchema.extend({

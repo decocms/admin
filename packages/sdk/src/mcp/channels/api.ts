@@ -1,12 +1,16 @@
+import type { TriggerData } from "@deco/ai";
+import { Trigger } from "@deco/ai/actors";
+import { join } from "node:path/posix";
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
+import { Path } from "../../path.ts";
 import { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   canAccessWorkspaceResource,
 } from "../assertions.ts";
 import { ChannelBinding } from "../bindings/binder.ts";
-import { createTool } from "../context.ts";
+import { AppContext, createTool } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 
 const SELECT_CHANNEL_QUERY = `
@@ -21,6 +25,7 @@ function mapChannel(
 ) {
   return {
     id: channel.id,
+    discriminator: channel.discriminator,
     agentId: channel.agent_id,
     createdAt: channel.created_at,
     updatedAt: channel.updated_at,
@@ -66,14 +71,14 @@ export const createChannel = createTool({
   name: "CHANNELS_CREATE",
   description: "Create a channel",
   inputSchema: z.object({
-    channelId: z.string().describe(
-      "The ID of the agent(current) to create the channel for, use only UUIDs",
+    discriminator: z.string().describe(
+      "The channel discriminator",
     ),
     name: z.string().describe("The name of the channel"),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { channelId, name },
+    { discriminator, name },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -83,9 +88,8 @@ export const createChannel = createTool({
     // Insert the new channel
     const { data: channel, error } = await db.from("deco_chat_channels")
       .insert({
-        id: channelId,
+        discriminator,
         workspace,
-        active: true,
         name,
       })
       .select(SELECT_CHANNEL_QUERY)
@@ -100,15 +104,13 @@ export const createChannel = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
+      const agentId = channel.agent_id;
+      const trigger = await createWebhookTrigger(discriminator, agentId, c);
       await binding.ON_CHANNEL_LINKED({
-        channelId,
+        discriminator,
         workspace,
-        agentId: channel.agent_id,
-        callbacks: {
-          stream: "", // Placeholder as requested
-          generate: "", // Placeholder as requested
-          generateObject: "", // Placeholder as requested
-        },
+        agentId,
+        callbacks: trigger.callbacks,
       });
     }
 
@@ -120,8 +122,11 @@ export const channelLink = createTool({
   name: "CHANNELS_LINK",
   description: "Link a channel to an agent",
   inputSchema: z.object({
-    channelId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
+    discriminator: z.string().describe(
+      "The channel discriminator",
+    ),
+    id: z.string().describe(
+      "The ID of the channel to link, use only UUIDs.",
     ),
     agentId: z.string().describe(
       "The ID of the agent to link the channel to, use only UUIDs.",
@@ -129,7 +134,7 @@ export const channelLink = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { agentId, channelId },
+    { id, agentId, discriminator },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -139,7 +144,8 @@ export const channelLink = createTool({
     // Update the channel with the agent_id
     const { data: channel, error } = await db.from("deco_chat_channels")
       .update({ agent_id: agentId })
-      .eq("id", channelId)
+      .eq("id", id)
+      .eq("discriminator", discriminator)
       .eq("workspace", workspace)
       .select(SELECT_CHANNEL_QUERY)
       .single();
@@ -153,15 +159,17 @@ export const channelLink = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
+
+      const trigger = await createWebhookTrigger(
+        channel.discriminator,
+        agentId,
+        c,
+      );
       await binding.ON_CHANNEL_LINKED({
-        channelId,
+        discriminator,
         workspace,
         agentId,
-        callbacks: {
-          stream: "", // Placeholder as requested
-          generate: "", // Placeholder as requested
-          generateObject: "", // Placeholder as requested
-        },
+        callbacks: trigger.callbacks,
       });
     }
 
@@ -173,13 +181,16 @@ export const channelUnlink = createTool({
   name: "CHANNELS_UNLINK",
   description: "Unlink a channel from an agent",
   inputSchema: z.object({
-    channelId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
+    id: z.string().describe(
+      "The ID of the channel to unlink, use only UUIDs.",
+    ),
+    discriminator: z.string().describe(
+      "The channel discriminator",
     ),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { channelId },
+    { id, discriminator },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -189,7 +200,8 @@ export const channelUnlink = createTool({
     // Update the channel with the agent_id
     const { data: channel, error } = await db.from("deco_chat_channels")
       .update({ agent_id: null })
-      .eq("id", channelId)
+      .eq("id", id)
+      .eq("discriminator", discriminator)
       .eq("workspace", workspace)
       .select(SELECT_CHANNEL_QUERY)
       .single();
@@ -204,7 +216,7 @@ export const channelUnlink = createTool({
         convertFromDatabase(channel.integration).connection,
       );
       await binding.ON_CHANNEL_UNLINKED({
-        channelId,
+        discriminator,
         workspace,
       });
     }
@@ -219,7 +231,7 @@ export const getChannel = createTool({
   inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { id: channelId },
+    { id },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -228,7 +240,7 @@ export const getChannel = createTool({
 
     const { data: channel, error } = await db.from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace)
       .maybeSingle();
 
@@ -244,19 +256,47 @@ export const getChannel = createTool({
   },
 });
 
+const createWebhookTrigger = async (
+  discriminator: string,
+  agentId: string,
+  c: AppContext,
+) => {
+  assertHasWorkspace(c);
+  const triggerPath = Path.resolveHome(
+    join(
+      Path.folders.Agent.root(agentId),
+      Path.folders.trigger(discriminator),
+    ),
+    c.workspace.value,
+  ).path;
+  // Create new trigger
+  const trigger = await c.stub(Trigger).new(triggerPath).create(
+    {
+      id: discriminator,
+      type: "webhook" as const,
+      passphrase: crypto.randomUUID() as string,
+      title: "Channel Webhook",
+    } satisfies TriggerData,
+  );
+  if (!trigger.ok) {
+    throw new InternalServerError("Failed to create trigger");
+  }
+  return trigger;
+};
+
 export const activateChannel = createTool({
   name: "CHANNELS_ACTIVATE",
   description: "Activate a channel",
-  inputSchema: z.object({ channelId: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
-  handler: async ({ channelId }, c) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
 
     const { data, error: selectError } = await db.from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace)
       .single();
 
@@ -271,24 +311,27 @@ export const activateChannel = createTool({
     }
 
     if (data.agent_id) {
+      const agentId = data.agent_id;
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(data.integration).connection,
       );
+      // Create new trigger
+      const trigger = await createWebhookTrigger(
+        data.discriminator,
+        agentId,
+        c,
+      );
       await binding.ON_CHANNEL_LINKED({
-        channelId,
+        discriminator: data.discriminator,
         workspace,
-        agentId: data.agent_id,
-        callbacks: {
-          stream: "", // Placeholder as requested
-          generate: "", // Placeholder as requested
-          generateObject: "", // Placeholder as requested
-        },
+        agentId,
+        callbacks: trigger.callbacks,
       });
     }
 
     const { error } = await db.from("deco_chat_triggers")
       .update({ active: true })
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace);
 
     if (error) {
@@ -304,16 +347,16 @@ export const activateChannel = createTool({
 export const deactivateChannel = createTool({
   name: "CHANNELS_DEACTIVATE",
   description: "Deactivate a channel",
-  inputSchema: z.object({ channelId: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
-  handler: async ({ channelId }, c) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
 
     const { data, error: selectError } = await db.from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace)
       .single();
 
@@ -331,14 +374,14 @@ export const deactivateChannel = createTool({
         convertFromDatabase(data.integration).connection,
       );
       await binding.ON_CHANNEL_UNLINKED({
-        channelId,
+        discriminator: data.discriminator,
         workspace,
       });
     }
 
     const { error } = await db.from("deco_chat_channels")
       .update({ active: false })
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace);
 
     if (error) {
@@ -353,10 +396,10 @@ export const deactivateChannel = createTool({
 export const deleteChannel = createTool({
   name: "CHANNELS_DELETE",
   description: "Delete a channel",
-  inputSchema: z.object({ channelId: z.string(), agentId: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { channelId },
+    { id },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -367,7 +410,7 @@ export const deleteChannel = createTool({
       "deco_chat_channels",
     )
       .select(SELECT_CHANNEL_QUERY)
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace)
       .single();
 
@@ -380,14 +423,14 @@ export const deleteChannel = createTool({
         convertFromDatabase(channel.integration).connection,
       );
       await binding.ON_CHANNEL_UNLINKED({
-        channelId,
+        discriminator: channel.discriminator,
         workspace,
       });
     }
 
     const { error } = await db.from("deco_chat_channels")
       .delete()
-      .eq("id", channelId)
+      .eq("id", id)
       .eq("workspace", workspace);
 
     if (error) {
@@ -395,7 +438,7 @@ export const deleteChannel = createTool({
     }
 
     return {
-      channelId,
+      id,
       agentId: channel.agent_id,
     };
   },

@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS deco_chat_channels(
-  id TEXT PRIMARY KEY,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  discriminator TEXT NOT NULL,
   agent_id uuid,
-  integration_id uuid,
-  workspace text NOT NULL,
+  integration_id uuid NOT NULL,
+  workspace TEXT NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz, -- for soft deletes
+  active boolean NOT NULL DEFAULT true,
   name text NOT NULL
 );
-
-ALTER TABLE deco_chat_channels ADD COLUMN active boolean NOT NULL DEFAULT true;
 
 CREATE INDEX IF NOT EXISTS idx_channels_workspace
   ON deco_chat_channels (workspace);
@@ -41,3 +41,6 @@ BEGIN
 END $$;
 
 ALTER TABLE deco_chat_channels ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE deco_chat_channels
+ADD CONSTRAINT unique_discriminator_integration UNIQUE (discriminator, integration_id);

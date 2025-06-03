@@ -23,11 +23,7 @@ import {
   PolicyClient,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
-import {
-  Callbacks,
-  ChannelBinding,
-  MCPBindingClient,
-} from "@deco/sdk/mcp/binder";
+import { Callbacks } from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
@@ -39,7 +35,7 @@ import { AIAgent } from "../agent.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
-
+export type { TriggerData };
 export const threadOf = (
   data: TriggerData,
   url?: URL,
@@ -93,7 +89,6 @@ function mapTriggerToTriggerData(
       email: trigger.user.metadata.email,
       avatar: trigger.user.metadata.avatar_url,
     },
-    binding: trigger.binding,
     ...trigger.data,
   } as TriggerData;
 }
@@ -130,7 +125,6 @@ const buildInvokeUrl = (
 export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
-  public channels?: MCPBindingClient<typeof ChannelBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
@@ -200,30 +194,42 @@ export class Trigger {
       generateObject: urlFor("generateObject"),
     };
   }
+
+  private async _loadFromState() {
+    return await this.state.storage.get<TriggerData | null>("triggerData");
+  }
+  private async _saveToState(data: TriggerData) {
+    await this.state.storage.put("triggerData", data);
+  }
+
   private async _loadData(): Promise<TriggerData | null> {
-    const triggerData = await this.mcpClient.TRIGGERS_GET({
+    const loadFromDbPromise = this.mcpClient.TRIGGERS_GET({
       id: this._getTriggerId(),
-    });
+    }).then((v) => v === null ? null : mapTriggerToTriggerData(v)).catch(() =>
+      null
+    );
+    const loadFromStatePromise = this._loadFromState().then((v) =>
+      v === null ? loadFromDbPromise : v
+    );
+
+    // loads in parallel and get faster
+    const triggerData = await Promise.race([
+      loadFromDbPromise,
+      loadFromStatePromise,
+    ]);
 
     if (!triggerData) {
-      return null;
+      // if faster is null so we try to load from db and state
+      return Promise.all([loadFromDbPromise, loadFromStatePromise]).then(
+        ([fromDb, fromState]) => fromDb ?? fromState,
+      );
     }
 
-    const trigger = mapTriggerToTriggerData(triggerData);
-    return trigger;
+    return triggerData;
   }
 
   private _setData(data: TriggerData) {
     this.data = data;
-    if (data.binding) {
-      const context = this._createContext();
-      if (data.type === "webhook") {
-        this.channels = ChannelBinding.forConnection(
-          data.binding.connection,
-          context,
-        );
-      }
-    }
     this.hooks = this.data ? hooks[this.data?.type ?? "cron"] : cron;
   }
 
@@ -327,7 +333,11 @@ export class Trigger {
     return stub.generate(...args);
   }
 
-  async create(data: TriggerData) {
+  async create(
+    data: TriggerData,
+  ): Promise<
+    { ok: false; message: string } | { ok: true; callbacks: Callbacks }
+  > {
     if (this.metadata?.internalCall === false) {
       return {
         success: false,
@@ -337,11 +347,12 @@ export class Trigger {
 
     try {
       this._setData(data);
+      await this._saveToState(data);
       await this.hooks?.onCreated?.(data, this);
 
       return {
         success: true,
-        message: "Trigger created successfully in Supabase",
+        callbacks: this._callbacks(),
       };
     } catch (error) {
       console.error("Error creating trigger in Supabase:", error);

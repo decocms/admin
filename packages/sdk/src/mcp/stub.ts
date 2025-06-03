@@ -1,5 +1,6 @@
 import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
 import { getErrorByStatusCode } from "../errors.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 import type { AppContext } from "./context.ts";
 import type { ToolBinder } from "./index.ts";
 
@@ -30,6 +31,7 @@ export interface CreateStubHandlerOptions<
 
 export interface CreateStubAPIOptions {
   workspace?: string;
+  connection?: MCPConnection;
 }
 
 export type CreateStubOptions<TDefinition extends ToolBinder[]> =
@@ -56,6 +58,18 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
         return async (args: unknown, init?: RequestInit) => {
           const traceDebugId = getTraceDebugId();
           const workspace = options?.workspace ?? "";
+          let payload = args;
+          let toolName = name;
+          if (options?.connection && typeof args === "object") {
+            payload = {
+              connection: options.connection,
+              params: {
+                name: toolName,
+                arguments: payload,
+              },
+            };
+            toolName = "INTEGRATIONS_CALL_TOOL";
+          }
           const response = await fetch(
             new URL(`${workspace}/tools/call/${name}`, API_SERVER_URL),
             {

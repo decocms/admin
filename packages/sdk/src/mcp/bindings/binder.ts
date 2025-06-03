@@ -1,12 +1,34 @@
+// deno-lint-ignore-file no-explicit-any
+import { z } from "zod";
 import { MCPConnection } from "../../models/mcp.ts";
-import { AppContext, createGlobalForContext, ToolBinder } from "../index.ts";
+import {
+  AppContext,
+  createGlobalForContext,
+  ToolBinder,
+  ToolLike,
+} from "../index.ts";
 import { MCPClientFetchStub } from "../stub.ts";
 import { WellKnownBindings } from "./index.ts";
-
-// deno-lint-ignore no-explicit-any
 export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
   [K in keyof TDefinition]: TDefinition[K];
 };
+
+export type BinderImplementation<
+  TBinder extends Binder<any>,
+> = TBinder extends Binder<infer TDefinition> ? {
+    [K in keyof TDefinition]: Omit<
+      ToolLike<
+        TDefinition[K]["name"],
+        z.infer<TDefinition[K]["inputSchema"]>,
+        TDefinition[K] extends { outputSchema: infer Schema }
+          ? Schema extends z.ZodType ? z.infer<Schema>
+          : never
+          : never
+      >,
+      "name" | "inputSchema" | "outputSchema"
+    >;
+  }
+  : never;
 
 export const bindingClient = <TDefinition extends readonly ToolBinder[]>(
   binder: TDefinition,
@@ -64,5 +86,19 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
 export const TriggerInputBinding = bindingClient(
   WellKnownBindings.Input,
 );
+
+export const impl = <TBinder extends Binder<any>>(
+  schema: TBinder,
+  implementation: BinderImplementation<TBinder>,
+) => {
+  const impl = [];
+  for (const key in schema) {
+    impl.push({
+      ...schema[key],
+      ...implementation[key],
+    });
+  }
+  return impl satisfies ToolLike[];
+};
 
 export * from "./index.ts";

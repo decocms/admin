@@ -6,9 +6,11 @@ import {
 import type {
   GlobalTools,
   MCPClientFetchStub,
+  ToolBinder,
   WorkspaceTools,
 } from "./mcp/index.ts";
 import { createMCPFetchStub } from "./mcp/stub.ts";
+import { MCPConnection } from "./models/mcp.ts";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -55,12 +57,22 @@ const global = createMCPFetchStub<GlobalTools>({});
 export const MCPClient = new Proxy(
   {} as typeof global & {
     forWorkspace: (workspace: string) => MCPClientFetchStub<WorkspaceTools>;
+    forConnection: <TDefinition extends readonly ToolBinder[]>(
+      workspace: string,
+      connection: MCPConnection,
+    ) => MCPClientFetchStub<TDefinition>;
   },
   {
     get(_, name) {
       if (name === "forWorkspace") {
         return (workspace: string) =>
           createMCPFetchStub<WorkspaceTools>({ workspace });
+      }
+      if (name === "forConnection") {
+        return <TDefinition extends readonly ToolBinder[]>(
+          workspace: string,
+          connection: MCPConnection,
+        ) => createMCPFetchStub<TDefinition>({ workspace, connection });
       }
       return global[name as keyof typeof global];
     },

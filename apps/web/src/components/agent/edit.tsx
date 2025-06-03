@@ -134,7 +134,7 @@ const TABS: Record<string, Tab> = {
   },
   integrations: {
     Component: IntegrationsTab,
-    title: "Integrations",
+    title: "Connections",
     initialOpen: "within",
     // it is not the ideal solution
     // but initialWidth is not working as expected

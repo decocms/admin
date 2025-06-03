@@ -55,7 +55,7 @@ function IntegrationActions({ onDelete, disabled }: IntegrationActionsProps) {
           <Icon name="more_vert" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="start">
         <DropdownMenuItem
           onClick={onDelete}
           className="text-destructive focus:bg-destructive/10"
@@ -76,24 +76,26 @@ function IntegrationCard({
   onConfigure: (integration: Integration) => void;
   onDelete: (integrationId: string) => void;
 }) {
+  const isVerified = integration.connection.type === "HTTP" &&
+    integration.connection.url.startsWith("https://mcp.deco.site");
   return (
     <Card
       className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
       onClick={() => onConfigure(integration)}
     >
-      <CardContent className="p-4">
-        <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start">
+      <CardContent className="p-0">
+        <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
           <IntegrationIcon
             icon={integration.icon}
             name={integration.name}
-            className="h-16 w-16"
+            className="h-10 w-10"
           />
 
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="text-base font-semibold truncate">
+          <div className="flex flex-col gap-0 min-w-0">
+            <div className="text-sm font-semibold truncate">
               {integration.name}
             </div>
-            <div className="text-sm text-muted-foreground line-clamp-3">
+            <div className="text-sm text-muted-foreground line-clamp-1">
               {integration.description}
             </div>
           </div>
@@ -105,6 +107,8 @@ function IntegrationCard({
               <IntegrationActions onDelete={() => onDelete(integration.id)} />
             )}
           </div>
+        </div>
+        <div className="px-4 py-3 border-t border-border">
         </div>
       </CardContent>
     </Card>
@@ -172,7 +176,7 @@ function CardsView(
   },
 ) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 peer">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
       {integrations.map((integration) => (
         <IntegrationCard
           key={integration.id}

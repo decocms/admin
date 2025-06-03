@@ -1,9 +1,4 @@
-import {
-  useCreateIntegration,
-  useIntegrations,
-  useMarketplaceIntegrations,
-  useUpdateThreadMessages,
-} from "@deco/sdk";
+import { useIntegrations, useMarketplaceIntegrations } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useEffect, useState } from "react";
 import { useMatch } from "react-router";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
@@ -23,6 +15,7 @@ import { ListPageHeader } from "../../common/list-page-header.tsx";
 import { ViewModeSwitcherProps } from "../../common/view-mode-switcher.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
+import { AddConnectionDialog } from "../add-connection-dialog.tsx";
 
 const isUUID = (uuid: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
@@ -30,9 +23,6 @@ const isUUID = (uuid: string) =>
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const navigateWorkspace = useNavigateWorkspace();
   const [error, setError] = useState<string | null>(null);
-
-  const create = useCreateIntegration();
-  const updateThreadMessages = useUpdateThreadMessages();
 
   useEffect(() => {
     const url = new URL(globalThis.location.href);
@@ -45,49 +35,16 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
     }
   }, []);
 
-  const handleCreate = async () => {
-    try {
-      const result = await create.mutateAsync({});
-      updateThreadMessages(result.id);
-      navigateWorkspace(`/integration/${result.id}`);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create integration",
-      );
-    }
-  };
-
   return (
     <>
       <PageLayout
         displayViewsTrigger={false}
         breadcrumb={
           <DefaultBreadcrumb
-            items={[{ label: "Integrations", link: "/integrations" }]}
+            items={[{ label: "Connections", link: "/integrations" }]}
           />
         }
-        actionButtons={
-          <Button
-            onClick={handleCreate}
-            disabled={create.isPending}
-            variant="special"
-            className="gap-2"
-          >
-            {create.isPending
-              ? (
-                <>
-                  <Spinner size="xs" />
-                  <span>Creating...</span>
-                </>
-              )
-              : (
-                <>
-                  <Icon name="add" />
-                  <span className="hidden md:inline">New Integration</span>
-                </>
-              )}
-          </Button>
-        }
+        actionButtons={<AddConnectionDialog />}
         tabs={tabs}
       />
       <AlertDialog open={!!error} onOpenChange={() => setError(null)}>

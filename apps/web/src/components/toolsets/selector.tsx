@@ -107,7 +107,7 @@ function IntegrationListItem({
         >
           <div className="flex gap-2 items-center">
             <Icon name="settings" size={16} />
-            <span className="text-xs font-medium">Setup Integration</span>
+            <span className="text-xs font-medium">Connection settings</span>
           </div>
           <Badge variant="destructive">
             <Icon name="error" size={10} />

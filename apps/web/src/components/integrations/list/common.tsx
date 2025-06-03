@@ -5,6 +5,12 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Avatar } from "../../common/avatar/index.tsx";
 import { Suspense } from "react";
 import { isFilePath } from "../../../utils/path.ts";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 
 function FileIcon({ path, fallback, className, variant }: {
   path: string;
@@ -161,5 +167,24 @@ export function IntegrationIcon(props: Props) {
     >
       <IntegrationIconContent {...props} />
     </Suspense>
+  );
+}
+
+export function VerifiedIntegrationBadge() {
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <Badge
+          variant="outline"
+          className="text-xs h-6 rounded-lg flex items-center gap-1 px-2 w-fit"
+        >
+          <Icon name="verified" size={16} />
+          <span className="font-medium">deco.chat</span>
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        Verified connection
+      </TooltipContent>
+    </Tooltip>
   );
 }

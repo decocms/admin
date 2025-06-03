@@ -367,7 +367,7 @@ function TableView({ agents }: {
     },
     {
       id: "integrations",
-      header: "Integrations",
+      header: "Connections",
       render: (agent: Agent) => <IntegrationBadges agent={agent} max={5} />,
     },
     {

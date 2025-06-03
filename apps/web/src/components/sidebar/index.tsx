@@ -63,8 +63,8 @@ const STATIC_ITEMS = [
   },
   {
     url: "/integrations",
-    title: "Integrations",
-    icon: "widgets",
+    title: "Connections",
+    icon: "linked_services",
   },
   {
     url: "/triggers",

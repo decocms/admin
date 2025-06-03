@@ -5,6 +5,8 @@ import {
   useUpdateThreadMessages,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
@@ -104,48 +106,36 @@ function ConnectIntegrationModal({
 
 function CardsView(
   { integrations, onRowClick }: {
-    integrations: Record<string, MarketplaceIntegration[]>;
+    integrations: MarketplaceIntegration[];
     onRowClick: (integration: MarketplaceIntegration) => void;
   },
 ) {
   return (
-    <div className="flex flex-col gap-6">
-      {Object.entries(integrations).map(([category, categoryIntegrations]) => (
-        <div key={category}>
-          <h3 className="text-lg font-semibold mb-3">{category}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {categoryIntegrations.map((integration) => (
-              <Card
-                key={integration.id}
-                className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer"
-                onClick={() => onRowClick(integration)}
-              >
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-[min-content_1fr] gap-4">
-                    <IntegrationIcon
-                      icon={integration.icon}
-                      name={integration.name}
-                      className="h-16 w-16"
-                    />
-                    <div className="grid grid-cols-1 gap-1">
-                      <div className="text-base font-semibold truncate">
-                        {integration.name}
-                      </div>
-                      <div className="text-sm text-muted-foreground line-clamp-2">
-                        {integration.description}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-xs px-2 py-1 bg-secondary rounded-full">
-                      {integration.provider}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {integrations.map((integration) => (
+        <Card
+          key={integration.id}
+          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer"
+          onClick={() => onRowClick(integration)}
+        >
+          <CardContent className="p-4">
+            <div className="grid grid-cols-[min-content_1fr] gap-4">
+              <IntegrationIcon
+                icon={integration.icon}
+                name={integration.name}
+                className="h-16 w-16"
+              />
+              <div className="grid grid-cols-1 gap-1">
+                <div className="text-base font-semibold truncate">
+                  {integration.name}
+                </div>
+                <div className="text-sm text-muted-foreground line-clamp-2">
+                  {integration.description}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -153,7 +143,7 @@ function CardsView(
 
 function TableView(
   { integrations, onConfigure }: {
-    integrations: Record<string, MarketplaceIntegration[]>;
+    integrations: MarketplaceIntegration[];
     onConfigure: (integration: MarketplaceIntegration) => void;
   },
 ) {
@@ -197,38 +187,28 @@ function TableView(
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      {Object.entries(integrations).map(([category, categoryIntegrations]) => {
-        const sortedIntegrations = [...categoryIntegrations].sort((a, b) => {
-          const aVal = getSortValue(a, sortKey);
-          const bVal = getSortValue(b, sortKey);
-          if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-          if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-          return 0;
-        });
+  const sortedIntegrations = [...integrations].sort((a, b) => {
+    const aVal = getSortValue(a, sortKey);
+    const bVal = getSortValue(b, sortKey);
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
 
-        return (
-          <div key={category}>
-            <h3 className="text-lg font-semibold mb-3">{category}</h3>
-            <Table
-              columns={columns}
-              data={sortedIntegrations}
-              sortKey={sortKey}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              onRowClick={onConfigure}
-            />
-          </div>
-        );
-      })}
-    </div>
+  return (
+    <Table
+      columns={columns}
+      data={sortedIntegrations}
+      sortKey={sortKey}
+      sortDirection={sortDirection}
+      onSort={handleSort}
+      onRowClick={onConfigure}
+    />
   );
 }
 
-function MarketplaceTab() {
+export function MarketplaceTab() {
   const [registryFilter, setRegistryFilter] = useState("");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [selectedIntegration, setSelectedIntegration] = useState<
     MarketplaceIntegration | null
   >(null);
@@ -244,33 +224,17 @@ function MarketplaceTab() {
 
   const { data: marketplace } = useMarketplaceIntegrations();
 
-  const filteredRegistryIntegrations = useMemo(() => {
+  const filteredIntegrations = useMemo(() => {
     const searchTerm = registryFilter.toLowerCase();
     const integrations = marketplace?.integrations ?? [];
 
-    const filtered = registryFilter
+    return registryFilter
       ? integrations.filter((integration: MarketplaceIntegration) =>
         integration.name.toLowerCase().includes(searchTerm) ||
         (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
         integration.provider.toLowerCase().includes(searchTerm)
       )
       : integrations;
-
-    // Categorize integrations
-    const categorized: Record<string, MarketplaceIntegration[]> = {
-      "First Party Integrations": [],
-      "Third Party Integrations": [],
-    };
-
-    filtered.forEach((integration: MarketplaceIntegration) => {
-      if (integration.provider === "deco") {
-        categorized["First Party Integrations"].push(integration);
-      } else {
-        categorized["Third Party Integrations"].push(integration);
-      }
-    });
-
-    return categorized;
   }, [marketplace, registryFilter]);
 
   function handleOpenModal(integration: MarketplaceIntegration) {
@@ -333,30 +297,32 @@ function MarketplaceTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full py-4">
-      <div className="px-4 overflow-x-auto">
-        <Header
-          value={registryFilter}
-          setValue={(value) => setRegistryFilter(value)}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
+    <div className="flex flex-col gap-4 h-full pb-4">
+      <div className="h-14 max-h-14 border-b border-border relative">
+        <Icon
+          name="search"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
         />
+        <Input
+          placeholder="Find connection..."
+          className="border-none rounded-none h-full px-10 focus-visible:ring-0"
+          value={registryFilter}
+          onChange={(e) => setRegistryFilter(e.target.value)}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-4 top-1/2 -translate-y-1/2"
+        >
+          <Icon name="filter_list" size={16} />
+        </Button>
       </div>
 
       <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-        {viewMode === "table"
-          ? (
-            <TableView
-              integrations={filteredRegistryIntegrations}
-              onConfigure={handleOpenModal}
-            />
-          )
-          : (
-            <CardsView
-              integrations={filteredRegistryIntegrations}
-              onRowClick={handleOpenModal}
-            />
-          )}
+        <CardsView
+          integrations={filteredIntegrations}
+          onRowClick={handleOpenModal}
+        />
       </div>
       <ConnectIntegrationModal
         open={showModal}

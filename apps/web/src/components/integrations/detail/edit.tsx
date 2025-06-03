@@ -186,7 +186,7 @@ export default function Page() {
           breadcrumb={
             <DefaultBreadcrumb
               items={[
-                { label: "Integrations", link: "/integrations" },
+                { label: "Connections", link: "/integrations" },
                 ...(integration?.name ? [{ label: integration.name }] : []),
               ]}
             />

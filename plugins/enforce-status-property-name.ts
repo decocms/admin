@@ -5,7 +5,7 @@ const plugin: Deno.lint.Plugin = {
       create(context) {
         return {
           Identifier(node) {
-            // Skip if this is a property access (e.g. obj.success)
+            // Skip if this is a property access (e.g. toast.success)
             if (node.parent?.type === "MemberExpression" && node.parent.property === node) {
               return;
             }

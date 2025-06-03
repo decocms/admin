@@ -120,7 +120,7 @@ export const inviteTeamMembers = (
 export const removeTeamMember = (
   teamId: number,
   memberId: number,
-): Promise<{ ok: boolean }> =>
+): Promise<{ success: boolean }> =>
   MCPClient.TEAM_MEMBERS_REMOVE({ teamId, memberId });
 
 export const registerActivity = (teamId: number) => {
@@ -140,7 +140,7 @@ export const updateMemberRole = (
   userId: string,
   roleId: number,
   action: "grant" | "revoke",
-): Promise<{ ok: boolean }> => {
+): Promise<{ success: boolean }> => {
   return MCPClient.TEAM_MEMBERS_UPDATE_ROLE({
     teamId,
     userId,

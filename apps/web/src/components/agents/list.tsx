@@ -81,7 +81,7 @@ export const useDuplicateAgent = (agent: Agent | null) => {
       console.error("Error duplicating agent:", error);
 
       trackEvent("agent_duplicate", {
-        ok: false,
+        success: false,
         error,
       });
     } finally {

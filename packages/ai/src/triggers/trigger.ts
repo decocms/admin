@@ -330,7 +330,7 @@ export class Trigger {
   async create(data: TriggerData) {
     if (this.metadata?.internalCall === false) {
       return {
-        ok: false,
+        success: false,
         message: "Trigger is not allowed to be created from external sources",
       };
     }
@@ -340,13 +340,13 @@ export class Trigger {
       await this.hooks?.onCreated?.(data, this);
 
       return {
-        ok: true,
+        success: true,
         message: "Trigger created successfully in Supabase",
       };
     } catch (error) {
       console.error("Error creating trigger in Supabase:", error);
       return {
-        ok: false,
+        success: false,
         message: `Failed to create trigger in Supabase: ${error}`,
       };
     }
@@ -355,13 +355,13 @@ export class Trigger {
   async delete() {
     if (this.metadata?.internalCall === false) {
       return {
-        ok: false,
+        success: false,
         message: "Trigger is not allowed to be deleted from external sources",
       };
     }
     if (!this.data) {
       return {
-        ok: true,
+        success: true,
       };
     }
 
@@ -371,13 +371,13 @@ export class Trigger {
       this.data = null;
 
       return {
-        ok: true,
+        success: true,
         message: "Trigger deleted successfully",
       };
     } catch (error) {
       console.error("Error deleting trigger:", error);
       return {
-        ok: false,
+        success: false,
         message: `Failed to delete trigger: ${error}`,
       };
     }

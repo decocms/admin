@@ -307,7 +307,7 @@ function MarketplaceTab() {
         setCreatedIntegrationId(integration.id);
         setIsPending(false);
         trackEvent("integration_install", {
-          ok: true,
+          success: true,
           data: selectedIntegration,
         });
 
@@ -318,7 +318,7 @@ function MarketplaceTab() {
       onError: (error) => {
         setIsPending(false);
         trackEvent("integration_install", {
-          ok: false,
+          success: false,
           data: selectedIntegration,
           error,
         });

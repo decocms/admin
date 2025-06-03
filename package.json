@@ -54,8 +54,7 @@
   "lint": {
     "plugins": [
       "./plugins/ensure-tailwind-design-system-tokens.ts",
-      "./plugins/enforce-kebab-case-file-names.ts",
-      "./plugins/enforce-status-property-name.ts"
+      "./plugins/enforce-kebab-case-file-names.ts"
     ]
   }
 }

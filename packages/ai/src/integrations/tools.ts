@@ -129,7 +129,7 @@ export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
 });
 
 const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
-  ok: z.boolean().describe("Whether the configuration was successful"),
+  success: z.boolean().describe("Whether the configuration was successful"),
   message: z.string().describe(
     "A message describing the result of the configuration attempt",
   ).optional(),

@@ -19,7 +19,7 @@ export const useCreateAgent = () => {
     updateThreadMessages(createdAgent.id);
     focusEditAgent(createdAgent.id, crypto.randomUUID(), { history: false });
     trackEvent(eventName || "agent_create", {
-      ok: true,
+      success: true,
       data: agent,
     });
   };

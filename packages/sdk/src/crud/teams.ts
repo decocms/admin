@@ -44,5 +44,5 @@ export const updateTeam = (
 export const deleteTeam = (
   teamId: number,
   init?: RequestInit,
-): Promise<{ ok: boolean }> =>
-  MCPClient.TEAMS_DELETE({ teamId }, init) as Promise<{ ok: boolean }>;
+): Promise<{ success: boolean }> =>
+  MCPClient.TEAMS_DELETE({ teamId }, init) as Promise<{ success: boolean }>;

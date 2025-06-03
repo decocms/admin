@@ -329,7 +329,7 @@ export const deleteApp = createTool({
 
     if (dbError) throw dbError;
 
-    return { ok: true };
+    return { success: true };
   },
 });
 

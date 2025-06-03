@@ -39,7 +39,7 @@ export const createTool = ({
     ...args,
     outputSchema: z.union([
       z.object({
-        ok: z.literal(true),
+        success: z.literal(true),
         message: z.string()
           .describe("A message describing the result of the operation")
           .nullable()
@@ -47,7 +47,7 @@ export const createTool = ({
         data: outputSchema || z.any(),
       }),
       z.object({
-        ok: z.literal(false),
+        success: z.literal(false),
         message: z.string()
           .describe("A message describing the result of the operation"),
         data: z.null().optional(),
@@ -66,14 +66,14 @@ export const createTool = ({
             const data = await execute?.(ctx, options);
 
             return {
-              ok: true,
+              success: true,
               message: "Success",
               data,
             };
           } catch (error) {
             err = error;
             return {
-              ok: false,
+              success: false,
               message: `Failed to execute tool with the following error: ${
                 String(error)
               }`,

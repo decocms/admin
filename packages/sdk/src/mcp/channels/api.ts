@@ -75,10 +75,11 @@ export const createChannel = createTool({
       "The channel discriminator",
     ),
     name: z.string().describe("The name of the channel"),
+    integrationId: z.string().describe("The ID of the integration to use"),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { discriminator, name },
+    { discriminator, name, integrationId },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -91,6 +92,7 @@ export const createChannel = createTool({
         discriminator,
         workspace,
         name,
+        integration_id: integrationId,
       })
       .select(SELECT_CHANNEL_QUERY)
       .single();

@@ -361,6 +361,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_assets: {
+        Row: {
+          created_at: string;
+          file_url: string;
+          metadata: Json | null;
+          workspace: string;
+        };
+        Insert: {
+          created_at?: string;
+          file_url: string;
+          metadata?: Json | null;
+          workspace: string;
+        };
+        Update: {
+          created_at?: string;
+          file_url?: string;
+          metadata?: Json | null;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
       deco_chat_channels: {
         Row: {
           active: boolean;
@@ -369,7 +390,7 @@ export type Database = {
           deleted_at: string | null;
           discriminator: string;
           id: string;
-          integration_id: string | null;
+          integration_id: string;
           name: string;
           updated_at: string;
           workspace: string;
@@ -381,7 +402,7 @@ export type Database = {
           deleted_at?: string | null;
           discriminator: string;
           id?: string;
-          integration_id?: string | null;
+          integration_id: string;
           name: string;
           updated_at?: string;
           workspace: string;
@@ -391,9 +412,9 @@ export type Database = {
           agent_id?: string | null;
           created_at?: string;
           deleted_at?: string | null;
-          id?: string;
           discriminator?: string;
-          integration_id?: string | null;
+          id?: string;
+          integration_id?: string;
           name?: string;
           updated_at?: string;
           workspace?: string;

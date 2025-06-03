@@ -87,20 +87,6 @@ export const ChannelBinding = bindingClient(
   WellKnownBindings.Channel,
 );
 
-export const impl = <TBinder extends Binder<any>>(
-  schema: TBinder,
-  implementation: BinderImplementation<TBinder>,
-) => {
-  const impl = [];
-  for (const key in schema) {
-    impl.push({
-      ...schema[key],
-      ...implementation[key],
-    });
-  }
-  return impl satisfies ToolLike[];
-};
-
 export type { Callbacks } from "./channels.ts";
 export * from "./index.ts";
 

@@ -320,7 +320,7 @@ export function WebhookTriggerForm({
                           onOpenChange={setOpen}
                           onIntegrationSelected={field.onChange}
                           initialSelectedIntegration={field.value || null}
-                          binder="Input"
+                          binder="Channel"
                         />
                       )
                       : (

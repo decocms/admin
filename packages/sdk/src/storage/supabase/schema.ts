@@ -361,6 +361,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_channels: {
+        Row: {
+          active: boolean;
+          agent_id: string | null;
+          created_at: string;
+          deleted_at: string | null;
+          id: string;
+          integration_id: string | null;
+          name: string;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          active?: boolean;
+          agent_id?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          id: string;
+          integration_id?: string | null;
+          name: string;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          active?: boolean;
+          agent_id?: string | null;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          integration_id?: string | null;
+          name?: string;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_channels_agent_id_fkey";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_agents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "deco_chat_channels_integration_id_fkey";
+            columns: ["integration_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_integrations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_customer: {
         Row: {
           created_at: string;

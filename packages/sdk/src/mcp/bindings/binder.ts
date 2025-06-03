@@ -83,8 +83,8 @@ export type MCPBindingClient<T extends ReturnType<typeof bindingClient>> =
     T["forConnection"]
   >;
 
-export const TriggerInputBinding = bindingClient(
-  WellKnownBindings.Input,
+export const ChannelBinding = bindingClient(
+  WellKnownBindings.Channel,
 );
 
 export const impl = <TBinder extends Binder<any>>(
@@ -101,4 +101,5 @@ export const impl = <TBinder extends Binder<any>>(
   return impl satisfies ToolLike[];
 };
 
+export type { Callbacks } from "./channels.ts";
 export * from "./index.ts";

@@ -25,8 +25,8 @@ import {
 } from "@deco/sdk/mcp";
 import {
   Callbacks,
+  ChannelBinding,
   MCPBindingClient,
-  TriggerInputBinding,
 } from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
 import { Json } from "@deco/sdk/storage";
@@ -107,7 +107,7 @@ const buildInvokeUrl = (
   method: keyof Trigger,
   passphrase?: string | null,
   payload?: InvokePayload,
-) => {
+): URL => {
   const invoke = new URL(
     `https://${Hosts.API}/actors/${Trigger.name}/invoke/${method}`,
   );
@@ -130,7 +130,7 @@ const buildInvokeUrl = (
 export class Trigger {
   public metadata?: TriggerMetadata;
   public mcpClient: MCPClientStub<WorkspaceTools>;
-  public inputBinding?: MCPBindingClient<typeof TriggerInputBinding>;
+  public channels?: MCPBindingClient<typeof ChannelBinding>;
 
   protected data: TriggerData | null = null;
   public agentId: string;
@@ -218,7 +218,7 @@ export class Trigger {
     if (data.binding) {
       const context = this._createContext();
       if (data.type === "webhook") {
-        this.inputBinding = TriggerInputBinding.forConnection(
+        this.channels = ChannelBinding.forConnection(
           data.binding.connection,
           context,
         );

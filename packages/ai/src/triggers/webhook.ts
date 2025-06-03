@@ -35,25 +35,6 @@ const parseOptions: {
 
 export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
   type: "webhook",
-  onCreated: async (data, trigger) => {
-    const inputBinding = trigger.inputBinding;
-    if (inputBinding) {
-      await inputBinding.ON_BINDING_CREATED({
-        callbacks: trigger._callbacks(),
-        triggerId: data.id,
-        workspace: getWorkspaceFromAgentId(trigger.agentId),
-      });
-    }
-  },
-  onDeleted: async (data, trigger) => {
-    const inputBinding = trigger.inputBinding;
-    if (inputBinding) {
-      await inputBinding.ON_BINDING_DELETED({
-        triggerId: data.id,
-        workspace: getWorkspaceFromAgentId(trigger.agentId),
-      });
-    }
-  },
   run: async (data, trigger, args) => {
     if (data.passphrase && data.passphrase !== trigger.metadata?.passphrase) {
       return {

@@ -1,23 +1,24 @@
 export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
-export * from "./wallet/stripe/webhook.ts";
 export * from "./models/llm-vault.ts";
+export * from "./wallet/stripe/webhook.ts";
 import * as agentsAPI from "./agents/api.ts";
+import * as channelsAPI from "./channels/api.ts";
 import { AppContext, State, Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
+import * as modelsAPI from "./models/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
-import * as whatsappAPI from "./whatsapp/api.ts";
 import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
-import * as modelsAPI from "./models/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+import * as whatsappAPI from "./whatsapp/api.ts";
 
 export * from "./bindings/binder.ts";
 
@@ -103,6 +104,14 @@ export const WORKSPACE_TOOLS = [
   whatsappAPI.createWhatsAppInvite,
   whatsappAPI.upsertWhatsAppUser,
   whatsappAPI.getWhatsAppUser,
+  channelsAPI.channelLink,
+  channelsAPI.channelUnlink,
+  channelsAPI.getChannel,
+  channelsAPI.deactivateChannel,
+  channelsAPI.activateChannel,
+  channelsAPI.deleteChannel,
+  channelsAPI.listChannels,
+  channelsAPI.createChannel,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

@@ -7,13 +7,13 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
-interface IntegrationActionsProps {
+interface ConnectionActionsProps {
   onDelete: () => void;
   disabled?: boolean;
 }
 
-export function IntegrationActions(
-  { onDelete, disabled }: IntegrationActionsProps,
+export function ConnectionActions(
+  { onDelete, disabled }: ConnectionActionsProps,
 ) {
   return (
     <DropdownMenu>

@@ -1,4 +1,4 @@
-import { useIntegrations, useMarketplaceIntegrations } from "@deco/sdk";
+import { useIntegrations } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,

@@ -27,7 +27,7 @@ import { IntegrationIcon } from "./common.tsx";
 import { Table, TableColumn } from "../../common/table/index.tsx";
 import { IntegrationInfo } from "../../common/table/table-cells.tsx";
 
-interface MarketplaceIntegration extends Integration {
+export interface MarketplaceIntegration extends Integration {
   provider: string;
 }
 

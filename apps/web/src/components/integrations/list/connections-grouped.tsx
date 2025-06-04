@@ -5,10 +5,8 @@
  *
  * The "App key" is a unique identifier used to group connections by their source application.
  * Grouping by app is useful to see all connections from the same app in one place.
- *
- * `${hostname}-${appName}`
  */
-import { type Integration, useIntegrations } from "@deco/sdk";
+import { type Integration, useIntegrations, useMarketplaceIntegrations } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -21,6 +19,7 @@ import { Table, TableColumn } from "../../common/table/index.tsx";
 import { IntegrationInfo } from "../../common/table/table-cells.tsx";
 import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
+import { MarketplaceIntegration } from "./marketplace.tsx";
 
 interface GroupedApp {
   id: string;
@@ -30,8 +29,6 @@ interface GroupedApp {
   instances: number;
   usedBy: { avatarUrl: string }[];
 }
-
-const WELL_KNOWN_DECO_CHAT_APP_KEY = "deco.chat";
 
 function AppCard({
   app,
@@ -177,21 +174,60 @@ function TableView(
   );
 }
 
-function getConnectionAppKey(integration: Integration) {
+interface AppKey {
+  appId: string;
+  provider: string;
+}
+
+const AppKeys = {
+  build: (key: AppKey) => `${key.provider}:::${key.appId}`,
+  parse: (key: string) => {
+    const [provider, appId] = key.split(":::");
+    return {
+      appId,
+      provider,
+    } as AppKey;
+  },
+  WELL_KNOWN_DECO_CHAT_APP_KEY: {
+    appId: "deco.chat",
+    provider: "deco",
+  },
+}
+
+const DECO_CHAT_CONNECTION_IDS = [
+  "i:workspace-management",
+  "i:user-management",
+  "i:knowledge-base",
+];
+
+function getConnectionAppKey(integration: Integration): AppKey {
+  if (DECO_CHAT_CONNECTION_IDS.some((id) => integration.id.startsWith(id))) {
+    return AppKeys.WELL_KNOWN_DECO_CHAT_APP_KEY;
+  }
+
   if (integration.connection.type === "HTTP") {
     const url = new URL(integration.connection.url);
 
     if (url.hostname.includes("mcp.deco.site")) {
       // https://mcp.deco.site/apps/{appName}...
       const appName = url.pathname.split("/")[2];
-      return `mcp.deco.site-${decodeURIComponent(appName)}`;
+      return {
+        appId: decodeURIComponent(appName),
+        provider: "deco",
+      };
     }
 
     if (url.hostname.includes("mcp.wppagent.com")) {
-      return `mcp.wppagent.com-WhatsApp`;
+      return {
+        appId: "WhatsApp",
+        provider: "wppagent",
+      };
     }
 
-    return null;
+    return {
+      appId: integration.id,
+      provider: "unknown",
+    };
   }
 
   if (integration.connection.type === "SSE") {
@@ -200,17 +236,22 @@ function getConnectionAppKey(integration: Integration) {
     if (url.hostname.includes("mcp.composio.dev")) {
       // https://mcp.composio.dev/{appName}...
       const appName = url.pathname.split("/")[1];
-      return `mcp.composio.dev-${appName}`;
+      return {
+        appId: appName,
+        provider: "composio",
+      };
     }
 
-    return null;
+    return {
+      appId: integration.id,
+      provider: "unknown",
+    };
   }
 
-  if (integration.connection.type === "INNATE") {
-    return WELL_KNOWN_DECO_CHAT_APP_KEY;
-  }
-
-  return null;
+  return {
+    appId: integration.id,
+    provider: "unknown",
+  };
 }
 
 function groupConnections(integrations: Integration[]) {
@@ -218,16 +259,13 @@ function groupConnections(integrations: Integration[]) {
 
   for (const integration of integrations) {
     const key = getConnectionAppKey(integration);
+    const appKey = AppKeys.build(key);
 
-    if (key) {
-      if (!grouped[key]) {
-        grouped[key] = [];
-      }
-
-      grouped[key].push(integration);
-    } else {
-      grouped[`${integration.id}-${integration.name}`] = [integration];
+    if (!grouped[appKey]) {
+      grouped[appKey] = [];
     }
+
+    grouped[appKey].push(integration);
   }
 
   return grouped;
@@ -251,17 +289,9 @@ function useConnectionListOptions() {
   };
 }
 
-function ConnectionsGroupedTab() {
+function useGroupedApps(filter: string) {
   const { data: installedIntegrations } = useIntegrations();
-  const navigateWorkspace = useNavigateWorkspace();
-
-  const {
-    filter,
-    viewMode,
-    setFilter,
-    setViewMode,
-    handleConfigure,
-  } = useConnectionListOptions();
+  const { data: marketplace } = useMarketplaceIntegrations();
 
   const groupedApps: GroupedApp[] = useMemo(() => {
     const filteredIntegrations = installedIntegrations?.filter((integration) =>
@@ -272,7 +302,7 @@ function ConnectionsGroupedTab() {
     const grouped = groupConnections(filteredIntegrations);
 
     return Object.entries(grouped).map(([key, integrations]) => {
-      if (key === "deco.chat") {
+      if (key === AppKeys.build(AppKeys.WELL_KNOWN_DECO_CHAT_APP_KEY)) {
         return {
           id: key,
           name: "Deco Chat",
@@ -283,16 +313,34 @@ function ConnectionsGroupedTab() {
         };
       }
 
+      const { appId, provider } = AppKeys.parse(key);
+      const marketplaceApp = marketplace?.integrations?.find((app) => app.id === appId && app.provider === provider);
+
       return {
         id: key,
-        name: key.split("-").at(-1) ?? "Unknown",
-        icon: integrations[0].icon,
-        description: "description",
+        name: marketplaceApp?.name ?? "Unknown",
+        icon: marketplaceApp?.icon ?? integrations[0].icon,
+        description: marketplaceApp?.description ?? "description",
         instances: integrations.length,
         usedBy: [],
       };
     });
   }, [installedIntegrations, filter]);
+
+  console.log("groupedApps", groupedApps);
+  return groupedApps;
+}
+
+function ConnectionsGroupedTab() {
+  const navigateWorkspace = useNavigateWorkspace();
+  const {
+    filter,
+    viewMode,
+    setFilter,
+    setViewMode,
+    handleConfigure,
+  } = useConnectionListOptions();
+  const groupedApps = useGroupedApps(filter);
 
   return (
     <div className="flex flex-col gap-4 h-full py-4">
@@ -306,13 +354,13 @@ function ConnectionsGroupedTab() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-        {!installedIntegrations
+        {!groupedApps
           ? (
             <div className="flex h-48 items-center justify-center">
               <Spinner size="lg" />
             </div>
           )
-          : installedIntegrations.length === 0
+          : groupedApps.length === 0
           ? (
             <EmptyState
               icon="conversion_path"

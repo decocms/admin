@@ -13,3 +13,4 @@ export * from "./fs.ts";
 export * from "./wallet.ts";
 export * from "./channels.ts";
 export * from "./prompts.ts";
+export * from "./knowledge-base.ts";

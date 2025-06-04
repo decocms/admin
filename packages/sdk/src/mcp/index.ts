@@ -94,6 +94,7 @@ export const WORKSPACE_TOOLS = [
   knowledgeAPI.forget,
   knowledgeAPI.remember,
   knowledgeAPI.search,
+  knowledgeAPI.addFileToKnowledgeBase,
   fsAPI.listFiles,
   fsAPI.readFile,
   fsAPI.readFileMetadata,

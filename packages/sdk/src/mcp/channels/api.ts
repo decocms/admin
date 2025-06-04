@@ -76,10 +76,13 @@ export const createChannel = createTool({
     ),
     name: z.string().describe("The name of the channel"),
     integrationId: z.string().describe("The ID of the integration to use"),
+    agentId: z.string().optional().describe(
+      "The ID of the agent to link the channel to.",
+    ),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { discriminator, name, integrationId },
+    { discriminator, name, integrationId, agentId },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -90,9 +93,10 @@ export const createChannel = createTool({
     const { data: channel, error } = await db.from("deco_chat_channels")
       .insert({
         discriminator,
+        agent_id: agentId,
         workspace,
         name,
-        integration_id: integrationId,
+        integration_id: integrationId.replace("i:", ""),
       })
       .select(SELECT_CHANNEL_QUERY)
       .single();

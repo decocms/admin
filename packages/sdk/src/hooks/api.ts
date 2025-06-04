@@ -16,6 +16,10 @@ export const KEYS = {
     workspace: Workspace,
     integrationId?: string,
   ) => ["integration", workspace, integrationId],
+  CHANNELS: (
+    workspace: Workspace,
+    channelId?: string,
+  ) => ["channels", workspace, channelId],
   BINDINGS: (
     workspace: Workspace,
     binder: Binder,

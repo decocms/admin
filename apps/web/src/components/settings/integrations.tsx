@@ -161,71 +161,73 @@ function IntegrationsTab() {
                 );
               })}
             </div>
-            {showAddConnectionEmptyState ? (
-              <div className="flex flex-col gap-2 items-center justify-center h-full min-h-96">
-                <div className="text-sm text-muted-foreground pb-2">
-                  No connections found.
+            {showAddConnectionEmptyState
+              ? (
+                <div className="flex flex-col gap-2 items-center justify-center h-full min-h-96">
+                  <div className="text-sm text-muted-foreground pb-2">
+                    No connections found.
+                  </div>
+                  <AddConnectionDialog />
                 </div>
-                <AddConnectionDialog />
-              </div>
-            ) : (
-              <>
-                <span className="block text-sm text-muted-foreground pb-2">
-                  {tools.find((tab) => tab.id === activeTab)?.description}
-                </span>
-                <div className="flex gap-2 w-full">
-                  <div className="border border-border rounded-lg w-full">
-                    <div className="flex items-center h-10 px-4 gap-2">
-                      <Icon
-                        name="search"
-                        size={20}
-                        className="text-muted-foreground"
-                      />
-                      <Input
-                        placeholder="Search"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
-                      />
+              )
+              : (
+                <>
+                  <span className="block text-sm text-muted-foreground pb-2">
+                    {tools.find((tab) => tab.id === activeTab)?.description}
+                  </span>
+                  <div className="flex gap-2 w-full">
+                    <div className="border border-border rounded-lg w-full">
+                      <div className="flex items-center h-10 px-4 gap-2">
+                        <Icon
+                          name="search"
+                          size={20}
+                          className="text-muted-foreground"
+                        />
+                        <Input
+                          placeholder="Search"
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
+                        />
+                      </div>
+                    </div>
+                    <Select
+                      onValueChange={(value) =>
+                        setFilter(value as "All" | "Active" | "Inactive")}
+                      value={filter}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a connection type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {["All", "Active", "Inactive"].map((filter) => (
+                          <SelectItem
+                            key={filter}
+                            value={filter}
+                          >
+                            {filter}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 mb-8">
+                    <div className="flex-1">
+                      <div className="flex flex-col gap-2">
+                        <IntegrationList
+                          integrations={toolsMap[
+                            activeTab as keyof typeof toolsMap
+                          ]}
+                          toolsSet={toolsSet}
+                          setIntegrationTools={setIntegrationTools}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <Select
-                    onValueChange={(value) =>
-                      setFilter(value as "All" | "Active" | "Inactive")}
-                    value={filter}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a connection type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {["All", "Active", "Inactive"].map((filter) => (
-                        <SelectItem
-                          key={filter}
-                          value={filter}
-                        >
-                          {filter}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 mb-8">
-                  <div className="flex-1">
-                    <div className="flex flex-col gap-2">
-                      <IntegrationList
-                        integrations={toolsMap[
-                          activeTab as keyof typeof toolsMap
-                        ]}
-                        toolsSet={toolsSet}
-                        setIntegrationTools={setIntegrationTools}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
           </form>
         </div>
       </Form>

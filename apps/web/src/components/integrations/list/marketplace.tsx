@@ -254,7 +254,7 @@ export function MarketplaceTab() {
     if (!selectedIntegration) return;
     setIsPending(true);
     const returnUrl = new URL(
-      buildWorkspaceUrl("/integrations"),
+      buildWorkspaceUrl("/connections"),
       globalThis.location.origin,
     );
 

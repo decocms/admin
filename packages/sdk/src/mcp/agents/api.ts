@@ -124,7 +124,7 @@ export const getAgent = createTool({
     }
 
     if (data.visibility !== "PUBLIC" && !canAccess) {
-      throw new ForbiddenError(`Agent ${id} not found`);
+      throw new ForbiddenError(`You are not allowed to access this agent`);
     }
 
     if (error) {

@@ -100,8 +100,6 @@ export const getAgent = createTool({
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
 
-    c.resourceAccess.grant();
-
     const [canAccess, { data, error }] = await Promise.all([
       assertWorkspaceResourceAccess(name, { id }, c)
         .then(() => true)
@@ -130,6 +128,8 @@ export const getAgent = createTool({
     if (error) {
       throw new InternalServerError((error as PostgrestError).message);
     }
+
+    c.resourceAccess.grant();
 
     return AgentSchema.parse(data);
   },

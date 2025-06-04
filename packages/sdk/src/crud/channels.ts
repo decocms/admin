@@ -1,6 +1,6 @@
 import { MCPClient } from "../fetcher.ts";
 import { Channel } from "../models/channels.ts";
-
+export type { Channel };
 
 /**
  * List all channels in a workspace

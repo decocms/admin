@@ -340,7 +340,7 @@ export class Trigger {
   > {
     if (this.metadata?.internalCall === false) {
       return {
-        success: false,
+        ok: false,
         message: "Trigger is not allowed to be created from external sources",
       };
     }
@@ -351,13 +351,13 @@ export class Trigger {
       await this.hooks?.onCreated?.(data, this);
 
       return {
-        success: true,
+        ok: true,
         callbacks: this._callbacks(),
       };
     } catch (error) {
       console.error("Error creating trigger in Supabase:", error);
       return {
-        success: false,
+        ok: false,
         message: `Failed to create trigger in Supabase: ${error}`,
       };
     }

@@ -28,7 +28,6 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { useCreateChannel } from "@deco/sdk/hooks";
 import { Channels } from "./channels.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";

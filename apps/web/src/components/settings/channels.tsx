@@ -69,7 +69,6 @@ export function Channels({ className }: ChannelsProps) {
   const { agent } = useAgentSettingsForm();
   const { mutate: createChannel, isPending } = useCreateChannel();
 
-
   const handleAddConnection = () => {
     if (!selected) {
       toast.error("Please select a binding first");

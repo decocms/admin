@@ -14,6 +14,7 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { Chiplet } from "../common/list-page-header.tsx";
 import { IntegrationList } from "../toolsets/selector.tsx";
 import { AddConnectionDialog } from "../integrations/add-connection-dialog.tsx";
+import { Button } from "../../../../../packages/ui/src/components/button.tsx";
 
 const tabs = [
   {
@@ -115,6 +116,7 @@ function IntegrationsTab() {
     !ADVANCED_INTEGRATIONS.includes(integration.id) &&
     integration.id.startsWith("i:")
   );
+  // const toolsIntegrations = [];
 
   const agentsIntegrations = orderedIntegrations.filter((integration) =>
     !ADVANCED_INTEGRATIONS.includes(integration.id) &&
@@ -125,22 +127,7 @@ function IntegrationsTab() {
     ADVANCED_INTEGRATIONS.includes(integration.id)
   );
 
-  const toolsMap = {
-    "tools": toolsIntegrations,
-    "agents": agentsIntegrations,
-    "advanced": advancedIntegrations,
-  };
-
-  const tools = tabs.map((tab) => {
-    return {
-      ...tab,
-      active: tab.id === activeTab,
-      count: toolsMap[tab.id as keyof typeof toolsMap].length,
-    };
-  });
-
-  const showAddConnectionEmptyState = activeTab === "tools" &&
-    toolsMap[activeTab as keyof typeof toolsMap].length === 0;
+  const showAddConnectionEmptyState = toolsIntegrations.length === 0;
 
   return (
     <ScrollArea className="h-full w-full">
@@ -150,31 +137,45 @@ function IntegrationsTab() {
             onSubmit={handleSubmit}
             className="space-y-2"
           >
-            <div className="flex gap-2">
-              {tools.map((tab) => {
-                return (
-                  <Chiplet
-                    key={tab.id}
-                    item={tab}
-                    onClick={() => setActiveTab(tab.id)}
-                  />
-                );
-              })}
+            <h6 className="text-sm font-medium">Connections</h6>
+            <div className="flex justify-between items-center">
+              <span className="block text-sm text-muted-foreground pb-2">
+                {tabs[0].description}
+              </span>
+              {!showAddConnectionEmptyState && (
+                <AddConnectionDialog
+                  trigger={
+                    <Button variant="outline">
+                      <Icon name="add" /> Add connection
+                    </Button>
+                  }
+                />
+              )}
             </div>
             {showAddConnectionEmptyState
               ? (
-                <div className="flex flex-col gap-2 items-center justify-center h-full min-h-96">
-                  <div className="text-sm text-muted-foreground pb-2">
-                    No connections found.
+                <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed relative overflow-hidden">
+                  <div className="absolute inset-0">
+                    <img
+                      src="/img/empty-state-agent-connections.svg"
+                      alt="No connections found"
+                      className="h-40"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-muted via-transparent to-muted" />
                   </div>
-                  <AddConnectionDialog />
+                  <div className="absolute z-10 flex flex-col items-center gap-2 bottom-6">
+                    <AddConnectionDialog
+                      trigger={
+                        <Button variant="outline">
+                          <Icon name="add" /> Add connection
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
               )
               : (
                 <>
-                  <span className="block text-sm text-muted-foreground pb-2">
-                    {tools.find((tab) => tab.id === activeTab)?.description}
-                  </span>
                   <div className="flex gap-2 w-full">
                     <div className="border border-border rounded-lg w-full">
                       <div className="flex items-center h-10 px-4 gap-2">
@@ -191,35 +192,12 @@ function IntegrationsTab() {
                         />
                       </div>
                     </div>
-                    <Select
-                      onValueChange={(value) =>
-                        setFilter(value as "All" | "Active" | "Inactive")}
-                      value={filter}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a connection type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {["All", "Active", "Inactive"].map((filter) => (
-                          <SelectItem
-                            key={filter}
-                            value={filter}
-                          >
-                            {filter}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                   <div className="space-y-2 mb-8">
                     <div className="flex-1">
                       <div className="flex flex-col gap-2">
                         <IntegrationList
-                          integrations={toolsMap[
-                            activeTab as keyof typeof toolsMap
-                          ]}
+                          integrations={toolsIntegrations}
                           toolsSet={toolsSet}
                           setIntegrationTools={setIntegrationTools}
                         />

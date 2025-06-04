@@ -61,7 +61,7 @@ const ConnectionDetail = lazy(() =>
 
 const ConnectionsList = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/list/connections-grouped.tsx"),
+    import("./components/integrations/connections-list.tsx"),
   )
 );
 

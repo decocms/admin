@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { isWellKnownApp } from "../apps.ts";
 
 function FileIcon({ path, fallback, className, variant }: {
   path: string;
@@ -26,7 +27,7 @@ function FileIcon({ path, fallback, className, variant }: {
         fallback={
           <Skeleton
             className={cn(
-              "rounded-2xl w-16 h-16 border border-border",
+              "rounded-xl w-16 h-16 border border-border",
             )}
           />
         }
@@ -124,8 +125,8 @@ function IntegrationIconContent(
   return (
     <div
       className={cn(
-        "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
+        "rounded-xl relative flex items-center justify-center p-2 h-16 w-16",
+        "before:content-[''] before:absolute before:inset-0 before:rounded-xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
         "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
         className,
       )}
@@ -136,7 +137,7 @@ function IntegrationIconContent(
             url={icon}
             fallback={fallback}
             fallbackClassName="!bg-transparent"
-            className="w-full h-full rounded-lg"
+            className="w-full h-full rounded-xl"
             objectFit="contain"
           />
         )
@@ -146,6 +147,7 @@ function IntegrationIconContent(
 }
 
 export interface Props {
+  id?: string;
   icon?: string;
   name: string;
   className?: string;
@@ -153,19 +155,24 @@ export interface Props {
 }
 
 export function IntegrationIcon(props: Props) {
+  const isWellKnown = props.id ? isWellKnownApp(props.id) : false;
+
   return (
     <Suspense
       fallback={
         <Skeleton
           className={cn(
-            "rounded-2xl w-16 h-16 border border-border",
+            "rounded-xl w-16 h-16 border border-border",
             props.variant === "default" ? "p-2" : "",
             props.className,
           )}
         />
       }
     >
-      <IntegrationIconContent {...props} />
+      <IntegrationIconContent
+        {...props}
+        className={cn(props.className, isWellKnown ? "rounded-xl p-0" : "")}
+      />
     </Suspense>
   );
 }

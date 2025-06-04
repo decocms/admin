@@ -53,14 +53,8 @@ function IntegrationListItem({
         isEmpty && "order-last",
       )}
     >
-      <label
-        htmlFor={`select-all-${integration.id}`}
-        className={cn(
-          "flex gap-4 px-4 py-4 rounded-t-xl",
-          !isEmpty && "hover:bg-muted cursor-pointer",
-        )}
-      >
-        <div className="flex gap-4 items-start justify-between w-full">
+      <div className="flex gap-4 p-2 rounded-t-xl">
+        <div className="flex gap-4 items-center justify-between w-full">
           <div className="p-1 rounded-xl border border-border">
             <IntegrationIcon
               icon={integration.icon}
@@ -73,24 +67,9 @@ function IntegrationListItem({
             <span className="text-sm font-semibold text-left truncate">
               {integration.name}
             </span>
-            {integration.description && (
-              <p className="text-sm text-muted-foreground">
-                {integration.description}
-              </p>
-            )}
           </div>
-          {!isEmpty && (
-            <div>
-              <Checkbox
-                id={`select-all-${integration.id}`}
-                className="cursor-pointer"
-                checked={isAll}
-                onCheckedChange={handleAll}
-              />
-            </div>
-          )}
         </div>
-      </label>
+      </div>
       <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
         <Icon name="chevron_right" size={16} />
       </div>
@@ -125,26 +104,38 @@ function IntegrationListItem({
           <span
             onClick={() => setOpenTools(!openTools)}
             className={cn(
-              "text-muted-foreground text-sm py-4 w-full hover:bg-muted px-4",
+              "text-muted-foreground text-sm h-10 flex items-center w-full bg-primary-foreground hover:bg-muted pl-2 pr-4",
               !openTools && "rounded-b-xl",
             )}
           >
             {isLoading
               ? (
-                "Loading tools..."
+                <span className="text-xs text-muted-foreground animate-pulse font-medium">
+                  Loading tools...
+                </span>
               )
               : (
-                <div className="flex items-center gap-4 text-foreground">
-                  <Icon
-                    name="chevron_right"
-                    filled
-                    size={14}
-                    className={cn(
-                      "inline-block mr-1 align-text-bottom",
-                      openTools && "rotate-90",
-                    )}
-                  />
-                  {`${enabled} of ${total} tools enabled`}
+                <div className="w-full flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Icon
+                      name="chevron_right"
+                      filled
+                      size={14}
+                      className={cn(
+                        "inline-block mr-1 align-text-bottom text-foreground",
+                        openTools && "rotate-90",
+                      )}
+                    />
+                    <span className="text-xs font-medium text-muted-foreground">All tools</span>
+                  </div>
+                  <div>
+                    <Checkbox
+                      id={`select-all-${integration.id}`}
+                      className="cursor-pointer"
+                      checked={isAll}
+                      onCheckedChange={handleAll}
+                    />
+                  </div>
                 </div>
               )}
           </span>

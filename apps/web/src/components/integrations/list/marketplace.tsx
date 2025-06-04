@@ -5,8 +5,6 @@ import {
   useUpdateThreadMessages,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
@@ -16,16 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../../hooks/use-navigate-workspace.ts";
-import { Header, IntegrationPageLayout } from "./breadcrumb.tsx";
+import { IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
-import { Table, TableColumn } from "../../common/table/index.tsx";
-import { IntegrationInfo } from "../../common/table/table-cells.tsx";
 
 export interface MarketplaceIntegration extends Integration {
   provider: string;
@@ -138,72 +136,6 @@ function CardsView(
         </Card>
       ))}
     </div>
-  );
-}
-
-function TableView(
-  { integrations, onConfigure }: {
-    integrations: MarketplaceIntegration[];
-    onConfigure: (integration: MarketplaceIntegration) => void;
-  },
-) {
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
-  function getSortValue(row: MarketplaceIntegration, key: string): string {
-    if (key === "provider") return row.provider?.toLowerCase() || "";
-    if (key === "description") return row.description?.toLowerCase() || "";
-    return row.name?.toLowerCase() || "";
-  }
-
-  const columns: TableColumn<MarketplaceIntegration>[] = [
-    {
-      id: "name",
-      header: "Name",
-      render: (integration) => <IntegrationInfo integration={integration} />,
-      sortable: true,
-    },
-    {
-      id: "description",
-      header: "Description",
-      accessor: (integration) => integration.description,
-      sortable: true,
-      cellClassName: "max-w-md",
-    },
-    {
-      id: "provider",
-      header: "Provider",
-      accessor: (integration) => integration.provider,
-      sortable: true,
-    },
-  ];
-
-  function handleSort(key: string) {
-    if (sortKey === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDirection("asc");
-    }
-  }
-
-  const sortedIntegrations = [...integrations].sort((a, b) => {
-    const aVal = getSortValue(a, sortKey);
-    const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  return (
-    <Table
-      columns={columns}
-      data={sortedIntegrations}
-      sortKey={sortKey}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onRowClick={onConfigure}
-    />
   );
 }
 

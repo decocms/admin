@@ -1,11 +1,14 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useBindings, useCreateChannel } from "@deco/sdk/hooks";
+import { useBindings, useCreateChannel, useChannels, useLinkChannel } from "@deco/sdk/hooks";
 import { useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Channel } from "@deco/sdk/models";
 
 type Binding = NonNullable<ReturnType<typeof useBindings>["data"]>[number];
 
@@ -46,7 +49,7 @@ function ChannelCard(
         >
           <Icon name="chat" size={20} />
         </div>
-        <span className="text-xs font-medium text-center leading-tight">
+        <span className="block text-xs font-medium text-center leading-tight max-w-full truncate">
           {binding.name}
         </span>
         {isConnected && (
@@ -65,25 +68,35 @@ interface ChannelsProps {
 
 export function Channels({ className }: ChannelsProps) {
   const { data: bindings } = useBindings("Channel");
-  const [selected, setSelected] = useState<Binding | null>(null);
+  const [selectedBinding, setSelectedBinding] = useState<Binding | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [discriminator, setDiscriminator] = useState("");
   const { agent } = useAgentSettingsForm();
   const { mutate: createChannel, isPending } = useCreateChannel();
+  const { mutate: linkChannel, isPending: isLinking } = useLinkChannel();
+  const { data: channels } = useChannels();
 
   const handleAddConnection = () => {
-    if (!selected) {
+    if (!selectedBinding) {
       toast.error("Please select a binding first");
       return;
     }
 
+    if (!discriminator.trim()) {
+      toast.error("Please enter a discriminator");
+      return;
+    }
+
     createChannel({
-      discriminator: `${selected.name}`, // TODO: find out how to get the correct discriminator (ex: user phone number for WhatsApp)
-      name: `${agent.name} - ${selected.name}`,
-      integrationId: selected.id,
+      discriminator: discriminator.trim(),
+      name: `${agent.name} - ${selectedBinding.name}`,
+      integrationId: selectedBinding.id,
       agentId: agent.id,
     }, {
       onSuccess: () => {
         toast.success("Channel created successfully");
-        setSelected(null);
+        setSelectedBinding(null);
+        setDiscriminator("");
       },
       onError: (error) => {
         toast.error(
@@ -92,6 +105,23 @@ export function Channels({ className }: ChannelsProps) {
       },
     });
   };
+
+  const handleLinkChannel = () => {
+    if (!selectedChannel) {
+      toast.error("Please select a channel first");
+      return;
+    }
+
+    if (!discriminator.trim()) {
+
+    linkChannel({
+      channelId: selectedChannel.id,
+      discriminator: discriminator.trim(),
+      agentId: agent.id,
+    });
+  }
+}
+
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -103,29 +133,62 @@ export function Channels({ className }: ChannelsProps) {
         </p>
       </div>
 
+      {
+        channels?.channels.map((channel) => (
+          <div key={channel.id}>
+            <p>{channel.discriminator}</p>
+            {channel.agentId === agent.id && (
+              <p>Linked</p>
+            )}
+          </div>
+        ))
+      }
+
+      <div>
+        Choose Channel
+      </div>
+
       <div className="grid grid-cols-6 gap-4">
         {bindings?.map((binding) => (
           <ChannelCard
             key={binding.id}
             binding={binding}
-            selected={selected}
-            setSelected={setSelected}
+            selected={selectedBinding}
+            setSelected={setSelectedBinding}
           />
         ))}
       </div>
 
+      {selectedBinding && (
+        <div className="space-y-2">
+          <Label htmlFor="discriminator">
+            Discriminator {selectedBinding.name === "WhatsApp" ? "(e.g., phone number)" : "(unique identifier)"}
+          </Label>
+          <Input
+            id="discriminator"
+            placeholder={selectedBinding.name === "WhatsApp" 
+              ? "Enter phone number (e.g., +1234567890)" 
+              : "Enter unique identifier"
+            }
+            value={discriminator}
+            onChange={(e) => setDiscriminator(e.target.value)}
+            className="max-w-md"
+          />
+        </div>
+      )}
+
       <div className="flex justify-center pt-4">
         <Button
-          variant={selected ? "default" : "outline"}
+          variant={selectedBinding ? "default" : "outline"}
           onClick={handleAddConnection}
-          disabled={!selected || isPending}
+          disabled={!selectedBinding || !discriminator.trim() || isPending}
           className="gap-2"
         >
           <Icon name="add" size={16} />
           {isPending
             ? "Creating..."
-            : selected
-            ? `Create channel with ${selected.name}`
+            : selectedBinding
+            ? `Create channel with ${selectedBinding.name}`
             : "Select a binding to create channel"}
         </Button>
       </div>

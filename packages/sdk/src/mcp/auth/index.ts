@@ -2,41 +2,25 @@
  * Create accessibilty tools for MCP tools.
  *
  * This is used to control access to MCP tools.
- *
- * @usage
- *    If setAccess is called with false once, it will reeturn false for all subsequent calls.
- *    If setAccess is called with true, it will return true for all subsequent calls.
- *    If setAccess is not called, it will return false.
- *
- * @example
- *    const authTools = createAuthTools();
- *
- *    authTools.canAccess(); // false
- *
- *    authTools.setAccess(true);
- *    authTools.canAccess(); // true
- *
- *    authTools.setAccess(false);
- *    authTools.canAccess(); // false
- *
- *    authTools.setAccess(true);
- *    authTools.canAccess(); // false
  */
-export const createAuthTools = () => {
-  let setOnce = false;
-  let canAccess = true;
+export const createResourceAccess = () => {
+  let canAccess = false;
 
   return {
-    setAccess: (access: boolean) => {
-      canAccess &&= access;
-      setOnce = true;
-    },
-    canAccess: () => canAccess && setOnce,
-    reset: () => {
-      setOnce = false;
+    /**
+     * Call this function to grant access to the tool.
+     * If you don't call this function, the tool will be denied access.
+     *
+     * This is to make sure the developer is aware of the access control when developing the tool.
+     */
+    grant: () => {
       canAccess = true;
     },
+    reset: () => {
+      canAccess = false;
+    },
+    granted: () => canAccess,
   };
 };
 
-export type AuthTools = ReturnType<typeof createAuthTools>;
+export type ResourceAccess = ReturnType<typeof createResourceAccess>;

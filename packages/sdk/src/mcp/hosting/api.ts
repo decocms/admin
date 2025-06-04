@@ -3,7 +3,7 @@ import { NotFoundError, UserInputError } from "../../errors.ts";
 import { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
@@ -73,9 +73,11 @@ export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (_, c) => {
+  handler: async (_, c, { name }) => {
     const { workspace } = getWorkspaceParams(c);
+
+    await assertWorkspaceResourceAccess(name, {}, c)
+      .then(() => c.resourceAccess.grant());
 
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -256,8 +258,10 @@ Important Notes:
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ appSlug, files }, c) => {
+  handler: async ({ appSlug, files }, c, { name }) => {
+    await assertWorkspaceResourceAccess(name, { appSlug, files }, c)
+      .then(() => c.resourceAccess.grant());
+
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
@@ -299,8 +303,10 @@ export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ appSlug }, c) => {
+  handler: async ({ appSlug }, c, { name }) => {
+    await assertWorkspaceResourceAccess(name, { appSlug }, c)
+      .then(() => c.resourceAccess.grant());
+
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
@@ -338,8 +344,10 @@ export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ appSlug }, c) => {
+  handler: async ({ appSlug }, c, { name }) => {
+    await assertWorkspaceResourceAccess(name, { appSlug }, c)
+      .then(() => c.resourceAccess.grant());
+
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
     const { data, error } = await c.db

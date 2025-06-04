@@ -10,7 +10,7 @@ import { z } from "zod";
 import { JWTPayload } from "../auth/jwt.ts";
 import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, HttpError } from "../errors.ts";
-import type { AuthTools } from "./auth/index.ts";
+import type { ResourceAccess } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -24,7 +24,7 @@ export interface Vars {
     slug: string;
     value: string;
   };
-  authTools: AuthTools;
+  resourceAccess: ResourceAccess;
   cookie?: string;
   db: Client;
   user: Principal;
@@ -140,12 +140,8 @@ export interface ToolDefinition<
   handler: (
     props: TInput,
     c: TAppContext,
+    resources: { name: string },
   ) => Promise<TReturn> | TReturn;
-  canAccess: (
-    name: TName,
-    props: TInput,
-    c: AppContext,
-  ) => Promise<void>;
 }
 
 export interface Tool<
@@ -182,13 +178,16 @@ export const createToolFactory = <
     try {
       const context = contextFactory(State.getStore());
 
-      context.authTools.reset();
+      context.resourceAccess.reset();
 
-      const result = await def.handler(props, context);
+      const result = await def.handler(props, context, { name: def.name });
 
-      if (!context.authTools.canAccess()) {
+      if (!context.resourceAccess.granted()) {
+        console.warn(
+          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+        );
         throw new ForbiddenError(
-          `User cannot access this tool ${def.name}`,
+          `User cannot access this tool ${def.name}.`,
         );
       }
 

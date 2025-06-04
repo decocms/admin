@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
-import { assertHasUser, assertPrincipalIsUser, bypass } from "../assertions.ts";
+import { assertHasUser, assertPrincipalIsUser } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { UnauthorizedError } from "../index.ts";
 import { userFromDatabase } from "../user.ts";
@@ -9,10 +9,11 @@ export const getProfile = createTool({
   name: "PROFILES_GET",
   description: "Get the current user's profile",
   inputSchema: z.object({}),
-  canAccess: bypass,
   handler: async (_, c) => {
     assertHasUser(c);
     assertPrincipalIsUser(c);
+
+    c.resourceAccess.grant(); // Using bypass equivalent
 
     const user = c.user;
 
@@ -52,13 +53,12 @@ export const updateProfile = createTool({
     is_new_user: z.boolean().nullable().optional(),
     phone: z.string().nullable().optional(),
   }),
-  canAccess: bypass,
-  handler: async (
-    { name, email, deco_user_id, is_new_user, phone },
-    c,
-  ) => {
+  handler: async ({ name, email, deco_user_id, is_new_user, phone }, c) => {
     assertPrincipalIsUser(c);
     assertHasUser(c);
+
+    c.resourceAccess.grant(); // Using bypass equivalent
+
     const user = c.user;
 
     const { data, error } = await c.db

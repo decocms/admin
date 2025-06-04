@@ -17,6 +17,7 @@ import { Hosts } from "@deco/sdk/hosts";
 import {
   AppContext,
   AuthorizationClient,
+  createResourceAccess,
   fromWorkspaceString,
   MCPClient,
   MCPClientStub,
@@ -170,6 +171,7 @@ export class Trigger {
       isLocal: true,
       stub: this.state.stub as AppContext["stub"],
       workspace: fromWorkspaceString(this.workspace),
+      resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       params: {},
       policy: policyClient,

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { WELL_KNOWN_ORIGINS } from "../../hosts.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool, getEnv } from "../context.ts";
 
@@ -79,12 +79,14 @@ export const listFiles = createTool({
   inputSchema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ prefix: root }, c) => {
+  handler: async ({ prefix: root }, c, { name }) => {
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
+
+    await assertWorkspaceResourceAccess(name, { prefix: root }, c)
+      .then(() => c.resourceAccess.grant());
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -105,12 +107,14 @@ export const readFile = createTool({
       "Seconds until URL expires (default: 60)",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ path, expiresIn = 60 }, c) => {
+  handler: async ({ path, expiresIn = 60 }, c, { name }) => {
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
+
+    await assertWorkspaceResourceAccess(name, { path, expiresIn }, c)
+      .then(() => c.resourceAccess.grant());
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -130,12 +134,14 @@ export const readFileMetadata = createTool({
   inputSchema: z.object({
     path: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ path }, c) => {
+  handler: async ({ path }, c, { name }) => {
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
+
+    await assertWorkspaceResourceAccess(name, { path }, c)
+      .then(() => c.resourceAccess.grant());
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -166,7 +172,6 @@ export const writeFile = createTool({
       "Metadata to be added to the file",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
     const bucketName = getWorkspaceBucketName(c);
 
@@ -194,12 +199,14 @@ export const deleteFile = createTool({
   name: "FS_DELETE",
   description: "Delete a file",
   inputSchema: z.object({ path: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ path }, c) => {
+  handler: async ({ path }, c, { name }) => {
     const bucketName = getWorkspaceBucketName(c);
 
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
+
+    await assertWorkspaceResourceAccess(name, { path }, c)
+      .then(() => c.resourceAccess.grant());
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

@@ -2,11 +2,11 @@ import { z } from "zod";
 import { Model, WELL_KNOWN_MODELS } from "../../constants.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
+import { AppContext } from "../index.ts";
 import { SupabaseLLMVault } from "./llm-vault.ts";
-import { AppContext, bypass } from "../index.ts";
 
 interface ModelRow {
   id: string;
@@ -53,19 +53,22 @@ export const createModel = createTool({
   name: "MODELS_CREATE",
   description: "Create a new model",
   inputSchema: createModelSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    const { name, model, apiKey, byDeco, description, isEnabled } = props;
+    await assertWorkspaceResourceAccess(name, props, c)
+      .then(() => c.resourceAccess.grant());
+
+    const { name: modelName, model, apiKey, byDeco, description, isEnabled } =
+      props;
 
     const { data, error } = await c
       .db
       .from("models")
       .insert({
         workspace,
-        name,
+        name: modelName,
         model,
         api_key_hash: null,
         is_enabled: isEnabled ?? true,
@@ -117,10 +120,12 @@ export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
   inputSchema: updateModelSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
+
+    await assertWorkspaceResourceAccess(name, props, c)
+      .then(() => c.resourceAccess.grant());
 
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
@@ -200,11 +205,13 @@ export const deleteModel = createTool({
   name: "MODELS_DELETE",
   description: "Delete a model by id",
   inputSchema: deleteModelSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
+
+    await assertWorkspaceResourceAccess(name, props, c)
+      .then(() => c.resourceAccess.grant());
 
     const { error } = await c.db
       .from("models")
@@ -280,17 +287,19 @@ export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
   inputSchema: listModelsSchema,
-  // TODO: Handle public agents authorization
-  canAccess: bypass,
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { excludeDisabled = false } = props;
 
-    // TODO: move this auth to canAccess wheen handle public agents authorization
-    try {
-      await canAccessWorkspaceResource("MODELS_LIST", props, c);
-    } catch (_) {
+    c.resourceAccess.grant();
+
+    // This is a workaround to enable public agents
+    const canAccess = await assertWorkspaceResourceAccess(name, props, c)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!canAccess) {
       return [];
     }
 
@@ -312,11 +321,13 @@ export const getModel = createTool({
   name: "MODELS_GET",
   description: "Get a model by id",
   inputSchema: getModelSchema,
-  canAccess: canAccessWorkspaceResource,
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
+
+    await assertWorkspaceResourceAccess(name, props, c)
+      .then(() => c.resourceAccess.grant());
 
     const defaultModel = WELL_KNOWN_MODELS.find((m) => m.id === id);
 

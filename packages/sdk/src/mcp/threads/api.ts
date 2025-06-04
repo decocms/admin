@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createTool } from "../context.ts";
 import { convertToUIMessages, MessageType } from "../convert-to-ui-messages.ts";
@@ -98,13 +98,17 @@ export const listThreads = createTool({
     ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
     c,
+    { name },
   ) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { agentId, resourceId }, c)
+      .then(() => c.resourceAccess.grant());
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -237,10 +241,13 @@ export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+  handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { id }, c)
+      .then(() => c.resourceAccess.grant());
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -271,10 +278,13 @@ export const getThread = createTool({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+  handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { id }, c)
+      .then(() => c.resourceAccess.grant());
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -302,10 +312,13 @@ export const getThreadTools = createTool({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
+  handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { id }, c)
+      .then(() => c.resourceAccess.grant());
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -332,8 +345,12 @@ export const updateThreadTitle = createTool({
     threadId: z.string(),
     title: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ threadId, title }, c) => {
+  handler: async ({ threadId, title }, c, { name }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { threadId }, c)
+      .then(() => c.resourceAccess.grant());
+
     const memory = await getWorkspaceMemory(c);
 
     const currentThread = await memory.getThreadById({ threadId });
@@ -369,8 +386,12 @@ export const updateThreadMetadata = createTool({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ threadId, metadata }, c) => {
+  handler: async ({ threadId, metadata }, c, { name }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, { threadId }, c)
+      .then(() => c.resourceAccess.grant());
+
     const memory = await getWorkspaceMemory(c);
 
     const currentThread = await memory.getThreadById({ threadId });

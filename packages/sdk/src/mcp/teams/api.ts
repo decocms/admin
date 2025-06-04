@@ -2,8 +2,7 @@ import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import {
   assertPrincipalIsUser,
-  bypass,
-  canAccessTeamResource,
+  assertTeamResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
 
@@ -28,11 +27,11 @@ export const getTeam = createTool({
   inputSchema: z.object({
     slug: z.string(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.slug, c);
-  },
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     const { slug } = props;
+
+    await assertTeamResourceAccess(name, slug, c)
+      .then(() => c.resourceAccess.grant());
 
     const { data: teamData, error } = await c
       .db
@@ -58,7 +57,7 @@ export const createTeam = createTool({
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
-  canAccess: bypass,
+
   /**
    * This function handle this steps:
    * 1. check if team slug already exists;
@@ -67,6 +66,8 @@ export const createTeam = createTool({
    * 4. Add member role as onwer (id: 1).
    */
   handler: async (props, c) => {
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
     const { name, slug, stripe_subscription_id } = props;
     const user = c.user;
@@ -145,11 +146,11 @@ export const updateTeam = createTool({
       stripe_subscription_id: z.string().optional(),
     }),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.id, c);
-  },
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     const { id, data } = props;
+
+    await assertTeamResourceAccess(name, id, c)
+      .then(() => c.resourceAccess.grant());
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -191,11 +192,11 @@ export const deleteTeam = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
-  handler: async (props, c) => {
+  handler: async (props, c, { name }) => {
     const { teamId } = props;
+
+    await assertTeamResourceAccess(name, teamId, c)
+      .then(() => c.resourceAccess.grant());
 
     const members = await c.db
       .from("members")
@@ -227,8 +228,9 @@ export const listTeams = createTool({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   inputSchema: z.object({}),
-  canAccess: bypass,
   handler: async (_, c) => {
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
     const user = c.user;
 

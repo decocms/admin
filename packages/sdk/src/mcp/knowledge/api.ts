@@ -5,7 +5,7 @@ import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool, createToolFactory } from "../context.ts";
 
@@ -50,8 +50,12 @@ export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
   description: "List all knowledge bases",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (_, c) => {
+  handler: async (_, c, { name }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, {}, c)
+      .then(() => c.resourceAccess.grant());
+
     const vector = await getVector(c);
     const names = await vector.listIndexes();
     // lazily create the default knowledge base
@@ -72,8 +76,12 @@ export const deleteBase = createTool({
   inputSchema: z.object({
     name: z.string().describe("The name of the knowledge base"),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ name }, c) => {
+  handler: async ({ name }, c, { name: toolName }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(toolName, { name }, c)
+      .then(() => c.resourceAccess.grant());
+
     const vector = await getVector(c);
     await vector.deleteIndex(name);
     return {
@@ -81,6 +89,7 @@ export const deleteBase = createTool({
     };
   },
 });
+
 export const createBase = createTool({
   name: "KNOWLEDGE_BASE_CREATE",
   description: "Create a knowledge base",
@@ -94,8 +103,12 @@ export const createBase = createTool({
     dimension: z.number().describe("The dimension of the knowledge base")
       .optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ name, dimension }, c) => {
+  handler: async ({ name, dimension }, c, { name: toolName }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(toolName, { name, dimension }, c)
+      .then(() => c.resourceAccess.grant());
+
     const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
@@ -114,8 +127,12 @@ export const forget = createKnowledgeBaseTool({
   inputSchema: z.object({
     docId: z.string().describe("The id of the content to forget"),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ docId }, c) => {
+  handler: async ({ docId }, c, { name: toolName }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(toolName, { docId }, c)
+      .then(() => c.resourceAccess.grant());
+
     const vector = await getVector(c);
     await vector.deleteIndexById(c.name, docId);
     return {
@@ -136,8 +153,16 @@ export const remember = createKnowledgeBaseTool({
       "The metadata to remember",
     ).optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ content, metadata, docId: _id }, c) => {
+  handler: async ({ content, metadata, docId: _id }, c, { name: toolName }) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(toolName, {
+      content,
+      metadata,
+      docId: _id,
+    }, c)
+      .then(() => c.resourceAccess.grant());
+
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
@@ -169,9 +194,12 @@ export const search = createKnowledgeBaseTool({
     topK: z.number().describe("The number of results to return").optional(),
     content: z.boolean().describe("Whether to return the content").optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ query, topK }, c) => {
+  handler: async ({ query, topK }, c, { name: toolName }) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(toolName, { query, topK }, c)
+      .then(() => c.resourceAccess.grant());
+
     const mem = await WorkspaceMemory.create({
       workspace: c.workspace.value,
       tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,

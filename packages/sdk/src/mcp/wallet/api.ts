@@ -9,7 +9,7 @@ import {
 import { ClientOf } from "@deco/sdk/http";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 import {
@@ -142,9 +142,11 @@ export const getWalletAccount = createTool({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (_, c) => {
+  handler: async (_, c, { name }) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(name, {}, c)
+      .then(() => c.resourceAccess.grant());
 
     const wallet = getWalletClient(c);
 
@@ -172,9 +174,11 @@ export const getThreadsUsage = createTool({
   inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ range }, ctx) => {
+  handler: async ({ range }, ctx, { name }) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, { range }, ctx)
+      .then(() => ctx.resourceAccess.grant());
 
     const wallet = getWalletClient(ctx);
 
@@ -193,9 +197,11 @@ export const getAgentsUsage = createTool({
   inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ range }, ctx) => {
+  handler: async ({ range }, ctx, { name }) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, { range }, ctx)
+      .then(() => ctx.resourceAccess.grant());
 
     const wallet = getWalletClient(ctx);
 
@@ -216,9 +222,12 @@ export const createCheckoutSession = createTool({
     successUrl: z.string(),
     cancelUrl: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
+  handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx, { name }) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, { amountUSDCents }, ctx)
+      .then(() => ctx.resourceAccess.grant());
+
     const plan = await getPlan(ctx);
     plan.assertHasFeature("ai-wallet-deposit");
 
@@ -250,9 +259,11 @@ export const createWalletVoucher = createTool({
       "The amount of money to add to the voucher. Specified in USD dollars.",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ amount }, ctx) => {
+  handler: async ({ amount }, ctx, { name }) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, { amount }, ctx)
+      .then(() => ctx.resourceAccess.grant());
 
     const wallet = getWalletClient(ctx);
     const id = crypto.randomUUID();
@@ -290,9 +301,11 @@ export const redeemWalletVoucher = createTool({
   inputSchema: z.object({
     voucher: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ voucher }, ctx) => {
+  handler: async ({ voucher }, ctx, { name }) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, { voucher }, ctx)
+      .then(() => ctx.resourceAccess.grant());
 
     const wallet = getWalletClient(ctx);
 
@@ -337,6 +350,12 @@ export const getWorkspacePlan = createTool({
   name: "GET_WORKSPACE_PLAN",
   description: "Get the plan for the current tenant's workspace",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
-  handler: (_, ctx) => getPlan(ctx),
+  handler: async (_, ctx, { name }) => {
+    assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(name, {}, ctx)
+      .then(() => ctx.resourceAccess.grant());
+
+    return getPlan(ctx);
+  },
 });

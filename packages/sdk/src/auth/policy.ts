@@ -228,13 +228,9 @@ export class PolicyClient {
       ]);
     }
 
-    const { error } = await this.db.from("member_roles").delete().eq(
-      "teamId",
-      teamId,
-    ).eq(
-      "memberId",
-      memberId,
-    );
+    const { error } = await this.db.from("member_roles")
+      .delete()
+      .eq("member_id", memberId);
 
     if (error) throw error;
 

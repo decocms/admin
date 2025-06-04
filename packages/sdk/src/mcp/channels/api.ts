@@ -17,6 +17,9 @@ const SELECT_CHANNEL_QUERY = `
   *,
   integration:deco_chat_integrations!inner(
     *
+  ),
+  agents:deco_chat_channel_agents(
+    agent_id
   )
 ` as const;
 
@@ -26,7 +29,9 @@ function mapChannel(
   return {
     id: channel.id,
     discriminator: channel.discriminator,
-    agentId: channel.agent_id,
+    agentIds: Array.isArray(channel.agents)
+      ? channel.agents.map((a: { agent_id: string }) => a.agent_id)
+      : [],
     createdAt: channel.created_at,
     updatedAt: channel.updated_at,
     workspace: channel.workspace,
@@ -76,13 +81,13 @@ export const createChannel = createTool({
     ),
     name: z.string().describe("The name of the channel"),
     integrationId: z.string().describe("The ID of the integration to use"),
-    agentId: z.string().optional().describe(
-      "The ID of the agent to link the channel to.",
+    agentIds: z.array(z.string()).optional().describe(
+      "The IDs of the agents to link the channel to.",
     ),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { discriminator, name, integrationId, agentId },
+    { discriminator, name, integrationId, agentIds },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -93,7 +98,6 @@ export const createChannel = createTool({
     const { data: channel, error } = await db.from("deco_chat_channels")
       .insert({
         discriminator,
-        agent_id: agentId,
         workspace,
         name,
         integration_id: integrationId.replace("i:", ""),
@@ -105,22 +109,46 @@ export const createChannel = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // If the channel has an agent_id and integration, call LINK_CHANNEL
-    if (channel.agent_id && channel.integration) {
+    // Link agents if provided
+    const allAgentIds = agentIds ?? [];
+    if (allAgentIds.length > 0) {
+      await Promise.all(
+        allAgentIds.map((aid) =>
+          db.from("deco_chat_channel_agents").insert({
+            channel_id: channel.id,
+            agent_id: aid,
+          })
+        ),
+      );
+    }
+
+    // If the channel has agents and integration, call LINK_CHANNEL for each
+    if (allAgentIds.length > 0 && channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      const agentId = channel.agent_id;
-      const trigger = await createWebhookTrigger(discriminator, agentId, c);
-      await binding.LINK_CHANNEL({
-        discriminator,
-        workspace,
-        agentId,
-        callbacks: trigger.callbacks,
-      });
+      await Promise.all(
+        allAgentIds.map(async (aid) => {
+          const trigger = await createWebhookTrigger(discriminator, aid, c);
+          await binding.LINK_CHANNEL({
+            discriminator,
+            workspace,
+            agentId: aid,
+            callbacks: trigger.callbacks,
+          });
+        }),
+      );
     }
 
-    return mapChannel(channel);
+    // Re-fetch with agents
+    const { data: fullChannel, error: fetchError } = await db.from(
+      "deco_chat_channels",
+    )
+      .select(SELECT_CHANNEL_QUERY)
+      .eq("id", channel.id)
+      .single();
+    if (fetchError) throw new InternalServerError(fetchError.message);
+    return mapChannel(fullChannel);
   },
 });
 
@@ -147,13 +175,17 @@ export const channelLink = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
-    // Update the channel with the agent_id
+    // Insert into join table (if not exists)
+    await db.from("deco_chat_channel_agents")
+      .upsert({ channel_id: id, agent_id: agentId }, {
+        onConflict: "channel_id,agent_id",
+      });
+
+    // Fetch channel with agents
     const { data: channel, error } = await db.from("deco_chat_channels")
-      .update({ agent_id: agentId })
-      .eq("id", id)
-      .eq("discriminator", discriminator)
-      .eq("workspace", workspace)
       .select(SELECT_CHANNEL_QUERY)
+      .eq("id", id)
+      .eq("workspace", workspace)
       .single();
 
     if (error) {
@@ -165,7 +197,6 @@ export const channelLink = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-
       const trigger = await createWebhookTrigger(
         channel.discriminator,
         agentId,
@@ -193,23 +224,30 @@ export const channelUnlink = createTool({
     discriminator: z.string().describe(
       "The channel discriminator",
     ),
+    agentId: z.string().describe(
+      "The ID of the agent to unlink, use only UUIDs.",
+    ),
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { id, discriminator },
+    { id, discriminator, agentId },
     c,
   ) => {
     assertHasWorkspace(c);
     const db = c.db;
     const workspace = c.workspace.value;
 
-    // Update the channel with the agent_id
+    // Remove from join table
+    await db.from("deco_chat_channel_agents")
+      .delete()
+      .eq("channel_id", id)
+      .eq("agent_id", agentId);
+
+    // Fetch channel with agents
     const { data: channel, error } = await db.from("deco_chat_channels")
-      .update({ agent_id: null })
-      .eq("id", id)
-      .eq("discriminator", discriminator)
-      .eq("workspace", workspace)
       .select(SELECT_CHANNEL_QUERY)
+      .eq("id", id)
+      .eq("workspace", workspace)
       .single();
 
     if (error) {
@@ -290,115 +328,6 @@ const createWebhookTrigger = async (
   return trigger;
 };
 
-export const activateChannel = createTool({
-  name: "CHANNELS_ACTIVATE",
-  description: "Activate a channel",
-  inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ id }, c) => {
-    assertHasWorkspace(c);
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data, error: selectError } = await db.from("deco_chat_channels")
-      .select(SELECT_CHANNEL_QUERY)
-      .eq("id", id)
-      .eq("workspace", workspace)
-      .single();
-
-    if (selectError) {
-      throw new InternalServerError(selectError.message);
-    }
-
-    if (data?.active) {
-      return {
-        ok: true,
-      };
-    }
-
-    if (data.agent_id) {
-      const agentId = data.agent_id;
-      const binding = ChannelBinding.forConnection(
-        convertFromDatabase(data.integration).connection,
-      );
-      // Create new trigger
-      const trigger = await createWebhookTrigger(
-        data.discriminator,
-        agentId,
-        c,
-      );
-      await binding.LINK_CHANNEL({
-        discriminator: data.discriminator,
-        workspace,
-        agentId,
-        callbacks: trigger.callbacks,
-      });
-    }
-
-    const { error } = await db.from("deco_chat_triggers")
-      .update({ active: true })
-      .eq("id", id)
-      .eq("workspace", workspace);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
-
-    return {
-      ok: true,
-    };
-  },
-});
-
-export const deactivateChannel = createTool({
-  name: "CHANNELS_DEACTIVATE",
-  description: "Deactivate a channel",
-  inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ id }, c) => {
-    assertHasWorkspace(c);
-    const db = c.db;
-    const workspace = c.workspace.value;
-
-    const { data, error: selectError } = await db.from("deco_chat_channels")
-      .select(SELECT_CHANNEL_QUERY)
-      .eq("id", id)
-      .eq("workspace", workspace)
-      .single();
-
-    if (selectError) {
-      throw new InternalServerError(selectError.message);
-    }
-
-    if (!data?.active) {
-      return {
-        ok: true,
-      };
-    }
-    if (data.agent_id) {
-      const binding = ChannelBinding.forConnection(
-        convertFromDatabase(data.integration).connection,
-      );
-      await binding.UNLINK_CHANNEL({
-        discriminator: data.discriminator,
-        workspace,
-      });
-    }
-
-    const { error } = await db.from("deco_chat_channels")
-      .update({ active: false })
-      .eq("id", id)
-      .eq("workspace", workspace);
-
-    if (error) {
-      throw new InternalServerError(error.message);
-    }
-    return {
-      ok: true,
-    };
-  },
-});
-
 export const deleteChannel = createTool({
   name: "CHANNELS_DELETE",
   description: "Delete a channel",
@@ -424,15 +353,13 @@ export const deleteChannel = createTool({
       throw new InternalServerError(selectError.message);
     }
 
-    if (channel.agent_id) {
-      const binding = ChannelBinding.forConnection(
-        convertFromDatabase(channel.integration).connection,
-      );
-      await binding.UNLINK_CHANNEL({
-        discriminator: channel.discriminator,
-        workspace,
-      });
-    }
+    const binding = ChannelBinding.forConnection(
+      convertFromDatabase(channel.integration).connection,
+    );
+    await binding.UNLINK_CHANNEL({
+      discriminator: channel.discriminator,
+      workspace,
+    });
 
     const { error } = await db.from("deco_chat_channels")
       .delete()
@@ -445,7 +372,6 @@ export const deleteChannel = createTool({
 
     return {
       id,
-      agentId: channel.agent_id,
     };
   },
 });

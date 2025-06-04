@@ -4,7 +4,12 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useBindings, useCreateChannel, useChannels, useLinkChannel } from "@deco/sdk/hooks";
+import {
+  useBindings,
+  useChannels,
+  useCreateChannel,
+  useLinkChannel,
+} from "@deco/sdk/hooks";
 import { useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
@@ -113,15 +118,13 @@ export function Channels({ className }: ChannelsProps) {
     }
 
     if (!discriminator.trim()) {
-
-    linkChannel({
-      channelId: selectedChannel.id,
-      discriminator: discriminator.trim(),
-      agentId: agent.id,
-    });
-  }
-}
-
+      linkChannel({
+        channelId: selectedChannel.id,
+        discriminator: discriminator.trim(),
+        agentId: agent.id,
+      });
+    }
+  };
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -133,16 +136,12 @@ export function Channels({ className }: ChannelsProps) {
         </p>
       </div>
 
-      {
-        channels?.channels.map((channel) => (
-          <div key={channel.id}>
-            <p>{channel.discriminator}</p>
-            {channel.agentId === agent.id && (
-              <p>Linked</p>
-            )}
-          </div>
-        ))
-      }
+      {channels?.channels.map((channel) => (
+        <div key={channel.id}>
+          <p>{channel.discriminator}</p>
+          {channel.agentId === agent.id && <p>Linked</p>}
+        </div>
+      ))}
 
       <div>
         Choose Channel
@@ -162,14 +161,15 @@ export function Channels({ className }: ChannelsProps) {
       {selectedBinding && (
         <div className="space-y-2">
           <Label htmlFor="discriminator">
-            Discriminator {selectedBinding.name === "WhatsApp" ? "(e.g., phone number)" : "(unique identifier)"}
+            Discriminator {selectedBinding.name === "WhatsApp"
+              ? "(e.g., phone number)"
+              : "(unique identifier)"}
           </Label>
           <Input
             id="discriminator"
-            placeholder={selectedBinding.name === "WhatsApp" 
-              ? "Enter phone number (e.g., +1234567890)" 
-              : "Enter unique identifier"
-            }
+            placeholder={selectedBinding.name === "WhatsApp"
+              ? "Enter phone number (e.g., +1234567890)"
+              : "Enter unique identifier"}
             value={discriminator}
             onChange={(e) => setDiscriminator(e.target.value)}
             className="max-w-md"

@@ -114,7 +114,7 @@ export const getAgent = createTool({
         : c.db
           .from("deco_chat_agents")
           .select("*")
-          .eq("workspace", c.workspace!.value)
+          .eq("workspace", c.workspace.value)
           .eq("id", id)
           .single(),
     ]);

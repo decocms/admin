@@ -105,14 +105,14 @@ export const createChannel = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // If the channel has an agent_id and integration, call ON_CHANNEL_LINKED
+    // If the channel has an agent_id and integration, call LINK_CHANNEL
     if (channel.agent_id && channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
       const agentId = channel.agent_id;
       const trigger = await createWebhookTrigger(discriminator, agentId, c);
-      await binding.ON_CHANNEL_LINKED({
+      await binding.LINK_CHANNEL({
         discriminator,
         workspace,
         agentId,
@@ -160,7 +160,7 @@ export const channelLink = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // Call ON_CHANNEL_LINKED if integration exists
+    // Call LINK_CHANNEL if integration exists
     if (channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
@@ -171,7 +171,7 @@ export const channelLink = createTool({
         agentId,
         c,
       );
-      await binding.ON_CHANNEL_LINKED({
+      await binding.LINK_CHANNEL({
         discriminator,
         workspace,
         agentId,
@@ -216,12 +216,12 @@ export const channelUnlink = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // Call ON_CHANNEL_LINKED if integration exists
+    // Call UNLINK_CHANNEL if integration exists
     if (channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      await binding.ON_CHANNEL_UNLINKED({
+      await binding.UNLINK_CHANNEL({
         discriminator,
         workspace,
       });
@@ -327,7 +327,7 @@ export const activateChannel = createTool({
         agentId,
         c,
       );
-      await binding.ON_CHANNEL_LINKED({
+      await binding.LINK_CHANNEL({
         discriminator: data.discriminator,
         workspace,
         agentId,
@@ -379,7 +379,7 @@ export const deactivateChannel = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(data.integration).connection,
       );
-      await binding.ON_CHANNEL_UNLINKED({
+      await binding.UNLINK_CHANNEL({
         discriminator: data.discriminator,
         workspace,
       });
@@ -428,7 +428,7 @@ export const deleteChannel = createTool({
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      await binding.ON_CHANNEL_UNLINKED({
+      await binding.UNLINK_CHANNEL({
         discriminator: channel.discriminator,
         workspace,
       });

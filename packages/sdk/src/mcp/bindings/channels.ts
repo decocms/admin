@@ -24,11 +24,11 @@ export type Callbacks = z.infer<typeof callbacksSchema>;
 export type ChannelLinkedPayload = z.infer<typeof linkedChannelSchema>;
 
 export const CHANNEL_BINDING_SCHEMA = [{
-  name: "ON_CHANNEL_LINKED" as const,
+  name: "LINK_CHANNEL" as const,
   inputSchema: linkedChannelSchema,
   outputSchema: z.any(),
 }, {
-  name: "ON_CHANNEL_UNLINKED" as const,
+  name: "UNLINK_CHANNEL" as const,
   inputSchema: channelIdSchema,
   outputSchema: z.any(),
 }] as const satisfies Binder;

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { JWTPayload } from "../auth/jwt.ts";
 import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, HttpError } from "../errors.ts";
+import type { AuthTools } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -23,6 +24,7 @@ export interface Vars {
     slug: string;
     value: string;
   };
+  authTools: AuthTools;
   cookie?: string;
   db: Client;
   user: Principal;
@@ -143,7 +145,7 @@ export interface ToolDefinition<
     name: TName,
     props: TInput,
     c: AppContext,
-  ) => Promise<boolean>;
+  ) => Promise<void>;
 }
 
 export interface Tool<
@@ -180,36 +182,24 @@ export const createToolFactory = <
     try {
       const context = contextFactory(State.getStore());
 
-      const hasAccess = await def.canAccess?.(
-        def.name,
-        props,
-        context,
-      ).catch((error) => {
-        console.warn(
-          "Failed to authorize tool with the following error",
-          error,
-        );
-        return false;
-      });
+      context.authTools.reset();
 
-      if (!hasAccess) {
+      const result = await def.handler(props, context);
+
+      if (!context.authTools.canAccess()) {
         throw new ForbiddenError(
           `User cannot access this tool ${def.name}`,
         );
       }
 
-      const structuredContent = await def.handler(props, context);
-
       return {
         isError: false,
-        structuredContent,
+        structuredContent: result,
       };
     } catch (error) {
-      const structuredContent = serializeError(error) as unknown as TReturn;
-
       return {
         isError: true,
-        structuredContent,
+        structuredContent: serializeError(error) as unknown as TReturn,
       };
     }
   },

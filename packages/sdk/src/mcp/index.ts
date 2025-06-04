@@ -3,6 +3,8 @@ export * from "./assertions.ts";
 export * from "./context.ts";
 export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
+export { createAuthTools } from "./auth/index.ts";
+
 import * as agentsAPI from "./agents/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { AppContext, State, Tool } from "./context.ts";

@@ -2,7 +2,7 @@ import { getServerClient } from "@deco/sdk/storage";
 import Cloudflare from "cloudflare";
 import type { MiddlewareHandler } from "hono";
 import { honoCtxToAppCtx } from "../api.ts";
-import { AppEnv, getEnv } from "../utils/context.ts";
+import { AppEnv, createAuthTools, getEnv } from "../utils/context.ts";
 
 export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx,
@@ -22,6 +22,11 @@ export const withContextMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx.set(
     "cf",
     new Cloudflare({ apiToken: CF_API_TOKEN }),
+  );
+
+  ctx.set(
+    "authTools",
+    createAuthTools(),
   );
 
   await next();

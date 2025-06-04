@@ -1,7 +1,14 @@
+import { useRemoveIntegration } from "@deco/sdk";
 import {
-    useRemoveIntegration
-} from "@deco/sdk";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@deco/ui/components/alert-dialog.tsx";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@deco/ui/components/alert-dialog.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { type MouseEvent, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";

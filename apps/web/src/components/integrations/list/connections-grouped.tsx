@@ -8,10 +8,7 @@
  *
  * `${hostname}-${appName}`
  */
-import {
-  type Integration,
-  useIntegrations
-} from "@deco/sdk";
+import { type Integration, useIntegrations } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

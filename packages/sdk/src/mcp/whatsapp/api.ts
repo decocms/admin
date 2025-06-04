@@ -106,8 +106,7 @@ export const createWhatsAppInvite = createTool({
   handler: async ({ userId, triggerId, wppMessageId, phone }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { userId, triggerId, phone }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { userId, triggerId, phone }, c);
 
     const workspace = c.workspace;
     if (!workspace?.value || !ALLOWED_WORKSPACES.includes(workspace.value)) {
@@ -162,8 +161,7 @@ export const upsertWhatsAppUser = createTool({
   handler: async ({ phone, triggerUrl, triggerId, triggers }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { phone, triggerId }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { phone, triggerId }, c);
 
     const alreadyHasTrigger = triggers.includes(triggerId);
 
@@ -201,8 +199,7 @@ export const getWhatsAppUser = createTool({
   handler: async ({ phone }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { phone }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { phone }, c);
 
     const { data, error } = await c.db
       .from("deco_chat_wpp_users")

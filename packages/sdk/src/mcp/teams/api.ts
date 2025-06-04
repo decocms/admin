@@ -30,8 +30,7 @@ export const getTeam = createTool({
   handler: async (props, c, { name }) => {
     const { slug } = props;
 
-    await assertTeamResourceAccess(name, slug, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, slug, c);
 
     const { data: teamData, error } = await c
       .db
@@ -149,8 +148,7 @@ export const updateTeam = createTool({
   handler: async (props, c, { name }) => {
     const { id, data } = props;
 
-    await assertTeamResourceAccess(name, id, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, id, c);
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -195,8 +193,7 @@ export const deleteTeam = createTool({
   handler: async (props, c, { name }) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     const members = await c.db
       .from("members")

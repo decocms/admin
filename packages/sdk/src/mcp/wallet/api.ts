@@ -145,8 +145,7 @@ export const getWalletAccount = createTool({
   handler: async (_, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, {}, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, {}, c);
 
     const wallet = getWalletClient(c);
 

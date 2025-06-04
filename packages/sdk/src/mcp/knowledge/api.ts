@@ -53,8 +53,7 @@ export const listKnowledgeBases = createTool({
   handler: async (_, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, {}, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, {}, c);
 
     const vector = await getVector(c);
     const names = await vector.listIndexes();
@@ -79,8 +78,7 @@ export const deleteBase = createTool({
   handler: async ({ name }, c, { name: toolName }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(toolName, { name }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(toolName, { name }, c);
 
     const vector = await getVector(c);
     await vector.deleteIndex(name);
@@ -106,8 +104,7 @@ export const createBase = createTool({
   handler: async ({ name, dimension }, c, { name: toolName }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(toolName, { name, dimension }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(toolName, { name, dimension }, c);
 
     const vector = await getVector(c);
     await vector.createIndex({
@@ -130,8 +127,7 @@ export const forget = createKnowledgeBaseTool({
   handler: async ({ docId }, c, { name: toolName }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(toolName, { docId }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(toolName, { docId }, c);
 
     const vector = await getVector(c);
     await vector.deleteIndexById(c.name, docId);
@@ -160,8 +156,7 @@ export const remember = createKnowledgeBaseTool({
       content,
       metadata,
       docId: _id,
-    }, c)
-      .then(() => c.resourceAccess.grant());
+    }, c);
 
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
@@ -197,8 +192,7 @@ export const search = createKnowledgeBaseTool({
   handler: async ({ query, topK }, c, { name: toolName }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(toolName, { query, topK }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(toolName, { query, topK }, c);
 
     const mem = await WorkspaceMemory.create({
       workspace: c.workspace.value,

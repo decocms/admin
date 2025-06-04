@@ -115,8 +115,7 @@ export const getTeamMembers = createTool({
   }> => {
     const { teamId, withActivity } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     // Get all members of the team
     const [{ data, error }, { data: invitesData }] = await Promise.all([
@@ -196,8 +195,7 @@ export const updateTeamMember = createTool({
   handler: async (props, c, { name }) => {
     const { teamId, memberId, data } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -256,9 +254,9 @@ export const removeTeamMember = createTool({
     // Allow users with team access to remove members or allow users to remove themselves from a team
     if (!hasAccess && member?.user_id !== c.user.id) {
       throw new ForbiddenError("You are not allowed to remove this member");
-    } else {
-      c.resourceAccess.grant();
     }
+
+    c.resourceAccess.grant();
 
     if (memberError) throw memberError;
     if (!member) {
@@ -320,8 +318,7 @@ export const registerMemberActivity = createTool({
   handler: async (props, c, { name }) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     assertPrincipalIsUser(c);
     const user = c.user;
@@ -419,8 +416,7 @@ export const inviteTeamMembers = createTool({
     const user = c.user;
     const teamIdAsNum = Number(teamId);
 
-    await assertTeamResourceAccess(name, teamIdAsNum, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamIdAsNum, c);
 
     const plan = await getPlan(c);
     plan.assertHasFeature("invite-to-workspace");
@@ -718,8 +714,7 @@ export const teamRolesList = createTool({
   handler: async (props, c, { name }) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     return await c.policy.getTeamRoles(teamId);
   },
@@ -737,8 +732,7 @@ export const updateMemberRole = createTool({
   handler: async (props, c, { name }) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c)
-      .then(() => c.resourceAccess.grant());
+    await assertTeamResourceAccess(name, teamId, c);
 
     const { teamId: teamIdFromProps, userId, roleId, action } = props;
 

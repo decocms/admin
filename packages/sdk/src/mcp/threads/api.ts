@@ -105,8 +105,7 @@ export const listThreads = createTool({
   ) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId, resourceId }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { agentId, resourceId }, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -244,8 +243,7 @@ export const getThreadMessages = createTool({
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { id }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id }, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -281,8 +279,7 @@ export const getThread = createTool({
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { id }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id }, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -315,8 +312,7 @@ export const getThreadTools = createTool({
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { id }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id }, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -348,8 +344,7 @@ export const updateThreadTitle = createTool({
   handler: async ({ threadId, title }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { threadId }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { threadId }, c);
 
     const memory = await getWorkspaceMemory(c);
 
@@ -389,8 +384,7 @@ export const updateThreadMetadata = createTool({
   handler: async ({ threadId, metadata }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { threadId }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { threadId }, c);
 
     const memory = await getWorkspaceMemory(c);
 

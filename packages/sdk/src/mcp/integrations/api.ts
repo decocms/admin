@@ -197,8 +197,7 @@ export const listIntegrations = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, { binder }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { binder }, c);
 
     const [
       integrations,
@@ -378,8 +377,7 @@ export const createIntegration = createTool({
   inputSchema: IntegrationSchema.partial(),
   handler: async (integration, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, integration, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, integration, c);
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -411,8 +409,7 @@ export const updateIntegration = createTool({
   }),
   handler: async ({ id, integration }, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, { id, integration }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id, integration }, c);
 
     const { uuid, type } = parseId(id);
 
@@ -450,8 +447,7 @@ export const deleteIntegration = createTool({
   }),
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, { id }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id }, c);
 
     const { uuid, type } = parseId(id);
 

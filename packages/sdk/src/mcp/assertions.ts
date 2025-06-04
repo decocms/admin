@@ -45,7 +45,7 @@ export const assertWorkspaceResourceAccess = async (
   c: AppContext,
 ): Promise<void> => {
   if (c.isLocal) {
-    return;
+    return c.resourceAccess.grant();
   }
 
   assertHasUser(c);
@@ -56,11 +56,11 @@ export const assertWorkspaceResourceAccess = async (
 
   // agent tokens
   if ("aud" in user && user.aud === c.workspace.value) {
-    return;
+    return c.resourceAccess.grant();
   }
 
   if (root === "users" && user.id === slug) {
-    return;
+    return c.resourceAccess.grant();
   }
 
   if (root === "shared") {
@@ -71,7 +71,7 @@ export const assertWorkspaceResourceAccess = async (
     );
 
     if (canAccess) {
-      return;
+      return c.resourceAccess.grant();
     }
   }
 
@@ -86,7 +86,7 @@ export const assertTeamResourceAccess = async (
   c: AppContext,
 ): Promise<void> => {
   if (c.isLocal) {
-    return;
+    return c.resourceAccess.grant();
   }
   assertHasUser(c);
   const user = c.user;
@@ -98,7 +98,7 @@ export const assertTeamResourceAccess = async (
     );
 
     if (canAccess) {
-      return;
+      return c.resourceAccess.grant();
     }
   }
 

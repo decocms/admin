@@ -57,8 +57,7 @@ export const createModel = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, props, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, props, c);
 
     const { name: modelName, model, apiKey, byDeco, description, isEnabled } =
       props;
@@ -124,8 +123,7 @@ export const updateModel = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, props, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, props, c);
 
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
@@ -210,8 +208,7 @@ export const deleteModel = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, props, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, props, c);
 
     const { error } = await c.db
       .from("models")
@@ -326,8 +323,7 @@ export const getModel = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, props, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, props, c);
 
     const defaultModel = WELL_KNOWN_MODELS.find((m) => m.id === id);
 

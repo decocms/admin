@@ -85,8 +85,7 @@ export const listFiles = createTool({
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { prefix: root }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { prefix: root }, c);
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -113,8 +112,7 @@ export const readFile = createTool({
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path, expiresIn }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { path, expiresIn }, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -140,8 +138,7 @@ export const readFileMetadata = createTool({
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { path }, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -205,8 +202,7 @@ export const deleteFile = createTool({
     assertHasWorkspace(c);
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { path }, c);
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

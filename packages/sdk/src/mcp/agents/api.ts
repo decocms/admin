@@ -10,7 +10,11 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool } from "../context.ts";
-import { InternalServerError, NotFoundError } from "../index.ts";
+import {
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+} from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const NO_DATA_ERROR = "PGRST116";
@@ -61,8 +65,7 @@ export const listAgents = createTool({
   handler: async (_, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, {}, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, {}, c);
 
     const { data, error } = await c.db
       .from("deco_chat_agents")
@@ -121,7 +124,7 @@ export const getAgent = createTool({
     }
 
     if (data.visibility !== "PUBLIC" && !canAccess) {
-      throw new NotFoundError(`Agent ${id} not found`);
+      throw new ForbiddenError(`Agent ${id} not found`);
     }
 
     if (error) {
@@ -139,8 +142,7 @@ export const createAgent = createTool({
   handler: async (agent, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, agent, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, agent, c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -173,8 +175,7 @@ export const updateAgent = createTool({
   handler: async ({ id, agent }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { id, agent }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id, agent }, c);
 
     const { data, error } = await c.db
       .from("deco_chat_agents")
@@ -202,8 +203,7 @@ export const deleteAgent = createTool({
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { id }, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(name, { id }, c);
 
     const { error } = await c.db
       .from("deco_chat_agents")

@@ -83,9 +83,10 @@ export const listFiles = createTool({
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
-    await ensureBucketExists(c, bucketName);
-
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c.tool.name, c),
+    ]);
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -110,9 +111,10 @@ export const readFile = createTool({
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
-    await ensureBucketExists(c, bucketName);
-
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c.tool.name, c),
+    ]);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -136,9 +138,10 @@ export const readFileMetadata = createTool({
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
-    await ensureBucketExists(c, bucketName);
-
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c.tool.name, c),
+    ]);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -173,7 +176,10 @@ export const writeFile = createTool({
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
-    await ensureBucketExists(c, bucketName);
+    await Promise.all([
+      ensureBucketExists(c, bucketName),
+      assertWorkspaceResourceAccess(c.tool.name, c),
+    ]);
 
     const s3Client = getS3Client(c);
     const putCommand = new PutObjectCommand({

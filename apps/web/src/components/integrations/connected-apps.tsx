@@ -10,7 +10,7 @@ import { Table, TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./list/breadcrumb.tsx";
-import { IntegrationIcon } from "./list/common.tsx";
+import { IntegrationIcon } from "./common.tsx";
 
 function AppCard({
   app,

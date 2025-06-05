@@ -20,7 +20,7 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationIcon } from "./list/common.tsx";
+import { IntegrationIcon } from "./common.tsx";
 
 export interface MarketplaceIntegration extends Integration {
   provider: string;

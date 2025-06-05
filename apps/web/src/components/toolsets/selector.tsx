@@ -6,7 +6,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { IntegrationIcon } from "../integrations/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {

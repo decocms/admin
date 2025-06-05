@@ -22,7 +22,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useRef, useState } from "react";
 import { useCurrentTeamRoles } from "../../settings/agent.tsx";
-import { IntegrationIcon } from "../list/common.tsx";
+import { IntegrationIcon } from "../common.tsx";
 import { useFormContext } from "./context.ts";
 
 const ICON_FILE_PATH = "assets/integrations";

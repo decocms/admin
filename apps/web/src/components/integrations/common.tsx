@@ -2,16 +2,16 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Avatar } from "../../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { Suspense } from "react";
-import { isFilePath } from "../../../utils/path.ts";
+import { isFilePath } from "../../utils/path.ts";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { isWellKnownApp } from "../apps.ts";
+import { isWellKnownApp } from "./apps.ts";
 
 function FileIcon({ path, fallback, className, variant }: {
   path: string;

@@ -2,9 +2,9 @@ import {
   useBindings,
   useChannels,
   useCreateChannel,
-  useLinkChannel,
+  useJoinChannel,
+  useLeaveChannel,
   useRemoveChannel,
-  useUnlinkChannel,
 } from "@deco/sdk/hooks";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
@@ -43,6 +43,8 @@ export function Channels({ className }: ChannelsProps) {
   const { mutate: createChannel, isPending: isCreating } = useCreateChannel();
   const linkChannelMutation = useLinkChannel();
   const unlinkChannelMutation = useUnlinkChannel();
+  const { mutate: joinChannel, isPending: isJoining } = useJoinChannel();
+  const { mutate: leaveChannel, isPending: isLeaving } = useLeaveChannel();
   const removeChannelMutation = useRemoveChannel();
   const { data: channels } = useChannels();
   const workspaceLink = useWorkspaceLink();
@@ -52,7 +54,7 @@ export function Channels({ className }: ChannelsProps) {
     () => allChannels.filter((channel) => channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
   );
-  const unlinkedChannels = useMemo(
+  const nonJoinedChannels = useMemo(
     () => allChannels.filter((channel) => !channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
   );
@@ -73,7 +75,6 @@ export function Channels({ className }: ChannelsProps) {
       removeChannelMutation.variables === channelId;
   };
 
-  const handleLinkChannel = (channelId: string) => {
     linkChannelMutation.mutate({
       channelId,
       agentId: agent.id,
@@ -89,7 +90,7 @@ export function Channels({ className }: ChannelsProps) {
     });
   };
 
-  const handleUnlinkChannel = (channelId: string) => {
+  const handleLeaveChannel = (channelId: string) => {
     const channel = agentChannels.find((c) => c.id === channelId);
     if (!channel) return;
 
@@ -196,7 +197,7 @@ export function Channels({ className }: ChannelsProps) {
             <button
               className="ml-auto cursor-pointer"
               type="button"
-              onClick={() => handleUnlinkChannel(channel.id)}
+              onClick={() => handleLeaveChannel(channel.id)}
               disabled={isChannelUnlinking(channel.id)}
             >
               {isChannelUnlinking(channel.id)
@@ -207,12 +208,12 @@ export function Channels({ className }: ChannelsProps) {
         );
       })}
 
-      {unlinkedChannels.length > 0 && (
+      {nonJoinedChannels.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">
             Available Channels
           </p>
-          {unlinkedChannels.map((channel) => {
+          {nonJoinedChannels.map((channel) => {
             const integration = channel.integration;
             return (
               <div
@@ -236,7 +237,7 @@ export function Channels({ className }: ChannelsProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleLinkChannel(channel.id)}
+                    onClick={() => handleJoinChannel(channel.id)}
                     disabled={isChannelLinking(channel.id)}
                     className="h-6 px-2 text-xs"
                   >
@@ -244,11 +245,11 @@ export function Channels({ className }: ChannelsProps) {
                       ? (
                         <div className="flex items-center gap-1">
                           <Spinner size="xs" />
-                          <span>Linking...</span>
+                          <span>Joining...</span>
                         </div>
                       )
                       : (
-                        "Link"
+                        "Join"
                       )}
                   </Button>
                   <button

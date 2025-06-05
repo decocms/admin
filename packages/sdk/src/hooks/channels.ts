@@ -69,11 +69,11 @@ export const useUpdateChannelCache = () => {
   return update;
 };
 
-export const useLinkChannel = () => {
+export const useJoinChannel = () => {
   const { workspace } = useSDK();
   const updateChannelCache = useUpdateChannelCache();
 
-  const link = useMutation({
+  const res = useMutation({
     mutationFn: ({
       channelId,
       agentId,
@@ -84,14 +84,14 @@ export const useLinkChannel = () => {
     onSuccess: (result) => updateChannelCache(result),
   });
 
-  return link;
+  return res;
 };
 
-export const useUnlinkChannel = () => {
+export const useLeaveChannel = () => {
   const { workspace } = useSDK();
   const updateChannelCache = useUpdateChannelCache();
 
-  const unlink = useMutation({
+  const res = useMutation({
     mutationFn: ({
       channelId,
       agentId,
@@ -102,7 +102,7 @@ export const useUnlinkChannel = () => {
     onSuccess: (result) => updateChannelCache(result),
   });
 
-  return unlink;
+  return res;
 };
 
 export const useRemoveChannel = () => {

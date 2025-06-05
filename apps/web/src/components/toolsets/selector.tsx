@@ -70,9 +70,6 @@ function IntegrationListItem({
   const navigateWorkspace = useNavigateWorkspace();
 
   const total = toolsData?.tools?.length ?? 0;
-  const enabled = new Set([
-    ...(toolsSet[integration.id] || []),
-  ]).size;
 
   const allTools = toolsData?.tools || [];
   const enabledCount =

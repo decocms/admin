@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
 import { trackEvent } from "../../../hooks/analytics.ts";
@@ -22,7 +21,6 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../../hooks/use-navigate-workspace.ts";
-import { IntegrationPageLayout } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 
 export interface MarketplaceIntegration extends Integration {

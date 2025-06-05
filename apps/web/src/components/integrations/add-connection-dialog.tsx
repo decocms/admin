@@ -6,38 +6,77 @@ import {
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { MarketplaceTab } from "./list/marketplace.tsx";
+import { Marketplace } from "./list/marketplace.tsx";
+import { Integration } from "@deco/sdk";
+import { cn } from "@deco/ui/lib/utils.ts";
 
-function AddConnectionDialogContent() {
-  const createCustomConnection = useCreateCustomConnection();
+function AddConnectionDialogContent({
+  title = "Add connection",
+  filter,
+  onSelect,
+}: {
+  title?: string;
+  filter?: (integration: Integration) => boolean;
+  onSelect?: (integration: Integration) => void;
+}) {
+  const [tab, setTab] = useState<"my-connections" | "new-connection">(
+    "my-connections",
+  );
 
   return (
     <DialogContent
       className="p-0 min-w-[80vw] min-h-[80vh] gap-0"
       closeButtonClassName="top-5 right-4"
     >
-      <DialogHeader className="flex flex-row justify-between items-center p-2 border-b border-border h-14 px-5 pr-12">
-        <DialogTitle>Add connection</DialogTitle>
-        <Button variant="outline" size="sm" onClick={createCustomConnection}>
-          <Icon name="handyman" size={16} />
-          <span className="hidden md:inline">Add custom connection</span>
-        </Button>
+      <DialogHeader className="flex flex-row justify-between items-center p-2 h-14 px-5 pr-12">
+        <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
-      <div className="max-h-[calc(100vh-10rem)] overflow-y-auto">
-        <MarketplaceTab />
+      <div className="flex h-[calc(100vh-10rem)]">
+        <aside className="w-56 flex flex-col p-4 gap-1">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start text-muted-foreground",
+              tab === "my-connections" && "bg-muted text-foreground",
+            )}
+            onClick={() => setTab("my-connections")}
+          >
+            <Icon name="apps" size={16} className="text-muted-foreground" />
+            <span>My connections</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start text-muted-foreground",
+              tab === "new-connection" && "bg-muted text-foreground",
+            )}
+            onClick={() => setTab("new-connection")}
+          >
+            <Icon name="add" size={16} className="text-muted-foreground" />
+            <span>New connection</span>
+          </Button>
+          {/* Filters will go here */}
+        </aside>
+        {/* Main Content */}
+        <div className="flex-1 max-h-full overflow-y-auto">
+          <Marketplace />
+        </div>
       </div>
     </DialogContent>
   );
 }
 
-interface AddConnectionDialogProps {
+interface SelectConnectionDialogProps {
   trigger?: React.ReactNode;
+  title?: string;
+  filter?: (integration: Integration) => boolean;
+  onSelect?: (integration: Integration) => void;
 }
 
-export function AddConnectionDialog(props: AddConnectionDialogProps) {
+export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   const trigger = useMemo(() => {
     if (props.trigger) {
       return props.trigger;
@@ -55,7 +94,11 @@ export function AddConnectionDialog(props: AddConnectionDialogProps) {
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <AddConnectionDialogContent />
+      <AddConnectionDialogContent
+        title={props.title}
+        filter={props.filter}
+        onSelect={props.onSelect}
+      />
     </Dialog>
   );
 }

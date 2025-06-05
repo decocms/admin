@@ -38,6 +38,7 @@ interface ConnectIntegrationModalProps {
   onEdit: () => void;
   onClose: () => void;
 }
+
 function ConnectIntegrationModal({
   open,
   integration,
@@ -139,7 +140,7 @@ function CardsView(
   );
 }
 
-export function MarketplaceTab() {
+export function Marketplace() {
   const [registryFilter, setRegistryFilter] = useState("");
   const [selectedIntegration, setSelectedIntegration] = useState<
     MarketplaceIntegration | null
@@ -229,28 +230,14 @@ export function MarketplaceTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full pb-4">
-      <div className="h-14 max-h-14 border-b border-border relative">
-        <Icon
-          name="search"
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-        />
-        <Input
-          placeholder="Find connection..."
-          className="border-none rounded-none h-full px-10 focus-visible:ring-0"
-          value={registryFilter}
-          onChange={(e) => setRegistryFilter(e.target.value)}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-1/2 -translate-y-1/2"
-        >
-          <Icon name="filter_list" size={16} />
-        </Button>
-      </div>
+    <div className="flex flex-col gap-4 h-full p-4">
+      <Input
+        placeholder="Find connection..."
+        value={registryFilter}
+        onChange={(e) => setRegistryFilter(e.target.value)}
+      />
 
-      <div className="flex-1 min-h-0 px-4 overflow-x-auto">
+      <div className="flex-1 min-h-0 overflow-x-auto">
         <CardsView
           integrations={filteredIntegrations}
           onRowClick={handleOpenModal}
@@ -266,19 +253,5 @@ export function MarketplaceTab() {
         onClose={handleCloseModal}
       />
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <IntegrationPageLayout
-      tabs={{
-        marketplace: {
-          title: "Marketplace",
-          Component: MarketplaceTab,
-          initialOpen: true,
-        },
-      }}
-    />
   );
 }

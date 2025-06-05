@@ -15,7 +15,7 @@ import { ListPageHeader } from "../../common/list-page-header.tsx";
 import { ViewModeSwitcherProps } from "../../common/view-mode-switcher.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
-import { AddConnectionDialog } from "../add-connection-dialog.tsx";
+import { SelectConnectionDialog } from "../add-connection-dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 const isUUID = (uuid: string) =>
@@ -45,7 +45,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
             items={[{ label: "Connections", link: "/connections" }]}
           />
         }
-        actionButtons={<AddConnectionDialog />}
+        actionButtons={<SelectConnectionDialog />}
         tabs={tabs}
       />
       <AlertDialog open={!!error} onOpenChange={() => setError(null)}>

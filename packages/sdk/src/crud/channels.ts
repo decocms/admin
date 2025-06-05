@@ -68,6 +68,9 @@ export const joinChannel = (
     agentId,
   });
 
+/**
+ * List available channels for a given connection
+ */
 export const listAvailableChannelsForConnection = (
   workspace: string,
   connection: MCPConnection,
@@ -76,6 +79,7 @@ export const listAvailableChannelsForConnection = (
     workspace,
     connection,
   ).DECO_CHAT_CHANNELS_LIST({});
+
 /**
  * Remove an agent from a channel
  * @param workspace - The workspace of the channel

@@ -1,13 +1,13 @@
 import {
   useBindings,
   useChannels,
+  useConnectionChannels,
   useCreateChannel,
   useJoinChannel,
   useLeaveChannel,
   useRemoveChannel,
 } from "@deco/sdk/hooks";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -28,9 +28,51 @@ import { Link } from "react-router";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { MCPConnection } from "@deco/sdk";
+import { Channel } from "@deco/sdk/models";
 
 interface ChannelsProps {
   className?: string;
+}
+
+interface ChannelCardProps {
+  channel: Channel;
+  children: React.ReactNode;
+  variant?: "agent" | "available";
+}
+
+function ChannelCard(
+  { channel, children, variant = "agent" }: ChannelCardProps,
+) {
+  const integration = channel.integration;
+  const isAgentVariant = variant === "agent";
+
+  return (
+    <div
+      className={cn(
+        "border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center",
+        !isAgentVariant && "justify-between",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <IntegrationIcon
+          name={integration?.name ?? "Unknown"}
+          icon={integration?.icon ?? ""}
+          className={cn(
+            "before:hidden w-10 h-10",
+          )}
+        />
+
+        <p className="text-sm text-foreground font-medium">
+          {integration?.name ?? "Unknown"}
+        </p>
+        <span className="text-sm text-foreground font-normal">
+          {channel.name ?? channel.discriminator}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function Channels({ className }: ChannelsProps) {
@@ -38,6 +80,7 @@ export function Channels({ className }: ChannelsProps) {
     "Channel",
   );
   const [discriminator, setDiscriminator] = useState("");
+  const [name, setName] = useState<string | undefined>(undefined);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { agent } = useAgentSettingsForm();
   const { mutate: createChannel, isPending: isCreating } = useCreateChannel();
@@ -46,7 +89,9 @@ export function Channels({ className }: ChannelsProps) {
   const removeChannelMutation = useRemoveChannel();
   const { data: channels } = useChannels();
   const workspaceLink = useWorkspaceLink();
-  const [selectedBinding, setSelectedBinding] = useState<string | null>(null);
+  const [selectedBindingId, setSelectedBindingId] = useState<string | null>(
+    null,
+  );
   const allChannels = channels?.channels || [];
   const agentChannels = useMemo(
     () => allChannels.filter((channel) => channel.agentIds.includes(agent.id)),
@@ -55,6 +100,10 @@ export function Channels({ className }: ChannelsProps) {
   const availableChannels = useMemo(
     () => allChannels.filter((channel) => !channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
+  );
+  const selectedBinding = useMemo(
+    () => bindings?.find((b) => b.id === selectedBindingId),
+    [bindings, selectedBindingId],
   );
 
   // Helper functions to check if specific channel is being processed
@@ -124,6 +173,7 @@ export function Channels({ className }: ChannelsProps) {
       discriminator: discriminator.trim(),
       integrationId: selectedBinding.id,
       agentId: agent.id,
+      name: name?.trim(),
     }, {
       onSuccess: () => {
         toast.success("Channel created successfully");
@@ -154,7 +204,7 @@ export function Channels({ className }: ChannelsProps) {
   return (
     <div className={cn("space-y-2", className)}>
       <div className="space-y-2">
-        <div className="flex w-full justify-between items-center">
+        <div className="flex w-full justify-between gap-2 items-center">
           <div>
             <h3 className="text-sm font-medium text-foreground leading-">
               Channels
@@ -175,24 +225,9 @@ export function Channels({ className }: ChannelsProps) {
       </div>
 
       {agentChannels.map((channel) => {
+        if (!channel) return null;
         return (
-          <div
-            key={channel.id}
-            className="border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center"
-          >
-            <div className="flex items-center gap-2">
-              <IntegrationIcon
-                name={channel.integration?.name ?? "Unknown"}
-                icon={channel.integration?.icon ?? ""}
-                className="before:hidden w-10 h-10"
-              />
-              <p className="text-sm text-foreground font-medium">
-                {channel.integration?.name ?? "Unknown"}
-              </p>
-              <span className="text-sm text-foreground font-normal">
-                {channel.discriminator}
-              </span>
-            </div>
+          <ChannelCard key={channel.id} channel={channel} variant="agent">
             <button
               className="ml-auto cursor-pointer"
               type="button"
@@ -203,7 +238,7 @@ export function Channels({ className }: ChannelsProps) {
                 ? <Spinner size="sm" />
                 : <Icon name="close" size={16} />}
             </button>
-          </div>
+          </ChannelCard>
         );
       })}
 
@@ -213,25 +248,13 @@ export function Channels({ className }: ChannelsProps) {
             Available Channels
           </p>
           {availableChannels.map((channel) => {
-            const integration = channel.integration;
+            if (!channel) return null;
             return (
-              <div
+              <ChannelCard
                 key={channel.id}
-                className="border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center justify-between"
+                channel={channel}
+                variant="available"
               >
-                <div className="flex items-center gap-2">
-                  <IntegrationIcon
-                    className="!border-none w-6 h-6"
-                    name={integration?.name ?? "Unknown"}
-                    icon={integration?.icon ?? ""}
-                  />
-                  <span className="text-sm text-foreground">
-                    {channel.discriminator}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {integration?.name || "Unknown"}
-                  </Badge>
-                </div>
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
@@ -262,7 +285,7 @@ export function Channels({ className }: ChannelsProps) {
                       : <Icon name="delete" size={16} />}
                   </button>
                 </div>
-              </div>
+              </ChannelCard>
             );
           })}
         </div>
@@ -298,9 +321,9 @@ export function Channels({ className }: ChannelsProps) {
               <FormLabel>Integration</FormLabel>
               <FormControl>
                 <Select
-                  value={selectedBinding ?? ""}
+                  value={selectedBindingId ?? ""}
                   onValueChange={(bindingId) => {
-                    setSelectedBinding(bindingId);
+                    setSelectedBindingId(bindingId);
                     if (discriminator.trim()) {
                       handleCreateChannel(bindingId);
                     }
@@ -332,15 +355,16 @@ export function Channels({ className }: ChannelsProps) {
             </FormItem>
 
             <div className="space-y-2">
-              <Label htmlFor="discriminator">
-                Channel (unique identifier)
-              </Label>
-              <Input
-                id="discriminator"
-                placeholder="Enter unique identifier (e.g., phone number for WhatsApp)"
-                value={discriminator}
-                onChange={(e) => setDiscriminator(e.target.value)}
-              />
+              {selectedBinding &&
+                (
+                  <ConnectionChannels
+                    key={selectedBindingId}
+                    connection={selectedBinding?.connection}
+                    discriminator={discriminator}
+                    setDiscriminator={setDiscriminator}
+                    setName={setName}
+                  />
+                )}
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -380,6 +404,58 @@ export function Channels({ className }: ChannelsProps) {
             </div>
           </>
         )}
+    </div>
+  );
+}
+
+function ConnectionChannels(
+  { connection, discriminator, setDiscriminator, setName }: {
+    connection: MCPConnection;
+    discriminator: string;
+    setDiscriminator: (discriminator: string) => void;
+    setName: (name: string | undefined) => void;
+  },
+) {
+  const { data: availableChannels, isLoading: isLoadingAvailableChannels } =
+    useConnectionChannels(connection);
+  return (
+    <div className="w-full">
+      <Label htmlFor="discriminator">
+        Channel
+      </Label>
+      <div className="mt-2 w-full">
+        <Select
+          onValueChange={(value) => {
+            const nameForChannel = availableChannels?.channels?.find((
+              channel,
+            ) => channel.value === value)?.label;
+            setDiscriminator(value);
+            setName(nameForChannel);
+          }}
+          disabled={isLoadingAvailableChannels}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a channel" />
+          </SelectTrigger>
+          <SelectContent className="w-full">
+            {availableChannels?.channels?.map((channel) => {
+              return (
+                <SelectItem key={channel.value} value={channel.value}>
+                  {channel.label}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+        {(!availableChannels?.channels && !isLoadingAvailableChannels) && (
+          <Input
+            id="discriminator"
+            placeholder="Enter unique identifier (e.g., phone number for WhatsApp)"
+            value={discriminator}
+            onChange={(e) => setDiscriminator(e.target.value)}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -58,7 +58,6 @@ export const MCPClient = new Proxy(
   {} as typeof global & {
     forWorkspace: (workspace: string) => MCPClientFetchStub<WorkspaceTools>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
-      workspace: string,
       connection: MCPConnection,
     ) => MCPClientFetchStub<TDefinition>;
   },
@@ -70,9 +69,8 @@ export const MCPClient = new Proxy(
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(
-          workspace: string,
           connection: MCPConnection,
-        ) => createMCPFetchStub<TDefinition>({ workspace, connection });
+        ) => createMCPFetchStub<TDefinition>({ connection });
       }
       return global[name as keyof typeof global];
     },

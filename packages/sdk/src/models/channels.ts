@@ -7,6 +7,7 @@ export const ChannelSchema = z.object({
   agentIds: z.array(z.string()).describe(
     "The IDs of the agents the channel is linked to",
   ),
+  name: z.string().optional().describe("The name of the channel"),
   createdAt: z.string().describe("The date and time the channel was created"),
   updatedAt: z.string().describe(
     "The date and time the channel was last updated",

@@ -94,6 +94,8 @@ export const callTool = createTool({
 
       await client.close();
 
+      console.log("result", result);
+
       return result;
     } catch (error) {
       console.error(

@@ -60,6 +60,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
           const workspace = options?.workspace ?? "";
           let payload = args;
           let toolName = name;
+          let mapper = (data: unknown) => data;
           if (options?.connection && typeof args === "object") {
             payload = {
               connection: options.connection,
@@ -69,11 +70,15 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
               },
             };
             toolName = "INTEGRATIONS_CALL_TOOL";
+            mapper = (data) =>
+              (data as {
+                structuredContent: unknown;
+              }).structuredContent;
           }
           const response = await fetch(
-            new URL(`${workspace}/tools/call/${name}`, API_SERVER_URL),
+            new URL(`${workspace}/tools/call/${toolName}`, API_SERVER_URL),
             {
-              body: JSON.stringify(args),
+              body: JSON.stringify(payload),
               method: "POST",
               credentials: "include",
               ...init,
@@ -99,7 +104,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
             );
           }
 
-          return data;
+          return mapper(data);
         };
       },
     },

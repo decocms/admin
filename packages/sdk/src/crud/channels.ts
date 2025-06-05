@@ -31,8 +31,9 @@ export const createChannel = (
     discriminator: string;
     integrationId: string;
     agentId?: string;
+    name?: string;
   },
-) => MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
+): Promise<Channel> => MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
 
 /**
  * Get a channel by ID
@@ -62,7 +63,7 @@ export const joinChannel = (
   workspace: string,
   channelId: string,
   agentId: string,
-) =>
+): Promise<Channel> =>
   MCPClient.forWorkspace(workspace).CHANNELS_JOIN({
     id: channelId,
     agentId,
@@ -76,9 +77,10 @@ export const listAvailableChannelsForConnection = (
   connection: MCPConnection,
 ) =>
   MCPClient.forConnection<typeof WellKnownBindings["Channel"]>(
-    workspace,
     connection,
-  ).DECO_CHAT_CHANNELS_LIST({});
+  ).DECO_CHAT_CHANNELS_LIST({
+    workspace,
+  });
 
 /**
  * Remove an agent from a channel
@@ -90,7 +92,7 @@ export const leaveChannel = (
   workspace: string,
   channelId: string,
   agentId: string,
-) =>
+): Promise<Channel> =>
   MCPClient.forWorkspace(workspace).CHANNELS_LEAVE({
     id: channelId,
     agentId: agentId,

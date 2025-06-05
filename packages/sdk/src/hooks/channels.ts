@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type Channel,
   createChannel,
@@ -10,11 +6,13 @@ import {
   getChannel,
   joinChannel,
   leaveChannel,
+  listAvailableChannelsForConnection,
   listChannels,
 } from "../crud/channels.ts";
 import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
+import { MCPConnection } from "../index.ts";
 
 export const useCreateChannel = () => {
   const client = useQueryClient();
@@ -25,6 +23,7 @@ export const useCreateChannel = () => {
       discriminator: string;
       integrationId: string;
       agentId?: string;
+      name?: string;
     }) => createChannel(workspace, channel),
     onSuccess: (result) => {
       const itemKey = KEYS.CHANNELS(workspace, result.id);
@@ -134,7 +133,7 @@ export const useRemoveChannel = () => {
 export const useChannel = (id: string) => {
   const { workspace } = useSDK();
 
-  const data = useSuspenseQuery({
+  const data = useQuery({
     queryKey: KEYS.CHANNELS(workspace, id),
     queryFn: ({ signal }) => getChannel(workspace, id, signal),
     retry: (failureCount, error) =>
@@ -148,7 +147,7 @@ export const useChannels = () => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
-  const data = useSuspenseQuery({
+  const data = useQuery({
     queryKey: KEYS.CHANNELS(workspace),
     queryFn: async ({ signal }) => {
       const result = await listChannels(workspace, signal);
@@ -158,6 +157,27 @@ export const useChannels = () => {
         client.cancelQueries({ queryKey: itemKey });
         client.setQueryData<Channel>(itemKey, item);
       }
+
+      return result;
+    },
+  });
+
+  return data;
+};
+
+export const useConnectionChannels = (connection: MCPConnection) => {
+  const { workspace } = useSDK();
+
+  const data = useQuery({
+    queryKey: KEYS.CHANNELS(workspace, connection.type), // TODO: use the connection id ?
+    queryFn: async () => {
+      const result = await listAvailableChannelsForConnection(
+        workspace,
+        connection,
+      ).catch((error) => {
+        console.error(error);
+        return { channels: [] };
+      });
 
       return result;
     },

@@ -32,6 +32,7 @@ function mapChannel(
     agentIds: Array.isArray(channel.agents)
       ? channel.agents.map((a: { agent_id: string }) => a.agent_id)
       : [],
+    name: channel.name,
     createdAt: channel.created_at,
     updatedAt: channel.updated_at,
     workspace: channel.workspace,
@@ -81,8 +82,11 @@ export const createChannel = createTool({
     agentIds: z.array(z.string()).optional().describe(
       "The IDs of the agents to link the channel to.",
     ),
+    name: z.string().optional().describe(
+      "The name of the channel",
+    ),
   }),
-  handler: async ({ discriminator, integrationId, agentIds }, c) => {
+  handler: async ({ discriminator, integrationId, agentIds, name }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
@@ -95,6 +99,7 @@ export const createChannel = createTool({
         discriminator,
         workspace,
         integration_id: integrationId.replace("i:", ""),
+        name,
       })
       .select(SELECT_CHANNEL_QUERY)
       .single();

@@ -12,7 +12,7 @@ import {
 import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { MCPConnection } from "../index.ts";
+import { Integration } from "../index.ts";
 
 export const useCreateChannel = () => {
   const client = useQueryClient();
@@ -165,15 +165,15 @@ export const useChannels = () => {
   return data;
 };
 
-export const useConnectionChannels = (connection: MCPConnection) => {
+export const useConnectionChannels = (binding: Integration) => {
   const { workspace } = useSDK();
 
   const data = useQuery({
-    queryKey: KEYS.CHANNELS(workspace, connection.type), // TODO: use the connection id ?
+    queryKey: KEYS.CHANNELS(workspace, binding.id),
     queryFn: async () => {
       const result = await listAvailableChannelsForConnection(
         workspace,
-        connection,
+        binding.connection,
       ).catch((error) => {
         console.error(error);
         return { channels: [] };

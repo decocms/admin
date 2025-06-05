@@ -28,8 +28,7 @@ import { Link } from "react-router";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { IntegrationIcon } from "../integrations/list/common.tsx";
-import { MCPConnection } from "@deco/sdk";
-import { Channel } from "@deco/sdk/models";
+import { Channel, Integration } from "@deco/sdk/models";
 
 interface ChannelsProps {
   className?: string;
@@ -359,7 +358,7 @@ export function Channels({ className }: ChannelsProps) {
                 (
                   <ConnectionChannels
                     key={selectedBindingId}
-                    connection={selectedBinding?.connection}
+                    binding={selectedBinding}
                     discriminator={discriminator}
                     setDiscriminator={setDiscriminator}
                     setName={setName}
@@ -409,44 +408,54 @@ export function Channels({ className }: ChannelsProps) {
 }
 
 function ConnectionChannels(
-  { connection, discriminator, setDiscriminator, setName }: {
-    connection: MCPConnection;
+  { binding, discriminator, setDiscriminator, setName }: {
+    binding: Integration;
     discriminator: string;
     setDiscriminator: (discriminator: string) => void;
     setName: (name: string | undefined) => void;
   },
 ) {
   const { data: availableChannels, isLoading: isLoadingAvailableChannels } =
-    useConnectionChannels(connection);
+    useConnectionChannels(binding);
+  if (isLoadingAvailableChannels) {
+    return (
+      <div className="w-full flex items-center gap-2">
+        <Spinner size="sm" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
   return (
     <div className="w-full">
       <Label htmlFor="discriminator">
         Channel
       </Label>
       <div className="mt-2 w-full">
-        <Select
-          onValueChange={(value) => {
-            const nameForChannel = availableChannels?.channels?.find((
-              channel,
-            ) => channel.value === value)?.label;
-            setDiscriminator(value);
-            setName(nameForChannel);
-          }}
-          disabled={isLoadingAvailableChannels}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a channel" />
-          </SelectTrigger>
-          <SelectContent className="w-full">
-            {availableChannels?.channels?.map((channel) => {
-              return (
-                <SelectItem key={channel.value} value={channel.value}>
-                  {channel.label}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        {availableChannels?.channels?.length && (
+          <Select
+            onValueChange={(value) => {
+              const nameForChannel = availableChannels?.channels?.find((
+                channel,
+              ) => channel.value === value)?.label;
+              setDiscriminator(value);
+              setName(nameForChannel);
+            }}
+            disabled={isLoadingAvailableChannels}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a channel" />
+            </SelectTrigger>
+            <SelectContent className="w-full">
+              {availableChannels?.channels?.map((channel) => {
+                return (
+                  <SelectItem key={channel.value} value={channel.value}>
+                    {channel.label}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        )}
         {(!availableChannels?.channels && !isLoadingAvailableChannels) && (
           <Input
             id="discriminator"

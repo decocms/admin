@@ -86,7 +86,7 @@ export const listTriggers = createTool({
   ): Promise<z.infer<typeof ListTriggersOutputSchema>> => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -140,7 +140,7 @@ export const upsertTrigger = createTool({
   ) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId, triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -261,7 +261,7 @@ export const createTrigger = createTool({
   ) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
@@ -288,7 +288,7 @@ export const updateTrigger = createTool({
   ) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId, triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const result = await upsertTrigger.handler({ agentId, triggerId, data });
     if (result.isError) {
@@ -314,7 +314,7 @@ export const createCronTrigger = createTool({
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
@@ -341,7 +341,7 @@ export const createWebhookTrigger = createTool({
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { agentId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
@@ -363,7 +363,7 @@ export const deleteTrigger = createTool({
   ): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { triggerId, agentId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -402,7 +402,7 @@ export const getWebhookTriggerUrl = createTool({
   ): Promise<z.infer<typeof GetWebhookTriggerUrlOutputSchema>> => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -444,7 +444,7 @@ export const getTrigger = createTool({
   > => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -480,7 +480,7 @@ export const activateTrigger = createTool({
   handler: async ({ triggerId }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -549,7 +549,7 @@ export const deactivateTrigger = createTool({
   handler: async ({ triggerId }, c, { name }) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, { triggerId }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;

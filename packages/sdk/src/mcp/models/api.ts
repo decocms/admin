@@ -57,7 +57,7 @@ export const createModel = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, props, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { name: modelName, model, apiKey, byDeco, description, isEnabled } =
       props;
@@ -123,7 +123,7 @@ export const updateModel = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, props, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
@@ -208,7 +208,7 @@ export const deleteModel = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, props, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { error } = await c.db
       .from("models")
@@ -292,7 +292,7 @@ export const listModels = createTool({
     c.resourceAccess.grant();
 
     // This is a workaround to enable public agents
-    const canAccess = await assertWorkspaceResourceAccess(name, props, c)
+    const canAccess = await assertWorkspaceResourceAccess(name, c)
       .then(() => true)
       .catch(() => false);
 
@@ -323,7 +323,7 @@ export const getModel = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, props, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const defaultModel = WELL_KNOWN_MODELS.find((m) => m.id === id);
 

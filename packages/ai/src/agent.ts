@@ -602,11 +602,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       req.headers.get("host") !== null && runtimeKey !== "deno" &&
       this._configuration?.visibility !== "PUBLIC"
     ) { // if host is set so its not an internal request so checks must be applied
-      await assertWorkspaceResourceAccess(
-        "AGENTS_GET",
-        null,
-        ctx,
-      );
+      await assertWorkspaceResourceAccess("AGENTS_GET", ctx);
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",

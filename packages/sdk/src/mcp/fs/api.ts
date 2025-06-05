@@ -85,7 +85,7 @@ export const listFiles = createTool({
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { prefix: root }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -112,7 +112,7 @@ export const readFile = createTool({
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path, expiresIn }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -138,7 +138,7 @@ export const readFileMetadata = createTool({
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -202,7 +202,7 @@ export const deleteFile = createTool({
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, { path }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

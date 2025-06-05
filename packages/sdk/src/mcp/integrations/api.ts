@@ -197,7 +197,7 @@ export const listIntegrations = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, { binder }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const [
       integrations,
@@ -307,7 +307,7 @@ export const getIntegration = createTool({
       INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
 
     const canAccess = isInnate ||
-      await assertWorkspaceResourceAccess(name, { id }, c)
+      await assertWorkspaceResourceAccess(name, c)
         .then(() => true)
         .catch(() => false);
 
@@ -377,7 +377,7 @@ export const createIntegration = createTool({
   inputSchema: IntegrationSchema.partial(),
   handler: async (integration, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, integration, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -409,7 +409,7 @@ export const updateIntegration = createTool({
   }),
   handler: async ({ id, integration }, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, { id, integration }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { uuid, type } = parseId(id);
 
@@ -447,7 +447,7 @@ export const deleteIntegration = createTool({
   }),
   handler: async ({ id }, c, { name }) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, { id }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { uuid, type } = parseId(id);
 

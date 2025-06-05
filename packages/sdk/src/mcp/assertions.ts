@@ -41,7 +41,6 @@ export const assertHasUser = (c: AppContext) => {
 
 export const assertWorkspaceResourceAccess = async (
   resource: string,
-  _: unknown,
   c: AppContext,
 ): Promise<void> => {
   if (c.isLocal) {

@@ -76,7 +76,7 @@ export const listApps = createTool({
   handler: async (_, c, { name }) => {
     const { workspace } = getWorkspaceParams(c);
 
-    await assertWorkspaceResourceAccess(name, {}, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -258,7 +258,7 @@ Important Notes:
     ),
   }),
   handler: async ({ appSlug, files }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, { appSlug, files }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
@@ -302,7 +302,7 @@ export const deleteApp = createTool({
   description: "Delete an app and its worker",
   inputSchema: AppInputSchema,
   handler: async ({ appSlug }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, { appSlug }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
@@ -342,7 +342,7 @@ export const getAppInfo = createTool({
   description: "Get info/metadata for an app (including endpoint)",
   inputSchema: AppInputSchema,
   handler: async ({ appSlug }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, { appSlug }, c);
+    await assertWorkspaceResourceAccess(name, c);
 
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB

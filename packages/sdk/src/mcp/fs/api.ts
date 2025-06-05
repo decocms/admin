@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -104,7 +105,7 @@ export const listFiles = createTool({
   inputSchema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  handler: async ({ prefix: root }, c) => {
+  handler: async ({ prefix }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
@@ -113,9 +114,21 @@ export const listFiles = createTool({
       assertWorkspaceResourceAccess(c.tool.name, c),
     ]);
 
+    // const s3Client = getS3Client(c);
+    // const bucketName = getWorkspaceBucketName(c);
+    // const listCommand = new ListObjectsCommand({
+    //   Bucket: bucketName,
+    //   Prefix: prefix,
+    // });
+    // const data = await s3Client.send(listCommand);
+    //
+    // return data;
     const { data: assets } = await c.db.from("deco_chat_assets").select(
       "file_url, metadata",
-    ).eq("workspace", c.workspace.value);
+    ).eq("workspace", c.workspace.value).ilike("file_url", `${prefix}%`)
+      .overrideTypes<
+        { file_url: string; metadata?: Record<string, string> }[]
+      >();
 
     return assets;
   },

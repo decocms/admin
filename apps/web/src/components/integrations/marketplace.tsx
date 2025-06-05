@@ -14,14 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { useMemo, useState } from "react";
-import { trackEvent } from "../../../hooks/analytics.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 import {
   useNavigateWorkspace,
   useWorkspaceLink,
-} from "../../../hooks/use-navigate-workspace.ts";
-import { IntegrationIcon } from "./common.tsx";
+} from "../../hooks/use-navigate-workspace.ts";
+import { IntegrationIcon } from "./list/common.tsx";
 
 export interface MarketplaceIntegration extends Integration {
   provider: string;
@@ -108,11 +107,11 @@ function CardsView(
   },
 ) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
       {integrations.map((integration) => (
         <Card
           key={integration.id}
-          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer"
+          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
           onClick={() => onRowClick(integration)}
         >
           <CardContent className="p-4">
@@ -120,13 +119,13 @@ function CardsView(
               <IntegrationIcon
                 icon={integration.icon}
                 name={integration.name}
-                className="h-16 w-16"
+                className="h-10 w-10"
               />
               <div className="grid grid-cols-1 gap-1">
-                <div className="text-base font-semibold truncate">
+                <div className="text-sm font-semibold truncate">
                   {integration.name}
                 </div>
-                <div className="text-sm text-muted-foreground line-clamp-2">
+                <div className="text-sm text-muted-foreground line-clamp-3">
                   {integration.description}
                 </div>
               </div>
@@ -138,8 +137,13 @@ function CardsView(
   );
 }
 
-export function Marketplace() {
-  const [registryFilter, setRegistryFilter] = useState("");
+export function Marketplace({
+  filter,
+  onClick,
+}: {
+  filter: string;
+  onClick: (integration: MarketplaceIntegration) => void;
+}) {
   const [selectedIntegration, setSelectedIntegration] = useState<
     MarketplaceIntegration | null
   >(null);
@@ -156,17 +160,17 @@ export function Marketplace() {
   const { data: marketplace } = useMarketplaceIntegrations();
 
   const filteredIntegrations = useMemo(() => {
-    const searchTerm = registryFilter.toLowerCase();
+    const searchTerm = filter.toLowerCase();
     const integrations = marketplace?.integrations ?? [];
 
-    return registryFilter
+    return filter
       ? integrations.filter((integration: MarketplaceIntegration) =>
         integration.name.toLowerCase().includes(searchTerm) ||
         (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
         integration.provider.toLowerCase().includes(searchTerm)
       )
       : integrations;
-  }, [marketplace, registryFilter]);
+  }, [marketplace, filter]);
 
   function handleOpenModal(integration: MarketplaceIntegration) {
     setSelectedIntegration(integration);
@@ -228,17 +232,11 @@ export function Marketplace() {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full p-4">
-      <Input
-        placeholder="Find connection..."
-        value={registryFilter}
-        onChange={(e) => setRegistryFilter(e.target.value)}
-      />
-
+    <div className="flex flex-col gap-4 h-full">
       <div className="flex-1 min-h-0 overflow-x-auto">
         <CardsView
           integrations={filteredIntegrations}
-          onRowClick={handleOpenModal}
+          onRowClick={onClick}
         />
       </div>
       <ConnectIntegrationModal

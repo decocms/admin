@@ -8,10 +8,12 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { Marketplace } from "./list/marketplace.tsx";
+import { Marketplace } from "./marketplace.tsx";
 import { Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { InstalledConnections } from "./installed-connections.tsx";
 
 function AddConnectionDialogContent({
   title = "Add connection",
@@ -25,6 +27,7 @@ function AddConnectionDialogContent({
   const [tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
   );
+  const [search, setSearch] = useState("");
 
   return (
     <DialogContent
@@ -60,9 +63,27 @@ function AddConnectionDialogContent({
           </Button>
           {/* Filters will go here */}
         </aside>
-        {/* Main Content */}
-        <div className="flex-1 max-h-full overflow-y-auto">
-          <Marketplace />
+
+        <div className="h-full overflow-y-hidden p-4 pb-20">
+          <Input
+            placeholder="Find connection..."
+            value={search}
+            className="mb-4"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {tab === "new-connection" && (
+            <Marketplace
+              filter={search}
+              onClick={(integration) => onSelect?.(integration)}
+            />
+          )}
+          {tab === "my-connections" && (
+            <InstalledConnections
+              query={search}
+              filter={filter}
+              onClick={(integration) => onSelect?.(integration)}
+            />
+          )}
         </div>
       </div>
     </DialogContent>
@@ -77,6 +98,7 @@ interface SelectConnectionDialogProps {
 }
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const trigger = useMemo(() => {
     if (props.trigger) {
       return props.trigger;
@@ -90,14 +112,17 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   }, [props.trigger]);
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
       <AddConnectionDialogContent
         title={props.title}
         filter={props.filter}
-        onSelect={props.onSelect}
+        onSelect={(integration) => {
+          props.onSelect?.(integration);
+          setIsOpen(false);
+        }}
       />
     </Dialog>
   );

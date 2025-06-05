@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
 interface ToolsMap {
   [integrationId: string]: string[];
@@ -85,6 +86,11 @@ function IntegrationListItem({
     );
   }
 
+  const openConfig = () => {
+    const appKey = AppKeys.build(getConnectionAppKey(integration));
+    navigateWorkspace(`/connection/${appKey}?selected=${integration.id}`);
+  };
+
   return (
     <div
       key={integration.id}
@@ -111,11 +117,7 @@ function IntegrationListItem({
         </div>
         <IntegrationListItemActions
           integration={integration}
-          onConfigure={() => {
-            // TODO: navigate correctly before merging
-            throw new Error("Not implemented");
-            // navigateWorkspace(`/connection/${integration.id}`);
-          }}
+          onConfigure={openConfig}
           onRemove={onRemove}
         />
       </div>
@@ -126,9 +128,7 @@ function IntegrationListItem({
         <div
           onClick={(e) => {
             e.preventDefault();
-            // TODO: navigate correctly before merging
-            throw new Error("Not implemented");
-            // navigateWorkspace(`/connection/${integration.id}`);
+            openConfig();
           }}
           className={cn(
             "flex gap-2 items-center justify-between px-4 py-4 border-t border-border cursor-pointer",

@@ -5,7 +5,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useMemo, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { SelectConnectionDialog } from "../integrations/add-connection-dialog.tsx";
+import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationList } from "../toolsets/selector.tsx";
 import {
   Tooltip,
@@ -16,7 +16,7 @@ import { Integration } from "@deco/sdk";
 
 type SetIntegrationTools = (
   integrationId: string,
-  tools: string[] | null,
+  tools: string[] | boolean,
 ) => void;
 
 const ADVANCED_INTEGRATIONS = [
@@ -26,6 +26,10 @@ const ADVANCED_INTEGRATIONS = [
   "DECO_INTEGRATIONS",
   "DECO_UTILS",
 ];
+
+const connectionFilter = (integration: Integration) =>
+  integration.id.startsWith("i:") ||
+  ADVANCED_INTEGRATIONS.includes(integration.id);
 
 function Connections({
   installedIntegrations,
@@ -73,6 +77,10 @@ function Connections({
         </span>
         {!showAddConnectionEmptyState && (
           <SelectConnectionDialog
+            onSelect={(integration) => {
+              setIntegrationTools(integration.id, true);
+            }}
+            filter={connectionFilter}
             trigger={
               <Button variant="outline">
                 <Icon name="add" /> Add connection
@@ -130,7 +138,7 @@ function Connections({
                     toolsSet={toolsSet}
                     setIntegrationTools={setIntegrationTools}
                     onRemove={(integrationId) =>
-                      setIntegrationTools(integrationId, null)}
+                      setIntegrationTools(integrationId, false)}
                   />
                 </div>
               </div>
@@ -207,19 +215,26 @@ function ToolsAndKnowledgeTab() {
   } = useAgentSettingsForm();
 
   const toolsSet = form.watch("tools_set");
-  const setIntegrationTools = (
+  const setIntegrationTools: SetIntegrationTools = (
     integrationId: string,
-    tools: string[] | null,
+    tools: string[] | boolean,
   ) => {
     const toolsSet = form.getValues("tools_set");
     const newToolsSet = { ...toolsSet };
 
-    if (tools !== null) {
-      newToolsSet[integrationId] = tools;
-    } else {
-      delete newToolsSet[integrationId];
+    // Boolean means enable/disable all tools
+    if (typeof tools === "boolean") {
+      if (tools) {
+        // enable all tools
+        newToolsSet[integrationId] = [];
+      } else {
+        delete newToolsSet[integrationId];
+      }
+      form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+      return;
     }
 
+    newToolsSet[integrationId] = tools;
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
 

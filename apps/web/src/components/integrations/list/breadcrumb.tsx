@@ -15,7 +15,7 @@ import { ListPageHeader } from "../../common/list-page-header.tsx";
 import { ViewModeSwitcherProps } from "../../common/view-mode-switcher.tsx";
 import { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
-import { SelectConnectionDialog } from "../add-connection-dialog.tsx";
+import { SelectConnectionDialog } from "../select-connection-dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
 const isUUID = (uuid: string) =>

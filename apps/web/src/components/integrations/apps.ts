@@ -81,25 +81,25 @@ export function isWellKnownApp(appKey: string): boolean {
     WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY === appKey;
 }
 
-function getConnectionAppKey(integration: Integration): AppKey {
+export function getConnectionAppKey(connection: Integration): AppKey {
   if (
     WELL_KNOWN_DECO_CHAT_CONNECTION_IDS.some((id) =>
-      integration.id.startsWith(id)
+      connection.id.startsWith(id)
     )
   ) {
     return AppKeys.parse(WELL_KNOWN_DECO_CHAT_APP_KEY);
   }
 
   if (
-    integration.id.startsWith(
+    connection.id.startsWith(
       WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
     )
   ) {
     return AppKeys.parse(WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY);
   }
 
-  if (integration.connection.type === "HTTP") {
-    const url = new URL(integration.connection.url);
+  if (connection.connection.type === "HTTP") {
+    const url = new URL(connection.connection.url);
 
     if (url.hostname.includes("mcp.deco.site")) {
       // https://mcp.deco.site/apps/{appName}...
@@ -118,13 +118,13 @@ function getConnectionAppKey(integration: Integration): AppKey {
     }
 
     return {
-      appId: integration.id,
+      appId: connection.id,
       provider: "unknown",
     };
   }
 
-  if (integration.connection.type === "SSE") {
-    const url = new URL(integration.connection.url);
+  if (connection.connection.type === "SSE") {
+    const url = new URL(connection.connection.url);
 
     if (url.hostname.includes("mcp.composio.dev")) {
       // https://mcp.composio.dev/{appName}...
@@ -136,13 +136,13 @@ function getConnectionAppKey(integration: Integration): AppKey {
     }
 
     return {
-      appId: integration.id,
+      appId: connection.id,
       provider: "unknown",
     };
   }
 
   return {
-    appId: integration.id,
+    appId: connection.id,
     provider: "unknown",
   };
 }

@@ -41,10 +41,8 @@ export function Channels({ className }: ChannelsProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { agent } = useAgentSettingsForm();
   const { mutate: createChannel, isPending: isCreating } = useCreateChannel();
-  const linkChannelMutation = useLinkChannel();
-  const unlinkChannelMutation = useUnlinkChannel();
-  const { mutate: joinChannel, isPending: isJoining } = useJoinChannel();
-  const { mutate: leaveChannel, isPending: isLeaving } = useLeaveChannel();
+  const joinChannelMutation = useJoinChannel();
+  const leaveChannelMutation = useLeaveChannel();
   const removeChannelMutation = useRemoveChannel();
   const { data: channels } = useChannels();
   const workspaceLink = useWorkspaceLink();
@@ -54,20 +52,20 @@ export function Channels({ className }: ChannelsProps) {
     () => allChannels.filter((channel) => channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
   );
-  const nonJoinedChannels = useMemo(
+  const unlinkedChannels = useMemo(
     () => allChannels.filter((channel) => !channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
   );
 
   // Helper functions to check if specific channel is being processed
   const isChannelUnlinking = (channelId: string) => {
-    return unlinkChannelMutation.isPending &&
-      unlinkChannelMutation.variables?.channelId === channelId;
+    return leaveChannelMutation.isPending &&
+      leaveChannelMutation.variables?.channelId === channelId;
   };
 
   const isChannelLinking = (channelId: string) => {
-    return linkChannelMutation.isPending &&
-      linkChannelMutation.variables?.channelId === channelId;
+    return joinChannelMutation.isPending &&
+      joinChannelMutation.variables?.channelId === channelId;
   };
 
   const isChannelRemoving = (channelId: string) => {
@@ -75,7 +73,8 @@ export function Channels({ className }: ChannelsProps) {
       removeChannelMutation.variables === channelId;
   };
 
-    linkChannelMutation.mutate({
+  const handleLinkChannel = (channelId: string) => {
+    joinChannelMutation.mutate({
       channelId,
       agentId: agent.id,
     }, {
@@ -90,11 +89,11 @@ export function Channels({ className }: ChannelsProps) {
     });
   };
 
-  const handleLeaveChannel = (channelId: string) => {
+  const handleUnlinkChannel = (channelId: string) => {
     const channel = agentChannels.find((c) => c.id === channelId);
     if (!channel) return;
 
-    unlinkChannelMutation.mutate({
+    leaveChannelMutation.mutate({
       channelId: channel.id,
       agentId: agent.id,
     }, {
@@ -197,7 +196,7 @@ export function Channels({ className }: ChannelsProps) {
             <button
               className="ml-auto cursor-pointer"
               type="button"
-              onClick={() => handleLeaveChannel(channel.id)}
+              onClick={() => handleUnlinkChannel(channel.id)}
               disabled={isChannelUnlinking(channel.id)}
             >
               {isChannelUnlinking(channel.id)
@@ -208,12 +207,12 @@ export function Channels({ className }: ChannelsProps) {
         );
       })}
 
-      {nonJoinedChannels.length > 0 && (
+      {unlinkedChannels.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">
             Available Channels
           </p>
-          {nonJoinedChannels.map((channel) => {
+          {unlinkedChannels.map((channel) => {
             const integration = channel.integration;
             return (
               <div
@@ -237,7 +236,7 @@ export function Channels({ className }: ChannelsProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleJoinChannel(channel.id)}
+                    onClick={() => handleLinkChannel(channel.id)}
                     disabled={isChannelLinking(channel.id)}
                     className="h-6 px-2 text-xs"
                   >
@@ -245,11 +244,11 @@ export function Channels({ className }: ChannelsProps) {
                       ? (
                         <div className="flex items-center gap-1">
                           <Spinner size="xs" />
-                          <span>Joining...</span>
+                          <span>Linking...</span>
                         </div>
                       )
                       : (
-                        "Join"
+                        "Link"
                       )}
                   </Button>
                   <button

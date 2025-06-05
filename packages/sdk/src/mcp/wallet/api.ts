@@ -176,8 +176,7 @@ export const getThreadsUsage = createTool({
   handler: async ({ range }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
 
@@ -199,8 +198,7 @@ export const getAgentsUsage = createTool({
   handler: async ({ range }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
 
@@ -224,8 +222,7 @@ export const createCheckoutSession = createTool({
   handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
     assertHasWorkspace(ctx);
 
-    await assertWorkspaceResourceAccess(ctx.tool.name, ctx)
-      .then(() => ctx.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(ctx.tool.name, ctx);
 
     const plan = await getPlan(ctx);
     plan.assertHasFeature("ai-wallet-deposit");
@@ -261,8 +258,7 @@ export const createWalletVoucher = createTool({
   handler: async ({ amount }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
     const id = crypto.randomUUID();
@@ -303,8 +299,7 @@ export const redeemWalletVoucher = createTool({
   handler: async ({ voucher }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
 
@@ -352,8 +347,7 @@ export const getWorkspacePlan = createTool({
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c)
-      .then(() => c.resourceAccess.grant());
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     return getPlan(c);
   },

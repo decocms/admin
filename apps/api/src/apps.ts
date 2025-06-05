@@ -3,6 +3,7 @@ import { getRuntimeKey } from "hono/adapter";
 import { Entrypoint } from "@deco/sdk/mcp";
 import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import { AppEnv } from "./utils/context.ts";
+
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
 app.all("/*", async (c) => {

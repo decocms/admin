@@ -8,6 +8,7 @@ export type AppEnv = {
   Variables: Vars & TimingVariables;
   Bindings: EnvVars & {
     PROD_DISPATCHER: { get: (script: string) => { fetch: typeof fetch } };
+    DISPATCH_SCRIPT?: string;
   };
 };
 

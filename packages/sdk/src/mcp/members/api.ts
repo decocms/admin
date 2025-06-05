@@ -109,13 +109,13 @@ export const getTeamMembers = createTool({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
-  handler: async (props, c, { name }): Promise<{
+  handler: async (props, c): Promise<{
     members: (ReturnType<typeof mapMember> & { lastActivity?: string })[];
     invites: InviteAPIData[];
   }> => {
     const { teamId, withActivity } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     // Get all members of the team
     const [{ data, error }, { data: invitesData }] = await Promise.all([
@@ -192,10 +192,10 @@ export const updateTeamMember = createTool({
       admin: z.boolean().optional(),
     }),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId, memberId, data } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -234,10 +234,10 @@ export const removeTeamMember = createTool({
     teamId: z.number(),
     memberId: z.number(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId, memberId } = props;
 
-    const hasAccess = await assertTeamResourceAccess(name, teamId, c)
+    const hasAccess = await assertTeamResourceAccess(c.tool.name, teamId, c)
       .then(() => true)
       .catch(() => false);
 
@@ -315,10 +315,10 @@ export const registerMemberActivity = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     assertPrincipalIsUser(c);
     const user = c.user;
@@ -408,7 +408,7 @@ export const inviteTeamMembers = createTool({
       })),
     })),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertPrincipalIsUser(c);
 
     const { teamId, invitees } = props;
@@ -416,7 +416,7 @@ export const inviteTeamMembers = createTool({
     const user = c.user;
     const teamIdAsNum = Number(teamId);
 
-    await assertTeamResourceAccess(name, teamIdAsNum, c);
+    await assertTeamResourceAccess(c.tool.name, teamIdAsNum, c);
 
     const plan = await getPlan(c);
     plan.assertHasFeature("invite-to-workspace");
@@ -664,7 +664,7 @@ export const deleteInvite = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { id } = props;
     const db = c.db;
 
@@ -684,7 +684,7 @@ export const deleteInvite = createTool({
       : invite?.invited_email && profile?.email &&
           invite.invited_email === profile.email
       ? true
-      : await assertTeamResourceAccess(name, invite.team_id, c)
+      : await assertTeamResourceAccess(c.tool.name, invite.team_id, c)
         .then(() => true).catch(() => false);
 
     if (!canAccess) {
@@ -711,10 +711,10 @@ export const teamRolesList = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     return await c.policy.getTeamRoles(teamId);
   },
@@ -729,10 +729,10 @@ export const updateMemberRole = createTool({
     roleId: z.number(),
     action: z.enum(["grant", "revoke"]),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     const { teamId: teamIdFromProps, userId, roleId, action } = props;
 

@@ -53,11 +53,11 @@ export const createModel = createTool({
   name: "MODELS_CREATE",
   description: "Create a new model",
   inputSchema: createModelSchema,
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { name: modelName, model, apiKey, byDeco, description, isEnabled } =
       props;
@@ -119,11 +119,11 @@ export const updateModel = createTool({
   name: "MODELS_UPDATE",
   description: "Update an existing model",
   inputSchema: updateModelSchema,
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { id, data: modelData } = props;
     const updateData: Partial<ModelRow> = {};
@@ -203,12 +203,12 @@ export const deleteModel = createTool({
   name: "MODELS_DELETE",
   description: "Delete a model by id",
   inputSchema: deleteModelSchema,
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { error } = await c.db
       .from("models")
@@ -284,7 +284,7 @@ export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
   inputSchema: listModelsSchema,
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { excludeDisabled = false } = props;
@@ -292,7 +292,7 @@ export const listModels = createTool({
     c.resourceAccess.grant();
 
     // This is a workaround to enable public agents
-    const canAccess = await assertWorkspaceResourceAccess(name, c)
+    const canAccess = await assertWorkspaceResourceAccess(c.tool.name, c)
       .then(() => true)
       .catch(() => false);
 
@@ -318,12 +318,12 @@ export const getModel = createTool({
   name: "MODELS_GET",
   description: "Get a model by id",
   inputSchema: getModelSchema,
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const defaultModel = WELL_KNOWN_MODELS.find((m) => m.id === id);
 

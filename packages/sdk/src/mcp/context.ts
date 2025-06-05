@@ -10,6 +10,7 @@ import { z } from "zod";
 import { JWTPayload } from "../auth/jwt.ts";
 import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, HttpError } from "../errors.ts";
+import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
@@ -25,6 +26,8 @@ export interface Vars {
     value: string;
   };
   resourceAccess: ResourceAccess;
+  /** Current tool being executed definitions */
+  tool?: { name: string };
   cookie?: string;
   db: Client;
   user: Principal;
@@ -137,11 +140,7 @@ export interface ToolDefinition<
   description: string;
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
-  handler: (
-    props: TInput,
-    c: TAppContext,
-    resources: { name: string },
-  ) => Promise<TReturn> | TReturn;
+  handler: (props: TInput, c: TAppContext) => Promise<TReturn> | TReturn;
 }
 
 export interface Tool<
@@ -177,10 +176,9 @@ export const createToolFactory = <
   ): Promise<ToolCallResult<TReturn>> => {
     try {
       const context = contextFactory(State.getStore());
+      context.tool = { name: def.name };
 
-      context.resourceAccess.reset();
-
-      const result = await def.handler(props, context, { name: def.name });
+      const result = await def.handler(props, context);
 
       if (!context.resourceAccess.granted()) {
         console.warn(
@@ -204,7 +202,9 @@ export const createToolFactory = <
   },
 });
 
-export const createTool = createToolFactory<AppContext>((c) => c);
+export const createTool = createToolFactory<WithTool<AppContext>>(
+  (c) => c as unknown as WithTool<AppContext>,
+);
 
 export type MCPDefinition = Tool[];
 

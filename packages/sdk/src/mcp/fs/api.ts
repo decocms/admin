@@ -79,13 +79,13 @@ export const listFiles = createTool({
   inputSchema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  handler: async ({ prefix: root }, c, { name }) => {
+  handler: async ({ prefix: root }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const s3Client = getS3Client(c);
     const listCommand = new ListObjectsCommand({
@@ -106,13 +106,13 @@ export const readFile = createTool({
       "Seconds until URL expires (default: 60)",
     ),
   }),
-  handler: async ({ path, expiresIn = 60 }, c, { name }) => {
+  handler: async ({ path, expiresIn = 60 }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -132,13 +132,13 @@ export const readFileMetadata = createTool({
   inputSchema: z.object({
     path: z.string(),
   }),
-  handler: async ({ path }, c, { name }) => {
+  handler: async ({ path }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const s3Client = getS3Client(c);
     const getCommand = new GetObjectCommand({
@@ -196,13 +196,13 @@ export const deleteFile = createTool({
   name: "FS_DELETE",
   description: "Delete a file",
   inputSchema: z.object({ path: z.string() }),
-  handler: async ({ path }, c, { name }) => {
+  handler: async ({ path }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

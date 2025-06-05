@@ -7,7 +7,7 @@ import { Path } from "../../path.ts";
 import { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { ChannelBinding } from "../bindings/binder.ts";
 import { AppContext, createTool } from "../context.ts";
@@ -46,9 +46,9 @@ export const listChannels = createTool({
   name: "CHANNELS_LIST",
   description: "List all channels",
   inputSchema: z.object({}),
-  handler: async (_, c, { name }) => {
+  handler: async (_, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -82,9 +82,9 @@ export const createChannel = createTool({
       "The IDs of the agents to link the channel to.",
     ),
   }),
-  handler: async ({ discriminator, integrationId, agentIds }, c, { name }) => {
+  handler: async ({ discriminator, integrationId, agentIds }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -160,9 +160,9 @@ export const channelLink = createTool({
       "The ID of the agent to link the channel to, use only UUIDs.",
     ),
   }),
-  handler: async ({ id, agentId, discriminator }, c, { name }) => {
+  handler: async ({ id, agentId, discriminator }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -220,9 +220,9 @@ export const channelUnlink = createTool({
       "The ID of the agent to unlink, use only UUIDs.",
     ),
   }),
-  handler: async ({ id, discriminator, agentId }, c, { name }) => {
+  handler: async ({ id, discriminator, agentId }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -263,9 +263,9 @@ export const getChannel = createTool({
   name: "CHANNELS_GET",
   description: "Get a channel by ID",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;
@@ -320,9 +320,9 @@ export const deleteChannel = createTool({
   name: "CHANNELS_DELETE",
   description: "Delete a channel",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const db = c.db;
     const workspace = c.workspace.value;

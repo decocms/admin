@@ -73,10 +73,10 @@ export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   inputSchema: z.object({}),
-  handler: async (_, c, { name }) => {
+  handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -257,8 +257,8 @@ Important Notes:
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
   }),
-  handler: async ({ appSlug, files }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, c);
+  handler: async ({ appSlug, files }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
@@ -301,8 +301,8 @@ export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
   inputSchema: AppInputSchema,
-  handler: async ({ appSlug }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, c);
+  handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
@@ -341,8 +341,8 @@ export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
   inputSchema: AppInputSchema,
-  handler: async ({ appSlug }, c, { name }) => {
-    await assertWorkspaceResourceAccess(name, c);
+  handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB

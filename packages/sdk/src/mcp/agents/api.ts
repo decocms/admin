@@ -62,10 +62,10 @@ export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
   inputSchema: z.object({}),
-  handler: async (_, c, { name }) => {
+  handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_agents")
@@ -97,11 +97,11 @@ export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
     const [canAccess, { data, error }] = await Promise.all([
-      assertWorkspaceResourceAccess(name, c)
+      assertWorkspaceResourceAccess(c.tool.name, c)
         .then(() => true)
         .catch(() => false),
       id in WELL_KNOWN_AGENTS
@@ -139,10 +139,10 @@ export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   inputSchema: AgentSchema.partial(),
-  handler: async (agent, c, { name }) => {
+  handler: async (agent, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -172,10 +172,10 @@ export const updateAgent = createTool({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
-  handler: async ({ id, agent }, c, { name }) => {
+  handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_agents")
@@ -200,10 +200,10 @@ export const deleteAgent = createTool({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { error } = await c.db
       .from("deco_chat_agents")

@@ -193,11 +193,11 @@ export const listIntegrations = createTool({
   inputSchema: z.object({
     binder: BindingsSchema.optional(),
   }),
-  handler: async ({ binder }, c, { name }) => {
+  handler: async ({ binder }, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const [
       integrations,
@@ -301,13 +301,13 @@ export const getIntegration = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     // preserve the logic of the old canAccess
     const isInnate =
       INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
 
     const canAccess = isInnate ||
-      await assertWorkspaceResourceAccess(name, c)
+      await assertWorkspaceResourceAccess(c.tool.name, c)
         .then(() => true)
         .catch(() => false);
 
@@ -375,9 +375,9 @@ export const createIntegration = createTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
   inputSchema: IntegrationSchema.partial(),
-  handler: async (integration, c, { name }) => {
+  handler: async (integration, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -407,9 +407,9 @@ export const updateIntegration = createTool({
     id: z.string(),
     integration: IntegrationSchema,
   }),
-  handler: async ({ id, integration }, c, { name }) => {
+  handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { uuid, type } = parseId(id);
 
@@ -445,9 +445,9 @@ export const deleteIntegration = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { uuid, type } = parseId(id);
 

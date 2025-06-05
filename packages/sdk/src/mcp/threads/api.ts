@@ -101,11 +101,10 @@ export const listThreads = createTool({
   handler: async (
     { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
     c,
-    { name },
   ) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -240,10 +239,10 @@ export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -276,10 +275,10 @@ export const getThread = createTool({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -309,10 +308,10 @@ export const getThreadTools = createTool({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  handler: async ({ id }, c, { name }) => {
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
@@ -341,10 +340,10 @@ export const updateThreadTitle = createTool({
     threadId: z.string(),
     title: z.string(),
   }),
-  handler: async ({ threadId, title }, c, { name }) => {
+  handler: async ({ threadId, title }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const memory = await getWorkspaceMemory(c);
 
@@ -381,10 +380,10 @@ export const updateThreadMetadata = createTool({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
-  handler: async ({ threadId, metadata }, c, { name }) => {
+  handler: async ({ threadId, metadata }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const memory = await getWorkspaceMemory(c);
 

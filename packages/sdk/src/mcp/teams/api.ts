@@ -27,10 +27,10 @@ export const getTeam = createTool({
   inputSchema: z.object({
     slug: z.string(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { slug } = props;
 
-    await assertTeamResourceAccess(name, slug, c);
+    await assertTeamResourceAccess(c.tool.name, slug, c);
 
     const { data: teamData, error } = await c
       .db
@@ -145,10 +145,10 @@ export const updateTeam = createTool({
       stripe_subscription_id: z.string().optional(),
     }),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { id, data } = props;
 
-    await assertTeamResourceAccess(name, id, c);
+    await assertTeamResourceAccess(c.tool.name, id, c);
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -190,10 +190,10 @@ export const deleteTeam = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  handler: async (props, c, { name }) => {
+  handler: async (props, c) => {
     const { teamId } = props;
 
-    await assertTeamResourceAccess(name, teamId, c);
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     const members = await c.db
       .from("members")

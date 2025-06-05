@@ -5,7 +5,9 @@ export const Binding = <TDefinition extends readonly ToolBinder[]>(
 ) => {
   return {
     isImplementedBy: (tools: Pick<ToolBinder, "name">[]) => {
-      return binder.every((tool) => tools.some((t) => t.name === tool.name));
+      return binder.every((tool) =>
+        tool.opt || tools.some((t) => t.name === tool.name)
+      );
     },
   };
 };

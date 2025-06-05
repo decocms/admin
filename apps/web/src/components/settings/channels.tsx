@@ -333,7 +333,7 @@ export function Channels({ className }: ChannelsProps) {
 
             <div className="space-y-2">
               <Label htmlFor="discriminator">
-                Discriminator (unique identifier)
+                Channel (unique identifier)
               </Label>
               <Input
                 id="discriminator"

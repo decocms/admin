@@ -1,5 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
+import { WellKnownBindings } from "../mcp/index.ts";
 import { Channel } from "../models/channels.ts";
+import { MCPConnection } from "../models/mcp.ts";
 export type { Channel };
 
 /**
@@ -66,6 +68,14 @@ export const joinChannel = (
     agentId,
   });
 
+export const listAvailableChannelsForConnection = (
+  workspace: string,
+  connection: MCPConnection,
+) =>
+  MCPClient.forConnection<typeof WellKnownBindings["Channel"]>(
+    workspace,
+    connection,
+  ).DECO_CHAT_CHANNELS_LIST({});
 /**
  * Remove an agent from a channel
  * @param workspace - The workspace of the channel

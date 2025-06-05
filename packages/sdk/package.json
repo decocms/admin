@@ -67,6 +67,7 @@
     "./hooks/profile": "./src/hooks/profile.ts",
     "./utils": "./src/utils/index.ts",
     "./mcp/bindings": "./src/mcp/bindings/index.ts",
-    "./mcp/binder": "./src/mcp/bindings/binder.ts"
+    "./mcp/binder": "./src/mcp/bindings/binder.ts",
+    "./models": "./src/models/index.ts"
   }
 }

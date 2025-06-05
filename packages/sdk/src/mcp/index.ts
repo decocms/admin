@@ -107,8 +107,6 @@ export const WORKSPACE_TOOLS = [
   channelsAPI.channelLink,
   channelsAPI.channelUnlink,
   channelsAPI.getChannel,
-  channelsAPI.deactivateChannel,
-  channelsAPI.activateChannel,
   channelsAPI.deleteChannel,
   channelsAPI.listChannels,
   channelsAPI.createChannel,

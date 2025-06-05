@@ -370,7 +370,6 @@ function SettingsTab() {
               )}
             />
 
-            {/* Channels Section */}
             <div className="border-t pt-6">
               <Channels />
             </div>

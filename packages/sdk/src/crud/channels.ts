@@ -27,7 +27,6 @@ export const createChannel = (
   workspace: string,
   channel: {
     discriminator: string;
-    name: string;
     integrationId: string;
     agentId?: string;
   },
@@ -80,39 +79,13 @@ export const linkChannel = (
 export const unlinkChannel = (
   workspace: string,
   channelId: string,
+  agentId: string,
   discriminator: string,
 ) =>
   MCPClient.forWorkspace(workspace).CHANNELS_UNLINK({
     id: channelId,
+    agentId: agentId,
     discriminator,
-  });
-
-/**
- * Activate a channel
- * @param workspace - The workspace of the channel
- * @param channelId - The ID of the channel to activate
- * @returns Success response
- */
-export const activateChannel = (
-  workspace: string,
-  channelId: string,
-) =>
-  MCPClient.forWorkspace(workspace).CHANNELS_ACTIVATE({
-    id: channelId,
-  });
-
-/**
- * Deactivate a channel
- * @param workspace - The workspace of the channel
- * @param channelId - The ID of the channel to deactivate
- * @returns Success response
- */
-export const deactivateChannel = (
-  workspace: string,
-  channelId: string,
-) =>
-  MCPClient.forWorkspace(workspace).CHANNELS_DEACTIVATE({
-    id: channelId,
   });
 
 /**

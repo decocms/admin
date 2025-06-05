@@ -79,7 +79,6 @@ export const createChannel = createTool({
     discriminator: z.string().describe(
       "The channel discriminator",
     ),
-    name: z.string().describe("The name of the channel"),
     integrationId: z.string().describe("The ID of the integration to use"),
     agentIds: z.array(z.string()).optional().describe(
       "The IDs of the agents to link the channel to.",
@@ -87,7 +86,7 @@ export const createChannel = createTool({
   }),
   canAccess: canAccessWorkspaceResource,
   handler: async (
-    { discriminator, name, integrationId, agentIds },
+    { discriminator, integrationId, agentIds },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -99,7 +98,6 @@ export const createChannel = createTool({
       .insert({
         discriminator,
         workspace,
-        name,
         integration_id: integrationId.replace("i:", ""),
       })
       .select(SELECT_CHANNEL_QUERY)

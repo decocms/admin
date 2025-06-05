@@ -4,10 +4,8 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
-  activateChannel,
   type Channel,
   createChannel,
-  deactivateChannel,
   deleteChannel,
   getChannel,
   linkChannel,
@@ -25,7 +23,6 @@ export const useCreateChannel = () => {
   const create = useMutation({
     mutationFn: (channel: {
       discriminator: string;
-      name: string;
       integrationId: string;
       agentId?: string;
     }) => createChannel(workspace, channel),
@@ -56,7 +53,7 @@ export const useUpdateChannelCache = () => {
   const update = (channel: Channel) => {
     const itemKey = KEYS.CHANNELS(workspace, channel.id);
     client.cancelQueries({ queryKey: itemKey });
-    client.setQueryData<Channel>(itemKey, channel);
+    client.setQueryData<Channel>(itemKey, channel ?? {} as Channel);
 
     const listKey = KEYS.CHANNELS(workspace);
     client.cancelQueries({ queryKey: listKey });
@@ -99,53 +96,17 @@ export const useUnlinkChannel = () => {
   const unlink = useMutation({
     mutationFn: ({
       channelId,
+      agentId,
       discriminator,
     }: {
       channelId: string;
+      agentId: string;
       discriminator: string;
-    }) => unlinkChannel(workspace, channelId, discriminator),
+    }) => unlinkChannel(workspace, channelId, agentId, discriminator),
     onSuccess: (result) => updateChannelCache(result),
   });
 
   return unlink;
-};
-
-export const useActivateChannel = () => {
-  const { workspace } = useSDK();
-  const client = useQueryClient();
-
-  const activate = useMutation({
-    mutationFn: (channelId: string) => activateChannel(workspace, channelId),
-    onSuccess: (_, channelId) => {
-      client.invalidateQueries({
-        queryKey: KEYS.CHANNELS(workspace, channelId),
-      });
-      client.invalidateQueries({
-        queryKey: KEYS.CHANNELS(workspace),
-      });
-    },
-  });
-
-  return activate;
-};
-
-export const useDeactivateChannel = () => {
-  const { workspace } = useSDK();
-  const client = useQueryClient();
-
-  const deactivate = useMutation({
-    mutationFn: (channelId: string) => deactivateChannel(workspace, channelId),
-    onSuccess: (_, channelId) => {
-      client.invalidateQueries({
-        queryKey: KEYS.CHANNELS(workspace, channelId),
-      });
-      client.invalidateQueries({
-        queryKey: KEYS.CHANNELS(workspace),
-      });
-    },
-  });
-
-  return deactivate;
 };
 
 export const useRemoveChannel = () => {

@@ -8,9 +8,9 @@ import {
   createChannel,
   deleteChannel,
   getChannel,
-  linkChannel,
+  joinChannel,
+  leaveChannel,
   listChannels,
-  unlinkChannel,
 } from "../crud/channels.ts";
 import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";
@@ -80,7 +80,7 @@ export const useLinkChannel = () => {
     }: {
       channelId: string;
       agentId: string;
-    }) => linkChannel(workspace, channelId, agentId),
+    }) => joinChannel(workspace, channelId, agentId),
     onSuccess: (result) => updateChannelCache(result),
   });
 
@@ -98,7 +98,7 @@ export const useUnlinkChannel = () => {
     }: {
       channelId: string;
       agentId: string;
-    }) => unlinkChannel(workspace, channelId, agentId),
+    }) => leaveChannel(workspace, channelId, agentId),
     onSuccess: (result) => updateChannelCache(result),
   });
 

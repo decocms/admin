@@ -16,19 +16,19 @@ const channelBindingSchema = channelIdSchema.extend({
   agentId: z.string(),
 });
 
-const linkedChannelSchema = channelBindingSchema.extend({
+const joinChannelSchema = channelBindingSchema.extend({
   callbacks: callbacksSchema,
 });
 
 export type Callbacks = z.infer<typeof callbacksSchema>;
-export type ChannelLinkedPayload = z.infer<typeof linkedChannelSchema>;
+export type JoinedChannelPayload = z.infer<typeof joinChannelSchema>;
 
 export const CHANNEL_BINDING_SCHEMA = [{
-  name: "LINK_CHANNEL" as const,
-  inputSchema: linkedChannelSchema,
+  name: "JOIN_CHANNEL" as const,
+  inputSchema: joinChannelSchema,
   outputSchema: z.any(),
 }, {
-  name: "UNLINK_CHANNEL" as const,
+  name: "LEAVE_CHANNEL" as const,
   inputSchema: channelIdSchema,
   outputSchema: z.any(),
 }] as const satisfies Binder;

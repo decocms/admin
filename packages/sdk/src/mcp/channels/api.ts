@@ -124,7 +124,7 @@ export const createChannel = createTool({
       await Promise.all(
         allAgentIds.map(async (aid) => {
           const trigger = await createWebhookTrigger(discriminator, aid, c);
-          await binding.LINK_CHANNEL({
+          await binding.JOIN_CHANNEL({
             discriminator,
             workspace,
             agentId: aid,
@@ -146,15 +146,15 @@ export const createChannel = createTool({
   },
 });
 
-export const channelLink = createTool({
-  name: "CHANNELS_LINK",
-  description: "Link a channel to an agent",
+export const channelJoin = createTool({
+  name: "CHANNELS_JOIN",
+  description: "Invite an agent to a channel",
   inputSchema: z.object({
     id: z.string().describe(
-      "The ID of the channel to link, use only UUIDs.",
+      "The ID of the channel to join, use only UUIDs.",
     ),
     agentId: z.string().describe(
-      "The ID of the agent to link the channel to, use only UUIDs.",
+      "The ID of the agent to join the channel to, use only UUIDs.",
     ),
   }),
   handler: async ({ id, agentId }, c) => {
@@ -181,7 +181,7 @@ export const channelLink = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // Call LINK_CHANNEL if integration exists
+    // Call JOIN_CHANNEL if integration exists
     if (channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
@@ -191,7 +191,7 @@ export const channelLink = createTool({
         agentId,
         c,
       );
-      await binding.LINK_CHANNEL({
+      await binding.JOIN_CHANNEL({
         discriminator: channel.discriminator,
         workspace,
         agentId,
@@ -203,9 +203,9 @@ export const channelLink = createTool({
   },
 });
 
-export const channelUnlink = createTool({
-  name: "CHANNELS_UNLINK",
-  description: "Unlink a channel from an agent",
+export const channelLeave = createTool({
+  name: "CHANNELS_LEAVE",
+  description: "Remove an agent from a channel",
   inputSchema: z.object({
     id: z.string().describe(
       "The ID of the channel to unlink, use only UUIDs.",
@@ -238,12 +238,12 @@ export const channelUnlink = createTool({
       throw new InternalServerError(error.message);
     }
 
-    // Call UNLINK_CHANNEL if integration exists
+    // Call LEAVE_CHANNEL if integration exists
     if (channel.integration) {
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
-      await binding.UNLINK_CHANNEL({
+      await binding.LEAVE_CHANNEL({
         discriminator: channel.discriminator,
         workspace,
       });
@@ -336,7 +336,7 @@ export const deleteChannel = createTool({
     const binding = ChannelBinding.forConnection(
       convertFromDatabase(channel.integration).connection,
     );
-    await binding.UNLINK_CHANNEL({
+    await binding.LEAVE_CHANNEL({
       discriminator: channel.discriminator,
       workspace,
     });

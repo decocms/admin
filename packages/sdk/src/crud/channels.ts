@@ -50,36 +50,34 @@ export const getChannel = (
   );
 
 /**
- * Link a channel to an agent
+ * Make a agent join the channel
  * @param workspace - The workspace of the channel
  * @param channelId - The ID of the channel to link
  * @param agentId - The ID of the agent to link to
- * @param discriminator - The channel discriminator
  * @returns The updated channel
  */
-export const linkChannel = (
+export const joinChannel = (
   workspace: string,
   channelId: string,
   agentId: string,
 ) =>
-  MCPClient.forWorkspace(workspace).CHANNELS_LINK({
+  MCPClient.forWorkspace(workspace).CHANNELS_JOIN({
     id: channelId,
     agentId,
   });
 
 /**
- * Unlink a channel from an agent
+ * Remove an agent from a channel
  * @param workspace - The workspace of the channel
  * @param channelId - The ID of the channel to unlink
- * @param discriminator - The channel discriminator
  * @returns The updated channel
  */
-export const unlinkChannel = (
+export const leaveChannel = (
   workspace: string,
   channelId: string,
   agentId: string,
 ) =>
-  MCPClient.forWorkspace(workspace).CHANNELS_UNLINK({
+  MCPClient.forWorkspace(workspace).CHANNELS_LEAVE({
     id: channelId,
     agentId: agentId,
   });

@@ -32,7 +32,7 @@ function mapChannel(
     agentIds: Array.isArray(channel.agents)
       ? channel.agents.map((a: { agent_id: string }) => a.agent_id)
       : [],
-    name: channel.name,
+    name: channel.name ?? undefined,
     createdAt: channel.created_at,
     updatedAt: channel.updated_at,
     workspace: channel.workspace,

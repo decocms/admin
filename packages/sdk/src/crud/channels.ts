@@ -33,7 +33,8 @@ export const createChannel = (
     agentId?: string;
     name?: string;
   },
-): Promise<Channel> => MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
+): Promise<Channel> =>
+  MCPClient.forWorkspace(workspace).CHANNELS_CREATE(channel);
 
 /**
  * Get a channel by ID

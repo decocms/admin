@@ -144,7 +144,7 @@ function ErrorFallback() {
     if (!isUnauthorized) {
       return;
     }
-    
+
     if (pathname === "/") {
       globalThis.location.href = "/about";
 

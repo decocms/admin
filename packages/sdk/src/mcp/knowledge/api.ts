@@ -245,6 +245,7 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
     });
 
     const proccessedFile = await fileProcessor.processFile(fileUrl);
+
     const fileMetadata = {
       ...metadata, // metadata has path that is used to get full file path
       ...proccessedFile.metadata,
@@ -255,8 +256,11 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
     const chunks = await Promise.all(
       proccessedFile.chunks.map((chunk) =>
         remember.handler({
-          content: chunk,
-          metadata: fileMetadata,
+          content: chunk.text,
+          metadata: {
+            ...fileMetadata,
+            ...chunk.metadata,
+          },
         })
       ),
     );

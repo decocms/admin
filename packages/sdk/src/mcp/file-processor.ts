@@ -1,8 +1,11 @@
+import { MDocument } from "@mastra/rag";
+
+type FileExt = "pdf" | "txt" | "md" | "csv" | "json";
 // File processing types
 interface ProcessedDocument {
   filename: string;
   content: string;
-  chunks: string[];
+  chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>["chunk"]>>;
   metadata: {
     fileType: string;
     fileSize: number;
@@ -81,7 +84,7 @@ export class FileProcessor {
         break;
     }
 
-    const chunks = this.chunkText(content);
+    const chunks = await this.chunkText(content, fileType as FileExt);
 
     return {
       filename: file.name,
@@ -135,7 +138,7 @@ export class FileProcessor {
   private getExtensionFromContentType(contentType: string | null): string {
     if (!contentType) return ".txt";
 
-    const typeMap: Record<string, string> = {
+    const typeMap: Record<string, `.${FileExt}`> = {
       "application/pdf": ".pdf",
       "text/plain": ".txt",
       "text/markdown": ".md",
@@ -207,30 +210,27 @@ export class FileProcessor {
   /**
    * Text chunking with overlap
    */
-  private chunkText(text: string): string[] {
-    const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 0);
-    const chunks: string[] = [];
-    let currentChunk = "";
-
-    for (const sentence of sentences) {
-      const trimmedSentence = sentence.trim() + ".";
-
-      if ((currentChunk + trimmedSentence).length <= this.config.chunkSize) {
-        currentChunk += (currentChunk ? " " : "") + trimmedSentence;
-      } else {
-        if (currentChunk) {
-          chunks.push(currentChunk);
-        }
-        currentChunk = trimmedSentence;
+  private chunkText(text: string, fileExt: FileExt) {
+    switch (fileExt) {
+      case "md": {
+        return MDocument.fromMarkdown(text).chunk({
+          maxSize: this.config.chunkSize,
+          headers: [["#", "title"], ["##", "section"]],
+        });
+      }
+      case "txt":
+      case "csv":
+      case "pdf": {
+        return MDocument.fromText(text).chunk({
+          maxSize: this.config.chunkSize,
+        });
+      }
+      case "json": {
+        return MDocument.fromJSON(text).chunk({
+          maxSize: this.config.chunkSize,
+        });
       }
     }
-
-    if (currentChunk) {
-      chunks.push(currentChunk);
-    }
-
-    // Add overlap between chunks
-    return this.addOverlap(chunks);
   }
 
   /**

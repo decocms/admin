@@ -9,7 +9,6 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
 import { Marketplace } from "./marketplace.tsx";
 import { Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";

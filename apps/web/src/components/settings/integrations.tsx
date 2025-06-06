@@ -196,7 +196,7 @@ function MultiAgent({
   const onConfigure = (connection: Integration) => {
     const agentId = connection.id.split("a:")[1];
     navigateWorkspace(`/agent/${agentId}/${crypto.randomUUID()}`);
-  }
+  };
 
   const activeIntegrations = installedIntegrations.filter((integration) =>
     !!toolsSet[integration.id]
@@ -217,7 +217,7 @@ function MultiAgent({
           <Icon name="add" /> Add agent
         </Button>
       }
-    /> 
+    />
   );
 
   return (

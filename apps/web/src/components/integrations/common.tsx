@@ -127,7 +127,7 @@ function IntegrationIconContent(
       className={cn(
         "rounded-xl relative flex items-center justify-center p-2 h-16 w-16",
         "before:content-[''] before:absolute before:inset-0 before:rounded-xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)] overflow-hidden",
         className,
       )}
     >
@@ -137,7 +137,7 @@ function IntegrationIconContent(
             url={icon}
             fallback={fallback}
             fallbackClassName="!bg-transparent"
-            className="w-full h-full rounded-xl"
+            className="w-full h-full rounded-none"
             objectFit="contain"
           />
         )

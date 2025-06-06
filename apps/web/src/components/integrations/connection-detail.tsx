@@ -4,6 +4,7 @@ import { useParams } from "react-router";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useGroupedApp } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { Integration, MCPConnection } from "@deco/sdk";
+import {
+  Integration,
+  MCPConnection,
+  MCPTool,
+  useToolCall,
+  useTools,
+} from "@deco/sdk";
 import { useRef, useState } from "react";
 import {
   RemoveConnectionAlert,
@@ -41,6 +48,24 @@ import {
 import { useForm } from "react-hook-form";
 import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
 import { trackEvent } from "../../hooks/analytics.ts";
+import { Card } from "@deco/ui/components/card.tsx";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@deco/ui/components/tabs.tsx";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import { ToolCallForm } from "./detail/tool-call-form.tsx";
+import { ToolCallResult } from "./detail/tool-call-result.tsx";
+import { MCPToolCallResult } from "./detail/types.ts";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -248,7 +273,7 @@ function ConfigureConnectionInstanceForm(
                         </div>
                       )
                       : (
-                        <div 
+                        <div
                           onClick={triggerFileInput}
                           className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
                         >
@@ -561,12 +586,277 @@ function Overview({ data, appKey }: {
   );
 }
 
-function ToolsInspector() {
+function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
+  const getParameters = (schema: Record<string, unknown>) => {
+    if (!schema || typeof schema !== "object") return [];
+
+    const properties = schema.properties as Record<string, any> || {};
+    const required = (schema.required as string[]) || [];
+
+    return Object.entries(properties).map(([name, prop]) => ({
+      name,
+      type: prop.type || "string",
+      description: prop.description || "",
+      required: required.includes(name),
+    }));
+  };
+
+  const parameters = getParameters(tool.inputSchema);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {parameters.length > 0
+        ? (
+          parameters.map((param) => (
+            <div className="flex flex-col gap-2">
+              <div key={param.name} className="flex items-center gap-2">
+                <Icon
+                  name={param.type === "string" ? "text_fields" : "category"}
+                  className="flex-shrink-0"
+                  size={16}
+                />
+                <span className="text-sm pl-1">
+                  {formatToolName(param.name)}
+                </span>
+                <span
+                  className={cn(
+                    "text-xs text-muted-foreground",
+                    param.required && "font-medium",
+                  )}
+                >
+                  {param.required ? "Required" : "Optional"}
+                </span>
+              </div>
+              {param.description && (
+                <span className="px-7 text-sm text-muted-foreground font-normal">
+                  {param.description}
+                </span>
+              )}
+            </div>
+          ))
+        )
+        : (
+          <div className="text-sm text-muted-foreground">
+            No parameters required
+          </div>
+        )}
+    </div>
+  );
+}
+
+interface ToolProps {
+  tool: MCPTool;
+  connection: MCPConnection;
+}
+
+function Tool({ tool, connection }: ToolProps) {
+  const toolCall = useToolCall(connection);
+  const [toolCallResponse, setToolCallResponse] = useState<
+    MCPToolCallResult | null
+  >(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const handleToolCall = async (payload: Record<string, unknown>) => {
+    setIsLoading(true);
+    abortControllerRef.current = new AbortController();
+    const startTime = performance.now();
+
+    try {
+      const response = await toolCall.mutateAsync({
+        name: tool.name,
+        arguments: payload,
+      });
+
+      const endTime = performance.now();
+
+      if (abortControllerRef.current?.signal.aborted) {
+        return;
+      }
+
+      setToolCallResponse({
+        status: "ok",
+        data: response,
+        latency: endTime - startTime,
+      });
+
+      // Scroll to results automatically
+      setTimeout(() => {
+        const resultElement = document.querySelector("[data-tool-result]");
+        resultElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    } catch (error) {
+      // Check if this was a cancellation
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      if (abortControllerRef.current?.signal.aborted) {
+        return;
+      }
+
+      const endTime = performance.now();
+      setToolCallResponse({
+        status: "error",
+        data: error,
+        latency: endTime - startTime,
+      });
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelToolCall = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem
+        value={tool.name}
+        className="border border-border overflow-hidden !border-b rounded-xl p-0"
+      >
+        <AccordionTrigger className="p-4 hover:no-underline cursor-pointer hover:bg-accent rounded-t-xl rounded-b-none">
+          <div className="flex items-start gap-3 w-full text-left">
+            <Icon name="build" filled size={16} className="flex-shrink-0" />
+            <div className="flex flex-col gap-1 min-w-0 flex-1">
+              <div className="font-medium text-sm truncate">
+                {formatToolName(tool.name)}
+              </div>
+              {tool.description && (
+                <div
+                  className="text-sm font-normal text-muted-foreground line-clamp-2"
+                  title={tool.description}
+                >
+                  {tool.description}
+                </div>
+              )}
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="bg-primary-foreground p-4">
+          <Tabs defaultValue="parameters" className="w-full">
+            <TabsList>
+              <TabsTrigger value="parameters" className="px-4">
+                Parameters
+              </TabsTrigger>
+              <TabsTrigger value="test-form" className="px-4">
+                Test form
+              </TabsTrigger>
+              <TabsTrigger value="test-raw" className="px-4">
+                Test raw
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="parameters" className="mt-4">
+              <ParametersViewer tool={tool} />
+            </TabsContent>
+            <TabsContent value="test-form" className="mt-4">
+              <ToolCallForm
+                tool={tool}
+                onSubmit={handleToolCall}
+                onCancel={handleCancelToolCall}
+                isLoading={isLoading}
+                rawMode={false}
+              />
+              {toolCallResponse && (
+                <Card className="p-4 mt-4" data-tool-result>
+                  <ToolCallResult response={toolCallResponse} />
+                </Card>
+              )}
+            </TabsContent>
+            <TabsContent value="test-raw" className="mt-4">
+              <ToolCallForm
+                tool={tool}
+                onSubmit={handleToolCall}
+                onCancel={handleCancelToolCall}
+                isLoading={isLoading}
+                rawMode
+              />
+              {toolCallResponse && (
+                <Card className="p-4 mt-4" data-tool-result>
+                  <ToolCallResult response={toolCallResponse} />
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+function ToolsInspector({ data }: {
+  data: ReturnType<typeof useGroupedApp>;
+}) {
+  const [search, setSearch] = useState("");
+  const [selectedIntegration, setSelectedIntegration] = useState<
+    Integration | null
+  >(data.instances[0] ?? null);
+  const connection = selectedIntegration?.connection;
+  const tools = useTools(connection as MCPConnection);
+
+  const filteredTools = tools.data.tools.filter((tool) =>
+    tool.name.toLowerCase().includes(search.toLowerCase()) ||
+    (tool.description &&
+      tool.description.toLowerCase().includes(search.toLowerCase()))
+  );
+
   return (
     <div className="w-full p-4 flex flex-col items-center gap-4">
       <h6 className="text-sm text-muted-foreground font-medium w-full">
         Tools
       </h6>
+      <div className="w-full flex items-center justify-between">
+        <Select
+          value={selectedIntegration?.id}
+          onValueChange={(value) => {
+            const instance = data.instances.find((i) => i.id === value);
+            setSelectedIntegration(instance ?? null);
+          }}
+        >
+          <SelectTrigger className="max-w-[250px] w-full">
+            <SelectValue placeholder="Select connection" />
+          </SelectTrigger>
+          <SelectContent>
+            {data.instances.map((instance) => (
+              <SelectItem key={instance.id} value={instance.id}>
+                <IntegrationIcon
+                  name={instance.name}
+                  icon={instance.icon}
+                  className="w-8 h-8"
+                />
+                {instance.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Input
+          placeholder="Search tools..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+      </div>
+      <div className="flex flex-col gap-4 w-full min-h-[80vh]">
+        {tools.isLoading
+          ? (
+            Array.from({ length: 8 }).map((_, idx) => (
+              <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
+            ))
+          )
+          : (
+            filteredTools.map((tool) =>
+              connection
+                ? <Tool key={tool.name} connection={connection} tool={tool} />
+                : <></>
+            )
+          )}
+      </div>
     </div>
   );
 }

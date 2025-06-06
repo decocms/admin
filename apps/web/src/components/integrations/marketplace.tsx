@@ -137,6 +137,18 @@ function CardsView(
   );
 }
 
+export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
+  connection: {
+    type: "HTTP",
+    url: "https://example.com/messages",
+  },
+  id: "",
+  name: "Create custom connection",
+  description: "Create a new connection with any MCP server",
+  icon: "",
+  provider: "deco",
+};
+
 export function Marketplace({
   filter,
   onClick,
@@ -161,7 +173,10 @@ export function Marketplace({
 
   const filteredIntegrations = useMemo(() => {
     const searchTerm = filter.toLowerCase();
-    const integrations = marketplace?.integrations ?? [];
+    const integrations = [
+      NEW_CUSTOM_CONNECTION,
+      ...(marketplace?.integrations ?? []),
+    ];
 
     return filter
       ? integrations.filter((integration: MarketplaceIntegration) =>

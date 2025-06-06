@@ -40,6 +40,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { useForm } from "react-hook-form";
 import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
+import { trackEvent } from "../../hooks/analytics.ts";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -148,6 +149,7 @@ function ConfigureConnectionInstanceForm(
       access: instance.access || null,
     },
   });
+  const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
   const updateIntegration = useUpdateIntegration();
   const isSaving = updateIntegration.isPending;
   const connection = form.watch("connection");
@@ -161,8 +163,28 @@ function ConfigureConnectionInstanceForm(
   } = useIconUpload(form);
 
   const onSubmit = async (data: Integration) => {
-    await updateIntegration.mutateAsync(data);
-    closeForm();
+    try {
+      await updateIntegration.mutateAsync(data);
+
+      trackEvent("integration_update", {
+        success: true,
+        data,
+      });
+
+      form.reset(data);
+      closeForm();
+    } catch (error) {
+      console.error(
+        `Error updating integration:`,
+        error,
+      );
+
+      trackEvent("integration_create", {
+        success: false,
+        error,
+        data,
+      });
+    }
   };
 
   const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
@@ -226,13 +248,16 @@ function ConfigureConnectionInstanceForm(
                         </div>
                       )
                       : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-muted rounded-xl">
+                        <div 
+                          onClick={triggerFileInput}
+                          className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
+                        >
                           <Icon
                             name="upload"
                             className="text-muted-foreground/70 text-xl"
                           />
                           <span className="text-xs text-muted-foreground/70 text-center px-1">
-                            Upload Icon
+                            Select an icon
                           </span>
                         </div>
                       )}
@@ -407,7 +432,7 @@ function ConfigureConnectionInstanceForm(
             >
               Discard changes
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving || numberOfChanges === 0}>
               Save
             </Button>
           </div>
@@ -536,6 +561,16 @@ function Overview({ data, appKey }: {
   );
 }
 
+function ToolsInspector() {
+  return (
+    <div className="w-full p-4 flex flex-col items-center gap-4">
+      <h6 className="text-sm text-muted-foreground font-medium w-full">
+        Tools
+      </h6>
+    </div>
+  );
+}
+
 function AppDetail({ data, appKey }: {
   data: ReturnType<typeof useGroupedApp>;
   appKey: string;
@@ -545,6 +580,7 @@ function AppDetail({ data, appKey }: {
       <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
         <Overview data={data} appKey={appKey} />
         <Instances data={data} />
+        <ToolsInspector data={data} />
       </div>
     </div>
   );

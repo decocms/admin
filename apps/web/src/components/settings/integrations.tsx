@@ -13,6 +13,8 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { Integration } from "@deco/sdk";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
 type SetIntegrationTools = (
   integrationId: string,
@@ -41,6 +43,12 @@ function Connections({
   setIntegrationTools: SetIntegrationTools;
 }) {
   const [search, setSearch] = useState("");
+  const navigateWorkspace = useNavigateWorkspace();
+  const onConfigureConnection = (integration: Integration) => {
+    const appKey = AppKeys.build(getConnectionAppKey(integration));
+    navigateWorkspace(`/connection/${appKey}?selected=${integration.id}`);
+  };
+
   const activeIntegrations = installedIntegrations.filter((integration) =>
     !!toolsSet[integration.id]
   );
@@ -131,6 +139,7 @@ function Connections({
                       integration={connection}
                       toolsSet={toolsSet}
                       setIntegrationTools={setIntegrationTools}
+                      onConfigure={onConfigureConnection}
                       onRemove={(integrationId) =>
                         setIntegrationTools(integrationId, false)}
                     />
@@ -183,6 +192,12 @@ function MultiAgent({
   toolsSet: Record<string, string[]>;
   setIntegrationTools: SetIntegrationTools;
 }) {
+  const navigateWorkspace = useNavigateWorkspace();
+  const onConfigure = (connection: Integration) => {
+    const agentId = connection.id.split("a:")[1];
+    navigateWorkspace(`/agent/${agentId}/${crypto.randomUUID()}`);
+  }
+
   const activeIntegrations = installedIntegrations.filter((integration) =>
     !!toolsSet[integration.id]
   );
@@ -190,6 +205,20 @@ function MultiAgent({
     integration.id.startsWith("a:")
   );
   const showAddAgentEmptyState = agentConnections.length === 0;
+
+  const newAgentButton = (
+    <SelectConnectionDialog
+      title="Connect agent"
+      filter={(integration) => integration.id.startsWith("a:")}
+      onSelect={(integration) =>
+        setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
+      trigger={
+        <Button variant="outline">
+          <Icon name="add" /> Add agent
+        </Button>
+      }
+    /> 
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -199,21 +228,12 @@ function MultiAgent({
           Enable your agent to communicate with other agents for collaborative
           workflows.
         </span>
+        {!showAddAgentEmptyState ? newAgentButton : null}
       </div>
       {showAddAgentEmptyState
         ? (
           <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-            <SelectConnectionDialog
-              title="Connect agent"
-              filter={(integration) => integration.id.startsWith("a:")}
-              onSelect={(integration) =>
-                setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
-              trigger={
-                <Button variant="outline">
-                  <Icon name="add" /> Add agent
-                </Button>
-              }
-            />
+            {newAgentButton}
           </div>
         )
         : (
@@ -226,6 +246,7 @@ function MultiAgent({
                     integration={agentConnection}
                     toolsSet={toolsSet}
                     setIntegrationTools={setIntegrationTools}
+                    onConfigure={onConfigure}
                     onRemove={(integrationId) =>
                       setIntegrationTools(integrationId, false)}
                     hideTools

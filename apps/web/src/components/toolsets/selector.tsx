@@ -60,17 +60,18 @@ export function IntegrationListItem({
   toolsSet,
   setIntegrationTools,
   onRemove,
+  onConfigure,
   hideTools,
 }: {
   integration: Integration;
   toolsSet: ToolsMap;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
+  onConfigure: (integration: Integration) => void;
   onRemove: (integrationId: string) => void;
   hideTools?: boolean;
 }) {
   const [openTools, setOpenTools] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
-  const navigateWorkspace = useNavigateWorkspace();
 
   const total = toolsData?.tools?.length ?? 0;
 
@@ -87,11 +88,6 @@ export function IntegrationListItem({
       checked ? allTools.map((tool) => tool.name) : [],
     );
   }
-
-  const openConfig = () => {
-    const appKey = AppKeys.build(getConnectionAppKey(integration));
-    navigateWorkspace(`/connection/${appKey}?selected=${integration.id}`);
-  };
 
   return (
     <div
@@ -119,7 +115,7 @@ export function IntegrationListItem({
         </div>
         <IntegrationListItemActions
           integration={integration}
-          onConfigure={openConfig}
+          onConfigure={() => onConfigure(integration)}
           onRemove={onRemove}
         />
       </div>
@@ -127,7 +123,7 @@ export function IntegrationListItem({
         <div
           onClick={(e) => {
             e.preventDefault();
-            openConfig();
+            onConfigure(integration);
           }}
           className={cn(
             "flex gap-2 items-center justify-between px-4 py-4 border-t border-border cursor-pointer",

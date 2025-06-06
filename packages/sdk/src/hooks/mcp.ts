@@ -131,7 +131,7 @@ export const useBindings = (binder: Binder) => {
       // Process items sequentially to provide incremental updates
       for (const item of items) {
         if (signal?.aborted) {
-          throw new Error('Query was cancelled');
+          throw new Error("Query was cancelled");
         }
 
         try {
@@ -162,7 +162,7 @@ export const useBindings = (binder: Binder) => {
             )
           ) {
             filtered.push(item);
-            
+
             // Update query data incrementally
             client.setQueryData<Integration[]>(queryKey, [...filtered]);
           }
@@ -171,7 +171,6 @@ export const useBindings = (binder: Binder) => {
           const itemKey = KEYS.INTEGRATION(workspace, item.id);
           client.cancelQueries({ queryKey: itemKey });
           client.setQueryData<Integration>(itemKey, item);
-
         } catch (error) {
           console.error("Error processing integration:", item.id, error);
         }

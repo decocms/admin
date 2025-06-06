@@ -122,10 +122,6 @@ export const useBindings = (binder: Binder) => {
     queryFn: async ({ signal }) => {
       const items = await listIntegrations(workspace, {}, signal);
 
-      // Initialize with empty array to show loading state
-      const queryKey = KEYS.BINDINGS(workspace, binder);
-      client.setQueryData<Integration[]>(queryKey, []);
-
       const filtered: typeof items = [];
 
       // Process items sequentially to provide incremental updates
@@ -164,7 +160,10 @@ export const useBindings = (binder: Binder) => {
             filtered.push(item);
 
             // Update query data incrementally
-            client.setQueryData<Integration[]>(queryKey, [...filtered]);
+            client.setQueryData<Integration[]>(
+              KEYS.BINDINGS(workspace, binder),
+              [...filtered],
+            );
           }
 
           // Cache individual integration

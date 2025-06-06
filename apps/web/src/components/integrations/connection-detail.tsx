@@ -1,0 +1,596 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useParams } from "react-router";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { useGroupedApp } from "./apps.ts";
+import { IntegrationIcon } from "./common.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@deco/ui/components/avatar.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Integration, MCPConnection } from "@deco/sdk";
+import { useRef, useState } from "react";
+import {
+  RemoveConnectionAlert,
+  useRemoveConnection,
+} from "./remove-connection.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
+import { useForm } from "react-hook-form";
+import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
+
+function ConnectionInstanceActions({
+  onConfigure,
+  onDelete,
+  onTestTools,
+}: {
+  onConfigure: () => void;
+  onTestTools: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="ml-2">
+          <Icon name="more_horiz" size={16} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onSelect={onConfigure}>Configure</DropdownMenuItem>
+        <DropdownMenuItem onSelect={onTestTools}>Test tools</DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={onDelete}
+          className="bg-destructive/10 text-destructive focus:bg-destructive/20 focus:text-destructive"
+        >
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+const ICON_FILE_PATH = "assets/integrations";
+
+function useIconFilename() {
+  function generate(originalFile: File) {
+    const extension = originalFile.name.split(".").pop()?.toLowerCase() ||
+      "png";
+    return `icon-${crypto.randomUUID()}.${extension}`;
+  }
+  return { generate };
+}
+
+function useIconUpload(form: ReturnType<typeof useForm<Integration>>) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const writeFileMutation = useWriteFile();
+  const { generate: generateIconFilename } = useIconFilename();
+  const [isUploading, setIsUploading] = useState(false);
+  const iconValue = form.watch("icon");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+    try {
+      setIsUploading(true);
+      const filename = generateIconFilename(file);
+      const path = `${ICON_FILE_PATH}/${filename}`;
+      const buffer = await file.arrayBuffer();
+      await writeFileMutation.mutateAsync({
+        path,
+        contentType: file.type,
+        content: new Uint8Array(buffer),
+      });
+      form.setValue("icon", path, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    } catch (error) {
+      console.error("Failed to upload icon:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  return {
+    fileInputRef,
+    isUploading,
+    iconValue,
+    handleFileChange,
+    triggerFileInput,
+  };
+}
+
+function ConfigureConnectionInstanceForm(
+  { instance, closeForm }: { instance: Integration; closeForm: () => void },
+) {
+  const form = useForm<Integration>({
+    defaultValues: {
+      id: instance.id || crypto.randomUUID(),
+      name: instance.name || "",
+      description: instance.description || "",
+      icon: instance.icon || "",
+      connection: instance.connection || {
+        type: "HTTP" as const,
+        url: "https://example.com/messages",
+        token: "",
+      },
+      access: instance.access || null,
+    },
+  });
+  const updateIntegration = useUpdateIntegration();
+  const isSaving = updateIntegration.isPending;
+  const connection = form.watch("connection");
+
+  const {
+    fileInputRef,
+    isUploading,
+    iconValue,
+    handleFileChange,
+    triggerFileInput,
+  } = useIconUpload(form);
+
+  const onSubmit = async (data: Integration) => {
+    await updateIntegration.mutateAsync(data);
+    closeForm();
+  };
+
+  const handleConnectionTypeChange = (value: MCPConnection["type"]) => {
+    const ec = instance.connection;
+    form.setValue(
+      "connection",
+      value === "SSE" || value === "HTTP"
+        ? {
+          type: value,
+          url: ec?.type === "SSE"
+            ? ec.url || "https://example.com/sse"
+            : "https://example.com/sse",
+        }
+        : value === "Websocket"
+        ? {
+          type: "Websocket",
+          url: ec?.type === "Websocket"
+            ? ec.url || "wss://example.com/ws"
+            : "wss://example.com/ws",
+        }
+        : {
+          type: "Deco",
+          tenant: ec?.type === "Deco" ? ec.tenant || "tenant-id" : "tenant-id",
+        },
+    );
+  };
+
+  return (
+    <div className="w-full p-6 bg-muted rounded-xl border border-border flex flex-col gap-6">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex flex-col gap-6"
+        >
+          <div className="flex items-end gap-4">
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <Input type="hidden" {...field} />
+                  <FormControl>
+                    {iconValue
+                      ? (
+                        <div onClick={triggerFileInput} className="w-14 h-14">
+                          <IntegrationIcon
+                            icon={iconValue}
+                            name={form.getValues("name") || "Integration"}
+                            className={cn(
+                              "w-14 h-14 bg-background",
+                              isUploading && "opacity-50",
+                            )}
+                          />
+                        </div>
+                      )
+                      : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-muted rounded-xl">
+                          <Icon
+                            name="upload"
+                            className="text-muted-foreground/70 text-xl"
+                          />
+                          <span className="text-xs text-muted-foreground/70 text-center px-1">
+                            Upload Icon
+                          </span>
+                        </div>
+                      )}
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              onClick={triggerFileInput}
+              disabled={isUploading}
+            >
+              <Icon name="upload" className="mr-2" />
+              Upload image
+            </Button>
+          </div>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-background"
+                    placeholder="Integration name"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <FormLabel>MCP Settings</FormLabel>
+            </div>
+            <div className="space-y-4 p-4 border border-border rounded-xl bg-background">
+              <FormField
+                control={form.control}
+                name="connection.type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Connection Type</FormLabel>
+                    <Select
+                      onValueChange={(value: MCPConnection["type"]) => {
+                        field.onChange(value);
+                        handleConnectionTypeChange(value);
+                      }}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a connection type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="HTTP">HTTP</SelectItem>
+                        <SelectItem value="SSE">
+                          Server-Sent Events (SSE)
+                        </SelectItem>
+                        <SelectItem value="Websocket">WebSocket</SelectItem>
+                        <SelectItem value="Deco">Deco</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {["SSE", "HTTP"].includes(connection.type) && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="connection.url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{connection.type} URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com/messages"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="connection.token"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Token</FormLabel>
+                        <span className="text-[10px] text-muted-foreground ml-1">
+                          optional
+                        </span>
+                        <FormControl>
+                          <Input placeholder="token" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              {connection.type === "Websocket" && (
+                <FormField
+                  control={form.control}
+                  name="connection.url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WebSocket URL</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="wss://example.com/ws"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {connection.type === "Deco" && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="connection.tenant"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tenant ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="tenant-id" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="connection.token"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Token</FormLabel>
+                        <span className="text-[10px] text-muted-foreground ml-1">
+                          optional
+                        </span>
+                        <FormControl>
+                          <Input placeholder="token" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeForm}
+              disabled={isSaving}
+            >
+              Discard changes
+            </Button>
+            <Button type="submit" disabled={isSaving}>
+              Save
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  );
+}
+
+function ConnectionInstanceItem(
+  { instance, onTestTools }: { instance: Integration; onTestTools: () => void },
+) {
+  const [isConfiguring, setIsConfiguring] = useState(false);
+  const { deletingId, performDelete, setDeletingId, isDeletionPending } =
+    useRemoveConnection();
+  // todo: make a useIntegrationAgents() hook
+  const agentsUsedBy: {
+    id: string;
+    avatar: string;
+    name: string;
+  }[] = [];
+  const extraCount = 0;
+
+  if (isConfiguring) {
+    return (
+      <ConfigureConnectionInstanceForm
+        instance={instance}
+        closeForm={() => setIsConfiguring(false)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="w-full p-4 flex items-center gap-2 rounded-xl border border-border"
+      key={instance.id}
+    >
+      <IntegrationIcon
+        id={instance.id}
+        icon={instance.icon}
+        name={instance.name}
+        className="h-10 w-10"
+      />
+      <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
+        <h5 className="text-sm font-medium truncate">{instance.name}</h5>
+        <p className="text-sm text-muted-foreground truncate">
+          {instance.description}
+        </p>
+      </div>
+      <div className="flex items-center gap-[-8px] ml-2">
+        {agentsUsedBy.map((agent) => (
+          <Avatar
+            key={agent.id}
+            className="border-2 border-background -ml-2 first:ml-0"
+          >
+            <AvatarImage src={agent.avatar} alt={agent.name} />
+            <AvatarFallback>{agent.name || "Unknown agent"}</AvatarFallback>
+          </Avatar>
+        ))}
+        {extraCount > 0 && (
+          <span className="ml-2 text-xs font-medium bg-muted rounded-full px-2 py-0.5">
+            +{extraCount}
+          </span>
+        )}
+      </div>
+      <ConnectionInstanceActions
+        onConfigure={() => setIsConfiguring(true)}
+        onTestTools={onTestTools}
+        onDelete={() => setDeletingId(instance.id)}
+      />
+      {deletingId && (
+        <RemoveConnectionAlert
+          open={deletingId !== null}
+          onOpenChange={() => setDeletingId(null)}
+          isDeleting={isDeletionPending}
+          onDelete={performDelete}
+        />
+      )}
+    </div>
+  );
+}
+
+function Instances({ data }: {
+  data: ReturnType<typeof useGroupedApp>;
+}) {
+  return (
+    <div className="w-full p-4 flex flex-col items-center gap-4">
+      <h6 className="text-sm text-muted-foreground font-medium w-full">
+        Instances
+      </h6>
+      {data.instances.map((instance) => (
+        <ConnectionInstanceItem
+          key={instance.id}
+          instance={instance}
+          onTestTools={() => {}}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Overview({ data, appKey }: {
+  data: ReturnType<typeof useGroupedApp>;
+  appKey: string;
+}) {
+  return (
+    <div className="w-full p-4 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-4 h-12">
+        <IntegrationIcon
+          id={appKey}
+          icon={data.info?.icon}
+          name={data.info?.name}
+          className="h-12 w-12"
+        />
+        <div className="h-12 flex flex-col gap-1">
+          <h5 className="text-xl font-medium">{data.info?.name}</h5>
+          <p className="text-sm text-muted-foreground">
+            {data.info?.description}
+          </p>
+        </div>
+      </div>
+      <Button variant="special">
+        Add connection
+      </Button>
+    </div>
+  );
+}
+
+function AppDetail({ data, appKey }: {
+  data: ReturnType<typeof useGroupedApp>;
+  appKey: string;
+}) {
+  return (
+    <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
+      <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
+        <Overview data={data} appKey={appKey} />
+        <Instances data={data} />
+      </div>
+    </div>
+  );
+}
+
+export default function Page() {
+  const { appKey: _appKey } = useParams();
+  const appKey = _appKey!;
+  const app = useGroupedApp({
+    appKey,
+  });
+
+  const { info, instances } = app;
+
+  return (
+    <PageLayout
+      tabs={{
+        main: {
+          Component: () => <AppDetail data={app} appKey={appKey} />,
+          title: "Overview",
+          initialOpen: true,
+        },
+      }}
+      displayViewsTrigger={false}
+      breadcrumb={
+        <DefaultBreadcrumb
+          items={[
+            { label: "Connections", link: "/connections" },
+            ...(info?.name
+              ? [{
+                label: (
+                  <div className="flex items-center gap-2">
+                    <IntegrationIcon
+                      id={appKey}
+                      icon={info.icon}
+                      name={info.name}
+                      className="h-7 w-7"
+                    />
+                    <span>{info.name}</span>
+                  </div>
+                ),
+              }]
+              : []),
+          ]}
+        />
+      }
+    />
+  );
+}

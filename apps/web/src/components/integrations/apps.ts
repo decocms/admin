@@ -3,6 +3,9 @@
  *
  * An "App" is a group of connections from the same source MCP.
  *
+ * This is not persisted anywhere, so we can change it later, or
+ * remove it completely.
+ *
  * The "App key" is a unique identifier used to group connections by their source application.
  * Grouping by app is useful to see all connections from the same app in one place.
  */
@@ -82,38 +85,63 @@ export function isWellKnownApp(appKey: string): boolean {
 }
 
 export function getConnectionAppKey(connection: Integration): AppKey {
-  if (
-    WELL_KNOWN_DECO_CHAT_CONNECTION_IDS.some((id) =>
-      connection.id.startsWith(id)
-    )
-  ) {
-    return AppKeys.parse(WELL_KNOWN_DECO_CHAT_APP_KEY);
-  }
+  try {
+    if (
+      WELL_KNOWN_DECO_CHAT_CONNECTION_IDS.some((id) =>
+        connection.id.startsWith(id)
+      )
+    ) {
+      return AppKeys.parse(WELL_KNOWN_DECO_CHAT_APP_KEY);
+    }
 
-  if (
-    connection.id.startsWith(
-      WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
-    )
-  ) {
-    return AppKeys.parse(WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY);
-  }
+    if (
+      connection.id.startsWith(
+        WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
+      )
+    ) {
+      return AppKeys.parse(WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY);
+    }
 
-  if (connection.connection.type === "HTTP") {
-    const url = new URL(connection.connection.url);
+    if (connection.connection.type === "HTTP") {
+      const url = new URL(connection.connection.url);
 
-    if (url.hostname.includes("mcp.deco.site")) {
-      // https://mcp.deco.site/apps/{appName}...
-      const appName = url.pathname.split("/")[2];
+      if (url.hostname.includes("mcp.deco.site")) {
+        // https://mcp.deco.site/apps/{appName}...
+        const appName = url.pathname.split("/")[2];
+        return {
+          appId: decodeURIComponent(appName),
+          provider: "deco",
+        };
+      }
+
+      if (url.hostname.includes("mcp.wppagent.com")) {
+        return {
+          appId: "WhatsApp",
+          provider: "wppagent", // the same as deco?
+        };
+      }
+
       return {
-        appId: decodeURIComponent(appName),
-        provider: "deco",
+        appId: connection.id,
+        provider: "unknown",
       };
     }
 
-    if (url.hostname.includes("mcp.wppagent.com")) {
+    if (connection.connection.type === "SSE") {
+      const url = new URL(connection.connection.url);
+
+      if (url.hostname.includes("mcp.composio.dev")) {
+        // https://mcp.composio.dev/{appName}...
+        const appName = url.pathname.split("/")[1];
+        return {
+          appId: appName,
+          provider: "composio",
+        };
+      }
+
       return {
-        appId: "WhatsApp",
-        provider: "wppagent", // the same as deco?
+        appId: connection.id,
+        provider: "unknown",
       };
     }
 
@@ -121,30 +149,13 @@ export function getConnectionAppKey(connection: Integration): AppKey {
       appId: connection.id,
       provider: "unknown",
     };
-  }
-
-  if (connection.connection.type === "SSE") {
-    const url = new URL(connection.connection.url);
-
-    if (url.hostname.includes("mcp.composio.dev")) {
-      // https://mcp.composio.dev/{appName}...
-      const appName = url.pathname.split("/")[1];
-      return {
-        appId: appName,
-        provider: "composio",
-      };
-    }
-
+  } catch (err) {
+    console.error("Could not get connection app key", err, connection);
     return {
       appId: connection.id,
       provider: "unknown",
     };
   }
-
-  return {
-    appId: connection.id,
-    provider: "unknown",
-  };
 }
 
 function groupConnections(integrations: Integration[]) {
@@ -206,4 +217,43 @@ export function useGroupedApps({
   }, [installedIntegrations, filter]);
 
   return groupedApps;
+}
+
+export function useGroupedApp({
+  appKey,
+}: {
+  appKey: string;
+}) {
+  const { data: installedIntegrations } = useIntegrations();
+  const { data: marketplace } = useMarketplaceIntegrations();
+
+  const instances = useMemo(() => {
+    const grouped = groupConnections(installedIntegrations ?? []);
+    return grouped[appKey];
+  }, [installedIntegrations, appKey]);
+
+  const info = useMemo(() => {
+    const wellKnownApp = WELL_KNOWN_APPS[appKey];
+    if (wellKnownApp) {
+      return wellKnownApp;
+    }
+
+    const marketplaceApp = marketplace?.integrations?.find((app) =>
+      AppKeys.build({
+        appId: app.id,
+        provider: app.provider,
+      }) === appKey
+    );
+
+    return {
+      name: marketplaceApp?.name ?? "Unknown",
+      icon: marketplaceApp?.icon ?? instances[0].icon,
+      description: marketplaceApp?.description ?? "description",
+    };
+  }, [marketplace, appKey]);
+
+  return {
+    info,
+    instances,
+  };
 }

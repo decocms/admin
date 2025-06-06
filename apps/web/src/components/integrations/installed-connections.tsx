@@ -1,10 +1,7 @@
-import {
-    Integration,
-    useIntegrations
-} from "@deco/sdk";
+import { Integration, useIntegrations } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { useMemo } from "react";
-import { IntegrationIcon } from "./list/common.tsx";
+import { IntegrationIcon } from "./common.tsx";
 
 function CardsView(
   { integrations, onRowClick }: {

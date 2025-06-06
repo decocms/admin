@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { IntegrationList } from "../toolsets/selector.tsx";
+import { IntegrationListItem } from "../toolsets/selector.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -52,17 +52,7 @@ function Connections({
     );
   });
 
-  const orderedIntegrations = useMemo(() => {
-    return filteredIntegrations.sort((a, b) => {
-      const aIsActive = activeIntegrations.includes(a);
-      const bIsActive = activeIntegrations.includes(b);
-      if (aIsActive && !bIsActive) return -1;
-      if (!aIsActive && bIsActive) return 1;
-      return 0;
-    });
-  }, [search, filteredIntegrations]);
-
-  const connections = orderedIntegrations.filter((integration) =>
+  const connections = filteredIntegrations.filter((integration) =>
     integration.id.startsWith("i:")
   );
 
@@ -77,9 +67,8 @@ function Connections({
         </span>
         {!showAddConnectionEmptyState && (
           <SelectConnectionDialog
-            onSelect={(integration) => {
-              setIntegrationTools(integration.id, true);
-            }}
+            onSelect={(integration) =>
+              setIntegrationTools(integration.id, true)}
             filter={connectionFilter}
             trigger={
               <Button variant="outline">
@@ -102,6 +91,9 @@ function Connections({
             </div>
             <div className="absolute z-10 flex flex-col items-center gap-2 bottom-6">
               <SelectConnectionDialog
+                onSelect={(integration) =>
+                  setIntegrationTools(integration.id, true)}
+                filter={connectionFilter}
                 trigger={
                   <Button variant="outline">
                     <Icon name="add" /> Add connection
@@ -133,13 +125,16 @@ function Connections({
             <div className="space-y-2">
               <div className="flex-1">
                 <div className="flex flex-col gap-2">
-                  <IntegrationList
-                    integrations={connections}
-                    toolsSet={toolsSet}
-                    setIntegrationTools={setIntegrationTools}
-                    onRemove={(integrationId) =>
-                      setIntegrationTools(integrationId, false)}
-                  />
+                  {connections.map((connection) => (
+                    <IntegrationListItem
+                      key={connection.id}
+                      integration={connection}
+                      toolsSet={toolsSet}
+                      setIntegrationTools={setIntegrationTools}
+                      onRemove={(integrationId) =>
+                        setIntegrationTools(integrationId, false)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -179,7 +174,23 @@ function Knowledge() {
   );
 }
 
-function MultiAgent() {
+function MultiAgent({
+  installedIntegrations,
+  toolsSet,
+  setIntegrationTools,
+}: {
+  installedIntegrations: Integration[];
+  toolsSet: Record<string, string[]>;
+  setIntegrationTools: SetIntegrationTools;
+}) {
+  const activeIntegrations = installedIntegrations.filter((integration) =>
+    !!toolsSet[integration.id]
+  );
+  const agentConnections = activeIntegrations.filter((integration) =>
+    integration.id.startsWith("a:")
+  );
+  const showAddAgentEmptyState = agentConnections.length === 0;
+
   return (
     <div className="flex flex-col gap-2">
       <h6 className="text-sm font-medium">Multi-Agent</h6>
@@ -189,20 +200,41 @@ function MultiAgent() {
           workflows.
         </span>
       </div>
-      <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-        <SelectConnectionDialog
-          title="Connect agent"
-          filter={(integration) => integration.id.startsWith("a:")}
-          onSelect={(integration) => {
-            console.log(integration);
-          }}
-          trigger={
-            <Button variant="outline">
-              <Icon name="add" /> Add agent
-            </Button>
-          }
-        />
-      </div>
+      {showAddAgentEmptyState
+        ? (
+          <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+            <SelectConnectionDialog
+              title="Connect agent"
+              filter={(integration) => integration.id.startsWith("a:")}
+              onSelect={(integration) =>
+                setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
+              trigger={
+                <Button variant="outline">
+                  <Icon name="add" /> Add agent
+                </Button>
+              }
+            />
+          </div>
+        )
+        : (
+          <div className="space-y-2">
+            <div className="flex-1">
+              <div className="flex flex-col gap-2">
+                {agentConnections.map((agentConnection) => (
+                  <IntegrationListItem
+                    key={agentConnection.id}
+                    integration={agentConnection}
+                    toolsSet={toolsSet}
+                    setIntegrationTools={setIntegrationTools}
+                    onRemove={(integrationId) =>
+                      setIntegrationTools(integrationId, false)}
+                    hideTools
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -252,7 +284,11 @@ function ToolsAndKnowledgeTab() {
               setIntegrationTools={setIntegrationTools}
             />
             <Knowledge />
-            <MultiAgent />
+            <MultiAgent
+              installedIntegrations={installedIntegrations}
+              toolsSet={toolsSet}
+              setIntegrationTools={setIntegrationTools}
+            />
           </form>
         </div>
       </Form>

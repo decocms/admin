@@ -187,7 +187,7 @@ export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
   name: "New Integration",
   description: "A new multi-channel platform integration",
   icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-  connection: { type: "SSE", url: "https://example.com/sse" },
+  connection: { type: "HTTP", url: "https://example.com/messages" },
 };
 
 export const INNATE_INTEGRATIONS = {

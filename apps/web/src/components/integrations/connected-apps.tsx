@@ -9,7 +9,7 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { Table, TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { GroupedApp, useGroupedApps } from "./apps.ts";
-import { Header } from "./list/breadcrumb.tsx";
+import { Header } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 
 function AppCard({

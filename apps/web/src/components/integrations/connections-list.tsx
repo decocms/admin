@@ -1,4 +1,4 @@
-import { IntegrationPageLayout } from "./list/breadcrumb.tsx";
+import { IntegrationPageLayout } from "./breadcrumb.tsx";
 import { ConnectedAppsList } from "./connected-apps.tsx";
 
 export default function Page() {

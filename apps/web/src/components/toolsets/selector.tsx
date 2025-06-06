@@ -55,16 +55,18 @@ function IntegrationListItemActions({
   );
 }
 
-function IntegrationListItem({
+export function IntegrationListItem({
   integration,
   toolsSet,
   setIntegrationTools,
   onRemove,
+  hideTools,
 }: {
   integration: Integration;
   toolsSet: ToolsMap;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
   onRemove: (integrationId: string) => void;
+  hideTools?: boolean;
 }) {
   const [openTools, setOpenTools] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
@@ -121,9 +123,6 @@ function IntegrationListItem({
           onRemove={onRemove}
         />
       </div>
-      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
-        <Icon name="chevron_right" size={16} />
-      </div>
       {isEmpty && (
         <div
           onClick={(e) => {
@@ -145,7 +144,7 @@ function IntegrationListItem({
           </Badge>
         </div>
       )}
-      {!isEmpty && (
+      {(!isEmpty && !hideTools) && (
         <div
           className={cn(
             "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-primary-foreground rounded-b-xl",
@@ -204,32 +203,6 @@ function IntegrationListItem({
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-export function IntegrationList({
-  integrations,
-  toolsSet,
-  setIntegrationTools,
-  onRemove,
-}: {
-  integrations: Integration[];
-  toolsSet: ToolsMap;
-  setIntegrationTools: (integrationId: string, tools: string[]) => void;
-  onRemove: (integrationId: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      {integrations.map((integration) => (
-        <IntegrationListItem
-          key={integration.id}
-          integration={integration}
-          toolsSet={toolsSet}
-          setIntegrationTools={setIntegrationTools}
-          onRemove={onRemove}
-        />
-      ))}
     </div>
   );
 }

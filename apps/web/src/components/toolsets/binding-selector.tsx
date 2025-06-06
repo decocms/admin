@@ -46,9 +46,6 @@ function IntegrationListItem({
         selectedIntegration === integration.id && "bg-muted",
       )}
     >
-      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
-        <Icon name="chevron_right" size={16} />
-      </div>
       <div className="flex items-center gap-3">
         <IntegrationIcon
           icon={integration.icon}

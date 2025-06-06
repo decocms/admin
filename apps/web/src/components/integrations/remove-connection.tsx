@@ -14,7 +14,7 @@ import { type MouseEvent, useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 
 export function useRemoveConnection() {
-  const { mutateAsync: removeIntegration } = useRemoveIntegration();
+  const { mutateAsync: removeIntegration, isPending } = useRemoveIntegration();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const performDelete = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -46,6 +46,7 @@ export function useRemoveConnection() {
     deletingId,
     setDeletingId,
     performDelete,
+    isDeletionPending: isPending,
   };
 }
 
@@ -57,14 +58,11 @@ export function RemoveConnectionAlert({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDelete: () => void;
+  onDelete: (e: React.MouseEvent<HTMLButtonElement>) => void;
   isDeleting: boolean;
 }) {
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>

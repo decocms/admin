@@ -56,7 +56,9 @@ const Login = lazy(() => import("./components/login/index.tsx"));
  * want custom Suspense behavior.
  */
 const ConnectionDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/integrations/detail/edit.tsx"))
+  wrapWithUILoadingFallback(
+    import("./components/integrations/connection-detail.tsx"),
+  )
 );
 
 const ConnectionsList = lazy(() =>

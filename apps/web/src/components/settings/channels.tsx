@@ -85,7 +85,11 @@ function ChannelCard(
 }
 
 export function Channels({ className }: ChannelsProps) {
-  const { data: bindings, isPending: isLoadingBindings } = useBindings(
+  const {
+    data: bindings,
+    isPending: isPendingBindings,
+    isLoading: isLoadingBindings,
+  } = useBindings(
     "Channel",
   );
   const [discriminator, setDiscriminator] = useState("");
@@ -345,7 +349,7 @@ export function Channels({ className }: ChannelsProps) {
       {!showCreateForm
         ? null
         : (!bindings || bindings.length === 0)
-        ? isLoadingBindings
+        ? (isPendingBindings || isLoadingBindings)
           ? (
             <div className="w-full flex items-center gap-2">
               <Spinner size="sm" />

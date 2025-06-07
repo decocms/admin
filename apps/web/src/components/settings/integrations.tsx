@@ -2,7 +2,7 @@ import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";

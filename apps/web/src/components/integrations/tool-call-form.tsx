@@ -3,7 +3,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "@deco/ui/components/form.tsx";
 import { useForm } from "react-hook-form";
 import { ajvResolver } from "@hookform/resolvers/ajv";

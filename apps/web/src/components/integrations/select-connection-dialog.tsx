@@ -9,10 +9,11 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Marketplace } from "./marketplace.tsx";
+import { Marketplace, NEW_CUSTOM_CONNECTION } from "./marketplace.tsx";
 import { Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
+import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
 
 function AddConnectionDialogContent({
   title = "Add connection",
@@ -27,6 +28,7 @@ function AddConnectionDialogContent({
     "my-connections",
   );
   const [search, setSearch] = useState("");
+  const createCustomConnection = useCreateCustomConnection();
 
   return (
     <DialogContent
@@ -73,7 +75,14 @@ function AddConnectionDialogContent({
           {tab === "new-connection" && (
             <Marketplace
               filter={search}
-              onClick={(integration) => onSelect?.(integration)}
+              onClick={async (integration) => {
+                if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+                  await createCustomConnection();
+                  return;
+                }
+
+                onSelect?.(integration);
+              }}
             />
           )}
           {tab === "my-connections" && (

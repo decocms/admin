@@ -2,6 +2,10 @@ import { useCreateIntegration, useUpdateThreadMessages } from "@deco/sdk";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useCallback } from "react";
 import { useNavigateWorkspace } from "./use-navigate-workspace.ts";
+import {
+  AppKeys,
+  getConnectionAppKey,
+} from "../components/integrations/apps.ts";
 
 /**
  * Creates an empty connection and redirects to the connection detail page.
@@ -23,8 +27,8 @@ export const useCreateCustomConnection = () => {
           url: "https://example.com/mcp",
         },
       });
-      updateThreadMessages(result.id);
-      navigateWorkspace(`/integration/${result.id}`);
+      const key = getConnectionAppKey(result);
+      navigateWorkspace(`/connection/${AppKeys.build(key)}?edit=${result.id}`);
     } catch (err) {
       console.error(err);
       toast.error(

@@ -56,6 +56,7 @@ import { Tab } from "../dock/index.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useFocusChat } from "./hooks.ts";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -108,7 +109,8 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
         <TooltipTrigger
           onClick={(e) => {
             e.stopPropagation();
-            navigateWorkspace(`/integration/${integration.id}`);
+            const appKey = AppKeys.build(getConnectionAppKey(integration));
+            navigateWorkspace(`/connection/${appKey}?focus=${integration.id}`);
           }}
           asChild
         >

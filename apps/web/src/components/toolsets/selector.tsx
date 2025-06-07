@@ -5,7 +5,6 @@ import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -15,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
 interface ToolsMap {
   [integrationId: string]: string[];

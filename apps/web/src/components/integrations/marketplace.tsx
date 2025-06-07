@@ -142,7 +142,7 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
     type: "HTTP",
     url: "https://example.com/messages",
   },
-  id: "",
+  id: "NEW_CUSTOM_CONNECTION",
   name: "Create custom connection",
   description: "Create a new connection with any MCP server",
   icon: "",
@@ -187,7 +187,7 @@ export function Marketplace({
       : integrations;
   }, [marketplace, filter]);
 
-  function handleOpenModal(integration: MarketplaceIntegration) {
+  function _handleOpenModal(integration: MarketplaceIntegration) {
     setSelectedIntegration(integration);
     setShowModal(true);
     setCreatedIntegrationId(null);

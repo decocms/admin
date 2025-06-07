@@ -55,7 +55,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@deco/ui/components/accordion.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import {
   Tabs,
   TabsContent,
@@ -590,6 +589,7 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
   const getParameters = (schema: Record<string, unknown>) => {
     if (!schema || typeof schema !== "object") return [];
 
+    // deno-lint-ignore no-explicit-any
     const properties = schema.properties as Record<string, any> || {};
     const required = (schema.required as string[]) || [];
 
@@ -853,7 +853,7 @@ function ToolsInspector({ data }: {
             filteredTools.map((tool) =>
               connection
                 ? <Tool key={tool.name} connection={connection} tool={tool} />
-                : <></>
+                : null
             )
           )}
       </div>
@@ -883,7 +883,7 @@ export default function Page() {
     appKey,
   });
 
-  const { info, instances } = app;
+  const { info, instances: _ } = app;
 
   return (
     <PageLayout

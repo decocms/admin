@@ -8,9 +8,9 @@ import { Form } from "@deco/ui/components/form.tsx";
 import { useForm } from "react-hook-form";
 import { ajvResolver } from "@hookform/resolvers/ajv";
 import type { JSONSchema7 } from "json-schema";
-import { generateDefaultValues } from "../../json-schema/utils/generate-default-values.ts";
-import JSONSchemaForm, { type SchemaType } from "../../json-schema/index.tsx";
-import { useCopy } from "../../../hooks/use-copy.ts";
+import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
+import JSONSchemaForm, { type SchemaType } from "../json-schema/index.tsx";
+import { useCopy } from "../../hooks/use-copy.ts";
 
 interface ToolCallFormProps {
   tool: MCPTool;

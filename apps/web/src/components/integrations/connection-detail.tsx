@@ -63,9 +63,9 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { ToolCallForm } from "./detail/tool-call-form.tsx";
-import { ToolCallResult } from "./detail/tool-call-result.tsx";
-import { MCPToolCallResult } from "./detail/types.ts";
+import { ToolCallForm } from "./tool-call-form.tsx";
+import { ToolCallResult } from "./tool-call-result.tsx";
+import { MCPToolCallResult } from "./types.ts";
 
 function ConnectionInstanceActions({
   onConfigure,

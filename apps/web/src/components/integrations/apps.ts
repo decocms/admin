@@ -117,7 +117,7 @@ export function getConnectionAppKey(connection: Integration): AppKey {
       if (url.hostname.includes("mcp.wppagent.com")) {
         return {
           appId: "WhatsApp",
-          provider: "wppagent", // the same as deco?
+          provider: "wppagent", // the same as deco? will use this for a "verified" badge
         };
       }
 

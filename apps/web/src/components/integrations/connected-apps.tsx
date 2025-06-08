@@ -195,7 +195,10 @@ export function ConnectedAppsList() {
               description="Connect services to expand what your agents can do."
               buttonProps={{
                 children: "Connect an integration",
-                onClick: () => navigateWorkspace("/integrations/marketplace"),
+                // TODO: fix before merging
+                onClick: () => {
+                  throw new Error("Not implemented");
+                },
               }}
             />
           )

@@ -1,6 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useParams } from "react-router";
+import { Navigate, useParams, useSearchParams } from "react-router";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useGroupedApp } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
@@ -65,6 +65,7 @@ import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import { MCPToolCallResult } from "./types.ts";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -97,6 +98,12 @@ function ConnectionInstanceActions({
 }
 
 const ICON_FILE_PATH = "assets/integrations";
+
+function useStartConfiguringOpen() {
+  const [searchParams] = useSearchParams();
+  const connectionId = searchParams.get("edit");
+  return { connectionId };
+}
 
 function useIconFilename() {
   function generate(originalFile: File) {
@@ -469,7 +476,10 @@ function ConfigureConnectionInstanceForm(
 function ConnectionInstanceItem(
   { instance, onTestTools }: { instance: Integration; onTestTools: () => void },
 ) {
-  const [isConfiguring, setIsConfiguring] = useState(false);
+  const { connectionId } = useStartConfiguringOpen();
+  const [isConfiguring, setIsConfiguring] = useState(
+    connectionId === instance.id,
+  );
   const { deletingId, performDelete, setDeletingId, isDeletionPending } =
     useRemoveConnection();
   // todo: make a useIntegrationAgents() hook
@@ -861,16 +871,24 @@ function ToolsInspector({ data }: {
   );
 }
 
-function AppDetail({ data, appKey }: {
-  data: ReturnType<typeof useGroupedApp>;
+function AppDetail({ appKey }: {
   appKey: string;
 }) {
+  const workspaceLink = useWorkspaceLink();
+  const app = useGroupedApp({
+    appKey,
+  });
+
+  if (!app.instances) {
+    return <Navigate to={workspaceLink("/connections")} replace />;
+  }
+
   return (
     <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
       <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
-        <Overview data={data} appKey={appKey} />
-        <Instances data={data} />
-        <ToolsInspector data={data} />
+        <Overview data={app} appKey={appKey} />
+        <Instances data={app} />
+        <ToolsInspector data={app} />
       </div>
     </div>
   );
@@ -883,13 +901,13 @@ export default function Page() {
     appKey,
   });
 
-  const { info, instances: _ } = app;
+  const { info } = app;
 
   return (
     <PageLayout
       tabs={{
         main: {
-          Component: () => <AppDetail data={app} appKey={appKey} />,
+          Component: () => <AppDetail appKey={appKey} />,
           title: "Overview",
           initialOpen: true,
         },

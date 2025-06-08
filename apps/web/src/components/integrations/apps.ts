@@ -248,12 +248,28 @@ export function useGroupedApp({
       }) === appKey
     );
 
+    if (marketplaceApp) {
+      return {
+        name: marketplaceApp.name,
+        icon: marketplaceApp.icon,
+        description: marketplaceApp.description,
+      };
+    }
+
+    const firstInstance = instances?.[0];
+    if (firstInstance) {
+      return {
+        name: firstInstance.name,
+        icon: firstInstance.icon,
+        description: firstInstance.description,
+      };
+    }
+
     return {
-      name: marketplaceApp?.name ?? "Unknown",
-      icon: marketplaceApp?.icon ?? instances[0].icon,
-      description: marketplaceApp?.description ?? "description",
+      name: "Unknown Connection",
+      description: "No description available",
     };
-  }, [marketplace, appKey]);
+  }, [marketplace, appKey, instances]);
 
   return {
     info,

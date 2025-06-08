@@ -1,4 +1,4 @@
-import { useCreateIntegration, useUpdateThreadMessages } from "@deco/sdk";
+import { useCreateIntegration } from "@deco/sdk";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useCallback } from "react";
 import { useNavigateWorkspace } from "./use-navigate-workspace.ts";
@@ -13,7 +13,6 @@ import {
  */
 export const useCreateCustomConnection = () => {
   const create = useCreateIntegration();
-  const updateThreadMessages = useUpdateThreadMessages();
   const navigateWorkspace = useNavigateWorkspace();
 
   return useCallback(async () => {
@@ -35,5 +34,5 @@ export const useCreateCustomConnection = () => {
         err instanceof Error ? err.message : "Failed to create integration",
       );
     }
-  }, [create, updateThreadMessages, navigateWorkspace]);
+  }, [create, navigateWorkspace]);
 };

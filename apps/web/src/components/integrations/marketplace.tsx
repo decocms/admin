@@ -187,7 +187,7 @@ export function Marketplace({
       : integrations;
   }, [marketplace, filter]);
 
-  function _handleOpenModal(integration: MarketplaceIntegration) {
+  function handleOpenModal(integration: MarketplaceIntegration) {
     setSelectedIntegration(integration);
     setShowModal(true);
     setCreatedIntegrationId(null);

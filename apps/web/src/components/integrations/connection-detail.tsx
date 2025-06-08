@@ -864,11 +864,14 @@ function ToolsInspector({ data }: {
               <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
             ))
           )
-          : tools.isError 
+          : tools.isError
           ? (
             <div className="flex flex-col items-center justify-center p-8 text-center">
-              <img src="/img/error-state-connection-tools.svg" className="h-64 mb-4" />
-              
+              <img
+                src="/img/error-state-connection-tools.svg"
+                className="h-64 mb-4"
+              />
+
               <h3 className="text-2xl font-semibold text-foreground mb-2">
                 Unable to list connection tools
               </h3>
@@ -877,7 +880,7 @@ function ToolsInspector({ data }: {
                   Error: {tools.error?.message || 'Unknown error occurred'}
                 </pre>
               </div>
-              
+
               <Button onClick={() => tools.refetch()}>
                 <Icon name="refresh" className="mr-2" />
                 Refresh

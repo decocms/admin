@@ -110,7 +110,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           onClick={(e) => {
             e.stopPropagation();
             const appKey = AppKeys.build(getConnectionAppKey(integration));
-            navigateWorkspace(`/connection/${appKey}?focus=${integration.id}`);
+            navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
           }}
           asChild
         >

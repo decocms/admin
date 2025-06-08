@@ -46,7 +46,7 @@ function Connections({
   const navigateWorkspace = useNavigateWorkspace();
   const onConfigureConnection = (integration: Integration) => {
     const appKey = AppKeys.build(getConnectionAppKey(integration));
-    navigateWorkspace(`/connection/${appKey}?selected=${integration.id}`);
+    navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
   };
 
   const activeIntegrations = installedIntegrations.filter((integration) =>

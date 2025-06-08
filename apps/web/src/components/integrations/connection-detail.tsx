@@ -31,7 +31,7 @@ import {
   useToolCall,
   useTools,
 } from "@deco/sdk";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   RemoveConnectionAlert,
   useRemoveConnection,
@@ -55,11 +55,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@deco/ui/components/accordion.tsx";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@deco/ui/components/collapsible.tsx";
 import {
   Tabs,
   TabsContent,
@@ -481,12 +476,26 @@ function ConfigureConnectionInstanceForm(
 function ConnectionInstanceItem(
   { instance, onTestTools }: { instance: Integration; onTestTools: () => void },
 ) {
-  const { connectionId } = useStartConfiguringOpen();
+  const { connectionId: queryStringConnectionId } = useStartConfiguringOpen();
   const [isConfiguring, setIsConfiguring] = useState(
-    connectionId === instance.id,
+    queryStringConnectionId === instance.id,
   );
   const { deletingId, performDelete, setDeletingId, isDeletionPending } =
     useRemoveConnection();
+  const instanceRef = useRef<HTMLDivElement>(null);
+
+  // Smooth scroll to this instance when connectionId matches
+  useEffect(() => {
+    setTimeout(() => {
+      if (queryStringConnectionId === instance.id && instanceRef.current) {
+        instanceRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }, 100);
+  }, [queryStringConnectionId, instance.id]);
+
   // todo: make a useIntegrationAgents() hook
   const agentsUsedBy: {
     id: string;
@@ -497,15 +506,23 @@ function ConnectionInstanceItem(
 
   if (isConfiguring) {
     return (
-      <ConfigureConnectionInstanceForm
-        instance={instance}
-        closeForm={() => setIsConfiguring(false)}
-      />
+      <div
+        ref={instanceRef}
+        className="w-full"
+        id={`connection-${instance.id}`}
+      >
+        <ConfigureConnectionInstanceForm
+          instance={instance}
+          closeForm={() => setIsConfiguring(false)}
+        />
+      </div>
     );
   }
 
   return (
     <div
+      ref={instanceRef}
+      id={`connection-${instance.id}`}
       className="w-full p-4 flex items-center gap-2 rounded-xl border border-border"
       key={instance.id}
     >

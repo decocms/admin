@@ -56,6 +56,11 @@ import {
   AccordionTrigger,
 } from "@deco/ui/components/accordion.tsx";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@deco/ui/components/collapsible.tsx";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -858,6 +863,26 @@ function ToolsInspector({ data }: {
             Array.from({ length: 8 }).map((_, idx) => (
               <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
             ))
+          )
+          : tools.isError 
+          ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <img src="/img/error-state-connection-tools.svg" className="h-64 mb-4" />
+              
+              <h3 className="text-2xl font-semibold text-foreground mb-2">
+                Unable to list connection tools
+              </h3>
+              <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
+                <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
+                  Error: {tools.error?.message || 'Unknown error occurred'}
+                </pre>
+              </div>
+              
+              <Button onClick={() => tools.refetch()}>
+                <Icon name="refresh" className="mr-2" />
+                Refresh
+              </Button>
+            </div>
           )
           : (
             filteredTools.map((tool) =>

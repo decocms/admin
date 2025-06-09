@@ -117,12 +117,10 @@ function KnowledgeBaseFileList(
                 file.file_url &&
                   removeFile.mutateAsync({ root: prefix, path: file.file_url });
                 file.docIds &&
-                  file.docIds.map((docId) =>
-                    removeFromKnowledge.mutateAsync({
-                      docId,
-                      connection: integration?.connection,
-                    })
-                  );
+                  removeFromKnowledge.mutateAsync({
+                    docIds: file.docIds,
+                    connection: integration?.connection,
+                  });
               }}
               className="flex-shrink-0 h-8 w-8 p-0"
               disabled={!file.file_url}

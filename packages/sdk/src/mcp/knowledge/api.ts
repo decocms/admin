@@ -125,17 +125,21 @@ export const forget = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_FORGET",
   description: "Forget something",
   inputSchema: z.object({
-    docId: z.string().describe("The id of the content to forget"),
+    docIds: z.array(z.string()).describe(
+      "The id of the content to forget",
+    ),
   }),
-  handler: async ({ docId }, c) => {
+  handler: async ({ docIds }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const vector = await getVector(c);
-    await vector.deleteIndexById(c.name, docId);
+    await Promise.all(docIds.map(
+      (docId) => vector.deleteIndexById(c.name, docId),
+    ));
     return {
-      docId,
+      docIds,
     };
   },
 });

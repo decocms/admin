@@ -35,11 +35,11 @@ export const addFileToKnowledge = (
 
 interface RemoveFromKnowledgeParams
   extends FromWorkspace, Partial<ForConnection> {
-  docId: string;
+  docIds: string;
 }
 export const removeFromKnowledge = (
-  { docId, workspace, connection }: RemoveFromKnowledgeParams,
-) => getClientFor(workspace, connection).KNOWLEDGE_BASE_FORGET({ docId });
+  { docIds, workspace, connection }: RemoveFromKnowledgeParams,
+) => getClientFor(workspace, connection).KNOWLEDGE_BASE_FORGET({ docIds });
 
 interface CreateKnowledgeParams extends FromWorkspace {
   name: string;

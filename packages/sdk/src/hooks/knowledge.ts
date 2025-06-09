@@ -38,14 +38,14 @@ export const useAddFileToKnowledge = () => {
 };
 
 interface RemoveFileFileKnowledgeParams extends ForConnection {
-  docId: string;
+  docIds: string[];
 }
 
 export const useRemoveFromKnowledge = () => {
   const { workspace } = useSDK();
 
   return useMutation({
-    mutationFn: ({ docId, connection }: RemoveFileFileKnowledgeParams) =>
-      removeFromKnowledge({ workspace, docId, connection }),
+    mutationFn: ({ docIds, connection }: RemoveFileFileKnowledgeParams) =>
+      removeFromKnowledge({ workspace, docIds, connection }),
   });
 };

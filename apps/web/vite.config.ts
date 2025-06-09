@@ -6,4 +6,15 @@ import { defineConfig, type PluginOption } from "vite";
 export default defineConfig({
   plugins: [react() as PluginOption[], tailwindcss() as PluginOption[]],
   server: { port: 3000, allowedHosts: [".deco.host"] },
+  build: {
+    target: ["es2022", "chrome89", "firefox89", "safari15"],
+  },
+  esbuild: {
+    target: "es2022",
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: "es2022",
+    },
+  },
 });

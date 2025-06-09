@@ -237,7 +237,10 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
     metadata: z.record(z.string(), z.union([z.string(), z.boolean()]))
       .optional(),
   }),
-  handler: async ({ fileUrl, metadata, path }, c) => {
+  handler: async (
+    { fileUrl, metadata, path },
+    c,
+  ): Promise<{ docIds: string[] }> => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
     const fileProcessor = new FileProcessor({
       chunkSize: 500,

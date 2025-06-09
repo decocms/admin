@@ -65,8 +65,8 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
             payload = {
               connection: options.connection,
               params: {
-                name: toolName,
-                arguments: payload,
+                name: name,
+                arguments: args,
               },
             };
             toolName = "INTEGRATIONS_CALL_TOOL";

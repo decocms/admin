@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import {
+  type Integration,
   useAddFileToKnowledge,
   useDeleteFile,
   useFiles,
@@ -16,6 +17,7 @@ import {
 } from "@deco/ui/components/form.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useAgentSettingsForm } from "./edit.tsx";
+import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
 
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return "0 Bytes";
@@ -26,7 +28,8 @@ const formatFileSize = (bytes: number) => {
 };
 
 function KnowledgeBaseFileList(
-  { files, title, agentId }: {
+  { files, title, agentId, integration }: {
+    integration?: Integration;
     agentId: string;
     title: string;
     files: {
@@ -115,7 +118,10 @@ function KnowledgeBaseFileList(
                   removeFile.mutateAsync({ root: prefix, path: file.file_url });
                 file.docIds &&
                   file.docIds.map((docId) =>
-                    removeFromKnowledge.mutateAsync({ docId })
+                    removeFromKnowledge.mutateAsync({
+                      docId,
+                      connection: integration?.connection,
+                    })
                   );
               }}
               className="flex-shrink-0 h-8 w-8 p-0"
@@ -130,7 +136,9 @@ function KnowledgeBaseFileList(
   );
 }
 
-function AgentKnowledgeBaseFileList({ agentId }: { agentId: string }) {
+function AgentKnowledgeBaseFileList(
+  { agentId, integration }: { agentId: string; integration?: Integration },
+) {
   const prefix = agentKnowledgeBasePath(agentId);
   const { data: files } = useFiles({ root: prefix });
   const formatedFiles = useMemo(() =>
@@ -148,6 +156,7 @@ function AgentKnowledgeBaseFileList({ agentId }: { agentId: string }) {
       agentId={agentId}
       files={formatedFiles}
       title="Current Files"
+      integration={integration}
     />
   );
 }
@@ -168,6 +177,10 @@ export default function UploadKnowledgeBaseAsset() {
   const writeFileMutation = useWriteFile();
   const addFileToKnowledgeBase = useAddFileToKnowledge();
   const readFile = useReadFile();
+  const { integration: knowledgeIntegration, createAgentKnowledge } =
+    useAgentKnowledgeIntegration(
+      agent,
+    );
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -224,6 +237,9 @@ export default function UploadKnowledgeBaseAsset() {
       setUploadedFiles((prev) => [...prev, ...fileObjects]);
 
       // Upload files
+      if (!knowledgeIntegration) {
+        await createAgentKnowledge();
+      }
       await uploadKnowledgeFiles(validFiles);
     }
   };
@@ -272,6 +288,7 @@ export default function UploadKnowledgeBaseAsset() {
 
           // TODO: get knowledge based by id like `agent-${id}` or create
           const content = await addFileToKnowledgeBase.mutateAsync({
+            connection: knowledgeIntegration?.connection,
             fileUrl,
             metadata: {
               path,
@@ -279,12 +296,16 @@ export default function UploadKnowledgeBaseAsset() {
             path,
           });
 
+          // TODO: fix this when forContext is fixed the return
+          const docIds = (content as any).docIds ??
+            (content as any)?.structuredContent?.docIds;
+
           await writeFileMutation.mutateAsync({
             ...fileMutateData,
             skipWrite: true,
             metadata: {
               ...fileMetadata,
-              docIds: content.docIds,
+              docIds,
             },
           });
 
@@ -297,7 +318,7 @@ export default function UploadKnowledgeBaseAsset() {
                   file_url: path,
                   uploading: false,
                   content,
-                  docIds: content.docIds,
+                  docIds,
                 };
               }
               return fileObj;

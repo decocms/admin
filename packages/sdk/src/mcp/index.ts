@@ -62,6 +62,7 @@ export const WORKSPACE_TOOLS = [
   integrationsAPI.updateIntegration,
   integrationsAPI.deleteIntegration,
   integrationsAPI.listIntegrations,
+  integrationsAPI.callTool,
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,

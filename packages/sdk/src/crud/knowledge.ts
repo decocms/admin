@@ -1,0 +1,51 @@
+import { MCPClient } from "../fetcher.ts";
+import { Integration, Workspace } from "../index.ts";
+
+interface FromWorkspace {
+  workspace: Workspace;
+}
+
+interface ForConnection {
+  connection: Integration["connection"];
+}
+
+const getClientFor = (
+  workspace: Workspace,
+  connection?: Integration["connection"],
+) => {
+  return connection
+    ? MCPClient.forConnection(workspace, connection)
+    : MCPClient.forWorkspace(workspace);
+};
+
+interface AddFileToKnowledgeParams
+  extends FromWorkspace, Partial<ForConnection> {
+  fileUrl: string;
+  path: string;
+  metadata?: Record<string, string>;
+}
+export const addFileToKnowledge = (
+  { fileUrl, workspace, metadata, path, connection }: AddFileToKnowledgeParams,
+) =>
+  getClientFor(workspace, connection).KNOWLEDGE_BASE_ADD_FILE({
+    fileUrl,
+    metadata,
+    path,
+  });
+
+interface RemoveFromKnowledgeParams
+  extends FromWorkspace, Partial<ForConnection> {
+  docId: string;
+}
+export const removeFromKnowledge = (
+  { docId, workspace, connection }: RemoveFromKnowledgeParams,
+) => getClientFor(workspace, connection).KNOWLEDGE_BASE_FORGET({ docId });
+
+interface CreateKnowledgeParams extends FromWorkspace {
+  name: string;
+}
+
+export const createKnowledge = ({ workspace, name }: CreateKnowledgeParams) =>
+  MCPClient.forWorkspace(workspace).KNOWLEDGE_BASE_CREATE({
+    name,
+  });

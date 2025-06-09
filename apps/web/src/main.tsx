@@ -67,6 +67,12 @@ const ConnectionsList = lazy(() =>
   )
 );
 
+const ConnectionInstallSuccess = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/integrations/install-success.tsx"),
+  )
+);
+
 const AgentList = lazy(
   () => wrapWithUILoadingFallback(import("./components/agents/list.tsx")),
 );
@@ -270,6 +276,7 @@ const router = createBrowserRouter([
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "connections", Component: ConnectionsList },
           { path: "connection/:appKey", Component: ConnectionDetail },
+          { path: "connections/success", Component: ConnectionInstallSuccess },
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:agentId/:triggerId", Component: TriggerDetails },
           { path: "settings", Component: Settings },

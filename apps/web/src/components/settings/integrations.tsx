@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Integration } from "@deco/sdk";
+import { Integration, listTools, useIntegrations } from "@deco/sdk";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 
@@ -210,6 +210,7 @@ function MultiAgent({
     <SelectConnectionDialog
       title="Connect agent"
       filter={(integration) => integration.id.startsWith("a:")}
+      forceTab="my-connections"
       onSelect={(integration) =>
         setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
       trigger={
@@ -264,10 +265,49 @@ function ToolsAndKnowledgeTab() {
   const {
     form,
     handleSubmit,
-    installedIntegrations,
+    agent,
   } = useAgentSettingsForm();
+  const { data: _installedIntegrations } = useIntegrations();
+  const installedIntegrations = _installedIntegrations.filter(
+    (i) => !i.id.includes(agent.id),
+  );
 
   const toolsSet = form.watch("tools_set");
+
+  const enableAllTools = (integrationId: string) => {
+    const newToolsSet = { ...toolsSet };
+    // When enabling all tools, first set the tools to an empty array
+    // so the integration is at least enabled even if fetching the tools fails
+    newToolsSet[integrationId] = [];
+    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+
+    // account for optimistic update post connection creation
+    setTimeout(() => {
+      const connection = installedIntegrations.find(
+        (integration) => integration.id === integrationId,
+      )?.connection;
+
+      if (!connection) {
+        console.error("No connection found for integration", integrationId);
+        return;
+      }
+
+      listTools(connection)
+        .then((result) => {
+          // If fetching goes well, update the form again
+          newToolsSet[integrationId] = result.tools.map((tool) => tool.name);
+          form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+        }).catch(console.error);
+    }, 100);
+    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+  };
+
+  const disableAllTools = (integrationId: string) => {
+    const newToolsSet = { ...toolsSet };
+    delete newToolsSet[integrationId];
+    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+  };
+
   const setIntegrationTools: SetIntegrationTools = (
     integrationId: string,
     tools: string[] | boolean,
@@ -278,12 +318,10 @@ function ToolsAndKnowledgeTab() {
     // Boolean means enable/disable all tools
     if (typeof tools === "boolean") {
       if (tools) {
-        // enable all tools
-        newToolsSet[integrationId] = [];
+        enableAllTools(integrationId);
       } else {
-        delete newToolsSet[integrationId];
+        disableAllTools(integrationId);
       }
-      form.setValue("tools_set", newToolsSet, { shouldDirty: true });
       return;
     }
 

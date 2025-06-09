@@ -1,9 +1,5 @@
-import {
-  type Integration,
-  useInstallFromMarketplace,
-  useMarketplaceIntegrations,
-  useUpdateThreadMessages,
-} from "@deco/sdk";
+import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
@@ -14,12 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { useMemo, useState } from "react";
-import { trackEvent } from "../../hooks/analytics.ts";
-import {
-  useNavigateWorkspace,
-  useWorkspaceLink,
-} from "../../hooks/use-navigate-workspace.ts";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
 
 export interface MarketplaceIntegration extends Integration {
@@ -36,7 +28,7 @@ interface ConnectIntegrationModalProps {
   onClose: () => void;
 }
 
-function ConnectIntegrationModal({
+export function SetupIntegrationModal({
   open,
   integration,
   createdIntegrationId,
@@ -100,6 +92,17 @@ function ConnectIntegrationModal({
   );
 }
 
+function VerifiedBadge() {
+  return (
+    <div className="absolute top-2 right-2">
+      <Badge variant="secondary">
+        <Icon name="verified" size={16} />
+        Verified
+      </Badge>
+    </div>
+  );
+}
+
 function CardsView(
   { integrations, onRowClick }: {
     integrations: MarketplaceIntegration[];
@@ -108,31 +111,36 @@ function CardsView(
 ) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-      {integrations.map((integration) => (
-        <Card
-          key={integration.id}
-          className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
-          onClick={() => onRowClick(integration)}
-        >
-          <CardContent className="p-4">
-            <div className="grid grid-cols-[min-content_1fr] gap-4">
-              <IntegrationIcon
-                icon={integration.icon}
-                name={integration.name}
-                className="h-10 w-10"
-              />
-              <div className="grid grid-cols-1 gap-1">
-                <div className="text-sm font-semibold truncate">
-                  {integration.name}
-                </div>
-                <div className="text-sm text-muted-foreground line-clamp-3">
-                  {integration.description}
+      {integrations.map((integration) => {
+        const showVerifiedBadge = integration.id !== NEW_CUSTOM_CONNECTION.id &&
+          integration.provider === "deco";
+        return (
+          <Card
+            key={integration.id}
+            className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
+            onClick={() => onRowClick(integration)}
+          >
+            <CardContent className="p-4 relative">
+              <div className="grid grid-cols-[min-content_1fr] gap-4">
+                {showVerifiedBadge && <VerifiedBadge />}
+                <IntegrationIcon
+                  icon={integration.icon}
+                  name={integration.name}
+                  className="h-10 w-10"
+                />
+                <div className="grid grid-cols-1 gap-1">
+                  <div className="text-sm font-semibold truncate">
+                    {integration.name}
+                  </div>
+                  <div className="text-sm text-muted-foreground line-clamp-3">
+                    {integration.description}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
@@ -156,19 +164,6 @@ export function Marketplace({
   filter: string;
   onClick: (integration: MarketplaceIntegration) => void;
 }) {
-  const [selectedIntegration, setSelectedIntegration] = useState<
-    MarketplaceIntegration | null
-  >(null);
-  const [showModal, setShowModal] = useState(false);
-  const [createdIntegrationId, setCreatedIntegrationId] = useState<
-    string | null
-  >(null);
-  const [isPending, setIsPending] = useState(false);
-  const { mutate: installIntegration } = useInstallFromMarketplace();
-  const navigateWorkspace = useNavigateWorkspace();
-  const updateThreadMessages = useUpdateThreadMessages();
-  const buildWorkspaceUrl = useWorkspaceLink();
-
   const { data: marketplace } = useMarketplaceIntegrations();
 
   const filteredIntegrations = useMemo(() => {
@@ -187,65 +182,6 @@ export function Marketplace({
       : integrations;
   }, [marketplace, filter]);
 
-  function handleOpenModal(integration: MarketplaceIntegration) {
-    setSelectedIntegration(integration);
-    setShowModal(true);
-    setCreatedIntegrationId(null);
-  }
-
-  function handleCloseModal() {
-    setShowModal(false);
-    setSelectedIntegration(null);
-    setCreatedIntegrationId(null);
-    setIsPending(false);
-  }
-
-  function handleConnect() {
-    if (!selectedIntegration) return;
-    setIsPending(true);
-    const returnUrl = new URL(
-      buildWorkspaceUrl("/connections"),
-      globalThis.location.origin,
-    );
-
-    installIntegration({
-      appName: selectedIntegration.id,
-      provider: selectedIntegration.provider,
-      returnUrl: returnUrl.href,
-    }, {
-      onSuccess: ({ integration, redirectUrl }) => {
-        if (typeof integration?.id !== "string") {
-          setIsPending(false);
-          return;
-        }
-        setCreatedIntegrationId(integration.id);
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: true,
-          data: selectedIntegration,
-        });
-
-        if (redirectUrl) {
-          globalThis.location.href = redirectUrl;
-        }
-      },
-      onError: (error) => {
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: false,
-          data: selectedIntegration,
-          error,
-        });
-      },
-    });
-  }
-
-  function handleEditIntegration() {
-    if (!createdIntegrationId) return;
-    updateThreadMessages(createdIntegrationId);
-    navigateWorkspace(`/integration/${createdIntegrationId}`);
-  }
-
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="flex-1 min-h-0 overflow-x-auto">
@@ -254,15 +190,6 @@ export function Marketplace({
           onRowClick={onClick}
         />
       </div>
-      <ConnectIntegrationModal
-        open={showModal}
-        integration={selectedIntegration}
-        createdIntegrationId={createdIntegrationId}
-        loading={isPending}
-        onConnect={handleConnect}
-        onEdit={handleEditIntegration}
-        onClose={handleCloseModal}
-      />
     </div>
   );
 }

@@ -1,34 +1,170 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Marketplace, NEW_CUSTOM_CONNECTION } from "./marketplace.tsx";
-import { Integration } from "@deco/sdk";
+import {
+  Marketplace,
+  MarketplaceIntegration,
+  NEW_CUSTOM_CONNECTION,
+} from "./marketplace.tsx";
+import { Integration, useInstallFromMarketplace } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
+import { IntegrationIcon } from "./common.tsx";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+
+export function ConfirmMarketplaceInstallDialog({
+  integration,
+  setIntegration,
+  onConfirm,
+}: {
+  integration: MarketplaceIntegration | null;
+  setIntegration: (integration: MarketplaceIntegration | null) => void;
+  onConfirm: ({
+    connection,
+    authorizeOauthUrl,
+  }: {
+    connection: Integration;
+    authorizeOauthUrl: string | null;
+  }) => void;
+}) {
+  const open = !!integration;
+  const { mutate: installIntegration } = useInstallFromMarketplace();
+  const [isPending, setIsPending] = useState(false);
+  const buildWorkspaceUrl = useWorkspaceLink();
+
+  const handleConnect = () => {
+    if (!integration) return;
+    setIsPending(true);
+    const returnUrl = new URL(
+      buildWorkspaceUrl("/connections/success"),
+      globalThis.location.origin,
+    );
+
+    installIntegration({
+      appName: integration.id,
+      provider: integration.provider,
+      returnUrl: returnUrl.href,
+    }, {
+      onSuccess: ({ integration: installedIntegration, redirectUrl }) => {
+        if (typeof installedIntegration?.id !== "string") {
+          setIsPending(false);
+          return;
+        }
+
+        setIsPending(false);
+        trackEvent("integration_install", {
+          success: true,
+          data: integration,
+        });
+        onConfirm({
+          connection: installedIntegration,
+          authorizeOauthUrl: redirectUrl ?? null,
+        });
+        setIntegration(null);
+      },
+      onError: (error) => {
+        setIsPending(false);
+        trackEvent("integration_install", {
+          success: false,
+          data: integration,
+          error,
+        });
+      },
+    });
+  };
+
+  if (!integration) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={() => setIntegration(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Connect to {integration.name}
+          </DialogTitle>
+          <DialogDescription>
+            <div className="mt-4">
+              <div className="grid grid-cols-[80px_1fr] items-start gap-4">
+                <IntegrationIcon
+                  icon={integration?.icon}
+                  name={integration?.name || ""}
+                />
+                <div>
+                  <div className="text-sm text-muted-foreground">
+                    {integration?.description}
+                  </div>
+                </div>
+              </div>
+              {integration.provider !== "deco" && (
+                <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
+                  <div className="flex items-center gap-2">
+                    <Icon name="info" size={16} />
+                    <span className="font-medium">
+                      Third-party integration
+                    </span>
+                  </div>
+                  <p className="mt-1">
+                    This integration is provided by a third party and is not
+                    maintained by deco.
+                    <br />
+                    Provider:{" "}
+                    <span className="font-medium">{integration.provider}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          {isPending
+            ? (
+              <Button disabled={isPending}>
+                Connecting...
+              </Button>
+            )
+            : (
+              <Button onClick={handleConnect}>
+                Connect
+              </Button>
+            )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function AddConnectionDialogContent({
   title = "Add connection",
   filter,
   onSelect,
+  forceTab,
 }: {
   title?: string;
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
+  forceTab?: "my-connections" | "new-connection";
 }) {
-  const [tab, setTab] = useState<"my-connections" | "new-connection">(
+  const [_tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
   );
+  const tab = forceTab ?? _tab;
   const [search, setSearch] = useState("");
   const createCustomConnection = useCreateCustomConnection();
+  const [installingIntegration, setInstallingIntegration] = useState<
+    MarketplaceIntegration | null
+  >(null);
 
   return (
     <DialogContent
@@ -39,33 +175,35 @@ function AddConnectionDialogContent({
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
       <div className="flex h-[calc(100vh-10rem)]">
-        <aside className="w-56 flex flex-col p-4 gap-1">
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start text-muted-foreground",
-              tab === "my-connections" && "bg-muted text-foreground",
-            )}
-            onClick={() => setTab("my-connections")}
-          >
-            <Icon name="apps" size={16} className="text-muted-foreground" />
-            <span>My connections</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start text-muted-foreground",
-              tab === "new-connection" && "bg-muted text-foreground",
-            )}
-            onClick={() => setTab("new-connection")}
-          >
-            <Icon name="add" size={16} className="text-muted-foreground" />
-            <span>New connection</span>
-          </Button>
-          {/* Filters will go here */}
-        </aside>
+        {!forceTab && (
+          <aside className="w-56 flex flex-col p-4 gap-1">
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-muted-foreground",
+                tab === "my-connections" && "bg-muted text-foreground",
+              )}
+              onClick={() => setTab("my-connections")}
+            >
+              <Icon name="apps" size={16} className="text-muted-foreground" />
+              <span>My connections</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-muted-foreground",
+                tab === "new-connection" && "bg-muted text-foreground",
+              )}
+              onClick={() => setTab("new-connection")}
+            >
+              <Icon name="add" size={16} className="text-muted-foreground" />
+              <span>New connection</span>
+            </Button>
+            {/* Filters will go here */}
+          </aside>
+        )}
 
-        <div className="h-full overflow-y-hidden p-4 pb-20">
+        <div className="h-full overflow-y-hidden p-4 pb-20 w-full">
           <Input
             placeholder="Find connection..."
             value={search}
@@ -81,7 +219,7 @@ function AddConnectionDialogContent({
                   return;
                 }
 
-                onSelect?.(integration);
+                setInstallingIntegration(integration);
               }}
             />
           )}
@@ -94,6 +232,20 @@ function AddConnectionDialogContent({
           )}
         </div>
       </div>
+      <ConfirmMarketplaceInstallDialog
+        integration={installingIntegration}
+        setIntegration={setInstallingIntegration}
+        onConfirm={({ connection, authorizeOauthUrl }) => {
+          onSelect?.(connection);
+          if (authorizeOauthUrl) {
+            globalThis.open(
+              authorizeOauthUrl,
+              "_blank",
+              "noopener,noreferrer,width=800,height=600,top=100,left=100",
+            );
+          }
+        }}
+      />
     </DialogContent>
   );
 }
@@ -103,6 +255,7 @@ interface SelectConnectionDialogProps {
   title?: string;
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
+  forceTab?: "my-connections" | "new-connection";
 }
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
@@ -127,6 +280,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
       <AddConnectionDialogContent
         title={props.title}
         filter={props.filter}
+        forceTab={props.forceTab}
         onSelect={(integration) => {
           props.onSelect?.(integration);
           setIsOpen(false);

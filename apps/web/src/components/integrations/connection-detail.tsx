@@ -66,6 +66,7 @@ import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -610,9 +611,7 @@ function Overview({ data, appKey }: {
           </p>
         </div>
       </div>
-      <Button variant="special">
-        Add connection
-      </Button>
+      <SelectConnectionDialog />
     </div>
   );
 }

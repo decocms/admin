@@ -45,7 +45,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
             items={[{ label: "Connections", link: "/connections" }]}
           />
         }
-        actionButtons={<SelectConnectionDialog />}
+        actionButtons={<SelectConnectionDialog forceTab="new-connection" />}
         tabs={tabs}
       />
       <AlertDialog open={!!error} onOpenChange={() => setError(null)}>

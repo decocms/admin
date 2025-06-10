@@ -47,7 +47,7 @@ export function useCurrentTeam(): CurrentTeam {
     return userTeam;
   }
   return {
-    avatarUrl: undefined,
+    avatarUrl: teamData?.avatar_url || "https://client.timbrotrading.com/build/images/timbro-logo-02.png",
     label: teamData?.name || teamSlug || "",
     id: teamData?.id ?? "",
     slug: teamData?.slug ?? teamSlug ?? "",
@@ -85,6 +85,7 @@ function CurrentTeamDropdownTrigger() {
         <Avatar
           url={avatarUrl}
           fallback={label}
+          objectFit="contain"
           className="size-6"
         />
         <div className="flex items-center justify-start flex-1 min-w-0 gap-1">

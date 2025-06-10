@@ -4,6 +4,7 @@ export interface Team {
   id: number;
   name: string;
   slug: string;
+  avatar_url: string;
   created_at: string;
 }
 

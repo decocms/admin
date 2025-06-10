@@ -19,11 +19,7 @@ export function Header() {
     <SidebarHeader className="md:h-14 h-12 py-0 flex flex-row items-center px-4 md:px-3">
       <SidebarMenu>
         <SidebarMenuItem className="flex items-center justify-between">
-          {picture ? (
-            <img src={picture} alt="Team Logo" className="w-20 h-14 pl-3" />
-          ) : (
-            <TeamSelector />
-          )}
+          <TeamSelector />
 
           <SidebarMenuButton asChild>
             <Button

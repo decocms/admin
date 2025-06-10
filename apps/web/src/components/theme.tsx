@@ -79,29 +79,25 @@ const DEFAULT_THEME: Theme = {
 //   picture: "/img/deco-chat-logo.png",
 };
 
-const OLIST_THEME: Theme = {
-    picture: "https://d3hw41hpah8tvx.cloudfront.net/images/logo_ecossistema_66f532e37b.svg",
+const TIMBRO_THEME: Theme = {
+    picture: "https://client.timbrotrading.com/build/images/timbro-logo-02.png",
     variables: {
-        "--primary": "dodgerblue",
-        "--splash": "#274AD8",
-        "--primary-light": "#274AD8",
-        "--primary-dark": "#FAFAFA",
-        "--sidebar": "#F4F9FF",
-        "--muted": "oklch(96.8% 0.007 247.896)",
-        "--accent": "oklch(96.8% 0.007 247.896)",
-        "--muted-foreground": "oklch(55.4% 0.046 257.417)",
-        "--accent-foreground": "oklch(55.4% 0.046 257.417)",
-        "--border": "oklch(92.9% 0.013 255.508)",
-        "--input": "oklch(92.9% 0.013 255.508)",
+        "--primary": "#d6074c",
+        "--splash": "#d6074c",
+        "--primary-light": "#dd3b71",
+        "--primary-dark": "#ffffff",
+        "--sidebar": "#f9cddc",
+        "--muted": "#f49cb9",
+        "--accent": "#f49cb9",
+        "--muted-foreground": "#737373",
+        "--accent-foreground": "#737373",
+        "--border": "#444444",
+        "--input": "#444444",
     },
-    font: {
-        type: "Google Fonts",
-        name: "Poppins",
-    }
 };
 
 const getWorkspaceTheme = (_workspace: string): Promise<Theme | null> =>
-  Promise.resolve(_workspace.includes("olist") ? OLIST_THEME : DEFAULT_THEME);
+  Promise.resolve(_workspace.includes("timbro") ? TIMBRO_THEME : DEFAULT_THEME);
 
 const useWorkspaceTheme = (workspace: string) => {
   return useQuery({

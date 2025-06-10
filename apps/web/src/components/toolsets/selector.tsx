@@ -268,7 +268,7 @@ function ToolList({
               <span
                 className={cn(
                   "text-sm truncate cursor-pointer text-foreground",
-                  enabled && !enabled && "text-muted-foreground",
+                  !enabled && "text-muted-foreground",
                 )}
               >
                 {beautifyToolName(tool.name)}

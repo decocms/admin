@@ -928,7 +928,7 @@ function ToolsInspector({ data, selectedConnectionId }: {
             setSelectedIntegration(instance ?? null);
           }}
         >
-          <SelectTrigger className="max-w-[250px] w-full">
+          <SelectTrigger className="max-w-[300px] w-full">
             <SelectValue placeholder="Select connection" />
           </SelectTrigger>
           <SelectContent>
@@ -937,7 +937,7 @@ function ToolsInspector({ data, selectedConnectionId }: {
                 <IntegrationIcon
                   name={instance.name}
                   icon={instance.icon}
-                  className="w-8 h-8"
+                  className="w-8 h-8 flex-shrink-0"
                 />
                 {instance.name}
               </SelectItem>

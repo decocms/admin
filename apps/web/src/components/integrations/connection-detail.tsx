@@ -2,7 +2,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Navigate, useParams, useSearchParams } from "react-router";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useGroupedApp } from "./apps.ts";
+import { isWellKnownApp, useGroupedApp } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
@@ -66,7 +66,8 @@ import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import { ConfirmMarketplaceInstallDialog, SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import { MarketplaceIntegration } from "./marketplace.tsx";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -599,6 +600,26 @@ function Overview({ data, appKey }: {
   data: ReturnType<typeof useGroupedApp>;
   appKey: string;
 }) {
+  const isWellKnown = isWellKnownApp(appKey);
+  const [installingIntegration, setInstallingIntegration] = useState<
+    MarketplaceIntegration | null
+  >(null);
+
+  const handleAddConnection = () => {
+    setInstallingIntegration({
+      id: data.info?.id ?? "",
+      provider: data.info?.provider ?? "unknown",
+      name: data.info?.name ?? "",
+      description: data.info?.description ?? "",
+      icon: data.info?.icon ?? "",
+      connection: {
+        type: "HTTP",
+        url: "https://example.com/sse",
+        token: "",
+      },
+    });
+  };
+  
   return (
     <div className="w-full p-4 flex items-center justify-between gap-2">
       <div className="flex items-center gap-4 h-12">
@@ -615,7 +636,36 @@ function Overview({ data, appKey }: {
           </p>
         </div>
       </div>
-      <SelectConnectionDialog />
+      {!isWellKnown && (
+        <Button variant="special" onClick={handleAddConnection}>
+          <span className="hidden md:inline">Add connection</span>
+        </Button>
+      )}
+
+      <ConfirmMarketplaceInstallDialog
+        integration={installingIntegration}
+        setIntegration={setInstallingIntegration}
+        onConfirm={({ authorizeOauthUrl }) => {
+          if (authorizeOauthUrl) {
+            const popup = globalThis.open(
+              authorizeOauthUrl,
+              "_blank",
+            );
+            if (!popup || popup.closed || typeof popup.closed === "undefined") {
+              alert(
+                "Please allow popups for this site to complete the OAuth flow.",
+              );
+              const link = document.createElement("a");
+              link.href = authorizeOauthUrl;
+              link.target = "_blank";
+              link.textContent = "Click here to continue OAuth flow";
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
+          }
+        }}
+      />
     </div>
   );
 }

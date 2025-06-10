@@ -63,6 +63,7 @@ export function ConfirmMarketplaceInstallDialog({
       onSuccess: ({ integration: installedIntegration, redirectUrl }) => {
         if (typeof installedIntegration?.id !== "string") {
           setIsPending(false);
+          console.error("Installed integration is not a string", installedIntegration);
           return;
         }
 

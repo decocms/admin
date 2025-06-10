@@ -14,7 +14,8 @@ import {
   useIntegrations,
   useMarketplaceIntegrations,
 } from "@deco/sdk";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { INTEGRATION_CHANNEL, type IntegrationMessage } from "../../lib/broadcast-channels.ts";
 
 export interface GroupedApp {
   id: string;
@@ -22,6 +23,7 @@ export interface GroupedApp {
   icon?: string;
   description: string;
   instances: number;
+  provider?: string;
   usedBy: { avatarUrl: string }[];
 }
 
@@ -178,6 +180,23 @@ function groupConnections(integrations: Integration[]) {
   return grouped;
 }
 
+export function useRefetchIntegrationsOnNotification() {
+  const { refetch: refetchIntegrations } = useIntegrations();
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
+      if (event.data.type === "INTEGRATION_UPDATED") {
+        refetchIntegrations();
+      }
+    };
+
+    INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
+    return () => {
+      INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
+    };
+  }, [refetchIntegrations]);
+}
+
 export function useGroupedApps({
   filter,
 }: {
@@ -185,6 +204,7 @@ export function useGroupedApps({
 }) {
   const { data: installedIntegrations } = useIntegrations();
   const { data: marketplace } = useMarketplaceIntegrations();
+  useRefetchIntegrationsOnNotification();
 
   const groupedApps: GroupedApp[] = useMemo(() => {
     const filteredIntegrations = installedIntegrations?.filter((integration) =>
@@ -229,6 +249,7 @@ export function useGroupedApp({
 }) {
   const { data: installedIntegrations } = useIntegrations();
   const { data: marketplace } = useMarketplaceIntegrations();
+  useRefetchIntegrationsOnNotification();
 
   const instances = useMemo(() => {
     const grouped = groupConnections(installedIntegrations ?? []);
@@ -250,9 +271,11 @@ export function useGroupedApp({
 
     if (marketplaceApp) {
       return {
+        id: marketplaceApp.id,
         name: marketplaceApp.name,
         icon: marketplaceApp.icon,
         description: marketplaceApp.description,
+        provider: marketplaceApp.provider,
       };
     }
 
@@ -262,12 +285,14 @@ export function useGroupedApp({
         name: firstInstance.name,
         icon: firstInstance.icon,
         description: firstInstance.description,
+        provider: "unknown",
       };
     }
 
     return {
       name: "Unknown Connection",
       description: "No description available",
+      provider: "unknown",
     };
   }, [marketplace, appKey, instances]);
 

@@ -14,7 +14,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
+import { AppKeys, getConnectionAppKey, useRefetchIntegrationsOnNotification } from "../integrations/apps.ts";
 import {
   INTEGRATION_CHANNEL,
   type IntegrationMessage,
@@ -269,25 +269,13 @@ function MultiAgent() {
 
 export function useAgentSettingsToolsSet() {
   const { form, agent } = useAgentSettingsForm();
-  const { data: _installedIntegrations, refetch: refetchIntegrations } =
-    useIntegrations();
+  const { data: _installedIntegrations } = useIntegrations();
   const installedIntegrations = _installedIntegrations.filter(
     (i) => !i.id.includes(agent.id),
   );
   const toolsSet = form.watch("tools_set");
 
-  useEffect(() => {
-    // Listen for integration updates from other windows
-    const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
-      if (event.data.type === "INTEGRATION_UPDATED") {
-        refetchIntegrations();
-      }
-    };
-    INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
-    return () => {
-      INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
-    };
-  }, [refetchIntegrations]);
+  useRefetchIntegrationsOnNotification();
 
   const enableAllTools = (integrationId: string) => {
     const toolsSet = form.getValues("tools_set");

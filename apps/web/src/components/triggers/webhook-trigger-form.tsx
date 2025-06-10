@@ -102,7 +102,8 @@ type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 type WebhookTriggerData = z.infer<typeof WebhookTriggerSchema>;
 
 function generateSecurePassphrase(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
   const length = 24;
   let result = "";
   

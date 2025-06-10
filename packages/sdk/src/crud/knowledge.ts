@@ -14,7 +14,7 @@ const getClientFor = (
   connection?: Integration["connection"],
 ) => {
   return connection
-    ? MCPClient.forConnection(workspace, connection)
+    ? MCPClient.forConnection(connection)
     : MCPClient.forWorkspace(workspace);
 };
 
@@ -35,7 +35,7 @@ export const addFileToKnowledge = (
 
 interface RemoveFromKnowledgeParams
   extends FromWorkspace, Partial<ForConnection> {
-  docIds: string;
+  docIds: string[];
 }
 export const removeFromKnowledge = (
   { docIds, workspace, connection }: RemoveFromKnowledgeParams,

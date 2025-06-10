@@ -47,11 +47,7 @@ export const useWriteFile = () => {
       skipWrite?: boolean;
     }) =>
       writeFile({ path, workspace, content, contentType, metadata, skipWrite }),
-    onMutate: async ({ path, content, contentType }: {
-      path: string;
-      content: Uint8Array;
-      contentType: string;
-    }) => {
+    onMutate: async ({ path, content, contentType, metadata }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: KEYS.FILE(workspace, path) });
 
@@ -64,6 +60,7 @@ export const useWriteFile = () => {
         content,
         contentType,
         exists: true,
+        metadata,
       }));
 
       return { previousData };

@@ -27,6 +27,17 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
+const agentKnowledgeBasePath = (agentId: string) =>
+  `agent/${agentId}/knowledge`;
+const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
+  `${agentKnowledgeBasePath(agentId)}/${path}`;
+const useAgentKnowledgeRootPath = (agentId: string) =>
+  useMemo(() => agentKnowledgeBasePath(agentId), [agentId]);
+const useAgentFiles = (agentId: string) => {
+  const prefix = useAgentKnowledgeRootPath(agentId);
+  return useFiles({ root: prefix });
+};
+
 function KnowledgeBaseFileList(
   { files, title, agentId, integration }: {
     integration?: Integration;
@@ -137,8 +148,8 @@ function KnowledgeBaseFileList(
 function AgentKnowledgeBaseFileList(
   { agentId, integration }: { agentId: string; integration?: Integration },
 ) {
-  const prefix = agentKnowledgeBasePath(agentId);
-  const { data: files } = useFiles({ root: prefix });
+  const { data: files } = useAgentFiles(agentId);
+  const prefix = useAgentKnowledgeRootPath(agentId);
   const formatedFiles = useMemo(() =>
     files
       ? files.map((file) => ({
@@ -159,17 +170,12 @@ function AgentKnowledgeBaseFileList(
   );
 }
 
-const agentKnowledgeBasePath = (agentId: string) =>
-  `agent/${agentId}/knowledge`;
-const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
-  `${agentKnowledgeBasePath(agentId)}/${path}`;
-
 export default function UploadKnowledgeBaseAsset() {
   const { agent } = useAgentSettingsForm();
-  const [isDragOver, setIsDragOver] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<
     { file: File; file_url?: string; uploading?: boolean; docIds?: string[] }[]
   >([]);
+  const { refetch: refetchAgentKnowledgeFiles } = useAgentFiles(agent.id);
   const [isUploading, setIsUploading] = useState(false);
   const knowledgeFileInputRef = useRef<HTMLInputElement>(null);
   const writeFileMutation = useWriteFile();
@@ -179,24 +185,6 @@ export default function UploadKnowledgeBaseAsset() {
     useAgentKnowledgeIntegration(
       agent,
     );
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    const files = Array.from(e.dataTransfer.files);
-    handleFiles(files);
-  };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -309,17 +297,8 @@ export default function UploadKnowledgeBaseAsset() {
 
           // Update the file object with the URL and remove uploading status
           setUploadedFiles((prev) =>
-            prev.map((fileObj) => {
-              if (fileObj.file === file) {
-                return {
-                  ...fileObj,
-                  file_url: path,
-                  uploading: false,
-                  content,
-                  docIds,
-                };
-              }
-              return fileObj;
+            prev.filter((fileObj) => {
+              return fileObj.file !== file;
             })
           );
 
@@ -338,6 +317,7 @@ export default function UploadKnowledgeBaseAsset() {
       });
 
       await Promise.all(uploadPromises);
+      await refetchAgentKnowledgeFiles();
       console.log("All files uploaded successfully");
     } catch (error) {
       console.error("Failed to upload some knowledge files:", error);
@@ -365,15 +345,9 @@ export default function UploadKnowledgeBaseAsset() {
         {/* Drag and Drop Area */}
         <div
           className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-            isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50",
+            "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer border-border hover:border-primary/50",
             isUploading && "opacity-50 pointer-events-none",
           )}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           onClick={triggerFileInput}
         >
           <input
@@ -386,12 +360,7 @@ export default function UploadKnowledgeBaseAsset() {
           />
 
           <div className="flex flex-col items-center gap-3">
-            <div
-              className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center",
-                isDragOver ? "bg-primary text-primary-foreground" : "bg-muted",
-              )}
-            >
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted">
               <Icon
                 name={isUploading ? "hourglass_empty" : "upload"}
                 size={24}
@@ -401,11 +370,7 @@ export default function UploadKnowledgeBaseAsset() {
 
             <div className="space-y-1">
               <p className="text-sm font-medium">
-                {isUploading
-                  ? "Uploading files..."
-                  : isDragOver
-                  ? "Drop files here"
-                  : "Drag and drop files here"}
+                {isUploading ? "Uploading files..." : "Click here to add files"}
               </p>
               <p className="text-xs text-muted-foreground">
                 or click to browse files

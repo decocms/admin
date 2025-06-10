@@ -154,11 +154,11 @@ export const createChannel = createTool({
 });
 
 const generateAgentLink = (
-  workspace: { root: string; value: string },
+  workspace: { root: string; value: string; slug: string },
   agentId: string,
 ) => {
   return `https://${Hosts.Chat}${
-    workspace.root === "users" ? "/" : `${workspace.value}/`
+    workspace.root === "users" ? "/" : `${workspace.slug}/`
   }agent/${agentId}/${crypto.randomUUID()}`;
 };
 

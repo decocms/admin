@@ -362,7 +362,7 @@ export function Channels({ className }: ChannelsProps) {
                 No channel integrations available. You need to install
                 integrations first.
                 <Link
-                  to={workspaceLink("/integrations")}
+                  to={workspaceLink("/connections")}
                   className="ml-2 text-primary hover:underline"
                 >
                   Go to Integrations →

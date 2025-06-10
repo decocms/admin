@@ -2,7 +2,7 @@ import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
@@ -15,6 +15,7 @@ import {
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
+import { INTEGRATION_CHANNEL, type IntegrationMessage } from "../../lib/broadcast-channels.ts";
 
 type SetIntegrationTools = (
   integrationId: string,
@@ -267,10 +268,29 @@ function ToolsAndKnowledgeTab() {
     handleSubmit,
     agent,
   } = useAgentSettingsForm();
-  const { data: _installedIntegrations } = useIntegrations();
+  const { data: _installedIntegrations, refetch } = useIntegrations();
   const installedIntegrations = _installedIntegrations.filter(
     (i) => !i.id.includes(agent.id),
   );
+
+  useEffect(() => {
+    // Listen for integration updates from other windows
+    const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
+      if (event.data.type === 'INTEGRATION_UPDATED') {
+        console.log("[Integrations] Received integration update, refetching...");
+        refetch();
+      }
+    };
+
+    INTEGRATION_CHANNEL.addEventListener('message', handleMessage);
+    return () => {
+      INTEGRATION_CHANNEL.removeEventListener('message', handleMessage);
+    };
+  }, [refetch]);
+
+  useEffect(() => {
+    console.log("installedIntegrations changed", installedIntegrations);
+  }, [installedIntegrations]);
 
   const toolsSet = form.watch("tools_set");
 

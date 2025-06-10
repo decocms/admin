@@ -475,7 +475,7 @@ function ConfigureConnectionInstanceForm(
 }
 
 function ConnectionInstanceItem(
-  { instance, onTestTools }: { instance: Integration; onTestTools: () => void },
+  { instance, onTestTools }: { instance: Integration; onTestTools: (connectionId: string) => void },
 ) {
   const { connectionId: queryStringConnectionId } = useStartConfiguringOpen();
   const [isConfiguring, setIsConfiguring] = useState(
@@ -557,7 +557,7 @@ function ConnectionInstanceItem(
       </div>
       <ConnectionInstanceActions
         onConfigure={() => setIsConfiguring(true)}
-        onTestTools={onTestTools}
+        onTestTools={() => onTestTools(instance.id)}
         onDelete={() => setDeletingId(instance.id)}
       />
       {deletingId && (
@@ -572,8 +572,9 @@ function ConnectionInstanceItem(
   );
 }
 
-function Instances({ data }: {
+function Instances({ data, onTestTools }: {
   data: ReturnType<typeof useGroupedApp>;
+  onTestTools: (connectionId: string) => void;
 }) {
   return (
     <div className="w-full p-4 flex flex-col items-center gap-4">
@@ -584,7 +585,7 @@ function Instances({ data }: {
         <ConnectionInstanceItem
           key={instance.id}
           instance={instance}
-          onTestTools={() => {}}
+          onTestTools={onTestTools}
         />
       ))}
     </div>
@@ -820,15 +821,31 @@ function Tool({ tool, connection }: ToolProps) {
   );
 }
 
-function ToolsInspector({ data }: {
+function ToolsInspector({ data, selectedConnectionId }: {
   data: ReturnType<typeof useGroupedApp>;
+  selectedConnectionId?: string;
 }) {
   const [search, setSearch] = useState("");
   const [selectedIntegration, setSelectedIntegration] = useState<
     Integration | null
   >(data.instances[0] ?? null);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const connection = selectedIntegration?.connection;
   const tools = useTools(connection as MCPConnection);
+
+  // Update selected integration when selectedConnectionId changes
+  useEffect(() => {
+    if (selectedConnectionId) {
+      const instance = data.instances.find((i) => i.id === selectedConnectionId);
+      if (instance) {
+        setSelectedIntegration(instance);
+        // Scroll to tools section
+        setTimeout(() => {
+          toolsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      }
+    }
+  }, [selectedConnectionId, data.instances]);
 
   const filteredTools = tools.data.tools.filter((tool) =>
     tool.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -837,7 +854,7 @@ function ToolsInspector({ data }: {
   );
 
   return (
-    <div className="w-full p-4 flex flex-col items-center gap-4">
+    <div ref={toolsRef} className="w-full p-4 flex flex-col items-center gap-4">
       <h6 className="text-sm text-muted-foreground font-medium w-full">
         Tools
       </h6>
@@ -920,6 +937,7 @@ function AppDetail({ appKey }: {
   const app = useGroupedApp({
     appKey,
   });
+  const [selectedToolInspectorConnectionId, setSelectedToolInspectorConnectionId] = useState<string>();
 
   if (!app.instances) {
     return <Navigate to={workspaceLink("/connections")} replace />;
@@ -929,8 +947,8 @@ function AppDetail({ appKey }: {
     <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
       <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
         <Overview data={app} appKey={appKey} />
-        <Instances data={app} />
-        <ToolsInspector data={app} />
+        <Instances data={app} onTestTools={(connectionId) => setSelectedToolInspectorConnectionId(connectionId)} />
+        <ToolsInspector data={app} selectedConnectionId={selectedToolInspectorConnectionId} />
       </div>
     </div>
   );

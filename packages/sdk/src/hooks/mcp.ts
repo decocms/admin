@@ -45,9 +45,11 @@ export const useCreateIntegration = () => {
 
 export const useUpdateIntegration = ({
   onError,
+  onSuccess,
 }: {
   onError?: (error: Error) => void;
-}) => {
+  onSuccess?: (result: Integration) => void;
+} = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -69,6 +71,8 @@ export const useUpdateIntegration = ({
             ? [result]
             : old.map((mcp) => mcp.id === result.id ? result : mcp),
       );
+
+      onSuccess?.(result);
     },
     onError,
   });

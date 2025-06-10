@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
@@ -237,11 +237,11 @@ function AddConnectionDialogContent({
         setIntegration={setInstallingIntegration}
         onConfirm={({ connection, authorizeOauthUrl }) => {
           onSelect?.(connection);
+          console.log("authorizeOauthUrl", authorizeOauthUrl);
           if (authorizeOauthUrl) {
             globalThis.open(
               authorizeOauthUrl,
               "_blank",
-              "noopener,noreferrer,width=800,height=600,top=100,left=100",
             );
           }
         }}

@@ -22,7 +22,10 @@ import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { IntegrationIcon } from "./common.tsx";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import {
+  useNavigateWorkspace,
+  useWorkspaceLink,
+} from "../../hooks/use-navigate-workspace.ts";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -165,6 +168,7 @@ function AddConnectionDialogContent({
   const [installingIntegration, setInstallingIntegration] = useState<
     MarketplaceIntegration | null
   >(null);
+  const navigateWorkspace = useNavigateWorkspace();
 
   return (
     <DialogContent
@@ -185,7 +189,11 @@ function AddConnectionDialogContent({
               )}
               onClick={() => setTab("my-connections")}
             >
-              <Icon name="apps" size={16} className="text-muted-foreground" />
+              <Icon
+                name="widgets"
+                size={16}
+                className="text-muted-foreground"
+              />
               <span>My connections</span>
             </Button>
             <Button
@@ -198,6 +206,16 @@ function AddConnectionDialogContent({
             >
               <Icon name="add" size={16} className="text-muted-foreground" />
               <span>New connection</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-muted-foreground group",
+              )}
+              onClick={() => navigateWorkspace("/connections")}
+            >
+              <Icon name="arrow_outward" size={16} />
+              <span className="group-hover:underline">Manage connections</span>
             </Button>
             {/* Filters will go here */}
           </aside>
@@ -213,12 +231,32 @@ function AddConnectionDialogContent({
           {tab === "new-connection" && (
             <Marketplace
               filter={search}
+              emptyState={
+                <div className="flex flex-col h-full min-h-[200px] gap-4">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">
+                      No connections found for the search "{search}" in the
+                      marketplace
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      You can{" "}
+                      <Button
+                        variant="link"
+                        className="px-0"
+                        onClick={() => setTab("my-connections")}
+                      >
+                        create a new custom connection
+                      </Button>{" "}
+                      instead.
+                    </p>
+                  </div>
+                </div>
+              }
               onClick={async (integration) => {
                 if (integration.id === NEW_CUSTOM_CONNECTION.id) {
                   await createCustomConnection();
                   return;
                 }
-
                 setInstallingIntegration(integration);
               }}
             />
@@ -226,6 +264,38 @@ function AddConnectionDialogContent({
           {tab === "my-connections" && (
             <InstalledConnections
               query={search}
+              emptyState={
+                <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
+                  <div className="flex flex-col gap-2">
+                    <h3 className="text-lg font-semibold">
+                      No connections found for the search "{search}" in your
+                      team
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      You can install a connection from the marketplace to get
+                      started:
+                    </p>
+                  </div>
+                  <Marketplace
+                    filter={search}
+                    emptyState={
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          No connections found for the search "{search}" on the
+                          marketplace
+                        </p>
+                      </div>
+                    }
+                    onClick={async (integration) => {
+                      if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+                        await createCustomConnection();
+                        return;
+                      }
+                      setInstallingIntegration(integration);
+                    }}
+                  />
+                </div>
+              }
               filter={filter}
               onClick={(integration) => onSelect?.(integration)}
             />

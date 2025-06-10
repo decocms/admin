@@ -44,10 +44,12 @@ export function InstalledConnections({
   query,
   filter,
   onClick,
+  emptyState,
 }: {
   query: string;
   filter?: (integration: Integration) => boolean;
   onClick: (integration: Integration) => void;
+  emptyState?: React.ReactNode;
 }) {
   const { data: installedIntegrations } = useIntegrations();
 
@@ -63,6 +65,10 @@ export function InstalledConnections({
 
     return filter ? filteredByQuery.filter(filter) : filteredByQuery;
   }, [installedIntegrations, query, filter]);
+
+  if (filteredIntegrations.length === 0 && emptyState) {
+    return emptyState;
+  }
 
   return (
     <div className="flex flex-col gap-4 h-full">

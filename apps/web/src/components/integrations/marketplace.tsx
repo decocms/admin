@@ -176,9 +176,11 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
 export function Marketplace({
   filter,
   onClick,
+  emptyState,
 }: {
   filter: string;
   onClick: (integration: MarketplaceIntegration) => void;
+  emptyState?: React.ReactNode;
 }) {
   const { data: marketplace } = useMarketplaceIntegrations();
 
@@ -197,6 +199,10 @@ export function Marketplace({
       )
       : integrations;
   }, [marketplace, filter]);
+
+  if (filteredIntegrations.length === 0 && emptyState) {
+    return emptyState;
+  }
 
   return (
     <div className="flex flex-col gap-4 h-full">

@@ -8,33 +8,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
-import { useEffect, useState } from "react";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useState } from "react";
 import { useMatch } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
 import { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-
-const isUUID = (uuid: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
-  const navigateWorkspace = useNavigateWorkspace();
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const url = new URL(globalThis.location.href);
-    const mcpUrl = url.searchParams.get("mcpUrl");
-
-    const uuid = mcpUrl?.split("/").at(-3);
-
-    if (typeof uuid === "string" && isUUID(uuid)) {
-      navigateWorkspace(`/integration/${uuid}`);
-    }
-  }, []);
 
   return (
     <>
@@ -81,7 +65,7 @@ export const Header = (
   },
 ) => {
   const teamConnectionsViewActive = useMatch({
-    path: `:teamSlug?/integrations`,
+    path: `:teamSlug?/connections`,
   });
 
   const { data: installedIntegrations } = useIntegrations();

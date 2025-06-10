@@ -43,7 +43,11 @@ export const useCreateIntegration = () => {
   return create;
 };
 
-export const useUpdateIntegration = () => {
+export const useUpdateIntegration = ({
+  onError,
+}: {
+  onError?: (error: Error) => void;
+}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -66,6 +70,7 @@ export const useUpdateIntegration = () => {
             : old.map((mcp) => mcp.id === result.id ? result : mcp),
       );
     },
+    onError,
   });
 
   return update;

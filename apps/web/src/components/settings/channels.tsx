@@ -37,8 +37,8 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
 import { Channel, Integration } from "@deco/sdk/models";
+import { IntegrationIcon } from "../integrations/common.tsx";
 
 interface ChannelsProps {
   className?: string;

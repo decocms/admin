@@ -22,6 +22,23 @@ import Ajv from "ajv";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+
+// Generate a secure random passphrase
+function generateSecurePassphrase(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const length = 24;
+  let result = '';
+  
+  // Use crypto.getRandomValues for secure random generation
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  
+  for (let i = 0; i < length; i++) {
+    result += chars[array[i] % chars.length];
+  }
+  
+  return result;
+}
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { BindingSelector } from "../toolsets/binding-selector.tsx";
 import { SingleToolSelector } from "../toolsets/single-selector.tsx";
@@ -142,6 +159,11 @@ export function WebhookTriggerForm({
 
   function handleOutputSchemaChange(val: string) {
     form.setValue("schema", val, { shouldValidate: true });
+  }
+
+  function handleGeneratePassphrase() {
+    const newPassphrase = generateSecurePassphrase();
+    form.setValue("passphrase", newPassphrase, { shouldValidate: true });
   }
 
   const onSubmit = (data: WebhookTriggerFormType) => {
@@ -268,12 +290,24 @@ export function WebhookTriggerForm({
                 <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <FormControl>
-                <Input
-                  {...field}
-                  placeholder="Passphrase"
-                  className="rounded-md"
-                  type="text"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    {...field}
+                    placeholder="Enter passphrase or generate one"
+                    className="rounded-md"
+                    type="text"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleGeneratePassphrase}
+                    className="whitespace-nowrap"
+                  >
+                    <Icon name="refresh" size={16} className="mr-1" />
+                    Generate
+                  </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -130,8 +130,8 @@
     }
 
     .prose code {
-      @apply my-2 !rounded-lg bg-primary-light/10 border border-primary-light block
-        whitespace-pre-wrap !p-2;
+      @apply my-2 !rounded-lg bg-primary-light/10 border border-primary-light
+        block whitespace-pre-wrap !p-2;
     }
   }
 }

@@ -619,6 +619,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_prompts: {
+        Row: {
+          id: string;
+          workspace: string;
+          name: string;
+          description: string | null;
+          content: string;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          workspace: string;
+          name: string;
+          description?: string | null;
+          content: string;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          workspace?: string;
+          name?: string;
+          description?: string | null;
+          content?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       deco_chat_temp_wpp_invites: {
         Row: {
           accept_message: string;

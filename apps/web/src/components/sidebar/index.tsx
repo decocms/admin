@@ -72,6 +72,11 @@ const STATIC_ITEMS = [
     icon: "conversion_path",
   },
   {
+    url: "/prompts",
+    title: "Prompt Library",
+    icon: "local_library",
+  },
+  {
     url: "/audits",
     title: "Activity",
     icon: "forum",

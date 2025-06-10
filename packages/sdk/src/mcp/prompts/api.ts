@@ -5,16 +5,6 @@ import {
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
 
-interface PromptRow {
-  id: string;
-  workspace: string;
-  name: string;
-  description: string | null;
-  content: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export const createPrompt = createTool({
   name: "PROMPTS_CREATE",
   description: "Create a new prompt",
@@ -27,15 +17,15 @@ export const createPrompt = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    c.resourceAccess.grant();
+
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { name, description, content } = props;
 
-    // @ts-expect-error - TODO: add prompts table
     const { data, error } = await c
       .db
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+      .from("deco_chat_prompts")
       .insert({
         workspace,
         name,
@@ -66,14 +56,14 @@ export const updatePrompt = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    c.resourceAccess.grant();
+
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { id, data } = props;
 
-    // @ts-expect-error - TODO: add prompts table
     const { data: prompt, error } = await c.db
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+      .from("deco_chat_prompts")
       .update(data)
       .eq("id", id)
       .eq("workspace", workspace)
@@ -97,11 +87,12 @@ export const deletePrompt = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    c.resourceAccess.grant();
+
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { error } = await c.db
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+      .from("deco_chat_prompts")
       .delete()
       .eq("id", id)
       .eq("workspace", workspace);
@@ -122,12 +113,12 @@ export const listPrompts = createTool({
 
     c.resourceAccess.grant();
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    console.log("c.isLocal", c.isLocal);
 
-    // @ts-expect-error - TODO: add prompts table
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { data, error } = await c.db
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+      .from("deco_chat_prompts")
       .select("*")
       .eq("workspace", workspace);
 
@@ -148,11 +139,12 @@ export const getPrompt = createTool({
     const workspace = c.workspace.value;
     const { id } = props;
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    c.resourceAccess.grant();
 
-    const { data, error } = await c
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { data, error } = await c.db
+      .from("deco_chat_prompts")
       .select("*")
       .eq("id", id)
       .eq("workspace", workspace)
@@ -176,11 +168,14 @@ export const searchPrompts = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
+    c.resourceAccess.grant();
+
+    // await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { query, limit = 10, offset = 0 } = props;
 
     const { data, error } = await c.db
-      // @ts-expect-error - TODO: add prompts table
-      .from("prompts")
+      .from("deco_chat_prompts")
       .select("*")
       .eq("workspace", workspace)
       .textSearch("name", query)

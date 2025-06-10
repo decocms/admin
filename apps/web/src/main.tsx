@@ -117,6 +117,14 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
 );
 
+const ListPrompts = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/prompts/list/list.tsx"))
+);
+
+const PromptDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -282,6 +290,8 @@ const router = createBrowserRouter([
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
+          { path: "prompts", Component: ListPrompts },
+          { path: "prompt/:id", Component: PromptDetail },
         ],
       },
       { path: "*", Component: NotFound },

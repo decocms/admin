@@ -26,21 +26,6 @@ import { IntegrationIcon } from "../integrations/common.tsx";
 import { BindingSelector } from "../toolsets/binding-selector.tsx";
 import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 
-function generateSecurePassphrase(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  const length = 24;
-  let result = '';
-  
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  
-  for (let i = 0; i < length; i++) {
-    result += chars[array[i] % chars.length];
-  }
-  
-  return result;
-}
-
 function JsonSchemaInput({ value, onChange }: {
   value: string | undefined;
   onChange: (v: string) => void;
@@ -154,6 +139,21 @@ export function WebhookTriggerForm({
       type: "webhook",
     },
   });
+
+  function generateSecurePassphrase(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const length = 24;
+    let result = '';
+    
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    
+    for (let i = 0; i < length; i++) {
+      result += chars[array[i] % chars.length];
+    }
+    
+    return result;
+  }
 
   function handleOutputSchemaChange(val: string) {
     form.setValue("schema", val, { shouldValidate: true });

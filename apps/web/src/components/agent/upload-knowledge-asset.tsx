@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react";
 import {
+  type Agent,
   type Integration,
   useAddFileToKnowledge,
   useDeleteFile,
@@ -15,9 +16,16 @@ import {
   FormItem,
   FormLabel,
 } from "@deco/ui/components/form.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useAgentSettingsForm } from "./edit.tsx";
 import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
+import { extname } from "@std/path/posix";
 
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return "0 Bytes";
@@ -38,109 +46,130 @@ const useAgentFiles = (agentId: string) => {
   return useFiles({ root: prefix });
 };
 
+function FileIcon({ filename }: { filename: string }) {
+  const ext = useMemo(() => extname(filename).substring(1), [filename]);
+  const color = useMemo(() => {
+    switch (ext) {
+      case "txt":
+      case "md":
+        return "text-blue-600";
+      case "csv":
+        return "text-green-600";
+      case "pdf":
+        return "text-red-600";
+      case "json":
+        return "text-yellow-600";
+    }
+  }, [ext]);
+
+  return (
+    <span className="relative w-6 flex items-center justify-center">
+      <svg width={24} height={24}>
+        <use href="/img/sheet.svg" />
+      </svg>
+      <span className={cn("mt-2 absolute uppercase text-[6px] spacing", color)}>
+        {ext}
+      </span>
+    </span>
+  );
+}
+
+interface KnowledgeBaseFileListProps {
+  integration?: Integration;
+  agentId: string;
+  files: {
+    name: string;
+    type: string;
+    uploading?: boolean;
+    size?: number;
+    file_url?: string;
+    docIds?: string[];
+  }[];
+}
+
 function KnowledgeBaseFileList(
-  { files, title, agentId, integration }: {
-    integration?: Integration;
-    agentId: string;
-    title: string;
-    files: {
-      name: string;
-      type: string;
-      uploading?: boolean;
-      size?: number;
-      file_url?: string;
-      docIds?: string[];
-    }[];
-  },
+  { files, agentId, integration }: KnowledgeBaseFileListProps,
 ) {
   const prefix = agentKnowledgeBasePath(agentId);
   const removeFile = useDeleteFile();
   const removeFromKnowledge = useRemoveFromKnowledge();
 
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">
-        {title} ({files.length})
-      </p>
-      <div className="space-y-2 max-h-40 overflow-y-auto">
-        {files.map((file, index) => (
-          <div
-            key={`${file.name}-${index}`}
-            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
-          >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
-                {file.uploading
-                  ? (
-                    <Icon
-                      name="hourglass_empty"
-                      size={16}
-                      className="text-primary animate-spin"
-                    />
-                  )
-                  : (
-                    <Icon
-                      name={file.type.includes("pdf") ||
-                          file.name.endsWith(".pdf")
-                        ? "picture_as_pdf"
-                        : file.name.endsWith(".csv")
-                        ? "table_chart"
-                        : file.name.endsWith(".json")
-                        ? "code"
-                        : file.name.endsWith(".md") ||
-                            file.name.endsWith(".txt")
-                        ? "description"
-                        : "insert_drive_file"}
-                      size={16}
-                      className="text-primary"
-                    />
-                  )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {file.name}
-                </p>
-                <div className="flex items-center gap-2">
-                  {file.size && (
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)}
-                    </p>
-                  )}
-                  {file.uploading && (
-                    <span className="text-xs text-primary">
-                      Uploading...
-                    </span>
-                  )}
-                  {file.file_url && file.uploading === false && (
-                    <span className="text-xs text-muted-foreground">
-                      ✓ Uploaded
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+  if (files.length === 0) return null;
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                file.file_url &&
-                  removeFile.mutateAsync({ root: prefix, path: file.file_url });
-                file.docIds &&
-                  removeFromKnowledge.mutateAsync({
-                    docIds: file.docIds,
-                    connection: integration?.connection,
-                  });
-              }}
-              className="flex-shrink-0 h-8 w-8 p-0"
-              disabled={!file.file_url}
-            >
-              <Icon name="close" size={16} />
-            </Button>
+  return (
+    <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+      {files.map((file) => (
+        <div
+          key={file.file_url ?? file.name}
+          className="flex items-center gap-3 justify-between p-2 h-14"
+        >
+          {/* icon */}
+          <div className="w-10 h-10 p-2 rounded bg-primary/10 flex-shrink-0">
+            {file.uploading
+              ? (
+                <Icon
+                  name="hourglass_empty"
+                  size={24}
+                  className="text-primary animate-spin"
+                />
+              )
+              : <FileIcon filename={file.file_url ?? file.name} />}
           </div>
-        ))}
-      </div>
+
+          {/* name */}
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium truncate">
+              {file.name}
+            </span>
+            <div className="flex items-center gap-2">
+              {file.size && (
+                <span className="text-xs text-muted-foreground">
+                  {formatFileSize(file.size)}
+                </span>
+              )}
+              {file.uploading && (
+                <span className="text-xs text-primary">
+                  Uploading...
+                </span>
+              )}
+            </div>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="flex-shrink-0 h-8 w-8 p-0"
+                disabled={!file.file_url}
+              >
+                <Icon name="more_horiz" size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  file.file_url &&
+                    removeFile.mutateAsync({
+                      root: prefix,
+                      path: file.file_url,
+                    });
+                  file.docIds &&
+                    removeFromKnowledge.mutateAsync({
+                      docIds: file.docIds,
+                      connection: integration?.connection,
+                    });
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Icon name="delete" size={16} className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ))}
     </div>
   );
 }
@@ -154,7 +183,7 @@ function AgentKnowledgeBaseFileList(
     files
       ? files.map((file) => ({
         file_url: file.file_url,
-        name: file.file_url.replace(prefix, ""),
+        name: file.file_url.replace(prefix + "/", ""),
         type: file.metadata?.type as string ?? "",
         docIds: file.metadata?.docIds as string[] ?? [] as string[],
       }))
@@ -164,17 +193,24 @@ function AgentKnowledgeBaseFileList(
     <KnowledgeBaseFileList
       agentId={agentId}
       files={formatedFiles}
-      title="Current Files"
       integration={integration}
     />
   );
 }
 
-export default function UploadKnowledgeBaseAsset() {
-  const { agent } = useAgentSettingsForm();
-  const [uploadedFiles, setUploadedFiles] = useState<
-    { file: File; file_url?: string; uploading?: boolean; docIds?: string[] }[]
-  >([]);
+interface UploadFile {
+  file: File;
+  file_url?: string;
+  uploading?: boolean;
+  docIds?: string[];
+}
+
+interface AddFileToKnowledgeProps {
+  agent: Agent;
+  onAddFile: Dispatch<SetStateAction<UploadFile[]>>;
+}
+
+function AddFileToKnowledge({ agent, onAddFile }: AddFileToKnowledgeProps) {
   const { refetch: refetchAgentKnowledgeFiles } = useAgentFiles(agent.id);
   const [isUploading, setIsUploading] = useState(false);
   const knowledgeFileInputRef = useRef<HTMLInputElement>(null);
@@ -185,50 +221,6 @@ export default function UploadKnowledgeBaseAsset() {
     useAgentKnowledgeIntegration(
       agent,
     );
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    handleFiles(files);
-  };
-
-  const handleFiles = async (files: File[]) => {
-    // Filter for supported file types - only pdf, txt, md, csv, json
-    const supportedTypes = [
-      "application/pdf",
-      "text/plain",
-      "text/markdown",
-      "text/csv",
-      "application/json",
-    ];
-
-    const validFiles = files.filter((file) => {
-      const isValidType = supportedTypes.includes(file.type);
-      const isValidExtension = file.name.endsWith(".pdf") ||
-        file.name.endsWith(".txt") ||
-        file.name.endsWith(".md") ||
-        file.name.endsWith(".csv") ||
-        file.name.endsWith(".json");
-      return isValidType || isValidExtension;
-    });
-
-    if (validFiles.length !== files.length) {
-      alert(
-        "Some files were skipped. Only PDF, TXT, MD, CSV, and JSON files are supported.",
-      );
-    }
-
-    if (validFiles.length > 0) {
-      // Add files to state with uploading status
-      const fileObjects = validFiles.map((file) => ({ file, uploading: true }));
-      setUploadedFiles((prev) => [...prev, ...fileObjects]);
-
-      // Upload files
-      if (!knowledgeIntegration) {
-        await createAgentKnowledge();
-      }
-      await uploadKnowledgeFiles(validFiles);
-    }
-  };
 
   const uploadKnowledgeFiles = async (files: File[]) => {
     setIsUploading(true);
@@ -241,6 +233,7 @@ export default function UploadKnowledgeBaseAsset() {
           const path = agentKnowledgeBaseFilepath(agent.id, filename);
           const buffer = await file.arrayBuffer();
 
+          // add filesize at metadata
           const fileMetadata = {
             agentId: agent.id,
             type: file.type,
@@ -296,21 +289,18 @@ export default function UploadKnowledgeBaseAsset() {
           });
 
           // Update the file object with the URL and remove uploading status
-          setUploadedFiles((prev) =>
+          onAddFile((prev) =>
             prev.filter((fileObj) => {
               return fileObj.file !== file;
             })
           );
 
-          console.log(`Successfully uploaded: ${file.name} to ${path}`);
           return { file, url: path };
         } catch (error) {
           console.error(`Failed to upload ${file.name}:`, error);
 
           // Remove failed upload from the list
-          setUploadedFiles((prev) =>
-            prev.filter((fileObj) => fileObj.file !== file)
-          );
+          onAddFile((prev) => prev.filter((fileObj) => fileObj.file !== file));
 
           throw error;
         }
@@ -331,61 +321,105 @@ export default function UploadKnowledgeBaseAsset() {
     knowledgeFileInputRef.current?.click();
   };
 
+  const handleFiles = async (files: File[]) => {
+    // Filter for supported file types - only pdf, txt, md, csv, json
+    const supportedTypes = [
+      "application/pdf",
+      "text/plain",
+      "text/markdown",
+      "text/csv",
+      "application/json",
+    ];
+
+    const validFiles = files.filter((file) => {
+      const isValidType = supportedTypes.includes(file.type);
+      const isValidExtension = file.name.endsWith(".pdf") ||
+        file.name.endsWith(".txt") ||
+        file.name.endsWith(".md") ||
+        file.name.endsWith(".csv") ||
+        file.name.endsWith(".json");
+      return isValidType || isValidExtension;
+    });
+
+    if (validFiles.length !== files.length) {
+      alert(
+        "Some files were skipped. Only PDF, TXT, MD, CSV, and JSON files are supported.",
+      );
+    }
+
+    if (validFiles.length > 0) {
+      // Add files to state with uploading status
+      const fileObjects = validFiles.map((file) => ({ file, uploading: true }));
+      onAddFile((prev) => [...prev, ...fileObjects]);
+
+      // Upload files
+      if (!knowledgeIntegration) {
+        await createAgentKnowledge();
+      }
+      await uploadKnowledgeFiles(validFiles);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    handleFiles(files);
+  };
+  return (
+    <div>
+      <input
+        type="file"
+        ref={knowledgeFileInputRef}
+        multiple
+        accept=".pdf,.txt,.md,.csv,.json"
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={triggerFileInput}
+        disabled={isUploading}
+      >
+        <Icon
+          name={isUploading ? "hourglass_empty" : "add"}
+          size={16}
+        />
+        Add file
+      </Button>
+
+      {
+        /*<p className="text-xs text-muted-foreground mt-2 text-center">
+        Supports: PDF, TXT, MD, CSV, JSON
+      </p>*/
+      }
+    </div>
+  );
+}
+
+export default function UploadKnowledgeBaseAsset() {
+  const { agent } = useAgentSettingsForm();
+  const [uploadedFiles, setUploadedFiles] = useState<
+    { file: File; file_url?: string; uploading?: boolean; docIds?: string[] }[]
+  >([]);
+
   return (
     <FormItem>
-      <FormLabel>Knowledge Files</FormLabel>
-      <FormDescription className="text-xs text-muted-foreground">
-        Upload documents to enhance your agent's knowledge base. Supports PDF,
-        TXT, MD, CSV, and JSON files.
-      </FormDescription>
+      <div className="flex items-center gap-2">
+        <div className="grow flex flex-col gap-2">
+          <FormLabel>Knowledge</FormLabel>
+          <FormDescription className="text-xs text-muted-foreground">
+            Directly attach files to the assistant knowledge
+          </FormDescription>
+        </div>
 
+        <AddFileToKnowledge agent={agent} onAddFile={setUploadedFiles} />
+      </div>
       <AgentKnowledgeBaseFileList agentId={agent.id} />
 
       <div className="space-y-4">
-        {/* Drag and Drop Area */}
-        <div
-          className={cn(
-            "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer border-border hover:border-primary/50",
-            isUploading && "opacity-50 pointer-events-none",
-          )}
-          onClick={triggerFileInput}
-        >
-          <input
-            type="file"
-            ref={knowledgeFileInputRef}
-            multiple
-            accept=".pdf,.txt,.md,.csv,.json"
-            className="hidden"
-            onChange={handleFileInputChange}
-          />
-
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-muted">
-              <Icon
-                name={isUploading ? "hourglass_empty" : "upload"}
-                size={24}
-                className={isUploading ? "animate-spin" : ""}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <p className="text-sm font-medium">
-                {isUploading ? "Uploading files..." : "Click here to add files"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                or click to browse files
-              </p>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Supports: PDF, TXT, MD, CSV, JSON
-            </p>
-          </div>
-        </div>
-
         {/* Uploaded Files List */}
         <KnowledgeBaseFileList
-          title="Uploaded Files"
           agentId={agent.id}
           files={uploadedFiles.map(({ file, uploading, file_url, docIds }) => ({
             name: file.name,

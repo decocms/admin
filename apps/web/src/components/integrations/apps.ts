@@ -229,11 +229,37 @@ export function useGroupedApps({
         app.id === appId && app.provider === provider
       );
 
+      if (marketplaceApp) {
+        apps.push({
+          id: key,
+          name: marketplaceApp.name,
+          icon: marketplaceApp.icon,
+          description: marketplaceApp.description ?? "",
+          instances: integrations.length,
+          usedBy: [],
+        });
+        continue;
+      }
+
+      const firstInstance = integrations[0];
+      if (firstInstance) {
+        apps.push({
+          id: key,
+          name: firstInstance.name,
+          icon: firstInstance.icon,
+          description: firstInstance.description ?? "",
+          instances: integrations.length,
+          provider: "custom",
+          usedBy: [],
+        });
+        continue;
+      }
+
       apps.push({
         id: key,
-        name: marketplaceApp?.name ?? "Unknown",
-        icon: marketplaceApp?.icon ?? integrations[0].icon,
-        description: marketplaceApp?.description ?? "description",
+        name: "Unknown",
+        icon: "",
+        description: "Unknown connection",
         instances: integrations.length,
         usedBy: [],
       });
@@ -287,8 +313,8 @@ export function useGroupedApp({
       return {
         name: firstInstance.name,
         icon: firstInstance.icon,
-        description: firstInstance.description,
-        provider: "unknown",
+        description: firstInstance.description ?? "",
+        provider: "custom",
       };
     }
 

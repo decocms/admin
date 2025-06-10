@@ -638,11 +638,13 @@ function Overview({ data, appKey }: {
           </p>
         </div>
       </div>
-      {!isWellKnown && (
-        <Button variant="special" onClick={handleAddConnection}>
-          <span className="hidden md:inline">Add connection</span>
-        </Button>
-      )}
+      {(!isWellKnown && data.info?.provider !== "custom")
+        ? (
+          <Button variant="special" onClick={handleAddConnection}>
+            <span className="hidden md:inline">Add connection</span>
+          </Button>
+        )
+        : null}
 
       <ConfirmMarketplaceInstallDialog
         integration={installingIntegration}

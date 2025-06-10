@@ -14,8 +14,11 @@ import {
   useIntegrations,
   useMarketplaceIntegrations,
 } from "@deco/sdk";
-import { useMemo, useEffect } from "react";
-import { INTEGRATION_CHANNEL, type IntegrationMessage } from "../../lib/broadcast-channels.ts";
+import { useEffect, useMemo } from "react";
+import {
+  INTEGRATION_CHANNEL,
+  type IntegrationMessage,
+} from "../../lib/broadcast-channels.ts";
 
 export interface GroupedApp {
   id: string;

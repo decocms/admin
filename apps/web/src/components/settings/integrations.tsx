@@ -14,7 +14,11 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { AppKeys, getConnectionAppKey, useRefetchIntegrationsOnNotification } from "../integrations/apps.ts";
+import {
+  AppKeys,
+  getConnectionAppKey,
+  useRefetchIntegrationsOnNotification,
+} from "../integrations/apps.ts";
 import {
   INTEGRATION_CHANNEL,
   type IntegrationMessage,

@@ -66,7 +66,10 @@ import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
 import { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { ConfirmMarketplaceInstallDialog, SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import {
+  ConfirmMarketplaceInstallDialog,
+  SelectConnectionDialog,
+} from "./select-connection-dialog.tsx";
 import { MarketplaceIntegration } from "./marketplace.tsx";
 
 function ConnectionInstanceActions({
@@ -619,7 +622,7 @@ function Overview({ data, appKey }: {
       },
     });
   };
-  
+
   return (
     <div className="w-full p-4 flex items-center justify-between gap-2">
       <div className="flex items-center gap-4 h-12">

@@ -22,14 +22,15 @@ import Ajv from "ajv";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { IntegrationIcon } from "../integrations/common.tsx";
+import { BindingSelector } from "../toolsets/binding-selector.tsx";
+import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 
-// Generate a secure random passphrase
 function generateSecurePassphrase(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
   const length = 24;
   let result = '';
   
-  // Use crypto.getRandomValues for secure random generation
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   
@@ -39,9 +40,6 @@ function generateSecurePassphrase(): string {
   
   return result;
 }
-import { IntegrationIcon } from "../integrations/common.tsx";
-import { BindingSelector } from "../toolsets/binding-selector.tsx";
-import { SingleToolSelector } from "../toolsets/single-selector.tsx";
 
 function JsonSchemaInput({ value, onChange }: {
   value: string | undefined;
@@ -252,7 +250,6 @@ export function WebhookTriggerForm({
                 <Input
                   {...field}
                   placeholder="Send birthday message"
-                  className="rounded-md"
                   required
                 />
               </FormControl>
@@ -294,13 +291,11 @@ export function WebhookTriggerForm({
                   <Input
                     {...field}
                     placeholder="Enter passphrase or generate one"
-                    className="rounded-md"
                     type="text"
                   />
                   <Button
                     type="button"
                     variant="secondary"
-                    size="sm"
                     onClick={handleGeneratePassphrase}
                     className="whitespace-nowrap"
                   >

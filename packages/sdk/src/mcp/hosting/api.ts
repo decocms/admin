@@ -7,7 +7,7 @@ import {
 } from "../assertions.ts";
 import { AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
-
+import { polyfill } from "./fs-polyfill.ts";
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
 const METADATA_FILE_NAME = "metadata.json";
@@ -94,7 +94,35 @@ type DeployResult = {
   etag?: string;
   id?: string;
 };
+export interface Polyfill {
+  fileName: string;
+  aliases: string[];
+  content: string;
+}
 
+const addPolyfills = (
+  files: Record<string, File>,
+  metadata: Record<string, unknown>,
+  polyfills: Polyfill[],
+) => {
+  const aliases: Record<string, string> = {};
+  metadata.alias = aliases;
+
+  for (const polyfill of polyfills) {
+    const filePath = `${polyfill.fileName}.mjs`;
+    files[filePath] ??= new File(
+      [polyfill.content],
+      filePath,
+      {
+        type: "application/javascript+module",
+      },
+    );
+
+    for (const alias of polyfill.aliases) {
+      aliases[alias] = `./${polyfill.fileName}`;
+    }
+  }
+};
 async function deployToCloudflare(
   c: AppContext,
   scriptSlug: string,
@@ -110,6 +138,8 @@ async function deployToCloudflare(
     compatibility_date: "2024-11-27",
     tags: [c.workspace.value],
   };
+
+  addPolyfills(files, metadata, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
@@ -281,6 +311,7 @@ Important Notes:
       "An optional object of environment variables to be set on the worker",
     ),
   }),
+  outputSchema: AppSchema,
   handler: async ({ appSlug, files, envVars }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
@@ -317,7 +348,7 @@ Important Notes:
       fileObjects,
       envVars,
     );
-    return updateDatabase(c, workspace, scriptSlug, result, filesRecord);
+    return await updateDatabase(c, workspace, scriptSlug, result, filesRecord);
   },
 });
 

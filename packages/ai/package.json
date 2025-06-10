@@ -23,7 +23,7 @@
     "@mastra/memory": "0.3.0",
     "@modelcontextprotocol/sdk": "1.11.4",
     "ai": "^4.1.61",
-    "zod": "^3.24.3",
+    "zod": "3.24.3",
     "zod-to-json-schema": "^3.24.4",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
     "@ai-sdk/provider-utils": "^2.0.5",

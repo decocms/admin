@@ -8,7 +8,7 @@ export function ExpandableDescription(
   return (
     <div className="relative max-w-full">
       <p
-        className={`text-xs text-muted-foreground break-all ${
+        className={`text-xs text-muted-foreground break-words ${
           !isExpanded ? "line-clamp-1" : ""
         }`}
       >

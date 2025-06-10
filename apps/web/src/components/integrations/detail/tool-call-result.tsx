@@ -1,5 +1,4 @@
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { RawJsonView } from "./tool-call-form.tsx";
 
 interface ToolCallResultProps {
   response: {
@@ -24,7 +23,9 @@ export function ToolCallResult({ response }: ToolCallResultProps) {
 
       <div>
         <div className="text-sm font-medium mb-2">Data</div>
-        <RawJsonView json={response.data} />
+        <pre className="p-4 rounded-lg bg-muted text-sm overflow-auto">
+          {JSON.stringify(response.data, null, 2)}
+        </pre>
       </div>
     </div>
   );

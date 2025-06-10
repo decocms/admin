@@ -22,7 +22,6 @@ import {
   getDecoRegistryServerClient,
   searchInstalledIntegations,
   searchMarketplaceIntegations,
-  startComposioOauthFlow,
   startOauthFlow,
 } from "./utils.ts";
 
@@ -122,21 +121,10 @@ export const DECO_INTEGRATION_OAUTH_START = createInnateTool({
       "The install id of the integration to start the OAuth flow for",
     ),
   }),
-  execute: () => ({ context }) => {
+  execute: () => async ({ context }) => {
     const { appName, returnUrl, installId } = context;
-    return startOauthFlow(appName, returnUrl, installId);
-  },
-});
-
-export const COMPOSIO_INTEGRATION_OAUTH_START = createInnateTool({
-  id: "COMPOSIO_INTEGRATION_OAUTH_START",
-  description: "Start the OAuth flow for a Composio integration",
-  inputSchema: z.object({
-    url: z.string().describe("The url of the Composio MCP server"),
-  }),
-  execute: () => ({ context }) => {
-    const { url } = context;
-    return startComposioOauthFlow(url);
+    const redirectUrl = await startOauthFlow(appName, returnUrl, installId);
+    return redirectUrl;
   },
 });
 
@@ -146,8 +134,6 @@ const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
     "A message describing the result of the configuration attempt",
   ).optional(),
   data: IntegrationSchema.omit({ id: true }).optional(),
-  // configure integration can return the install id, e.g for composio
-  installId: z.string().optional(),
 });
 
 export const DECO_INTEGRATION_INSTALL = createInnateTool({
@@ -185,8 +171,7 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
           typeof parsed.data.connection.url === "string"
         ? pattern.exec(parsed.data.connection.url)
         : null;
-      const id = parsed.installId ?? match?.pathname.groups.installId ??
-        crypto.randomUUID();
+      const id = match?.pathname.groups.installId ?? crypto.randomUUID();
 
       const created = await agent.metadata?.mcpClient?.INTEGRATIONS_CREATE({
         id,
@@ -202,6 +187,7 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
       return { installationId: created.id };
     } catch (error) {
       client.close();
+
       throw error;
     }
   },
@@ -330,5 +316,4 @@ export const tools = {
   DECO_INTEGRATION_DISABLE,
   DECO_INTEGRATION_LIST_TOOLS,
   DECO_INTEGRATION_OAUTH_START,
-  COMPOSIO_INTEGRATION_OAUTH_START,
 } as const;

@@ -187,14 +187,14 @@ export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
   name: "New Integration",
   description: "A new multi-channel platform integration",
   icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-  connection: { type: "HTTP", url: "https://example.com/messages" },
+  connection: { type: "SSE", url: "https://example.com/sse" },
 };
 
 export const INNATE_INTEGRATIONS = {
   DECO_INTEGRATIONS: {
     id: "DECO_INTEGRATIONS",
-    name: "Connection management",
-    description: "Tools for managing connections.",
+    name: "Integrations",
+    description: "Tools for managing integrations.",
     icon: "https://assets.webdraw.app/uploads/integrations.png",
     connection: { type: "INNATE", name: "DECO_INTEGRATIONS" },
   },

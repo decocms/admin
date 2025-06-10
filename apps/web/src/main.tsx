@@ -55,21 +55,19 @@ const Login = lazy(() => import("./components/login/index.tsx"));
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
  * want custom Suspense behavior.
  */
-const ConnectionDetail = lazy(() =>
+const IntegrationDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/integrations/detail/edit.tsx"))
+);
+
+const IntegrationList = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/connection-detail.tsx"),
+    import("./components/integrations/list/installed.tsx"),
   )
 );
 
-const ConnectionsList = lazy(() =>
+const IntegrationMarketplace = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/connections-list.tsx"),
-  )
-);
-
-const ConnectionInstallSuccess = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/integrations/install-success.tsx"),
+    import("./components/integrations/list/marketplace.tsx"),
   )
 );
 
@@ -274,9 +272,12 @@ const router = createBrowserRouter([
           },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          { path: "connections", Component: ConnectionsList },
-          { path: "connection/:appKey", Component: ConnectionDetail },
-          { path: "connections/success", Component: ConnectionInstallSuccess },
+          {
+            path: "integrations/marketplace",
+            Component: IntegrationMarketplace,
+          },
+          { path: "integrations", Component: IntegrationList },
+          { path: "integration/:id", Component: IntegrationDetail },
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:agentId/:triggerId", Component: TriggerDetails },
           { path: "settings", Component: Settings },

@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import { useParams } from "react-router";
 import { AgentAvatar } from "../avatar/index.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
-import { IntegrationIcon } from "../../integrations/common.tsx";
+import { IntegrationIcon } from "../../integrations/list/common.tsx";
 import { format } from "date-fns";
 
 interface AgentInfoProps {
@@ -164,7 +164,7 @@ export function DateTimeCell({
 }
 
 interface IntegrationInfoProps {
-  integration?: { id?: string; icon?: string; name: string };
+  integration?: { icon?: string; name: string };
   integrationId?: string;
   className?: string;
 }
@@ -177,12 +177,13 @@ function IntegrationInfo(
       <div
         className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
       >
-        <IntegrationIcon
-          id={integration.id}
-          icon={integration.icon}
-          name={integration.name}
-          className="h-10 w-10"
-        />
+        <div className="w-8 h-8">
+          <IntegrationIcon
+            icon={integration.icon}
+            name={integration.name}
+            className="rounded-sm h-8 w-8"
+          />
+        </div>
         <span className="truncate hidden md:inline">{integration.name}</span>
       </div>
     );

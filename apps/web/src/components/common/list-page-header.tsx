@@ -1,11 +1,5 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import type { ComponentProps, InputHTMLAttributes, ReactNode } from "react";
 import { ViewModeSwitcher } from "./view-mode-switcher.tsx";
 
@@ -23,8 +17,6 @@ interface Chiplet {
   active?: boolean;
   label: string | ReactNode;
   count: number;
-  disabled?: boolean;
-  tooltip?: string;
 }
 
 interface ChipletProps {
@@ -36,30 +28,17 @@ export function Chiplet(props: ChipletProps) {
   const { item, onClick } = props;
 
   return (
-    <Tooltip>
-      <TooltipTrigger>
-        <Button
-          variant="outline"
-          disabled={item.disabled}
-          className={cn(
-            "shadow-none items-center gap-2",
-            item.active && "bg-accent",
-          )}
-          onClick={() => onClick(item)}
-          type="button"
-        >
-          {item.label}
-          <span className="text-xs text-muted-foreground">
-            {item.count}
-          </span>
-        </Button>
-      </TooltipTrigger>
-      {item.tooltip && (
-        <TooltipContent side="bottom">
-          {item.tooltip}
-        </TooltipContent>
-      )}
-    </Tooltip>
+    <Button
+      variant={item.active ? "secondary" : "outline"}
+      className="shadow-none items-center gap-2"
+      onClick={() => onClick(item)}
+      type="button"
+    >
+      {item.label}
+      <span className="text-xs text-muted-foreground">
+        {item.count}
+      </span>
+    </Button>
   );
 }
 

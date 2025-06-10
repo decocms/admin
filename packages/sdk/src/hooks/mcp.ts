@@ -45,13 +45,7 @@ export const useCreateIntegration = () => {
   return create;
 };
 
-export const useUpdateIntegration = ({
-  onError,
-  onSuccess,
-}: {
-  onError?: (error: Error) => void;
-  onSuccess?: (result: Integration) => void;
-} = {}) => {
+export const useUpdateIntegration = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -73,10 +67,7 @@ export const useUpdateIntegration = ({
             ? [result]
             : old.map((mcp) => mcp.id === result.id ? result : mcp),
       );
-
-      onSuccess?.(result);
     },
-    onError,
   });
 
   return update;
@@ -281,30 +272,6 @@ export const useInstallFromMarketplace = () => {
         redirectUrl = result?.data?.redirectUrl;
         if (!redirectUrl) {
           throw new Error("No redirect URL found");
-        }
-      }
-
-      if (provider === "composio") {
-        if (!("url" in integration.connection)) {
-          throw new Error("Composio integration has no url");
-        }
-
-        const result = await agentStub.callTool(
-          "DECO_INTEGRATIONS.COMPOSIO_INTEGRATION_OAUTH_START",
-          {
-            url: integration.connection.url,
-          },
-        );
-        redirectUrl = result?.data?.redirectUrl;
-        if (!redirectUrl) {
-          const errorInfo = {
-            appName,
-            returnUrl,
-            installId: integration.id.split(":").pop()!,
-            url: integration.connection.url,
-            result,
-          };
-          console.error("[Composio] No redirect URL found", errorInfo);
         }
       }
 

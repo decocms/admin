@@ -92,7 +92,7 @@ function ConnectionInstanceActions({
         <DropdownMenuItem onSelect={onTestTools}>Test tools</DropdownMenuItem>
         <DropdownMenuItem
           onSelect={onDelete}
-          className="bg-destructive/10 text-destructive focus:bg-destructive/20 focus:text-destructive"
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
         >
           Delete
         </DropdownMenuItem>

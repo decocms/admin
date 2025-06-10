@@ -94,6 +94,20 @@ export const KEYS = {
     threadId: string,
   ) => ["thread-tools", workspace, threadId],
   PROFILE: () => ["profile"],
+  PROMPTS: (workspace: Workspace) => ["prompts", workspace],
+  PROMPT: (workspace: Workspace, id: string) => ["prompts", workspace, id],
+  PROMPTS_SEARCH: (
+    workspace: Workspace,
+    query: string,
+    limit: number = 10,
+    offset: number = 0,
+  ) => [
+    "prompts",
+    workspace,
+    query,
+    limit,
+    offset,
+  ],
   WHATSAPP_USER: (workspace: Workspace, phone: string) => [
     "whatsapp-user",
     workspace,

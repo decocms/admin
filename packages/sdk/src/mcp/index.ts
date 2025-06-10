@@ -15,6 +15,7 @@ import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
+import * as promptsAPI from "./prompts/api.ts";
 import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
@@ -113,6 +114,12 @@ export const WORKSPACE_TOOLS = [
   channelsAPI.deleteChannel,
   channelsAPI.listChannels,
   channelsAPI.createChannel,
+  promptsAPI.createPrompt,
+  promptsAPI.updatePrompt,
+  promptsAPI.deletePrompt,
+  promptsAPI.listPrompts,
+  promptsAPI.getPrompt,
+  promptsAPI.searchPrompts,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

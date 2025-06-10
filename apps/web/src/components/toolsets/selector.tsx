@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
-import { useAgentSettingsToolsSet } from "../settings/integrations.tsx";
 
 interface ToolsMap {
   [integrationId: string]: string[];

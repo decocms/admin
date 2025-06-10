@@ -2,7 +2,7 @@ import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
@@ -19,10 +19,6 @@ import {
   getConnectionAppKey,
   useRefetchIntegrationsOnNotification,
 } from "../integrations/apps.ts";
-import {
-  INTEGRATION_CHANNEL,
-  type IntegrationMessage,
-} from "../../lib/broadcast-channels.ts";
 
 const ADVANCED_INTEGRATIONS = [
   "i:user-management",

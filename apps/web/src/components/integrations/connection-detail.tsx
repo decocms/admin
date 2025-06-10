@@ -68,7 +68,6 @@ import { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
   ConfirmMarketplaceInstallDialog,
-  SelectConnectionDialog,
 } from "./select-connection-dialog.tsx";
 import { MarketplaceIntegration } from "./marketplace.tsx";
 

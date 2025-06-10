@@ -7,12 +7,14 @@ export function EmptyState({
   icon,
   title,
   description,
-  buttonProps,
+  buttonProps = {},
+  buttonComponent,
 }: {
   icon: string;
   title: string;
   description: string | ReactNode;
-  buttonProps: ComponentProps<typeof Button>;
+  buttonProps?: ComponentProps<typeof Button>;
+  buttonComponent?: ReactNode;
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 relative">
@@ -42,12 +44,14 @@ export function EmptyState({
           {description}
         </div>
       </div>
-      <Button
-        variant="outline"
-        size="default"
-        className={cn("gap-2", buttonProps?.className)}
-        {...buttonProps}
-      />
+      {buttonComponent ?? (
+        <Button
+          variant="outline"
+          size="default"
+          className={cn("gap-2", buttonProps?.className)}
+          {...buttonProps}
+        />
+      )}
     </div>
   );
 }

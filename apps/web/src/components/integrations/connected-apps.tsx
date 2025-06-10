@@ -11,6 +11,7 @@ import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
+import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 
 function AppCard({
   app,
@@ -193,13 +194,9 @@ export function ConnectedAppsList() {
               icon="conversion_path"
               title="No connected integrations yet"
               description="Connect services to expand what your agents can do."
-              buttonProps={{
-                children: "Connect an integration",
-                // TODO: fix before merging
-                onClick: () => {
-                  throw new Error("Not implemented");
-                },
-              }}
+              buttonComponent={
+                <SelectConnectionDialog forceTab="new-connection" />
+              }
             />
           )
           : (

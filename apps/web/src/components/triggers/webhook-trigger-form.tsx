@@ -101,6 +101,21 @@ type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 
 type WebhookTriggerData = z.infer<typeof WebhookTriggerSchema>;
 
+function generateSecurePassphrase(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+  const length = 24;
+  let result = "";
+  
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  
+  for (let i = 0; i < length; i++) {
+    result += chars[array[i] % chars.length];
+  }
+  
+  return result;
+}
+
 export function WebhookTriggerForm({
   agentId,
   onSuccess,
@@ -139,21 +154,6 @@ export function WebhookTriggerForm({
       type: "webhook",
     },
   });
-
-  function generateSecurePassphrase(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    const length = 24;
-    let result = '';
-    
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    
-    for (let i = 0; i < length; i++) {
-      result += chars[array[i] % chars.length];
-    }
-    
-    return result;
-  }
 
   function handleOutputSchemaChange(val: string) {
     form.setValue("schema", val, { shouldValidate: true });

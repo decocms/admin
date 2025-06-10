@@ -240,12 +240,11 @@ function AddConnectionDialogContent({
               filter={search}
               emptyState={
                 <div className="flex flex-col h-full min-h-[200px] gap-4">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-lg font-semibold">
-                      No connections found for the search "{search}" in the
-                      marketplace
+                  <div className="flex flex-col gap-2 py-8 w-full items-center">
+                    <h3 className="text-2xl font-medium">
+                      No connections found for the search "{search}"
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground w-full text-center">
                       You can{" "}
                       <Button
                         variant="link"
@@ -274,23 +273,20 @@ function AddConnectionDialogContent({
               emptyState={showEmptyState
                 ? myConnectionsEmptyState ?? (
                   <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-lg font-semibold">
-                        No connections found for the search "{search}" in your
-                        team
+                    <div className="w-full flex items-center flex-col gap-2 py-8">
+                      <h3 className="text-2xl font-medium">
+                        No connections found
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        You can install a connection from the marketplace to get
-                        started:
+                        Create a new connection to get started
                       </p>
                     </div>
                     <Marketplace
                       filter={search}
                       emptyState={
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 py-8 w-full items-center">
                           <p className="text-sm text-muted-foreground">
-                            No connections found for the search "{search}" on
-                            the marketplace
+                            No connections found for the search "{search}"
                           </p>
                         </div>
                       }

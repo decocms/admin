@@ -237,12 +237,23 @@ function AddConnectionDialogContent({
         setIntegration={setInstallingIntegration}
         onConfirm={({ connection, authorizeOauthUrl }) => {
           onSelect?.(connection);
-          console.log("authorizeOauthUrl", authorizeOauthUrl);
           if (authorizeOauthUrl) {
-            globalThis.open(
+            const popup = globalThis.open(
               authorizeOauthUrl,
               "_blank",
             );
+            if (!popup || popup.closed || typeof popup.closed === "undefined") {
+              alert(
+                "Please allow popups for this site to complete the OAuth flow.",
+              );
+              const link = document.createElement("a");
+              link.href = authorizeOauthUrl;
+              link.target = "_blank";
+              link.textContent = "Click here to continue OAuth flow";
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }
           }
         }}
       />

@@ -22,8 +22,8 @@ import {
   getDecoRegistryServerClient,
   searchInstalledIntegations,
   searchMarketplaceIntegations,
-  startOauthFlow,
   startComposioOauthFlow,
+  startOauthFlow,
 } from "./utils.ts";
 
 export const DECO_INTEGRATIONS_SEARCH = createInnateTool({
@@ -185,7 +185,8 @@ export const DECO_INTEGRATION_INSTALL = createInnateTool({
           typeof parsed.data.connection.url === "string"
         ? pattern.exec(parsed.data.connection.url)
         : null;
-      const id = parsed.installId ?? match?.pathname.groups.installId ?? crypto.randomUUID();
+      const id = parsed.installId ?? match?.pathname.groups.installId ??
+        crypto.randomUUID();
 
       const created = await agent.metadata?.mcpClient?.INTEGRATIONS_CREATE({
         id,

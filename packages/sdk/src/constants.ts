@@ -193,7 +193,7 @@ export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
 export const INNATE_INTEGRATIONS = {
   DECO_INTEGRATIONS: {
     id: "DECO_INTEGRATIONS",
-    name: "Connections",
+    name: "Connection management",
     description: "Tools for managing connections.",
     icon: "https://assets.webdraw.app/uploads/integrations.png",
     connection: { type: "INNATE", name: "DECO_INTEGRATIONS" },

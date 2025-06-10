@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { useAgentSettingsToolsSet } from "../settings/integrations.tsx";
 
 interface ToolsMap {
   [integrationId: string]: string[];
@@ -54,21 +55,21 @@ function IntegrationListItemActions({
 }
 
 export function IntegrationListItem({
-  integration,
   toolsSet,
   setIntegrationTools,
+  integration,
   onRemove,
   onConfigure,
   hideTools,
 }: {
-  integration: Integration;
   toolsSet: ToolsMap;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
+  integration: Integration;
   onConfigure: (integration: Integration) => void;
   onRemove: (integrationId: string) => void;
   hideTools?: boolean;
 }) {
-  const [openTools, setOpenTools] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
 
   const total = toolsData?.tools?.length ?? 0;
@@ -142,14 +143,14 @@ export function IntegrationListItem({
         <div
           className={cn(
             "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-primary-foreground rounded-b-xl",
-            !openTools && "hover:bg-muted",
+            !toolsOpen && "hover:bg-muted",
           )}
         >
           <span
-            onClick={() => setOpenTools(!openTools)}
+            onClick={() => setToolsOpen(!toolsOpen)}
             className={cn(
               "text-muted-foreground text-sm h-10 flex items-center w-full hover:bg-muted pl-2 pr-4",
-              !openTools && "rounded-b-xl",
+              !toolsOpen && "rounded-b-xl",
             )}
           >
             <div className="w-full flex items-center justify-between">
@@ -160,7 +161,7 @@ export function IntegrationListItem({
                   size={14}
                   className={cn(
                     "inline-block mr-1 align-text-bottom text-foreground",
-                    openTools && "rotate-90",
+                    toolsOpen && "rotate-90",
                   )}
                 />
                 <span
@@ -186,7 +187,7 @@ export function IntegrationListItem({
               </div>
             </div>
           </span>
-          {openTools && (
+          {toolsOpen && (
             <ToolList
               integration={integration}
               toolsSet={toolsSet}

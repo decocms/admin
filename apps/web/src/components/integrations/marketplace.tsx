@@ -1,5 +1,4 @@
 import { type Integration, useMarketplaceIntegrations } from "@deco/sdk";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
@@ -11,6 +10,11 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
 
@@ -94,11 +98,21 @@ export function SetupIntegrationModal({
 
 function VerifiedBadge() {
   return (
-    <div className="absolute top-2 right-2">
-      <Badge variant="secondary">
-        <Icon name="verified" size={16} />
-        Verified
-      </Badge>
+    <div className="relative">
+      <div className="absolute bg-primary rounded-full w-2 h-2 top-1 left-1" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Icon
+            name="verified"
+            size={16}
+            className="absolute z-10 text-primary-light"
+            filled
+          />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Made by Deco</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -120,17 +134,19 @@ function CardsView(
             className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
             onClick={() => onRowClick(integration)}
           >
-            <CardContent className="p-4 relative">
+            <CardContent className="p-4">
               <div className="grid grid-cols-[min-content_1fr] gap-4">
-                {showVerifiedBadge && <VerifiedBadge />}
                 <IntegrationIcon
                   icon={integration.icon}
                   name={integration.name}
                   className="h-10 w-10"
                 />
                 <div className="grid grid-cols-1 gap-1">
-                  <div className="text-sm font-semibold truncate">
-                    {integration.name}
+                  <div className="flex items-start gap-1">
+                    <div className="text-sm font-semibold truncate">
+                      {integration.name}
+                    </div>
+                    {showVerifiedBadge && <VerifiedBadge />}
                   </div>
                   <div className="text-sm text-muted-foreground line-clamp-3">
                     {integration.description}

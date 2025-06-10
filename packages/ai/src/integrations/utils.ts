@@ -70,6 +70,23 @@ export const startOauthFlow = async (
   return { redirectUrl };
 };
 
+interface ToolCallResult {
+  content?: {
+    text?: string;
+  }[];
+}
+
+const parseComposioToolResult = (result: ToolCallResult) => {
+  try {
+    const dataStringified = result.content?.[0]?.text ?? "{}";
+    const data = JSON.parse(dataStringified);
+    return data;
+  } catch (error) {
+    console.error("Error parsing Composio tool result", error);
+    return {};
+  }
+};
+
 export const startComposioOauthFlow = async (
   url: string,
 ) => {
@@ -78,13 +95,22 @@ export const startComposioOauthFlow = async (
     connection: { type: "HTTP", url },
   });
 
-  const {tools} = await client.listTools();
+  const { tools } = await client.listTools();
 
-  const connectionCheckTool = tools.find((tool) => tool.name.endsWith("_CHECK_ACTIVE_CONNECTION"));
-  const initiateConnectionTool = tools.find((tool) => tool.name.endsWith("_INITIATE_CONNECTION"));
-  const getRequiredParametersTool = tools.find((tool) => tool.name.endsWith("_GET_REQUIRED_PARAMETERS"));
-  
-  if (!connectionCheckTool || !initiateConnectionTool || !getRequiredParametersTool) {
+  const connectionCheckTool = tools.find((tool) =>
+    tool.name.endsWith("_CHECK_ACTIVE_CONNECTION")
+  );
+  const initiateConnectionTool = tools.find((tool) =>
+    tool.name.endsWith("_INITIATE_CONNECTION")
+  );
+  const getRequiredParametersTool = tools.find((tool) =>
+    tool.name.endsWith("_GET_REQUIRED_PARAMETERS")
+  );
+
+  if (
+    !connectionCheckTool || !initiateConnectionTool ||
+    !getRequiredParametersTool
+  ) {
     throw new Error("Composio authenticator has no required tools");
   }
 
@@ -93,23 +119,19 @@ export const startComposioOauthFlow = async (
     arguments: {},
   });
 
-  console.log("connection check result", connectionCheckResult);
-
   const getRequiredParametersResult = await client.callTool({
     name: getRequiredParametersTool.name,
     arguments: {},
   });
-
-  console.log("get required parameters result", getRequiredParametersResult);
 
   const initiateConnectionResult = await client.callTool({
     name: initiateConnectionTool.name,
     arguments: {},
   });
 
-  const thing = initiateConnectionResult.content?.[0]?.text ?? "{}"
-  const thingParsed = JSON.parse(thing);
-  console.log("initiate connection result", thingParsed);
-  const redirectUrl = thingParsed.data.response_data.redirect_url ?? "";
+  const data = parseComposioToolResult(
+    initiateConnectionResult as ToolCallResult,
+  );
+  const redirectUrl = data.data?.response_data?.redirect_url ?? null;
   return { redirectUrl };
 };

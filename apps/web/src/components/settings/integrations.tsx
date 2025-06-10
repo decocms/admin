@@ -2,7 +2,7 @@ import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
@@ -20,11 +20,6 @@ import {
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
 
-type SetIntegrationTools = (
-  integrationId: string,
-  tools: string[] | boolean,
-) => void;
-
 const ADVANCED_INTEGRATIONS = [
   "i:user-management",
   "i:workspace-management",
@@ -37,38 +32,52 @@ const connectionFilter = (integration: Integration) =>
   integration.id.startsWith("i:") ||
   ADVANCED_INTEGRATIONS.includes(integration.id);
 
-function Connections({
-  installedIntegrations,
-  toolsSet,
-  setIntegrationTools,
-}: {
-  installedIntegrations: Integration[];
-  toolsSet: Record<string, string[]>;
-  setIntegrationTools: SetIntegrationTools;
-}) {
-  const [search, setSearch] = useState("");
+function AddConnectionButton() {
+  const { enableAllTools } = useAgentSettingsToolsSet();
+  return (
+    <SelectConnectionDialog
+      onSelect={(integration) => enableAllTools(integration.id)}
+      filter={connectionFilter}
+      trigger={
+        <Button variant="outline">
+          <Icon name="add" /> Add connection
+        </Button>
+      }
+    />
+  );
+}
+
+function useConfigureConnection() {
   const navigateWorkspace = useNavigateWorkspace();
-  const onConfigureConnection = (integration: Integration) => {
+  return useCallback((integration: Integration) => {
     const appKey = AppKeys.build(getConnectionAppKey(integration));
     navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
-  };
+  }, [navigateWorkspace]);
+}
 
-  const activeIntegrations = installedIntegrations.filter((integration) =>
-    !!toolsSet[integration.id]
-  );
-  const filteredIntegrations = activeIntegrations.filter((integration) => {
-    const searchTerm = search.toLowerCase();
-    return (
-      integration?.name?.toLowerCase().includes(searchTerm) ||
-      integration?.description?.toLowerCase().includes(searchTerm)
-    );
-  });
+function Connections() {
+  const {
+    toolsSet,
+    setIntegrationTools,
+    installedIntegrations,
+    disableAllTools,
+  } = useAgentSettingsToolsSet();
+  const [search, setSearch] = useState("");
 
-  const connections = filteredIntegrations.filter((integration) =>
-    integration.id.startsWith("i:")
-  );
+  const onConfigureConnection = useConfigureConnection();
 
-  const showAddConnectionEmptyState = connections.length === 0;
+  const connections = installedIntegrations
+    .filter(connectionFilter)
+    .filter((connection) => !!toolsSet[connection.id])
+    .filter((connection) => {
+      const searchTerm = search.toLowerCase();
+      return (
+        connection?.name?.toLowerCase().includes(searchTerm) ||
+        connection?.description?.toLowerCase().includes(searchTerm)
+      );
+    });
+
+  const showAddConnectionEmptyState = connections.length === 0 && !search;
   return (
     <div className="flex flex-col gap-2">
       <h6 className="text-sm font-medium">Connections</h6>
@@ -77,18 +86,7 @@ function Connections({
           Connect and configure integrations to extend your agent's capabilities
           with external services.
         </span>
-        {!showAddConnectionEmptyState && (
-          <SelectConnectionDialog
-            onSelect={(integration) =>
-              setIntegrationTools(integration.id, true)}
-            filter={connectionFilter}
-            trigger={
-              <Button variant="outline">
-                <Icon name="add" /> Add connection
-              </Button>
-            }
-          />
-        )}
+        {!showAddConnectionEmptyState && <AddConnectionButton />}
       </div>
       {showAddConnectionEmptyState
         ? (
@@ -102,16 +100,7 @@ function Connections({
               <div className="absolute inset-0 bg-gradient-to-r from-muted via-transparent to-muted" />
             </div>
             <div className="absolute z-10 flex flex-col items-center gap-2 bottom-6">
-              <SelectConnectionDialog
-                onSelect={(integration) =>
-                  setIntegrationTools(integration.id, true)}
-                filter={connectionFilter}
-                trigger={
-                  <Button variant="outline">
-                    <Icon name="add" /> Add connection
-                  </Button>
-                }
-              />
+              <AddConnectionButton />
             </div>
           </div>
         )
@@ -140,12 +129,12 @@ function Connections({
                   {connections.map((connection) => (
                     <IntegrationListItem
                       key={connection.id}
-                      integration={connection}
                       toolsSet={toolsSet}
                       setIntegrationTools={setIntegrationTools}
+                      integration={connection}
                       onConfigure={onConfigureConnection}
                       onRemove={(integrationId) =>
-                        setIntegrationTools(integrationId, false)}
+                        disableAllTools(integrationId)}
                     />
                   ))}
                 </div>
@@ -187,33 +176,23 @@ function Knowledge() {
   );
 }
 
-function MultiAgent({
-  installedIntegrations,
-  toolsSet,
-  setIntegrationTools,
-}: {
-  installedIntegrations: Integration[];
-  toolsSet: Record<string, string[]>;
-  setIntegrationTools: SetIntegrationTools;
-}) {
+function useConfigureAgentConnection() {
   const navigateWorkspace = useNavigateWorkspace();
-  const onConfigure = (connection: Integration) => {
+  return useCallback((connection: Integration) => {
     const agentId = connection.id.split("a:")[1];
     navigateWorkspace(`/agent/${agentId}/${crypto.randomUUID()}`);
-  };
+  }, [navigateWorkspace]);
+}
 
-  const activeIntegrations = installedIntegrations.filter((integration) =>
-    !!toolsSet[integration.id]
-  );
-  const agentConnections = activeIntegrations.filter((integration) =>
-    integration.id.startsWith("a:")
-  );
-  const showAddAgentEmptyState = agentConnections.length === 0;
+const agentConnectionFilter = (integration: Integration) =>
+  integration.id.startsWith("a:");
 
-  const newAgentButton = (
+function AddAgentConnectionButton() {
+  const { setIntegrationTools } = useAgentSettingsToolsSet();
+  return (
     <SelectConnectionDialog
       title="Connect agent"
-      filter={(integration) => integration.id.startsWith("a:")}
+      filter={agentConnectionFilter}
       forceTab="my-connections"
       onSelect={(integration) =>
         setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
@@ -224,6 +203,21 @@ function MultiAgent({
       }
     />
   );
+}
+
+function MultiAgent() {
+  const {
+    toolsSet,
+    setIntegrationTools,
+    installedIntegrations,
+    disableAllTools,
+  } = useAgentSettingsToolsSet();
+  const onConfigure = useConfigureAgentConnection();
+
+  const agentConnections = installedIntegrations
+    .filter(agentConnectionFilter)
+    .filter((connection) => !!toolsSet[connection.id]);
+  const showAddAgentEmptyState = agentConnections.length === 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -233,12 +227,12 @@ function MultiAgent({
           Enable your agent to communicate with other agents for collaborative
           workflows.
         </span>
-        {!showAddAgentEmptyState ? newAgentButton : null}
+        {!showAddAgentEmptyState ? <AddAgentConnectionButton /> : null}
       </div>
       {showAddAgentEmptyState
         ? (
           <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-            {newAgentButton}
+            <AddAgentConnectionButton />
           </div>
         )
         : (
@@ -248,12 +242,11 @@ function MultiAgent({
                 {agentConnections.map((agentConnection) => (
                   <IntegrationListItem
                     key={agentConnection.id}
-                    integration={agentConnection}
                     toolsSet={toolsSet}
                     setIntegrationTools={setIntegrationTools}
+                    integration={agentConnection}
                     onConfigure={onConfigure}
-                    onRemove={(integrationId) =>
-                      setIntegrationTools(integrationId, false)}
+                    onRemove={(integrationId) => disableAllTools(integrationId)}
                     hideTools
                   />
                 ))}
@@ -265,41 +258,30 @@ function MultiAgent({
   );
 }
 
-function ToolsAndKnowledgeTab() {
-  const {
-    form,
-    handleSubmit,
-    agent,
-  } = useAgentSettingsForm();
-  const { data: _installedIntegrations, refetch } = useIntegrations();
+export function useAgentSettingsToolsSet() {
+  const { form, agent } = useAgentSettingsForm();
+  const { data: _installedIntegrations, refetch: refetchIntegrations } =
+    useIntegrations();
   const installedIntegrations = _installedIntegrations.filter(
     (i) => !i.id.includes(agent.id),
   );
+  const toolsSet = form.watch("tools_set");
 
   useEffect(() => {
     // Listen for integration updates from other windows
     const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
       if (event.data.type === "INTEGRATION_UPDATED") {
-        console.log(
-          "[Integrations] Received integration update, refetching...",
-        );
-        refetch();
+        refetchIntegrations();
       }
     };
-
     INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
     return () => {
       INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
     };
-  }, [refetch]);
-
-  useEffect(() => {
-    console.log("installedIntegrations changed", installedIntegrations);
-  }, [installedIntegrations]);
-
-  const toolsSet = form.watch("tools_set");
+  }, [refetchIntegrations]);
 
   const enableAllTools = (integrationId: string) => {
+    const toolsSet = form.getValues("tools_set");
     const newToolsSet = { ...toolsSet };
     // When enabling all tools, first set the tools to an empty array
     // so the integration is at least enabled even if fetching the tools fails
@@ -307,6 +289,7 @@ function ToolsAndKnowledgeTab() {
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
 
     // account for optimistic update post connection creation
+    // TODO: change to on success and track pending integrations to selectall
     setTimeout(() => {
       const connection = installedIntegrations.find(
         (integration) => integration.id === integrationId,
@@ -328,31 +311,36 @@ function ToolsAndKnowledgeTab() {
   };
 
   const disableAllTools = (integrationId: string) => {
+    const toolsSet = form.getValues("tools_set");
     const newToolsSet = { ...toolsSet };
     delete newToolsSet[integrationId];
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
 
-  const setIntegrationTools: SetIntegrationTools = (
+  const setIntegrationTools = (
     integrationId: string,
-    tools: string[] | boolean,
+    tools: string[],
   ) => {
     const toolsSet = form.getValues("tools_set");
     const newToolsSet = { ...toolsSet };
-
-    // Boolean means enable/disable all tools
-    if (typeof tools === "boolean") {
-      if (tools) {
-        enableAllTools(integrationId);
-      } else {
-        disableAllTools(integrationId);
-      }
-      return;
-    }
-
     newToolsSet[integrationId] = tools;
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
+
+  return {
+    toolsSet,
+    setIntegrationTools,
+    enableAllTools,
+    disableAllTools,
+    installedIntegrations,
+  };
+}
+
+function ToolsAndKnowledgeTab() {
+  const {
+    form,
+    handleSubmit,
+  } = useAgentSettingsForm();
 
   return (
     <ScrollArea className="h-full w-full">
@@ -362,17 +350,9 @@ function ToolsAndKnowledgeTab() {
             onSubmit={handleSubmit}
             className="space-y-4"
           >
-            <Connections
-              installedIntegrations={installedIntegrations}
-              toolsSet={toolsSet}
-              setIntegrationTools={setIntegrationTools}
-            />
+            <Connections />
             <Knowledge />
-            <MultiAgent
-              installedIntegrations={installedIntegrations}
-              toolsSet={toolsSet}
-              setIntegrationTools={setIntegrationTools}
-            />
+            <MultiAgent />
           </form>
         </div>
       </Form>

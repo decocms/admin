@@ -23,7 +23,7 @@ import { Json, QueryResult } from "../../storage/index.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { convertFromDatabase, parseId } from "../integrations/api.ts";
@@ -79,12 +79,14 @@ export const listTriggers = createTool({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
   inputSchema: z.object({ agentId: z.string().optional() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId },
     c,
   ): Promise<z.infer<typeof ListTriggersOutputSchema>> => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
 
@@ -130,12 +132,11 @@ export const upsertTrigger = createTool({
     triggerId: z.string().optional(),
     data: TriggerSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (
-    { agentId, triggerId, data },
-    c,
-  ) => {
+  handler: async ({ agentId, triggerId, data }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
     const user = c.user;
@@ -248,11 +249,11 @@ export const createTrigger = createTool({
     ),
     data: TriggerSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (
-    { agentId, data },
-    _c,
-  ) => {
+  handler: async ({ agentId, data }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
       throw result.structuredContent;
@@ -271,11 +272,11 @@ export const updateTrigger = createTool({
     triggerId: z.string(),
     data: TriggerSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (
-    { agentId, triggerId, data },
-    _c,
-  ) => {
+  handler: async ({ agentId, triggerId, data }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const result = await upsertTrigger.handler({ agentId, triggerId, data });
     if (result.isError) {
       throw result.structuredContent;
@@ -293,11 +294,14 @@ export const createCronTrigger = createTool({
     ),
     data: CreateCronTriggerInputSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
-    _c,
+    c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
@@ -316,11 +320,14 @@ export const createWebhookTrigger = createTool({
     ),
     data: CreateWebhookTriggerInputSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { agentId, data },
-    _c,
+    c,
   ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
     if (result.isError) {
@@ -334,12 +341,14 @@ export const deleteTrigger = createTool({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
   inputSchema: z.object({ triggerId: z.string(), agentId: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId, agentId },
     c,
   ): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
@@ -370,12 +379,14 @@ export const getWebhookTriggerUrl = createTool({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
   inputSchema: z.object({ triggerId: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { triggerId },
     c,
   ): Promise<z.infer<typeof GetWebhookTriggerUrlOutputSchema>> => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
 
@@ -403,11 +414,7 @@ export const getTrigger = createTool({
   name: "TRIGGERS_GET",
   description: "Get a trigger by ID",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async (
-    { id: triggerId },
-    c,
-  ): Promise<
+  handler: async ({ id: triggerId }, c): Promise<
     z.infer<
       typeof CreateTriggerOutputSchema
     > & {
@@ -415,6 +422,9 @@ export const getTrigger = createTool({
     }
   > => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
 
@@ -446,9 +456,11 @@ export const activateTrigger = createTool({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
   inputSchema: z.object({ triggerId: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;
@@ -513,9 +525,11 @@ export const deactivateTrigger = createTool({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
   inputSchema: z.object({ triggerId: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ triggerId }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const db = c.db;
     const workspace = c.workspace.value;
     const stub = c.stub;

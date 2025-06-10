@@ -147,7 +147,7 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === DEFAULT_PATH) {
+    if (pathname === "/") {
       globalThis.location.href = "/about";
 
       return;

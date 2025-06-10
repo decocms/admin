@@ -16,6 +16,10 @@ export const KEYS = {
     workspace: Workspace,
     integrationId?: string,
   ) => ["integration", workspace, integrationId],
+  CHANNELS: (
+    workspace: Workspace,
+    channelId?: string,
+  ) => ["channels", workspace, channelId],
   BINDINGS: (
     workspace: Workspace,
     binder: Binder,
@@ -23,16 +27,21 @@ export const KEYS = {
   THREADS: (
     workspace: Workspace,
     options?: ThreadFilterOptions,
-  ) => [
-    "threads",
-    workspace,
-    options?.agentId,
-    options?.resourceId,
-    options?.orderBy,
-    options?.cursor,
-    options?.limit,
-    options?.uniqueByAgentId,
-  ],
+  ) => {
+    if (!options) {
+      return ["threads", workspace];
+    }
+    return [
+      "threads",
+      workspace,
+      options.agentId,
+      options.resourceId,
+      options.orderBy,
+      options.cursor,
+      options.limit,
+      options.uniqueByAgentId,
+    ];
+  },
   TOOLS: (
     workspace: Workspace,
     agentId: string,

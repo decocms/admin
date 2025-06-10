@@ -59,39 +59,47 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
 
   const isDecoTeam = workspace as string === "shared/deco.cx";
 
-  // Find webhook triggers (WhatsApp uses webhook triggers)
   const webhookTriggers =
     triggers?.triggers?.filter((trigger) => trigger.type === "webhook") ?? [];
-  const whatsappTrigger =
-    webhookTriggers.find((trigger) =>
-      whatsappUser?.trigger_id === trigger.id
-    ) ?? webhookTriggers[0]; // Use first webhook trigger if no specific WhatsApp trigger found
+  const currentWhatsAppRouterTrigger = webhookTriggers.find((trigger) =>
+    whatsappUser?.trigger_id === trigger.id
+  );
 
   const { mutate: upsertWhatsAppUser } = useUpsertWhatsAppUser({
     agentId: agentId,
   });
-  const { mutate: sendAgentWhatsAppInvite, isPending: isInvitePending } =
-    useSendAgentWhatsAppInvite(agentId, whatsappTrigger?.id ?? "");
 
-  function runWhatsAppIntegration() {
-    (!triggers?.triggers || triggers?.triggers.length === 0) && createTrigger(
-      {
-        title: "WhatsApp Integration",
-        description: "A WhatsApp integration for this agent",
-        type: "webhook",
-        passphrase: crypto.randomUUID(),
-      },
+  const anyTrigger = webhookTriggers[0];
+  const anyTriggerId = anyTrigger?.id;
+
+  const { mutate: sendAgentWhatsAppInvite, isPending: isInvitePending } =
+    useSendAgentWhatsAppInvite(
+      agentId,
+      currentWhatsAppRouterTrigger?.id ?? anyTriggerId ?? "",
     );
 
-    if (!whatsappTrigger?.data.url || !whatsappTrigger?.id) {
-      toast.error("No trigger available for WhatsApp integration");
-      return;
+  function runWhatsAppIntegration() {
+    if (!anyTriggerId) {
+      createTrigger(
+        {
+          title: "WhatsApp Integration",
+          description: "WhatsApp integration for this agent",
+          type: "webhook",
+          passphrase: crypto.randomUUID(),
+        },
+        {
+          onError: (error) => {
+            toast.error(`Failed to create trigger: ${error.message}`);
+          },
+        },
+      );
     }
 
     upsertWhatsAppUser(
       {
-        triggerUrl: whatsappTrigger?.data.url,
-        triggerId: whatsappTrigger?.id,
+        triggerUrl: currentWhatsAppRouterTrigger?.data.url ??
+          anyTrigger?.data.url ?? "",
+        triggerId: currentWhatsAppRouterTrigger?.id ?? anyTrigger?.id,
         triggers: [...(whatsappUser?.triggers ?? [])],
       },
       {
@@ -129,7 +137,7 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
       return;
     }
 
-    if (!whatsappTrigger && webhookTriggers.length === 0) {
+    if (!anyTriggerId) {
       createTrigger(
         {
           title: "WhatsApp Integration",
@@ -138,32 +146,11 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
           passphrase: crypto.randomUUID(),
         },
         {
-          onSuccess: () => {
-            // Send invite with the newly created trigger
-            sendAgentWhatsAppInvite(
-              { to: phoneNumber },
-              {
-                onSuccess: () => {
-                  toast.success("WhatsApp invite sent successfully!");
-                  setIsInviteDialogOpen(false);
-                },
-                onError: (error) => {
-                  toast.error(`Failed to send invite: ${error.message}`);
-                },
-              },
-            );
-          },
           onError: (error) => {
             toast.error(`Failed to create trigger: ${error.message}`);
           },
         },
       );
-      return;
-    }
-
-    if (!whatsappTrigger) {
-      toast.error("No trigger available for WhatsApp integration");
-      return;
     }
 
     sendAgentWhatsAppInvite(
@@ -186,7 +173,8 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
     }
   }
 
-  const isWhatsAppEnabled = whatsappUser?.trigger_id === whatsappTrigger?.id;
+  const isWhatsAppEnabled =
+    whatsappUser?.trigger_id === currentWhatsAppRouterTrigger?.id;
 
   if (isWellKnownAgent) {
     return;

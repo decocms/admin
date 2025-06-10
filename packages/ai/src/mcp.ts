@@ -104,11 +104,12 @@ const getMCPServerTools = async (
                     // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
                   }, CallToolResultSchema);
 
-                  await innerClient.close();
                   return result;
                 } catch (error) {
                   agent._resetCallableToolSet(mcpServer.id);
                   throw error;
+                } finally {
+                  await innerClient.close();
                 }
               },
             }),

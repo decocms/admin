@@ -361,6 +361,101 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_assets: {
+        Row: {
+          created_at: string;
+          file_url: string;
+          metadata: Json | null;
+          workspace: string;
+        };
+        Insert: {
+          created_at?: string;
+          file_url: string;
+          metadata?: Json | null;
+          workspace: string;
+        };
+        Update: {
+          created_at?: string;
+          file_url?: string;
+          metadata?: Json | null;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
+      deco_chat_channel_agents: {
+        Row: {
+          agent_id: string;
+          channel_id: string;
+        };
+        Insert: {
+          agent_id: string;
+          channel_id: string;
+        };
+        Update: {
+          agent_id?: string;
+          channel_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fk_agent";
+            columns: ["agent_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_agents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fk_channel";
+            columns: ["channel_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_channels";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deco_chat_channels: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          deleted_at: string | null;
+          discriminator: string;
+          id: string;
+          integration_id: string;
+          name: string | null;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          discriminator: string;
+          id?: string;
+          integration_id: string;
+          name?: string | null;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          deleted_at?: string | null;
+          discriminator?: string;
+          id?: string;
+          integration_id?: string;
+          name?: string | null;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_channels_integration_id_fkey";
+            columns: ["integration_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_integrations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_customer: {
         Row: {
           created_at: string;

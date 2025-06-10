@@ -24,8 +24,7 @@ import { QueryResult } from "../../storage/supabase/client.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {
   assertHasWorkspace,
-  bypass,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
 import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
@@ -63,9 +62,9 @@ export const callTool = createTool({
   inputSchema: IntegrationSchema.pick({
     connection: true,
   }).merge(CallToolRequestSchema.pick({ params: true })),
-  // The tool call will be authorized itself. This is a proxy
-  canAccess: bypass,
   handler: async ({ connection: reqConnection, params: toolCall }, c) => {
+    c.resourceAccess.grant();
+
     const connection = isApiDecoChatMCPConnection(reqConnection)
       ? patchApiDecoChatTokenHTTPConnection(
         reqConnection,
@@ -115,8 +114,9 @@ export const listTools = createTool({
   inputSchema: IntegrationSchema.pick({
     connection: true,
   }),
-  canAccess: bypass,
   handler: async ({ connection }, c) => {
+    c.resourceAccess.grant();
+
     const result = await listToolsByConnectionType(
       connection,
       c,
@@ -193,10 +193,11 @@ export const listIntegrations = createTool({
   inputSchema: z.object({
     binder: BindingsSchema.optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ binder }, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const [
       integrations,
@@ -300,14 +301,20 @@ export const getIntegration = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  async canAccess(name, props, c) {
-    const { id } = props;
-    if (INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS]) {
-      return true;
-    }
-    return await canAccessWorkspaceResource(name, props, c);
-  },
   handler: async ({ id }, c) => {
+    // preserve the logic of the old canAccess
+    const isInnate =
+      INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
+
+    const canAccess = isInnate ||
+      await assertWorkspaceResourceAccess(c.tool.name, c)
+        .then(() => true)
+        .catch(() => false);
+
+    if (canAccess) {
+      c.resourceAccess.grant();
+    }
+
     const { uuid, type } = parseId(id);
     if (uuid in INNATE_INTEGRATIONS) {
       const data =
@@ -368,9 +375,9 @@ export const createIntegration = createTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
   inputSchema: IntegrationSchema.partial(),
-  canAccess: canAccessWorkspaceResource,
   handler: async (integration, c) => {
     assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
@@ -400,9 +407,9 @@ export const updateIntegration = createTool({
     id: z.string(),
     integration: IntegrationSchema,
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { uuid, type } = parseId(id);
 
@@ -438,9 +445,9 @@ export const deleteIntegration = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { uuid, type } = parseId(id);
 

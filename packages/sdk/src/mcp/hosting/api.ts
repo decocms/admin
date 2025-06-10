@@ -3,11 +3,11 @@ import { NotFoundError, UserInputError } from "../../errors.ts";
 import { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
-
+import { polyfill } from "./fs-polyfill.ts";
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
 const METADATA_FILE_NAME = "metadata.json";
@@ -73,9 +73,10 @@ export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -93,19 +94,52 @@ type DeployResult = {
   etag?: string;
   id?: string;
 };
+export interface Polyfill {
+  fileName: string;
+  aliases: string[];
+  content: string;
+}
 
+const addPolyfills = (
+  files: Record<string, File>,
+  metadata: Record<string, unknown>,
+  polyfills: Polyfill[],
+) => {
+  const aliases: Record<string, string> = {};
+  metadata.alias = aliases;
+
+  for (const polyfill of polyfills) {
+    const filePath = `${polyfill.fileName}.mjs`;
+    files[filePath] ??= new File(
+      [polyfill.content],
+      filePath,
+      {
+        type: "application/javascript+module",
+      },
+    );
+
+    for (const alias of polyfill.aliases) {
+      aliases[alias] = `./${polyfill.fileName}`;
+    }
+  }
+};
 async function deployToCloudflare(
   c: AppContext,
   scriptSlug: string,
   mainModule: string,
   files: Record<string, File>,
+  envVars?: Record<string, string>,
 ): Promise<DeployResult> {
+  assertHasWorkspace(c);
   const env = getEnv(c);
   const metadata = {
     main_module: mainModule,
     compatibility_flags: ["nodejs_compat"],
     compatibility_date: "2024-11-27",
+    tags: [c.workspace.value],
   };
+
+  addPolyfills(files, metadata, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
@@ -131,6 +165,24 @@ async function deployToCloudflare(
       },
     );
 
+  if (envVars) {
+    const promises = [];
+    for (const [key, value] of Object.entries(envVars)) {
+      promises.push(
+        c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
+          env.CF_DISPATCH_NAMESPACE,
+          scriptSlug,
+          {
+            account_id: env.CF_ACCOUNT_ID,
+            name: key,
+            text: value,
+            type: "secret_text",
+          },
+        ),
+      );
+    }
+    await Promise.all(promises);
+  }
   return {
     etag: result.etag,
     id: result.id,
@@ -255,9 +307,14 @@ Important Notes:
     files: z.array(FileSchema).describe(
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
+    envVars: z.record(z.string(), z.string()).optional().describe(
+      "An optional object of environment variables to be set on the worker",
+    ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ appSlug, files }, c) => {
+  outputSchema: AppSchema,
+  handler: async ({ appSlug, files, envVars }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
@@ -289,8 +346,9 @@ Important Notes:
       scriptSlug,
       SCRIPT_FILE_NAME,
       fileObjects,
+      envVars,
     );
-    return updateDatabase(c, workspace, scriptSlug, result, filesRecord);
+    return await updateDatabase(c, workspace, scriptSlug, result, filesRecord);
   },
 });
 
@@ -299,8 +357,9 @@ export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
@@ -338,8 +397,9 @@ export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
     const { data, error } = await c.db

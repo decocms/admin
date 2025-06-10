@@ -16,6 +16,8 @@ import type { Binder, Integration } from "../models/mcp.ts";
 import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
+import { listTools, MCPTool } from "./index.ts";
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -127,16 +129,62 @@ export const useBindings = (binder: Binder) => {
   const data = useQuery({
     queryKey: KEYS.BINDINGS(workspace, binder),
     queryFn: async ({ signal }) => {
-      const items = await listIntegrations(workspace, { binder }, signal);
+      const items = await listIntegrations(workspace, {}, signal);
 
+      const filtered: typeof items = [];
+
+      // Process items sequentially to provide incremental updates
       for (const item of items) {
-        const itemKey = KEYS.INTEGRATION(workspace, item.id);
+        if (signal?.aborted) {
+          throw new Error("Query was cancelled");
+        }
 
-        client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<Integration>(itemKey, item);
+        try {
+          const integrationTools = await Promise.race([
+            listTools(item.connection).then((tools) => ({
+              ...item,
+              tools: tools.tools,
+            })).catch((error) => {
+              console.error("error", error);
+              return {
+                ...item,
+                tools: [],
+              };
+            }),
+            new Promise<{
+              tools: MCPTool[];
+            }>((resolve) =>
+              setTimeout(() =>
+                resolve({
+                  tools: [],
+                }), 7_000)
+            ),
+          ]);
+
+          if (
+            Binding(WellKnownBindings[binder]).isImplementedBy(
+              integrationTools?.tools,
+            )
+          ) {
+            filtered.push(item);
+
+            // Update query data incrementally
+            client.setQueryData<Integration[]>(
+              KEYS.BINDINGS(workspace, binder),
+              [...filtered],
+            );
+          }
+
+          // Cache individual integration
+          const itemKey = KEYS.INTEGRATION(workspace, item.id);
+          client.cancelQueries({ queryKey: itemKey });
+          client.setQueryData<Integration>(itemKey, item);
+        } catch (error) {
+          console.error("Error processing integration:", item.id, error);
+        }
       }
 
-      return items;
+      return filtered;
     },
   });
 

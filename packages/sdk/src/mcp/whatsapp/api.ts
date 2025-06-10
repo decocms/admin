@@ -1,10 +1,9 @@
+import { z } from "zod";
 import {
   assertHasWorkspace,
-  bypass,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool, getEnv } from "../context.ts";
-import { z } from "zod";
 import { NotFoundError } from "../index.ts";
 
 const ALLOWED_WORKSPACES = ["/shared/deco.cx"];
@@ -20,11 +19,12 @@ export const sendWhatsAppTemplateMessage = createTool({
     sender_name: z.string(),
     agent_name: z.string(),
   }),
-  canAccess: bypass,
   handler: async (
     { to, template_name, language_code, sender_phone, sender_name, agent_name },
     c,
   ) => {
+    c.resourceAccess.grant(); // Using bypass equivalent
+
     const workspace = c.workspace;
     if (!workspace?.value || !ALLOWED_WORKSPACES.includes(workspace.value)) {
       throw new Error("Workspace not allowed");
@@ -103,9 +103,11 @@ export const createWhatsAppInvite = createTool({
     wppMessageId: z.string(),
     phone: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ userId, triggerId, wppMessageId, phone }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const workspace = c.workspace;
     if (!workspace?.value || !ALLOWED_WORKSPACES.includes(workspace.value)) {
       throw new Error("Workspace not allowed");
@@ -156,9 +158,10 @@ export const upsertWhatsAppUser = createTool({
     triggerId: z.string(),
     triggers: z.string().array(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ phone, triggerUrl, triggerId, triggers }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const alreadyHasTrigger = triggers.includes(triggerId);
 
@@ -193,9 +196,10 @@ export const getWhatsAppUser = createTool({
   inputSchema: z.object({
     phone: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ phone }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_wpp_users")

@@ -1,3 +1,4 @@
+import { contextStorage } from "../fetch.ts";
 import { WebCache } from "./index.ts";
 
 /**
@@ -29,6 +30,8 @@ export class SWRCache<T> {
       await this._cache.set(key, result);
       return result;
     });
+
+    contextStorage.getStore()?.ctx?.waitUntil?.(freshPromise);
 
     // Return whichever resolves first, but always update cache with fresh
     return Promise.race([

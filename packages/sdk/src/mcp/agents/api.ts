@@ -7,10 +7,14 @@ import {
 } from "../../index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { AppContext, createTool } from "../context.ts";
-import { InternalServerError, NotFoundError } from "../index.ts";
+import {
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+} from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
 
 const NO_DATA_ERROR = "PGRST116";
@@ -58,9 +62,10 @@ export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_agents")
@@ -92,49 +97,39 @@ export const getAgent = createTool({
   name: "AGENTS_GET",
   description: "Get an agent by id",
   inputSchema: z.object({ id: z.string() }),
-  async canAccess(name, props, c) {
-    const hasAccess = await canAccessWorkspaceResource(name, props, c)
-      .catch(() => false);
-
-    if (hasAccess) {
-      return true;
-    }
-
-    const { data: agentData } = await c.db
-      .from("deco_chat_agents")
-      .select("visibility")
-      .eq("workspace", c.workspace!.value)
-      .eq("id", props.id)
-      .single();
-
-    // TODO: implement this using authorization system
-    if (agentData?.visibility === "PUBLIC") {
-      return true;
-    }
-
-    return false;
-  },
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    const { data, error } = id in WELL_KNOWN_AGENTS
-      ? {
-        data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
-        error: null,
-      }
-      : await c.db
-        .from("deco_chat_agents")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const [canAccess, { data, error }] = await Promise.all([
+      assertWorkspaceResourceAccess(c.tool.name, c)
+        .then(() => true)
+        .catch(() => false),
+      id in WELL_KNOWN_AGENTS
+        ? Promise.resolve({
+          data: WELL_KNOWN_AGENTS[id as keyof typeof WELL_KNOWN_AGENTS],
+          error: null,
+        })
+        : c.db
+          .from("deco_chat_agents")
+          .select("*")
+          .eq("workspace", c.workspace.value)
+          .eq("id", id)
+          .single(),
+    ]);
 
     if ((error && error.code == NO_DATA_ERROR) || !data) {
       throw new NotFoundError(id);
     }
 
+    if (data.visibility !== "PUBLIC" && !canAccess) {
+      throw new ForbiddenError(`You are not allowed to access this agent`);
+    }
+
     if (error) {
       throw new InternalServerError((error as PostgrestError).message);
     }
+
+    c.resourceAccess.grant();
 
     return AgentSchema.parse(data);
   },
@@ -144,9 +139,10 @@ export const createAgent = createTool({
   name: "AGENTS_CREATE",
   description: "Create a new agent",
   inputSchema: AgentSchema.partial(),
-  canAccess: canAccessWorkspaceResource,
   handler: async (agent, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const [{ data, error }] = await Promise.all([
       c.db
@@ -176,9 +172,11 @@ export const updateAgent = createTool({
     id: z.string(),
     agent: AgentSchema.partial(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id, agent }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { data, error } = await c.db
       .from("deco_chat_agents")
       .update({ ...agent, id, workspace: c.workspace.value })
@@ -202,9 +200,11 @@ export const deleteAgent = createTool({
   name: "AGENTS_DELETE",
   description: "Delete an agent by id",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { error } = await c.db
       .from("deco_chat_agents")
       .delete()

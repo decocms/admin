@@ -10,6 +10,8 @@ import { z } from "zod";
 import { JWTPayload } from "../auth/jwt.ts";
 import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, HttpError } from "../errors.ts";
+import type { WithTool } from "./assertions.ts";
+import type { ResourceAccess } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -23,6 +25,9 @@ export interface Vars {
     slug: string;
     value: string;
   };
+  resourceAccess: ResourceAccess;
+  /** Current tool being executed definitions */
+  tool?: { name: string };
   cookie?: string;
   db: Client;
   user: Principal;
@@ -135,15 +140,7 @@ export interface ToolDefinition<
   description: string;
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
-  handler: (
-    props: TInput,
-    c: TAppContext,
-  ) => Promise<TReturn> | TReturn;
-  canAccess: (
-    name: TName,
-    props: TInput,
-    c: AppContext,
-  ) => Promise<boolean>;
+  handler: (props: TInput, c: TAppContext) => Promise<TReturn> | TReturn;
 }
 
 export interface Tool<
@@ -179,43 +176,35 @@ export const createToolFactory = <
   ): Promise<ToolCallResult<TReturn>> => {
     try {
       const context = contextFactory(State.getStore());
+      context.tool = { name: def.name };
 
-      const hasAccess = await def.canAccess?.(
-        def.name,
-        props,
-        context,
-      ).catch((error) => {
+      const result = await def.handler(props, context);
+
+      if (!context.resourceAccess.granted()) {
         console.warn(
-          "Failed to authorize tool with the following error",
-          error,
+          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
         );
-        return false;
-      });
-
-      if (!hasAccess) {
         throw new ForbiddenError(
-          `User cannot access this tool ${def.name}`,
+          `User cannot access this tool ${def.name}.`,
         );
       }
 
-      const structuredContent = await def.handler(props, context);
-
       return {
         isError: false,
-        structuredContent,
+        structuredContent: result,
       };
     } catch (error) {
-      const structuredContent = serializeError(error) as unknown as TReturn;
-
       return {
         isError: true,
-        structuredContent,
+        structuredContent: serializeError(error) as unknown as TReturn,
       };
     }
   },
 });
 
-export const createTool = createToolFactory<AppContext>((c) => c);
+export const createTool = createToolFactory<WithTool<AppContext>>(
+  (c) => c as unknown as WithTool<AppContext>,
+);
 
 export type MCPDefinition = Tool[];
 

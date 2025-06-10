@@ -1,16 +1,17 @@
 import { z } from "zod";
 import {
+  ForbiddenError,
   InternalServerError,
   NotFoundError,
   UserInputError,
 } from "../../errors.ts";
 import {
   assertPrincipalIsUser,
-  bypass,
-  canAccessTeamResource,
+  assertTeamResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createTool } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
+import { getPlan } from "../wallet/api.ts";
 import {
   checkAlreadyExistUserIdInTeam,
   getInviteIdByEmailAndTeam,
@@ -19,7 +20,6 @@ import {
   sendInviteEmail,
   userBelongsToTeam,
 } from "./invites-utils.ts";
-import { getPlan } from "../wallet/api.ts";
 
 export const updateActivityLog = async (c: AppContext, {
   teamId,
@@ -109,14 +109,13 @@ export const getTeamMembers = createTool({
     teamId: z.number(),
     withActivity: z.boolean().optional(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c): Promise<{
     members: (ReturnType<typeof mapMember> & { lastActivity?: string })[];
     invites: InviteAPIData[];
   }> => {
     const { teamId, withActivity } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     // Get all members of the team
     const [{ data, error }, { data: invitesData }] = await Promise.all([
@@ -193,11 +192,10 @@ export const updateTeamMember = createTool({
       admin: z.boolean().optional(),
     }),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
     const { teamId, memberId, data } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -236,15 +234,12 @@ export const removeTeamMember = createTool({
     teamId: z.number(),
     memberId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c) ||
-      (await c.db.from("members").select("user_id").eq("id", props.memberId).eq(
-          "team_id",
-          props.teamId,
-        ).single()).data?.user_id === c.user.id;
-  },
   handler: async (props, c) => {
     const { teamId, memberId } = props;
+
+    const hasAccess = await assertTeamResourceAccess(c.tool.name, teamId, c)
+      .then(() => true)
+      .catch(() => false);
 
     // Verify the member exists in the team
     const { data: member, error: memberError } = await c
@@ -255,6 +250,13 @@ export const removeTeamMember = createTool({
       .eq("team_id", teamId)
       .is("deleted_at", null)
       .single();
+
+    // Allow users with team access to remove members or allow users to remove themselves from a team
+    if (!hasAccess && member?.user_id !== c.user.id) {
+      throw new ForbiddenError("You are not allowed to remove this member");
+    }
+
+    c.resourceAccess.grant();
 
     if (memberError) throw memberError;
     if (!member) {
@@ -313,12 +315,12 @@ export const registerMemberActivity = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
-    assertPrincipalIsUser(c);
     const { teamId } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
+
+    assertPrincipalIsUser(c);
     const user = c.user;
 
     await c.db.from("user_activity").insert({
@@ -337,8 +339,9 @@ export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
   inputSchema: z.object({}),
-  canAccess: bypass,
   handler: async (_props, c) => {
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
     const user = c.user;
     const db = c.db;
@@ -405,18 +408,18 @@ export const inviteTeamMembers = createTool({
       })),
     })),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, Number(props.teamId), c);
-  },
   handler: async (props, c) => {
     assertPrincipalIsUser(c);
-    const plan = await getPlan(c);
-    plan.assertHasFeature("invite-to-workspace");
 
     const { teamId, invitees } = props;
     const db = c.db;
     const user = c.user;
     const teamIdAsNum = Number(teamId);
+
+    await assertTeamResourceAccess(c.tool.name, teamIdAsNum, c);
+
+    const plan = await getPlan(c);
+    plan.assertHasFeature("invite-to-workspace");
 
     // Check for valid inputs
     if (!invitees || !teamId || Number.isNaN(teamIdAsNum)) {
@@ -478,7 +481,7 @@ export const inviteTeamMembers = createTool({
     }
 
     if (!userBelongsToTeam(teamData, user.id)) {
-      throw new UserInputError(`You don't have access to team ${teamId}`);
+      throw new ForbiddenError(`You don't have access to team ${teamId}`);
     }
 
     // Create invites
@@ -526,8 +529,9 @@ export const acceptInvite = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  canAccess: bypass,
   handler: async (props, c) => {
+    c.resourceAccess.grant();
+
     const { id } = props;
     const db = c.db;
     const user = c.user;
@@ -660,8 +664,14 @@ export const deleteInvite = createTool({
   inputSchema: z.object({
     id: z.string(),
   }),
-  canAccess: async (name, props, c) => {
+  handler: async (props, c) => {
+    const { id } = props;
+    const db = c.db;
+
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
+
     const [{ data: invite, error }, { data: profile }] = await Promise.all([
       c.db.from("invites").select("team_id, invited_email").eq("id", props.id)
         .single(),
@@ -669,18 +679,17 @@ export const deleteInvite = createTool({
       c.db.from("profiles").select("email").eq("user_id", c.user.id).single(),
     ]);
 
-    if (error || !invite || !profile) return false;
+    const canAccess = error || !invite || !profile
+      ? false
+      : invite?.invited_email && profile?.email &&
+          invite.invited_email === profile.email
+      ? true
+      : await assertTeamResourceAccess(c.tool.name, invite.team_id, c)
+        .then(() => true).catch(() => false);
 
-    if (
-      invite?.invited_email && profile?.email &&
-      invite.invited_email === profile.email
-    ) return true;
-
-    return await canAccessTeamResource(name, invite.team_id, c);
-  },
-  handler: async (props, c) => {
-    const { id } = props;
-    const db = c.db;
+    if (!canAccess) {
+      throw new ForbiddenError("You are not allowed to delete this invite");
+    }
 
     const { data } = await db
       .from("invites")
@@ -702,11 +711,12 @@ export const teamRolesList = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
-    return await c.policy.getTeamRoles(props.teamId);
+    const { teamId } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
+
+    return await c.policy.getTeamRoles(teamId);
   },
 });
 
@@ -719,11 +729,12 @@ export const updateMemberRole = createTool({
     roleId: z.number(),
     action: z.enum(["grant", "revoke"]),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
-    const { teamId, userId, roleId, action } = props;
+    const { teamId } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
+
+    const { teamId: teamIdFromProps, userId, roleId, action } = props;
 
     const { data: profile } = await c.db.from("profiles").select("email").eq(
       "user_id",
@@ -732,7 +743,10 @@ export const updateMemberRole = createTool({
 
     if (!profile) throw new NotFoundError(`User with id ${userId} not found`);
 
-    await c.policy.updateUserRole(teamId, profile.email, { roleId, action });
+    await c.policy.updateUserRole(teamIdFromProps, profile.email, {
+      roleId,
+      action,
+    });
 
     return { success: true };
   },

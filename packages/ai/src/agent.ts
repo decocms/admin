@@ -25,13 +25,15 @@ import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   AppContext,
+  assertWorkspaceResourceAccess,
   AuthorizationClient,
-  canAccessWorkspaceResource,
-  ForbiddenError,
+  createResourceAccess,
   fromWorkspaceString,
+  LLMVault,
   MCPClient,
   MCPClientStub,
   PolicyClient,
+  SupabaseLLMVault,
   WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
@@ -50,7 +52,6 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import type { StorageThreadType } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
@@ -67,6 +68,15 @@ import {
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
+import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
+import { convertToAIMessage } from "./agent/ai-message.ts";
+import { createAgentOpenAIVoice } from "./agent/audio.ts";
+import {
+  createLLMInstance,
+  DEFAULT_ACCOUNT_ID,
+  getLLMConfig,
+} from "./agent/llm.ts";
+import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
@@ -77,15 +87,6 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
-import { LLMVault, SupabaseLLMVault } from "@deco/sdk/mcp";
-import { AgentWallet } from "./agent/wallet.ts";
-import { convertToAIMessage } from "./agent/ai-message.ts";
-import { createAgentOpenAIVoice } from "./agent/audio.ts";
-import {
-  createLLMInstance,
-  DEFAULT_ACCOUNT_ID,
-  getLLMConfig,
-} from "./agent/llm.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -235,6 +236,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       stub: this.state.stub as AppContext["stub"],
       cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
+      resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
       authorization: new AuthorizationClient(policyClient),
@@ -266,6 +268,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     if (!integration) {
+      console.log("integration not found", mcpId);
       return null;
     }
 
@@ -302,7 +305,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
               mcpId,
               timeout.signal,
             )
-              .catch(() => {
+              .catch((err) => {
+                console.error("list tools error", err);
                 return null;
               }),
             new Promise((resolve) =>
@@ -600,13 +604,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       req.headers.get("host") !== null && runtimeKey !== "deno" &&
       this._configuration?.visibility !== "PUBLIC"
     ) { // if host is set so its not an internal request so checks must be applied
-      const canAccess = await canAccessWorkspaceResource(
-        "AGENTS_GET",
-        null,
-        ctx,
-      );
-
-      if (!canAccess) throw new ForbiddenError("Cannot access agent");
+      await assertWorkspaceResourceAccess("AGENTS_GET", ctx);
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",
@@ -1026,7 +1024,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           ? {
             memoryOptions: {
               lastMessages: options.lastMessages,
-              semanticRecall: false,
+              semanticRecall: options.enableSemanticRecall,
             },
           }
           : {}),

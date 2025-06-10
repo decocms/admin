@@ -9,7 +9,7 @@ import {
 import { ClientOf } from "@deco/sdk/http";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 import {
@@ -142,9 +142,10 @@ export const getWalletAccount = createTool({
   name: "GET_WALLET_ACCOUNT",
   description: "Get the wallet account for the current tenant",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
 
@@ -172,15 +173,16 @@ export const getThreadsUsage = createTool({
   inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ range }, ctx) => {
-    assertHasWorkspace(ctx);
+  handler: async ({ range }, c) => {
+    assertHasWorkspace(c);
 
-    const wallet = getWalletClient(ctx);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
 
     const usage = await ThreadsUsage.fetch(
       wallet,
-      ctx.workspace.value,
+      c.workspace.value,
       range,
     );
     return ThreadsUsage.format(usage);
@@ -193,15 +195,16 @@ export const getAgentsUsage = createTool({
   inputSchema: z.object({
     range: z.enum(["day", "week", "month"]),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ range }, ctx) => {
-    assertHasWorkspace(ctx);
+  handler: async ({ range }, c) => {
+    assertHasWorkspace(c);
 
-    const wallet = getWalletClient(ctx);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
 
     const usage = await AgentsUsage.fetch(
       wallet,
-      ctx.workspace.value,
+      c.workspace.value,
       range,
     );
     return AgentsUsage.format(usage);
@@ -216,9 +219,11 @@ export const createCheckoutSession = createTool({
     successUrl: z.string(),
     cancelUrl: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
     assertHasWorkspace(ctx);
+
+    await assertWorkspaceResourceAccess(ctx.tool.name, ctx);
+
     const plan = await getPlan(ctx);
     plan.assertHasFeature("ai-wallet-deposit");
 
@@ -250,11 +255,12 @@ export const createWalletVoucher = createTool({
       "The amount of money to add to the voucher. Specified in USD dollars.",
     ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ amount }, ctx) => {
-    assertHasWorkspace(ctx);
+  handler: async ({ amount }, c) => {
+    assertHasWorkspace(c);
 
-    const wallet = getWalletClient(ctx);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
     const id = crypto.randomUUID();
     const amountMicroDollars = MicroDollar.fromDollars(amount);
     const claimableId = `${id}-${amountMicroDollars.toMicrodollarString()}`;
@@ -267,7 +273,7 @@ export const createWalletVoucher = createTool({
       type: "WorkspaceCreateVoucher" as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId: id,
-      workspace: ctx.workspace.value,
+      workspace: c.workspace.value,
     } as const;
 
     const response = await wallet["POST /transactions"]({}, {
@@ -290,11 +296,12 @@ export const redeemWalletVoucher = createTool({
   inputSchema: z.object({
     voucher: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ voucher }, ctx) => {
-    assertHasWorkspace(ctx);
+  handler: async ({ voucher }, c) => {
+    assertHasWorkspace(c);
 
-    const wallet = getWalletClient(ctx);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
 
     const parts = voucher.split("-");
     const voucherId = parts.slice(0, -1).join("-");
@@ -316,7 +323,7 @@ export const redeemWalletVoucher = createTool({
       type: "WorkspaceRedeemVoucher" as const,
       amount: amountMicroDollars.toMicrodollarString(),
       voucherId,
-      workspace: ctx.workspace.value,
+      workspace: c.workspace.value,
     } as const;
 
     const response = await wallet["POST /transactions"]({}, {
@@ -337,6 +344,11 @@ export const getWorkspacePlan = createTool({
   name: "GET_WORKSPACE_PLAN",
   description: "Get the plan for the current tenant's workspace",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
-  handler: (_, ctx) => getPlan(ctx),
+  handler: async (_, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    return getPlan(c);
+  },
 });

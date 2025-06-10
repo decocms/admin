@@ -1,4 +1,4 @@
-import { NotFoundError, UnauthorizedError } from "../errors.ts";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import { Workspace } from "../path.ts";
 import { AppContext, UserPrincipal } from "./context.ts";
 
@@ -7,10 +7,17 @@ type WithUser<TAppContext extends AppContext = AppContext> =
   & {
     user: UserPrincipal;
   };
+
 type WithWorkspace<TAppContext extends AppContext = AppContext> =
   & Omit<TAppContext, "workspace">
   & {
     workspace: { root: string; slug: string; value: Workspace };
+  };
+
+export type WithTool<TAppContext extends AppContext = AppContext> =
+  & Omit<TAppContext, "tool">
+  & {
+    tool: { name: string };
   };
 
 export function assertHasWorkspace<TContext extends AppContext = AppContext>(
@@ -20,6 +27,7 @@ export function assertHasWorkspace<TContext extends AppContext = AppContext>(
     throw new NotFoundError();
   }
 }
+
 export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "user"> | Pick<WithUser<TContext>, "user">,
 ): asserts c is WithUser<TContext> {
@@ -39,49 +47,69 @@ export const assertHasUser = (c: AppContext) => {
   }
 };
 
-export const bypass = (): Promise<boolean> => Promise.resolve(true);
-
-export const canAccessWorkspaceResource = async (
+export const assertWorkspaceResourceAccess = async (
   resource: string,
-  _: unknown,
   c: AppContext,
-): Promise<boolean> => {
+): Promise<void> => {
   if (c.isLocal) {
-    return bypass();
+    return c.resourceAccess.grant();
   }
+
   assertHasUser(c);
   assertHasWorkspace(c);
+
   const user = c.user;
   const { root, slug } = c.workspace;
 
   // agent tokens
   if ("aud" in user && user.aud === c.workspace.value) {
-    return true;
+    return c.resourceAccess.grant();
   }
 
   if (root === "users" && user.id === slug) {
-    return true;
+    return c.resourceAccess.grant();
   }
 
   if (root === "shared") {
-    return await c.authorization.canAccess(user.id as string, slug, resource);
+    const canAccess = await c.authorization.canAccess(
+      user.id as string,
+      slug,
+      resource,
+    );
+
+    if (canAccess) {
+      return c.resourceAccess.grant();
+    }
   }
 
-  return false;
+  throw new ForbiddenError(
+    `Cannot access ${resource} in workspace ${c.workspace.value}`,
+  );
 };
 
-export const canAccessTeamResource = (
+export const assertTeamResourceAccess = async (
   resource: string,
   teamIdOrSlug: string | number,
   c: AppContext,
-) => {
+): Promise<void> => {
   if (c.isLocal) {
-    return bypass();
+    return c.resourceAccess.grant();
   }
   assertHasUser(c);
   const user = c.user;
   if ("id" in user && typeof user.id === "string") {
-    return c.authorization.canAccess(user.id, teamIdOrSlug, resource);
+    const canAccess = await c.authorization.canAccess(
+      user.id,
+      teamIdOrSlug,
+      resource,
+    );
+
+    if (canAccess) {
+      return c.resourceAccess.grant();
+    }
   }
-  return false;
+
+  throw new ForbiddenError(
+    `Cannot access ${resource} in team ${teamIdOrSlug}`,
+  );
 };

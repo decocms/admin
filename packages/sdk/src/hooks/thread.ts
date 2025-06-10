@@ -15,6 +15,7 @@ import {
   getThreadMessages,
   listThreads,
   ThreadFilterOptions,
+  ThreadList,
   updateThreadMetadata,
   updateThreadTitle,
 } from "../crud/thread.ts";
@@ -61,8 +62,6 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
   const options: ThreadFilterOptions = {
-    orderBy: "createdAt_desc",
-    limit: 20,
     ...partialOptions,
   };
   const key = KEYS.THREADS(workspace, options);
@@ -90,9 +89,12 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             : "New chat";
 
           const updated = {
-            pagination: oldData?.pagination ?? {
+            pagination: {
               hasMore: false,
               nextCursor: null,
+              hasPrev: false,
+              prevCursor: null,
+              ...oldData?.pagination,
             },
             threads: [
               ...(oldData?.threads ?? []),
@@ -133,7 +135,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   });
 };
 
-export const useUpdateThreadTitle = (threadId: string, userId: string) => {
+export const useUpdateThreadTitle = (threadId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
@@ -142,38 +144,34 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
       return await updateThreadTitle(workspace, threadId, newTitle);
     },
     onMutate: async (newTitle: string) => {
+      // Cancel all threads queries to prevent race conditions
       await client.cancelQueries({
-        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+        queryKey: KEYS.THREADS(workspace),
       });
 
-      const previousThreads = client.getQueryData(
-        KEYS.THREADS(workspace, { resourceId: userId }),
-      );
+      // Optimistically update all threads queries that contain this thread
+      client.setQueriesData(
+        { queryKey: KEYS.THREADS(workspace) },
+        (oldData: ThreadList | undefined) => {
+          if (!oldData?.threads) return oldData;
 
-      // Optimistically update the thread in the threads list
-      client.setQueryData(
-        KEYS.THREADS(workspace, { resourceId: userId }),
-        // deno-lint-ignore no-explicit-any
-        (old: any) => {
-          if (!old) return old;
-          // deno-lint-ignore no-explicit-any
-          const newThreads = old.threads.map((thread: any) =>
-            thread.id === threadId ? { ...thread, title: newTitle } : thread
-          );
-          return { ...old, threads: newThreads };
+          return {
+            ...oldData,
+            threads: oldData.threads.map((thread) =>
+              thread.id === threadId ? { ...thread, title: newTitle } : thread
+            ),
+          };
         },
       );
-
-      // Return a context object with the snapshotted value
-      return { previousThreads };
     },
     // deno-lint-ignore no-explicit-any
     onError: (_: any, __: any, context: any) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousThreads) {
-        client.setQueryData(
-          KEYS.THREADS(workspace, { resourceId: userId }),
-          context.previousThreads,
+      // If the mutation fails, restore all previous queries data
+      if (context?.previousQueriesData) {
+        context.previousQueriesData.forEach(
+          ([queryKey, data]: [readonly unknown[], unknown]) => {
+            client.setQueryData(queryKey, data);
+          },
         );
       }
     },
@@ -181,13 +179,13 @@ export const useUpdateThreadTitle = (threadId: string, userId: string) => {
       // Always refetch after error or success to ensure data is in sync
       client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
       client.invalidateQueries({
-        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+        queryKey: KEYS.THREADS(workspace),
       });
     },
   });
 };
 
-export const useDeleteThread = (threadId: string, userId: string) => {
+export const useDeleteThread = (threadId: string) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
@@ -198,10 +196,10 @@ export const useDeleteThread = (threadId: string, userId: string) => {
       });
     },
     onSuccess: () => {
-      // Invalidate both the thread and threads list queries
+      // Invalidate both the thread and all threads list queries
       client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
       client.invalidateQueries({
-        queryKey: KEYS.THREADS(workspace, { resourceId: userId }),
+        queryKey: KEYS.THREADS(workspace),
       });
     },
   });

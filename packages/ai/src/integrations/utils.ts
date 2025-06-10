@@ -87,6 +87,12 @@ const parseComposioToolResult = (result: ToolCallResult) => {
   }
 };
 
+// TODO: Check if any composio integration cannot be auto connected
+const canAutoConnect = (_data: Record<string, unknown>) => {
+  console.log("[Composio] canAutoConnect", _data);
+  return true;
+};
+
 export const startComposioOauthFlow = async (
   url: string,
 ) => {
@@ -97,9 +103,6 @@ export const startComposioOauthFlow = async (
 
   const { tools } = await client.listTools();
 
-  const connectionCheckTool = tools.find((tool) =>
-    tool.name.endsWith("_CHECK_ACTIVE_CONNECTION")
-  );
   const initiateConnectionTool = tools.find((tool) =>
     tool.name.endsWith("_INITIATE_CONNECTION")
   );
@@ -107,22 +110,24 @@ export const startComposioOauthFlow = async (
     tool.name.endsWith("_GET_REQUIRED_PARAMETERS")
   );
 
-  if (
-    !connectionCheckTool || !initiateConnectionTool ||
-    !getRequiredParametersTool
-  ) {
+  if (!initiateConnectionTool) {
     throw new Error("Composio authenticator has no required tools");
   }
 
-  const connectionCheckResult = await client.callTool({
-    name: connectionCheckTool.name,
-    arguments: {},
-  });
+  if (getRequiredParametersTool) {
+    const getRequiredParametersResult = await client.callTool({
+      name: getRequiredParametersTool.name,
+      arguments: {},
+    });
 
-  const getRequiredParametersResult = await client.callTool({
-    name: getRequiredParametersTool.name,
-    arguments: {},
-  });
+    const getRequiredParametersData = parseComposioToolResult(
+      getRequiredParametersResult as ToolCallResult,
+    );
+
+    if (!canAutoConnect(getRequiredParametersData)) {
+      return { redirectUrl: null };
+    }
+  }
 
   const initiateConnectionResult = await client.callTool({
     name: initiateConnectionTool.name,

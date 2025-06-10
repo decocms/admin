@@ -7,7 +7,14 @@ export * from "@deco/sdk/mcp";
 export type AppEnv = {
   Variables: Vars & TimingVariables;
   Bindings: EnvVars & {
-    PROD_DISPATCHER: { get: (script: string) => { fetch: typeof fetch } };
+    DECO_CHAT_APP_ORIGIN?: string;
+    PROD_DISPATCHER: {
+      get: (
+        script: string,
+        ctx?: Record<string, unknown>,
+        metadata?: { outbound?: { params_object?: Record<string, unknown> } },
+      ) => { fetch: typeof fetch };
+    };
   };
 };
 

@@ -15,7 +15,10 @@ import {
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
-import { INTEGRATION_CHANNEL, type IntegrationMessage } from "../../lib/broadcast-channels.ts";
+import {
+  INTEGRATION_CHANNEL,
+  type IntegrationMessage,
+} from "../../lib/broadcast-channels.ts";
 
 type SetIntegrationTools = (
   integrationId: string,
@@ -276,15 +279,17 @@ function ToolsAndKnowledgeTab() {
   useEffect(() => {
     // Listen for integration updates from other windows
     const handleMessage = (event: MessageEvent<IntegrationMessage>) => {
-      if (event.data.type === 'INTEGRATION_UPDATED') {
-        console.log("[Integrations] Received integration update, refetching...");
+      if (event.data.type === "INTEGRATION_UPDATED") {
+        console.log(
+          "[Integrations] Received integration update, refetching...",
+        );
         refetch();
       }
     };
 
-    INTEGRATION_CHANNEL.addEventListener('message', handleMessage);
+    INTEGRATION_CHANNEL.addEventListener("message", handleMessage);
     return () => {
-      INTEGRATION_CHANNEL.removeEventListener('message', handleMessage);
+      INTEGRATION_CHANNEL.removeEventListener("message", handleMessage);
     };
   }, [refetch]);
 

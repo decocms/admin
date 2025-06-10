@@ -475,7 +475,10 @@ function ConfigureConnectionInstanceForm(
 }
 
 function ConnectionInstanceItem(
-  { instance, onTestTools }: { instance: Integration; onTestTools: (connectionId: string) => void },
+  { instance, onTestTools }: {
+    instance: Integration;
+    onTestTools: (connectionId: string) => void;
+  },
 ) {
   const { connectionId: queryStringConnectionId } = useStartConfiguringOpen();
   const [isConfiguring, setIsConfiguring] = useState(
@@ -836,12 +839,17 @@ function ToolsInspector({ data, selectedConnectionId }: {
   // Update selected integration when selectedConnectionId changes
   useEffect(() => {
     if (selectedConnectionId) {
-      const instance = data.instances.find((i) => i.id === selectedConnectionId);
+      const instance = data.instances.find((i) =>
+        i.id === selectedConnectionId
+      );
       if (instance) {
         setSelectedIntegration(instance);
         // Scroll to tools section
         setTimeout(() => {
-          toolsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          toolsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }, 100);
       }
     }
@@ -862,7 +870,9 @@ function ToolsInspector({ data, selectedConnectionId }: {
         <Select
           value={selectedIntegration?.id}
           onValueChange={(value) => {
-            const instance = data.instances.find((i) => i.id === value);
+            const instance = data.instances.find((i) =>
+              i.id === value
+            );
             setSelectedIntegration(instance ?? null);
           }}
         >
@@ -937,7 +947,10 @@ function AppDetail({ appKey }: {
   const app = useGroupedApp({
     appKey,
   });
-  const [selectedToolInspectorConnectionId, setSelectedToolInspectorConnectionId] = useState<string>();
+  const [
+    selectedToolInspectorConnectionId,
+    setSelectedToolInspectorConnectionId,
+  ] = useState<string>();
 
   if (!app.instances) {
     return <Navigate to={workspaceLink("/connections")} replace />;
@@ -947,8 +960,15 @@ function AppDetail({ appKey }: {
     <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
       <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
         <Overview data={app} appKey={appKey} />
-        <Instances data={app} onTestTools={(connectionId) => setSelectedToolInspectorConnectionId(connectionId)} />
-        <ToolsInspector data={app} selectedConnectionId={selectedToolInspectorConnectionId} />
+        <Instances
+          data={app}
+          onTestTools={(connectionId) =>
+            setSelectedToolInspectorConnectionId(connectionId)}
+        />
+        <ToolsInspector
+          data={app}
+          selectedConnectionId={selectedToolInspectorConnectionId}
+        />
       </div>
     </div>
   );

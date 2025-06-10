@@ -100,12 +100,15 @@ async function deployToCloudflare(
   scriptSlug: string,
   mainModule: string,
   files: Record<string, File>,
+  envVars?: Record<string, string>,
 ): Promise<DeployResult> {
+  assertHasWorkspace(c);
   const env = getEnv(c);
   const metadata = {
     main_module: mainModule,
     compatibility_flags: ["nodejs_compat"],
     compatibility_date: "2024-11-27",
+    tags: [c.workspace.value],
   };
 
   const body = {
@@ -132,6 +135,24 @@ async function deployToCloudflare(
       },
     );
 
+  if (envVars) {
+    const promises = [];
+    for (const [key, value] of Object.entries(envVars)) {
+      promises.push(
+        c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
+          env.CF_DISPATCH_NAMESPACE,
+          scriptSlug,
+          {
+            account_id: env.CF_ACCOUNT_ID,
+            name: key,
+            text: value,
+            type: "secret_text",
+          },
+        ),
+      );
+    }
+    await Promise.all(promises);
+  }
   return {
     etag: result.etag,
     id: result.id,
@@ -256,8 +277,11 @@ Important Notes:
     files: z.array(FileSchema).describe(
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
+    envVars: z.record(z.string(), z.string()).optional().describe(
+      "An optional object of environment variables to be set on the worker",
+    ),
   }),
-  handler: async ({ appSlug, files }, c) => {
+  handler: async ({ appSlug, files, envVars }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     // Convert array to record for bundler
@@ -291,6 +315,7 @@ Important Notes:
       scriptSlug,
       SCRIPT_FILE_NAME,
       fileObjects,
+      envVars,
     );
     return updateDatabase(c, workspace, scriptSlug, result, filesRecord);
   },

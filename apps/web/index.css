@@ -92,5 +92,46 @@
     .one-tab .dv-scrollable {
       @apply grow-0!;
     }
+
+    .prose ul {
+      @apply list-disc pl-6;
+    }
+
+    .prose ol {
+      @apply list-decimal pl-6;
+    }
+
+    .prose h1 {
+      @apply text-2xl font-bold;
+    }
+
+    .prose h2 {
+      @apply text-xl font-bold;
+    }
+
+    .prose h3 {
+      @apply text-lg font-bold;
+    }
+
+    .prose h4 {
+      @apply text-base font-bold;
+    }
+
+    .prose h5 {
+      @apply text-sm font-bold;
+    }
+
+    .prose h6 {
+      @apply text-xs font-bold;
+    }
+
+    .prose a {
+      @apply text-primary-light underline;
+    }
+
+    .prose code {
+      @apply my-2 !rounded-lg bg-primary-light/10 border border-primary-light block
+        whitespace-pre-wrap !p-2;
+    }
   }
 }

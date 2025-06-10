@@ -153,11 +153,13 @@ function AddConnectionDialogContent({
   filter,
   onSelect,
   forceTab,
+  myConnectionsEmptyState,
 }: {
   title?: string;
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
   forceTab?: "my-connections" | "new-connection";
+  myConnectionsEmptyState?: React.ReactNode;
 }) {
   const [_tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
@@ -169,6 +171,7 @@ function AddConnectionDialogContent({
     MarketplaceIntegration | null
   >(null);
   const navigateWorkspace = useNavigateWorkspace();
+  const showEmptyState = search.length > 0;
 
   return (
     <DialogContent
@@ -264,38 +267,40 @@ function AddConnectionDialogContent({
           {tab === "my-connections" && (
             <InstalledConnections
               query={search}
-              emptyState={
-                <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-lg font-semibold">
-                      No connections found for the search "{search}" in your
-                      team
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      You can install a connection from the marketplace to get
-                      started:
-                    </p>
-                  </div>
-                  <Marketplace
-                    filter={search}
-                    emptyState={
-                      <div className="flex flex-col gap-2">
-                        <p className="text-sm text-muted-foreground">
-                          No connections found for the search "{search}" on the
-                          marketplace
-                        </p>
-                      </div>
-                    }
-                    onClick={async (integration) => {
-                      if (integration.id === NEW_CUSTOM_CONNECTION.id) {
-                        await createCustomConnection();
-                        return;
+              emptyState={showEmptyState
+                ? myConnectionsEmptyState ?? (
+                  <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="text-lg font-semibold">
+                        No connections found for the search "{search}" in your
+                        team
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        You can install a connection from the marketplace to get
+                        started:
+                      </p>
+                    </div>
+                    <Marketplace
+                      filter={search}
+                      emptyState={
+                        <div className="flex flex-col gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            No connections found for the search "{search}" on
+                            the marketplace
+                          </p>
+                        </div>
                       }
-                      setInstallingIntegration(integration);
-                    }}
-                  />
-                </div>
-              }
+                      onClick={async (integration) => {
+                        if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+                          await createCustomConnection();
+                          return;
+                        }
+                        setInstallingIntegration(integration);
+                      }}
+                    />
+                  </div>
+                )
+                : null}
               filter={filter}
               onClick={(integration) => onSelect?.(integration)}
             />
@@ -337,6 +342,7 @@ interface SelectConnectionDialogProps {
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
   forceTab?: "my-connections" | "new-connection";
+  myConnectionsEmptyState?: React.ReactNode;
 }
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
@@ -362,6 +368,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
         title={props.title}
         filter={props.filter}
         forceTab={props.forceTab}
+        myConnectionsEmptyState={props.myConnectionsEmptyState}
         onSelect={(integration) => {
           props.onSelect?.(integration);
           setIsOpen(false);

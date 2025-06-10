@@ -194,6 +194,15 @@ function AddAgentConnectionButton() {
       title="Connect agent"
       filter={agentConnectionFilter}
       forceTab="my-connections"
+      myConnectionsEmptyState={
+        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+          <div className="flex flex-col gap-2 pt-8">
+            <h3 className="text-lg font-medium">
+              No agents found
+            </h3>
+          </div>
+        </div>
+      }
       onSelect={(integration) =>
         setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
       trigger={

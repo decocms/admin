@@ -4,6 +4,7 @@ import { timing } from "hono/timing";
 import api from "./api.ts";
 import apps, { withAppsJWTToken } from "./apps.ts";
 import { AppEnv } from "./utils/context.ts";
+import outbound from "./outbound.ts";
 
 export const APPS_DOMAIN_QS = "app_host";
 
@@ -42,5 +43,5 @@ app.use(timing({ crossOrigin: true, total: true }));
 app.use(`/${Hosts.API}/*`, withAppsJWTToken);
 app.route(`/${Hosts.API}`, api);
 app.route(`/${Hosts.APPS}`, apps);
-app.route(`/${Hosts.APPS_OUTBOUND}`, apps);
+app.route(`/${Hosts.APPS_OUTBOUND}`, outbound);
 export default app;

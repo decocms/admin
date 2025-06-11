@@ -74,7 +74,7 @@ export function Avatar({
   url,
   fallback,
   className,
-  objectFit = "contain",
+  objectFit = "cover",
   fallbackClassName,
   ...props
 }: AvatarProps) {

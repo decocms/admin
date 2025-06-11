@@ -5,34 +5,33 @@ export function mergeThemes(
   currentTheme: Json | null,
   newTheme: Theme | undefined,
 ): Theme | null {
-  // If no new theme, return current theme if it's valid
+  // Early return if no new theme and current theme is invalid
   if (!newTheme) {
-    if (
-      currentTheme && typeof currentTheme === "object" &&
-      !Array.isArray(currentTheme)
-    ) {
-      const theme = currentTheme as Theme;
-      return {
-        picture: typeof theme.picture === "string" ? theme.picture : undefined,
-        variables:
-          typeof theme.variables === "object" && !Array.isArray(theme.variables)
-            ? theme.variables
-            : undefined,
-        font: theme.font,
-      };
+    if (!currentTheme || typeof currentTheme !== "object" || Array.isArray(currentTheme)) {
+      return null;
     }
-    return null;
+
+    const theme = currentTheme as Theme;
+    return {
+      picture: typeof theme.picture === "string" ? theme.picture : undefined,
+      variables:
+        typeof theme.variables === "object" && !Array.isArray(theme.variables)
+          ? theme.variables
+          : undefined,
+      font: theme.font,
+    };
   }
 
-  // Start with current theme if valid
+  // Initialize merged theme
   const merged: Theme = {
     picture: undefined,
     variables: {},
   };
 
-  // Merge current theme if it exists and is valid
+  // Merge current theme if valid
   if (
-    currentTheme && typeof currentTheme === "object" &&
+    currentTheme && 
+    typeof currentTheme === "object" &&
     !Array.isArray(currentTheme)
   ) {
     const theme = currentTheme as Theme;
@@ -40,7 +39,8 @@ export function mergeThemes(
       merged.picture = theme.picture;
     }
     if (
-      typeof theme.variables === "object" && !Array.isArray(theme.variables)
+      typeof theme.variables === "object" && 
+      !Array.isArray(theme.variables)
     ) {
       merged.variables = { ...theme.variables };
     }

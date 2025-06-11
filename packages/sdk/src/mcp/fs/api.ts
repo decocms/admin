@@ -73,6 +73,13 @@ const getS3Client = (c: AppContext) => {
   });
 };
 
+/**
+ * Calling this function to get a presigned URL without checking authorization
+ * could leak files to unauthorized users. Only use this for files you are sure
+ * are public.
+ * 
+ * Why i didn't made the file public on write with ACL? R2 does not support it :(
+ */
 export const getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION = ({
   c,
   existingBucketName,

@@ -1,4 +1,4 @@
-import { useDeleteTeam, useUpdateTeam, useWriteFile } from "@deco/sdk";
+import { useDeleteTeam, useSDK, useUpdateTeam, useWriteFile } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { clearThemeCache } from "../theme.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -268,6 +269,7 @@ export function GeneralSettings() {
   // If slug is empty, it's a personal team
   const isPersonalTeam = !currentTeamSlug;
 
+  const { workspace } = useSDK();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
   const writeFile = useWriteFile();
@@ -304,7 +306,6 @@ export function GeneralSettings() {
   });
 
   async function onSubmit(data: GeneralSettingsFormValues) {
-    console.log("onSubmit", data, isPersonalTeam, selectedFile);
     if (isPersonalTeam) return;
 
     // Parse theme variables if present
@@ -343,6 +344,7 @@ export function GeneralSettings() {
         },
       },
     });
+    clearThemeCache(workspace);
     form.reset(data);
   }
 
@@ -367,7 +369,9 @@ export function GeneralSettings() {
                     <FormField
                       control={form.control}
                       name="avatar"
-                      render={({ field: { value, onChange, ...field } }) => (
+                      render={(
+                        { field: { value: _value, onChange, ...field } },
+                      ) => (
                         <FormItem className="w-full flex flex-col items-center">
                           <FormControl>
                             <div

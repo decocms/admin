@@ -18,7 +18,6 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
-import { useTheme } from "../theme.tsx";
 import { Theme } from "@deco/sdk";
 
 interface CurrentTeam {

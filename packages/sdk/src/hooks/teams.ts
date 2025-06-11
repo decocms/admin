@@ -17,6 +17,7 @@ import {
 import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
 import { DEFAULT_THEME } from "../theme.ts";
+import { useSDK } from "./store.tsx";
 
 export const useTeams = () => {
   return useSuspenseQuery({
@@ -74,7 +75,9 @@ export function useDeleteTeam() {
   });
 }
 
-export function useWorkspaceTheme(slug: string) {
+export function useWorkspaceTheme() {
+  const { workspace } = useSDK();
+  const slug = workspace.split("/")[1] ?? "";
   return useQuery({
     queryKey: KEYS.TEAM_THEME(slug),
     queryFn: async () => {

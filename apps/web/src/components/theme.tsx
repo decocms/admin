@@ -1,12 +1,37 @@
 import { CSSProperties } from "react";
 import { ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+
+const THEME_CACHE_KEY = (workspace: string) =>
+  `workspace_theme_cache_${workspace}`;
+
+export const clearThemeCache = (workspace: string) => {
+  localStorage.removeItem(THEME_CACHE_KEY(workspace));
+};
 
 export const useTheme = () => {
   const { workspace } = useSDK();
-  const slug = workspace.split("/")[1] ?? "";
-  return useWorkspaceTheme(slug);
+  const { data: theme, isLoading: isQueryLoading } = useWorkspaceTheme();
+  const [cachedTheme, setCachedTheme] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const cached = localStorage.getItem(THEME_CACHE_KEY(workspace));
+    return cached ? JSON.parse(cached) : null;
+  });
+
+  useEffect(() => {
+    if (theme) {
+      localStorage.setItem(THEME_CACHE_KEY(workspace), JSON.stringify(theme));
+      setCachedTheme(theme);
+    }
+  }, [theme]);
+
+  return {
+    data: cachedTheme || theme,
+    isLoading: isQueryLoading && !cachedTheme,
+    isStale: !!cachedTheme && !!theme &&
+      JSON.stringify(cachedTheme) !== JSON.stringify(theme),
+  };
 };
 
 export function WithWorkspaceTheme({
@@ -14,7 +39,7 @@ export function WithWorkspaceTheme({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: theme, isLoading: isQueryLoading } = useTheme();
+  const { data: theme } = useTheme();
   const loadedLogo = theme?.picture ?? "/img/deco-chat-logo.png";
   const loadedBackground = theme?.variables?.[
     "--splash" as ThemeVariable
@@ -29,8 +54,15 @@ export function WithWorkspaceTheme({
   const loadedBackgroundPromise = useRef<PromiseWithResolvers<void>>(
     Promise.withResolvers(),
   );
+  const { workspace } = useSDK();
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return !localStorage.getItem(THEME_CACHE_KEY(workspace));
+  });
 
   useEffect(() => {
+    if (!showSplash) return;
+
     if (splashRef.current && circleRef.current) {
       // Initial animation for the logo
       gsap.fromTo(
@@ -54,9 +86,11 @@ export function WithWorkspaceTheme({
         loadedBackgroundPromise.current.resolve();
       });
     }
-  }, []);
+  }, [showSplash]);
 
   useEffect(() => {
+    if (!showSplash) return;
+
     if (loadedLogo && logoRef.current) {
       // Create a new image element to preload the workspace logo
       const newLogo = new Image();
@@ -84,9 +118,11 @@ export function WithWorkspaceTheme({
         });
       };
     }
-  }, [loadedLogo]);
+  }, [loadedLogo, showSplash]);
 
   useEffect(() => {
+    if (!showSplash) return;
+
     if (loadedBackground) {
       loadedBackgroundPromise.current.promise.then(() => {
         if (loadedColorCircleRef.current) {
@@ -106,13 +142,16 @@ export function WithWorkspaceTheme({
                 y: -(splashScreenRef.current.clientHeight * 2),
                 duration: 2,
                 ease: "power2.inOut",
+                onComplete: () => {
+                  setShowSplash(false);
+                },
               });
             }
           });
         }
       });
     }
-  }, [loadedBackground]);
+  }, [loadedBackground, showSplash]);
 
   const variables = {
     ...theme?.variables,
@@ -121,40 +160,42 @@ export function WithWorkspaceTheme({
 
   return (
     <>
-      <div
-        ref={splashScreenRef}
-        className="fixed inset-0 flex items-center justify-center z-50 bg-white"
-      >
+      {showSplash && (
         <div
-          ref={circleRef}
-          // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-          className="absolute w-24 h-24 rounded-full bg-stone-200"
-          style={{ transformOrigin: "center" }}
-        />
-        {loadedBackground && (
-          <div
-            ref={loadedColorCircleRef}
-            className="absolute w-24 h-24 rounded-full opacity-0"
-            style={{
-              transformOrigin: "center",
-              backgroundColor: loadedBackground,
-            }}
-          />
-        )}
-        <div
-          ref={splashRef}
-          className="relative flex flex-col items-center justify-center"
+          ref={splashScreenRef}
+          className="fixed inset-0 flex items-center justify-center z-50 bg-white"
         >
-          <div className="p-4 rounded-full bg-white">
-            <img
-              ref={logoRef}
-              src="/img/deco-chat-logo.png"
-              alt="Deco Chat Logo"
-              className="w-36 h-36 object-contain rounded-full"
+          <div
+            ref={circleRef}
+            // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+            className="absolute w-24 h-24 rounded-full bg-stone-200"
+            style={{ transformOrigin: "center" }}
+          />
+          {loadedBackground && (
+            <div
+              ref={loadedColorCircleRef}
+              className="absolute w-24 h-24 rounded-full opacity-0"
+              style={{
+                transformOrigin: "center",
+                backgroundColor: loadedBackground,
+              }}
             />
+          )}
+          <div
+            ref={splashRef}
+            className="relative flex flex-col items-center justify-center"
+          >
+            <div className="p-4 rounded-full bg-white">
+              <img
+                ref={logoRef}
+                src="/img/deco-chat-logo.png"
+                alt="Deco Chat Logo"
+                className="w-36 h-36 object-contain rounded-full"
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
       <div className="h-full w-full" style={variables as CSSProperties}>
         {children}
       </div>

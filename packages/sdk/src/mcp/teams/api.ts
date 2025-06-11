@@ -4,9 +4,13 @@ import {
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";
-import { createTool } from "../context.ts";
+import { AppContext, createTool } from "../context.ts";
 import { Json } from "../../storage/index.ts";
 import { Theme } from "../../theme.ts";
+import {
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
+} from "../fs/api.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -40,6 +44,24 @@ export const removeNameAccents = (name: string): string => {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
+export const buildSignedUrlCreator = ({
+  c,
+  existingBucketName,
+}: {
+  c: AppContext;
+  existingBucketName: string;
+}) => {
+  return (path: string) => {
+    // Team avatars are ok to be public
+    return getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
+      c,
+      path,
+      existingBucketName,
+      expiresIn: 180,
+    });
+  };
+};
+
 export const getTeam = createTool({
   name: "TEAMS_GET",
   description: "Get a team by slug",
@@ -63,10 +85,23 @@ export const getTeam = createTool({
       throw new NotFoundError("Team not found or user does not have access");
     }
 
-    return {
-      ...teamData,
-      avatar_url: getAvatarFromTheme(teamData.theme),
-    };
+    try {
+      const workspace = `/shared/${slug}`;
+      const signedUrlCreator = buildSignedUrlCreator({
+        c,
+        existingBucketName: getWorkspaceBucketName(workspace),
+      });
+      return {
+        ...teamData,
+        avatar_url: await getAvatarFromTheme(teamData.theme, signedUrlCreator),
+      };
+    } catch (error) {
+      console.error("Error getting signed url creator", error);
+      return {
+        ...teamData,
+        avatar_url: null,
+      };
+    }
   },
 });
 
@@ -285,9 +320,15 @@ export const updateTeam = createTool({
 
     if (updateError) throw updateError;
 
+    const workspace = `/shared/${updatedTeam.slug}`;
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(workspace),
+    });
+
     return {
       ...updatedTeam,
-      avatar_url: getAvatarFromTheme(updatedTeam.theme),
+      avatar_url: await getAvatarFromTheme(updatedTeam.theme, signedUrlCreator),
     };
   },
 });
@@ -362,10 +403,24 @@ export const listTeams = createTool({
       throw error;
     }
 
-    return data.map(({ members: _members, ...teamData }) => ({
-      ...teamData,
-      avatar_url: getAvatarFromTheme(teamData.theme),
-    }));
+    const teamsWithoutAvatar = data.map(({ members: _members, ...teamData }) =>
+      teamData
+    );
+
+    const teamsWithAvatar = await Promise.all(
+      teamsWithoutAvatar.map(async (team) => {
+        const signedUrlCreator = buildSignedUrlCreator({
+          c,
+          existingBucketName: getWorkspaceBucketName(`/shared/${team.slug}`),
+        });
+        return {
+          ...team,
+          avatar_url: await getAvatarFromTheme(team.theme, signedUrlCreator),
+        };
+      }),
+    );
+
+    return teamsWithAvatar;
   },
 });
 
@@ -386,7 +441,23 @@ export const getWorkspaceTheme = createTool({
 
     if (error) throw error;
 
-    const theme = team?.theme;
+    const _theme = team?.theme as Theme | null;
+
+    if (!_theme || typeof _theme !== "object") {
+      return { theme: {} };
+    }
+
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(`/shared/${slug}`),
+    });
+
+    const theme = {
+      ..._theme,
+      picture: _theme?.picture
+        ? await getAvatarFromTheme(_theme as Json, signedUrlCreator)
+        : undefined,
+    };
     return { theme };
   },
 });

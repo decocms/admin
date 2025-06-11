@@ -7,6 +7,10 @@ import { ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
+/**
+ * Kind of a stale cache for the theme so we don't show the splash screen
+ * every time the user opens a workspace.
+ */
 const THEME_CACHE_KEY = (workspace: string) =>
   `workspace_theme_cache_${workspace}`;
 

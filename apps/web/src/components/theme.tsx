@@ -14,7 +14,6 @@ export const useTheme = () => {
   const { workspace } = useSDK();
   const { data: theme, isLoading: isQueryLoading } = useWorkspaceTheme();
   const [cachedTheme, setCachedTheme] = useState(() => {
-    if (typeof window === "undefined") return null;
     const cached = localStorage.getItem(THEME_CACHE_KEY(workspace));
     return cached ? JSON.parse(cached) : null;
   });
@@ -56,7 +55,6 @@ export function WithWorkspaceTheme({
   );
   const { workspace } = useSDK();
   const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window === "undefined") return true;
     return !localStorage.getItem(THEME_CACHE_KEY(workspace));
   });
 

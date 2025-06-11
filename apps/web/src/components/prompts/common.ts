@@ -1,64 +1,75 @@
 import { Prompt } from "@deco/sdk";
 import { ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions } from "@tiptap/suggestion";
-import { MentionDropdown } from "./mention-dropdown.tsx";
+import tippy from "tippy.js";
+import MentionDropdown from "../mention/dropdown.tsx";
 
 const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
   return {
-    char: "@",
+    char: "/",
     items: ({ query }) => {
-      return items.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      )
-        .slice(0, 5);
+      return [
+        {
+          name: "Prompts",
+          options: items.map((item) => ({
+            id: item.id,
+            label: item.name,
+          })).filter((item) =>
+            item.label.toLowerCase().includes(query.toLowerCase())
+          ).slice(0, 5),
+        },
+      ];
     },
     render: () => {
-      let component: ReactRenderer<typeof MentionDropdown>;
-      let popup: HTMLElement;
+      let component: ReactRenderer<typeof MentionDropdown> | null = null;
+      let popup: tippy.Instance | null = null;
 
       return {
         onStart: (props) => {
+          if (component) {
+            component.destroy();
+          }
+
           component = new ReactRenderer(MentionDropdown, {
             props,
             editor: props.editor,
           });
 
-          popup = document.createElement("div");
-          popup.classList.add("mention-popup");
+          if (!props.clientRect) {
+            return;
+          }
 
-          const top = props.clientRect?.()?.top || 0;
-          const left = props.clientRect?.()?.left || 0;
-
-          Object.assign(popup.style, {
-            position: "absolute",
-            top: `${top + globalThis.window.scrollY + 30}px`,
-            left: `${left + globalThis.window.scrollX}px`,
-            zIndex: 9999,
+          // @ts-expect-error - tippy is not well typed
+          popup = tippy("body", {
+            getReferenceClientRect: props.clientRect,
+            appendTo: () => document.body,
+            content: component?.element,
+            showOnCreate: true,
+            interactive: true,
+            trigger: "manual",
+            placement: "bottom-start",
           });
-          popup.appendChild(component.element);
-          document.body.appendChild(popup);
         },
+
         onUpdate(props) {
-          component.updateProps(props);
-
-          const top = props.clientRect?.()?.top || 0;
-          const left = props.clientRect?.()?.left || 0;
-
-          Object.assign(popup.style, {
-            top: `${top + globalThis.window.scrollY + 30}px`,
-            left: `${left + globalThis.window.scrollX}px`,
-          });
+          component?.updateProps(props);
         },
+
         onKeyDown(props) {
-          if (props.event.key === "Enter") {
-            component.element.dispatchEvent(props.event);
+          if (props.event.key === "Escape") {
+            popup?.destroy?.();
+            component?.destroy?.();
+
             return true;
           }
-          return false;
+
+          // @ts-expect-error - component.ref is not typed
+          return component?.ref?.onKeyDown(props);
         },
+
         onExit() {
-          component?.destroy();
-          popup?.remove();
+          popup?.destroy?.();
+          component?.destroy?.();
         },
       };
     },

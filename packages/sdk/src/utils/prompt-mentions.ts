@@ -5,7 +5,19 @@ interface PromptMention {
 }
 
 const MENTION_REGEX =
-  /<span[^>]*data-type="mention"[^>]*data-id="([^"]*)"[^>]*><\/span>/g;
+  /<span\s+data-type="mention"\s+[^>]*?data-id="([^"]+)"[^>]*?>.*?<\/span>/gs;
+
+/**
+ * Normalizes mentions in a content string
+ * @param content - The content string to normalize
+ * @returns The normalized content string
+ */
+export function normalizeMentions(content: string): string {
+  return content.replaceAll(
+    MENTION_REGEX,
+    '<span data-type="mention" data-id="$1"></span>',
+  );
+}
 
 /**
  * Extracts prompt mentions from a system prompt
@@ -30,12 +42,16 @@ export async function replacePromptMentions(
   systemPrompt: string,
   workspace: string,
 ): Promise<string> {
-  const mentions = extractPromptMentions(systemPrompt);
+  const mentions = extractPromptMentions(normalizeMentions(systemPrompt));
   let result = systemPrompt;
+
+  if (mentions.length === 0) {
+    return result;
+  }
 
   const prompts = await listPrompts(workspace, {
     ids: mentions.map((mention) => mention.id),
-  });
+  }).catch(() => []);
 
   for (const mention of mentions) {
     try {

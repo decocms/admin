@@ -1,3 +1,4 @@
+import { JwtIssuer } from "@deco/sdk/auth";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import { Database } from "../../storage/index.ts";
@@ -8,6 +9,7 @@ import {
 import { AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 import { polyfill } from "./fs-polyfill.ts";
+
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
 const METADATA_FILE_NAME = "metadata.json";
@@ -281,7 +283,7 @@ Example of files deployment:
       import { z } from "./deps.ts";
 
       export default {
-        async fetch(request: Request): Promise<Response> {
+        async fetch(request: Request, env: any): Promise<Response> {
           return new Response("Hello from Deno on Cloudflare!");
         }
       }
@@ -295,7 +297,11 @@ Example of files deployment:
   }
 ]
 
-Important Notes: 
+Important Notes:
+- You can access the app workspace by accessing env.DECO_CHAT_WORKSPACE
+- You can access the app script slug by accessing env.DECO_CHAT_SCRIPT_SLUG
+- You can access the app auth token by accessing env.DECO_CHAT_AUTH_TOKEN
+- Token and workspace can be used to make authenticated requests to the Deco API under https://api.deco.chat
 - Always use Cloudflare Workers syntax with export default and proper fetch handler signature
 - When using template literals inside content strings, escape backticks with a backslash (\\) or use string concatenation (+)
 - Do not use Deno.* namespace functions
@@ -345,12 +351,22 @@ Important Notes:
       ),
     };
 
+    const jwt = JwtIssuer.forSecret(c.envVars.ISSUER_JWT_SECRET);
+    const appEnvVars = {
+      DECO_CHAT_WORKSPACE: workspace,
+      DECO_CHAT_SCRIPT_SLUG: scriptSlug,
+      DECO_CHAT_AUTH_TOKEN: await jwt.create({
+        sub: `app:${scriptSlug}`,
+        aud: workspace,
+      }),
+    };
+
     const result = await deployToCloudflare(
       c,
       scriptSlug,
       SCRIPT_FILE_NAME,
       fileObjects,
-      envVars,
+      { ...envVars, ...appEnvVars },
     );
     const data = await updateDatabase(
       c,

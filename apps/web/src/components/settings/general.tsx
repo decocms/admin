@@ -41,6 +41,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { clearThemeCache } from "../theme.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -346,6 +347,25 @@ export function GeneralSettings() {
     });
     clearThemeCache(workspace);
     form.reset(data);
+
+    // Show toast with refresh button if theme variables were changed
+    if (themeVariables) {
+      toast(
+        <div className="flex items-center gap-2">
+          <span>Refresh the page to see theme changes</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => globalThis.location.reload()}
+          >
+            Refresh
+          </Button>
+        </div>,
+        {
+          duration: 10000, // Show for 10 seconds
+        }
+      );
+    }
   }
 
   const isReadOnly = isPersonalTeam;

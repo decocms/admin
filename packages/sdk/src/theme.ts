@@ -1,3 +1,6 @@
+/**
+ * TODO(camudo): Handle custom fonts
+ */
 export const THEME_VARIABLES = [
   "--background",
   "--foreground",
@@ -69,27 +72,5 @@ export const DEFAULT_THEME: Theme = {
   font: {
     type: "Google Fonts",
     name: "Inter",
-  },
-  //   picture: "/img/deco-chat-logo.png",
-};
-
-export const TIMBRO_THEME: Theme = {
-  picture: "https://client.timbrotrading.com/build/images/timbro-logo-02.png",
-  variables: {
-    "--background": "#e2e2e2",
-    "--foreground": "#151515",
-    "--primary": "#d6074c",
-    "--secondary": "#33569b",
-    "--secondary-foreground": "#ffffff",
-    "--splash": "#d6074c",
-    "--primary-light": "#dd3b71",
-    "--primary-dark": "#ffffff",
-    "--sidebar": "#ffffff",
-    "--muted": "#b4b4b4",
-    "--accent": "#b4b4b4",
-    "--muted-foreground": "#444444",
-    "--accent-foreground": "#444444",
-    "--border": "#a1a1a1",
-    "--input": "#a1a1a1",
   },
 };

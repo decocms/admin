@@ -153,7 +153,6 @@ export function WithWorkspaceTheme({
 
   const variables = {
     ...theme?.variables,
-    "--font-sans": `"${theme?.font?.name}", sans-serif`,
   };
 
   return (

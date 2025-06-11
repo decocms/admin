@@ -18,8 +18,13 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
 import { extname } from "@std/path/posix";
+import {
+  type FileExt,
+  isAllowedContentType,
+  isAllowedFileExt,
+} from "@deco/sdk/utils";
+import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
 
 export interface UploadFile {
   file: File;
@@ -51,17 +56,17 @@ export const useAgentFiles = (agentId: string) => {
 };
 
 function FileIcon({ filename }: { filename: string }) {
-  const ext = useMemo(() => extname(filename).substring(1), [filename]);
+  const ext = useMemo<FileExt>(() => extname(filename) as FileExt, [filename]);
   const color = useMemo(() => {
     switch (ext) {
-      case "txt":
-      case "md":
+      case ".txt":
+      case ".md":
         return "text-blue-600";
-      case "csv":
+      case ".csv":
         return "text-green-600";
-      case "pdf":
+      case ".pdf":
         return "text-red-600";
-      case "json":
+      case ".json":
         return "text-yellow-600";
     }
   }, [ext]);
@@ -236,7 +241,7 @@ export function AddFileToKnowledgeButton(
           const fileMetadata = {
             agentId: agent.id,
             type: file.type,
-            bytes: file.bytes,
+            bytes: file.bytes.toString(),
           };
 
           const fileMutateData = {
@@ -303,7 +308,6 @@ export function AddFileToKnowledgeButton(
       console.log("All files uploaded successfully");
     } catch (error) {
       console.error("Failed to upload some knowledge files:", error);
-      alert("Failed to upload some files. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -314,30 +318,11 @@ export function AddFileToKnowledgeButton(
   };
 
   const handleFiles = async (files: File[]) => {
-    // Filter for supported file types - only pdf, txt, md, csv, json
-    const supportedTypes = [
-      "application/pdf",
-      "text/plain",
-      "text/markdown",
-      "text/csv",
-      "application/json",
-    ];
-
     const validFiles = files.filter((file) => {
-      const isValidType = supportedTypes.includes(file.type);
-      const isValidExtension = file.name.endsWith(".pdf") ||
-        file.name.endsWith(".txt") ||
-        file.name.endsWith(".md") ||
-        file.name.endsWith(".csv") ||
-        file.name.endsWith(".json");
+      const isValidType = isAllowedContentType(file.type);
+      const isValidExtension = isAllowedFileExt(extname(file.name));
       return isValidType || isValidExtension;
     });
-
-    if (validFiles.length !== files.length) {
-      alert(
-        "Some files were skipped. Only PDF, TXT, MD, CSV, and JSON files are supported.",
-      );
-    }
 
     if (validFiles.length > 0) {
       // Add files to state with uploading status
@@ -348,6 +333,7 @@ export function AddFileToKnowledgeButton(
       if (!knowledgeIntegration) {
         await createAgentKnowledge();
       }
+
       await uploadKnowledgeFiles(validFiles);
     }
   };

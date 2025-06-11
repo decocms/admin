@@ -1,6 +1,12 @@
 import { MDocument } from "@mastra/rag";
+import { extname } from "@std/path/posix";
+import {
+  type ContentType,
+  type FileExt,
+  isAllowedContentType,
+  isAllowedFileExt,
+} from "../utils/knowledge-file-types.ts";
 
-type FileExt = "pdf" | "txt" | "md" | "csv" | "json";
 // File processing types
 interface ProcessedDocument {
   filename: string;
@@ -52,15 +58,12 @@ export class FileProcessor {
       type: response.headers.get("content-type") || "application/octet-stream",
     });
 
-    const fileType = this.getFileType(file.name);
+    const fileExt = extname(file.name);
 
     // Only allow specific file extensions
-    const allowedTypes = ["pdf", "txt", "md", "csv", "json"];
-    if (!allowedTypes.includes(fileType)) {
+    if (!isAllowedFileExt(fileExt)) {
       throw new Error(
-        `Unsupported file type: ${fileType}. Allowed types: ${
-          allowedTypes.join(", ")
-        }`,
+        `Unsupported file type: ${fileExt}.`,
       );
     }
 
@@ -68,30 +71,30 @@ export class FileProcessor {
 
     let content = "";
 
-    switch (fileType) {
-      case "pdf":
+    switch (fileExt) {
+      case ".pdf":
         content = await this.processPDF(file);
         break;
-      case "txt":
-      case "md":
+      case ".txt":
+      case ".md":
         content = await this.processText(file);
         break;
-      case "csv":
+      case ".csv":
         content = await this.processCSV(file);
         break;
-      case "json":
+      case ".json":
         content = await this.processJSON(file);
         break;
     }
 
-    const chunks = await this.chunkText(content, fileType as FileExt);
+    const chunks = await this.chunkText(content, fileExt as FileExt);
 
     return {
       filename: file.name,
       content,
       chunks,
       metadata: {
-        fileType,
+        fileType: fileExt,
         fileSize: file.size,
         chunkCount: chunks.length,
         fileHash,
@@ -135,20 +138,20 @@ export class FileProcessor {
   /**
    * Get file extension from content-type header
    */
-  private getExtensionFromContentType(contentType: string | null): string {
-    if (!contentType) return ".txt";
+  private getExtensionFromContentType(_contentType: string | null): FileExt {
+    const contentType = _contentType?.toLowerCase() ?? "";
+    if (!contentType || !isAllowedContentType(contentType)) return ".txt";
 
-    const typeMap: Record<string, `.${FileExt}`> = {
+    const typeMap: Record<ContentType, FileExt> = {
       "application/pdf": ".pdf",
       "text/plain": ".txt",
       "text/markdown": ".md",
       "text/csv": ".csv",
       "application/csv": ".csv",
       "application/json": ".json",
-      "text/json": ".json",
     };
 
-    return typeMap[contentType.toLowerCase()] || ".txt";
+    return typeMap[contentType];
   }
 
   /**
@@ -212,57 +215,25 @@ export class FileProcessor {
    */
   private chunkText(text: string, fileExt: FileExt) {
     switch (fileExt) {
-      case "md": {
+      case ".md": {
         return MDocument.fromMarkdown(text).chunk({
           maxSize: this.config.chunkSize,
           headers: [["#", "title"], ["##", "section"]],
         });
       }
-      case "txt":
-      case "csv":
-      case "pdf": {
+      case ".txt":
+      case ".csv":
+      case ".pdf": {
         return MDocument.fromText(text).chunk({
           maxSize: this.config.chunkSize,
         });
       }
-      case "json": {
+      case ".json": {
         return MDocument.fromJSON(text).chunk({
           maxSize: this.config.chunkSize,
         });
       }
     }
-  }
-
-  /**
-   * Add overlap between chunks
-   */
-  private addOverlap(chunks: string[]): string[] {
-    if (chunks.length <= 1 || this.config.chunkOverlap <= 0) {
-      return chunks;
-    }
-
-    const overlappedChunks: string[] = [chunks[0]];
-
-    for (let i = 1; i < chunks.length; i++) {
-      const prevChunk = chunks[i - 1];
-      const currentChunk = chunks[i];
-
-      // Take last N characters from previous chunk as overlap
-      const overlapText = prevChunk.slice(-this.config.chunkOverlap);
-      const mergedChunk = overlapText + " " + currentChunk;
-
-      overlappedChunks.push(mergedChunk);
-    }
-
-    return overlappedChunks;
-  }
-
-  /**
-   * Utility functions
-   */
-  private getFileType(filename: string): string {
-    const extension = filename.toLowerCase().split(".").pop();
-    return extension || "unknown";
   }
 
   private async generateFileHash(file: File): Promise<string> {

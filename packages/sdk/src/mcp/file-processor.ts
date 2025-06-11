@@ -5,7 +5,7 @@ import {
   type FileExt,
   isAllowedContentType,
   isAllowedFileExt,
-} from "../utils/knowledge-file-types.ts";
+} from "../utils/knowledge.ts";
 
 // File processing types
 interface ProcessedDocument {

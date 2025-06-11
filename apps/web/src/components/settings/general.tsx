@@ -258,6 +258,9 @@ function DeleteTeamDialog({
   );
 }
 
+const AVATAR_UPLOAD_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
+const TEAM_AVATAR_PATH = "team-avatars";
+
 export function GeneralSettings() {
   const {
     label: currentTeamName,
@@ -316,14 +319,38 @@ export function GeneralSettings() {
         themeVariables = JSON.parse(data.themeVariables);
       }
     } catch (e) {
-      // If parsing fails, use empty object
       console.error("Failed to parse theme variables:", e);
+      toast.error("Failed to update theme variables");
+      return;
     }
 
     // Upload file if one was selected
     let avatarUrl = data.avatar || "";
     if (selectedFile) {
-      const path = `team-avatars/${currentTeamSlug}-${crypto.randomUUID()}.png`;
+      if (selectedFile.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+        toast.error("File size exceeds the limit of 5MB");
+        setSelectedFile(null);
+        setLocalAvatarUrl(null);
+        return;
+      }
+
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(selectedFile.type)) {
+        toast.error("Please upload a PNG, JPEG, JPG, or WebP image file");
+        setSelectedFile(null);
+        setLocalAvatarUrl(null);
+        return;
+      }
+
+      const filename = `${currentTeamSlug}-${crypto.randomUUID()}.${
+        selectedFile.name.split(".").pop() || "png"
+      }`;
+      const path = `${TEAM_AVATAR_PATH}/${filename}`;
       await writeFile.mutateAsync({
         path,
         content: new Uint8Array(await selectedFile.arrayBuffer()),
@@ -363,7 +390,7 @@ export function GeneralSettings() {
         </div>,
         {
           duration: 10000, // Show for 10 seconds
-        }
+        },
       );
     }
   }
@@ -415,9 +442,17 @@ export function GeneralSettings() {
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
+                                maxLength={AVATAR_UPLOAD_SIZE_LIMIT}
                                 onChange={(e) => {
                                   const file = e.target.files?.[0] || null;
                                   if (file) {
+                                    if (file.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+                                      toast.error(
+                                        "File size exceeds the limit of 5MB",
+                                      );
+                                      e.target.value = ""; // Clear the file input
+                                      return;
+                                    }
                                     setSelectedFile(file);
                                     const objectUrl = URL.createObjectURL(file);
                                     setLocalAvatarUrl(objectUrl);

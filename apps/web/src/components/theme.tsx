@@ -1,3 +1,7 @@
+/**
+ * Very ugly code but the animation looks good.
+ * Take the time to refactor this someday.
+ */
 import { CSSProperties } from "react";
 import { ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
@@ -137,8 +141,9 @@ export function WithWorkspaceTheme({
           ).then(() => {
             if (splashScreenRef.current) {
               gsap.to(splashScreenRef.current, {
-                y: -(splashScreenRef.current.clientHeight * 2),
-                duration: 2,
+                scale: 0,
+                opacity: 1,
+                duration: 1,
                 ease: "power2.inOut",
                 onComplete: () => {
                   setShowSplash(false);

@@ -232,10 +232,11 @@ export function AddFileToKnowledgeButton(
           const path = agentKnowledgeBaseFilepath(agent.id, filename);
           const buffer = await file.arrayBuffer();
 
-          // add filesize at metadata
+          // TODO: add filesize at metadata
           const fileMetadata = {
             agentId: agent.id,
             type: file.type,
+            bytes: file.bytes,
           };
 
           const fileMutateData = {
@@ -245,7 +246,6 @@ export function AddFileToKnowledgeButton(
             metadata: fileMetadata,
           };
 
-          // add metadata
           const savedResponse = await writeFileMutation.mutateAsync(
             fileMutateData,
           );
@@ -260,11 +260,10 @@ export function AddFileToKnowledgeButton(
           );
 
           if (!fileUrl) {
-            // TODO delete file
+            // TODO: delete file if failed
             return;
           }
 
-          // TODO: get knowledge based by id like `agent-${id}` or create
           const content = await addFileToKnowledgeBase.mutateAsync({
             connection: knowledgeIntegration?.connection,
             fileUrl,
@@ -286,15 +285,6 @@ export function AddFileToKnowledgeButton(
               docIds,
             },
           });
-
-          // Update the file object with the URL and remove uploading status
-          onAddFile((prev) =>
-            prev.filter((fileObj) => {
-              return fileObj.file !== file;
-            })
-          );
-
-          return { file, url: path };
         } catch (error) {
           console.error(`Failed to upload ${file.name}:`, error);
 
@@ -307,6 +297,7 @@ export function AddFileToKnowledgeButton(
 
       await Promise.all(uploadPromises);
       await refetchAgentKnowledgeFiles();
+      onAddFile([]);
       console.log("All files uploaded successfully");
     } catch (error) {
       console.error("Failed to upload some knowledge files:", error);

@@ -428,7 +428,8 @@ export function GeneralSettings() {
                               <Avatar
                                 fallback={currentTeamName}
                                 url={localAvatarUrl || avatarUrl}
-                                className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity"
+                                objectFit="contain"
+                                className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity rounded-xl p-1"
                               />
                               <div className="absolute top-0 left-0 w-24 h-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Icon

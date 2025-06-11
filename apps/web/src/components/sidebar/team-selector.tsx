@@ -233,6 +233,7 @@ function SwitchTeam(
                     className="w-6 h-6"
                     url={team.avatarUrl}
                     fallback={team.label}
+                    objectFit="contain"
                   />
                   <span className="md:text-sm">
                     {team.label}

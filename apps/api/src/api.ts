@@ -236,12 +236,27 @@ app.post("/webhooks/stripe", handleStripeWebhook);
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
 
+const SENSITIVE_HEADERS = ["Cookie", "Authorization"];
 app.all("/views/:script/*path", (c: Context) => {
   const script = c.req.param("script");
   const path = c.req.param("path");
 
   const url = `${Entrypoint.build(script)}/${path}`;
-  return fetchScript(c, script, new Request(url, c.req.raw));
+  const headers = new Headers(c.req.header());
+  SENSITIVE_HEADERS.forEach((header) => {
+    headers.delete(header);
+  });
+
+  return fetchScript(
+    c,
+    script,
+    new Request(url, {
+      redirect: c.req.raw.redirect,
+      body: c.req.raw.body,
+      method: c.req.raw.method,
+      headers,
+    }),
+  );
 });
 
 app.onError((err, c) => {

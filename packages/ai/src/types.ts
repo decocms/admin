@@ -9,7 +9,7 @@ import type {
   Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
-
+import { MCPConnection } from "../../sdk/src/index.ts";
 export type { TriggerData } from "./triggers/trigger.ts";
 export type { GenerateOptions, StreamOptions };
 
@@ -48,6 +48,31 @@ export interface ThreadQueryOptions {
  * Represents a thread in the memory
  */
 export type Thread = StorageThreadType;
+
+export interface GenerateOptions {
+  instructions?: string;
+  model?: string;
+  tools?: Record<string, string[]>;
+  lastMessages?: number;
+  bypassOpenRouter?: boolean;
+  threadId?: string;
+  resourceId?: string;
+  enableSemanticRecall?: boolean;
+  toolsets?: Toolset[];
+}
+
+export interface Toolset {
+  connection: MCPConnection;
+  filters: string[];
+}
+
+export interface StreamOptions extends GenerateOptions {
+  sendReasoning?: boolean;
+  smoothStream?: {
+    delayInMs: number;
+    chunking: "word" | "line";
+  };
+}
 
 /**
  * Interface for an AI agent that can generate responses and use tools

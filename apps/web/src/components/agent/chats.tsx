@@ -56,16 +56,26 @@ export const getPublicChatLink = (agentId: string, workspace: Workspace) => {
 function Page() {
   const [params] = useSearchParams();
 
-  const { agentId, workspace, threadId } = useMemo(() => {
+  const { agentId, workspace, threadId, toolsets } = useMemo(() => {
     const workspace = params.get("workspace") as Workspace | null;
     const agentId = params.get("agentId");
     const threadId = crypto.randomUUID();
+    const toolsets = params.getAll("toolsets").map((toolset) => {
+      const [mcpUrl, connectionType = "HTTP"] = toolset.split(",");
 
+      return {
+        connection: {
+          type: connectionType,
+          url: mcpUrl,
+        },
+        filters: [],
+      };
+    });
     if (!workspace || !agentId) {
       throw new Error("Missing required params, workspace, agentId, threadId");
     }
 
-    return { workspace, agentId, threadId };
+    return { workspace, agentId, threadId, toolsets };
   }, [params]);
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
@@ -101,6 +111,7 @@ function Page() {
           <ChatProvider
             agentId={agentId}
             threadId={threadId}
+            toolsets={toolsets}
             uiOptions={{
               showThreadTools: false,
               showModelSelector: false,

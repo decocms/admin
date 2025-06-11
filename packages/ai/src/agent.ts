@@ -96,8 +96,10 @@ import type {
   StreamOptions,
   Thread,
   ThreadQueryOptions,
+  Toolset,
 } from "./types.ts";
 import type { TextPart } from "ai";
+import { MCPConnection } from "../../sdk/src/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -126,12 +128,17 @@ export interface AgentMetadata extends AuthMetadata {
   userCookie?: string | null;
   timings?: ServerTimingsBuilder;
   mcpClient?: MCPClientStub<WorkspaceTools>;
+  toolsets?: Toolset[];
 }
 
-const normalizeMCPId = (mcpId: string) => {
-  return mcpId.startsWith("i:") || mcpId.startsWith("a:")
-    ? mcpId.slice(2)
-    : mcpId;
+const normalizeMCPId = (mcpId: string | MCPConnection) => {
+  if (typeof mcpId === "string") {
+    return mcpId.startsWith("i:") || mcpId.startsWith("a:")
+      ? mcpId.slice(2)
+      : mcpId;
+  }
+
+  return decodeURIComponent(mcpId.url);
 };
 
 const NON_SERIALIZABLE_FIELDS = ["WALLET"];
@@ -284,16 +291,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   protected async _getOrCreateCallableToolSet(
-    mcpId: string,
+    connection: string | MCPConnection,
     signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
-    if (this.callableToolSet[mcpId]) {
-      return this.callableToolSet[mcpId];
+    const isConnectionMcpId = typeof connection === "string";
+
+    if (isConnectionMcpId && this.callableToolSet[connection]) {
+      return this.callableToolSet[connection];
     }
 
-    const integration = await this.metadata?.mcpClient?.INTEGRATIONS_GET({
-      id: mcpId,
-    });
+    const mcpId = normalizeMCPId(connection);
+
+    const integration = isConnectionMcpId
+      ? await this.metadata?.mcpClient?.INTEGRATIONS_GET({
+        id: connection,
+      })
+      : {
+        connection,
+        name: mcpId,
+        id: mcpId,
+      };
 
     if (!integration) {
       console.log("integration not found", mcpId);
@@ -319,60 +336,64 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   protected async _pickCallableTools(
     tool_set: Configuration["tools_set"],
     timings?: ServerTimingsBuilder,
+    toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
     const tools: ToolsetsInput = {};
+    const toolsets = toolsetsFromOptions?.map(({ connection, filters }) => {
+      return [connection, filters] as [MCPConnection, string[]];
+    }) ?? [];
     await Promise.all(
-      Object.entries(tool_set).map(async ([mcpId, filterList]) => {
-        const getOrCreateCallableToolSetTiming = timings?.start(
-          `connect-mcp-${normalizeMCPId(mcpId)}`,
-        );
-        const timeout = new AbortController();
-        const allToolsFor = await Promise.race(
-          [
-            this._getOrCreateCallableToolSet(
-              mcpId,
-              timeout.signal,
-            )
-              .catch((err) => {
-                console.error("list tools error", err);
+      [...Object.entries(tool_set), ...toolsets].map(
+        async ([connection, filterList]) => {
+          const mcpId = normalizeMCPId(connection);
+          const getOrCreateCallableToolSetTiming = timings?.start(
+            `connect-mcp-${mcpId}`,
+          );
+          const timeout = new AbortController();
+          const allToolsFor = await Promise.race(
+            [
+              this._getOrCreateCallableToolSet(
+                connection,
+                timeout.signal,
+              )
+                .catch((err) => {
+                  console.error("list tools error", err);
+                  return null;
+                }),
+              new Promise((resolve) =>
+                setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)
+              ).then(() => {
+                // should not rely only on timeout abort because it also aborts subsequent requests
+                timeout.abort();
                 return null;
               }),
-            new Promise((resolve) =>
-              setTimeout(() => resolve(null), LOAD_TOOLS_TIMEOUT_MS)
-            ).then(() => {
-              // should not rely only on timeout abort because it also aborts subsequent requests
-              timeout.abort();
-              return null;
-            }),
-          ],
-        );
-        if (!allToolsFor) {
-          console.warn(`No tools found for server: ${mcpId}. Skipping.`);
-          getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
-          return;
-        }
-        getOrCreateCallableToolSetTiming?.end();
-
-        if (filterList.length === 0) {
-          tools[mcpId] = allToolsFor;
-          return;
-        }
-        const toolsInput: ToolsInput = {};
-        for (const item of filterList) {
-          const slug = slugify(item);
-          if (slug in allToolsFor) {
-            toolsInput[slug] = allToolsFor[slug];
-            continue;
-          }
-          console.warn(
-            `Tool ${item} not found in callableToolSet[${mcpId}], ${
-              Object.keys(allToolsFor)
-            }`,
+            ],
           );
-        }
+          if (!allToolsFor) {
+            console.warn(`No tools found for server: ${mcpId}. Skipping.`);
+            getOrCreateCallableToolSetTiming?.end("timeout"); // sinalize timeout for timings
+            return;
+          }
+          getOrCreateCallableToolSetTiming?.end();
 
-        tools[mcpId] = toolsInput;
-      }),
+          if (filterList.length === 0) {
+            tools[mcpId] = allToolsFor;
+            return;
+          }
+          const toolsInput: ToolsInput = {};
+          for (const item of filterList) {
+            const slug = slugify(item);
+            if (slug in allToolsFor) {
+              toolsInput[slug] = allToolsFor[slug];
+              continue;
+            }
+
+            console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
+          }
+
+          tools[mcpId] = toolsInput;
+        },
+      ),
     );
 
     return tools;
@@ -523,13 +544,18 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     tools?: Record<string, string[]>,
     timings?: ServerTimingsBuilder,
     thread = this._thread,
+    toolsetsFromOptions?: Toolset[],
   ): Promise<ToolsetsInput> {
     const getThreadToolsTiming = timings?.start("get-thread-tools");
     const tool_set = tools ?? await this.getThreadTools(thread);
     getThreadToolsTiming?.end();
 
     const pickCallableToolsTiming = timings?.start("pick-callable-tools");
-    const toolsets = await this._pickCallableTools(tool_set, timings);
+    const toolsets = await this._pickCallableTools(
+      tool_set,
+      timings,
+      toolsetsFromOptions,
+    );
     pickCallableToolsTiming?.end();
 
     return toolsets;
@@ -1033,7 +1059,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       options?.tools,
       timings,
       thread,
+      options?.toolsets,
     );
+
     const agentOverridesTiming = timings.start("agent-overrides");
     const agent = await this._withAgentOverrides({
       ...options,

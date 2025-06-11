@@ -188,6 +188,9 @@ export function AgentKnowledgeBaseFileList(
         name: file.file_url.replace(prefix + "/", ""),
         type: file.metadata?.type as string ?? "",
         docIds: file.metadata?.docIds as string[] ?? [] as string[],
+        size: typeof file.metadata?.bytes === "string"
+          ? Number(file.metadata.bytes)
+          : undefined,
       }))
       : [], [prefix, files]);
 
@@ -234,7 +237,7 @@ export function AddFileToKnowledgeButton(
           const fileMetadata = {
             agentId: agent.id,
             type: file.type,
-            bytes: file.bytes.toString(),
+            bytes: file.size.toString(),
           };
 
           const fileMutateData = {

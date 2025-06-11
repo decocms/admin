@@ -7,7 +7,10 @@ export function mergeThemes(
 ): Theme | null {
   // Early return if no new theme and current theme is invalid
   if (!newTheme) {
-    if (!currentTheme || typeof currentTheme !== "object" || Array.isArray(currentTheme)) {
+    if (
+      !currentTheme || typeof currentTheme !== "object" ||
+      Array.isArray(currentTheme)
+    ) {
       return null;
     }
 
@@ -30,7 +33,7 @@ export function mergeThemes(
 
   // Merge current theme if valid
   if (
-    currentTheme && 
+    currentTheme &&
     typeof currentTheme === "object" &&
     !Array.isArray(currentTheme)
   ) {
@@ -39,7 +42,7 @@ export function mergeThemes(
       merged.picture = theme.picture;
     }
     if (
-      typeof theme.variables === "object" && 
+      typeof theme.variables === "object" &&
       !Array.isArray(theme.variables)
     ) {
       merged.variables = { ...theme.variables };

@@ -1,17 +1,12 @@
 import { useMemo } from "react";
-import {
-  type Agent,
-  useCreateKnowledge,
-  useIntegration,
-  useIntegrations,
-} from "@deco/sdk";
+import { type Agent, useCreateKnowledge, useIntegrations } from "@deco/sdk";
 
 const DEFAULT_DIMENSION = 1536;
 const convertUUIDToValidAlphanumeric = (uuid: string) =>
   uuid.replaceAll("-", "");
 
 export const useAgentKnowledgeIntegration = (
-  { id: idProp }: Pick<Agent, "id">,
+  { id: idProp }: Agent,
 ) => {
   const id = useMemo(() => convertUUIDToValidAlphanumeric(idProp), [idProp]);
   const knowledgeIntegrationId = useMemo(() => `i:knowledge-base-${id}`, [id]);
@@ -23,7 +18,6 @@ export const useAgentKnowledgeIntegration = (
       ),
     [knowledgeIntegrationId, integrations],
   );
-  // const knowledgeIntegration = useIntegration(knowledgeIntegrationId);
 
   const createKnowledge = useCreateKnowledge();
 
@@ -32,8 +26,9 @@ export const useAgentKnowledgeIntegration = (
       return { name: id, dimmension: DEFAULT_DIMENSION };
     }
     const kb = await createKnowledge.mutateAsync({ name: id });
-    // await knowledgeIntegration.refetch();
     integrations.refetch();
+
+    // Add the knowledge_base_search tool at agent
 
     return kb;
   };

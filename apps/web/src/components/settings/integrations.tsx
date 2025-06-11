@@ -1,4 +1,4 @@
-import { Form } from "@deco/ui/components/form.tsx";
+import { Form, FormField, FormItem } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -19,6 +19,13 @@ import {
   getConnectionAppKey,
   useRefetchIntegrationsOnNotification,
 } from "../integrations/apps.ts";
+import {
+  AddFileToKnowledgeButton,
+  AgentKnowledgeBaseFileList,
+  KnowledgeBaseFileList,
+  UploadFile,
+  useAgentFiles,
+} from "../agent/upload-knowledge-asset.tsx";
 
 const ADVANCED_INTEGRATIONS = [
   "i:user-management",
@@ -146,33 +153,74 @@ function Connections() {
   );
 }
 
-function Knowledge() {
+function KnowledgeHeading() {
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <h6 className="text-sm font-medium">Knowledge</h6>
       <div className="flex justify-between items-center">
         <span className="block text-sm text-muted-foreground pb-2">
           Directly attach files to the assistant knowledge base.
         </span>
       </div>
-      <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-        <img
-          src="/img/empty-state-agent-knowledge.svg"
-          alt="No connections found"
-          className="h-24 mb-4"
-        />
-        <Tooltip>
-          <TooltipTrigger>
-            <Button disabled variant="outline">
-              <Icon name="add" /> Add files
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Coming soon</p>
-          </TooltipContent>
-        </Tooltip>
+    </>
+  );
+}
+
+function Knowledge() {
+  const { agent } = useAgentSettingsForm();
+  const [uploadedFiles, setUploadedFiles] = useState<
+    UploadFile[]
+  >([]);
+  const { data: files } = useAgentFiles(agent.id);
+
+  if (files?.length === 0) {
+    return (
+      <div className="flex flex-col gap-2" key="empty-kb">
+        <KnowledgeHeading />
+        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+          <img
+            src="/img/empty-state-agent-knowledge.svg"
+            alt="No connections found"
+            className="h-24 mb-4"
+          />
+          <span className="text-sm text-muted-foreground">
+            Supports: PDF, TXT, MD, CSV, JSON
+          </span>
+          <AddFileToKnowledgeButton
+            agent={agent}
+            onAddFile={setUploadedFiles}
+          />
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <FormItem className="flex flex-col gap-2" key="files-kb">
+      <div className="flex items-center gap-2">
+        <div className="grow flex flex-col gap-2">
+          <KnowledgeHeading />
+        </div>
+
+        <AddFileToKnowledgeButton agent={agent} onAddFile={setUploadedFiles} />
+      </div>
+      <AgentKnowledgeBaseFileList agentId={agent.id} />
+
+      <div className="space-y-4">
+        {/* Uploaded Files List */}
+        <KnowledgeBaseFileList
+          agentId={agent.id}
+          files={uploadedFiles.map(({ file, uploading, file_url, docIds }) => ({
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            file_url: file_url,
+            uploading,
+            docIds,
+          }))}
+        />
+      </div>
+    </FormItem>
   );
 }
 

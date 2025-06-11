@@ -12,20 +12,21 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
-  FormDescription,
-  FormItem,
-  FormLabel,
-} from "@deco/ui/components/form.tsx";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useAgentSettingsForm } from "./edit.tsx";
 import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
 import { extname } from "@std/path/posix";
+
+export interface UploadFile {
+  file: File;
+  file_url?: string;
+  uploading?: boolean;
+  docIds?: string[];
+}
 
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return "0 Bytes";
@@ -37,11 +38,14 @@ const formatFileSize = (bytes: number) => {
 
 const agentKnowledgeBasePath = (agentId: string) =>
   `agent/${agentId}/knowledge`;
+
 const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
   `${agentKnowledgeBasePath(agentId)}/${path}`;
+
 const useAgentKnowledgeRootPath = (agentId: string) =>
   useMemo(() => agentKnowledgeBasePath(agentId), [agentId]);
-const useAgentFiles = (agentId: string) => {
+
+export const useAgentFiles = (agentId: string) => {
   const prefix = useAgentKnowledgeRootPath(agentId);
   return useFiles({ root: prefix });
 };
@@ -87,7 +91,7 @@ interface KnowledgeBaseFileListProps {
   }[];
 }
 
-function KnowledgeBaseFileList(
+export function KnowledgeBaseFileList(
   { files, agentId, integration }: KnowledgeBaseFileListProps,
 ) {
   const prefix = agentKnowledgeBasePath(agentId);
@@ -174,7 +178,7 @@ function KnowledgeBaseFileList(
   );
 }
 
-function AgentKnowledgeBaseFileList(
+export function AgentKnowledgeBaseFileList(
   { agentId, integration }: { agentId: string; integration?: Integration },
 ) {
   const { data: files } = useAgentFiles(agentId);
@@ -198,19 +202,14 @@ function AgentKnowledgeBaseFileList(
   );
 }
 
-interface UploadFile {
-  file: File;
-  file_url?: string;
-  uploading?: boolean;
-  docIds?: string[];
-}
-
 interface AddFileToKnowledgeProps {
   agent: Agent;
   onAddFile: Dispatch<SetStateAction<UploadFile[]>>;
 }
 
-function AddFileToKnowledge({ agent, onAddFile }: AddFileToKnowledgeProps) {
+export function AddFileToKnowledgeButton(
+  { agent, onAddFile }: AddFileToKnowledgeProps,
+) {
   const { refetch: refetchAgentKnowledgeFiles } = useAgentFiles(agent.id);
   const [isUploading, setIsUploading] = useState(false);
   const knowledgeFileInputRef = useRef<HTMLInputElement>(null);
@@ -387,50 +386,6 @@ function AddFileToKnowledge({ agent, onAddFile }: AddFileToKnowledgeProps) {
         />
         Add file
       </Button>
-
-      {
-        /*<p className="text-xs text-muted-foreground mt-2 text-center">
-        Supports: PDF, TXT, MD, CSV, JSON
-      </p>*/
-      }
     </div>
-  );
-}
-
-export default function UploadKnowledgeBaseAsset() {
-  const { agent } = useAgentSettingsForm();
-  const [uploadedFiles, setUploadedFiles] = useState<
-    { file: File; file_url?: string; uploading?: boolean; docIds?: string[] }[]
-  >([]);
-
-  return (
-    <FormItem>
-      <div className="flex items-center gap-2">
-        <div className="grow flex flex-col gap-2">
-          <FormLabel>Knowledge</FormLabel>
-          <FormDescription className="text-xs text-muted-foreground">
-            Directly attach files to the assistant knowledge
-          </FormDescription>
-        </div>
-
-        <AddFileToKnowledge agent={agent} onAddFile={setUploadedFiles} />
-      </div>
-      <AgentKnowledgeBaseFileList agentId={agent.id} />
-
-      <div className="space-y-4">
-        {/* Uploaded Files List */}
-        <KnowledgeBaseFileList
-          agentId={agent.id}
-          files={uploadedFiles.map(({ file, uploading, file_url, docIds }) => ({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            file_url: file_url,
-            uploading,
-            docIds,
-          }))}
-        />
-      </div>
-    </FormItem>
   );
 }

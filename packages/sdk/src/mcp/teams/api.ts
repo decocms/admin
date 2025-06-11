@@ -19,14 +19,21 @@ export const sanitizeTeamName = (name: string): string => {
   );
 };
 
-export const getAvatarFromTheme = (theme: Json): string | null => {
+export const getAvatarFromTheme = (
+  theme: Json,
+  createSignedUrl: (path: string) => Promise<string>,
+): Promise<string | null> => {
   if (
     theme !== null && typeof theme === "object" && "picture" in theme &&
     typeof theme.picture === "string"
   ) {
-    return theme.picture as string;
+    const picture = theme.picture as string;
+    return createSignedUrl(picture).catch((error) => {
+      console.error("Error getting avatar from theme", error);
+      return null;
+    });
   }
-  return null;
+  return Promise.resolve(null);
 };
 
 export const removeNameAccents = (name: string): string => {
@@ -231,7 +238,6 @@ export const updateTeam = createTool({
   }),
   handler: async (props, c) => {
     const { id, data } = props;
-    console.log(data);
 
     await assertTeamResourceAccess(c.tool.name, id, c);
 

@@ -1,4 +1,4 @@
-import { useDeleteTeam, useUpdateTeam } from "@deco/sdk";
+import { useDeleteTeam, useUpdateTeam, useWriteFile } from "@deco/sdk";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -270,10 +270,22 @@ export function GeneralSettings() {
 
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
+  const writeFile = useWriteFile();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup object URL when component unmounts or when localAvatarUrl changes
+  useEffect(() => {
+    return () => {
+      if (localAvatarUrl) {
+        URL.revokeObjectURL(localAvatarUrl);
+      }
+    };
+  }, [localAvatarUrl]);
 
   const form = useForm<GeneralSettingsFormValues>({
     resolver: zodResolver(generalSettingsSchema),
@@ -292,8 +304,8 @@ export function GeneralSettings() {
   });
 
   async function onSubmit(data: GeneralSettingsFormValues) {
+    console.log("onSubmit", data, isPersonalTeam, selectedFile);
     if (isPersonalTeam) return;
-    const prevSlug = currentTeamSlug;
 
     // Parse theme variables if present
     let themeVariables = undefined;
@@ -306,8 +318,17 @@ export function GeneralSettings() {
       console.error("Failed to parse theme variables:", e);
     }
 
-    // TODO: Implement avatar upload and get URL
-    const avatarUrl = data.avatar ? "TODO: Implement avatar upload" : undefined;
+    // Upload file if one was selected
+    let avatarUrl = data.avatar || "";
+    if (selectedFile) {
+      const path = `team-avatars/${currentTeamSlug}-${crypto.randomUUID()}.png`;
+      await writeFile.mutateAsync({
+        path,
+        content: new Uint8Array(await selectedFile.arrayBuffer()),
+        contentType: selectedFile.type,
+      });
+      avatarUrl = path;
+    }
 
     await updateTeam.mutateAsync({
       id: typeof currentTeamId === "number"
@@ -323,10 +344,6 @@ export function GeneralSettings() {
       },
     });
     form.reset(data);
-    // If the slug changed, navigate to the new team's settings page
-    if (data.teamSlug !== prevSlug) {
-      globalThis.location.href = `/${data.teamSlug}/settings`;
-    }
   }
 
   const isReadOnly = isPersonalTeam;
@@ -359,7 +376,7 @@ export function GeneralSettings() {
                             >
                               <Avatar
                                 fallback={currentTeamName}
-                                url={avatarUrl}
+                                url={localAvatarUrl || avatarUrl}
                                 className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity"
                               />
                               <div className="absolute top-0 left-0 w-24 h-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -376,9 +393,12 @@ export function GeneralSettings() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0] || null;
-                                  // TODO: Upload file and get URL
-                                  const url = "TODO: Implement file upload";
-                                  onChange(url);
+                                  if (file) {
+                                    setSelectedFile(file);
+                                    const objectUrl = URL.createObjectURL(file);
+                                    setLocalAvatarUrl(objectUrl);
+                                    onChange(objectUrl);
+                                  }
                                 }}
                                 disabled={isReadOnly}
                               />

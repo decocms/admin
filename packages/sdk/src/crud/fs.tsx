@@ -19,6 +19,7 @@ interface WriteOptions {
   content: Uint8Array;
   contentType: string;
   expiresIn?: number;
+  publicAccess?: boolean;
 }
 
 export const writeFile = async ({
@@ -30,7 +31,11 @@ export const writeFile = async ({
 }: WriteOptions) => {
   const { url: uploadUrl } = await MCPClient
     .forWorkspace(workspace)
-    .FS_WRITE({ path, contentType, ...(expiresIn ? { expiresIn } : {}) });
+    .FS_WRITE({
+      path,
+      contentType,
+      ...(expiresIn ? { expiresIn } : {}),
+    });
 
   const response = await fetch(uploadUrl!, {
     method: "PUT",
@@ -39,6 +44,11 @@ export const writeFile = async ({
       "Content-Type": contentType,
     },
   });
+
+  if (!response.ok) {
+    console.error(response);
+    throw new Error("Failed to upload file");
+  }
 
   return response;
 };

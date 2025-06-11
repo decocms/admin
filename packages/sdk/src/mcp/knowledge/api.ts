@@ -10,6 +10,7 @@ import {
 } from "../assertions.ts";
 import { AppContext, createTool, createToolFactory } from "../context.ts";
 import { FileProcessor } from "../file-processor.ts";
+import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -46,8 +47,6 @@ async function getVector(c: AppContext) {
   }
   return vector;
 }
-
-const DEFAULT_DIMENSION = 1536;
 
 export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
@@ -112,7 +111,7 @@ export const createBase = createTool({
     const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
-      dimension: dimension ?? DEFAULT_DIMENSION,
+      dimension: dimension ?? KNOWLEDGE_BASE_DIMENSION,
     });
     return {
       name,

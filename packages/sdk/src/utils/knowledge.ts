@@ -1,3 +1,5 @@
+import { WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH } from "../constants.ts";
+
 export type FileExt = ".pdf" | ".txt" | ".md" | ".csv" | ".json";
 const allowedTypes: FileExt[] = [".pdf", ".txt", ".md", ".csv", ".json"];
 
@@ -31,3 +33,6 @@ export const formatFileSize = (bytes: number) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
+
+export const getKnowledgeBaseIntegrationId = (index: string) =>
+  `${WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH}-${index}`;

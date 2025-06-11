@@ -8,6 +8,7 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
+import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import {
   AppKeys,
@@ -25,7 +26,7 @@ import {
 const ADVANCED_INTEGRATIONS = [
   "i:user-management",
   "i:workspace-management",
-  "i:knowledge-base-standard",
+  getKnowledgeBaseIntegrationId("standard"),
   "DECO_INTEGRATIONS",
   "DECO_UTILS",
 ];

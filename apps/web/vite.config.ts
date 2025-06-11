@@ -6,4 +6,9 @@ import { defineConfig, type PluginOption } from "vite";
 export default defineConfig({
   plugins: [react() as PluginOption[], tailwindcss() as PluginOption[]],
   server: { port: 3000, allowedHosts: [".deco.host"] },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: "es2022",
+    },
+  },
 });

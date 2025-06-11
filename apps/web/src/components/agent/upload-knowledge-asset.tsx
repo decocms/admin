@@ -274,7 +274,9 @@ export function AddFileToKnowledgeButton(
           });
 
           // TODO: fix this when forContext is fixed the return
+          // deno-lint-ignore no-explicit-any
           const docIds = (content as any).docIds ??
+            // deno-lint-ignore no-explicit-any
             (content as any)?.structuredContent?.docIds;
 
           await writeFileMutation.mutateAsync({

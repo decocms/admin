@@ -3,9 +3,12 @@ import { type Prompt } from "../models/index.ts";
 
 export const listPrompts = (
   workspace: string,
+  input?: { ids?: string[] },
   init?: RequestInit,
 ): Promise<Prompt[]> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_LIST({}, init) as Promise<Prompt[]>;
+  MCPClient.forWorkspace(workspace).PROMPTS_LIST(input || {}, init) as Promise<
+    Prompt[]
+  >;
 
 export const getPrompt = (
   workspace: string,

@@ -19,7 +19,6 @@ export const MentionDropdown = ({ items, command }: Props) => {
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    console.log(event.key);
     if (event.key === "ArrowDown") {
       setSelected((prev) => (prev + 1) % items.length);
       event.preventDefault();

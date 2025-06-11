@@ -69,6 +69,7 @@ import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
+import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
 import {
@@ -404,10 +405,16 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     await this._initMemory(memoryId, config, tokenLimit);
 
+    // Process instructions to replace prompt mentions
+    const processedInstructions = await replacePromptMentions(
+      config.instructions,
+      this.workspace,
+    );
+
     this._maybeAgent = new Agent({
       memory: this._memory as unknown as MastraMemory,
       name: config.name,
-      instructions: config.instructions,
+      instructions: processedInstructions,
       model: llm,
       voice: this.env.OPENAI_API_KEY
         ? createAgentOpenAIVoice({
@@ -1000,13 +1007,22 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ),
     );
 
+    // Process instructions if provided in options
+    let processedInstructions = options?.instructions;
+    if (processedInstructions) {
+      processedInstructions = await replacePromptMentions(
+        processedInstructions,
+        this.workspace,
+      );
+    }
+
     const response = await agent.stream(
       aiMessages,
       {
         ...thread,
         context,
         toolsets,
-        instructions: options?.instructions,
+        instructions: processedInstructions,
         maxSteps: this._maxSteps(),
         maxTokens: this._maxTokens(),
         experimental_transform: experimentalTransform,

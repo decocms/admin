@@ -4,9 +4,9 @@ import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
-import suggestion from "../prompts/common.ts";
+import suggestion from "./common.ts";
 
 interface RichTextAreaProps {
   value: string;
@@ -31,11 +31,14 @@ export default function RichTextArea({
 }: RichTextAreaProps) {
   const { data: prompts } = usePrompts();
 
+  const promptMap = useMemo(() => {
+    if (!prompts) return new Map();
+    return new Map(prompts.map((prompt) => [prompt.id, prompt.name]));
+  }, [prompts]);
+
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        hardBreak: true,
-      }),
+      StarterKit,
       Markdown.configure({
         html: true,
         breaks: true,
@@ -51,6 +54,21 @@ export default function RichTextArea({
             "inline-flex items-center rounded-full bg-primary-light/20 transition-colors duration-300 hover:bg-primary-light/70 px-2 font-medium text-black border border-primary-light text-xs",
         },
         suggestion: suggestion(prompts ?? []),
+        renderText({ node }) {
+          const promptName = promptMap.get(node.attrs.id) || node.attrs.id;
+          return `@${promptName}`;
+        },
+        renderHTML({ node, options: { HTMLAttributes } }) {
+          return [
+            "span",
+            {
+              ...HTMLAttributes,
+              "data-type": "mention",
+              "data-id": node.attrs.id,
+            },
+            `@${promptMap.get(node.attrs.id) || node.attrs.id}`,
+          ];
+        },
       }),
     ],
     content: value,
@@ -58,10 +76,10 @@ export default function RichTextArea({
     onUpdate: ({ editor }) => {
       const markdown = editor.storage.markdown.getMarkdown({
         html: true,
-      });
-
-      console.log("markdown", markdown);
-      console.log("raw", editor.getHTML());
+      }).replaceAll(
+        /<span\s+data-type="mention"[^>]*?data-id="([^"]+)"[^>]*?>.*?<\/span>/g,
+        '<span data-type="mention" data-id="$1"></span>',
+      );
 
       onChange(markdown);
     },

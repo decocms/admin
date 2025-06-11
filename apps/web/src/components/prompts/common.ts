@@ -1,7 +1,6 @@
-import type { Prompt } from "@deco/sdk";
-import type { Editor } from "@tiptap/react";
+import { Prompt } from "@deco/sdk";
 import { ReactRenderer } from "@tiptap/react";
-import { SuggestionOptions } from "@tiptap/suggestion";
+import type { SuggestionOptions } from "@tiptap/suggestion";
 import { MentionDropdown } from "./mention-dropdown.tsx";
 
 const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
@@ -10,7 +9,8 @@ const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
     items: ({ query }) => {
       return items.filter((item) =>
         item.name.toLowerCase().includes(query.toLowerCase())
-      );
+      )
+        .slice(0, 5);
     },
     render: () => {
       let component: ReactRenderer<typeof MentionDropdown>;
@@ -20,7 +20,7 @@ const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
         onStart: (props) => {
           component = new ReactRenderer(MentionDropdown, {
             props,
-            editor: props.editor as Editor,
+            editor: props.editor,
           });
 
           popup = document.createElement("div");
@@ -50,8 +50,11 @@ const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
           });
         },
         onKeyDown(props) {
-          component.element.dispatchEvent(props.event);
-          return true;
+          if (props.event.key === "Enter") {
+            component.element.dispatchEvent(props.event);
+            return true;
+          }
+          return false;
         },
         onExit() {
           component?.destroy();

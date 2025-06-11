@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
+import { assertHasWorkspace } from "../assertions.ts";
 import { createTool } from "../context.ts";
 
 export const createPrompt = createTool({
@@ -106,21 +103,29 @@ export const deletePrompt = createTool({
 export const listPrompts = createTool({
   name: "PROMPTS_LIST",
   description: "List prompts for the current workspace",
-  inputSchema: z.object({}),
-  handler: async (_, c) => {
+  inputSchema: z.object({
+    ids: z.array(z.string()).optional().describe("Filter prompts by ids"),
+  }),
+  handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
     c.resourceAccess.grant();
 
-    console.log("c.isLocal", c.isLocal);
-
     // await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { data, error } = await c.db
+    const { ids = [] } = props;
+
+    let query = c.db
       .from("deco_chat_prompts")
       .select("*")
       .eq("workspace", workspace);
+
+    if (ids.length > 0) {
+      query = query.in("id", ids);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

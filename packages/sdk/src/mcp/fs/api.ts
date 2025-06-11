@@ -120,7 +120,7 @@ export const listFiles = createTool({
         { file_url: string; metadata?: Record<string, string | string[]> }[]
       >();
 
-    return assets;
+    return assets ?? [];
   },
 });
 

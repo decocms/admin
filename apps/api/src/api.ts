@@ -2,6 +2,7 @@ import { HttpServerTransport } from "@deco/mcp/http";
 import {
   AuthorizationClient,
   createMCPToolsStub,
+  Entrypoint,
   GLOBAL_TOOLS,
   PolicyClient,
   ToolLike,
@@ -16,9 +17,10 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
+import { fetchScript } from "./apps.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
-import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
+import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { AppContext, AppEnv, State } from "./utils/context.ts";
@@ -233,6 +235,14 @@ app.post("/webhooks/stripe", handleStripeWebhook);
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));
+
+app.all("/views/:script/*path", (c: Context) => {
+  const script = c.req.param("script");
+  const path = c.req.param("path");
+
+  const url = `${Entrypoint.build(script)}/${path}`;
+  return fetchScript(c, script, new Request(url, c.req.raw));
+});
 
 app.onError((err, c) => {
   console.error(err);

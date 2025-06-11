@@ -26,12 +26,20 @@ import { Separator } from "@deco/ui/components/separator.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { DEFAULT_THEME, THEME_VARIABLES, type ThemeVariable } from "@deco/sdk";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -39,6 +47,8 @@ interface GeneralSettingsFormValues {
   workspaceEmailDomain: boolean;
   teamSystemPrompt: string;
   personalSystemPrompt: string;
+  avatar: string;
+  themeVariables: string;
 }
 
 const generalSettingsSchema = z.object({
@@ -52,7 +62,128 @@ const generalSettingsSchema = z.object({
   workspaceEmailDomain: z.boolean(),
   teamSystemPrompt: z.string(),
   personalSystemPrompt: z.string(),
+  avatar: z.string(),
+  themeVariables: z.string(),
 });
+
+interface ThemeVariableState {
+  key: ThemeVariable;
+  value: string;
+  isDefault: boolean;
+  defaultValue: string;
+}
+
+function ThemeEditor(
+  { value, onChange }: { value: string; onChange: (value: string) => void },
+) {
+  const [variables, setVariables] = useState<ThemeVariableState[]>([]);
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(value || "{}");
+      const vars = THEME_VARIABLES.map((key) => ({
+        key,
+        value: String(parsed[key] || ""),
+        isDefault: !parsed[key],
+        defaultValue: DEFAULT_THEME.variables?.[key] || "",
+      }));
+      setVariables(vars);
+    } catch {
+      setVariables(THEME_VARIABLES.map((key) => ({
+        key,
+        value: "",
+        isDefault: true,
+        defaultValue: DEFAULT_THEME.variables?.[key] || "",
+      })));
+    }
+  }, [value]);
+
+  const handleVariableChange = (key: ThemeVariable, newValue: string) => {
+    const newVariables = variables.map((v) =>
+      v.key === key ? { ...v, value: newValue, isDefault: false } : v
+    );
+    setVariables(newVariables);
+
+    // Convert back to JSON
+    const jsonObject = newVariables.reduce(
+      (acc, { key, value, isDefault }) => ({
+        ...acc,
+        [key]: isDefault ? undefined : value,
+      }),
+      {},
+    );
+    onChange(JSON.stringify(jsonObject, null, 2));
+  };
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {variables.map((variable, index) => (
+        <div key={index} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium">
+              {variable.key.replace("--", "")}
+            </div>
+            {variable.isDefault && (
+              <div className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                Default
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                value={variable.value}
+                onChange={(e) =>
+                  handleVariableChange(variable.key, e.target.value)}
+                className="flex-1"
+                placeholder="Using default theme"
+              />
+              {!variable.isDefault && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => handleVariableChange(variable.key, "")}
+                        className="absolute right-2 top-0 bottom-0 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Icon name="close" size={16} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Reset to default</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                type="color"
+                value={variable.value || variable.defaultValue || "#000000"}
+                onChange={(e) =>
+                  handleVariableChange(variable.key, e.target.value)}
+                className="w-10 h-10 p-1 cursor-pointer rounded-md border-0 bg-transparent"
+                style={{
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  appearance: "none",
+                }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none rounded-md border border-border"
+                style={{
+                  backgroundColor: variable.value || variable.defaultValue ||
+                    "#000000",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function DeleteTeamDialog({
   isOpen,
@@ -131,6 +262,7 @@ export function GeneralSettings() {
     slug: currentTeamSlug,
     avatarUrl,
     id: currentTeamId,
+    theme: currentTeamTheme,
   } = useCurrentTeam();
 
   // If slug is empty, it's a personal team
@@ -141,6 +273,8 @@ export function GeneralSettings() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<GeneralSettingsFormValues>({
     resolver: zodResolver(generalSettingsSchema),
     defaultValues: {
@@ -149,6 +283,10 @@ export function GeneralSettings() {
       workspaceEmailDomain: true,
       teamSystemPrompt: "",
       personalSystemPrompt: "",
+      avatar: currentTeamTheme?.picture || "",
+      themeVariables: currentTeamTheme?.variables
+        ? JSON.stringify(currentTeamTheme.variables, null, 2)
+        : "",
     },
     mode: "onChange",
   });
@@ -156,6 +294,21 @@ export function GeneralSettings() {
   async function onSubmit(data: GeneralSettingsFormValues) {
     if (isPersonalTeam) return;
     const prevSlug = currentTeamSlug;
+
+    // Parse theme variables if present
+    let themeVariables = undefined;
+    try {
+      if (data.themeVariables) {
+        themeVariables = JSON.parse(data.themeVariables);
+      }
+    } catch (e) {
+      // If parsing fails, use empty object
+      console.error("Failed to parse theme variables:", e);
+    }
+
+    // TODO: Implement avatar upload and get URL
+    const avatarUrl = data.avatar ? "TODO: Implement avatar upload" : undefined;
+
     await updateTeam.mutateAsync({
       id: typeof currentTeamId === "number"
         ? currentTeamId
@@ -163,6 +316,10 @@ export function GeneralSettings() {
       data: {
         name: data.teamName,
         slug: data.teamSlug,
+        theme: {
+          picture: avatarUrl,
+          variables: themeVariables,
+        },
       },
     });
     form.reset(data);
@@ -184,20 +341,62 @@ export function GeneralSettings() {
               <h2 className="text-2xl">General</h2>
             </div>
             <div className="max-w-2xl mx-auto space-y-8">
-              <div className="flex flex-col items-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Avatar
-                    fallback={currentTeamName}
-                    url={avatarUrl}
-                    className="w-[120px] h-[120px]"
-                  />
-                </div>
-              </div>
               <Form {...form}>
                 <form
                   className="space-y-8"
                   onSubmit={form.handleSubmit(onSubmit)}
                 >
+                  <div className="flex flex-col items-center w-full">
+                    <FormField
+                      control={form.control}
+                      name="avatar"
+                      render={({ field: { value, onChange, ...field } }) => (
+                        <FormItem className="w-full flex flex-col items-center">
+                          <FormControl>
+                            <div
+                              className="relative group cursor-pointer"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Avatar
+                                fallback={currentTeamName}
+                                url={avatarUrl}
+                                className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity"
+                              />
+                              <div className="absolute top-0 left-0 w-24 h-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Icon
+                                  name="upload"
+                                  size={32}
+                                  className="text-white"
+                                />
+                              </div>
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+                                  // TODO: Upload file and get URL
+                                  const url = "TODO: Implement file upload";
+                                  onChange(url);
+                                }}
+                                disabled={isReadOnly}
+                              />
+                              <Input
+                                type="text"
+                                className="hidden"
+                                {...field}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription className="text-center">
+                            Click to upload a team avatar
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
                     name="teamName"
@@ -228,14 +427,10 @@ export function GeneralSettings() {
                           <Input
                             {...field}
                             placeholder="your-team"
-                            readOnly={isReadOnly}
-                            disabled={isReadOnly}
+                            readOnly
+                            disabled
                           />
                         </FormControl>
-                        <FormDescription>
-                          Changing the team slug will redirect you to the new
-                          address
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -284,6 +479,26 @@ export function GeneralSettings() {
                           for you. Use it to personalize style or add your own
                           context.
                         </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="themeVariables"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Theme Variables</FormLabel>
+                        <FormDescription>
+                          Customize the theme of your team. Variables left blank
+                          will use the default theme.
+                        </FormDescription>
+                        <FormControl>
+                          <ThemeEditor
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />

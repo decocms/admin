@@ -18,12 +18,15 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
+import { useTheme } from "../theme.tsx";
+import { Theme } from "@deco/sdk";
 
 interface CurrentTeam {
   avatarUrl: string | undefined;
   slug: string;
   id: number | string;
   label: string;
+  theme: Theme | undefined;
 }
 
 function useUserTeam(): CurrentTeam {
@@ -36,6 +39,7 @@ function useUserTeam(): CurrentTeam {
     label,
     id: user?.id ?? "",
     slug: "",
+    theme: undefined,
   };
 }
 
@@ -47,10 +51,11 @@ export function useCurrentTeam(): CurrentTeam {
     return userTeam;
   }
   return {
-    avatarUrl: teamData?.avatar_url || "https://client.timbrotrading.com/build/images/timbro-logo-02.png",
+    avatarUrl: teamData?.avatar_url,
     label: teamData?.name || teamSlug || "",
     id: teamData?.id ?? "",
     slug: teamData?.slug ?? teamSlug ?? "",
+    theme: teamData?.theme,
   };
 }
 
@@ -62,10 +67,11 @@ function useUserTeams() {
   const allTeams: CurrentTeam[] = [
     personalTeam,
     ...teams.map((team) => ({
-      avatarUrl: undefined,
+      avatarUrl: team.avatar_url,
       slug: team.slug,
       label: team.name,
       id: team.id,
+      theme: team.theme,
     })),
   ];
 

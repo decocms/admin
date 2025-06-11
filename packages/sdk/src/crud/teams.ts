@@ -1,10 +1,12 @@
 import { MCPClient } from "../fetcher.ts";
+import { Theme } from "../theme.ts";
 
 export interface Team {
   id: number;
   name: string;
   slug: string;
-  avatar_url: string;
+  avatar_url?: string;
+  theme?: Theme;
   created_at: string;
 }
 
@@ -29,10 +31,18 @@ export const createTeam = (
   init?: RequestInit,
 ): Promise<Team> => MCPClient.TEAMS_CREATE(input, init) as Promise<Team>;
 
+export const getWorkspaceTheme = (
+  slug: string,
+  init?: RequestInit,
+): Promise<{ theme?: Theme } | null> =>
+  MCPClient.TEAMS_GET_THEME({ slug }, init) as Promise<
+    { theme?: Theme } | null
+  >;
+
 export interface UpdateTeamInput {
   id: number;
   data: Partial<
-    Pick<Team, "name" | "slug"> & { stripe_subscription_id?: string }
+    Pick<Team, "name" | "slug" | "theme"> & { stripe_subscription_id?: string }
   >;
   [key: string]: unknown;
 }

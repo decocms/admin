@@ -5,6 +5,8 @@ import {
   assertTeamResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
+import { Json } from "../../storage/index.ts";
+import { Theme } from "../../theme.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -15,6 +17,16 @@ export const sanitizeTeamName = (name: string): string => {
     /[^\w\s\-.+@]/g,
     "",
   );
+};
+
+export const getAvatarFromTheme = (theme: Json): string | null => {
+  if (
+    theme !== null && typeof theme === "object" && "picture" in theme &&
+    typeof theme.picture === "string"
+  ) {
+    return theme.picture as string;
+  }
+  return null;
 };
 
 export const removeNameAccents = (name: string): string => {
@@ -44,7 +56,10 @@ export const getTeam = createTool({
       throw new NotFoundError("Team not found or user does not have access");
     }
 
-    return teamData;
+    return {
+      ...teamData,
+      avatar_url: getAvatarFromTheme(teamData.theme),
+    };
   },
 });
 
@@ -134,6 +149,71 @@ export const createTeam = createTool({
   },
 });
 
+function mergeTheme(
+  currentTheme: Json | null,
+  newTheme: Theme | undefined,
+): Theme | null {
+  // If no new theme, return current theme if it's valid
+  if (!newTheme) {
+    if (
+      currentTheme && typeof currentTheme === "object" &&
+      !Array.isArray(currentTheme)
+    ) {
+      const theme = currentTheme as Theme;
+      return {
+        picture: typeof theme.picture === "string" ? theme.picture : undefined,
+        variables:
+          typeof theme.variables === "object" && !Array.isArray(theme.variables)
+            ? theme.variables
+            : undefined,
+        font: theme.font,
+      };
+    }
+    return null;
+  }
+
+  // Start with current theme if valid
+  const merged: Theme = {
+    picture: undefined,
+    variables: {},
+  };
+
+  // Merge current theme if it exists and is valid
+  if (
+    currentTheme && typeof currentTheme === "object" &&
+    !Array.isArray(currentTheme)
+  ) {
+    const theme = currentTheme as Theme;
+    if (typeof theme.picture === "string") {
+      merged.picture = theme.picture;
+    }
+    if (
+      typeof theme.variables === "object" && !Array.isArray(theme.variables)
+    ) {
+      merged.variables = { ...theme.variables };
+    }
+    if (theme.font) {
+      merged.font = theme.font;
+    }
+  }
+
+  // Merge new theme
+  if (newTheme.picture) {
+    merged.picture = newTheme.picture;
+  }
+  if (newTheme.variables) {
+    merged.variables = {
+      ...merged.variables,
+      ...newTheme.variables,
+    };
+  }
+  if (newTheme.font) {
+    merged.font = newTheme.font;
+  }
+
+  return merged;
+}
+
 export const updateTeam = createTool({
   name: "TEAMS_UPDATE",
   description: "Update an existing team",
@@ -143,10 +223,15 @@ export const updateTeam = createTool({
       name: z.string().optional(),
       slug: z.string().optional(),
       stripe_subscription_id: z.string().optional(),
+      theme: z.object({
+        picture: z.string().optional(),
+        variables: z.record(z.string()).optional(),
+      }).optional(),
     }),
   }),
   handler: async (props, c) => {
     const { id, data } = props;
+    console.log(data);
 
     await assertTeamResourceAccess(c.tool.name, id, c);
 
@@ -166,6 +251,19 @@ export const updateTeam = createTool({
       }
     }
 
+    // Get current team data to merge theme
+    const { data: currentTeam, error: getError } = await c
+      .db
+      .from("teams")
+      .select("theme")
+      .eq("id", id)
+      .single();
+
+    if (getError) throw getError;
+
+    // Merge themes
+    const mergedTheme = mergeTheme(currentTeam.theme, data.theme);
+
     // Update the team
     const { data: updatedTeam, error: updateError } = await c
       .db
@@ -173,6 +271,7 @@ export const updateTeam = createTool({
       .update({
         ...data,
         ...(data.name ? { name: sanitizeTeamName(data.name) } : {}),
+        ...(mergedTheme ? { theme: mergedTheme as Json } : {}),
       })
       .eq("id", id)
       .select()
@@ -180,7 +279,10 @@ export const updateTeam = createTool({
 
     if (updateError) throw updateError;
 
-    return updatedTeam;
+    return {
+      ...updatedTeam,
+      avatar_url: getAvatarFromTheme(updatedTeam.theme),
+    };
   },
 });
 
@@ -238,6 +340,7 @@ export const listTeams = createTool({
         id,
         name,
         slug,
+        theme,
         created_at,
         members!inner (
           id,
@@ -253,6 +356,31 @@ export const listTeams = createTool({
       throw error;
     }
 
-    return data.map(({ members: _members, ...teamData }) => teamData);
+    return data.map(({ members: _members, ...teamData }) => ({
+      ...teamData,
+      avatar_url: getAvatarFromTheme(teamData.theme),
+    }));
+  },
+});
+
+export const getWorkspaceTheme = createTool({
+  name: "TEAMS_GET_THEME",
+  description: "Get the theme for a workspace",
+  inputSchema: z.object({
+    slug: z.string(),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+    const { slug } = props;
+
+    const { data: team, error } = await c.db.from("teams").select("theme").eq(
+      "slug",
+      slug,
+    ).maybeSingle();
+
+    if (error) throw error;
+
+    const theme = team?.theme;
+    return { theme };
   },
 });

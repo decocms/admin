@@ -31,6 +31,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.updateTeam,
   teamsAPI.deleteTeam,
   teamsAPI.listTeams,
+  teamsAPI.getWorkspaceTheme,
   membersAPI.getTeamMembers,
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,

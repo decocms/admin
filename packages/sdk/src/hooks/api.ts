@@ -58,6 +58,7 @@ export const KEYS = {
   ],
   TEAMS: () => ["teams"],
   TEAM: (slug: string) => ["team", slug],
+  TEAM_THEME: (slug: string) => ["team-theme", slug],
   TEAM_MEMBERS: (
     slugOrId: string | number,
   ) => ["taem", slugOrId, "members"],

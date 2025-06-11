@@ -307,9 +307,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_access: {
+        Row: {
+          allowed_roles: string[] | null;
+          id: string;
+          owner_id: string;
+          visibility: Database["public"]["Enums"]["deco_chat_visibility_type"];
+        };
+        Insert: {
+          allowed_roles?: string[] | null;
+          id?: string;
+          owner_id: string;
+          visibility?: Database["public"]["Enums"]["deco_chat_visibility_type"];
+        };
+        Update: {
+          allowed_roles?: string[] | null;
+          id?: string;
+          owner_id?: string;
+          visibility?: Database["public"]["Enums"]["deco_chat_visibility_type"];
+        };
+        Relationships: [];
+      };
       deco_chat_agents: {
         Row: {
           access: string | null;
+          access_id: string | null;
           avatar: string;
           created_at: string;
           description: string | null;
@@ -327,6 +349,7 @@ export type Database = {
         };
         Insert: {
           access?: string | null;
+          access_id?: string | null;
           avatar: string;
           created_at?: string;
           description?: string | null;
@@ -344,6 +367,7 @@ export type Database = {
         };
         Update: {
           access?: string | null;
+          access_id?: string | null;
           avatar?: string;
           created_at?: string;
           description?: string | null;
@@ -359,7 +383,15 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["visibility_type"];
           workspace?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_agents_access_id_fkey";
+            columns: ["access_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_access";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       deco_chat_assets: {
         Row: {
@@ -516,6 +548,7 @@ export type Database = {
       deco_chat_integrations: {
         Row: {
           access: string | null;
+          access_id: string | null;
           connection: Json;
           created_at: string;
           description: string | null;
@@ -526,6 +559,7 @@ export type Database = {
         };
         Insert: {
           access?: string | null;
+          access_id?: string | null;
           connection: Json;
           created_at?: string;
           description?: string | null;
@@ -536,12 +570,51 @@ export type Database = {
         };
         Update: {
           access?: string | null;
+          access_id?: string | null;
           connection?: Json;
           created_at?: string;
           description?: string | null;
           icon?: string | null;
           id?: string;
           name?: string;
+          workspace?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_integrations_access_id_fkey";
+            columns: ["access_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_access";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      deco_chat_prompts: {
+        Row: {
+          content: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          updated_at: string | null;
+          workspace: string;
+        };
+        Insert: {
+          content: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name: string;
+          updated_at?: string | null;
+          workspace: string;
+        };
+        Update: {
+          content?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          updated_at?: string | null;
           workspace?: string;
         };
         Relationships: [];
@@ -666,6 +739,7 @@ export type Database = {
       };
       deco_chat_triggers: {
         Row: {
+          access_id: string | null;
           active: boolean;
           agent_id: string;
           binding_id: string | null;
@@ -678,6 +752,7 @@ export type Database = {
           workspace: string;
         };
         Insert: {
+          access_id?: string | null;
           active?: boolean;
           agent_id: string;
           binding_id?: string | null;
@@ -690,6 +765,7 @@ export type Database = {
           workspace: string;
         };
         Update: {
+          access_id?: string | null;
           active?: boolean;
           agent_id?: string;
           binding_id?: string | null;
@@ -702,6 +778,13 @@ export type Database = {
           workspace?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "deco_chat_triggers_access_id_fkey";
+            columns: ["access_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_access";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "deco_chat_triggers_binding_id_fkey";
             columns: ["binding_id"];
@@ -2539,6 +2622,7 @@ export type Database = {
           plan: string | null;
           slug: string | null;
           stripe_subscription_id: string | null;
+          theme: Json | null;
         };
         Insert: {
           created_at?: string | null;
@@ -2547,6 +2631,7 @@ export type Database = {
           plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
+          theme?: Json | null;
         };
         Update: {
           created_at?: string | null;
@@ -2555,6 +2640,7 @@ export type Database = {
           plan?: string | null;
           slug?: string | null;
           stripe_subscription_id?: string | null;
+          theme?: Json | null;
         };
         Relationships: [];
       };
@@ -4328,6 +4414,7 @@ export type Database = {
       };
     };
     Enums: {
+      deco_chat_visibility_type: "public" | "private" | "role_based";
       visibility_type: "PUBLIC" | "WORKSPACE" | "PRIVATE";
     };
     CompositeTypes: {
@@ -4448,6 +4535,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      deco_chat_visibility_type: ["public", "private", "role_based"],
       visibility_type: ["PUBLIC", "WORKSPACE", "PRIVATE"],
     },
   },

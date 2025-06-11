@@ -21,7 +21,7 @@
     --dv-drag-over-background-color: var(--color-accent);
     --dv-drag-over-border-color: var(--color-border);
     --dv-tabs-container-scrollbar-color: var(--color-muted);
-    --dv-group-view-background-color: var(--color-slate-50);
+    --dv-group-view-background-color: var(--sidebar);
     --dv-tabs-and-actions-container-background-color: var(--color-background);
     --dv-activegroup-visiblepanel-tab-background-color: transparent;
     --dv-activegroup-hiddenpanel-tab-background-color: transparent;

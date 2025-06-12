@@ -13,7 +13,6 @@
     "@mastra/rag": "0.1.23",
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "1.11.4",
-    "@std/path": "npm:@jsr/std__path@1.1.0",
     "cloudflare": "^4.2.0",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
     "@tanstack/react-query": "^5.80.6",

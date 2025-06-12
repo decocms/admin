@@ -1,4 +1,4 @@
-import { Form, FormItem } from "@deco/ui/components/form.tsx";
+import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -7,26 +7,23 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Integration, listTools, useIntegrations } from "@deco/sdk";
-import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import {
   AppKeys,
   getConnectionAppKey,
   useRefetchIntegrationsOnNotification,
 } from "../integrations/apps.ts";
-import {
-  AddFileToKnowledgeButton,
-  AgentKnowledgeBaseFileList,
-  KnowledgeBaseFileList,
-  UploadFile,
-  useAgentFiles,
-} from "../agent/upload-knowledge-asset.tsx";
 
 const ADVANCED_INTEGRATIONS = [
   "i:user-management",
   "i:workspace-management",
-  getKnowledgeBaseIntegrationId("standard"),
+  "i:knowledge-base-standard",
   "DECO_INTEGRATIONS",
   "DECO_UTILS",
 ];
@@ -149,74 +146,33 @@ function Connections() {
   );
 }
 
-function KnowledgeHeading() {
+function Knowledge() {
   return (
-    <>
+    <div className="flex flex-col gap-2">
       <h6 className="text-sm font-medium">Knowledge</h6>
       <div className="flex justify-between items-center">
         <span className="block text-sm text-muted-foreground pb-2">
           Directly attach files to the assistant knowledge base.
         </span>
       </div>
-    </>
-  );
-}
-
-function Knowledge() {
-  const { agent } = useAgentSettingsForm();
-  const [uploadedFiles, setUploadedFiles] = useState<
-    UploadFile[]
-  >([]);
-  const { data: files } = useAgentFiles(agent.id);
-
-  if (files?.length === 0) {
-    return (
-      <div className="flex flex-col gap-2" key="empty-kb">
-        <KnowledgeHeading />
-        <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
-          <img
-            src="/img/empty-state-agent-knowledge.svg"
-            alt="No connections found"
-            className="h-24 mb-4"
-          />
-          <span className="text-sm text-muted-foreground">
-            Supports: PDF, TXT, MD, CSV, JSON
-          </span>
-          <AddFileToKnowledgeButton
-            agent={agent}
-            onAddFile={setUploadedFiles}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <FormItem className="flex flex-col gap-2" key="files-kb">
-      <div className="flex items-center gap-2">
-        <div className="grow flex flex-col gap-2">
-          <KnowledgeHeading />
-        </div>
-
-        <AddFileToKnowledgeButton agent={agent} onAddFile={setUploadedFiles} />
-      </div>
-      <AgentKnowledgeBaseFileList agentId={agent.id} />
-
-      <div className="space-y-4">
-        {/* Uploaded Files List */}
-        <KnowledgeBaseFileList
-          agentId={agent.id}
-          files={uploadedFiles.map(({ file, uploading, file_url, docIds }) => ({
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            file_url: file_url,
-            uploading,
-            docIds,
-          }))}
+      <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
+        <img
+          src="/img/empty-state-agent-knowledge.svg"
+          alt="No connections found"
+          className="h-24 mb-4"
         />
+        <Tooltip>
+          <TooltipTrigger>
+            <Button disabled variant="outline">
+              <Icon name="add" /> Add files
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Coming soon</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
-    </FormItem>
+    </div>
   );
 }
 

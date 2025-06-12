@@ -217,8 +217,6 @@ export const deleteAgent = createTool({
       await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
     }
 
-    // TODO: implement an way to remove knowledge base and it's files from asset and kb
-
     if (error) {
       throw new InternalServerError(error.message);
     }

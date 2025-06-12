@@ -45,6 +45,7 @@ import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { lazy } from "react";
 import { wrapWithUILoadingFallback } from "../../main.tsx";
+import { useTabsForAgent } from "./preview.tsx";
 
 interface Props {
   agentId?: string;
@@ -236,6 +237,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const updateAgentCache = useUpdateAgentCache();
   const createAgent = useCreateAgent();
 
+  const tabs = useTabsForAgent(agent, TABS);
+
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
   );
@@ -337,7 +340,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
           }}
         >
           <PageLayout
-            tabs={TABS}
+            tabs={tabs}
             key={agentId}
             actionButtons={
               <ActionButtons

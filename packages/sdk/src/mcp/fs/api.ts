@@ -1,7 +1,6 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  ListObjectsCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -105,7 +104,7 @@ export const listFiles = createTool({
   inputSchema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
-  handler: async ({ prefix: root }, c) => {
+  handler: async ({ prefix }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
@@ -114,13 +113,14 @@ export const listFiles = createTool({
       assertWorkspaceResourceAccess(c.tool.name, c),
     ]);
 
-    const s3Client = getS3Client(c);
-    const listCommand = new ListObjectsCommand({
-      Bucket: bucketName,
-      Prefix: root,
-    });
+    const { data: assets } = await c.db.from("deco_chat_assets").select(
+      "file_url, metadata",
+    ).eq("workspace", c.workspace.value).ilike("file_url", `${prefix}%`)
+      .overrideTypes<
+        { file_url: string; metadata?: Record<string, string | string[]> }[]
+      >();
 
-    return s3Client.send(listCommand);
+    return assets ?? [];
   },
 });
 
@@ -194,11 +194,12 @@ export const writeFile = createTool({
     contentType: z.string().describe(
       "Content-Type for the file. This is required.",
     ),
-    metadata: z.record(z.string(), z.string()).optional().describe(
+    metadata: z.record(z.string(), z.any()).optional().describe(
       "Metadata to be added to the file",
     ),
   }),
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
@@ -212,13 +213,26 @@ export const writeFile = createTool({
       Bucket: bucketName,
       Key: path,
       ContentType: contentType,
-      Metadata: metadata,
     });
 
     const url = await getSignedUrl(s3Client, putCommand, {
       expiresIn,
       signableHeaders: new Set(["content-type"]),
     });
+
+    const { data: newFile, error } = await c.db.from("deco_chat_assets").upsert(
+      {
+        file_url: path,
+        workspace: c.workspace.value,
+        metadata,
+      },
+    ).select().single();
+
+    if (!newFile || error) {
+      await deleteFile.handler({ path });
+
+      return {};
+    }
 
     return { url };
   },
@@ -241,6 +255,17 @@ export const deleteFile = createTool({
       Bucket: bucketName,
       Key: path,
     });
+
+    const { error } = await c.db.from("deco_chat_assets").delete().eq(
+      "workspace",
+      c.workspace.value,
+    ).eq("file_url", path).select().single();
+
+    if (error) {
+      console.log(
+        `failed deleting file: ${path} - workspace: ${c.workspace.value}`,
+      );
+    }
 
     return s3Client.send(deleteCommand);
   },

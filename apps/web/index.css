@@ -129,9 +129,25 @@
       @apply text-primary-light underline;
     }
 
+    .prose pre {
+      @apply whitespace-pre-wrap break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose pre code {
+      @apply my-2 rounded-lg bg-primary-light/10 border border-primary-light
+        block whitespace-pre-wrap !p-2 break-words;
+      overflow-wrap: anywhere;
+    }
+
     .prose code {
-      @apply my-2 !rounded-lg bg-primary-light/10 border border-primary-light
-        block whitespace-pre-wrap !p-2;
+      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20
+        whitespace-pre-wrap px-1 leading-normal inline break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose hr {
+      @apply my-4 border-border;
     }
   }
 }

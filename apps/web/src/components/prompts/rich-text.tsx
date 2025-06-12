@@ -7,6 +7,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import suggestion from "./common.ts";
 
 interface RichTextAreaProps {
@@ -31,6 +32,7 @@ export default function RichTextArea({
   className,
 }: RichTextAreaProps) {
   const { data: prompts } = usePrompts();
+  const withWorkspace = useWorkspaceLink();
 
   const promptMap = useMemo(() => {
     if (!prompts) return new Map();
@@ -53,7 +55,7 @@ export default function RichTextArea({
       Mention.configure({
         HTMLAttributes: {
           class:
-            "inline-flex items-center rounded-md bg-primary-light/20 transition-colors duration-300 hover:bg-primary-light/70 px-2 font-medium text-black border border-primary-light text-xs group relative",
+            "inline-flex items-center rounded-md bg-purple-light/20 transition-colors duration-300 hover:bg-purple-light/70 px-2 py-0.5 font-medium text-black border border-purple-light text-xs group relative text-purple-dark",
         },
         suggestion: suggestion(prompts ?? []),
         renderText({ node }) {
@@ -100,7 +102,7 @@ export default function RichTextArea({
                       "text-foreground no-underline text-xs w-full block text-right",
                     // TODO(@vitoUwu): Add a way to open the prompt in a golden layout tab
                     // instead of navigating to it
-                    href: `/prompt/${node.attrs.id}`,
+                    href: withWorkspace(`/prompt/${node.attrs.id}`),
                   },
                   "View Prompt",
                 ],
@@ -127,7 +129,7 @@ export default function RichTextArea({
     editorProps: {
       attributes: {
         class: cn(
-          "min-h-[83lvh] h-full border-border border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-xl border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm prose",
+          "min-h-[83lvh] h-full border-border border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-xl border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm prose leading-7",
           disabled && "opacity-100 text-muted-foreground",
           className,
         ),

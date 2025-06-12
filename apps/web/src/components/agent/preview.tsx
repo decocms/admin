@@ -33,11 +33,14 @@ function Preview(props: Props) {
   );
 }
 
-export function useTabsForAgent(agent: Agent | undefined, baseTabs: Record<string, Tab>) {
+export function useTabsForAgent(
+  agent: Agent | undefined,
+  baseTabs: Record<string, Tab>,
+) {
   // Create dynamic tabs for agent views
   const dynamicViewTabs = useMemo(() => {
     if (!agent?.views?.length) return {};
-    
+
     const viewTabs: Record<string, Tab> = {};
     agent.views.forEach((view, index) => {
       const tabKey = `view-${index}`;
@@ -53,17 +56,17 @@ export function useTabsForAgent(agent: Agent | undefined, baseTabs: Record<strin
   // Combine static tabs with dynamic view tabs, placing views after chat
   const allTabs = useMemo(() => {
     const tabs = { ...baseTabs };
-    
+
     // Insert view tabs after chat tab
     if (Object.keys(dynamicViewTabs).length > 0) {
       const tabEntries = Object.entries(tabs);
-      const chatIndex = tabEntries.findIndex(([key]) => key === 'chat');
-      
+      const chatIndex = tabEntries.findIndex(([key]) => key === "chat");
+
       if (chatIndex !== -1) {
         // Split tabs at chat position and insert view tabs after
         const beforeChat = tabEntries.slice(0, chatIndex + 1);
         const afterChat = tabEntries.slice(chatIndex + 1);
-        
+
         return Object.fromEntries([
           ...beforeChat,
           ...Object.entries(dynamicViewTabs),
@@ -71,7 +74,7 @@ export function useTabsForAgent(agent: Agent | undefined, baseTabs: Record<strin
         ]);
       }
     }
-    
+
     return tabs;
   }, [baseTabs, dynamicViewTabs]);
 

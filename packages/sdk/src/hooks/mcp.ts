@@ -297,7 +297,8 @@ export const useInstallFromMarketplace = () => {
       },
     ) => {
       const result: { installationId: string } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {id: appName,
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {
+          id: appName,
         });
 
       const integration = await loadIntegration(

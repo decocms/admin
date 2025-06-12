@@ -1,34 +1,19 @@
 import { Prompt, usePrompts } from "@deco/sdk";
-import { normalizeMentions } from "@deco/sdk/utils";
+import {
+  normalizeMentions,
+  unescapeHTML,
+  weakEscapeHTML,
+} from "@deco/sdk/utils";
 import { cn } from "@deco/ui/lib/utils.ts";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import suggestion from "./common.ts";
-
-interface RichTextAreaProps {
-  value: string;
-  onChange: (markdown: string) => void;
-  onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
-  onKeyUp?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
-  onPaste?: (event: React.ClipboardEvent) => void;
-  disabled?: boolean;
-  placeholder?: string;
-  className?: string;
-}
-
-function unescapeHTML(text: string) {
-  return text
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
-}
+import { useWorkspaceLink } from "../../../hooks/use-navigate-workspace.ts";
+import suggestion from "../common.ts";
+import type { PromptInputProps } from "./index.tsx";
 
 export default function RichTextArea({
   value,
@@ -39,7 +24,8 @@ export default function RichTextArea({
   disabled = false,
   placeholder,
   className,
-}: RichTextAreaProps) {
+  enableMentions = false,
+}: PromptInputProps) {
   const { data: prompts } = usePrompts();
   const withWorkspace = useWorkspaceLink();
 
@@ -50,8 +36,8 @@ export default function RichTextArea({
     );
   }, [prompts]);
 
-  const editor = useEditor({
-    extensions: [
+  const extensions = useMemo(() => {
+    const extensions: Extensions = [
       StarterKit,
       Markdown.configure({
         html: true,
@@ -61,7 +47,10 @@ export default function RichTextArea({
       Placeholder.configure({
         placeholder: placeholder ?? "Type a message...",
       }),
-      Mention.configure({
+    ];
+
+    if (enableMentions) {
+      extensions.push(Mention.configure({
         HTMLAttributes: {
           class:
             "inline-flex items-center rounded-md bg-purple-light/20 transition-colors duration-300 hover:bg-purple-light/70 px-2 py-0.5 font-medium text-black border border-purple-light text-xs group relative text-purple-dark",
@@ -83,7 +72,7 @@ export default function RichTextArea({
               "div",
               {
                 class:
-                  "group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none opacity-0 transition-opacity duration-300 absolute top-full left-0 w-56",
+                  "group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none opacity-0 transition-opacity duration-300 absolute top-full left-0 w-56 z-10",
               },
               [
                 "div",
@@ -128,9 +117,15 @@ export default function RichTextArea({
             ],
           ];
         },
-      }),
-    ],
-    content: value,
+      }));
+    }
+
+    return extensions;
+  }, [enableMentions, placeholder, prompts]);
+
+  const editor = useEditor({
+    extensions,
+    content: normalizeMentions(weakEscapeHTML(value)),
     editable: !disabled,
     onUpdate: ({ editor }) => {
       const markdown = normalizeMentions(
@@ -165,7 +160,7 @@ export default function RichTextArea({
       },
       attributes: {
         class: cn(
-          "min-h-[83lvh] h-full border-border border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-xl border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm prose leading-7",
+          "min-h-[79lvh] h-full border-border border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-xl border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm prose leading-7",
           disabled && "opacity-100 text-muted-foreground",
           className,
         ),
@@ -176,16 +171,20 @@ export default function RichTextArea({
   useEffect(() => {
     if (!editor) return;
 
-    const markdown = normalizeMentions(
+    const markdown = normalizeMentions(weakEscapeHTML(
       editor?.storage.markdown.getMarkdown() ?? "",
-    );
+    ));
 
-    const normalizedValue = normalizeMentions(value);
+    const normalizedValue = normalizeMentions(weakEscapeHTML(value));
 
     if (markdown !== normalizedValue) {
-      editor.commands.setContent(normalizedValue, false, {
-        preserveWhitespace: "full",
-      });
+      editor.commands.setContent(
+        normalizedValue,
+        false,
+        {
+          preserveWhitespace: "full",
+        },
+      );
     }
   }, [value, editor]);
 
@@ -194,11 +193,19 @@ export default function RichTextArea({
   }, [disabled, editor]);
 
   return (
-    <EditorContent
-      editor={editor}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
-      onPaste={onPaste}
-    />
+    <>
+      <EditorContent
+        editor={editor}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        onPaste={onPaste}
+      />
+      {enableMentions && (
+        <p className="text-muted-foreground text-xs font-normal mt-2">
+          Hint: You can use the <span className="font-bold">/</span>{" "}
+          to insert a prompt.
+        </p>
+      )}
+    </>
   );
 }

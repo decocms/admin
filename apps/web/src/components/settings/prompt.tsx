@@ -1,14 +1,13 @@
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
-import RichTextArea from "../prompts/rich-text.tsx";
+import PromptInput from "../prompts/rich-text/index.tsx";
 
 function PromptTab() {
   const {
@@ -29,16 +28,12 @@ function PromptTab() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <RichTextArea
+                    <PromptInput
                       placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
+                      enableMentions
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription className="text-xs font-normal text-muted-foreground">
-                    Hint: You can use the <span className="font-bold">/</span>
-                    {" "}
-                    to insert a prompt.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

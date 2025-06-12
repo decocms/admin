@@ -9,7 +9,7 @@ import {
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import RichTextArea from "../rich-text.tsx";
+import PromptInput from "../rich-text/index.tsx";
 import { useFormContext } from "./context.ts";
 
 export function DetailForm() {
@@ -70,8 +70,9 @@ export function DetailForm() {
               <FormItem>
                 <FormLabel>Content</FormLabel>
                 <FormControl>
-                  <RichTextArea
+                  <PromptInput
                     placeholder="The prompt content"
+                    className="min-h-[49lvh]"
                     {...field}
                   />
                 </FormControl>

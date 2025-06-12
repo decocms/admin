@@ -1,4 +1,5 @@
 import { listPrompts } from "../crud/prompts.ts";
+import { unescapeHTML } from "./html.ts";
 
 interface PromptMention {
   id: string;
@@ -6,6 +7,10 @@ interface PromptMention {
 
 const MENTION_REGEX =
   /<span\s+data-type="mention"\s+[^>]*?data-id="([^"]+)"[^>]*?>.*?<\/span>/gs;
+const PARTIAL_ESCAPED_MENTION_REGEX =
+  /&lt;span\s+data-type="mention"\s+[^&]*?data-id="([^"]+)"[^&]*?&gt;.*?&lt;\/span&gt;/gs;
+const ESCAPED_MENTION_REGEX =
+  /&lt;span\s+data-type=&quot;mention&quot;\s+[^&]*?data-id=&quot;([^&]+)&quot;[^&]*?&gt;.*?&lt;\/span&gt;/gs;
 
 /**
  * Normalizes mentions in a content string
@@ -13,20 +18,23 @@ const MENTION_REGEX =
  * @returns The normalized content string
  */
 export function normalizeMentions(content: string): string {
-  return content.replaceAll(
-    MENTION_REGEX,
-    '<span data-type="mention" data-id="$1"></span>',
-  );
+  const replaceTo = '<span data-type="mention" data-id="$1"></span>';
+
+  return content
+    .replaceAll(MENTION_REGEX, replaceTo)
+    .replaceAll(PARTIAL_ESCAPED_MENTION_REGEX, replaceTo)
+    .replaceAll(ESCAPED_MENTION_REGEX, replaceTo);
 }
 
 /**
  * Extracts prompt mentions from a system prompt
  */
 export function extractPromptMentions(systemPrompt: string): PromptMention[] {
+  const unescapedSystemPrompt = unescapeHTML(systemPrompt);
   const mentions: PromptMention[] = [];
   let match;
 
-  while ((match = MENTION_REGEX.exec(systemPrompt)) !== null) {
+  while ((match = MENTION_REGEX.exec(unescapedSystemPrompt)) !== null) {
     mentions.push({
       id: match[1],
     });
@@ -54,17 +62,12 @@ export async function replacePromptMentions(
   }).catch(() => []);
 
   for (const mention of mentions) {
-    try {
-      const prompt = prompts.find((prompt) => prompt.id === mention.id);
-      result = result.replaceAll(
-        `<span data-type="mention" data-id="${mention.id}"></span>`,
-        prompt?.content ?? "",
-      );
-    } catch (error) {
-      console.error(`Failed to fetch prompt ${mention.id}:`, error);
-      // Keep the original mention if we can't fetch the prompt
-    }
+    const prompt = prompts.find((prompt) => prompt.id === mention.id);
+    result = result.replaceAll(
+      `<span data-type="mention" data-id="${mention.id}"></span>`,
+      prompt?.content ?? "",
+    );
   }
 
-  return result;
+  return unescapeHTML(result);
 }

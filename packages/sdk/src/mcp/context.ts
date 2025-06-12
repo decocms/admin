@@ -113,13 +113,21 @@ export const AUTH_URL = (ctx: AppContext) =>
     ? "http://localhost:3001"
     : "https://api.deco.chat";
 
-type ToolCallResult<T> = {
+type ToolCallResultSuccess<T> = {
   isError: false;
   structuredContent: T;
-} | {
+};
+
+type ToolCallResultError = {
   isError: true;
   content: { type: "text"; text: string }[];
 };
+
+type ToolCallResult<T> = ToolCallResultSuccess<T> | ToolCallResultError;
+
+export const isToolCallResultError = <T>(
+  result: ToolCallResult<T>,
+): result is ToolCallResultError => result.isError;
 
 export interface ToolDefinition<
   TAppContext extends AppContext = AppContext,
@@ -189,10 +197,7 @@ export const createToolFactory = <
     } catch (error) {
       return {
         isError: true,
-        content: [{
-          type: "text",
-          text: JSON.stringify(serializeError(error), null, 2),
-        }],
+        content: [{ type: "text", text: serializeError(error) }],
       };
     }
   },

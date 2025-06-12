@@ -13,6 +13,7 @@ import { AppContext, createTool } from "../context.ts";
 import {
   ForbiddenError,
   InternalServerError,
+  isToolCallResultError,
   NotFoundError,
 } from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
@@ -211,6 +212,11 @@ export const deleteAgent = createTool({
       .eq("id", id);
 
     const triggers = await listTriggers.handler({ agentId: id });
+
+    if (isToolCallResultError(triggers)) {
+      throw triggers.content[0].text
+    }
+
     for (const trigger of triggers.structuredContent.triggers) {
       await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
     }

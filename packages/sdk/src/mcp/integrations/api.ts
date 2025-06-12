@@ -27,7 +27,12 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
+import {
+  Binding,
+  isToolCallResultError,
+  NotFoundError,
+  WellKnownBindings,
+} from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 
 const ensureStartingSlash = (path: string) =>
@@ -215,6 +220,10 @@ export const listIntegrations = createTool({
       listKnowledgeBases.handler({}),
     ]);
 
+    if (isToolCallResultError(knowledgeBases)) {
+      throw knowledgeBases.content[0].text;
+    }
+
     const error = integrations.error || agents.error;
 
     if (error) {
@@ -332,6 +341,11 @@ export const getIntegration = createTool({
       .eq("id", uuid)
       .single().then((r) => r);
     const knowledgeBases = await listKnowledgeBases.handler({});
+
+    if (isToolCallResultError(knowledgeBases)) {
+      throw knowledgeBases.content[0].text;
+    }
+
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
       knowledgeBases.structuredContent?.names ?? [],

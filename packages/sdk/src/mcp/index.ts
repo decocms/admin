@@ -206,7 +206,7 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
               const result = await tool.handler(args as any);
 
               if (result.isError) {
-                throw result.structuredContent;
+                throw result.content[0].text;
               }
 
               return result.structuredContent;

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, PropsWithChildren, use } from "react";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 export type Workspace = `users/${string}` | `shared/${string}`;
 
@@ -29,6 +30,7 @@ export function SDKProvider(
       <Context.Provider value={props}>
         {children}
       </Context.Provider>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

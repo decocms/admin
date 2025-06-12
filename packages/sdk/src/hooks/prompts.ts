@@ -17,11 +17,11 @@ import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
-export const usePrompts = () => {
+export const usePrompts = (input?: { ids?: string[] }) => {
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPTS(workspace),
-    queryFn: ({ signal }) => listPrompts(workspace, { signal }),
+    queryFn: ({ signal }) => listPrompts(workspace, input, { signal }),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
   });

@@ -21,7 +21,7 @@ const suggestion: (items: Prompt[]) => Partial<SuggestionOptions> = (items) => {
       ];
     },
     render: () => {
-      let component: ReactRenderer<typeof MentionDropdown> | null = null;
+      let component: ReactRenderer<unknown> | null = null;
       let popup: tippy.Instance | null = null;
 
       return {

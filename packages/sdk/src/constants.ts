@@ -272,7 +272,3 @@ check if the agent is active and configure the agent.
 `,
   },
 } satisfies Record<string, Agent>;
-
-export const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH =
-  "i:knowledge-base";
-export const KNOWLEDGE_BASE_DIMENSION = 1536;

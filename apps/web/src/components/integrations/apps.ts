@@ -13,7 +13,6 @@ import {
   type Integration,
   useIntegrations,
   useMarketplaceIntegrations,
-  WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
 } from "@deco/sdk";
 import { useEffect, useMemo } from "react";
 import {
@@ -82,6 +81,8 @@ const WELL_KNOWN_DECO_CHAT_CONNECTION_IDS = [
   "i:workspace-management",
   "i:user-management",
 ];
+
+const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH = "i:knowledge-base";
 
 export function isWellKnownApp(appKey: string): boolean {
   return WELL_KNOWN_DECO_CHAT_APP_KEY === appKey ||

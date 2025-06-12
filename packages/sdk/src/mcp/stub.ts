@@ -65,8 +65,8 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
             payload = {
               connection: options.connection,
               params: {
-                name: name,
-                arguments: args,
+                name: toolName,
+                arguments: payload,
               },
             };
             toolName = "INTEGRATIONS_CALL_TOOL";
@@ -83,8 +83,8 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
               credentials: "include",
               ...init,
               headers: {
-                "content-type": "application/json",
                 ...init?.headers,
+                "content-type": "application/json",
                 "accept": "application/json",
                 "x-trace-debug-id": traceDebugId,
               },

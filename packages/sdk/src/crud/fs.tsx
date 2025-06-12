@@ -19,8 +19,6 @@ interface WriteOptions {
   content: Uint8Array;
   contentType: string;
   expiresIn?: number;
-  metadata?: Record<string, string | string[]>;
-  skipWrite?: boolean;
 }
 
 export const writeFile = async ({
@@ -29,21 +27,10 @@ export const writeFile = async ({
   content,
   contentType,
   expiresIn,
-  metadata,
-  skipWrite,
 }: WriteOptions) => {
   const { url: uploadUrl } = await MCPClient
     .forWorkspace(workspace)
-    .FS_WRITE({
-      path,
-      contentType,
-      metadata,
-      ...(expiresIn ? { expiresIn } : {}),
-    });
-
-  if (skipWrite) {
-    return { ok: true };
-  }
+    .FS_WRITE({ path, contentType, ...(expiresIn ? { expiresIn } : {}) });
 
   const response = await fetch(uploadUrl!, {
     method: "PUT",
@@ -82,11 +69,3 @@ export const readFile = async ({
 
   return url;
 };
-
-interface DeleteOptions {
-  workspace: string;
-  path: string;
-}
-
-export const deleteFile = ({ workspace, path }: DeleteOptions) =>
-  MCPClient.forWorkspace(workspace).FS_DELETE({ path });

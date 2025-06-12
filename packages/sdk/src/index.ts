@@ -10,7 +10,6 @@ export * from "./crud/trigger.ts";
 export * from "./crud/members.ts";
 export * from "./crud/thread.ts";
 export * from "./crud/prompts.ts";
-export * from "./crud/knowledge.ts";
 
 export * from "./hooks/agent.ts";
 export * from "./hooks/fs.ts";
@@ -26,7 +25,6 @@ export * from "./hooks/whatsapp.ts";
 export * from "./hooks/models.ts";
 export * from "./hooks/wallet.ts";
 export * from "./hooks/prompts.ts";
-export * from "./hooks/knowledge.ts";
 
 export * from "./models/agent.ts";
 export * from "./models/mcp.ts";

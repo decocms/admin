@@ -9,8 +9,6 @@ import {
   type WithTool,
 } from "../assertions.ts";
 import { AppContext, createTool, createToolFactory } from "../context.ts";
-import { FileProcessor } from "../file-processor.ts";
-import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -47,6 +45,8 @@ async function getVector(c: AppContext) {
   }
   return vector;
 }
+
+const DEFAULT_DIMENSION = 1536;
 
 export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",
@@ -111,7 +111,7 @@ export const createBase = createTool({
     const vector = await getVector(c);
     await vector.createIndex({
       indexName: name,
-      dimension: dimension ?? KNOWLEDGE_BASE_DIMENSION,
+      dimension: dimension ?? DEFAULT_DIMENSION,
     });
     return {
       name,
@@ -124,21 +124,17 @@ export const forget = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_FORGET",
   description: "Forget something",
   inputSchema: z.object({
-    docIds: z.array(z.string()).describe(
-      "The id of the content to forget",
-    ),
+    docId: z.string().describe("The id of the content to forget"),
   }),
-  handler: async ({ docIds }, c) => {
+  handler: async ({ docId }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const vector = await getVector(c);
-    await Promise.all(docIds.map(
-      (docId) => vector.deleteIndexById(c.name, docId),
-    ));
+    await vector.deleteIndexById(c.name, docId);
     return {
-      docIds,
+      docId,
     };
   },
 });
@@ -159,6 +155,7 @@ export const remember = createKnowledgeBaseTool({
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
+
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
@@ -166,25 +163,19 @@ export const remember = createKnowledgeBaseTool({
     const vector = await getVector(c);
     const docId = _id ?? crypto.randomUUID();
     const embedder = openAIEmbedder(c.envVars.OPENAI_API_KEY);
+    // Create embeddings using OpenAI
+    const { embedding } = await embed({
+      model: embedder,
+      value: content,
+    });
+    await vector.upsert(c.name, [embedding], [{
+      id: docId,
+      metadata: { ...metadata ?? {}, content },
+    }]);
 
-    try {
-      // Create embeddings using OpenAI
-      const { embedding } = await embed({
-        model: embedder,
-        value: content,
-      });
-      await vector.upsert(c.name, [embedding], [{
-        id: docId,
-        metadata: { ...metadata ?? {}, content },
-      }]);
-
-      return {
-        docId,
-      };
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
+    return {
+      docId,
+    };
   },
 });
 
@@ -228,61 +219,5 @@ export const search = createKnowledgeBaseTool({
       queryVector: embedding,
       topK: topK ?? 1,
     });
-  },
-});
-
-export const addFileToKnowledgeBase = createKnowledgeBaseTool({
-  name: "KNOWLEDGE_BASE_ADD_FILE",
-  description: "Add a file content into knowledge base",
-  inputSchema: z.object({
-    fileUrl: z.string(),
-    path: z.string(),
-    metadata: z.record(z.string(), z.union([z.string(), z.boolean()]))
-      .optional(),
-  }),
-  handler: async (
-    { fileUrl, metadata, path },
-    c,
-  ): Promise<{ docIds: string[] }> => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
-    const fileProcessor = new FileProcessor({
-      chunkSize: 500,
-      chunkOverlap: 50,
-    });
-
-    const proccessedFile = await fileProcessor.processFile(fileUrl);
-
-    const fileMetadata = {
-      ...metadata, // metadata has path that is used to get full file path
-      ...proccessedFile.metadata,
-      fileSize: proccessedFile.metadata.fileSize.toString(),
-      chunkCount: proccessedFile.metadata.chunkCount.toString(),
-    };
-
-    const chunks = await Promise.all(
-      proccessedFile.chunks.map((chunk) =>
-        remember.handler({
-          content: chunk.text,
-          metadata: {
-            ...fileMetadata,
-            ...chunk.metadata,
-          },
-        })
-      ),
-    );
-
-    const docIds = chunks.map((chunk) => chunk.docId);
-
-    assertHasWorkspace(c);
-    if (path) {
-      await c.db.from("deco_chat_assets").update({
-        metadata: {
-          ...metadata,
-          docIds,
-        },
-      }).eq("workspace", c.workspace.value).eq("file_url", path);
-    }
-
-    return { docIds };
   },
 });

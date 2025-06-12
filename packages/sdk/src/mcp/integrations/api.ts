@@ -29,7 +29,6 @@ import {
 import { createTool } from "../context.ts";
 import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
-import { getKnowledgeBaseIntegrationId } from "../../utils/index.ts";
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -173,7 +172,7 @@ const virtualIntegrationsFor = (
       url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
       url.searchParams.set("name", kb);
       return {
-        id: getKnowledgeBaseIntegrationId(kb),
+        id: formatId("i", `knowledge-base-${kb}`),
         name: `${kb} (Knowledge Base)`,
         description: "A knowledge base for your workspace",
         connection: {

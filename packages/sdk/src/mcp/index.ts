@@ -212,11 +212,7 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
               // deno-lint-ignore no-explicit-any
               const result = await tool.handler(args as any);
 
-              if (result.isError) {
-                throw result.content[0].text;
-              }
-
-              return result.structuredContent;
+              return result;
             },
             props,
           );

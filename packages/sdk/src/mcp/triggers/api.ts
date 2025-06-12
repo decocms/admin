@@ -25,7 +25,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createTool, isToolCallResultError } from "../context.ts";
+import { createTool } from "../context.ts";
 import { convertFromDatabase, parseId } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
 
@@ -255,11 +255,8 @@ export const createTrigger = createTool({
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const result = await upsertTrigger.handler({ agentId, data });
-    if (isToolCallResultError(result)) {
-      throw result.content[0].text;
-    }
 
-    return result.structuredContent;
+    return result;
   },
 });
 
@@ -279,11 +276,8 @@ export const updateTrigger = createTool({
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const result = await upsertTrigger.handler({ agentId, triggerId, data });
-    if (isToolCallResultError(result)) {
-      throw result.content[0].text;
-    }
 
-    return result.structuredContent;
+    return result;
   },
 });
 
@@ -306,11 +300,8 @@ export const createCronTrigger = createTool({
 
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
-    if (isToolCallResultError(result)) {
-      throw result.content[0].text;
-    }
 
-    return result.structuredContent;
+    return result;
   },
 });
 
@@ -333,11 +324,8 @@ export const createWebhookTrigger = createTool({
 
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
-    if (isToolCallResultError(result)) {
-      throw result.content[0].text;
-    }
 
-    return result.structuredContent;
+    return result;
   },
 });
 

@@ -63,22 +63,12 @@ export const createTool = ({
           ctx.threadId && span.setAttribute("tool.thread", ctx.threadId);
           ctx.resourceId && span.setAttribute("tool.resource", ctx.resourceId);
           try {
-            const data = await execute?.(ctx, options);
-
-            return {
-              success: true,
-              message: "Success",
-              data,
-            };
+            return await execute?.(ctx, options);
           } catch (error) {
             err = error;
-            return {
-              success: false,
-              message: `Failed to execute tool with the following error: ${
-                String(error)
-              }`,
-              data: null,
-            };
+            return `Failed to execute tool with the following error: ${
+              String(error)
+            }`;
           } finally {
             if (err) {
               span.setStatus({

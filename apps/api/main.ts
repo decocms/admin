@@ -13,7 +13,7 @@ const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
 // Domains we consider "self"
 const SELF_DOMAINS: string[] = [
   Hosts.API,
-  Hosts.APPS,
+  ...process.env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS],
   `localhost:${process.env.PORT || 8000}`,
 ];
 

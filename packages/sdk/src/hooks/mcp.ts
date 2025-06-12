@@ -269,7 +269,9 @@ export const useMarketplaceIntegrations = () => {
         query: "",
         filters: { installed: false },
         verbose: true,
-      }).then((r: { data: IntegrationsResult }) => r.data),
+      }).then((r: IntegrationsResult | string) =>
+        typeof r === "string" ? { integrations: [] } : r
+      ),
   });
 };
 
@@ -294,14 +296,13 @@ export const useInstallFromMarketplace = () => {
         provider: string;
       },
     ) => {
-      const result: { data: { installationId: string } } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {
-          id: appName,
+      const result: { installationId: string } = await agentStub
+        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {id: appName,
         });
 
       const integration = await loadIntegration(
         workspace,
-        result.data.installationId,
+        result.installationId,
       );
 
       let redirectUrl: string | null = null;
@@ -318,7 +319,7 @@ export const useInstallFromMarketplace = () => {
             installId: integration.id.split(":").pop()!,
           },
         );
-        redirectUrl = result?.data?.redirectUrl;
+        redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
           throw new Error("No redirect URL found");
         }
@@ -331,11 +332,9 @@ export const useInstallFromMarketplace = () => {
 
         const result = await agentStub.callTool(
           "DECO_INTEGRATIONS.COMPOSIO_INTEGRATION_OAUTH_START",
-          {
-            url: integration.connection.url,
-          },
+          { url: integration.connection.url },
         );
-        redirectUrl = result?.data?.redirectUrl;
+        redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
           const errorInfo = {
             appName,

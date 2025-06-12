@@ -17,7 +17,7 @@ enabled = true
 [[dispatch_namespaces]]
 binding = "PROD_DISPATCHER"
 namespace = "deco-chat-prod"
-# outbound = { service = "deco-chat-api", parameters = ["DECO_CHAT_APP_ORIGIN"] }
+outbound = { service = "apps-outbound", parameters = ["DECO_CHAT_APP_ORIGIN"] }
 
 services = [{ binding = "WALLET", service = "wallet" }]
 

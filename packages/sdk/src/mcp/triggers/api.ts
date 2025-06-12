@@ -333,7 +333,7 @@ export const createWebhookTrigger = createTool({
 
     agentId ??= crypto.randomUUID();
     const result = await upsertTrigger.handler({ agentId, data });
-      if (isToolCallResultError(result)) {
+    if (isToolCallResultError(result)) {
       throw result.content[0].text;
     }
 

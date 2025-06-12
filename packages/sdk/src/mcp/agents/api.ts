@@ -214,7 +214,7 @@ export const deleteAgent = createTool({
     const triggers = await listTriggers.handler({ agentId: id });
 
     if (isToolCallResultError(triggers)) {
-      throw triggers.content[0].text
+      throw triggers.content[0].text;
     }
 
     for (const trigger of triggers.structuredContent.triggers) {

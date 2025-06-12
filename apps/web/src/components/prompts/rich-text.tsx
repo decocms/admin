@@ -23,11 +23,11 @@ interface RichTextAreaProps {
 
 function unescapeHTML(text: string) {
   return text
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
+    .replace(/&#039;/g, "'");
 }
 
 export default function RichTextArea({

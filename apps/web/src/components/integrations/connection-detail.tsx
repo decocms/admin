@@ -70,6 +70,7 @@ import {
   ConfirmMarketplaceInstallDialog,
 } from "./select-connection-dialog.tsx";
 import { MarketplaceIntegration } from "./marketplace.tsx";
+import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -606,6 +607,11 @@ function Overview({ data, appKey }: {
   const [installingIntegration, setInstallingIntegration] = useState<
     MarketplaceIntegration | null
   >(null);
+  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
+    open: boolean;
+    url: string;
+    integrationName: string;
+  }>({ open: false, url: "", integrationName: "" });
 
   const handleAddConnection = () => {
     setInstallingIntegration({
@@ -655,20 +661,25 @@ function Overview({ data, appKey }: {
               authorizeOauthUrl,
               "_blank",
             );
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              alert(
-                "Please allow popups for this site to complete the OAuth flow.",
-              );
-              const link = document.createElement("a");
-              link.href = authorizeOauthUrl;
-              link.target = "_blank";
-              link.textContent = "Click here to continue OAuth flow";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+            if (
+              !popup || popup.closed || typeof popup.closed === "undefined"
+            ) {
+              setOauthCompletionDialog({
+                open: true,
+                url: authorizeOauthUrl,
+                integrationName: installingIntegration?.name || "the service",
+              });
             }
           }
         }}
+      />
+
+      <OAuthCompletionDialog
+        open={oauthCompletionDialog.open}
+        onOpenChange={(open) =>
+          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
+        authorizeOauthUrl={oauthCompletionDialog.url}
+        integrationName={oauthCompletionDialog.integrationName}
       />
     </div>
   );

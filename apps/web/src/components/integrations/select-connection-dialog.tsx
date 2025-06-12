@@ -26,6 +26,7 @@ import {
   useNavigateWorkspace,
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
+import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -174,6 +175,11 @@ function AddConnectionDialogContent({
   const [installingIntegration, setInstallingIntegration] = useState<
     MarketplaceIntegration | null
   >(null);
+  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
+    open: boolean;
+    url: string;
+    integrationName: string;
+  }>({ open: false, url: "", integrationName: "" });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
 
@@ -318,19 +324,22 @@ function AddConnectionDialogContent({
               "_blank",
             );
             if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              alert(
-                "Please allow popups for this site to complete the OAuth flow.",
-              );
-              const link = document.createElement("a");
-              link.href = authorizeOauthUrl;
-              link.target = "_blank";
-              link.textContent = "Click here to continue OAuth flow";
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
+              setOauthCompletionDialog({
+                open: true,
+                url: authorizeOauthUrl,
+                integrationName: installingIntegration?.name || "the service",
+              });
             }
           }
         }}
+      />
+
+      <OAuthCompletionDialog
+        open={oauthCompletionDialog.open}
+        onOpenChange={(open) =>
+          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
+        authorizeOauthUrl={oauthCompletionDialog.url}
+        integrationName={oauthCompletionDialog.integrationName}
       />
     </DialogContent>
   );

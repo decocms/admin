@@ -69,7 +69,7 @@ export default function RichTextArea({
         suggestion: suggestion(prompts ?? []),
         renderText({ node }) {
           const promptName = promptMap.get(node.attrs.id) || node.attrs.id;
-          return `@${promptName}`;
+          return `${promptName}`;
         },
         renderHTML({ node, options: { HTMLAttributes } }) {
           return [
@@ -95,7 +95,11 @@ export default function RichTextArea({
                   {
                     class: "line-clamp-3",
                   },
-                  `${promptMap.get(node.attrs.id)?.content || node.attrs.id}`,
+                  `${
+                    unescapeHTML(
+                      promptMap.get(node.attrs.id)?.content || node.attrs.id,
+                    )
+                  }`,
                 ],
                 [
                   "div",
@@ -139,18 +143,24 @@ export default function RichTextArea({
       handlePaste(view, event) {
         const text = event.clipboardData?.getData("text/plain");
         if (text) {
-          if (text.includes("&lt;")) {
-            view.dispatch(view.state.tr.insertText(unescapeHTML(text)));
+          const normalizedText = normalizeMentions(text);
+
+          if (normalizedText.includes("&lt;")) {
+            view.dispatch(
+              view.state.tr.insertText(unescapeHTML(normalizedText)),
+            );
             return true;
           }
 
-          view.dispatch(view.state.tr.insertText(text));
+          view.dispatch(view.state.tr.insertText(normalizedText));
           return true;
         }
         return false;
       },
       handleTextInput(view, from, to, text) {
-        view.dispatch(view.state.tr.insertText(text, from, to));
+        view.dispatch(
+          view.state.tr.insertText(normalizeMentions(text), from, to),
+        );
         return true;
       },
       attributes: {

@@ -27,12 +27,7 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import {
-  Binding,
-  isToolCallResultError,
-  NotFoundError,
-  WellKnownBindings,
-} from "../index.ts";
+import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 
 const ensureStartingSlash = (path: string) =>
@@ -220,10 +215,6 @@ export const listIntegrations = createTool({
       listKnowledgeBases.handler({}),
     ]);
 
-    if (isToolCallResultError(knowledgeBases)) {
-      throw knowledgeBases.content[0].text;
-    }
-
     const error = integrations.error || agents.error;
 
     if (error) {
@@ -252,7 +243,7 @@ export const listIntegrations = createTool({
     const result = [
       ...virtualIntegrationsFor(
         workspace,
-        knowledgeBases.structuredContent?.names ?? [],
+        knowledgeBases.names ?? [],
       ),
       ...filteredIntegrations.map((item) => ({
         ...item,
@@ -274,17 +265,14 @@ export const listIntegrations = createTool({
           listTools.handler({
             connection: integration.connection,
           }),
-          new Promise<{ isError: true }>((resolve) =>
-            setTimeout(() =>
-              resolve({
-                isError: true,
-              }), 7_000)
+          new Promise<null>(
+            (r) => setTimeout(() => r(null), 7_000),
           ),
         ]);
-        if (integrationTools.isError) {
+        if (!integrationTools) {
           return;
         }
-        const tools = integrationTools.structuredContent?.tools ?? [];
+        const tools = integrationTools.tools ?? [];
         if (Binding(WellKnownBindings[binder]).isImplementedBy(tools)) {
           filtered.push(integration);
         }
@@ -342,13 +330,9 @@ export const getIntegration = createTool({
       .single().then((r) => r);
     const knowledgeBases = await listKnowledgeBases.handler({});
 
-    if (isToolCallResultError(knowledgeBases)) {
-      throw knowledgeBases.content[0].text;
-    }
-
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
-      knowledgeBases.structuredContent?.names ?? [],
+      knowledgeBases.names ?? [],
     );
 
     if (virtualIntegrations.some((i) => i.id === id)) {

@@ -6,6 +6,7 @@ import {
   GLOBAL_TOOLS,
   PolicyClient,
   ToolLike,
+  withMCPErrorHandling,
   WORKSPACE_TOOLS,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -97,7 +98,7 @@ const createMCPHandlerFor = (
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
-        tool.handler,
+        withMCPErrorHandling(tool.handler),
       );
     }
 

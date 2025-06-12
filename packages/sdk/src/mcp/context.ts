@@ -157,7 +157,7 @@ export interface Tool<
   outputSchema?: z.ZodType<TReturn>;
   handler: (
     props: TInput,
-  ) => Promise<ToolCallResult<TReturn>> | ToolCallResult<TReturn>;
+  ) => Promise<TReturn> | TReturn;
 }
 
 export const createToolFactory = <
@@ -172,36 +172,44 @@ export const createToolFactory = <
 ): Tool<TName, TInput, TReturn> => ({
   group,
   ...def,
-  handler: async (
-    props: TInput,
-  ): Promise<ToolCallResult<TReturn>> => {
-    try {
-      const context = contextFactory(State.getStore());
-      context.tool = { name: def.name };
+  handler: async (props: TInput): Promise<TReturn> => {
+    const context = contextFactory(State.getStore());
+    context.tool = { name: def.name };
 
-      const result = await def.handler(props, context);
+    const result = await def.handler(props, context);
 
-      if (!context.resourceAccess.granted()) {
-        console.warn(
-          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-        );
-        throw new ForbiddenError(
-          `User cannot access this tool ${def.name}.`,
-        );
-      }
-
-      return {
-        isError: false,
-        structuredContent: result,
-      };
-    } catch (error) {
-      return {
-        isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
-      };
+    if (!context.resourceAccess.granted()) {
+      console.warn(
+        `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+      );
+      throw new ForbiddenError(
+        `User cannot access this tool ${def.name}.`,
+      );
     }
+
+    return result;
   },
 });
+
+export const withMCPErrorHandling = <
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+>(f: (props: TInput) => Promise<TReturn>) =>
+async (props: TInput) => {
+  try {
+    const result = await f(props);
+
+    return {
+      isError: false,
+      structuredContent: result,
+    };
+  } catch (error) {
+    return {
+      isError: true,
+      content: [{ type: "text", text: serializeError(error) }],
+    };
+  }
+};
 
 export const createTool = createToolFactory<WithTool<AppContext>>(
   (c) => c as unknown as WithTool<AppContext>,

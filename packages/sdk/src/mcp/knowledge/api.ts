@@ -271,11 +271,7 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
       ),
     );
 
-    if (chunks.some((embeded) => embeded.isError)) {
-      throw new Error("Failed to embed file");
-    }
-
-    const docIds = chunks.map((chunk) => chunk.structuredContent.docId);
+    const docIds = chunks.map((chunk) => chunk.docId);
 
     assertHasWorkspace(c);
     if (path) {

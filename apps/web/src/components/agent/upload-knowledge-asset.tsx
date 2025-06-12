@@ -107,15 +107,7 @@ export function KnowledgeBaseFileList(
         >
           {/* icon */}
           <div className="w-10 h-10 p-2 rounded bg-primary/10 flex-shrink-0">
-            {file.uploading
-              ? (
-                <Icon
-                  name="hourglass_empty"
-                  size={24}
-                  className="text-primary animate-spin"
-                />
-              )
-              : <FileIcon filename={file.file_url ?? file.name} />}
+            <FileIcon filename={file.file_url ?? file.name} />
           </div>
 
           {/* name */}
@@ -132,6 +124,13 @@ export function KnowledgeBaseFileList(
               {file.uploading && (
                 <span className="text-xs text-primary">
                   Uploading...
+                </span>
+              )}
+
+              {removeFile.isPending &&
+                removeFile.variables.path === file.file_url && (
+                <span className="text-xs text-primary">
+                  removing...
                 </span>
               )}
             </div>
@@ -151,7 +150,10 @@ export function KnowledgeBaseFileList(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
+                disabled={removeFile.isPending &&
+                  removeFile.variables.path === file.file_url}
                 onClick={() => {
+                  if (removeFromKnowledge.isPending) return;
                   file.file_url &&
                     removeFile.mutateAsync({
                       root: prefix,
@@ -356,7 +358,7 @@ export function AddFileToKnowledgeButton(
         disabled={isUploading}
       >
         <Icon
-          name={isUploading ? "hourglass_empty" : "add"}
+          name="add"
           size={16}
         />
         Add file

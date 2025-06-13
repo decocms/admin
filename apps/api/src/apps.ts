@@ -1,7 +1,10 @@
-import { Context } from "hono";
+import { Entrypoint } from "@deco/sdk/mcp";
+import { Context, Hono } from "hono";
 import { getRuntimeKey } from "hono/adapter";
+import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import { AppEnv } from "./utils/context.ts";
 export type DispatcherFetch = typeof fetch;
+export const app = new Hono<AppEnv>();
 
 export const fetchScript = async (
   c: Context<AppEnv>,
@@ -40,3 +43,21 @@ export const fetchScript = async (
   }
   return response;
 };
+app.all("/*", (c) => {
+  const url = new URL(c.req.url);
+  const host = appsDomainOf(c.req.raw) ?? c.req.header("host") ??
+    url.host;
+  if (!host) {
+    return new Response("No host", { status: 400 });
+  }
+  const script = Entrypoint.script(host);
+  if (url.host !== host) {
+    url.host = host;
+    url.protocol = "https";
+    url.port = `443`;
+    url.searchParams.delete(APPS_DOMAIN_QS);
+  }
+  const req = new Request(url, c.req.raw);
+  return fetchScript(c, script, req);
+});
+export default app;

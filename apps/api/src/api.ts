@@ -15,7 +15,7 @@ import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
-import { endTime, startTime, timing } from "hono/timing";
+import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import { fetchScript } from "./apps.ts";
@@ -164,8 +164,6 @@ const createToolCallHandlerFor = <
     return c.json({ data: result });
   };
 };
-
-app.use(timing({ crossOrigin: true, total: true }));
 
 // Add logger middleware
 app.use(logger());

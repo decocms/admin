@@ -38,17 +38,33 @@ export default function PromptInput({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3 mt-1">
-        <Switch
-          id="markdown-view"
-          checked={view === "markdown"}
-          onCheckedChange={(checked: boolean) => {
-            setView(checked ? "markdown" : "raw");
-          }}
-        />
-        <Label htmlFor="markdown-view" className="text-xs text-foreground">
-          Markdown
-        </Label>
+      <div className="flex justify-between items-center gap-2 mb-3 mt-1 px-3 py-2 rounded-xl border">
+        <p className="text-xs text-muted-foreground">
+          You can use{" "}
+          <a
+            href="https://www.commonmark.org/help/"
+            className="underline text-primary-dark font-medium"
+          >
+            markdown
+          </a>{" "}
+          here.
+        </p>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="markdown-view"
+            checked={view === "markdown"}
+            onCheckedChange={(checked: boolean) => {
+              setView(checked ? "markdown" : "raw");
+            }}
+            className="cursor-pointer"
+          />
+          <Label
+            htmlFor="markdown-view"
+            className="text-xs text-foreground cursor-pointer"
+          >
+            Markdown
+          </Label>
+        </div>
       </div>
       {view === "markdown"
         ? (

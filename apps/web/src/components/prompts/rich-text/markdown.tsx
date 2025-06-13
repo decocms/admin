@@ -86,28 +86,33 @@ export default function RichTextArea({
                   },
                   `${
                     unescapeHTML(
-                      promptMap.get(node.attrs.id)?.content || node.attrs.id,
+                      promptMap.get(node.attrs.id)?.content ||
+                        `Prompt "${node.attrs.id}" not found`,
                     )
                   }`,
                 ],
-                [
-                  "div",
-                  {
-                    class: "h-px w-full bg-border my-1 block",
-                  },
-                  "",
-                ],
-                [
-                  "a",
-                  {
-                    class:
-                      "text-foreground no-underline text-xs w-full block text-right",
-                    // TODO(@vitoUwu): Add a way to open the prompt in a golden layout tab
-                    // instead of navigating to it
-                    href: withWorkspace(`/prompt/${node.attrs.id}`),
-                  },
-                  "View Prompt",
-                ],
+                ...(promptMap.has(node.attrs.id)
+                  ? [
+                    [
+                      "div",
+                      {
+                        class: "h-px w-full bg-border my-1 block",
+                      },
+                      "",
+                    ],
+                    [
+                      "a",
+                      {
+                        class:
+                          "text-foreground no-underline text-xs w-full block text-right",
+                        // TODO(@vitoUwu): Add a way to open the prompt in a golden layout tab
+                        // instead of navigating to it
+                        href: withWorkspace(`/prompt/${node.attrs.id}`),
+                      },
+                      "View Prompt",
+                    ],
+                  ]
+                  : []),
               ],
             ],
             [

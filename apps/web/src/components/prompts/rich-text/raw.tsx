@@ -21,7 +21,10 @@ export default function RawTextArea({
       onPaste={(e) => onPaste?.(e)}
       disabled={disabled}
       placeholder={placeholder}
-      className={cn(className, "whitespace-pre-wrap [overflow-wrap:anywhere]")}
+      className={cn(
+        "min-h-[80lvh] whitespace-pre-wrap [overflow-wrap:anywhere]",
+        className,
+      )}
     />
   );
 }

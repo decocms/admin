@@ -233,8 +233,7 @@ export const WELL_KNOWN_AGENTS = {
     id: "teamAgent",
     ...NEW_AGENT_TEMPLATE,
     tools_set: {
-      DECO_UTILS: ["WHO_AM_I"],
-      "i:workspace-management": ["AGENTS_UPDATE"],
+      DECO_UTILS: ["SELF_UPDATE"],
     },
   },
   setupAgent: {

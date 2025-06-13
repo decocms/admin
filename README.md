@@ -123,10 +123,16 @@ deployments directly from your terminal.
 
 ### Installation & Login
 
-To use the CLI, simply run:
+To install the CLI, simply run:
 
 ```sh
-deno run -A jsr:@deco/cli login
+deno install -A -g -n deco jsr:@deco/cli
+```
+
+Then, to use it
+
+```sh
+deco login
 ```
 
 This will prompt you to log in and set up your session.

@@ -280,6 +280,7 @@ function CustomToolUI({ tool, isLastMessage }: {
             </div>
             <Button
               onClick={() => {
+                // maybe just use react query state to update the agent?
                 globalThis.dispatchEvent(new CustomEvent("agent-self-update", {
                   detail: { name, instructions }
                 }));

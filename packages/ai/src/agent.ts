@@ -88,7 +88,6 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
-import { withDefaultInstructions } from "./agent/default-instructions.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -422,7 +421,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this._maybeAgent = new Agent({
       memory: this._memory as unknown as MastraMemory,
       name: config.name,
-      instructions: withDefaultInstructions(processedInstructions),
+      instructions: processedInstructions,
       model: llm,
       voice: this.env.OPENAI_API_KEY
         ? createAgentOpenAIVoice({
@@ -1022,7 +1021,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         processedInstructions,
         this.workspace,
       );
-      processedInstructions = withDefaultInstructions(processedInstructions);
     }
 
     const response = await agent.stream(

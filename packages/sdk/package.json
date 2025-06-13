@@ -17,6 +17,7 @@
     "cloudflare": "^4.2.0",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
     "@tanstack/react-query": "^5.80.6",
+    "@tanstack/react-query-devtools": "^5.80.6",
     "@zenfs/core": "^2.0.0",
     "ai": "^4.3.13",
     "dockview-react": "^4.2.1",

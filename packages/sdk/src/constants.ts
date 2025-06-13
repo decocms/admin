@@ -233,13 +233,8 @@ export const WELL_KNOWN_AGENTS = {
     id: "teamAgent",
     ...NEW_AGENT_TEMPLATE,
     tools_set: {
-      DECO_INTEGRATIONS: [
-        "DECO_INTEGRATIONS_SEARCH",
-        "DECO_INTEGRATION_INSTALL",
-        "DECO_INTEGRATION_ENABLE",
-        "DECO_INTEGRATION_DISABLE",
-        "DECO_INTEGRATION_LIST_TOOLS",
-      ],
+      DECO_UTILS: ["WHO_AM_I"],
+      "i:workspace-management": ["AGENTS_UPDATE"],
     },
   },
   setupAgent: {

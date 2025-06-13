@@ -36,7 +36,6 @@ export const DECO_CHAT_API = LOCAL_DEBUGGER
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 
-
 export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
   setupAgent: "setupAgent",

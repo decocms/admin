@@ -1,4 +1,4 @@
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@deco/sdk/auth";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "./constants.ts";
 import {
   createServerClient,
   parseCookieHeader,

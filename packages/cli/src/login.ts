@@ -1,4 +1,4 @@
-import { AUTH_PORT_CLI, AUTH_URL_CLI } from "@deco/sdk";
+import { AUTH_PORT_CLI, AUTH_URL_CLI } from "./constants.ts";
 import { Provider } from "@supabase/supabase-js";
 import { saveSession } from "./session.ts";
 import { createClient } from "./supabase.ts";

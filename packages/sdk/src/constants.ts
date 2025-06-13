@@ -6,8 +6,8 @@
  * it will use the localhost version.
  */
 
-import { Agent } from "./models/agent.ts";
-import { Integration } from "./models/mcp.ts";
+import type { Agent } from "./models/agent.ts";
+import type { Integration } from "./models/mcp.ts";
 
 // @ts-ignore - Vite injects env variables at build time
 const LOCAL_DEBUGGER = import.meta.env?.VITE_USE_LOCAL_BACKEND === "true";
@@ -22,6 +22,8 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
       "and add VITE_USE_LOCAL_BACKEND=true",
   );
 }
+
+export const SUPABASE_URL = "https://auth.deco.cx";
 
 export const DECO_CHAT_WEB = LOCAL_DEBUGGER
   ? "http://localhost:3000"

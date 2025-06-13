@@ -1,4 +1,4 @@
-import { DECO_CHAT_API } from "@deco/sdk";
+import { DECO_CHAT_API } from "./constants.ts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 

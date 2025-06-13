@@ -1,0 +1,16 @@
+const LOCAL_DEBUGGER = Deno.env.get("VITE_USE_LOCAL_BACKEND") === "true";
+
+export const SUPABASE_URL = "https://auth.deco.cx";
+export const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96a3NnZG15cnFjeGN3aG5iZXBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc3ODI5NjYsImV4cCI6MjA2MzM1ODk2Nn0.fx_Ouo3V-s4ZWr0MJ8gP5PFkr11xEkxThKiNDZSLRyY";
+
+export const DECO_CHAT_WEB = LOCAL_DEBUGGER
+  ? "http://localhost:3000"
+  : "https://deco.chat";
+
+export const DECO_CHAT_API = LOCAL_DEBUGGER
+  ? "http://localhost:3001"
+  : "https://api.deco.chat";
+
+export const AUTH_PORT_CLI = 3457;
+export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;

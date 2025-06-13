@@ -256,7 +256,7 @@ export const useIntegrations = () => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Integration & { provider: string }>;
+  integrations: Array<Omit<Integration, "connection"> & { provider: string }>;
 }
 
 export const useMarketplaceIntegrations = () => {
@@ -265,13 +265,10 @@ export const useMarketplaceIntegrations = () => {
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      MCPClient.forWorkspace(workspace).DECO_INTEGRATIONS_SEARCH({
-        query: "",
-        filters: { installed: false },
-        verbose: true,
-      }).then((r: IntegrationsResult | string) =>
-        typeof r === "string" ? { integrations: [] } : r
-      ),
+      MCPClient.forWorkspace(workspace).DECO_INTEGRATIONS_SEARCH({ query: "" })
+        .then((r: IntegrationsResult | string) =>
+          typeof r === "string" ? { integrations: [] } : r
+        ),
   });
 };
 

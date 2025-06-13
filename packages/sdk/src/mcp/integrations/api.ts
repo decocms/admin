@@ -509,7 +509,9 @@ It's always handy to search for installed integrations with no query, since all 
   }),
   outputSchema: z.object({
     integrations: z.array(
-      IntegrationSchema.omit({ connection: true }),
+      IntegrationSchema.omit({ connection: true }).and(z.object({
+        provider: z.string(),
+      })),
     ).describe("The Integrations that match the query"),
   }),
   handler: async ({ query }, c) => {

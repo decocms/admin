@@ -9,7 +9,7 @@ import { z } from "zod";
 import {
   Agent,
   AgentSchema,
-  API_SERVER_URL,
+  DECO_CHAT_API,
   BindingsSchema,
   INNATE_INTEGRATIONS,
   Integration,
@@ -144,13 +144,13 @@ const virtualIntegrationsFor = (
     description: "Manage your teams, invites and profile",
     connection: {
       type: "HTTP",
-      url: new URL("/mcp", API_SERVER_URL).href,
+      url: new URL("/mcp", DECO_CHAT_API).href,
     },
     icon: "https://i.imgur.com/GD4o7vx.png",
     workspace,
     created_at: new Date().toISOString(),
   };
-  const workspaceMcp = new URL(`${workspace}/mcp`, API_SERVER_URL);
+  const workspaceMcp = new URL(`${workspace}/mcp`, DECO_CHAT_API);
 
   // Create a virtual Workspace Management integration
   const workspaceManagementIntegration = {

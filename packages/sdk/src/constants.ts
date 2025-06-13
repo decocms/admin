@@ -23,22 +23,18 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   );
 }
 
-export const LEGACY_API_SERVER_URL = LOCAL_DEBUGGER
-  ? "http://localhost:8000"
-  : "https://fs.deco.chat";
+export const DECO_CHAT_WEB = LOCAL_DEBUGGER
+  ? "http://localhost:3000"
+  : "https://deco.chat";
 
-export const API_SERVER_URL = LOCAL_DEBUGGER
+export const DECO_CHAT_API = LOCAL_DEBUGGER
   ? "http://localhost:3001"
   : "https://api.deco.chat";
 
-export const AUTH_URL = LOCAL_DEBUGGER
-  ? "http://localhost:3001"
-  : "https://api.deco.chat";
+export const AUTH_PORT_CLI = 3457;
+export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 
-export const API_HEADERS = {
-  "content-type": "application/json",
-  "use-api-host": "true",
-} as const;
+export const DECO_CHAT_LOGIN = new URL("/login?cli", DECO_CHAT_WEB).href;
 
 export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",

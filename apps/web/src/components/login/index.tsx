@@ -7,6 +7,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 function Login() {
   const [searchParams] = useSearchParams();
   const next = searchParams.get("next");
+  const cli = searchParams.has("cli");
 
   const handleProviderClick = (providerName: string) => {
     trackEvent("deco_chat_login_provider_click", {
@@ -39,7 +40,10 @@ function Login() {
                 asChild
               >
                 <Link
-                  to={provider.authURL(next || globalThis.location.origin)}
+                  to={provider.authURL({
+                    next: next || globalThis.location.origin,
+                    cli,
+                  })}
                   className="flex items-center gap-2.5 h-6"
                   onClick={() => handleProviderClick(provider.name)}
                 >

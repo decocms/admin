@@ -1,4 +1,4 @@
-import { AUTH_URL, UnauthorizedError, useInvites } from "@deco/sdk";
+import { DECO_CHAT_API, UnauthorizedError, useInvites } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -206,7 +206,7 @@ function LoggedUser() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const logoutUrl = useMemo(() => {
-    const url = new URL(AUTH_URL);
+    const url = new URL(DECO_CHAT_API);
     url.pathname = "/auth/logout";
 
     const next = new URL(location.pathname, globalThis.location.origin);

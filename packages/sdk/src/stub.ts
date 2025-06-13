@@ -1,6 +1,6 @@
 import type { Actor } from "@deco/actors";
 import { actors } from "@deco/actors/stub";
-import { API_SERVER_URL, getTraceDebugId } from "./constants.ts";
+import { DECO_CHAT_API, getTraceDebugId } from "./constants.ts";
 
 /**
  * A utility to create a stub for an actor.
@@ -14,7 +14,7 @@ export const stub = <T extends Actor>(name: string) => {
     {
       server: {
         credentials: "include",
-        url: API_SERVER_URL,
+        url: DECO_CHAT_API,
       },
       maxWsChunkSize: 768e3, // 768kb to make a message binary.
       errorHandling: {

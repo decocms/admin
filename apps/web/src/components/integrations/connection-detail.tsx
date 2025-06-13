@@ -620,11 +620,6 @@ function Overview({ data, appKey }: {
       name: data.info?.name ?? "",
       description: data.info?.description ?? "",
       icon: data.info?.icon ?? "",
-      connection: {
-        type: "HTTP",
-        url: "https://example.com/sse",
-        token: "",
-      },
     });
   };
 

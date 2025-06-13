@@ -2,7 +2,6 @@ import type { Integration } from "@deco/sdk";
 import { Path } from "@deco/sdk/path";
 import z from "zod";
 import { AIAgent } from "../agent.ts";
-import { INNATE_TOOLS } from "../storage/tools.ts";
 import { createInnateTool } from "../utils/create-tool.ts";
 
 const descriptionFrom = (
@@ -43,11 +42,7 @@ export const createHandoffToolsFor = (
           content: context.message,
         };
 
-        const response = await targetAgent.generate([userMessage], {
-          tools: {
-            DECO_INTEGRATIONS: Object.keys(INNATE_TOOLS.DECO_INTEGRATIONS),
-          },
-        });
+        const response = await targetAgent.generate([userMessage]);
 
         return {
           text: response.text,

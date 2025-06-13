@@ -1,12 +1,13 @@
 {
   "name": "@deco/cli",
-  "version": "0.1.5",
+  "version": "0.1.9",
   "license": "MIT",
   "exports": "./cli.ts",
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.7",
     "@cliffy/prompt": "jsr:@cliffy/prompt@^1.0.0-rc.7",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.12.3",
+    "@std/cli": "jsr:@std/cli@^1.0.20",
     "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
     "@std/fs": "jsr:@std/fs@^1.0.18",
     "@supabase/ssr": "npm:@supabase/ssr@^0.6.1",

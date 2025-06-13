@@ -73,7 +73,11 @@ async function monitorPortAvailability(port: number) {
   }
 }
 
-async function register(port: number, domain: string) {
+async function register(
+  port: number,
+  domain: string,
+  onBeforeRegister?: () => void,
+) {
   const server = `wss://${domain}`;
   const localAddr = `http://localhost:${port}`;
 
@@ -82,6 +86,8 @@ async function register(port: number, domain: string) {
     monitorPortAvailability(port).catch((err) => {
       console.error("Port monitoring error:", err);
     });
+
+    onBeforeRegister?.();
 
     // Wait for port to become available before connecting
     await waitForPort(port);
@@ -112,7 +118,12 @@ async function register(port: number, domain: string) {
   }
 }
 
-export const link = async ({ port: p }: { port?: number }) => {
+export const link = async (
+  { port: p, onBeforeRegister }: {
+    port?: number;
+    onBeforeRegister?: () => void;
+  },
+) => {
   const port = p || 8000;
 
   // Save the host information to localStorage
@@ -124,5 +135,5 @@ export const link = async ({ port: p }: { port?: number }) => {
 
   localStorage.setItem(key, JSON.stringify(hostInfo));
   const domain = hostInfo.domain;
-  await register(port, domain);
+  await register(port, domain, onBeforeRegister);
 };

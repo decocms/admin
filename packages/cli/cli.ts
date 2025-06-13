@@ -1,4 +1,5 @@
 import { Command } from "@cliffy/command";
+import { parseArgs } from "@std/cli";
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
 import { link } from "./src/link.ts";
@@ -61,7 +62,24 @@ const linkCmd = new Command()
     required: false,
   })
   .action(async (args) => {
-    await link(args);
+    const parsedArgs = parseArgs(Deno.args, {
+      string: ["build-cmd"],
+    });
+    const runCommand: string[] = parsedArgs["_"] as string[];
+    runCommand[0] === "link" && runCommand.splice(0, 1); // remove first command
+    await link({
+      ...args,
+      onBeforeRegister: () => {
+        if (runCommand.length > 0) {
+          const denoCmd = new Deno.Command(runCommand[0], {
+            args: runCommand.slice(1),
+            stdout: "inherit",
+            stderr: "inherit",
+          });
+          denoCmd.spawn();
+        }
+      },
+    });
   });
 
 // Hosting parent command

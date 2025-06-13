@@ -32,10 +32,13 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+const LOCALHOST_ENDPOINTS = ["localhost", "127.0.0.1", "0.0.0.0"];
 async function isPortRunning(port: number): Promise<boolean> {
   try {
-    const listener = Deno.listen({ port, hostname: "localhost" });
-    await listener.close();
+    for (const endpoint of LOCALHOST_ENDPOINTS) {
+      const listener = Deno.listen({ port, hostname: endpoint });
+      await listener.close();
+    }
     return false;
   } catch {
     return true;
@@ -72,7 +75,7 @@ async function monitorPortAvailability(port: number) {
 
 async function register(port: number, domain: string) {
   const server = `wss://${domain}`;
-  const localAddr = `http://${hostname}:${port}`;
+  const localAddr = `http://localhost:${port}`;
 
   try {
     // Start port monitoring in the background

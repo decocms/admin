@@ -5,7 +5,7 @@ import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
-import { default as app } from "./src/app.ts";
+import { default as app } from "./src/api.ts";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
@@ -13,7 +13,6 @@ const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
 // Domains we consider "self"
 const SELF_DOMAINS: string[] = [
   Hosts.API,
-  ...process.env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS],
   `localhost:${process.env.PORT || 8000}`,
 ];
 

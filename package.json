@@ -26,6 +26,7 @@
     "./apps/web",
     "./apps/api",
     "./apps/outbound",
+    "./apps/pages",
     "./packages/ui",
     "./packages/sdk",
     "./packages/ai"

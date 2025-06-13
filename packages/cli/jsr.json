@@ -1,6 +1,0 @@
-{
-  "name": "@deco/cli",
-  "version": "0.1.2",
-  "license": "MIT",
-  "exports": "./cli.ts"
-}

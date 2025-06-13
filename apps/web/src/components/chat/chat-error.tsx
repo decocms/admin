@@ -13,7 +13,6 @@ import { useState } from "react";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Protect } from "../wallet/plan.tsx";
 import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
-import { Collapsible } from "@deco/ui/components/collapsible.tsx";
 import { ExpandableDescription } from "../toolsets/description.tsx";
 
 function getErrorMessage(error: Error) {

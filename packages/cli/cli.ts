@@ -1,7 +1,8 @@
 import { Command } from "@cliffy/command";
-import { loginCommand } from "./src/login.ts";
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
+import { link } from "./src/link.ts";
+import { loginCommand } from "./src/login.ts";
 import { deleteSession, getSessionToken } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 
@@ -54,6 +55,15 @@ const hostingDeploy = new Command()
     await deploy({ ...args, appSlug: args.app, authCookie });
   });
 
+const linkCmd = new Command()
+  .description("Link the project to be accessed through a remote domain.")
+  .option("-p, --port <port:number>", "Port to link", {
+    required: false,
+  })
+  .action(async (args) => {
+    await link(args);
+  });
+
 // Hosting parent command
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
@@ -71,4 +81,5 @@ await new Command()
   .command("logout", logout)
   .command("whoami", whoami)
   .command("hosting", hosting)
+  .command("link", linkCmd)
   .parse(Deno.args);

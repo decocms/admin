@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { Theme } from "../theme.ts";
+import type { Theme } from "../theme.ts";
 
 export interface Team {
   id: number;

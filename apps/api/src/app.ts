@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { timing } from "hono/timing";
 import api from "./api.ts";
 import apps from "./apps.ts";
-import { AppEnv } from "./utils/context.ts";
+import type { AppEnv } from "./utils/context.ts";
 
 export const APPS_DOMAIN_QS = "app_host";
 

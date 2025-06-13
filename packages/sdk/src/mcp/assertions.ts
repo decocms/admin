@@ -1,6 +1,6 @@
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
-import { Workspace } from "../path.ts";
-import { AppContext, UserPrincipal } from "./context.ts";
+import type { Workspace } from "../path.ts";
+import type { AppContext, UserPrincipal } from "./context.ts";
 
 type WithUser<TAppContext extends AppContext = AppContext> =
   & Omit<TAppContext, "user">

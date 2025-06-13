@@ -12,8 +12,8 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 import { useMatch } from "react-router";
 import { ListPageHeader } from "../common/list-page-header.tsx";
-import { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
-import { Tab } from "../dock/index.tsx";
+import type { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
+import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 

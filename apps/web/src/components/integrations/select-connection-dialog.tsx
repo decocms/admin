@@ -13,10 +13,10 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
   Marketplace,
-  MarketplaceIntegration,
+  type MarketplaceIntegration,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
-import { Integration, useInstallFromMarketplace } from "@deco/sdk";
+import { type Integration, useInstallFromMarketplace } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";

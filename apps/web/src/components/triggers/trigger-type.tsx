@@ -1,5 +1,5 @@
-import { TriggerOutputSchema } from "@deco/sdk";
-import { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
+import type { z } from "zod";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import cronstrue from "cronstrue";
 

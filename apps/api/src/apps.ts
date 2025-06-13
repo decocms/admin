@@ -1,8 +1,8 @@
 import { Entrypoint } from "@deco/sdk/mcp";
-import { Context, Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { getRuntimeKey } from "hono/adapter";
 import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
-import { AppEnv } from "./utils/context.ts";
+import type { AppEnv } from "./utils/context.ts";
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
 

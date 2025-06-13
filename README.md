@@ -118,7 +118,8 @@ enterprise-grade managed solution at [deco.chat](https://deco.chat).
 
 ## 🖥️ Using the CLI
 
-The deco.chat CLI allows you to interact with your workspace and manage deployments directly from your terminal.
+The deco.chat CLI allows you to interact with your workspace and manage
+deployments directly from your terminal.
 
 ### Installation & Login
 
@@ -132,6 +133,8 @@ This will prompt you to log in and set up your session.
 
 ### More Commands
 
-For additional commands and usage, check the [@cli.ts](./packages/cli/cli.ts) file in the repository. You can find commands for deploying, listing apps, managing sessions, and more.
+For additional commands and usage, check the [@cli.ts](./packages/cli/cli.ts)
+file in the repository. You can find commands for deploying, listing apps,
+managing sessions, and more.
 
 ---

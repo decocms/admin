@@ -1,6 +1,6 @@
 import { useActivateTrigger, useDeactivateTrigger } from "@deco/sdk";
-import { z } from "zod";
-import { TriggerOutputSchema } from "@deco/sdk";
+import type { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { useState } from "react";
 

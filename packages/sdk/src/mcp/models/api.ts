@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { Model, WELL_KNOWN_MODELS } from "../../constants.ts";
+import { type Model, WELL_KNOWN_MODELS } from "../../constants.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createTool } from "../context.ts";
-import { AppContext } from "../index.ts";
+import type { AppContext } from "../index.ts";
 import { SupabaseLLMVault } from "./llm-vault.ts";
 
 interface ModelRow {

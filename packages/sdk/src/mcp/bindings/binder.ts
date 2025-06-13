@@ -1,13 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
-import { z } from "zod";
-import { MCPConnection } from "../../models/mcp.ts";
+import type { z } from "zod";
+import type { MCPConnection } from "../../models/mcp.ts";
 import {
-  AppContext,
+  type AppContext,
   createGlobalForContext,
-  ToolBinder,
-  ToolLike,
+  type ToolBinder,
+  type ToolLike,
 } from "../index.ts";
-import { MCPClientFetchStub } from "../stub.ts";
+import type { MCPClientFetchStub } from "../stub.ts";
 import { WellKnownBindings } from "./index.ts";
 export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
   [K in keyof TDefinition]: TDefinition[K];

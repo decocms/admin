@@ -1,4 +1,4 @@
-import { SDKProvider, Workspace } from "@deco/sdk";
+import { SDKProvider, type Workspace } from "@deco/sdk";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,7 +18,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import {
   createContext,
   Fragment,
-  ReactNode,
+  type ReactNode,
   useContext,
   useRef,
   useState,
@@ -28,7 +28,7 @@ import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/use-user.ts";
 import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
 import RegisterActivity from "./common/register-activity.tsx";
-import Docked, { Tab } from "./dock/index.tsx";
+import Docked, { type Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { useLocalStorage } from "../hooks/use-local-storage.ts";
 import { ProfileSettings } from "./settings/profile.tsx";

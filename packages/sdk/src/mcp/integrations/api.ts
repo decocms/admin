@@ -7,12 +7,12 @@ import {
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
-  Agent,
+  type Agent,
   AgentSchema,
   BindingsSchema,
   DECO_CHAT_API,
   INNATE_INTEGRATIONS,
-  Integration,
+  type Integration,
   IntegrationSchema,
   InternalServerError,
   NEW_INTEGRATION_TEMPLATE,
@@ -20,7 +20,7 @@ import {
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";
-import { QueryResult } from "../../storage/supabase/client.ts";
+import type { QueryResult } from "../../storage/supabase/client.ts";
 import { getKnowledgeBaseIntegrationId } from "../../utils/index.ts";
 import { IMPORTANT_ROLES } from "../agents/api.ts";
 import {

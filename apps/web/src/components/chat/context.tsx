@@ -9,8 +9,8 @@ import {
 } from "@deco/sdk";
 import {
   createContext,
-  PropsWithChildren,
-  RefObject,
+  type PropsWithChildren,
+  type RefObject,
   useContext,
   useRef,
 } from "react";

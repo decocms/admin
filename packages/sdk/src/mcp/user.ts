@@ -1,5 +1,5 @@
-import { type User as SupaUser } from "@supabase/supabase-js";
-import { type User } from "../index.ts";
+import type { User as SupaUser } from "@supabase/supabase-js";
+import type { User } from "../index.ts";
 
 export const userFromDatabase = (user: SupaUser): User => {
   const metadata = getUserMetadata(user);

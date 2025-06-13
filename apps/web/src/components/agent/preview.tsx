@@ -1,4 +1,8 @@
-import { DetailedHTMLProps, IframeHTMLAttributes, useMemo } from "react";
+import {
+  type DetailedHTMLProps,
+  type IframeHTMLAttributes,
+  useMemo,
+} from "react";
 import { ALLOWANCES } from "../../constants.ts";
 import { IMAGE_REGEXP } from "../chat/utils/preview.ts";
 import type { Agent } from "@deco/sdk";

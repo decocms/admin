@@ -30,7 +30,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  PropsWithChildren,
+  type PropsWithChildren,
   Suspense,
   useDeferredValue,
   useMemo,

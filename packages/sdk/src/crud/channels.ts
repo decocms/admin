@@ -1,7 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
-import { WellKnownBindings } from "../mcp/index.ts";
-import { Channel } from "../models/channels.ts";
-import { MCPConnection } from "../models/mcp.ts";
+import type { WellKnownBindings } from "../mcp/index.ts";
+import type { Channel } from "../models/channels.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 export type { Channel };
 
 /**

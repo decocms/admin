@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Agent,
+  type Agent,
   useAgent,
   useCreateTrigger,
   useListTriggersByAgentId,

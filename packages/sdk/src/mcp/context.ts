@@ -1,15 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
-import { ActorConstructor, StubFactory } from "@deco/actors";
-import { AIAgent, Trigger } from "@deco/ai/actors";
-import { Client } from "@deco/sdk/storage";
+import type { ActorConstructor, StubFactory } from "@deco/actors";
+import type { AIAgent, Trigger } from "@deco/ai/actors";
+import type { Client } from "@deco/sdk/storage";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
-import { type User as SupaUser } from "@supabase/supabase-js";
-import Cloudflare from "cloudflare";
+import type { User as SupaUser } from "@supabase/supabase-js";
+import type Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { JWTPayload } from "../auth/jwt.ts";
-import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-import { ForbiddenError, HttpError } from "../errors.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
+import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+import { ForbiddenError, type HttpError } from "../errors.ts";
 import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 

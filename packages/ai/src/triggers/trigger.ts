@@ -15,18 +15,18 @@ import { Actor } from "@deco/actors";
 import { SUPABASE_URL } from "@deco/sdk/auth";
 import { Hosts } from "@deco/sdk/hosts";
 import {
-  AppContext,
+  type AppContext,
   AuthorizationClient,
   createResourceAccess,
   fromWorkspaceString,
   MCPClient,
-  MCPClientStub,
+  type MCPClientStub,
   PolicyClient,
-  WorkspaceTools,
+  type WorkspaceTools,
 } from "@deco/sdk/mcp";
-import { Callbacks } from "@deco/sdk/mcp/binder";
+import type { Callbacks } from "@deco/sdk/mcp/binder";
 import { getTwoFirstSegments, type Workspace } from "@deco/sdk/path";
-import { Json } from "@deco/sdk/storage";
+import type { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";

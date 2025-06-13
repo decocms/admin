@@ -7,7 +7,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
-import { Integration, listTools, useIntegrations } from "@deco/sdk";
+import { type Integration, listTools, useIntegrations } from "@deco/sdk";
 import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import {
@@ -19,7 +19,7 @@ import {
   AddFileToKnowledgeButton,
   AgentKnowledgeBaseFileList,
   KnowledgeBaseFileList,
-  UploadFile,
+  type UploadFile,
   useAgentFiles,
 } from "../agent/upload-knowledge-asset.tsx";
 

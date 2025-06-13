@@ -1,5 +1,5 @@
-import { JSONSchema7 } from "json-schema";
-import { SchemaType } from "../index.tsx";
+import type { JSONSchema7 } from "json-schema";
+import type { SchemaType } from "../index.tsx";
 import { generateDefaultValue } from "./generate-default-value.ts";
 import { selectAnyOfSchema } from "./schema.ts";
 

@@ -5,7 +5,7 @@ import {
 } from "@deco/ui/components/avatar.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
+import { type HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
 import { useFile } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { isFilePath } from "../../../utils/path.ts";

@@ -1,9 +1,9 @@
-import React, { useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { type ReactNode, useState } from "react";
 
 export function CodeBlock({ children, className }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);

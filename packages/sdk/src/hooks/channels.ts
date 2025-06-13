@@ -12,7 +12,7 @@ import {
 import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { Integration } from "../index.ts";
+import type { Integration } from "../index.ts";
 
 export const useCreateChannel = () => {
   const client = useQueryClient();

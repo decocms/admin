@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
-import { Database } from "../../storage/index.ts";
+import type { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { AppContext, createTool, getEnv } from "../context.ts";
+import { type AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 import { polyfill } from "./fs-polyfill.ts";
 

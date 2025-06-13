@@ -1,4 +1,4 @@
-import { Polyfill } from "./api.ts";
+import type { Polyfill } from "./api.ts";
 
 const promises = {
   stat(_path: string) {

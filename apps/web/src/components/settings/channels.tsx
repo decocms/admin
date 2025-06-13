@@ -7,7 +7,7 @@ import {
   useLeaveChannel,
   useRemoveChannel,
 } from "@deco/sdk/hooks";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import type { Channel, Integration } from "@deco/sdk/models";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -37,7 +38,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { Channel, Integration } from "@deco/sdk/models";
 import { IntegrationIcon } from "../integrations/common.tsx";
 
 interface ChannelsProps {

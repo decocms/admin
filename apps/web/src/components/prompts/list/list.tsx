@@ -1,5 +1,5 @@
 import {
-  Prompt,
+  type Prompt,
   useCreatePrompt,
   useDeletePrompt,
   usePrompts,
@@ -27,7 +27,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useReducer, useState } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
-import { Table, TableColumn } from "../../common/table/index.tsx";
+import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Header } from "./common.tsx";
 

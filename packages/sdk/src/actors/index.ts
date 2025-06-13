@@ -1,6 +1,6 @@
 import process from "node:process";
 import { type AuthUser, getUserBySupabaseCookie } from "../auth/user.ts";
-import { type Principal } from "../mcp/index.ts";
+import type { Principal } from "../mcp/index.ts";
 
 export interface AuthMetadata {
   user?: AuthUser | null;

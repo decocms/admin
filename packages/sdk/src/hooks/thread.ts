@@ -14,8 +14,8 @@ import {
   getThread,
   getThreadMessages,
   listThreads,
-  ThreadFilterOptions,
-  ThreadList,
+  type ThreadFilterOptions,
+  type ThreadList,
   updateThreadMetadata,
   updateThreadTitle,
 } from "../crud/thread.ts";

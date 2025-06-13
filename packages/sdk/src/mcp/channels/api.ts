@@ -5,13 +5,13 @@ import { join } from "node:path/posix";
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { Path } from "../../path.ts";
-import { QueryResult } from "../../storage/index.ts";
+import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { ChannelBinding } from "../bindings/binder.ts";
-import { AppContext, createTool } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 
 const SELECT_CHANNEL_QUERY = `

@@ -1,4 +1,4 @@
-import { PostgrestError } from "@supabase/supabase-js";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
   AgentSchema,
@@ -8,9 +8,9 @@ import {
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
-  WithTool,
+  type WithTool,
 } from "../assertions.ts";
-import { AppContext, createTool } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import {
   ForbiddenError,
   InternalServerError,

@@ -5,13 +5,13 @@ import {
 } from "@tanstack/react-query";
 import {
   createPrompt,
-  CreatePromptInput,
+  type CreatePromptInput,
   deletePrompt,
   getPrompt,
   listPrompts,
   searchPrompts,
   updatePrompt,
-  UpdatePromptInput,
+  type UpdatePromptInput,
 } from "../crud/prompts.ts";
 import { InternalServerError } from "../errors.ts";
 import { KEYS } from "./api.ts";

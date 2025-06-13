@@ -1,10 +1,10 @@
-import {
+import type {
   CreateTriggerInput,
   IntegrationSchema,
   ListTriggersOutputSchema,
 } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
-import { z } from "zod";
+import type { z } from "zod";
 import { Trigger } from "./trigger.ts";
 
 export type TriggerData = CreateTriggerInput & {

@@ -1,5 +1,5 @@
 import {
-  TriggerOutputSchema,
+  type TriggerOutputSchema,
   useCreateTrigger,
   useIntegrations,
   useUpdateTrigger,

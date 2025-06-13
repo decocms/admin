@@ -6,13 +6,13 @@ import {
 } from "@tanstack/react-query";
 import {
   createTeam,
-  CreateTeamInput,
+  type CreateTeamInput,
   deleteTeam,
   getTeam,
   getWorkspaceTheme,
   listTeams,
   updateTeam,
-  UpdateTeamInput,
+  type UpdateTeamInput,
 } from "../crud/teams.ts";
 import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";

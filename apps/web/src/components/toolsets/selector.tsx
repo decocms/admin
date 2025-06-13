@@ -1,4 +1,4 @@
-import { type Integration, MCPTool, useTools } from "@deco/sdk";
+import { type Integration, type MCPTool, useTools } from "@deco/sdk";
 import { useProfile } from "@deco/sdk/hooks";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";

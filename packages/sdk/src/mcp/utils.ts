@@ -5,7 +5,7 @@ import {
   type SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { Integration, MCPConnection } from "../models/mcp.ts";
+import type { Integration, MCPConnection } from "../models/mcp.ts";
 
 export const createTransport = (
   connection: MCPConnection,

@@ -1,18 +1,18 @@
-import { TriggerSchema, useListTriggersByAgentId } from "@deco/sdk";
+import { type TriggerSchema, useListTriggersByAgentId } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { useState } from "react";
 import { useParams } from "react-router";
+import type { z } from "zod";
 import { AuditListContent } from "../audit/list.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { CronDetails } from "./cron-details.tsx";
-import { WebhookDetails } from "./webhook-details.tsx";
-import { TriggerToggle } from "./trigger-toggle.tsx";
-import { z } from "zod";
 import { TriggerModal } from "./trigger-dialog.tsx";
-import { useState } from "react";
+import { TriggerToggle } from "./trigger-toggle.tsx";
+import { WebhookDetails } from "./webhook-details.tsx";
 
 const useTrigger = (agentId: string, triggerId: string) => {
   const { data, isLoading } = useListTriggersByAgentId(agentId);

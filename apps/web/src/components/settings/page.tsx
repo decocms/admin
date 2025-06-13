@@ -1,4 +1,4 @@
-import { Tab } from "../dock/index.tsx";
+import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import GeneralSettings from "./general.tsx";
 import MembersSettings from "./members.tsx";

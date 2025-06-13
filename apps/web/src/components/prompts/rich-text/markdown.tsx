@@ -1,4 +1,4 @@
-import { Prompt, usePrompts } from "@deco/sdk";
+import { type Prompt, usePrompts } from "@deco/sdk";
 import {
   normalizeMentions,
   unescapeHTML,
@@ -7,7 +7,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.ts";
 import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, Extensions, useEditor } from "@tiptap/react";
+import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";

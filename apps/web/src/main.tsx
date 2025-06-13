@@ -2,12 +2,12 @@ import "./polyfills.ts";
 
 import {
   ForbiddenError,
-  InternalServerError,
+  type InternalServerError,
   NotFoundError,
   UnauthorizedError,
 } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
+import { type JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,

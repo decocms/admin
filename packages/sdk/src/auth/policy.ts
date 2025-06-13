@@ -1,4 +1,4 @@
-import { Client } from "@deco/sdk/storage";
+import type { Client } from "@deco/sdk/storage";
 import { WebCache } from "../cache/index.ts";
 
 // Cache duration in seconds (WebCache expects seconds)

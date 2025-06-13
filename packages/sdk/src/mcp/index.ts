@@ -7,7 +7,7 @@ export { createResourceAccess } from "./auth/index.ts";
 
 import * as agentsAPI from "./agents/api.ts";
 import * as channelsAPI from "./channels/api.ts";
-import { AppContext, State, Tool } from "./context.ts";
+import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
@@ -16,7 +16,7 @@ import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
-import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
+import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";

@@ -3,7 +3,7 @@ import { withActors } from "@deco/actors/hono";
 import { Hosts } from "@deco/sdk/hosts";
 import type { Handler } from "hono";
 import { endTime, startTime } from "hono/timing";
-import { AppEnv } from "../utils/context.ts";
+import type { AppEnv } from "../utils/context.ts";
 
 export const runtime = new RuntimeClass();
 

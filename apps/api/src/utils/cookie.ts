@@ -1,4 +1,4 @@
-import { HonoAppContext } from "./context.ts";
+import type { HonoAppContext } from "./context.ts";
 
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {

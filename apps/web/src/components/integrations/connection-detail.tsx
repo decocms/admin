@@ -25,9 +25,9 @@ import {
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import {
-  Integration,
-  MCPConnection,
-  MCPTool,
+  type Integration,
+  type MCPConnection,
+  type MCPTool,
   useToolCall,
   useTools,
 } from "@deco/sdk";
@@ -64,12 +64,12 @@ import {
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { ToolCallForm } from "./tool-call-form.tsx";
 import { ToolCallResult } from "./tool-call-result.tsx";
-import { MCPToolCallResult } from "./types.ts";
+import type { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
   ConfirmMarketplaceInstallDialog,
 } from "./select-connection-dialog.tsx";
-import { MarketplaceIntegration } from "./marketplace.tsx";
+import type { MarketplaceIntegration } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 
 function ConnectionInstanceActions({

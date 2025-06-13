@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import type {
   SpeechRecognition,

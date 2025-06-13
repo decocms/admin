@@ -1,4 +1,4 @@
-import { Prompt } from "@deco/sdk";
+import type { Prompt } from "@deco/sdk";
 import { ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions } from "@tiptap/suggestion";
 import tippy from "tippy.js";

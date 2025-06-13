@@ -24,17 +24,17 @@ import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
-  AppContext,
+  type AppContext,
   assertWorkspaceResourceAccess,
   AuthorizationClient,
   createResourceAccess,
   fromWorkspaceString,
-  LLMVault,
+  type LLMVault,
   MCPClient,
-  MCPClientStub,
+  type MCPClientStub,
   PolicyClient,
   SupabaseLLMVault,
-  WorkspaceTools,
+  type WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import {
@@ -61,7 +61,7 @@ import { createServerClient } from "@supabase/ssr";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
-  LanguageModelUsage,
+  type LanguageModelUsage,
   type Message,
   smoothStream,
 } from "ai";
@@ -87,7 +87,7 @@ import type {
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
-import { GenerateOptions } from "./types.ts";
+import type { GenerateOptions } from "./types.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =

@@ -1,4 +1,4 @@
-import { JWTPayload, jwtVerify, SignJWT } from "jose";
+import { type JWTPayload, jwtVerify, SignJWT } from "jose";
 export type { JWTPayload };
 
 export async function createJWT<T extends JWTPayload = JWTPayload>(

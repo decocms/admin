@@ -4,9 +4,9 @@ import {
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";
-import { AppContext, createTool } from "../context.ts";
-import { Json } from "../../storage/index.ts";
-import { Theme } from "../../theme.ts";
+import { type AppContext, createTool } from "../context.ts";
+import type { Json } from "../../storage/index.ts";
+import type { Theme } from "../../theme.ts";
 import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,

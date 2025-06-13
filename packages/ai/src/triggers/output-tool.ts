@@ -1,7 +1,7 @@
-import { ActorProxy } from "@deco/actors";
-import { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
+import type { ActorProxy } from "@deco/actors";
+import type { MCPClientStub, WorkspaceTools } from "@deco/sdk/mcp";
 import type { Workspace } from "@deco/sdk/path";
-import { ToolAction } from "@mastra/core";
+import type { ToolAction } from "@mastra/core";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AIAgent } from "../agent.ts";
 import { mcpServerTools } from "../mcp.ts";

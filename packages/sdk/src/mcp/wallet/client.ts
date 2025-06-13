@@ -1,5 +1,5 @@
 import { createHttpClient } from "../../http.ts";
-import { MicroDollar } from "./microdollar.ts";
+import type { MicroDollar } from "./microdollar.ts";
 
 export interface DoubleEntry {
   debit: string;

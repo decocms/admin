@@ -2,8 +2,8 @@
  * Very ugly code but the animation looks good.
  * Take the time to refactor this someday.
  */
-import { CSSProperties } from "react";
-import { ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
+import type { CSSProperties } from "react";
+import { type ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 

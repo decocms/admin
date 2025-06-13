@@ -1,6 +1,6 @@
 import z from "zod";
 import { createWorkspaceClient } from "../mcp.ts";
-import { FileLike } from "./deploy.ts";
+import type { FileLike } from "./deploy.ts";
 
 interface Options {
   workspace: string;

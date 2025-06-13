@@ -9,7 +9,7 @@ import {
 import { createSessionTokenCookie } from "@deco/sdk/auth";
 import { WebCache } from "@deco/sdk/cache";
 import { SWRCache } from "@deco/sdk/cache/swr";
-import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
+import { type AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";

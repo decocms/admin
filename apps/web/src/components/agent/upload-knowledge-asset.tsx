@@ -1,4 +1,10 @@
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type Agent,
   type Integration,

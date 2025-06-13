@@ -1,16 +1,16 @@
-import { TriggerOutputSchema } from "@deco/sdk";
-import { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { useState } from "react";
+import type { z } from "zod";
 import { DeleteTriggerModal } from "./delete-trigger-dialog.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
-import { useState } from "react";
 
 interface TriggerActionsProps {
   trigger: z.infer<typeof TriggerOutputSchema>;

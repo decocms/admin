@@ -5,7 +5,7 @@ import {
   createKnowledge,
   removeFromKnowledge,
 } from "../crud/knowledge.ts";
-import { Integration } from "../index.ts";
+import type { Integration } from "../index.ts";
 
 interface ForConnection {
   connection?: Integration["connection"];

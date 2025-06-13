@@ -1,5 +1,5 @@
 import type { ListModelsInput } from "../crud/model.ts";
-import { ThreadFilterOptions } from "../crud/thread.ts";
+import type { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
 import type { Binder } from "../models/mcp.ts";
 

@@ -1,16 +1,16 @@
 import { getUserBySupabaseCookie } from "@deco/sdk/auth";
 import { createSupabaseClient } from "@deco/sdk/storage";
-import {
+import type {
   EmailOtpType,
-  type Provider,
-  type User as SupaUser,
+  Provider,
+  User as SupaUser,
 } from "@supabase/supabase-js";
 import { Hono } from "hono";
 import { honoCtxToAppCtx } from "../api.ts";
 import {
   AUTH_URL,
   getEnv,
-  HonoAppContext as AppContext,
+  type HonoAppContext as AppContext,
   type Principal,
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";

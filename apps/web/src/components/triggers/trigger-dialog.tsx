@@ -26,8 +26,8 @@ import { AgentAvatar } from "../common/avatar/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { CronTriggerForm } from "./cron-trigger-form.tsx";
 import { WebhookTriggerForm } from "./webhook-trigger-form.tsx";
-import { TriggerOutputSchema } from "@deco/sdk";
-import { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
+import type { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 
 function AgentSelect({

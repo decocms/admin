@@ -3,7 +3,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table, TableColumn } from "../common/table/index.tsx";
+import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
   AgentInfo,
   DateTimeCell,
@@ -14,8 +14,8 @@ import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerActions } from "./trigger-actions.tsx";
 import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerType } from "./trigger-type.tsx";
-import { TriggerOutputSchema } from "@deco/sdk";
-import { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
+import type { z } from "zod";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";

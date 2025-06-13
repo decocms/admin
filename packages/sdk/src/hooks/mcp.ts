@@ -18,7 +18,7 @@ import { InternalServerError } from "../errors.ts";
 import { MCPClient } from "../fetcher.ts";
 import type { Binder, Integration } from "../models/mcp.ts";
 import { KEYS } from "./api.ts";
-import { listTools, MCPTool } from "./index.ts";
+import { listTools, type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {

@@ -1,6 +1,6 @@
 import {
-  Agent,
-  Thread,
+  type Agent,
+  type Thread,
   useAgents,
   useDeleteThread,
   useIntegrations,
@@ -42,7 +42,7 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ReactNode, Suspense, useRef, useState } from "react";
+import { type ReactNode, Suspense, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
 import { z } from "zod";

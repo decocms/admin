@@ -5,12 +5,12 @@ import {
   Entrypoint,
   GLOBAL_TOOLS,
   PolicyClient,
-  ToolLike,
+  type ToolLike,
   withMCPErrorHandling,
   WORKSPACE_TOOLS,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { Context, Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { env, getRuntimeKey } from "hono/adapter";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
@@ -24,7 +24,7 @@ import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
-import { AppContext, AppEnv, State } from "./utils/context.ts";
+import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 
 export const app = new Hono<AppEnv>();

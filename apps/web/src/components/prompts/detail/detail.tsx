@@ -29,7 +29,7 @@ import { trackEvent } from "../../../hooks/analytics.ts";
 import { ChatInput } from "../../chat/chat-input.tsx";
 import { ChatMessages } from "../../chat/chat-messages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
-import { Tab } from "../../dock/index.tsx";
+import type { Tab } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";

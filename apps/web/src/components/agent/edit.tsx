@@ -1,7 +1,7 @@
 import {
   type Agent,
   AgentSchema,
-  Integration,
+  type Integration,
   NotFoundError,
   useAgent,
   useIntegrations,
@@ -25,7 +25,7 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useFocusChat } from "../agents/hooks.ts";

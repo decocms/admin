@@ -15,11 +15,11 @@ import {
 } from "../crud/trigger.ts";
 import { useSDK } from "./store.tsx";
 import { KEYS } from "./api.ts";
-import {
+import type {
   CreateTriggerInput,
   ListTriggersOutputSchema,
 } from "../models/trigger.ts";
-import { z } from "zod";
+import type { z } from "zod";
 
 export function useListTriggersByAgentId(
   agentId: string,

@@ -7,19 +7,19 @@ import {
   UserInputError,
 } from "../../errors.ts";
 import { Hosts } from "../../hosts.ts";
-import { AgentSchema } from "../../models/agent.ts";
-import { IntegrationSchema } from "../../models/mcp.ts";
+import type { AgentSchema } from "../../models/agent.ts";
+import type { IntegrationSchema } from "../../models/mcp.ts";
 import {
   CreateCronTriggerInputSchema,
-  CreateTriggerOutputSchema,
+  type CreateTriggerOutputSchema,
   CreateWebhookTriggerInputSchema,
-  DeleteTriggerOutputSchema,
-  GetWebhookTriggerUrlOutputSchema,
-  ListTriggersOutputSchema,
+  type DeleteTriggerOutputSchema,
+  type GetWebhookTriggerUrlOutputSchema,
+  type ListTriggersOutputSchema,
   TriggerSchema,
 } from "../../models/trigger.ts";
 import { Path } from "../../path.ts";
-import { Json, QueryResult } from "../../storage/index.ts";
+import type { Json, QueryResult } from "../../storage/index.ts";
 import { getAgentsByIds } from "../agents/api.ts";
 import {
   assertHasWorkspace,

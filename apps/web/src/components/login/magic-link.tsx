@@ -9,7 +9,8 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import { DECO_CHAT_API } from "@deco/sdk";
-import { FormEventHandler, useEffect, useRef, useState } from "react";
+import type { FormEventHandler } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SplitScreenLayout } from "./layout.tsx";
 
 const useSendMagicLink = () => {

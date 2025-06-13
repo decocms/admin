@@ -8,7 +8,7 @@ import {
   assertWorkspaceResourceAccess,
   type WithTool,
 } from "../assertions.ts";
-import { AppContext, createTool, createToolFactory } from "../context.ts";
+import { type AppContext, createTool, createToolFactory } from "../context.ts";
 import { FileProcessor } from "../file-processor.ts";
 import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 

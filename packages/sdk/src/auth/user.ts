@@ -1,7 +1,7 @@
 import type { AuthUser, SupabaseClient } from "@supabase/supabase-js";
 import { jwtDecode } from "jwt-decode";
 import { LRUCache } from "lru-cache";
-import { Principal } from "../mcp/context.ts";
+import type { Principal } from "../mcp/context.ts";
 import { JwtIssuer } from "./jwt.ts";
 import {
   createSupabaseSessionClient,

@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { AppContext, createTool } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
 import {
   createWalletClient,
   MicroDollar,
-  WalletAPI,
+  type WalletAPI,
   WellKnownWallets,
 } from "./index.ts";
-import { ClientOf } from "@deco/sdk/http";
+import type { ClientOf } from "@deco/sdk/http";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -17,7 +17,7 @@ import {
   InternalServerError,
   UserInputError,
 } from "../../errors.ts";
-import { Feature, Plan, PLANS_FEATURES } from "../../plan.ts";
+import { type Feature, type Plan, PLANS_FEATURES } from "../../plan.ts";
 
 const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {

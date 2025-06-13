@@ -1,5 +1,5 @@
-import { EnvVars, Vars } from "@deco/sdk/mcp";
-import { Context } from "hono";
+import type { EnvVars, Vars } from "@deco/sdk/mcp";
+import type { Context } from "hono";
 import type { TimingVariables } from "hono/timing";
 
 export * from "@deco/sdk/mcp";

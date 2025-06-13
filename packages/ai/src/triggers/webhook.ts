@@ -4,7 +4,7 @@ import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
 import { handleOutputTool } from "./output-tool.ts";
 import type { TriggerData } from "./services.ts";
 import { threadOf } from "./tools.ts";
-import { type TriggerHooks } from "./trigger.ts";
+import type { TriggerHooks } from "./trigger.ts";
 
 export interface WebhookArgs {
   threadId?: string;

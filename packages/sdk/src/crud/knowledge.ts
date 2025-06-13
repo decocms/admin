@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { Integration, Workspace } from "../index.ts";
+import type { Integration, Workspace } from "../index.ts";
 
 interface FromWorkspace {
   workspace: Workspace;

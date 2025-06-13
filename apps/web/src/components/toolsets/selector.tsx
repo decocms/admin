@@ -69,7 +69,6 @@ export function IntegrationListItem({
   hideTools?: boolean;
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
-  console.log("toolsOpen", toolsOpen);
   const { data: toolsData, isLoading } = useTools(integration.connection);
 
   const total = toolsData?.tools?.length ?? 0;

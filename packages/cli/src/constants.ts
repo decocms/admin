@@ -14,3 +14,5 @@ export const DECO_CHAT_API = LOCAL_DEBUGGER
 
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
+
+export const DECO_CHAT_LOGIN = new URL("/login?cli", DECO_CHAT_WEB).href;

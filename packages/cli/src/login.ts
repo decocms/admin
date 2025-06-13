@@ -1,4 +1,4 @@
-import { AUTH_PORT_CLI, AUTH_URL_CLI } from "./constants.ts";
+import { AUTH_PORT_CLI, DECO_CHAT_LOGIN } from "./constants.ts";
 import type { Provider } from "@supabase/supabase-js";
 import { saveSession } from "./session.ts";
 import { createClient } from "./supabase.ts";
@@ -11,7 +11,7 @@ export const loginCommand = async () => {
     port: AUTH_PORT_CLI,
     onListen: () => {
       const browser = Deno.env.get("BROWSER") ?? "open";
-      const command = new Deno.Command(browser, { args: [AUTH_URL_CLI] });
+      const command = new Deno.Command(browser, { args: [DECO_CHAT_LOGIN] });
       command.spawn();
     },
   }, async (req) => {

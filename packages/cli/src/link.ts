@@ -1,5 +1,5 @@
-import { connect } from "jsr:@deco/warp";
-import * as colors from "jsr:@std/fmt/colors";
+import { connect } from "@deco/warp";
+import * as colors from "@std/fmt/colors";
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -112,7 +112,7 @@ async function register(port: number, domain: string) {
   }
 }
 
-export const link = async ({ port: p }: { port: number }) => {
+export const link = async ({ port: p }: { port?: number }) => {
   const port = p || 8000;
 
   // Save the host information to localStorage

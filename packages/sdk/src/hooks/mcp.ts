@@ -1,3 +1,4 @@
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import {
   useMutation,
   useQueries,
@@ -5,6 +6,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   createIntegration,
   deleteIntegration,
@@ -13,13 +15,11 @@ import {
   saveIntegration,
 } from "../crud/mcp.ts";
 import { InternalServerError } from "../errors.ts";
+import { MCPClient } from "../fetcher.ts";
 import type { Binder, Integration } from "../models/mcp.ts";
-import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
-import { useSDK } from "./store.tsx";
 import { listTools, MCPTool } from "./index.ts";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
-import { useMemo } from "react";
+import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -260,12 +260,12 @@ interface IntegrationsResult {
 }
 
 export const useMarketplaceIntegrations = () => {
-  const agentStub = useAgentStub();
+  const { workspace } = useSDK();
 
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      agentStub.callTool("DECO_INTEGRATIONS.DECO_INTEGRATIONS_SEARCH", {
+      MCPClient.forWorkspace(workspace).DECO_INTEGRATIONS_SEARCH({
         query: "",
         filters: { installed: false },
         verbose: true,
@@ -284,9 +284,8 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
 ];
 
 export const useInstallFromMarketplace = () => {
-  const agentStub = useAgentStub();
-  const client = useQueryClient();
   const { workspace } = useSDK();
+  const client = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (
@@ -296,10 +295,9 @@ export const useInstallFromMarketplace = () => {
         provider: string;
       },
     ) => {
-      const result: { installationId: string } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {
-          id: appName,
-        });
+      const result: { installationId: string } = await MCPClient
+        .forWorkspace(workspace)
+        .DECO_INTEGRATION_INSTALL({ id: appName });
 
       const integration = await loadIntegration(
         workspace,
@@ -312,14 +310,14 @@ export const useInstallFromMarketplace = () => {
         WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
         provider === "deco"
       ) {
-        const result = await agentStub.callTool(
-          "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
-          {
+        const result = await MCPClient
+          .forWorkspace(workspace)
+          .DECO_INTEGRATION_OAUTH_START({
             appName: appName,
             returnUrl,
             installId: integration.id.split(":").pop()!,
-          },
-        );
+          });
+
         redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
           throw new Error("No redirect URL found");
@@ -331,10 +329,12 @@ export const useInstallFromMarketplace = () => {
           throw new Error("Composio integration has no url");
         }
 
-        const result = await agentStub.callTool(
-          "DECO_INTEGRATIONS.COMPOSIO_INTEGRATION_OAUTH_START",
-          { url: integration.connection.url },
-        );
+        const result = await MCPClient
+          .forWorkspace(workspace)
+          .COMPOSIO_INTEGRATION_OAUTH_START({
+            url: integration.connection.url,
+          });
+
         redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
           const errorInfo = {

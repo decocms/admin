@@ -9,8 +9,8 @@ import { z } from "zod";
 import {
   Agent,
   AgentSchema,
-  DECO_CHAT_API,
   BindingsSchema,
+  DECO_CHAT_API,
   INNATE_INTEGRATIONS,
   Integration,
   IntegrationSchema,

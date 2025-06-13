@@ -1,4 +1,4 @@
-import { DECO_CHAT_API, AUTH_URL_CLI } from "@deco/sdk";
+import { AUTH_URL_CLI, DECO_CHAT_API } from "@deco/sdk";
 
 interface Options {
   next?: string | null;

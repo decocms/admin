@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { ToolMessage } from "./tool-message.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
+import { useFile } from "@deco/sdk";
 
 interface ChatMessageProps {
   message: Message;
@@ -14,10 +15,11 @@ interface ChatMessageProps {
 }
 
 interface MessagePart {
-  type: "text" | "tool-invocation-group" | "reasoning";
+  type: "text" | "tool-invocation-group" | "reasoning" | "image";
   content?: string;
   toolInvocations?: NonNullable<Message["toolInvocations"]>;
   reasoning?: string;
+  image?: string;
 }
 
 interface MessageAttachment {
@@ -36,12 +38,17 @@ interface ToolPart {
   toolInvocation: NonNullable<Message["toolInvocations"]>[0];
 }
 
+interface ImagePart {
+  type: "image";
+  image: string;
+}
+
 interface ReasoningPart {
   type: "reasoning";
   reasoning: string;
 }
 
-type Part = TextPart | ToolPart | ReasoningPart;
+type Part = TextPart | ToolPart | ReasoningPart | ImagePart;
 
 function mergeParts(parts: Part[] | undefined): MessagePart[] {
   if (!parts) return [];
@@ -50,7 +57,7 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   let currentToolGroup: NonNullable<Message["toolInvocations"]> = [];
   let currentTextContent: string[] = [];
   let currentReasoning: string[] = [];
-
+  let currentImage: string[] = [];
   const flushToolGroup = () => {
     if (currentToolGroup.length > 0) {
       mergedParts.push({
@@ -81,6 +88,17 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
     }
   };
 
+  const flushImage = () => {
+
+    if (currentImage.length > 0) {
+      mergedParts.push({
+        type: "image",
+        image: currentImage.join("\n").trim(),
+      });
+      currentImage = [];  
+    }
+  };
+
   parts.forEach((part) => {
     if (part.type === "tool-invocation") {
       // If we have pending text content or reasoning, flush them first
@@ -99,6 +117,11 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
       // If we have pending tool invocations, flush them first
       flushToolGroup();
       currentReasoning.push(part.reasoning);
+    } else if (part.type === "image") {
+      flushToolGroup();
+      flushReasoning();
+      flushTextContent();
+      currentImage.push(part.image);
     }
   });
 
@@ -106,6 +129,7 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   flushToolGroup();
   flushReasoning();
   flushTextContent();
+  flushImage();
 
   return mergedParts;
 }
@@ -214,7 +238,13 @@ export function ChatMessage(
                         content={part.content || ""}
                       />
                     );
-                  } else if (
+                  } else if (part.type === "image") {
+                    if (!part.image) return null;
+                    return (
+                      <ImagePart image={part.image} key={index} />
+                    );
+                  }
+                  else if (
                     part.type === "tool-invocation-group" &&
                     part.toolInvocations
                   ) {
@@ -314,5 +344,15 @@ export function ChatMessage(
         </div>
       </div>
     </div>
+  );
+}
+
+function ImagePart({ image }: { image: string }) {
+  const { data: fileUrl } = useFile(image);
+
+  if (!fileUrl) return null;
+
+  return (
+    <img src={fileUrl} alt={image} className="rounded-lg max-w-[300px] max-h-[300px] object-cover" />
   );
 }

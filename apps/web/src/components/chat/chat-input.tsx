@@ -34,6 +34,7 @@ import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea } from "./rich-text.tsx";
 import ToolsButton from "./tools-button.tsx";
+import { formatFilename } from "../../utils/format.ts";
 
 export function ChatInput() {
   return (
@@ -239,7 +240,7 @@ ChatInput.UI = (
 
   async function uploadFile(file: File) {
     try {
-      const path = `uploads/${file.name}`;
+      const path = `uploads/${formatFilename(file.name)}`;
       const buffer = await file.arrayBuffer();
       await writeFileMutation.mutateAsync({
         path,

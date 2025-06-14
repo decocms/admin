@@ -861,7 +861,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent })
+        convertToAIMessage({ message: msg, agent: this._agent, workspace: this.workspace, aiAgent: this })
       ),
     );
     const result = await this._agent.generate(aiMessages, {
@@ -903,7 +903,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent })
+        convertToAIMessage({ message: msg, agent: this._agent, workspace: this.workspace, aiAgent: this })
       ),
     );
 
@@ -1006,9 +1006,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent })
+        convertToAIMessage({ message: msg, agent: this._agent, workspace: this.workspace, aiAgent: this })
       ),
     );
+
 
     // Process instructions if provided in options
     let processedInstructions = options?.instructions;

@@ -133,7 +133,7 @@ export const readFile = createTool({
       "Seconds until URL expires (default: 60)",
     ),
   }),
-  handler: async ({ path, expiresIn = 60 }, c) => {
+  handler: async ({ path, expiresIn = 180 }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 

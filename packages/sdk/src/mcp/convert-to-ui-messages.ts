@@ -7,6 +7,7 @@
  */
 
 import type { AssistantContent, Message, ToolContent, UserContent } from "ai";
+import { extractPathFromUrl } from "../utils/url.ts";
 
 // Types for the memory system
 // TODO: better type this
@@ -25,7 +26,7 @@ export type MessageType = {
 
 const toParts = (results: Map<string, unknown>) =>
 // deno-lint-ignore no-explicit-any
-(item: any): NonNullable<Message["parts"]>[number] => {
+(item: any): NonNullable<Message["parts"]>[number] | { type: "image"; image: string } => {
   if (item.type === "tool-call") {
     const result = results.get(item.toolCallId);
 
@@ -46,6 +47,15 @@ const toParts = (results: Map<string, unknown>) =>
       ...item,
       details: item.details ?? [],
       reasoning: item.text,
+    };
+  }
+
+  if (item.type === "image") {
+    const url = item.image
+    const path = extractPathFromUrl(url);
+    return {
+      type: "image",
+      image: path,
     };
   }
 
@@ -103,5 +113,6 @@ export function convertToUIMessages(messages: MessageType[]): Message[] {
     }
   }
 
+  console.log({ uiMessages });
   return uiMessages;
 }

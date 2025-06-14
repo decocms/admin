@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { parseArgs } from "@std/cli";
+import denoJson from "./deno.json" with { type: "json" };
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
 import { link } from "./src/link.ts";
@@ -61,23 +61,25 @@ const linkCmd = new Command()
   .option("-p, --port <port:number>", "Port to link", {
     required: false,
   })
-  .action(async (args) => {
-    const parsedArgs = parseArgs(Deno.args, {
-      string: ["build-cmd"],
-    });
-    const runCommand: string[] = parsedArgs["_"] as string[];
-    runCommand[0] === "link" && runCommand.splice(0, 1); // remove first command
+  .arguments("[...build-cmd]")
+  .action(async function ({ port }) {
+    const runCommand = this.getLiteralArgs();
+
     await link({
-      ...args,
+      port,
       onBeforeRegister: () => {
-        if (runCommand.length > 0) {
-          const denoCmd = new Deno.Command(runCommand[0], {
-            args: runCommand.slice(1),
-            stdout: "inherit",
-            stderr: "inherit",
-          });
-          denoCmd.spawn();
+        const [cmd, ...args] = runCommand;
+
+        if (runCommand.length === 0) {
+          console.error("No build command provided");
+          return;
         }
+
+        new Deno.Command(cmd, {
+          args,
+          stdout: "inherit",
+          stderr: "inherit",
+        }).spawn();
       },
     });
   });
@@ -90,11 +92,9 @@ const hosting = new Command()
 
 // Main CLI
 await new Command()
-  .name("deco")
-  .version("0.1.0")
-  .description(
-    "A CLI for interacting with deco.chat.",
-  )
+  .name(denoJson.name)
+  .version(denoJson.version)
+  .description(denoJson.description)
   .command("login", login)
   .command("logout", logout)
   .command("whoami", whoami)

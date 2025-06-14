@@ -39,16 +39,14 @@ const readEnvFile = async (rootDir: string) => {
 
 const gatherFiles = async (rootDir: string) => {
   const tsFiles: string[] = [];
-  for await (
-    const entry of walk(rootDir, {
-      exts: [".ts"],
-      includeDirs: false,
-      skip: [/node_modules/],
-    })
-  ) {
-    if (entry.name !== "build.ts") {
-      tsFiles.push(entry.path.slice(rootDir.length + 1));
-    }
+  const walker = walk(rootDir, {
+    exts: [".ts"],
+    includeDirs: false,
+    skip: [/node_modules/],
+  });
+
+  for await (const entry of walker) {
+    tsFiles.push(entry.path.slice(rootDir.length + 1));
   }
 
   return tsFiles;
@@ -96,7 +94,7 @@ export const deploy = async ({ workspace, authCookie, appSlug }: Options) => {
   console.log(`  App: ${appSlug}`);
   console.log(`  Files: ${files.length}`);
 
-  const confirmed = await Confirm.prompt("Proceed with deployment? (y/N)");
+  const confirmed = await Confirm.prompt("Proceed with deployment?");
   if (!confirmed) {
     console.log("❌ Deployment cancelled");
     Deno.exit(0);

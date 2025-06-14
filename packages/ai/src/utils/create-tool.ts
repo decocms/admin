@@ -37,22 +37,7 @@ export const createTool = ({
 }: Parameters<typeof mastraCreateTool>[0]) =>
   mastraCreateTool({
     ...args,
-    outputSchema: z.union([
-      z.object({
-        success: z.literal(true),
-        message: z.string()
-          .describe("A message describing the result of the operation")
-          .nullable()
-          .optional(),
-        data: outputSchema || z.any(),
-      }),
-      z.object({
-        success: z.literal(false),
-        message: z.string()
-          .describe("A message describing the result of the operation"),
-        data: z.null().optional(),
-      }),
-    ]),
+    outputSchema,
     execute: (ctx, options) => {
       const tracer = trace.getTracer("tool-tracer");
       return tracer.startActiveSpan(
@@ -63,7 +48,14 @@ export const createTool = ({
           ctx.threadId && span.setAttribute("tool.thread", ctx.threadId);
           ctx.resourceId && span.setAttribute("tool.resource", ctx.resourceId);
           try {
-            return await execute?.(ctx, options);
+            const result = await execute?.(ctx, options);
+
+            if (Array.isArray(result.content)) {
+              // deno-lint-ignore no-explicit-any
+              return result.content.map((t: any) => t.text).join("\n\n");
+            }
+
+            return result;
           } catch (error) {
             err = error;
             return `Failed to execute tool with the following error: ${

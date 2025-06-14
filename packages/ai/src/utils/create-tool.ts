@@ -50,7 +50,7 @@ export const createTool = ({
           try {
             const result = await execute?.(ctx, options);
 
-            if (Array.isArray(result.content)) {
+            if (Array.isArray(result.content) && result.content.length > 0) {
               // deno-lint-ignore no-explicit-any
               return result.content.map((t: any) => t.text).join("\n\n");
             }

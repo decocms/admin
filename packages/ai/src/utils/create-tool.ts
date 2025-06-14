@@ -4,7 +4,7 @@ import {
   type ToolExecutionContext,
 } from "@mastra/core";
 import type { ToolExecutionOptions } from "ai";
-import { z } from "zod";
+import type { z } from "zod";
 import type { AIAgent, Env } from "../agent.ts";
 
 export interface ToolOptions<

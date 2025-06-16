@@ -50,7 +50,7 @@ export async function deleteSession() {
   await client.auth.signOut();
 }
 
-export async function getSessionToken(): Promise<string> {
+export async function getSessionCookies(): Promise<string> {
   const session = await readSession();
 
   if (!session) {
@@ -87,4 +87,21 @@ export async function getSessionToken(): Promise<string> {
   const cookies = setCookie.map((cookie) => cookie.split(";")[0]).join("; ");
 
   return cookies;
+}
+
+export async function getSessionToken(): Promise<string> {
+  const session = await readSession();
+
+  if (!session) {
+    throw new Error("Session not found. Please login again.");
+  }
+
+  // Extract tokens from session
+  const { access_token, refresh_token } = session;
+
+  if (!access_token || !refresh_token) {
+    throw new Error("Session expired. Please login again.");
+  }
+
+  return access_token;
 }

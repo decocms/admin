@@ -4,7 +4,6 @@ import type { FileLike } from "./deploy.ts";
 
 interface Options {
   workspace: string;
-  authCookie: string;
 }
 
 interface App {
@@ -14,10 +13,10 @@ interface App {
   workspace: string;
   files: FileLike[];
 }
-export const listApps = async ({ workspace, authCookie }: Options) => {
+export const listApps = async ({ workspace }: Options) => {
   console.log(`🔍 Listing apps in workspace '${workspace}'...`);
 
-  const client = await createWorkspaceClient({ workspace, authCookie });
+  const client = await createWorkspaceClient({ workspace });
   const response = await client.callTool({
     name: "HOSTING_APPS_LIST",
     arguments: {},

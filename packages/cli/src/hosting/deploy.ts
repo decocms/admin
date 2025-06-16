@@ -5,7 +5,6 @@ import { createWorkspaceClient } from "../mcp.ts";
 
 interface Options {
   workspace: string;
-  authCookie: string;
   appSlug: string;
 }
 
@@ -80,11 +79,11 @@ const manifestFrom = ({ appSlug, files, envVars }: BuildManifest) => ({
   envVars,
 });
 
-export const deploy = async ({ workspace, authCookie, appSlug }: Options) => {
+export const deploy = async ({ workspace, appSlug }: Options) => {
   const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
-  const client = await createWorkspaceClient({ workspace, authCookie });
+  const client = await createWorkspaceClient({ workspace });
   const envVars = await readEnvFile(rootDir);
   const filePaths = await gatherFiles(rootDir);
   const files = await readFiles(rootDir, filePaths);

@@ -39,10 +39,7 @@ const hostingList = new Command()
   .option("-w, --workspace <workspace:string>", "Workspace name", {
     required: true,
   })
-  .action(async (args) => {
-    const authCookie = await getSessionToken();
-    await listApps({ ...args, authCookie });
-  });
+  .action(listApps);
 
 // Placeholder for hosting deploy command implementation
 const hostingDeploy = new Command()
@@ -51,10 +48,7 @@ const hostingDeploy = new Command()
     required: true,
   })
   .option("-a, --app <app:string>", "App name", { required: true })
-  .action(async (args) => {
-    const authCookie = await getSessionToken();
-    await deploy({ ...args, appSlug: args.app, authCookie });
-  });
+  .action((args) => deploy({ ...args, appSlug: args.app }));
 
 const linkCmd = new Command()
   .description("Link the project to be accessed through a remote domain.")
@@ -64,6 +58,7 @@ const linkCmd = new Command()
   .arguments("[...build-cmd]")
   .action(async function ({ port }) {
     const runCommand = this.getLiteralArgs();
+    const token = await getSessionToken();
 
     await link({
       port,
@@ -75,11 +70,14 @@ const linkCmd = new Command()
           return;
         }
 
-        new Deno.Command(cmd, {
+        const process = new Deno.Command(cmd, {
           args,
           stdout: "inherit",
           stderr: "inherit",
+          env: { ...Deno.env.toObject(), DECO_CHAT_API_KEY: token },
         }).spawn();
+
+        return process;
       },
     });
   });

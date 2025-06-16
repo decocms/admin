@@ -1,4 +1,3 @@
-import { JwtIssuer } from "@deco/sdk/auth";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";
@@ -365,13 +364,6 @@ Important Notes:
     const appEnvVars = {
       DECO_CHAT_WORKSPACE: workspace,
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
-      DECO_CHAT_API_TOKEN: await JwtIssuer.forSecret(
-        c.envVars.ISSUER_JWT_SECRET,
-      )
-        .create({
-          sub: `app:${scriptSlug}`,
-          aud: workspace,
-        }),
     };
 
     const result = await deployToCloudflare(

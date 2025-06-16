@@ -1,18 +1,19 @@
 {
   "name": "@deco/apps-outbound",
   "private": true,
-  "sideEffects": false,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 8000",
-    "build": "wrangler deploy --dry-run --outdir=dist",
-    "deploy": "wrangler deploy"
+    "dev": "deno serve -A --port 3001 --unstable-hmr --unstable-kv --env-file=../web/.env main.ts",
+    "dev:wrangler": "wrangler dev --port 3001"
   },
   "dependencies": {
+    "jose": "^6.0.11",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.50.0"
   },
   "devDependencies": {
-    "wrangler": "^3.91.0",
-    "typescript": "^5.5.2"
+    "wrangler": "^4.13.2"
   },
   "engines": {
     "node": ">=20.0.0"

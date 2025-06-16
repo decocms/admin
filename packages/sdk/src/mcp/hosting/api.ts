@@ -252,7 +252,8 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
-const ENTRYPOINT = "main.ts";
+// main.ts or main.mjs or main.js or main.cjs
+const ENTRYPOINTS = ["main.ts", "main.mjs", "main.js", "main.cjs"];
 
 // First, let's define a new type for the file structure
 const FileSchema = z.object({
@@ -264,7 +265,7 @@ const FileSchema = z.object({
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
-    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINT}.
+    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINTS}.
 
 Common patterns:
 1. Use a deps.ts file to centralize dependencies:
@@ -332,20 +333,23 @@ Important Notes:
       return acc;
     }, {} as Record<string, string>);
 
-    const skipBundling = files.length === 1 &&
-      files[0].path === SCRIPT_FILE_NAME;
-
-    if (!(ENTRYPOINT in filesRecord) && !skipBundling) {
-      throw new UserInputError(`${ENTRYPOINT} is not in the files`);
+    // check if the entrypoint is in the files
+    const entrypoint = ENTRYPOINTS.find((entrypoint) =>
+      entrypoint in filesRecord
+    );
+    if (!entrypoint) {
+      throw new UserInputError(
+        `Entrypoint not found in files. Entrypoint must be one of: ${
+          ENTRYPOINTS.join(", ")
+        }`,
+      );
     }
 
     await createNamespaceOnce(c);
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
 
     // Bundle the files
-    const bundledScript = skipBundling
-      ? filesRecord[SCRIPT_FILE_NAME]
-      : await bundler(filesRecord, ENTRYPOINT);
+    const bundledScript = await bundler(filesRecord, entrypoint);
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File(

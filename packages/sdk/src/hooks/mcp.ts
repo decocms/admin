@@ -277,6 +277,7 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "googlesheets",
   "googlegmail",
   "googleyoutube",
+  "googledrive",
   "airtable",
   "slack",
 ];

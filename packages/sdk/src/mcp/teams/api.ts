@@ -7,6 +7,7 @@ import {
 import { type AppContext, createTool } from "../context.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
+import { THEME_VARIABLES } from "../../theme.ts";
 import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
@@ -14,6 +15,50 @@ import {
 import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;
+
+// Enhanced theme schema with detailed context for AI tools
+const themeVariablesSchema = z.object({
+  "--background": z.string().optional().describe("Main background color of the application (OKLCH/hex format)"),
+  "--foreground": z.string().optional().describe("Main text color on background (OKLCH/hex format)"),
+  "--card": z.string().optional().describe("Background color for cards and panels (OKLCH/hex format)"),
+  "--card-foreground": z.string().optional().describe("Text color on cards and panels (OKLCH/hex format)"),
+  "--popover": z.string().optional().describe("Background color for popovers and dropdowns (OKLCH/hex format)"),
+  "--popover-foreground": z.string().optional().describe("Text color in popovers and dropdowns (OKLCH/hex format)"),
+  "--primary": z.string().optional().describe("Primary brand color for buttons and highlights (OKLCH/hex format)"),
+  "--primary-foreground": z.string().optional().describe("Text color on primary elements (OKLCH/hex format)"),
+  "--primary-light": z.string().optional().describe("Lighter variant of primary color (OKLCH/hex format)"),
+  "--primary-dark": z.string().optional().describe("Darker variant of primary color (OKLCH/hex format)"),
+  "--secondary": z.string().optional().describe("Secondary color for less prominent elements (OKLCH/hex format)"),
+  "--secondary-foreground": z.string().optional().describe("Text color on secondary elements (OKLCH/hex format)"),
+  "--muted": z.string().optional().describe("Muted background color for subtle elements (OKLCH/hex format)"),
+  "--muted-foreground": z.string().optional().describe("Muted text color for secondary text (OKLCH/hex format)"),
+  "--accent": z.string().optional().describe("Accent color for interactive elements (OKLCH/hex format)"),
+  "--accent-foreground": z.string().optional().describe("Text color on accent elements (OKLCH/hex format)"),
+  "--destructive": z.string().optional().describe("Color for destructive actions and errors (OKLCH/hex format)"),
+  "--destructive-foreground": z.string().optional().describe("Text color on destructive elements (OKLCH/hex format)"),
+  "--border": z.string().optional().describe("Border color for elements (OKLCH/hex format)"),
+  "--input": z.string().optional().describe("Border color for input fields (OKLCH/hex format)"),
+  "--sidebar": z.string().optional().describe("Background color for sidebar navigation (OKLCH/hex format)"),
+  "--splash": z.string().optional().describe("Background color for splash screen animation (OKLCH/hex format)"),
+});
+
+const fontSchema = z.union([
+  z.object({
+    type: z.literal("Google Fonts").describe("Use a Google Fonts font"),
+    name: z.string().describe("Name of the Google Font (e.g., 'Inter', 'Roboto', 'Open Sans')"),
+  }),
+  z.object({
+    type: z.literal("Custom").describe("Use a custom uploaded font"),
+    name: z.string().describe("Display name for the custom font"),
+    url: z.string().describe("URL to the custom font file"),
+  }),
+]);
+
+const enhancedThemeSchema = z.object({
+  variables: themeVariablesSchema.optional().describe("CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors."),
+  picture: z.string().optional().describe("URL to team avatar/logo image"),
+  font: fontSchema.optional().describe("Font configuration for the workspace"),
+}).describe("Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.");
 
 export const sanitizeTeamName = (name: string): string => {
   if (!name) return "";
@@ -194,17 +239,14 @@ export const createTeam = createTool({
 
 export const updateTeam = createTool({
   name: "TEAMS_UPDATE",
-  description: "Update an existing team",
+  description: "Update an existing team including theme customization",
   inputSchema: z.object({
     id: z.number().describe("The id of the team to update"),
     data: z.object({
-      name: z.string().optional(),
-      slug: z.string().optional(),
+      name: z.string().optional().describe("Team name"),
+      slug: z.string().optional().describe("Team URL slug"),
       stripe_subscription_id: z.string().optional(),
-      theme: z.object({
-        picture: z.string().optional(),
-        variables: z.record(z.string()).optional(),
-      }).optional(),
+      theme: enhancedThemeSchema.optional(),
     }),
   }),
   handler: async (props, c) => {
@@ -263,6 +305,56 @@ export const updateTeam = createTool({
 
     return {
       ...updatedTeam,
+      avatar_url: await getAvatarFromTheme(updatedTeam.theme, signedUrlCreator),
+    };
+  },
+});
+
+export const setTeamTheme = createTool({
+  name: "SET_TEAM_THEME",
+  description: "Set or update the theme for a team workspace. This tool provides comprehensive theme customization with detailed schema context for AI operations.",
+  inputSchema: z.object({
+    teamId: z.number().describe("The ID of the team to update the theme for"),
+    theme: enhancedThemeSchema.describe("Theme configuration. Only specify the properties you want to change - existing values will be preserved through theme merging."),
+  }),
+  handler: async (props, c) => {
+    const { teamId, theme } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
+
+    // Get current team data to merge theme
+    const { data: currentTeam, error: getError } = await c
+      .db
+      .from("teams")
+      .select("theme, slug")
+      .eq("id", teamId)
+      .single();
+
+    if (getError) throw getError;
+
+    const mergedTheme = mergeThemes(currentTeam.theme, theme);
+
+    // Update the team theme
+    const { data: updatedTeam, error: updateError } = await c
+      .db  
+      .from("teams")
+      .update({ theme: mergedTheme as Json })
+      .eq("id", teamId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    const workspace = `/shared/${updatedTeam.slug}`;
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(workspace),
+    });
+
+    return {
+      success: true,
+      message: "Theme updated successfully",
+      theme: updatedTeam.theme,
       avatar_url: await getAvatarFromTheme(updatedTeam.theme, signedUrlCreator),
     };
   },

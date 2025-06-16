@@ -332,7 +332,10 @@ Important Notes:
       return acc;
     }, {} as Record<string, string>);
 
-    if (!(ENTRYPOINT in filesRecord)) {
+    const skipBundling = files.length === 1 &&
+      files[0].path === SCRIPT_FILE_NAME;
+
+    if (!(ENTRYPOINT in filesRecord) && !skipBundling) {
       throw new UserInputError(`${ENTRYPOINT} is not in the files`);
     }
 
@@ -340,7 +343,9 @@ Important Notes:
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
 
     // Bundle the files
-    const bundledScript = await bundler(filesRecord, ENTRYPOINT);
+    const bundledScript = skipBundling
+      ? filesRecord[SCRIPT_FILE_NAME]
+      : await bundler(filesRecord, ENTRYPOINT);
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File(

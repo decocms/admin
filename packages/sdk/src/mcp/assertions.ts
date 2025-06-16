@@ -61,8 +61,14 @@ export const assertWorkspaceResourceAccess = async (
   const user = c.user;
   const { root, slug } = c.workspace;
 
-  // agent tokens
+  // jwt-issued tokens
   if ("aud" in user && user.aud === c.workspace.value) {
+    // scopes should be a space-separated list of resources
+    if (user.scope && !user.scope.split(" ").includes(resource)) {
+      throw new ForbiddenError(
+        `Cannot access ${resource} in workspace ${c.workspace.value}`,
+      );
+    }
     return c.resourceAccess.grant();
   }
 

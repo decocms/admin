@@ -14,10 +14,13 @@ import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
-export type AgentPrincipal = JWTPayload;
+export interface JWTPrincipal extends JWTPayload {
+  scope?: string;
+}
+
 export type Principal =
   | UserPrincipal
-  | AgentPrincipal;
+  | JWTPrincipal;
 export interface Vars {
   params: Record<string, string>;
   workspace?: {

@@ -141,6 +141,13 @@ async function deployToCloudflare(
     compatibility_flags: ["nodejs_compat"],
     compatibility_date: "2024-11-27",
     tags: [c.workspace.value],
+    bindings: [
+      {
+        type: "kv_namespace",
+        name: "GUPY_RFP_KV",
+        namespace_id: "32e8688dbede452d920389a4d3cf2f20"
+      },
+    ]
   };
 
   addPolyfills(files, metadata, [polyfill]);

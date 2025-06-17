@@ -18,6 +18,11 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
+import {
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
+  assertWorkspaceResourceAccess,
+} from "@deco/sdk/mcp";
 import { fetchScript } from "./apps.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -229,6 +234,32 @@ app.post(
 // Login and auth routes
 Object.entries(loginRoutes).forEach(([route, honoApp]) => {
   app.route(route, honoApp);
+});
+
+app.get("/files/:root/:slug/:path{.+}", async (c) => {
+  const root = c.req.param("root");
+  const slug = c.req.param("slug");
+  const filePath = c.req.param("path"); 
+
+  if (!filePath) {
+    throw new HTTPException(400, { message: "File path is required" });
+  }
+
+  const workspace = `/${root}/${slug}`;
+
+  const appCtx = honoCtxToAppCtx(c);
+
+  await assertWorkspaceResourceAccess("FS_READ", appCtx);
+
+  const bucketName = getWorkspaceBucketName(workspace);
+  const url = await getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
+    c: appCtx,
+    existingBucketName: bucketName,
+    path: filePath,
+    expiresIn: 3600,
+  });
+
+  return c.redirect(url, 302);
 });
 
 // External webhooks

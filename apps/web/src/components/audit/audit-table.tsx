@@ -1,4 +1,4 @@
-import { Table, TableColumn } from "../common/table/index.tsx";
+import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
   AgentInfo,
   DateTimeCell,

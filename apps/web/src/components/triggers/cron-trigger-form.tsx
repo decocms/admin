@@ -1,6 +1,6 @@
 import {
   CronTriggerSchema,
-  TriggerOutputSchema,
+  type TriggerOutputSchema,
   useCreateTrigger,
   useUpdateTrigger,
 } from "@deco/sdk";

@@ -30,8 +30,11 @@ export type ToolsData = {
 
 const INITIAL_DATA: ToolsData = { tools: [], instructions: "" };
 
-export const listTools = (connection: MCPConnection): Promise<ToolsData> =>
-  MCPClient.INTEGRATIONS_LIST_TOOLS({ connection }) as Promise<ToolsData>;
+export const listTools = (
+  connection: MCPConnection,
+  init?: RequestInit,
+): Promise<ToolsData> =>
+  MCPClient.INTEGRATIONS_LIST_TOOLS({ connection }, init) as Promise<ToolsData>;
 
 export const callTool = (
   connection: MCPConnection,
@@ -54,7 +57,7 @@ export function useTools(connection: MCPConnection) {
       // deno-lint-ignore no-explicit-any
       (connection as any).name,
     ],
-    queryFn: () => listTools(connection),
+    queryFn: ({ signal }) => listTools(connection, { signal }),
   });
 
   return {

@@ -2,10 +2,16 @@ import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import {
   assertPrincipalIsUser,
-  bypass,
-  canAccessTeamResource,
+  assertTeamResourceAccess,
 } from "../assertions.ts";
-import { createTool } from "../context.ts";
+import { type AppContext, createTool } from "../context.ts";
+import type { Json } from "../../storage/index.ts";
+import type { Theme } from "../../theme.ts";
+import {
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
+} from "../fs/api.ts";
+import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -18,8 +24,43 @@ export const sanitizeTeamName = (name: string): string => {
   );
 };
 
+export const getAvatarFromTheme = (
+  theme: Json,
+  createSignedUrl: (path: string) => Promise<string>,
+): Promise<string | null> => {
+  if (
+    theme !== null && typeof theme === "object" && "picture" in theme &&
+    typeof theme.picture === "string"
+  ) {
+    const picture = theme.picture as string;
+    return createSignedUrl(picture).catch((error) => {
+      console.error("Error getting avatar from theme", error);
+      return null;
+    });
+  }
+  return Promise.resolve(null);
+};
+
 export const removeNameAccents = (name: string): string => {
   return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
+export const buildSignedUrlCreator = ({
+  c,
+  existingBucketName,
+}: {
+  c: AppContext;
+  existingBucketName: string;
+}) => {
+  return (path: string) => {
+    // Team avatars are ok to be public
+    return getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
+      c,
+      path,
+      existingBucketName,
+      expiresIn: 180,
+    });
+  };
 };
 
 export const getTeam = createTool({
@@ -28,11 +69,10 @@ export const getTeam = createTool({
   inputSchema: z.object({
     slug: z.string(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.slug, c);
-  },
   handler: async (props, c) => {
     const { slug } = props;
+
+    await assertTeamResourceAccess(c.tool.name, slug, c);
 
     const { data: teamData, error } = await c
       .db
@@ -46,7 +86,23 @@ export const getTeam = createTool({
       throw new NotFoundError("Team not found or user does not have access");
     }
 
-    return teamData;
+    try {
+      const workspace = `/shared/${slug}`;
+      const signedUrlCreator = buildSignedUrlCreator({
+        c,
+        existingBucketName: getWorkspaceBucketName(workspace),
+      });
+      return {
+        ...teamData,
+        avatar_url: await getAvatarFromTheme(teamData.theme, signedUrlCreator),
+      };
+    } catch (error) {
+      console.error("Error getting signed url creator", error);
+      return {
+        ...teamData,
+        avatar_url: null,
+      };
+    }
   },
 });
 
@@ -58,7 +114,7 @@ export const createTeam = createTool({
     slug: z.string().optional(),
     stripe_subscription_id: z.string().optional(),
   }),
-  canAccess: bypass,
+
   /**
    * This function handle this steps:
    * 1. check if team slug already exists;
@@ -67,6 +123,8 @@ export const createTeam = createTool({
    * 4. Add member role as onwer (id: 1).
    */
   handler: async (props, c) => {
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
     const { name, slug, stripe_subscription_id } = props;
     const user = c.user;
@@ -143,13 +201,16 @@ export const updateTeam = createTool({
       name: z.string().optional(),
       slug: z.string().optional(),
       stripe_subscription_id: z.string().optional(),
+      theme: z.object({
+        picture: z.string().optional(),
+        variables: z.record(z.string()).optional(),
+      }).optional(),
     }),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.id, c);
-  },
   handler: async (props, c) => {
     const { id, data } = props;
+
+    await assertTeamResourceAccess(c.tool.name, id, c);
 
     // TODO: check if it's required
     // Enforce unique slug if being updated
@@ -167,6 +228,18 @@ export const updateTeam = createTool({
       }
     }
 
+    // Get current team data to merge theme
+    const { data: currentTeam, error: getError } = await c
+      .db
+      .from("teams")
+      .select("theme")
+      .eq("id", id)
+      .single();
+
+    if (getError) throw getError;
+
+    const mergedTheme = mergeThemes(currentTeam.theme, data.theme);
+
     // Update the team
     const { data: updatedTeam, error: updateError } = await c
       .db
@@ -174,6 +247,7 @@ export const updateTeam = createTool({
       .update({
         ...data,
         ...(data.name ? { name: sanitizeTeamName(data.name) } : {}),
+        ...(mergedTheme ? { theme: mergedTheme as Json } : {}),
       })
       .eq("id", id)
       .select()
@@ -181,7 +255,16 @@ export const updateTeam = createTool({
 
     if (updateError) throw updateError;
 
-    return updatedTeam;
+    const workspace = `/shared/${updatedTeam.slug}`;
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(workspace),
+    });
+
+    return {
+      ...updatedTeam,
+      avatar_url: await getAvatarFromTheme(updatedTeam.theme, signedUrlCreator),
+    };
   },
 });
 
@@ -191,11 +274,10 @@ export const deleteTeam = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
-  async canAccess(name, props, c) {
-    return await canAccessTeamResource(name, props.teamId, c);
-  },
   handler: async (props, c) => {
     const { teamId } = props;
+
+    await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     const members = await c.db
       .from("members")
@@ -227,8 +309,9 @@ export const listTeams = createTool({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   inputSchema: z.object({}),
-  canAccess: bypass,
   handler: async (_, c) => {
+    c.resourceAccess.grant();
+
     assertPrincipalIsUser(c);
     const user = c.user;
 
@@ -239,6 +322,7 @@ export const listTeams = createTool({
         id,
         name,
         slug,
+        theme,
         created_at,
         members!inner (
           id,
@@ -254,6 +338,61 @@ export const listTeams = createTool({
       throw error;
     }
 
-    return data.map(({ members: _members, ...teamData }) => teamData);
+    const teamsWithoutAvatar = data.map(({ members: _members, ...teamData }) =>
+      teamData
+    );
+
+    const teamsWithAvatar = await Promise.all(
+      teamsWithoutAvatar.map(async (team) => {
+        const signedUrlCreator = buildSignedUrlCreator({
+          c,
+          existingBucketName: getWorkspaceBucketName(`/shared/${team.slug}`),
+        });
+        return {
+          ...team,
+          avatar_url: await getAvatarFromTheme(team.theme, signedUrlCreator),
+        };
+      }),
+    );
+
+    return teamsWithAvatar;
+  },
+});
+
+export const getWorkspaceTheme = createTool({
+  name: "TEAMS_GET_THEME",
+  description: "Get the theme for a workspace",
+  inputSchema: z.object({
+    slug: z.string(),
+  }),
+  handler: async (props, c) => {
+    c.resourceAccess.grant();
+    const { slug } = props;
+
+    const { data: team, error } = await c.db.from("teams").select("theme").eq(
+      "slug",
+      slug,
+    ).maybeSingle();
+
+    if (error) throw error;
+
+    const _theme = team?.theme as Theme | null;
+
+    if (!_theme || typeof _theme !== "object") {
+      return { theme: {} };
+    }
+
+    const signedUrlCreator = buildSignedUrlCreator({
+      c,
+      existingBucketName: getWorkspaceBucketName(`/shared/${slug}`),
+    });
+
+    const theme = {
+      ..._theme,
+      picture: _theme?.picture
+        ? await getAvatarFromTheme(_theme as Json, signedUrlCreator)
+        : undefined,
+    };
+    return { theme };
   },
 });

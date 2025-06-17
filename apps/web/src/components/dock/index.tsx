@@ -9,19 +9,19 @@ import {
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  AddPanelOptions,
+  type AddPanelOptions,
   type DockviewApi,
   DockviewReact,
   type DockviewReadyEvent,
-  IDockviewPanelHeaderProps,
+  type IDockviewPanelHeaderProps,
   type IDockviewPanelProps,
 } from "dockview-react";
 import {
-  ComponentProps,
-  ComponentType,
+  type ComponentProps,
+  type ComponentType,
   createContext,
   type Dispatch,
-  ReactNode,
+  type ReactNode,
   type SetStateAction,
   Suspense,
   use,

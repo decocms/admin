@@ -12,7 +12,7 @@ import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { IntegrationIcon } from "../integrations/common.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 interface BindingSelectorProps {
@@ -46,9 +46,6 @@ function IntegrationListItem({
         selectedIntegration === integration.id && "bg-muted",
       )}
     >
-      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
-        <Icon name="chevron_right" size={16} />
-      </div>
       <div className="flex items-center gap-3">
         <IntegrationIcon
           icon={integration.icon}
@@ -95,7 +92,9 @@ export function BindingSelector({
       setTimeout(() => {
         selectedItemRef.current?.scrollIntoView({ block: "center" });
       }, 100);
-    } else if (!isMobile && installedIntegrations.length > 0) {
+    } else if (
+      !isMobile && installedIntegrations && installedIntegrations.length > 0
+    ) {
       setSelectedIntegration(installedIntegrations[0].id);
     } else {
       setSelectedIntegration(null);
@@ -110,7 +109,7 @@ export function BindingSelector({
     }
   }
 
-  const filtered = installedIntegrations.filter((i) =>
+  const filtered = installedIntegrations?.filter((i) =>
     i.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -151,7 +150,7 @@ export function BindingSelector({
                   <ScrollArea className="h-[calc(100vh-10rem)]">
                     <div className="p-4">
                       <div className="space-y-2">
-                        {filtered.map((integration) => (
+                        {filtered?.map((integration) => (
                           <ErrorBoundary key={integration.id} fallback={null}>
                             <IntegrationListItem
                               key={integration.id}
@@ -196,7 +195,7 @@ export function BindingSelector({
                   <div className="w-[365px] flex-shrink-0 truncate h-full">
                     <ScrollArea className="h-full">
                       <div className="space-y-2">
-                        {filtered.map((integration) => (
+                        {filtered?.map((integration) => (
                           <IntegrationListItem
                             key={integration.id}
                             integration={integration}

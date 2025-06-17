@@ -1,10 +1,13 @@
-import { ListTriggersOutputSchema, useListTriggersByAgentId } from "@deco/sdk";
+import {
+  type ListTriggersOutputSchema,
+  useListTriggersByAgentId,
+} from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
 import { useChatContext } from "../chat/context.tsx";
 import { TriggerModal as TriggerModalButton } from "./trigger-dialog.tsx";
 import { TriggerCard } from "./trigger-card.tsx";

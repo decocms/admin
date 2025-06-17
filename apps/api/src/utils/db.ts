@@ -1,5 +1,5 @@
 import {
-  createServerClient,
+  type createServerClient,
   serializeCookieHeader,
   type SetAllCookies,
 } from "@supabase/ssr";

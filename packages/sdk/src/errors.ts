@@ -6,6 +6,10 @@ export class HttpError extends Error {
     super(message);
     this.traceId = traceId;
   }
+
+  override toString() {
+    return `HttpError[${this.code}] ${this.message}\n${this.stack}`;
+  }
 }
 
 export class UserInputError extends HttpError {

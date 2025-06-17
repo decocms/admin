@@ -7,6 +7,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Buffer } from "node:buffer";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
@@ -154,7 +155,7 @@ export const FETCH = createInnateTool({
 export const POLL_FOR_CONTENT = createInnateTool({
   id: "POLL_FOR_CONTENT",
   description:
-    "Check if a URL has content available by verifying the Content-Length header, with retry logic. Will keep polling until content is found or max attempts are reached.",
+    "Check if a URL has content available with better detection methods, timeouts, and resource management. Uses HEAD requests for efficiency and proper retry logic.",
   inputSchema: PollForContentInputSchema,
   outputSchema: PollForContentOutputSchema,
   execute: () => async ({ context }) => {
@@ -163,28 +164,105 @@ export const POLL_FOR_CONTENT = createInnateTool({
       maxAttempts = RETRY_CONFIG.maxAttempts,
       maxDelay = RETRY_CONFIG.maxDelay,
     } = context;
+
+    try {
+      new URL(url);
+    } catch {
+      return {
+        hasContent: false,
+        message: "Invalid URL format",
+      };
+    }
+
     let attempt = 1;
 
     while (attempt <= maxAttempts) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       try {
-        const res = await fetch(url);
+        let hasContent = false;
+        let contentInfo = "";
 
-        if (res.ok) {
-          const contentLength = res.headers.get("Content-Length");
-          const hasContent = contentLength
-            ? parseInt(contentLength, 10) > 0
-            : false;
+        try {
+          const headRes = await fetch(url, {
+            method: "HEAD",
+            signal: controller.signal,
+          });
 
-          if (hasContent) {
-            return {
-              hasContent: true,
-              message: "URL has content available",
-            };
+          if (headRes.ok) {
+            const contentLength = headRes.headers.get("Content-Length");
+            const contentType = headRes.headers.get("Content-Type");
+
+            // Simple logic: if HEAD returns OK (200-299), content is likely available
+            // Additional checks for content length can help confirm
+            const hasValidLength = contentLength
+              ? parseInt(contentLength, 10) > 0
+              : true; // Default to true if no length header
+
+            if (hasValidLength) {
+              hasContent = true;
+              contentInfo =
+                `URL has content available (HEAD: ${headRes.status}, Content-Length: ${
+                  contentLength || "unknown"
+                }, Content-Type: ${contentType || "unknown"})`;
+            }
+          }
+        } catch (headError) {
+          console.debug(
+            "HEAD request failed, will try GET fallback:",
+            headError,
+          );
+        }
+
+        // If HEAD didn't confirm content, try GET as fallback
+        if (!hasContent) {
+          try {
+            const getRes = await fetch(url, {
+              method: "GET",
+              signal: controller.signal,
+              headers: {
+                "Range": "bytes=0-1023", // Only fetch first 1KB to minimize data transfer
+              },
+            });
+
+            if (getRes.ok) {
+              const contentLength = getRes.headers.get("Content-Length");
+              const contentType = getRes.headers.get("Content-Type");
+
+              // Cancel the response body to avoid downloading the full content
+              if (getRes.body) {
+                await getRes.body.cancel();
+              }
+
+              hasContent = true;
+              contentInfo =
+                `URL has content available (GET: ${getRes.status}, Content-Length: ${
+                  contentLength || "unknown"
+                }, Content-Type: ${contentType || "unknown"})`;
+            }
+          } catch (getError) {
+            // Both HEAD and GET failed, continue to retry logic
+            console.debug("GET request also failed:", getError);
           }
         }
 
+        clearTimeout(timeoutId);
+
+        if (hasContent) {
+          return {
+            hasContent: true,
+            message: contentInfo,
+          };
+        }
+
+        // If we reach here, no content was detected
         if (attempt < maxAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), maxDelay);
+          // Exponential backoff with jitter
+          const baseDelay = Math.min(500 * Math.pow(2, attempt - 1), maxDelay);
+          const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
+          const delay = baseDelay + jitter;
+
           await new Promise((resolve) => setTimeout(resolve, delay));
           attempt++;
           continue;
@@ -192,11 +270,41 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
         return {
           hasContent: false,
-          message: "URL has no content after maximum attempts",
+          message: `URL has no content after ${maxAttempts} attempts`,
         };
       } catch (error) {
-        if (attempt < maxAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), maxDelay);
+        clearTimeout(timeoutId);
+
+        // Check if it's a timeout error
+        if (error instanceof Error && error.name === "AbortError") {
+          if (attempt < maxAttempts) {
+            const baseDelay = Math.min(
+              1000 * Math.pow(2, attempt - 1),
+              maxDelay,
+            );
+            const jitter = Math.random() * 0.1 * baseDelay;
+            const delay = baseDelay + jitter;
+
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            attempt++;
+            continue;
+          }
+
+          return {
+            hasContent: false,
+            message: "Request timed out after multiple attempts",
+          };
+        }
+
+        // For other errors, determine if they're retryable
+        const isRetryable = error instanceof TypeError || // Network errors
+          (error instanceof Error && error.message.includes("fetch"));
+
+        if (isRetryable && attempt < maxAttempts) {
+          const baseDelay = Math.min(1000 * Math.pow(2, attempt - 1), maxDelay);
+          const jitter = Math.random() * 0.1 * baseDelay;
+          const delay = baseDelay + jitter;
+
           await new Promise((resolve) => setTimeout(resolve, delay));
           attempt++;
           continue;
@@ -274,14 +382,11 @@ export const CONFIRM = createInnateTool({
 });
 
 const CreatePresignedUrlInputSchema = z.object({
-  filePath: z.string().describe(
-    `The path to the file to generate a presigned URL for. 
-    You must choose the directory from Pictures, Documents, or Videos, depending on what will be uploaded.
-    Examples: Pictures/image.jpg, Documents/report.pdf, Videos/video.mp4
-    Remember to add the file extension to the end of the path.`,
-  ),
   expiresIn: z.number().optional().describe(
     "Number of seconds until the URL expires (default: 3600)",
+  ),
+  fileExtension: z.string().describe(
+    "The file extension to use for the file",
   ),
 });
 
@@ -297,7 +402,7 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
   inputSchema: CreatePresignedUrlInputSchema,
   outputSchema: CreatePresignedUrlOutputSchema,
   execute: (agent, env) => async ({ context }) => {
-    const { filePath, expiresIn = 3600 } = context;
+    const { expiresIn = 3600, fileExtension } = context;
     if (!env) {
       throw new Error("Env is required");
     }
@@ -316,10 +421,9 @@ export const CREATE_PRESIGNED_URL = createInnateTool({
       },
     });
 
-    const s3Key = `${workspace}/${filePath}`;
+    const s3Key = `${workspace}/${crypto.randomUUID()}.${fileExtension}`;
 
-    const extension = filePath.split(".").pop()?.toLowerCase();
-    const contentType = getContentType(extension || "");
+    const contentType = getContentType(fileExtension);
 
     const putCommand = new PutObjectCommand({
       Bucket: bucketName,
@@ -415,6 +519,340 @@ export const WHO_AM_I = createInnateTool({
   },
 });
 
+const SpeakInputSchema = z.object({
+  text: z.string().describe("The text to speak using the agent's voice"),
+  emotion: z.enum(["neutral", "excited", "calm", "serious", "friendly"])
+    .optional().catch("neutral").describe(
+      "The emotional tone to use when speaking (optional)",
+    ),
+  speed: z.enum(["slow", "normal", "fast"]).optional().catch("normal").describe(
+    "The speed at which to speak (optional)",
+  ),
+  voice: z.enum([
+    "alloy",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "shimmer",
+    "ash",
+    "sage",
+    "coral",
+  ]).optional().catch("echo").describe(
+    "The voice to use for speech synthesis (optional, defaults to agent's configured voice)",
+  ),
+});
+
+const SpeakOutputSchema = z.object({
+  success: z.boolean().describe(
+    "Whether the speech was successfully generated",
+  ),
+  message: z.string().describe("Status message about the speech generation"),
+  audioUrl: z.string().optional().describe("URL to the generated audio file"),
+});
+
+export const SPEAK = createInnateTool({
+  id: "SPEAK",
+  description:
+    "Use the agent's voice to speak text aloud. This tool converts text to speech using the agent's configured voice model. " +
+    "Use this when you want to provide audio responses, when the user specifically requests voice output, " +
+    "or when you want to create more engaging interactions. You can optionally generate an audio file that can be shared or played later. " +
+    "This is perfect for creating voice-enabled conversations, reading content aloud, or providing audio feedback. " +
+    "Use the audioUrl in markdown to display the audio file in the chat. " +
+    "For example: ![audio]({audioUrl})",
+  inputSchema: SpeakInputSchema,
+  outputSchema: SpeakOutputSchema,
+  execute: (agent, env) => async ({ context }) => {
+    let s3Client: S3Client | null = null;
+    // deno-lint-ignore no-explicit-any
+    let readableStream: any = null;
+
+    try {
+      const { text, emotion, speed, voice } = context;
+
+      // Add emotional context to the text if specified
+      let enhancedText = text;
+      if (emotion && emotion !== "neutral") {
+        enhancedText = `[Speaking in a ${emotion} tone] ${text}`;
+      }
+
+      // Use the agent's speak method with voice and speed options
+      const speedMap = { slow: 0.75, normal: 1.0, fast: 1.25 };
+      const speakOptions = {
+        voice,
+        speed: speed ? speedMap[speed] : undefined,
+      };
+
+      readableStream = await agent.speak(enhancedText, speakOptions);
+
+      // Check if we got a valid ReadableStream
+      if (!readableStream) {
+        return {
+          success: false,
+          message: "Voice synthesis is not available for this agent",
+        };
+      }
+
+      const {
+        DECO_CHAT_DATA_BUCKET_NAME,
+        AWS_REGION,
+        AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY,
+      } = env ?? {};
+
+      let audioUrl: string | undefined;
+
+      if (
+        DECO_CHAT_DATA_BUCKET_NAME &&
+        AWS_REGION &&
+        AWS_ACCESS_KEY_ID &&
+        AWS_SECRET_ACCESS_KEY
+      ) {
+        try {
+          s3Client = new S3Client({
+            region: AWS_REGION,
+            credentials: {
+              accessKeyId: AWS_ACCESS_KEY_ID,
+              secretAccessKey: AWS_SECRET_ACCESS_KEY,
+            },
+          });
+
+          const timestamp = Date.now();
+          const audioFileName = `audio/speech-${timestamp}.mp3`;
+          const { workspace } = agent;
+          const s3Key = `${workspace}/${audioFileName}`;
+
+          audioUrl = await processAudioStream(
+            readableStream,
+            s3Client,
+            DECO_CHAT_DATA_BUCKET_NAME,
+            s3Key,
+          );
+        } catch (uploadError) {
+          console.error("💥 Error uploading audio:", uploadError);
+        }
+      }
+
+      return {
+        success: true,
+        message: `Successfully generated speech for: "${text.substring(0, 50)}${
+          text.length > 50 ? "..." : ""
+        }"`,
+        audioUrl,
+      };
+    } catch (error) {
+      console.error("💥 Error in SPEAK tool:", error);
+      return {
+        success: false,
+        message: `Failed to generate speech: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+    } finally {
+      // Cleanup resources
+      await cleanupResources(readableStream, s3Client);
+    }
+  },
+});
+
+// Helper function to process audio stream with memory efficiency
+async function processAudioStream(
+  // deno-lint-ignore no-explicit-any
+  readableStream: any,
+  s3Client: S3Client,
+  bucketName: string,
+  s3Key: string,
+): Promise<string> {
+  const MAX_MEMORY_BUFFER = 50 * 1024 * 1024; // 50MB limit
+  let totalSize = 0;
+  const chunks: Buffer[] = [];
+
+  try {
+    // Handle different stream types with better error recovery
+    if (readableStream && typeof readableStream === "object") {
+      // Check if it's a Node.js readable stream
+      if ("read" in readableStream || "on" in readableStream) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error("Stream processing timeout after 30 seconds"));
+          }, 30000);
+
+          const cleanup = () => {
+            clearTimeout(timeout);
+          };
+
+          if (readableStream._readableState?.length > 0) {
+            let chunk;
+            while ((chunk = readableStream.read()) !== null) {
+              if (chunk instanceof Buffer) {
+                totalSize += chunk.length;
+                if (totalSize > MAX_MEMORY_BUFFER) {
+                  cleanup();
+                  reject(
+                    new Error(
+                      `Audio file too large (>${
+                        MAX_MEMORY_BUFFER / 1024 / 1024
+                      }MB)`,
+                    ),
+                  );
+                  return;
+                }
+                chunks.push(chunk);
+              }
+            }
+          }
+
+          readableStream.on("data", (chunk: Buffer) => {
+            totalSize += chunk.length;
+            if (totalSize > MAX_MEMORY_BUFFER) {
+              cleanup();
+              reject(
+                new Error(
+                  `Audio file too large (>${
+                    MAX_MEMORY_BUFFER / 1024 / 1024
+                  }MB)`,
+                ),
+              );
+              return;
+            }
+            chunks.push(chunk);
+          });
+
+          readableStream.on("end", () => {
+            cleanup();
+            resolve();
+          });
+
+          readableStream.on("error", (error: Error) => {
+            cleanup();
+            reject(new Error(`Stream error: ${error.message}`));
+          });
+
+          if (readableStream.readableEnded || readableStream.destroyed) {
+            cleanup();
+            resolve();
+          }
+        });
+      } else if (readableStream instanceof ArrayBuffer) {
+        const buffer = Buffer.from(readableStream);
+        if (buffer.length > MAX_MEMORY_BUFFER) {
+          throw new Error(
+            `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
+          );
+        }
+        chunks.push(buffer);
+      } else if (typeof readableStream === "string") {
+        const buffer = Buffer.from(readableStream, "base64");
+        if (buffer.length > MAX_MEMORY_BUFFER) {
+          throw new Error(
+            `Audio file too large (>${MAX_MEMORY_BUFFER / 1024 / 1024}MB)`,
+          );
+        }
+        chunks.push(buffer);
+      } else {
+        throw new Error("Unsupported stream type");
+      }
+    } else {
+      throw new Error("Invalid stream object");
+    }
+
+    if (chunks.length === 0) {
+      throw new Error("No audio data received from voice synthesis");
+    }
+
+    const audioBuffer = Buffer.concat(chunks);
+
+    await uploadWithRetry(s3Client, bucketName, s3Key, audioBuffer);
+
+    const getCommand = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key,
+      ResponseContentType: "audio/mpeg",
+    });
+
+    return await getSignedUrl(s3Client, getCommand, {
+      expiresIn: 3600 * 24, // 24 hours
+    });
+  } finally {
+    chunks.length = 0;
+  }
+}
+
+// Helper function to upload with retry logic
+async function uploadWithRetry(
+  s3Client: S3Client,
+  bucketName: string,
+  s3Key: string,
+  audioBuffer: Buffer,
+  maxRetries: number = 3,
+): Promise<void> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const putCommand = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: s3Key,
+        Body: audioBuffer,
+        ContentType: "audio/mpeg",
+        ContentLength: audioBuffer.length,
+      });
+
+      await s3Client.send(putCommand);
+      return; // Success
+    } catch (error) {
+      lastError = error instanceof Error
+        ? error
+        : new Error("Unknown upload error");
+
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to upload after ${maxRetries} attempts: ${lastError?.message}`,
+  );
+}
+
+// Helper function to cleanup resources
+function cleanupResources(
+  // deno-lint-ignore no-explicit-any
+  readableStream: any,
+  s3Client: S3Client | null,
+): void {
+  try {
+    if (readableStream && typeof readableStream === "object") {
+      if (
+        "destroy" in readableStream &&
+        typeof readableStream.destroy === "function"
+      ) {
+        readableStream.destroy();
+      } else if (
+        "close" in readableStream && typeof readableStream.close === "function"
+      ) {
+        readableStream.close();
+      }
+    }
+  } catch (error) {
+    console.warn("Warning: Failed to cleanup stream resources:", error);
+  }
+
+  try {
+    if (
+      s3Client && "destroy" in s3Client &&
+      typeof s3Client.destroy === "function"
+    ) {
+      s3Client.destroy();
+    }
+  } catch (error) {
+    console.warn("Warning: Failed to cleanup S3 client resources:", error);
+  }
+}
+
 export const tools = {
   FETCH,
   POLL_FOR_CONTENT,
@@ -423,4 +861,5 @@ export const tools = {
   CONFIRM,
   CREATE_PRESIGNED_URL,
   WHO_AM_I,
+  SPEAK,
 };

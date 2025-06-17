@@ -21,7 +21,7 @@
     --dv-drag-over-background-color: var(--color-accent);
     --dv-drag-over-border-color: var(--color-border);
     --dv-tabs-container-scrollbar-color: var(--color-muted);
-    --dv-group-view-background-color: var(--color-slate-50);
+    --dv-group-view-background-color: var(--sidebar);
     --dv-tabs-and-actions-container-background-color: var(--color-background);
     --dv-activegroup-visiblepanel-tab-background-color: transparent;
     --dv-activegroup-hiddenpanel-tab-background-color: transparent;
@@ -91,6 +91,63 @@
 
     .one-tab .dv-scrollable {
       @apply grow-0!;
+    }
+
+    .prose ul {
+      @apply list-disc pl-6;
+    }
+
+    .prose ol {
+      @apply list-decimal pl-6;
+    }
+
+    .prose h1 {
+      @apply text-2xl font-bold;
+    }
+
+    .prose h2 {
+      @apply text-xl font-bold;
+    }
+
+    .prose h3 {
+      @apply text-lg font-bold;
+    }
+
+    .prose h4 {
+      @apply text-base font-bold;
+    }
+
+    .prose h5 {
+      @apply text-sm font-bold;
+    }
+
+    .prose h6 {
+      @apply text-xs font-bold;
+    }
+
+    .prose a {
+      @apply text-primary-light underline;
+    }
+
+    .prose pre {
+      @apply whitespace-pre-wrap break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose pre code {
+      @apply my-2 rounded-lg bg-primary-light/10 border border-primary-light
+        block whitespace-pre-wrap !p-2 break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose code {
+      @apply rounded bg-muted-foreground/10 border border-muted-foreground/20
+        whitespace-pre-wrap px-1 leading-normal inline break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose hr {
+      @apply my-4 border-border;
     }
   }
 }

@@ -14,7 +14,7 @@
 
 import {
   createClient,
-  SupabaseClient,
+  type SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2.31.0";
 import { parse } from "https://deno.land/std@0.212.0/flags/mod.ts";
 import {

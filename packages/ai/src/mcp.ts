@@ -7,7 +7,9 @@ import {
   type MCPConnection,
 } from "@deco/sdk";
 import { createSessionTokenCookie } from "@deco/sdk/auth";
-import { AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
+import { WebCache } from "@deco/sdk/cache";
+import { SWRCache } from "@deco/sdk/cache/swr";
+import { type AppContext, fromWorkspaceString, MCPClient } from "@deco/sdk/mcp";
 import { slugify } from "@deco/sdk/memory";
 import type { ToolAction } from "@mastra/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -48,22 +50,30 @@ export const patchApiDecoChatTokenHTTPConnection = (
   };
 };
 
+const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
+  `list-tools`,
+  WebCache.MAX_SAFE_TTL,
+);
+export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
+  return swr.cache(async () => {
+    const client = await createServerClient(mcpServer, signal).catch(
+      console.error,
+    );
+    if (!client) {
+      return { tools: [] };
+    }
+
+    return client.listTools().finally(() => client.close());
+  }, "url" in mcpServer.connection ? mcpServer.connection.url : mcpServer.id);
+};
+
 const getMCPServerTools = async (
   mcpServer: Integration,
   agent: AIAgent,
   signal?: AbortSignal,
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
-  const client = await createServerClient(mcpServer, signal).catch(
-    console.error,
-  );
-
-  if (!client) {
-    return {};
-  }
-
   try {
-    const { tools } = await client.listTools();
-    await client.close();
+    const { tools } = await swrListTools(mcpServer, signal);
     const mtools: Record<string, ToolAction<any, any, any>> = Object
       .fromEntries(
         tools.map((tool: typeof tools[number]) => {
@@ -74,6 +84,12 @@ const getMCPServerTools = async (
               id: slug,
               description: tool.description! ?? "",
               inputSchema: jsonSchemaToModel(tool.inputSchema),
+              outputSchema: jsonSchemaToModel(
+                tool.outputSchema ?? {
+                  type: "object",
+                  additionalProperties: true,
+                },
+              ),
               execute: async ({ context }) => {
                 const innerClient = await createServerClient(mcpServer).catch(
                   console.error,
@@ -88,11 +104,12 @@ const getMCPServerTools = async (
                     // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
                   }, CallToolResultSchema);
 
-                  await innerClient.close();
                   return result;
                 } catch (error) {
                   agent._resetCallableToolSet(mcpServer.id);
                   throw error;
+                } finally {
+                  await innerClient.close();
                 }
               },
             }),
@@ -103,7 +120,6 @@ const getMCPServerTools = async (
     return mtools;
   } catch (err) {
     console.error("[MCP] Error connecting to", mcpServer.name, err);
-    await client.close();
     return {};
   }
 };
@@ -277,6 +293,18 @@ const handleMCPResponse = async (client: Client) => {
 
   return { tools: result.tools, instructions, capabilities, version };
 };
+export const swrMCPMetadata = (
+  mcpServer: Pick<Integration, "connection" | "name">,
+) => {
+  const fetch = async () => {
+    const client = await createServerClient(mcpServer);
+    return handleMCPResponse(client).finally(() => client.close());
+  };
+  if ("url" in mcpServer.connection) {
+    return swr.cache(fetch, mcpServer.connection.url);
+  }
+  return fetch();
+};
 
 export async function listToolsByConnectionType(
   connection: MCPConnection,
@@ -291,6 +319,7 @@ export async function listToolsByConnectionType(
             ? fromWorkspaceString(connection.workspace)
             : undefined),
       });
+
       const maybeIntegration = await mcpClient.INTEGRATIONS_GET({
         id: connection.name,
       });
@@ -315,13 +344,10 @@ export async function listToolsByConnectionType(
     case "Websocket":
     case "SSE":
     case "HTTP": {
-      const client = await createServerClient({
+      return await swrMCPMetadata({
         name: connection.type,
         connection,
       });
-      return {
-        ...(await handleMCPResponse(client)),
-      };
     }
     default: {
       return { error: "Invalid connection type" };

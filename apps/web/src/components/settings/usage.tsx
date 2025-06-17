@@ -10,7 +10,7 @@ import {
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
-  ChartConfig,
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -370,7 +370,7 @@ function CreditsUsedPerThread({
           )
           : (
             enrichedThreads.map((thread) => (
-              <Dialog>
+              <Dialog key={thread.id}>
                 <DialogTrigger asChild>
                   <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">

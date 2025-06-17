@@ -4,8 +4,8 @@ import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
-import { default as app } from "./src/app.ts";
 import process from "node:process";
+import { default as app } from "./src/app.ts";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
@@ -13,7 +13,8 @@ const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
 // Domains we consider "self"
 const SELF_DOMAINS: string[] = [
   Hosts.API,
-  `localhost:${process.env.PORT || 3001}`,
+  ...process.env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS],
+  `localhost:${process.env.PORT || 8000}`,
 ];
 
 // Patch fetch globally
@@ -47,7 +48,7 @@ globalThis.fetch = async function patchedFetch(
 
   const context = contextStorage.getStore();
 
-  if (SELF_DOMAINS.includes(url.host)) {
+  if (SELF_DOMAINS.some((domain) => url.host.endsWith(domain))) {
     if (!context) {
       throw new Error("Missing context for internal self-invocation");
     }

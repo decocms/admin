@@ -1,6 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import {
-  API_SERVER_URL,
+  DECO_CHAT_API,
   dispatchMessages,
   getTraceDebugId,
   useAgent,
@@ -9,8 +9,8 @@ import {
 } from "@deco/sdk";
 import {
   createContext,
-  PropsWithChildren,
-  RefObject,
+  type PropsWithChildren,
+  type RefObject,
   useContext,
   useRef,
 } from "react";
@@ -99,7 +99,7 @@ export function ChatProvider({
       "x-deno-isolate-instance-id": agentRoot,
       "x-trace-debug-id": getTraceDebugId(),
     },
-    api: new URL("/actors/AIAgent/invoke/stream", API_SERVER_URL).href,
+    api: new URL("/actors/AIAgent/invoke/stream", DECO_CHAT_API).href,
     experimental_prepareRequestBody: ({ messages }) => {
       dispatchMessages({ messages, threadId, agentId });
       const lastMessage = messages.at(-1);

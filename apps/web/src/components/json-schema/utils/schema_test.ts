@@ -9,7 +9,7 @@ import {
   selectAnyOfSchema,
   typeMatches,
 } from "./schema.ts";
-import { JSONSchema7 } from "json-schema";
+import type { JSONSchema7 } from "json-schema";
 
 Deno.test("formatPropertyName", () => {
   // Test camelCase to Title Case

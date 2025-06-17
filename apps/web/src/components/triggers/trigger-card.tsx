@@ -1,5 +1,5 @@
-import { TriggerOutputSchema } from "@deco/sdk";
-import { z } from "zod";
+import type { TriggerOutputSchema } from "@deco/sdk";
+import type { z } from "zod";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { useState } from "react";

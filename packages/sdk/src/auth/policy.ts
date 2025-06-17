@@ -1,4 +1,4 @@
-import { Client } from "@deco/sdk/storage";
+import type { Client } from "@deco/sdk/storage";
 import { WebCache } from "../cache/index.ts";
 
 // Cache duration in seconds (WebCache expects seconds)
@@ -228,13 +228,9 @@ export class PolicyClient {
       ]);
     }
 
-    const { error } = await this.db.from("member_roles").delete().eq(
-      "teamId",
-      teamId,
-    ).eq(
-      "memberId",
-      memberId,
-    );
+    const { error } = await this.db.from("member_roles")
+      .delete()
+      .eq("member_id", memberId);
 
     if (error) throw error;
 

@@ -4,7 +4,7 @@ import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
 import { handleOutputTool } from "./output-tool.ts";
 import type { TriggerData } from "./services.ts";
 import { threadOf } from "./tools.ts";
-import { type TriggerHooks } from "./trigger.ts";
+import type { TriggerHooks } from "./trigger.ts";
 
 export interface WebhookArgs {
   threadId?: string;
@@ -30,28 +30,16 @@ const parseOptions: {
   bypassOpenRouter: (val) => val === "true",
   lastMessages: (val) => val ? parseInt(val) : undefined,
   sendReasoning: (val) => val === "true",
+  enableSemanticRecall: (val) => val === "true",
 };
 
 export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
   type: "webhook",
-  onCreated: async (data, trigger) => {
-    const inputBinding = trigger.inputBinding;
-    if (inputBinding) {
-      await inputBinding.ON_BINDING_CREATED({
-        callbacks: trigger._callbacks(),
-        triggerId: data.id,
-        workspace: getWorkspaceFromAgentId(trigger.agentId),
-      });
-    }
-  },
-  onDeleted: async (data, trigger) => {
-    const inputBinding = trigger.inputBinding;
-    if (inputBinding) {
-      await inputBinding.ON_BINDING_DELETED({
-        triggerId: data.id,
-        workspace: getWorkspaceFromAgentId(trigger.agentId),
-      });
-    }
+  onCreated: (data, trigger) => {
+    const metadata = trigger.metadata ?? {};
+    trigger.metadata = metadata;
+    metadata.passphrase ??= data.passphrase;
+    return Promise.resolve();
   },
   run: async (data, trigger, args) => {
     if (data.passphrase && data.passphrase !== trigger.metadata?.passphrase) {
@@ -75,6 +63,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         options[key] = parser(val) as any;
       }
     }
+
     const { threadId, resourceId } = threadOf(data, url);
 
     const agent = trigger.state

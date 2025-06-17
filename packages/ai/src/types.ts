@@ -8,7 +8,7 @@ import type {
   Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
-
+export type { TriggerData } from "./triggers/trigger.ts";
 /**
  * Represents a tool that can be used by an AI agent
  */
@@ -53,6 +53,7 @@ export interface GenerateOptions {
   bypassOpenRouter?: boolean;
   threadId?: string;
   resourceId?: string;
+  enableSemanticRecall?: boolean;
 }
 
 export interface StreamOptions extends GenerateOptions {

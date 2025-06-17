@@ -1,23 +1,27 @@
 export * from "../errors.ts";
 export * from "./assertions.ts";
 export * from "./context.ts";
-export * from "./wallet/stripe/webhook.ts";
 export * from "./models/llm-vault.ts";
+export * from "./wallet/stripe/webhook.ts";
+export { createResourceAccess } from "./auth/index.ts";
+
 import * as agentsAPI from "./agents/api.ts";
-import { AppContext, State, Tool } from "./context.ts";
+import * as channelsAPI from "./channels/api.ts";
+import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
+import * as modelsAPI from "./models/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
-import * as whatsappAPI from "./whatsapp/api.ts";
-import { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
+import * as promptsAPI from "./prompts/api.ts";
+import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
-import * as modelsAPI from "./models/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+import * as whatsappAPI from "./whatsapp/api.ts";
 
 export * from "./bindings/binder.ts";
 
@@ -28,6 +32,7 @@ export const GLOBAL_TOOLS = [
   teamsAPI.updateTeam,
   teamsAPI.deleteTeam,
   teamsAPI.listTeams,
+  teamsAPI.getWorkspaceTheme,
   membersAPI.getTeamMembers,
   membersAPI.updateTeamMember,
   membersAPI.removeTeamMember,
@@ -57,6 +62,11 @@ export const WORKSPACE_TOOLS = [
   integrationsAPI.updateIntegration,
   integrationsAPI.deleteIntegration,
   integrationsAPI.listIntegrations,
+  integrationsAPI.callTool,
+  integrationsAPI.COMPOSIO_INTEGRATION_OAUTH_START,
+  integrationsAPI.DECO_INTEGRATION_OAUTH_START,
+  integrationsAPI.DECO_INTEGRATION_INSTALL,
+  integrationsAPI.DECO_INTEGRATIONS_SEARCH,
   threadsAPI.listThreads,
   threadsAPI.getThread,
   threadsAPI.getThreadMessages,
@@ -90,6 +100,7 @@ export const WORKSPACE_TOOLS = [
   knowledgeAPI.forget,
   knowledgeAPI.remember,
   knowledgeAPI.search,
+  knowledgeAPI.addFileToKnowledgeBase,
   fsAPI.listFiles,
   fsAPI.readFile,
   fsAPI.readFileMetadata,
@@ -104,6 +115,18 @@ export const WORKSPACE_TOOLS = [
   whatsappAPI.createWhatsAppInvite,
   whatsappAPI.upsertWhatsAppUser,
   whatsappAPI.getWhatsAppUser,
+  channelsAPI.channelJoin,
+  channelsAPI.channelLeave,
+  channelsAPI.getChannel,
+  channelsAPI.deleteChannel,
+  channelsAPI.listChannels,
+  channelsAPI.createChannel,
+  promptsAPI.createPrompt,
+  promptsAPI.updatePrompt,
+  promptsAPI.deletePrompt,
+  promptsAPI.listPrompts,
+  promptsAPI.getPrompt,
+  promptsAPI.searchPrompts,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;
@@ -120,10 +143,12 @@ export type ToolBinder<
   // deno-lint-ignore no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
-> = Pick<
-  ToolLike<TName, TInput, TReturn>,
-  "name" | "inputSchema" | "outputSchema"
->;
+> =
+  & Pick<
+    ToolLike<TName, TInput, TReturn>,
+    "name" | "inputSchema" | "outputSchema"
+  >
+  & { opt?: true };
 
 const global = createMCPToolsStub({
   tools: GLOBAL_TOOLS,
@@ -194,11 +219,7 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
               // deno-lint-ignore no-explicit-any
               const result = await tool.handler(args as any);
 
-              if (result.isError) {
-                throw result.structuredContent;
-              }
-
-              return result.structuredContent;
+              return result;
             },
             props,
           );

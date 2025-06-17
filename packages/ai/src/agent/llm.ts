@@ -1,6 +1,6 @@
 import { isWellKnownModel } from "@deco/sdk";
-import { LLMVault } from "@deco/sdk/mcp";
-import { LanguageModelV1 } from "ai";
+import type { LLMVault } from "@deco/sdk/mcp";
+import type { LanguageModelV1 } from "ai";
 import { createLLMProvider } from "./llm-provider.ts";
 
 export const DEFAULT_ACCOUNT_ID = "c95fc4cec7fc52453228d9db170c372c";
@@ -26,13 +26,16 @@ export async function getLLMConfig({
   llmVault,
 }: {
   modelId: string;
-  llmVault: LLMVault;
+  llmVault?: LLMVault;
 }): Promise<LLMConfigWithModelId> {
   if (isWellKnownModel(modelId)) {
     return {
       model: modelId,
       modelId: modelId,
     };
+  }
+  if (!llmVault) {
+    throw new Error("LLM vault not found");
   }
 
   // TODO(@camudo): cache for custom models, so we don't read the api key every time.

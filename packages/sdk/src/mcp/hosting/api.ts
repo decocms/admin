@@ -1,19 +1,23 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
-import { Database } from "../../storage/index.ts";
+import type { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { AppContext, createTool, getEnv } from "../context.ts";
+import { type AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
+import { polyfill } from "./fs-polyfill.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
 const METADATA_FILE_NAME = "metadata.json";
 export const Entrypoint = {
+  host: (appSlug: string) => {
+    return `${appSlug}${HOSTING_APPS_DOMAIN}`;
+  },
   build: (appSlug: string) => {
-    return `https://${appSlug}${HOSTING_APPS_DOMAIN}`;
+    return `https://${Entrypoint.host(appSlug)}`;
   },
   script: (domain: string) => {
     return domain.split(HOSTING_APPS_DOMAIN)[0];
@@ -73,9 +77,10 @@ export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   inputSchema: z.object({}),
-  canAccess: canAccessWorkspaceResource,
   handler: async (_, c) => {
     const { workspace } = getWorkspaceParams(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -93,19 +98,52 @@ type DeployResult = {
   etag?: string;
   id?: string;
 };
+export interface Polyfill {
+  fileName: string;
+  aliases: string[];
+  content: string;
+}
 
+const addPolyfills = (
+  files: Record<string, File>,
+  metadata: Record<string, unknown>,
+  polyfills: Polyfill[],
+) => {
+  const aliases: Record<string, string> = {};
+  metadata.alias = aliases;
+
+  for (const polyfill of polyfills) {
+    const filePath = `${polyfill.fileName}.mjs`;
+    files[filePath] ??= new File(
+      [polyfill.content],
+      filePath,
+      {
+        type: "application/javascript+module",
+      },
+    );
+
+    for (const alias of polyfill.aliases) {
+      aliases[alias] = `./${polyfill.fileName}`;
+    }
+  }
+};
 async function deployToCloudflare(
   c: AppContext,
   scriptSlug: string,
   mainModule: string,
   files: Record<string, File>,
+  envVars?: Record<string, string>,
 ): Promise<DeployResult> {
+  assertHasWorkspace(c);
   const env = getEnv(c);
   const metadata = {
     main_module: mainModule,
     compatibility_flags: ["nodejs_compat"],
     compatibility_date: "2024-11-27",
+    tags: [c.workspace.value],
   };
+
+  addPolyfills(files, metadata, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
@@ -131,6 +169,24 @@ async function deployToCloudflare(
       },
     );
 
+  if (envVars) {
+    const promises = [];
+    for (const [key, value] of Object.entries(envVars)) {
+      promises.push(
+        c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
+          env.CF_DISPATCH_NAMESPACE,
+          scriptSlug,
+          {
+            account_id: env.CF_ACCOUNT_ID,
+            name: key,
+            text: value,
+            type: "secret_text",
+          },
+        ),
+      );
+    }
+    await Promise.all(promises);
+  }
   return {
     etag: result.etag,
     id: result.id,
@@ -196,7 +252,8 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
-const ENTRYPOINT = "main.ts";
+// main.ts or main.mjs or main.js or main.cjs
+const ENTRYPOINTS = ["main.ts", "main.mjs", "main.js", "main.cjs"];
 
 // First, let's define a new type for the file structure
 const FileSchema = z.object({
@@ -208,7 +265,7 @@ const FileSchema = z.object({
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
-    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINT}.
+    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINTS}.
 
 Common patterns:
 1. Use a deps.ts file to centralize dependencies:
@@ -229,7 +286,7 @@ Example of files deployment:
       import { z } from "./deps.ts";
 
       export default {
-        async fetch(request: Request): Promise<Response> {
+        async fetch(request: Request, env: any): Promise<Response> {
           return new Response("Hello from Deno on Cloudflare!");
         }
       }
@@ -243,7 +300,10 @@ Example of files deployment:
   }
 ]
 
-Important Notes: 
+Important Notes:
+- You can access the app workspace by accessing env.DECO_CHAT_WORKSPACE
+- You can access the app script slug by accessing env.DECO_CHAT_SCRIPT_SLUG
+- Token and workspace can be used to make authenticated requests to the Deco API under https://api.deco.chat
 - Always use Cloudflare Workers syntax with export default and proper fetch handler signature
 - When using template literals inside content strings, escape backticks with a backslash (\\) or use string concatenation (+)
 - Do not use Deno.* namespace functions
@@ -255,24 +315,41 @@ Important Notes:
     files: z.array(FileSchema).describe(
       "An array of files with their paths and contents. Must include main.ts as entrypoint",
     ),
+    envVars: z.record(z.string(), z.string()).optional().describe(
+      "An optional object of environment variables to be set on the worker",
+    ),
   }),
-  canAccess: canAccessWorkspaceResource,
-  handler: async ({ appSlug, files }, c) => {
+  outputSchema: z.object({
+    entrypoint: z.string(),
+    id: z.string(),
+    workspace: z.string(),
+  }),
+  handler: async ({ appSlug, files, envVars }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     // Convert array to record for bundler
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
       return acc;
     }, {} as Record<string, string>);
 
-    if (!(ENTRYPOINT in filesRecord)) {
-      throw new UserInputError(`${ENTRYPOINT} is not in the files`);
+    // check if the entrypoint is in the files
+    const entrypoint = ENTRYPOINTS.find((entrypoint) =>
+      entrypoint in filesRecord
+    );
+    if (!entrypoint) {
+      throw new UserInputError(
+        `Entrypoint not found in files. Entrypoint must be one of: ${
+          ENTRYPOINTS.join(", ")
+        }`,
+      );
     }
 
     await createNamespaceOnce(c);
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
 
     // Bundle the files
-    const bundledScript = await bundler(filesRecord, ENTRYPOINT);
+    const bundledScript = await bundler(filesRecord, entrypoint);
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File(
@@ -284,13 +361,30 @@ Important Notes:
       ),
     };
 
+    const appEnvVars = {
+      DECO_CHAT_WORKSPACE: workspace,
+      DECO_CHAT_SCRIPT_SLUG: scriptSlug,
+    };
+
     const result = await deployToCloudflare(
       c,
       scriptSlug,
       SCRIPT_FILE_NAME,
       fileObjects,
+      { ...envVars, ...appEnvVars },
     );
-    return updateDatabase(c, workspace, scriptSlug, result, filesRecord);
+    const data = await updateDatabase(
+      c,
+      workspace,
+      scriptSlug,
+      result,
+      filesRecord,
+    );
+    return {
+      entrypoint: data.entrypoint,
+      id: data.id,
+      workspace: data.workspace,
+    };
   },
 });
 
@@ -299,8 +393,9 @@ export const deleteApp = createTool({
   name: "HOSTING_APP_DELETE",
   description: "Delete an app and its worker",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const cf = c.cf;
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
     const env = getEnv(c);
@@ -338,8 +433,9 @@ export const getAppInfo = createTool({
   name: "HOSTING_APP_INFO",
   description: "Get info/metadata for an app (including endpoint)",
   inputSchema: AppInputSchema,
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const { workspace, slug } = getWorkspaceParams(c, appSlug);
     // 1. Fetch from DB
     const { data, error } = await c.db

@@ -1,0 +1,1 @@
+alter table teams add column theme jsonb;

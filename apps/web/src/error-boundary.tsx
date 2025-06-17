@@ -1,4 +1,10 @@
-import { Component, createContext, ErrorInfo, ReactNode, use } from "react";
+import {
+  Component,
+  createContext,
+  type ErrorInfo,
+  type ReactNode,
+  use,
+} from "react";
 
 type Props = {
   children: ReactNode;

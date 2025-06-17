@@ -1,5 +1,5 @@
 import type { JSONSchema7, JSONSchema7Definition } from "json-schema";
-import { FormEvent, type ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 import { ArrayField } from "./components/array-field.tsx";
 import { BooleanField } from "./components/boolean-field.tsx";

@@ -1,8 +1,8 @@
-import { CronTriggerSchema, TriggerOutputSchema } from "@deco/sdk";
+import type { CronTriggerSchema, TriggerOutputSchema } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { CodeBlock } from "./code-block.tsx";
 import cronstrue from "cronstrue";
-import { z } from "zod";
+import type { z } from "zod";
+import { CodeBlock } from "./code-block.tsx";
 
 export function CronDetails(
   { trigger }: { trigger: z.infer<typeof TriggerOutputSchema> },

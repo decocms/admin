@@ -1,19 +1,23 @@
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
   createTeam,
-  CreateTeamInput,
+  type CreateTeamInput,
   deleteTeam,
   getTeam,
+  getWorkspaceTheme,
   listTeams,
   updateTeam,
-  UpdateTeamInput,
+  type UpdateTeamInput,
 } from "../crud/teams.ts";
 import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
+import { DEFAULT_THEME } from "../theme.ts";
+import { useSDK } from "./store.tsx";
 
 export const useTeams = () => {
   return useSuspenseQuery({
@@ -67,6 +71,22 @@ export function useDeleteTeam() {
     onSuccess: () => {
       client.invalidateQueries({ queryKey: KEYS.TEAMS() });
       // Remove all team caches (by id or slug if needed)
+    },
+  });
+}
+
+export function useWorkspaceTheme() {
+  const { workspace } = useSDK();
+  const slug = workspace.split("/")[1] ?? "";
+  return useQuery({
+    queryKey: KEYS.TEAM_THEME(slug),
+    queryFn: async () => {
+      const data = await getWorkspaceTheme(slug);
+      const theme = data?.theme ?? {};
+      return {
+        ...DEFAULT_THEME,
+        ...theme,
+      };
     },
   });
 }

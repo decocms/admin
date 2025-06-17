@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { User } from "./user.ts";
+import type { User } from "./user.ts";
 
 interface Roles {
   name: string;

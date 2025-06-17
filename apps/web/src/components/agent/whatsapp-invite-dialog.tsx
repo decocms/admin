@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Country, PhoneInput } from "../settings/profile.tsx";
+import { type Country, PhoneInput } from "../settings/profile.tsx";
 import { useState } from "react";
 
 interface WhatsAppInviteDialogProps {

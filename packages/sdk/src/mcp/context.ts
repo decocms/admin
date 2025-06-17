@@ -1,15 +1,17 @@
 // deno-lint-ignore-file no-explicit-any
-import { ActorConstructor, StubFactory } from "@deco/actors";
-import { AIAgent, Trigger } from "@deco/ai/actors";
-import { Client } from "@deco/sdk/storage";
+import type { ActorConstructor, StubFactory } from "@deco/actors";
+import type { AIAgent, Trigger } from "@deco/ai/actors";
+import type { Client } from "@deco/sdk/storage";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
-import { type User as SupaUser } from "@supabase/supabase-js";
-import Cloudflare from "cloudflare";
+import type { User as SupaUser } from "@supabase/supabase-js";
+import type Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
-import { JWTPayload } from "../auth/jwt.ts";
-import { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-import { ForbiddenError, HttpError } from "../errors.ts";
+import type { JWTPayload } from "../auth/jwt.ts";
+import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+import { ForbiddenError, type HttpError } from "../errors.ts";
+import type { WithTool } from "./assertions.ts";
+import type { ResourceAccess } from "./auth/index.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -23,6 +25,9 @@ export interface Vars {
     slug: string;
     value: string;
   };
+  resourceAccess: ResourceAccess;
+  /** Current tool being executed definitions */
+  tool?: { name: string };
   cookie?: string;
   db: Client;
   user: Principal;
@@ -52,30 +57,20 @@ const isErrorLike = (error: unknown): error is Error =>
 const isHttpError = (error: unknown): error is HttpError =>
   Boolean((error as HttpError)?.code) && Boolean((error as HttpError)?.message);
 
-export const serializeError = (error: unknown): Record<string, unknown> => {
+export const serializeError = (error: unknown): string => {
   if (typeof error === "string") {
-    return { message: error };
+    return error;
   }
 
-  if (isHttpError(error)) {
-    return {
-      message: error.message,
-      code: error.code,
-    };
-  }
-
-  if (isErrorLike(error)) {
-    return {
-      message: error.message,
-      stack: error.stack,
-    };
+  if (isHttpError(error) || isErrorLike(error)) {
+    return error.toString();
   }
 
   try {
-    return Object.fromEntries(Object.entries(error as Record<string, unknown>));
+    return JSON.stringify(error, null, 2);
   } catch (e) {
     console.error(e);
-    return { message: "Unknown error" };
+    return "Unknown error";
   }
 };
 
@@ -118,10 +113,21 @@ export const AUTH_URL = (ctx: AppContext) =>
     ? "http://localhost:3001"
     : "https://api.deco.chat";
 
-type ToolCallResult<T> = {
+type ToolCallResultSuccess<T> = {
+  isError: false;
   structuredContent: T;
-  isError: boolean;
 };
+
+type ToolCallResultError = {
+  isError: true;
+  content: { type: "text"; text: string }[];
+};
+
+type ToolCallResult<T> = ToolCallResultSuccess<T> | ToolCallResultError;
+
+export const isToolCallResultError = <T>(
+  result: ToolCallResult<T>,
+): result is ToolCallResultError => result.isError;
 
 export interface ToolDefinition<
   TAppContext extends AppContext = AppContext,
@@ -135,15 +141,7 @@ export interface ToolDefinition<
   description: string;
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
-  handler: (
-    props: TInput,
-    c: TAppContext,
-  ) => Promise<TReturn> | TReturn;
-  canAccess: (
-    name: TName,
-    props: TInput,
-    c: AppContext,
-  ) => Promise<boolean>;
+  handler: (props: TInput, c: TAppContext) => Promise<TReturn> | TReturn;
 }
 
 export interface Tool<
@@ -159,7 +157,7 @@ export interface Tool<
   outputSchema?: z.ZodType<TReturn>;
   handler: (
     props: TInput,
-  ) => Promise<ToolCallResult<TReturn>> | ToolCallResult<TReturn>;
+  ) => Promise<TReturn> | TReturn;
 }
 
 export const createToolFactory = <
@@ -174,48 +172,48 @@ export const createToolFactory = <
 ): Tool<TName, TInput, TReturn> => ({
   group,
   ...def,
-  handler: async (
-    props: TInput,
-  ): Promise<ToolCallResult<TReturn>> => {
-    try {
-      const context = contextFactory(State.getStore());
+  handler: async (props: TInput): Promise<TReturn> => {
+    const context = contextFactory(State.getStore());
+    context.tool = { name: def.name };
 
-      const hasAccess = await def.canAccess?.(
-        def.name,
-        props,
-        context,
-      ).catch((error) => {
-        console.warn(
-          "Failed to authorize tool with the following error",
-          error,
-        );
-        return false;
-      });
+    const result = await def.handler(props, context);
 
-      if (!hasAccess) {
-        throw new ForbiddenError(
-          `User cannot access this tool ${def.name}`,
-        );
-      }
-
-      const structuredContent = await def.handler(props, context);
-
-      return {
-        isError: false,
-        structuredContent,
-      };
-    } catch (error) {
-      const structuredContent = serializeError(error) as unknown as TReturn;
-
-      return {
-        isError: true,
-        structuredContent,
-      };
+    if (!context.resourceAccess.granted()) {
+      console.warn(
+        `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+      );
+      throw new ForbiddenError(
+        `User cannot access this tool ${def.name}.`,
+      );
     }
+
+    return result;
   },
 });
 
-export const createTool = createToolFactory<AppContext>((c) => c);
+export const withMCPErrorHandling = <
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+>(f: (props: TInput) => Promise<TReturn>) =>
+async (props: TInput) => {
+  try {
+    const result = await f(props);
+
+    return {
+      isError: false,
+      structuredContent: result,
+    };
+  } catch (error) {
+    return {
+      isError: true,
+      content: [{ type: "text", text: serializeError(error) }],
+    };
+  }
+};
+
+export const createTool = createToolFactory<WithTool<AppContext>>(
+  (c) => c as unknown as WithTool<AppContext>,
+);
 
 export type MCPDefinition = Tool[];
 

@@ -4,7 +4,7 @@ import {
   type ToolExecutionContext,
 } from "@mastra/core";
 import type { ToolExecutionOptions } from "ai";
-import { z } from "zod";
+import type { z } from "zod";
 import type { AIAgent, Env } from "../agent.ts";
 
 export interface ToolOptions<
@@ -37,22 +37,7 @@ export const createTool = ({
 }: Parameters<typeof mastraCreateTool>[0]) =>
   mastraCreateTool({
     ...args,
-    outputSchema: z.union([
-      z.object({
-        success: z.literal(true),
-        message: z.string()
-          .describe("A message describing the result of the operation")
-          .nullable()
-          .optional(),
-        data: outputSchema || z.any(),
-      }),
-      z.object({
-        success: z.literal(false),
-        message: z.string()
-          .describe("A message describing the result of the operation"),
-        data: z.null().optional(),
-      }),
-    ]),
+    outputSchema,
     execute: (ctx, options) => {
       const tracer = trace.getTracer("tool-tracer");
       return tracer.startActiveSpan(
@@ -63,22 +48,22 @@ export const createTool = ({
           ctx.threadId && span.setAttribute("tool.thread", ctx.threadId);
           ctx.resourceId && span.setAttribute("tool.resource", ctx.resourceId);
           try {
-            const data = await execute?.(ctx, options);
+            const result = await execute?.(ctx, options);
 
-            return {
-              success: true,
-              message: "Success",
-              data,
-            };
+            if (
+              Array.isArray(result?.content) && result.content.length > 0 &&
+              result.content[0]?.type === "text"
+            ) {
+              // deno-lint-ignore no-explicit-any
+              return result.content.map((t: any) => t.text).join("\n\n");
+            }
+
+            return result;
           } catch (error) {
             err = error;
-            return {
-              success: false,
-              message: `Failed to execute tool with the following error: ${
-                String(error)
-              }`,
-              data: null,
-            };
+            return `Failed to execute tool with the following error: ${
+              String(error)
+            }`;
           } finally {
             if (err) {
               span.setStatus({

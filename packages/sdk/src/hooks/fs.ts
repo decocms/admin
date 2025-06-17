@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listFiles, readFile, writeFile } from "../crud/fs.tsx";
+import { deleteFile, listFiles, readFile, writeFile } from "../crud/fs.tsx";
 import { useSDK } from "../index.ts";
 import { KEYS } from "./api.ts";
 
@@ -12,7 +12,20 @@ export const useFile = (path: string) => {
   });
 };
 
-export const useFiles = (root: string) => {
+export const useReadFile = () => {
+  const queryClient = useQueryClient();
+  const { workspace } = useSDK();
+
+  return (path: string) =>
+    queryClient.fetchQuery({
+      queryKey: KEYS.FILE(workspace, path),
+      queryFn: () => readFile({ workspace, path }),
+    });
+};
+
+export const useFiles = (
+  { root }: { root: string },
+) => {
   const { workspace } = useSDK();
 
   return useQuery({
@@ -26,16 +39,15 @@ export const useWriteFile = () => {
   const { workspace } = useSDK();
 
   return useMutation({
-    mutationFn: ({ path, content, contentType }: {
+    mutationFn: ({ path, content, contentType, metadata, skipWrite }: {
       path: string;
       content: Uint8Array;
       contentType: string;
-    }) => writeFile({ path, workspace, content, contentType }),
-    onMutate: async ({ path, content, contentType }: {
-      path: string;
-      content: Uint8Array;
-      contentType: string;
-    }) => {
+      metadata?: Record<string, string | string[]>;
+      skipWrite?: boolean;
+    }) =>
+      writeFile({ path, workspace, content, contentType, metadata, skipWrite }),
+    onMutate: async ({ path, content, contentType, metadata }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: KEYS.FILE(workspace, path) });
 
@@ -48,6 +60,7 @@ export const useWriteFile = () => {
         content,
         contentType,
         exists: true,
+        metadata,
       }));
 
       return { previousData };
@@ -66,6 +79,30 @@ export const useWriteFile = () => {
       queryClient.invalidateQueries({
         queryKey: KEYS.FILE(workspace, variables.path),
       });
+    },
+  });
+};
+
+interface DeleteFileParams {
+  path: string;
+  /* prefix root to revalited useFiles */
+  root?: string;
+}
+
+export const useDeleteFile = () => {
+  const { workspace } = useSDK();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      { path }: DeleteFileParams,
+    ) => deleteFile({ workspace, path }),
+    onSuccess: (_, { root }) => {
+      if (!root) return;
+
+      const rootKey = KEYS.FILE(workspace, root);
+
+      queryClient.invalidateQueries({ queryKey: rootKey });
     },
   });
 };

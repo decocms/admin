@@ -1,6 +1,6 @@
 import {
-  Agent,
-  Thread,
+  type Agent,
+  type Thread,
   useAgents,
   useDeleteThread,
   useIntegrations,
@@ -42,7 +42,7 @@ import {
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ReactNode, Suspense, useEffect, useRef, useState } from "react";
+import { type ReactNode, Suspense, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
 import { z } from "zod";
@@ -62,14 +62,19 @@ const STATIC_ITEMS = [
     icon: "robot_2",
   },
   {
-    url: "/integrations",
-    title: "Integrations",
-    icon: "widgets",
+    url: "/connections",
+    title: "Connections",
+    icon: "linked_services",
   },
   {
     url: "/triggers",
     title: "Triggers",
     icon: "conversion_path",
+  },
+  {
+    url: "/prompts",
+    title: "Prompt Library",
+    icon: "local_library",
   },
   {
     url: "/audits",
@@ -110,8 +115,7 @@ function DeleteThreadModal(
     onOpenChange: (open: boolean) => void;
   },
 ) {
-  const user = useUser();
-  const deleteThread = useDeleteThread(thread.id, user?.id ?? "");
+  const deleteThread = useDeleteThread(thread.id);
 
   const handleDelete = async () => {
     try {
@@ -221,9 +225,8 @@ function ThreadActions({ thread, onEdit, className }: {
 }
 
 function SidebarThreadItem(
-  { thread, userId, onThreadClick, agent }: {
+  { thread, onThreadClick, agent }: {
     thread: Thread;
-    userId: string;
     agent?: Agent;
     onThreadClick: (thread: Thread) => void;
   },
@@ -231,7 +234,7 @@ function SidebarThreadItem(
   const [isEditing, setIsEditing] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const updateTitle: ReturnType<typeof useUpdateThreadTitle> =
-    useUpdateThreadTitle(thread.id, userId);
+    useUpdateThreadTitle(thread.id);
 
   const methods = useForm<EditTitleForm>({
     resolver: zodResolver(editTitleSchema),
@@ -240,30 +243,16 @@ function SidebarThreadItem(
     },
   });
 
-  // Focus the input when the thread is being edited
-  useEffect(() => {
-    if (isEditing) {
-      const input = formRef.current?.querySelector("input");
-      input?.focus();
-    }
-  }, [isEditing]);
+  const threadWasUpdated = thread.updatedAt !== thread.createdAt;
 
-  // Close the input when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isEditing && formRef.current &&
-        !formRef.current.contains(event.target as Node)
-      ) {
-        setIsEditing(false);
-      }
-    };
+  function focusInput() {
+    const input = formRef.current?.querySelector("input");
+    input?.focus();
+  }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isEditing]);
+  function handleBlur() {
+    setIsEditing(false);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,7 +303,7 @@ function SidebarThreadItem(
                             handleSubmit(e);
                           }
                         }}
-                        onBlur={handleSubmit}
+                        onBlur={handleBlur}
                       />
                     </form>
                   </Form>
@@ -342,7 +331,11 @@ function SidebarThreadItem(
                         </div>
                       )}
                     <span className="truncate">
-                      {agent ? agent.name : thread.title}
+                      {threadWasUpdated
+                        ? thread.title
+                        : agent
+                        ? agent.name
+                        : thread.title}
                     </span>
                   </Link>
                 )}
@@ -358,6 +351,7 @@ function SidebarThreadItem(
           onEdit={() => {
             setIsEditing(true);
             methods.setValue("title", thread.title);
+            focusInput();
           }}
         />
       )}
@@ -366,9 +360,8 @@ function SidebarThreadItem(
 }
 
 function SidebarThreadList(
-  { threads, userId, agents }: {
+  { threads, agents }: {
     threads: Thread[];
-    userId: string;
     agents: Agent[];
   },
 ) {
@@ -388,7 +381,6 @@ function SidebarThreadList(
       key={thread.id}
       thread={thread}
       agent={agents.find((agent) => agent.id === thread.metadata?.agentId)}
-      userId={userId}
       onThreadClick={handleThreadClick}
     />
   ));
@@ -425,7 +417,6 @@ function SidebarThreads() {
               <SidebarThreadList
                 threads={groupedThreads.today}
                 agents={agents}
-                userId={user?.id ?? ""}
               />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -440,7 +431,6 @@ function SidebarThreads() {
               <SidebarThreadList
                 threads={groupedThreads.yesterday}
                 agents={agents}
-                userId={user?.id ?? ""}
               />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -457,7 +447,6 @@ function SidebarThreads() {
                   <SidebarThreadList
                     threads={threads}
                     agents={agents}
-                    userId={user?.id ?? ""}
                   />
                 </SidebarMenu>
               </SidebarGroupContent>

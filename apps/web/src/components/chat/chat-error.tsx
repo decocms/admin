@@ -13,6 +13,15 @@ import { useState } from "react";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Protect } from "../wallet/plan.tsx";
 import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
+import { ExpandableDescription } from "../toolsets/description.tsx";
+
+function getErrorMessage(error: Error) {
+  try {
+    return JSON.parse(error.message).message;
+  } catch {
+    return error.message;
+  }
+}
 
 const WELL_KNOWN_ERROR_MESSAGES = {
   InsufficientFunds: "Insufficient funds",
@@ -105,6 +114,11 @@ export function ChatError() {
         <Icon name="info" size={20} />
         <div className="flex flex-col">
           <p>An error occurred while generating the response.</p>
+          {error && (
+            <ExpandableDescription
+              description={`${error.name}: ${getErrorMessage(error)}`}
+            />
+          )}
           {correlationIdRef?.current && (
             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
               <span className="select-none">

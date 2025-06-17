@@ -2,12 +2,12 @@ import "./polyfills.ts";
 
 import {
   ForbiddenError,
-  InternalServerError,
+  type InternalServerError,
   NotFoundError,
   UnauthorizedError,
 } from "@deco/sdk";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { JSX, lazy, StrictMode, Suspense, useEffect } from "react";
+import { type JSX, lazy, StrictMode, Suspense, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import {
   createBrowserRouter,
@@ -55,19 +55,21 @@ const Login = lazy(() => import("./components/login/index.tsx"));
  * Route component with Suspense + Spinner. Remove the wrapWithUILoadingFallback if
  * want custom Suspense behavior.
  */
-const IntegrationDetail = lazy(() =>
-  wrapWithUILoadingFallback(import("./components/integrations/detail/edit.tsx"))
-);
-
-const IntegrationList = lazy(() =>
+const ConnectionDetail = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/list/installed.tsx"),
+    import("./components/integrations/connection-detail.tsx"),
   )
 );
 
-const IntegrationMarketplace = lazy(() =>
+const ConnectionsList = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/integrations/list/marketplace.tsx"),
+    import("./components/integrations/connections-list.tsx"),
+  )
+);
+
+const ConnectionInstallSuccess = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/integrations/install-success.tsx"),
   )
 );
 
@@ -115,6 +117,14 @@ const SalesDeck = lazy(() =>
   wrapWithUILoadingFallback(import("./components/sales-deck/deck.tsx"))
 );
 
+const ListPrompts = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/prompts/list/list.tsx"))
+);
+
+const PromptDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -145,7 +155,7 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === DEFAULT_PATH) {
+    if (pathname === "/") {
       globalThis.location.href = "/about";
 
       return;
@@ -272,17 +282,16 @@ const router = createBrowserRouter([
           },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
-          {
-            path: "integrations/marketplace",
-            Component: IntegrationMarketplace,
-          },
-          { path: "integrations", Component: IntegrationList },
-          { path: "integration/:id", Component: IntegrationDetail },
+          { path: "connections", Component: ConnectionsList },
+          { path: "connection/:appKey", Component: ConnectionDetail },
+          { path: "connections/success", Component: ConnectionInstallSuccess },
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:agentId/:triggerId", Component: TriggerDetails },
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
+          { path: "prompts", Component: ListPrompts },
+          { path: "prompt/:id", Component: PromptDetail },
         ],
       },
       { path: "*", Component: NotFound },

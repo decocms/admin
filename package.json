@@ -25,9 +25,11 @@
   "workspace": [
     "./apps/web",
     "./apps/api",
+    "./apps/outbound",
     "./packages/ui",
     "./packages/sdk",
-    "./packages/ai"
+    "./packages/ai",
+    "./packages/cli"
   ],
   "compilerOptions": {
     "experimentalDecorators": true,

@@ -1,6 +1,6 @@
 # deco.chat
 
-The code for https://deco.chat
+The code for <https://deco.chat>
 
 _An extensible, self-hosted AI workspace for building intelligent, UI-rich AI
 Agents that integrate seamlessly with your internal tools and data._
@@ -113,3 +113,34 @@ Empowering businesses to scale AI safely, visually, and efficiently. Explore our
 enterprise-grade managed solution at [deco.chat](https://deco.chat).
 
 **Build more than just conversations—build experiences.** 🌐✨
+
+---
+
+## 🖥️ Using the CLI
+
+The deco.chat CLI allows you to interact with your workspace and manage
+deployments directly from your terminal.
+
+### Installation & Login
+
+To install the CLI, simply run:
+
+```sh
+deno install -A -g -n deco jsr:@deco/cli
+```
+
+Then, to use it
+
+```sh
+deco login
+```
+
+This will prompt you to log in and set up your session.
+
+### More Commands
+
+For additional commands and usage, check the [@cli.ts](./packages/cli/cli.ts)
+file in the repository. You can find commands for deploying, listing apps,
+managing sessions, and more.
+
+---

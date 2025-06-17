@@ -6,8 +6,8 @@
  * it will use the localhost version.
  */
 
-import { Agent } from "./models/agent.ts";
-import { Integration } from "./models/mcp.ts";
+import type { Agent } from "./models/agent.ts";
+import type { Integration } from "./models/mcp.ts";
 
 // @ts-ignore - Vite injects env variables at build time
 const LOCAL_DEBUGGER = import.meta.env?.VITE_USE_LOCAL_BACKEND === "true";
@@ -23,22 +23,18 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
   );
 }
 
-export const LEGACY_API_SERVER_URL = LOCAL_DEBUGGER
-  ? "http://localhost:8000"
-  : "https://fs.deco.chat";
+export const SUPABASE_URL = "https://auth.deco.cx";
 
-export const API_SERVER_URL = LOCAL_DEBUGGER
+export const DECO_CHAT_WEB = LOCAL_DEBUGGER
+  ? "http://localhost:3000"
+  : "https://deco.chat";
+
+export const DECO_CHAT_API = LOCAL_DEBUGGER
   ? "http://localhost:3001"
   : "https://api.deco.chat";
 
-export const AUTH_URL = LOCAL_DEBUGGER
-  ? "http://localhost:3001"
-  : "https://api.deco.chat";
-
-export const API_HEADERS = {
-  "content-type": "application/json",
-  "use-api-host": "true",
-} as const;
+export const AUTH_PORT_CLI = 3457;
+export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;
 
 export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
@@ -64,7 +60,7 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/15dc381c-23b4-4f6b-9ceb-9690f77a7cf5/openai.svg",
   anthropic:
     "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
-  google:
+  gemini:
     "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
   xai:
     "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
@@ -79,6 +75,17 @@ type Capability =
 
 // First one is the default model for agents, so choose wisely.
 export const WELL_KNOWN_MODELS: Model[] = [
+  {
+    id: "google:gemini-2.5-pro-preview",
+    model: "google:gemini-2.5-pro-preview",
+    name: "Google Gemini Pro 2.5",
+    logo: LOGOS.gemini,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    legacyId: "google:gemini-2.5-pro-preview-03-25",
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
   {
     id: "openai:gpt-4.1-mini",
     model: "openai:gpt-4.1-mini",
@@ -107,17 +114,6 @@ export const WELL_KNOWN_MODELS: Model[] = [
     logo: LOGOS.anthropic,
     capabilities: ["reasoning", "image-upload", "file-upload"],
     legacyId: "anthropic:claude-3-7-sonnet-20250219",
-    byDeco: true,
-    isEnabled: true,
-    hasCustomKey: false,
-  },
-  {
-    id: "google:gemini-2.5-pro-preview",
-    model: "google:gemini-2.5-pro-preview",
-    name: "Google Gemini Pro 2.5",
-    logo: LOGOS.google,
-    capabilities: ["reasoning", "image-upload", "file-upload"],
-    legacyId: "google:gemini-2.5-pro-preview-03-25",
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
@@ -187,17 +183,10 @@ export const NEW_INTEGRATION_TEMPLATE: Omit<Integration, "id"> = {
   name: "New Integration",
   description: "A new multi-channel platform integration",
   icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
-  connection: { type: "SSE", url: "https://example.com/sse" },
+  connection: { type: "HTTP", url: "https://example.com/messages" },
 };
 
 export const INNATE_INTEGRATIONS = {
-  DECO_INTEGRATIONS: {
-    id: "DECO_INTEGRATIONS",
-    name: "Integrations",
-    description: "Tools for managing integrations.",
-    icon: "https://assets.webdraw.app/uploads/integrations.png",
-    connection: { type: "INNATE", name: "DECO_INTEGRATIONS" },
-  },
   DECO_UTILS: {
     id: "DECO_UTILS",
     name: "Utils",
@@ -217,7 +206,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   views: [],
   instructions: "",
   max_steps: 10,
-  max_tokens: 4096,
+  max_tokens: 16000,
   memory: {
     last_messages: 10,
   },
@@ -229,19 +218,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
  * these tools hardcoded in here. Maybe a setup is missing?
  */
 export const WELL_KNOWN_AGENTS = {
-  teamAgent: {
-    id: "teamAgent",
-    ...NEW_AGENT_TEMPLATE,
-    tools_set: {
-      DECO_INTEGRATIONS: [
-        "DECO_INTEGRATIONS_SEARCH",
-        "DECO_INTEGRATION_INSTALL",
-        "DECO_INTEGRATION_ENABLE",
-        "DECO_INTEGRATION_DISABLE",
-        "DECO_INTEGRATION_LIST_TOOLS",
-      ],
-    },
-  },
+  teamAgent: { id: "teamAgent", ...NEW_AGENT_TEMPLATE },
   setupAgent: {
     id: "setupAgent",
     name: "Setup agent",
@@ -249,15 +226,7 @@ export const WELL_KNOWN_AGENTS = {
     description: "I can help you with this setup.",
     model: DEFAULT_MODEL.id,
     visibility: "PUBLIC",
-    tools_set: {
-      DECO_INTEGRATIONS: [
-        "DECO_INTEGRATIONS_SEARCH",
-        "DECO_INTEGRATION_INSTALL",
-        "DECO_INTEGRATION_ENABLE",
-        "DECO_INTEGRATION_DISABLE",
-        "DECO_INTEGRATION_LIST_TOOLS",
-      ],
-    },
+    tools_set: {},
     views: [],
     instructions: `
 You are an assistant that helps users set up integrations and agents. 
@@ -272,3 +241,7 @@ check if the agent is active and configure the agent.
 `,
   },
 } satisfies Record<string, Agent>;
+
+export const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH =
+  "i:knowledge-base";
+export const KNOWLEDGE_BASE_DIMENSION = 1536;

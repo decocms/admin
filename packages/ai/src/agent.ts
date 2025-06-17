@@ -24,17 +24,17 @@ import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
 import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
-  AppContext,
+  type AppContext,
+  assertWorkspaceResourceAccess,
   AuthorizationClient,
-  canAccessWorkspaceResource,
-  ForbiddenError,
+  createResourceAccess,
   fromWorkspaceString,
-  LLMVault,
+  type LLMVault,
   MCPClient,
-  MCPClientStub,
+  type MCPClientStub,
   PolicyClient,
   SupabaseLLMVault,
-  WorkspaceTools,
+  type WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
 import {
@@ -61,7 +61,7 @@ import { createServerClient } from "@supabase/ssr";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
-  LanguageModelUsage,
+  type LanguageModelUsage,
   type Message,
   smoothStream,
 } from "ai";
@@ -69,14 +69,7 @@ import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
-import { convertToAIMessage } from "./agent/ai-message.ts";
-import { createAgentOpenAIVoice } from "./agent/audio.ts";
-import {
-  createLLMInstance,
-  DEFAULT_ACCOUNT_ID,
-  getLLMConfig,
-} from "./agent/llm.ts";
-import { AgentWallet } from "./agent/wallet.ts";
+import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
@@ -87,6 +80,14 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import { GenerateOptions } from "./types.ts";
+import { AgentWallet } from "./agent/wallet.ts";
+import { convertToAIMessage } from "./agent/ai-message.ts";
+import { createAgentOpenAIVoice } from "./agent/audio.ts";
+import {
+  createLLMInstance,
+  DEFAULT_ACCOUNT_ID,
+  getLLMConfig,
+} from "./agent/llm.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -175,7 +176,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private wallet: AgentWallet;
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
-  private llmVault: LLMVault;
+  private llmVault?: LLMVault;
   private telemetry?: Telemetry;
 
   constructor(
@@ -198,11 +199,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.env.SUPABASE_SERVER_TOKEN,
       { cookies: { getAll: () => [] } },
     );
-    this.llmVault = new SupabaseLLMVault(
-      this.db,
-      this.env.LLMS_ENCRYPTION_KEY,
-      this.workspace,
-    );
+    this.llmVault = this.env.LLMS_ENCRYPTION_KEY
+      ? new SupabaseLLMVault(
+        this.db,
+        this.env.LLMS_ENCRYPTION_KEY,
+        this.workspace,
+      )
+      : undefined;
 
     this.agentScoppedMcpClient = this._createMCPClient();
     this.wallet = new AgentWallet({
@@ -236,6 +239,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       stub: this.state.stub as AppContext["stub"],
       cookie: metadata?.userCookie ?? undefined,
       workspace: fromWorkspaceString(this.workspace),
+      resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
       authorization: new AuthorizationClient(policyClient),
@@ -267,6 +271,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     if (!integration) {
+      console.log("integration not found", mcpId);
       return null;
     }
 
@@ -303,7 +308,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
               mcpId,
               timeout.signal,
             )
-              .catch(() => {
+              .catch((err) => {
+                console.error("list tools error", err);
                 return null;
               }),
             new Promise((resolve) =>
@@ -333,8 +339,11 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             toolsInput[slug] = allToolsFor[slug];
             continue;
           }
-
-          console.warn(`Tool ${item} not found in callableToolSet[${mcpId}]`);
+          console.warn(
+            `Tool ${item} not found in callableToolSet[${mcpId}], ${
+              Object.keys(allToolsFor)
+            }`,
+          );
         }
 
         tools[mcpId] = toolsInput;
@@ -404,11 +413,17 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.telemetry = Telemetry.init({ serviceName: "agent" });
     this.telemetry.tracer = trace.getTracer("agent");
 
+    // Process instructions to replace prompt mentions
+    const processedInstructions = await replacePromptMentions(
+      config.instructions,
+      this.workspace,
+    );
+
     this._maybeAgent = new Agent({
       memory: this._memory as unknown as MastraMemory,
       name: config.name,
+      instructions: processedInstructions,
       model: llm,
-      instructions: config.instructions,
       mastra: {
         // @ts-ignore: Mastra requires a logger, but we don't use it
         getLogger: () => undefined,
@@ -615,13 +630,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       req.headers.get("host") !== null && runtimeKey !== "deno" &&
       this._configuration?.visibility !== "PUBLIC"
     ) { // if host is set so its not an internal request so checks must be applied
-      const canAccess = await canAccessWorkspaceResource(
-        "AGENTS_GET",
-        null,
-        ctx,
-      );
-
-      if (!canAccess) throw new ForbiddenError("Cannot access agent");
+      await assertWorkspaceResourceAccess("AGENTS_GET", ctx);
     } else if (req.headers.get("host") !== null && runtimeKey === "deno") {
       console.warn(
         "Deno runtime detected, skipping access check. This might fail in production.",
@@ -705,6 +714,26 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       }
       return uiMessage;
     });
+  }
+
+  async speak(text: string, options?: { voice?: string; speed?: number }) {
+    if (!this._maybeAgent) {
+      throw new Error("Agent not initialized");
+    }
+
+    try {
+      const readableStream = await this._maybeAgent.voice.speak(text, {
+        speaker: options?.voice || "echo",
+        properties: {
+          speed: options?.speed || 1.0,
+          pitch: "default",
+        },
+      });
+
+      return readableStream;
+    } catch (error) {
+      throw error;
+    }
   }
 
   public async updateThreadTools(tool_set: Configuration["tools_set"]) {
@@ -990,13 +1019,22 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ),
     );
 
+    // Process instructions if provided in options
+    let processedInstructions = options?.instructions;
+    if (processedInstructions) {
+      processedInstructions = await replacePromptMentions(
+        processedInstructions,
+        this.workspace,
+      );
+    }
+
     const response = await agent.stream(
       aiMessages,
       {
         ...thread,
         context,
         toolsets,
-        instructions: options?.instructions,
+        instructions: processedInstructions,
         maxSteps: this._maxSteps(),
         maxTokens: this._maxTokens(),
         experimental_transform: experimentalTransform,
@@ -1014,7 +1052,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           ? {
             memoryOptions: {
               lastMessages: options.lastMessages,
-              semanticRecall: false,
+              semanticRecall: options.enableSemanticRecall,
             },
           }
           : {}),

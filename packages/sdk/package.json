@@ -12,9 +12,10 @@
     "@mastra/libsql": "alpha",
     "@libsql/client": "^0.15.4",
     "@modelcontextprotocol/sdk": "1.11.4",
+    "@std/path": "npm:@jsr/std__path@1.1.0",
     "cloudflare": "^4.2.0",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.1",
-    "@tanstack/react-query": "^5.72.0",
+    "@tanstack/react-query": "^5.80.6",
     "@zenfs/core": "^2.0.0",
     "ai": "^4.3.13",
     "dockview-react": "^4.2.1",
@@ -22,7 +23,7 @@
     "lru-cache": "^11.1.0",
     "react": "^19.1.0",
     "stripe": "18.0.0",
-    "zod": "3.24.3",
+    "zod": "^3.24.3",
     "@aws-sdk/client-s3": "^3.808.0",
     "uuid": "^11.1.0",
     "@tursodatabase/api": "^1.9.0",
@@ -51,6 +52,7 @@
     "./memory": "./src/memory/memory.ts",
     "./actors": "./src/actors/index.ts",
     "./cache": "./src/cache/index.ts",
+    "./cache/swr": "./src/cache/swr.ts",
     "./common": "./src/common/index.ts",
     "./hosts": "./src/hosts.ts",
     "./path": "./src/path.ts",
@@ -65,6 +67,7 @@
     "./hooks/profile": "./src/hooks/profile.ts",
     "./utils": "./src/utils/index.ts",
     "./mcp/bindings": "./src/mcp/bindings/index.ts",
-    "./mcp/binder": "./src/mcp/bindings/binder.ts"
+    "./mcp/binder": "./src/mcp/bindings/binder.ts",
+    "./models": "./src/models/index.ts"
   }
 }

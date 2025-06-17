@@ -1,34 +1,77 @@
-import { type Integration, MCPTool, useTools } from "@deco/sdk";
+import { type Integration, type MCPTool, useTools } from "@deco/sdk";
+import { useProfile } from "@deco/sdk/hooks";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationIcon } from "../integrations/list/common.tsx";
+import { IntegrationIcon } from "../integrations/common.tsx";
 import { ExpandableDescription } from "./description.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
 
 interface ToolsMap {
   [integrationId: string]: string[];
 }
 
-function IntegrationListItem({
+function IntegrationListItemActions({
   integration,
-  toolsSet,
-  setIntegrationTools,
+  onConfigure,
+  onRemove,
 }: {
   integration: Integration;
+  onConfigure: () => void;
+  onRemove: (integrationId: string) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <Icon name="more_horiz" size={16} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onSelect={onConfigure}
+          className="text-primary focus:bg-primary/10"
+        >
+          Configure
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => onRemove(integration.id)}
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+        >
+          Remove
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function IntegrationListItem({
+  toolsSet,
+  setIntegrationTools,
+  integration,
+  onRemove,
+  onConfigure,
+  hideTools,
+}: {
   toolsSet: ToolsMap;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
+  integration: Integration;
+  onConfigure: (integration: Integration) => void;
+  onRemove: (integrationId: string) => void;
+  hideTools?: boolean;
 }) {
-  const [openTools, setOpenTools] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
-  const navigateWorkspace = useNavigateWorkspace();
 
   const total = toolsData?.tools?.length ?? 0;
-  const enabled = new Set([
-    ...(toolsSet[integration.id] || []),
-  ]).size;
 
   const allTools = toolsData?.tools || [];
   const enabledCount =
@@ -52,52 +95,33 @@ function IntegrationListItem({
         isEmpty && "order-last",
       )}
     >
-      <label
-        htmlFor={`select-all-${integration.id}`}
-        className={cn(
-          "flex gap-4 px-4 py-4 rounded-t-xl",
-          !isEmpty && "hover:bg-muted cursor-pointer",
-        )}
-      >
-        <div className="flex gap-4 items-start justify-between w-full">
-          <div className="p-2 rounded-xl border border-border">
+      <div className="flex gap-4 p-2 rounded-t-xl">
+        <div className="flex gap-4 items-center justify-between w-full">
+          <div className="p-1 rounded-xl border border-border">
             <IntegrationIcon
               icon={integration.icon}
               name={integration.name}
               variant="small"
-              className="h-8 w-8 p-0 rounded-none"
+              className="h-9 w-9 p-0 rounded-lg"
             />
           </div>
           <div className="flex flex-col gap-1 w-full">
             <span className="text-sm font-semibold text-left truncate">
               {integration.name}
             </span>
-            {integration.description && (
-              <p className="text-sm text-muted-foreground">
-                {integration.description}
-              </p>
-            )}
           </div>
-          {!isEmpty && (
-            <div>
-              <Checkbox
-                id={`select-all-${integration.id}`}
-                className="cursor-pointer"
-                checked={isAll}
-                onCheckedChange={handleAll}
-              />
-            </div>
-          )}
         </div>
-      </label>
-      <div className="absolute right-4 top-4 text-muted-foreground lg:hidden">
-        <Icon name="chevron_right" size={16} />
+        <IntegrationListItemActions
+          integration={integration}
+          onConfigure={() => onConfigure(integration)}
+          onRemove={onRemove}
+        />
       </div>
       {isEmpty && (
         <div
           onClick={(e) => {
             e.preventDefault();
-            navigateWorkspace(`/integration/${integration.id}`);
+            onConfigure(integration);
           }}
           className={cn(
             "flex gap-2 items-center justify-between px-4 py-4 border-t border-border cursor-pointer",
@@ -106,7 +130,7 @@ function IntegrationListItem({
         >
           <div className="flex gap-2 items-center">
             <Icon name="settings" size={16} />
-            <span className="text-xs font-medium">Setup Integration</span>
+            <span className="text-xs font-medium">Connection settings</span>
           </div>
           <Badge variant="destructive">
             <Icon name="error" size={10} />
@@ -114,42 +138,56 @@ function IntegrationListItem({
           </Badge>
         </div>
       )}
-      {!isEmpty && (
+      {(!isEmpty && !hideTools) && (
         <div
           className={cn(
-            "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer",
-            !openTools && "hover:bg-muted rounded-b-xl",
+            "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-primary-foreground rounded-b-xl",
+            !toolsOpen && "hover:bg-muted",
           )}
         >
           <span
-            onClick={() => setOpenTools(!openTools)}
+            onClick={() => setToolsOpen(!toolsOpen)}
             className={cn(
-              "text-muted-foreground text-sm py-4 w-full hover:bg-muted px-4",
-              !openTools && "rounded-b-xl",
+              "text-muted-foreground text-sm h-10 flex items-center w-full hover:bg-muted pl-2 pr-4",
+              !toolsOpen && "rounded-b-xl",
             )}
           >
-            {isLoading
-              ? (
-                "Loading tools..."
-              )
-              : (
-                <div className="flex items-center gap-4 text-foreground">
-                  <Icon
-                    name="chevron_right"
-                    filled
-                    size={14}
-                    className={cn(
-                      "inline-block mr-1 align-text-bottom",
-                      openTools && "rotate-90",
-                    )}
-                  />
-                  {`${enabled} of ${total} tools enabled`}
-                </div>
-              )}
+            <div className="w-full flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Icon
+                  name="chevron_right"
+                  filled
+                  size={14}
+                  className={cn(
+                    "inline-block mr-1 align-text-bottom text-foreground",
+                    toolsOpen && "rotate-90",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs font-medium text-muted-foreground",
+                    isLoading && "animate-pulse",
+                  )}
+                >
+                  {isLoading ? "Loading tools..." : "All tools"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {enabledCount}/{total}
+                </span>
+                <Checkbox
+                  id={`select-all-${integration.id}`}
+                  className="cursor-pointer"
+                  checked={isAll}
+                  onCheckedChange={handleAll}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
           </span>
-          {openTools && (
+          {toolsOpen && (
             <ToolList
-              className="px-4"
               integration={integration}
               toolsSet={toolsSet}
               isLoading={isLoading}
@@ -163,35 +201,18 @@ function IntegrationListItem({
   );
 }
 
-export function IntegrationList({
-  integrations,
-  toolsSet,
-  setIntegrationTools,
-}: {
-  integrations: Integration[];
-  toolsSet: ToolsMap;
-  setIntegrationTools: (integrationId: string, tools: string[]) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      {integrations.map((integration) => (
-        <IntegrationListItem
-          key={integration.id}
-          integration={integration}
-          toolsSet={toolsSet}
-          setIntegrationTools={setIntegrationTools}
-        />
-      ))}
-    </div>
-  );
-}
-
 function beautifyToolName(text: string) {
   return text
     .replace(/_/g, " ")
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+// @franca: temporary, leandro wants a talking agent in vtex day
+const clientHiddenTools = ["SPEAK"];
+const hideFor = (email: string) => {
+  return !email.endsWith("@deco.cx");
+};
 
 function ToolList({
   className,
@@ -208,6 +229,10 @@ function ToolList({
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
   className?: string;
 }) {
+  const { data: profile } = useProfile();
+  const filteredTools = allTools.filter((tool) =>
+    !(clientHiddenTools.includes(tool.name) && hideFor(profile?.email))
+  );
   if (isLoading) {
     return (
       <div className={cn("space-y-2", className)}>
@@ -219,73 +244,48 @@ function ToolList({
   }
 
   return (
-    <div className={cn("space-y-4 pt-2", className)}>
-      <div className="space-y-2">
-        <label
-          className="flex items-start gap-3 p-4 hover:bg-muted rounded-xl cursor-pointer"
-          htmlFor={`select-all-${integration.id}`}
-        >
-          <Checkbox
-            checked={allTools.every((tool) =>
-              toolsSet[integration.id]?.includes(tool.name)
-            )}
-            className="cursor-pointer"
-            id={`select-all-${integration.id}`}
-            onCheckedChange={(checked) => {
-              setIntegrationTools(
-                integration.id,
-                checked ? allTools.map((tool) => tool.name) : [],
-              );
-            }}
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm truncate cursor-pointer text-foreground">
-              Select All
-            </span>
-          </div>
-        </label>
-        {allTools?.map((tool) => {
-          const enabled = toolsSet[integration.id]?.includes(tool.name) ??
-            false;
+    <div className="space-y-2 rounded-b-xl max-h-[350px] w-full overflow-y-auto">
+      {filteredTools?.map((tool) => {
+        const enabled = toolsSet[integration.id]?.includes(tool.name) ??
+          false;
 
-          const handleCheckboxChange = (checked: boolean) => {
-            const withoutTool = toolsSet[integration.id]?.filter((t) =>
-              t !== tool.name
-            );
-            const withTool = [...(toolsSet[integration.id] || []), tool.name];
-            const toolsToUpdate = checked ? withTool : withoutTool;
-            setIntegrationTools(integration.id, toolsToUpdate);
-          };
-
-          return (
-            <label
-              key={tool.name}
-              className="flex items-start gap-3 p-4 bg-muted/50 hover:bg-muted rounded-xl cursor-pointer"
-              htmlFor={`${integration.id}-${tool.name}`}
-            >
-              <Checkbox
-                checked={enabled}
-                className="cursor-pointer"
-                id={`${integration.id}-${tool.name}`}
-                onCheckedChange={handleCheckboxChange}
-              />
-              <div className="flex flex-col min-w-0">
-                <span
-                  className={cn(
-                    "text-sm truncate cursor-pointer text-foreground",
-                    enabled && !enabled && "text-muted-foreground",
-                  )}
-                >
-                  {beautifyToolName(tool.name)}
-                </span>
-                {tool.description && (
-                  <ExpandableDescription description={tool.description} />
-                )}
-              </div>
-            </label>
+        const handleCheckboxChange = (checked: boolean) => {
+          const withoutTool = toolsSet[integration.id]?.filter((t) =>
+            t !== tool.name
           );
-        })}
-      </div>
+          const withTool = [...(toolsSet[integration.id] || []), tool.name];
+          const toolsToUpdate = checked ? withTool : withoutTool;
+          setIntegrationTools(integration.id, toolsToUpdate);
+        };
+
+        return (
+          <label
+            key={tool.name}
+            className="flex items-center justify-between gap-3 px-4 hover:bg-muted cursor-pointer"
+            htmlFor={`${integration.id}-${tool.name}`}
+          >
+            <div className="flex flex-col min-w-0 border-l border-border border-dashed p-4 pr-0">
+              <span
+                className={cn(
+                  "text-sm truncate cursor-pointer text-foreground",
+                  !enabled && "text-muted-foreground",
+                )}
+              >
+                {beautifyToolName(tool.name)}
+              </span>
+              {tool.description && (
+                <ExpandableDescription description={tool.description} />
+              )}
+            </div>
+            <Checkbox
+              checked={enabled}
+              className="cursor-pointer"
+              id={`${integration.id}-${tool.name}`}
+              onCheckedChange={handleCheckboxChange}
+            />
+          </label>
+        );
+      })}
     </div>
   );
 }

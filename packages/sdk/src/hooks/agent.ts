@@ -8,7 +8,6 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   createAgent,
   deleteAgent,
@@ -18,7 +17,6 @@ import {
 } from "../crud/agent.ts";
 import { InternalServerError } from "../errors.ts";
 import type { Agent } from "../models/agent.ts";
-import { stub } from "../stub.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
@@ -156,18 +154,4 @@ export const useAgentRoot = (agentId: string) => {
   );
 
   return root;
-};
-
-// TODO: I guess we can improve this and have proper typings
-export const useAgentStub = (
-  agentId: string = WELL_KNOWN_AGENT_IDS.teamAgent,
-  threadId?: string,
-) => {
-  const agentRoot = useAgentRoot(agentId);
-
-  return useMemo(
-    // deno-lint-ignore no-explicit-any
-    () => stub<any>("AIAgent").new(agentRoot).withMetadata({ threadId }),
-    [agentRoot, threadId],
-  );
 };

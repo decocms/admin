@@ -1,9 +1,12 @@
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useMemo } from "react";
 import {
   createIntegration,
   deleteIntegration,
@@ -12,9 +15,10 @@ import {
   saveIntegration,
 } from "../crud/mcp.ts";
 import { InternalServerError } from "../errors.ts";
+import { MCPClient } from "../fetcher.ts";
 import type { Binder, Integration } from "../models/mcp.ts";
-import { useAgentStub } from "./agent.ts";
 import { KEYS } from "./api.ts";
+import { listTools, type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 
 export const useCreateIntegration = () => {
@@ -43,7 +47,13 @@ export const useCreateIntegration = () => {
   return create;
 };
 
-export const useUpdateIntegration = () => {
+export const useUpdateIntegration = ({
+  onError,
+  onSuccess,
+}: {
+  onError?: (error: Error) => void;
+  onSuccess?: (result: Integration) => void;
+} = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -65,7 +75,10 @@ export const useUpdateIntegration = () => {
             ? [result]
             : old.map((mcp) => mcp.id === result.id ? result : mcp),
       );
+
+      onSuccess?.(result);
     },
+    onError,
   });
 
   return update;
@@ -115,23 +128,107 @@ export const useBindings = (binder: Binder) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
-  const data = useQuery({
-    queryKey: KEYS.BINDINGS(workspace, binder),
-    queryFn: async ({ signal }) => {
-      const items = await listIntegrations(workspace, { binder }, signal);
+  const { data: items, isLoading: isLoadingItems, error: itemsError } =
+    useQuery({
+      queryKey: KEYS.INTEGRATION(workspace),
+      queryFn: ({ signal }) => listIntegrations(workspace, {}, signal),
+      staleTime: 2 * 60 * 1000, // 2 minutes
+    });
 
-      for (const item of items) {
-        const itemKey = KEYS.INTEGRATION(workspace, item.id);
+  const queriesConfig = useMemo(() => {
+    return (items || []).map((item) => ({
+      queryKey: KEYS.INTEGRATION_TOOLS(workspace, item.id, binder),
+      queryFn: async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 7_000); // 7 second timeout
 
-        client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<Integration>(itemKey, item);
-      }
+        try {
+          const tools = await listTools(item.connection, {
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
 
-      return items;
-    },
+          const itemKey = KEYS.INTEGRATION(workspace, item.id);
+          client.setQueryData<Integration>(itemKey, item);
+
+          return {
+            integration: item,
+            tools: tools.tools,
+            success: true,
+          };
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (error instanceof Error && error.name === "AbortError") {
+            console.warn(
+              `Timeout fetching tools for integration: ${item.id}`,
+            );
+            return {
+              integration: item,
+              tools: [] as MCPTool[],
+              success: false,
+            };
+          }
+
+          console.error(
+            "Error fetching tools for integration:",
+            item.id,
+            error,
+          );
+          throw error;
+        }
+      },
+      enabled: !!items && items.length > 0,
+      staleTime: 5 * 60 * 1000, // 5 minutes - tools don't change often
+      retry: (failureCount: number) => failureCount < 2,
+      // Use a shorter timeout to prevent hanging queries
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    }));
+  }, [items, workspace, binder, client]);
+
+  const integrationQueries = useQueries({
+    queries: queriesConfig,
   });
 
-  return data;
+  // Derive filtered results from individual queries
+  const filteredIntegrations = useMemo(() => {
+    if (!items || integrationQueries.length === 0) return [];
+
+    return integrationQueries
+      .filter((query) => query.isSuccess && query.data)
+      .map((query) => query.data!)
+      .filter(({ tools }) =>
+        Binding(WellKnownBindings[binder]).isImplementedBy(tools)
+      )
+      .map(({ integration }) => integration);
+  }, [
+    integrationQueries.length,
+    integrationQueries.map((q) => q.isSuccess),
+    integrationQueries.map((q) => !!q.data),
+    items,
+    binder,
+  ]);
+
+  // Aggregate loading and error states
+  const isLoading = isLoadingItems ||
+    integrationQueries.some((q) => q.isLoading);
+  const hasErrors = !!itemsError || integrationQueries.some((q) => q.error);
+  const errors = [
+    itemsError,
+    ...integrationQueries.map((q) => q.error).filter(Boolean),
+  ].filter(Boolean);
+
+  return {
+    data: filteredIntegrations,
+    isLoading,
+    isPending: isLoading,
+    error: hasErrors ? errors[0] : null,
+    isSuccess: !isLoading && !hasErrors,
+    totalIntegrations: items?.length || 0,
+    processedIntegrations:
+      integrationQueries.filter((q) => q.isSuccess || q.isError).length,
+  };
 };
 
 /** Hook for listing all MCPs */
@@ -159,20 +256,19 @@ export const useIntegrations = () => {
 };
 
 interface IntegrationsResult {
-  integrations: Array<Integration & { provider: string }>;
+  integrations: Array<Omit<Integration, "connection"> & { provider: string }>;
 }
 
 export const useMarketplaceIntegrations = () => {
-  const agentStub = useAgentStub();
+  const { workspace } = useSDK();
 
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      agentStub.callTool("DECO_INTEGRATIONS.DECO_INTEGRATIONS_SEARCH", {
-        query: "",
-        filters: { installed: false },
-        verbose: true,
-      }).then((r: { data: IntegrationsResult }) => r.data),
+      MCPClient.forWorkspace(workspace).DECO_INTEGRATIONS_SEARCH({ query: "" })
+        .then((r: IntegrationsResult | string) =>
+          typeof r === "string" ? { integrations: [] } : r
+        ),
   });
 };
 
@@ -180,14 +276,15 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "github",
   "googlesheets",
   "googlegmail",
+  "googleyoutube",
+  "googledrive",
   "airtable",
   "slack",
 ];
 
 export const useInstallFromMarketplace = () => {
-  const agentStub = useAgentStub();
-  const client = useQueryClient();
   const { workspace } = useSDK();
+  const client = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (
@@ -197,14 +294,13 @@ export const useInstallFromMarketplace = () => {
         provider: string;
       },
     ) => {
-      const result: { data: { installationId: string } } = await agentStub
-        .callTool("DECO_INTEGRATIONS.DECO_INTEGRATION_INSTALL", {
-          id: appName,
-        });
+      const result: { installationId: string } = await MCPClient
+        .forWorkspace(workspace)
+        .DECO_INTEGRATION_INSTALL({ id: appName });
 
       const integration = await loadIntegration(
         workspace,
-        result.data.installationId,
+        result.installationId,
       );
 
       let redirectUrl: string | null = null;
@@ -213,17 +309,41 @@ export const useInstallFromMarketplace = () => {
         WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
         provider === "deco"
       ) {
-        const result = await agentStub.callTool(
-          "DECO_INTEGRATIONS.DECO_INTEGRATION_OAUTH_START",
-          {
+        const result = await MCPClient
+          .forWorkspace(workspace)
+          .DECO_INTEGRATION_OAUTH_START({
             appName: appName,
             returnUrl,
             installId: integration.id.split(":").pop()!,
-          },
-        );
-        redirectUrl = result?.data?.redirectUrl;
+          });
+
+        redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
           throw new Error("No redirect URL found");
+        }
+      }
+
+      if (provider === "composio") {
+        if (!("url" in integration.connection)) {
+          throw new Error("Composio integration has no url");
+        }
+
+        const result = await MCPClient
+          .forWorkspace(workspace)
+          .COMPOSIO_INTEGRATION_OAUTH_START({
+            url: integration.connection.url,
+          });
+
+        redirectUrl = result?.redirectUrl;
+        if (!redirectUrl) {
+          const errorInfo = {
+            appName,
+            returnUrl,
+            installId: integration.id.split(":").pop()!,
+            url: integration.connection.url,
+            result,
+          };
+          console.error("[Composio] No redirect URL found", errorInfo);
         }
       }
 

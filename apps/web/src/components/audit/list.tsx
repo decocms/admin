@@ -14,13 +14,15 @@ import {
 } from "@deco/ui/components/pagination.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Suspense, useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { Tab } from "../dock/index.tsx";
+import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AuditFilters } from "./audit-filters.tsx";
 import { AuditTable } from "./audit-table.tsx";
+
+const CURSOR_PAGINATION_SEARCH_PARAM = "after";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -67,10 +69,6 @@ export function AuditListContent({
   );
   const [sort, setSort] = useState<AuditOrderBy>(SORT_OPTIONS[0].value);
   // Cursor-based pagination state
-  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
-    undefined,
-  );
-  const [prevCursors, setPrevCursors] = useState<string[]>([]);
   const navigate = useNavigateWorkspace();
 
   // Fetch agents for filter dropdown
@@ -78,6 +76,19 @@ export function AuditListContent({
 
   // Get teamId from teams and params
   const params = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const getSafeCursor = (cursor: string | null) => {
+    if (!cursor) return;
+    try {
+      new Date(cursor);
+      return cursor;
+    } catch {
+      return;
+    }
+  };
+  const currentCursor =
+    getSafeCursor(searchParams.get(CURSOR_PAGINATION_SEARCH_PARAM)) ??
+      undefined;
   const { data: teams } = useTeams();
   const resolvedTeamSlug = params.teamSlug;
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
@@ -98,33 +109,29 @@ export function AuditListContent({
   // Handlers
   function handleAgentChange(value: string) {
     setSelectedAgent(value === "all" ? undefined : value);
-    setCurrentCursor(undefined);
-    setPrevCursors([]);
+    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
   }
   function handleUserChange(value: string) {
     setSelectedUser(value === "all" ? undefined : value);
-    setCurrentCursor(undefined);
-    setPrevCursors([]);
+
+    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
   }
   function handleSortChange(newSort: string) {
     setSort(newSort as AuditOrderBy);
-    setCurrentCursor(undefined);
-    setPrevCursors([]);
+    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
   }
   function handleNextPage() {
     if (pagination?.hasMore && pagination?.nextCursor) {
-      setPrevCursors((prev) => [...prev, currentCursor ?? ""]);
-      setCurrentCursor(pagination.nextCursor);
+      setSearchParams({
+        [CURSOR_PAGINATION_SEARCH_PARAM]: pagination.nextCursor,
+      });
     }
   }
   function handlePrevPage() {
-    if (prevCursors.length > 0) {
-      const newPrevCursors = [...prevCursors];
-      const prevCursor = newPrevCursors.pop();
-      setPrevCursors(newPrevCursors);
-      setCurrentCursor(
-        prevCursor && prevCursor.length > 0 ? prevCursor : undefined,
-      );
+    if (pagination?.prevCursor) {
+      setSearchParams({
+        [CURSOR_PAGINATION_SEARCH_PARAM]: pagination?.prevCursor,
+      });
     }
   }
 
@@ -173,19 +180,14 @@ export function AuditListContent({
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (prevCursors.length > 0) handlePrevPage();
+                        handlePrevPage();
                       }}
-                      aria-disabled={prevCursors.length === 0}
-                      tabIndex={prevCursors.length === 0 ? -1 : 0}
-                      className={prevCursors.length === 0
+                      aria-disabled={!pagination?.hasPrev}
+                      tabIndex={!pagination?.hasPrev ? -1 : 0}
+                      className={!pagination?.hasPrev
                         ? "opacity-50 pointer-events-none"
                         : ""}
                     />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <span className="px-3 py-1 text-sm text-muted-foreground select-none">
-                      Page {prevCursors.length + 1}
-                    </span>
                   </PaginationItem>
                   <PaginationItem>
                     <PaginationNext

@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
-import { Transaction } from "../client.ts";
+import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 
 export const verifyAndParseStripeEvent = (

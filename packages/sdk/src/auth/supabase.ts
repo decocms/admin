@@ -1,7 +1,9 @@
 import { createServerClient, serializeCookieHeader } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SUPABASE_URL } from "../constants.ts";
 
-export const SUPABASE_URL = "https://auth.deco.cx";
+export { SUPABASE_URL };
+
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {
   const cookie = headers.get("Cookie");

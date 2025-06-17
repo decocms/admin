@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { AppContext } from "../../context.ts";
+import type { AppContext } from "../../context.ts";
 import { assertHasWorkspace } from "../../assertions.ts";
 import { createCurrencyClient } from "../index.ts";
 

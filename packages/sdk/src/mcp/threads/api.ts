@@ -9,7 +9,7 @@ import { z } from "zod";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
-  canAccessWorkspaceResource,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createTool } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
@@ -99,13 +99,15 @@ export const listThreads = createTool({
     ]).default("createdAt_desc").optional(),
     cursor: z.string().optional(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async (
     { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
     c,
   ) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -121,7 +123,7 @@ export const listThreads = createTool({
 
     // Build the WHERE clause for filtering
     const whereClauses = [];
-    const args = [];
+    const args: string[] = [];
 
     if (agentId) {
       whereClauses.push("json_extract(metadata, '$.agentId') = ?");
@@ -133,8 +135,11 @@ export const listThreads = createTool({
       args.push(resourceId);
     }
 
+    let cursorWhereClauseIdx: number | undefined = undefined;
     if (cursor) {
       const operator = isDesc ? "<" : ">";
+      cursorWhereClauseIdx = whereClauses.length;
+
       whereClauses.push(`${field} ${operator} ?`);
       args.push(cursor);
     }
@@ -144,22 +149,43 @@ export const listThreads = createTool({
       "(json_extract(metadata, '$.deleted') IS NULL OR json_extract(metadata, '$.deleted') = false)",
     );
 
+    const prevWhereClauses = [...whereClauses];
+    const hasCursor = cursorWhereClauseIdx !== undefined;
+    if (cursorWhereClauseIdx !== undefined) {
+      const operator = isDesc ? ">" : "<"; // should be the oposite of cursor
+      prevWhereClauses[cursorWhereClauseIdx] = `${field} ${operator} ?`;
+    }
+
     const whereClause = whereClauses.length > 0
       ? `WHERE ${whereClauses.join(" AND ")}`
       : "";
+    const prevWhereClause = whereClauses.length > 0
+      ? `WHERE ${prevWhereClauses.join(" AND ")}`
+      : "";
 
     limit ??= 10;
-    const { data: result, error } = await safeExecute(client, {
-      sql: uniqueByAgentId
-        ? `WITH RankedThreads AS (
+
+    const generateQuery = ({ where }: { where: string }) =>
+      safeExecute(client, {
+        sql: uniqueByAgentId
+          ? `WITH RankedThreads AS (
             SELECT *,
               ROW_NUMBER() OVER (PARTITION BY json_extract(metadata, '$.agentId') ORDER BY ${field} ${direction.toUpperCase()}) as rn
-            FROM mastra_threads ${whereClause}
+            FROM mastra_threads ${where}
           )
           SELECT * FROM RankedThreads WHERE rn = 1 ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`
-        : `SELECT * FROM mastra_threads ${whereClause} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
-      args: [...args, limit + 1], // Fetch one extra to determine if there are more
-    });
+          : `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+        args: [...args, limit + 1], // Fetch one extra to determine if there are more
+      });
+
+    const [{ data: result, error }, { data: prevCursorResult }] = await Promise
+      .all([
+        generateQuery({ where: whereClause }),
+
+        hasCursor
+          ? generateQuery({ where: prevWhereClause })
+          : { data: { rows: [] } } as const,
+      ]);
 
     if (!result || error) {
       return { threads: [], pagination: { hasMore: false, nextCursor: null } };
@@ -168,6 +194,9 @@ export const listThreads = createTool({
     const threads = result.rows
       .map((row: unknown) => ThreadSchema.safeParse(row)?.data)
       .filter((a): a is Thread => !!a);
+    const prevThreads = prevCursorResult?.rows.map((row) =>
+      ThreadSchema.safeParse(row)?.data
+    ).filter((t) => t !== undefined);
 
     // Check if there are more results
     const hasMore = threads.length > limit;
@@ -182,11 +211,26 @@ export const listThreads = createTool({
         : threads[threads.length - 1].updatedAt
       : null;
 
+    const _prevCursor = prevThreads && prevThreads.length > 0
+      ? field === "createdAt"
+        ? prevThreads.at(0)?.createdAt
+        : prevThreads.at(0)?.updatedAt
+      : null;
+
+    const prevCursor = !!_prevCursor && new Date(_prevCursor);
+    if (prevCursor) {
+      prevCursor.setMilliseconds(
+        prevCursor.getMilliseconds() + (isDesc ? +1 : -1),
+      );
+    }
+
     return {
       threads,
       pagination: {
         hasMore,
         nextCursor,
+        prevCursor: prevCursor ? prevCursor.toISOString() : null,
+        hasPrev: !!prevCursor,
       },
     };
   },
@@ -196,10 +240,12 @@ export const getThreadMessages = createTool({
   name: "THREADS_GET_MESSAGES",
   description: "Get only the messages for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -235,10 +281,12 @@ export const getThread = createTool({
   name: "THREADS_GET",
   description: "Get a thread by thread id (without messages)",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -266,10 +314,12 @@ export const getThreadTools = createTool({
   name: "THREADS_GET_TOOLS",
   description: "Get the tools_set for a thread by thread id",
   inputSchema: z.object({ id: z.string() }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ id }, c) => {
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
     const workspace = c.workspace.value;
 
     const client = await createSQLClientFor(
@@ -296,8 +346,11 @@ export const updateThreadTitle = createTool({
     threadId: z.string(),
     title: z.string(),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, title }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const memory = await getWorkspaceMemory(c);
 
     const currentThread = await memory.getThreadById({ threadId });
@@ -333,8 +386,11 @@ export const updateThreadMetadata = createTool({
     threadId: z.string(),
     metadata: z.record(z.unknown()),
   }),
-  canAccess: canAccessWorkspaceResource,
   handler: async ({ threadId, metadata }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
     const memory = await getWorkspaceMemory(c);
 
     const currentThread = await memory.getThreadById({ threadId });

@@ -1,5 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
 compatibility_flags = ["nodejs_compat"]
+
 name = "deco-chat-api"
 main = "main.ts"
 compatibility_date = "2024-11-27"
@@ -17,7 +18,7 @@ enabled = true
 [[dispatch_namespaces]]
 binding = "PROD_DISPATCHER"
 namespace = "deco-chat-prod"
-
+outbound = { service = "apps-outbound", parameters = ["DECO_CHAT_APP_ORIGIN"] }
 services = [{ binding = "WALLET", service = "wallet" }]
 
 [version_metadata]
@@ -39,3 +40,11 @@ new_classes = ["Trigger", "AIAgent"]
 
 [[tail_consumers]]
 service = "hyperdx-tail"
+
+[[migrations]]
+tag = "v2"
+new_classes = ["TestDO"]
+
+[[migrations]]
+tag = "v3"
+deleted_classes = ["TestDO"]

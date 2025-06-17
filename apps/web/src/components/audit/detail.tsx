@@ -3,7 +3,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useParams } from "react-router";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { ChatProvider } from "../chat/context.tsx";
-import { Tab } from "../dock/index.tsx";
+import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 
 const useThreadId = () => {

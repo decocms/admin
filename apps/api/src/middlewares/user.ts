@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 import { endTime, startTime } from "hono/timing";
 import { getUser } from "../auth/index.ts";
-import { AppEnv } from "../utils/context.ts";
+import type { AppEnv } from "../utils/context.ts";
 
 export const setUserMiddleware: MiddlewareHandler<AppEnv> = async (
   ctx,

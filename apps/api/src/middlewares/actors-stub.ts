@@ -1,9 +1,9 @@
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import { ActorCfRuntime } from "@deco/actors/cf";
 import { actors } from "@deco/actors/stub";
-import { AIAgent, Trigger } from "@deco/ai/actors";
+import type { AIAgent, Trigger } from "@deco/ai/actors";
 import type { MiddlewareHandler } from "hono";
-import { AppEnv } from "../utils/context.ts";
+import type { AppEnv } from "../utils/context.ts";
 import { runtime } from "./actors.ts";
 
 export const withActorsStubMiddleware: MiddlewareHandler<AppEnv> = async (

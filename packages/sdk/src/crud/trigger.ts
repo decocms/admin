@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import { CreateTriggerInput } from "../models/trigger.ts";
+import type { CreateTriggerInput } from "../models/trigger.ts";
 
 export const listTriggers = (workspace: string, agentId: string) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_LIST(

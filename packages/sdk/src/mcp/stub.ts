@@ -1,5 +1,6 @@
-import { API_SERVER_URL, getTraceDebugId } from "../constants.ts";
+import { DECO_CHAT_API, getTraceDebugId } from "../constants.ts";
 import { getErrorByStatusCode } from "../errors.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 import type { AppContext } from "./context.ts";
 import type { ToolBinder } from "./index.ts";
 
@@ -30,6 +31,7 @@ export interface CreateStubHandlerOptions<
 
 export interface CreateStubAPIOptions {
   workspace?: string;
+  connection?: MCPConnection;
 }
 
 export type CreateStubOptions<TDefinition extends ToolBinder[]> =
@@ -56,16 +58,33 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
         return async (args: unknown, init?: RequestInit) => {
           const traceDebugId = getTraceDebugId();
           const workspace = options?.workspace ?? "";
+          let payload = args;
+          let toolName = name;
+          let mapper = (data: unknown) => data;
+          if (options?.connection && typeof args === "object") {
+            payload = {
+              connection: options.connection,
+              params: {
+                name: name,
+                arguments: args,
+              },
+            };
+            toolName = "INTEGRATIONS_CALL_TOOL";
+            mapper = (data) =>
+              (data as {
+                structuredContent: unknown;
+              }).structuredContent;
+          }
           const response = await fetch(
-            new URL(`${workspace}/tools/call/${name}`, API_SERVER_URL),
+            new URL(`${workspace}/tools/call/${toolName}`, DECO_CHAT_API),
             {
-              body: JSON.stringify(args),
+              body: JSON.stringify(payload),
               method: "POST",
               credentials: "include",
               ...init,
               headers: {
-                ...init?.headers,
                 "content-type": "application/json",
+                ...init?.headers,
                 "accept": "application/json",
                 "x-trace-debug-id": traceDebugId,
               },
@@ -85,7 +104,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
             );
           }
 
-          return data;
+          return mapper(data);
         };
       },
     },

@@ -38,9 +38,7 @@ interface ToolInvocation {
   toolName: string;
   state: "call" | "result" | "error" | "partial-call";
   args?: Record<string, unknown>;
-  result?: {
-    data?: Record<string, unknown>;
-  };
+  result?: Record<string, unknown>;
   error?: unknown;
 }
 
@@ -230,22 +228,22 @@ function CustomToolUI({ tool, isLastMessage }: {
 }) {
   const { select } = useChatContext();
 
-  if (tool.state !== "result" || !tool.result?.data) return null;
+  if (tool.state !== "result" || !tool.result) return null;
 
   switch (tool.toolName) {
     case "RENDER": {
       return (
         <Preview
-          content={tool.result.data.content as "url" | "html"}
-          title={tool.result.data.title as string}
+          content={tool.result.content as "url" | "html"}
+          title={tool.result.title as string}
         />
       );
     }
     case "HOSTING_APP_DEPLOY": {
       return (
         <Preview
-          content={tool.result.data.content as "url" | "html"}
-          title={tool.result.data.title as string}
+          content={tool.result.content as "url" | "html"}
+          title={tool.result.title as string}
         />
       );
     }
@@ -254,10 +252,10 @@ function CustomToolUI({ tool, isLastMessage }: {
       return (
         <div className="animate-in slide-in-from-bottom duration-300">
           <AgentCard
-            id={tool.result.data.id as string}
-            name={tool.result.data.name as string}
-            description={tool.result.data.description as string}
-            avatar={tool.result.data.avatar as string}
+            id={tool.result.id as string}
+            name={tool.result.name as string}
+            description={tool.result.description as string}
+            avatar={tool.result.avatar as string}
             displayLink={tool.toolName === "AGENT_CREATE"}
           />
         </div>
@@ -265,7 +263,7 @@ function CustomToolUI({ tool, isLastMessage }: {
     }
     case "SHOW_PICKER":
     case "CONFIRM": {
-      const options = (tool.result.data.options as ConfirmOption[]).map((
+      const options = (tool.result.options as ConfirmOption[]).map((
         option,
       ) => ({
         id: option.value,
@@ -274,7 +272,7 @@ function CustomToolUI({ tool, isLastMessage }: {
 
       return (
         <Picker
-          question={tool.result.data.question as string}
+          question={tool.result.question as string}
           options={options}
           onSelect={(value) => select(tool.toolCallId, value)}
           disabled={!isLastMessage}

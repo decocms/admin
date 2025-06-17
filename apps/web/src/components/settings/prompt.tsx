@@ -6,8 +6,8 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
+import PromptInput from "../prompts/rich-text/index.tsx";
 
 function PromptTab() {
   const {
@@ -28,9 +28,9 @@ function PromptTab() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Textarea
+                    <PromptInput
                       placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
-                      className="min-h-[170px] h-full border-border"
+                      enableMentions
                       {...field}
                     />
                   </FormControl>

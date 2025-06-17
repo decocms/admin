@@ -1,9 +1,9 @@
+import { Hosts } from "@deco/sdk/hosts";
 import { Hono } from "hono";
 import { timing } from "hono/timing";
 import api from "./api.ts";
 import apps from "./apps.ts";
-import { AppEnv } from "./utils/context.ts";
-import { Hosts } from "@deco/sdk/hosts";
+import type { AppEnv } from "./utils/context.ts";
 
 export const APPS_DOMAIN_QS = "app_host";
 
@@ -16,7 +16,9 @@ export const appsDomainOf = (req: Request, url?: URL) => {
 };
 
 const normalizeHost = (req: Request) => {
-  const host = req.headers.get("host") ?? "localhost";
+  const host = req.headers.get("host") ?? new URL(req.url).hostname ??
+    "localhost";
+
   const appsHost = appsDomainOf(req);
   if (appsHost) {
     return Hosts.APPS;
@@ -40,5 +42,4 @@ app.use(timing({ crossOrigin: true, total: true }));
 
 app.route(`/${Hosts.API}`, api);
 app.route(`/${Hosts.APPS}`, apps);
-
 export default app;

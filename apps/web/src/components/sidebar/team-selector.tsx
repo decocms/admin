@@ -18,12 +18,14 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
+import type { Theme } from "@deco/sdk";
 
 interface CurrentTeam {
   avatarUrl: string | undefined;
   slug: string;
   id: number | string;
   label: string;
+  theme: Theme | undefined;
 }
 
 function useUserTeam(): CurrentTeam {
@@ -36,6 +38,7 @@ function useUserTeam(): CurrentTeam {
     label,
     id: user?.id ?? "",
     slug: "",
+    theme: undefined,
   };
 }
 
@@ -47,10 +50,11 @@ export function useCurrentTeam(): CurrentTeam {
     return userTeam;
   }
   return {
-    avatarUrl: undefined,
+    avatarUrl: teamData?.avatar_url,
     label: teamData?.name || teamSlug || "",
     id: teamData?.id ?? "",
     slug: teamData?.slug ?? teamSlug ?? "",
+    theme: teamData?.theme,
   };
 }
 
@@ -62,10 +66,11 @@ function useUserTeams() {
   const allTeams: CurrentTeam[] = [
     personalTeam,
     ...teams.map((team) => ({
-      avatarUrl: undefined,
+      avatarUrl: team.avatar_url,
       slug: team.slug,
       label: team.name,
       id: team.id,
+      theme: team.theme,
     })),
   ];
 
@@ -85,6 +90,7 @@ function CurrentTeamDropdownTrigger() {
         <Avatar
           url={avatarUrl}
           fallback={label}
+          objectFit="contain"
           className="size-6"
         />
         <div className="flex items-center justify-start flex-1 min-w-0 gap-1">
@@ -227,6 +233,7 @@ function SwitchTeam(
                     className="w-6 h-6"
                     url={team.avatarUrl}
                     fallback={team.label}
+                    objectFit="contain"
                   />
                   <span className="md:text-sm">
                     {team.label}

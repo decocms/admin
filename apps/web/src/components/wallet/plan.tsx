@@ -1,4 +1,4 @@
-import { Feature, usePlanHasFeature } from "@deco/sdk";
+import { type Feature, usePlanHasFeature } from "@deco/sdk";
 
 export function Protect(
   { feature, fallback, children }: {

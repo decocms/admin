@@ -1,5 +1,5 @@
 import type { ListModelsInput } from "../crud/model.ts";
-import { ThreadFilterOptions } from "../crud/thread.ts";
+import type { ThreadFilterOptions } from "../crud/thread.ts";
 import type { Workspace } from "../index.ts";
 import type { Binder } from "../models/mcp.ts";
 
@@ -16,6 +16,20 @@ export const KEYS = {
     workspace: Workspace,
     integrationId?: string,
   ) => ["integration", workspace, integrationId],
+  INTEGRATION_TOOLS: (
+    workspace: Workspace,
+    integrationId: string,
+    binder?: Binder,
+  ) => [
+    "integration-tools",
+    workspace,
+    integrationId,
+    ...(binder ? [binder] : []),
+  ],
+  CHANNELS: (
+    workspace: Workspace,
+    channelId?: string,
+  ) => ["channels", workspace, channelId],
   BINDINGS: (
     workspace: Workspace,
     binder: Binder,
@@ -23,16 +37,21 @@ export const KEYS = {
   THREADS: (
     workspace: Workspace,
     options?: ThreadFilterOptions,
-  ) => [
-    "threads",
-    workspace,
-    options?.agentId,
-    options?.resourceId,
-    options?.orderBy,
-    options?.cursor,
-    options?.limit,
-    options?.uniqueByAgentId,
-  ],
+  ) => {
+    if (!options) {
+      return ["threads", workspace];
+    }
+    return [
+      "threads",
+      workspace,
+      options.agentId,
+      options.resourceId,
+      options.orderBy,
+      options.cursor,
+      options.limit,
+      options.uniqueByAgentId,
+    ];
+  },
   TOOLS: (
     workspace: Workspace,
     agentId: string,
@@ -49,6 +68,7 @@ export const KEYS = {
   ],
   TEAMS: () => ["teams"],
   TEAM: (slug: string) => ["team", slug],
+  TEAM_THEME: (slug: string) => ["team-theme", slug],
   TEAM_MEMBERS: (
     slugOrId: string | number,
   ) => ["taem", slugOrId, "members"],
@@ -84,6 +104,20 @@ export const KEYS = {
     threadId: string,
   ) => ["thread-tools", workspace, threadId],
   PROFILE: () => ["profile"],
+  PROMPTS: (workspace: Workspace) => ["prompts", workspace],
+  PROMPT: (workspace: Workspace, id: string) => ["prompts", workspace, id],
+  PROMPTS_SEARCH: (
+    workspace: Workspace,
+    query: string,
+    limit: number = 10,
+    offset: number = 0,
+  ) => [
+    "prompts",
+    workspace,
+    query,
+    limit,
+    offset,
+  ],
   WHATSAPP_USER: (workspace: Workspace, phone: string) => [
     "whatsapp-user",
     workspace,

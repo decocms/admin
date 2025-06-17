@@ -1,4 +1,4 @@
-import {
+import type {
   PostgrestFilterBuilder,
   UnstableGetResult as GetResult,
 } from "@supabase/postgrest-js";

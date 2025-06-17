@@ -1,7 +1,7 @@
 import {
   type Agent,
   AgentSchema,
-  Integration,
+  type Integration,
   NotFoundError,
   useAgent,
   useIntegrations,
@@ -25,7 +25,7 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useFocusChat } from "../agents/hooks.ts";
@@ -35,7 +35,7 @@ import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import IntegrationsTab from "../settings/integrations.tsx";
+import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
 import PromptTab from "../settings/prompt.tsx";
 import { AgentTriggers } from "../triggers/agent-triggers.tsx";
 import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
@@ -45,6 +45,7 @@ import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { lazy } from "react";
 import { wrapWithUILoadingFallback } from "../../main.tsx";
+import { useTabsForAgent } from "./preview.tsx";
 
 interface Props {
   agentId?: string;
@@ -133,8 +134,8 @@ const TABS: Record<string, Tab> = {
     initialOpen: "within",
   },
   integrations: {
-    Component: IntegrationsTab,
-    title: "Integrations",
+    Component: ToolsAndKnowledgeTab,
+    title: "Tools & Knowledge",
     initialOpen: "within",
     // it is not the ideal solution
     // but initialWidth is not working as expected
@@ -235,6 +236,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const updateAgent = useUpdateAgent();
   const updateAgentCache = useUpdateAgentCache();
   const createAgent = useCreateAgent();
+
+  const tabs = useTabsForAgent(agent, TABS);
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
@@ -337,7 +340,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
           }}
         >
           <PageLayout
-            tabs={TABS}
+            tabs={tabs}
             key={agentId}
             actionButtons={
               <ActionButtons

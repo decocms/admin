@@ -1,3 +1,8 @@
+/**
+ * This file is responsible for reading and writing the config file.
+ * Config for Deco workers is stored in the wrangler.toml file, so
+ * we're a superset of the wrangler config.
+ */
 import { z } from "zod";
 import { parse, stringify } from "smol-toml";
 

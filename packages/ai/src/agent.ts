@@ -79,7 +79,7 @@ import type {
   Thread,
   ThreadQueryOptions,
 } from "./types.ts";
-import { GenerateOptions } from "./types.ts";
+import type { GenerateOptions } from "./types.ts";
 import { AgentWallet } from "./agent/wallet.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";

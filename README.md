@@ -139,6 +139,7 @@ This will prompt you to log in and set up your session.
 
 ### All Commands
 
-For a complete reference of all available commands, see the [CLI Documentation](./packages/cli/README.md).
+For a complete reference of all available commands, see the
+[CLI Documentation](./packages/cli/README.md).
 
 ---

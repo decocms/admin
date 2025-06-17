@@ -13,48 +13,62 @@ deno install -Ar -g -n deco jsr:@deco/cli
 ### Authentication
 
 #### `deco login`
+
 Log in to deco.chat and retrieve tokens for CLI usage.
 
 #### `deco logout`
+
 Log out of deco.chat and remove local session data.
 
 #### `deco whoami`
+
 Print information about the current session.
 
 ### Configuration
 
 #### `deco configure`
-Save configuration options for the current directory. This command will prompt you for:
+
+Save configuration options for the current directory. This command will prompt
+you for:
+
 - Workspace name
 - App name
 
 ### Hosting
 
 #### `deco deploy`
+
 Deploy the current directory into the current workspace.
 
 Options:
+
 - `-w, --workspace <workspace>`: Workspace name (optional)
 - `-a, --app <app>`: App name (optional)
-- `-l, --local`: Deploy the app locally (requires deco.chat running at local API endpoint)
+- `-l, --local`: Deploy the app locally (requires deco.chat running at local API
+  endpoint)
 
 #### `deco hosting list -w <workspace>`
+
 List all apps in the specified workspace.
 
 ### Development
 
 #### `deco link`
+
 Link the project to be accessed through a remote domain.
 
 Options:
+
 - `-p, --port <port>`: Port to link (optional)
 
 Usage:
+
 ```bash
 deco link [build-command]
 ```
 
 Example:
+
 ```bash
 deco link npm run dev
 ```
@@ -62,6 +76,7 @@ deco link npm run dev
 ### Maintenance
 
 #### `deco update`
+
 Update the deco CLI to the latest version.
 
 ## Environment Variables
@@ -71,4 +86,5 @@ Update the deco CLI to the latest version.
 
 ## Configuration File
 
-The CLI uses a configuration file to store workspace and app settings. You can set these values using the `deco configure` command. 
+The CLI uses a configuration file to store workspace and app settings. You can
+set these values using the `deco configure` command.

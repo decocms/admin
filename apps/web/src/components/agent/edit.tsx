@@ -267,7 +267,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         if (isWellKnownAgent) {
           const id = crypto.randomUUID();
           const agent = { ...data, id };
-          createAgent(agent, {});
+          await createAgent(agent, {});
           const wellKnownAgent =
             WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS];
           form.reset(wellKnownAgent);

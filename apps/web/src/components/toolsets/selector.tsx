@@ -77,7 +77,7 @@ export function IntegrationListItem({
   const enabledCount =
     allTools.filter((tool) => toolsSet[integration.id]?.includes(tool.name))
       .length;
-  const isAll = enabledCount > 0;
+  const isAll = enabledCount === total && total > 0;
   const isEmpty = !isLoading && allTools.length === 0;
 
   function handleAll(checked: boolean) {
@@ -180,7 +180,10 @@ export function IntegrationListItem({
                   id={`select-all-${integration.id}`}
                   className="cursor-pointer"
                   checked={isAll}
-                  onCheckedChange={handleAll}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAll(!isAll);
+                  }}
                   disabled={isLoading}
                 />
               </div>

@@ -162,6 +162,8 @@ function KnowledgeHeading() {
   );
 }
 
+// TODO: bring this back. The flow it buggs is adding a file to kb
+// deno-lint-ignore  no-unused-vars
 function Knowledge() {
   const { agent } = useAgentSettingsForm();
   const [uploadedFiles, setUploadedFiles] = useState<
@@ -392,7 +394,7 @@ function ToolsAndKnowledgeTab() {
             className="space-y-4"
           >
             <Connections />
-            <Knowledge />
+            {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
             <MultiAgent />
           </form>
         </div>

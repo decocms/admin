@@ -261,7 +261,9 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
     };
 
     const chunks = await Promise.all(
-      proccessedFile.chunks.map((chunk: { text: string; metadata: Record<string, string> }) =>
+      proccessedFile.chunks.map((
+        chunk: { text: string; metadata: Record<string, string> },
+      ) =>
         remember.handler({
           content: chunk.text,
           metadata: {

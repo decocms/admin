@@ -29,7 +29,8 @@
     "./packages/ui",
     "./packages/sdk",
     "./packages/ai",
-    "./packages/cli"
+    "./packages/cli",
+    "./packages/runtime"
   ],
   "compilerOptions": {
     "experimentalDecorators": true,

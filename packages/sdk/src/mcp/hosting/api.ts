@@ -159,9 +159,11 @@ async function deployToCloudflare({
   assertHasWorkspace(c);
   const env = getEnv(c);
 
-  const verifiedWranglerConfig = acceptedWranglerConfigSchema.parse(
-    wranglerConfig,
-  );
+  const verifiedWranglerConfig = wranglerConfig
+    ? acceptedWranglerConfigSchema.parse(wranglerConfig)
+    : {};
+
+  console.log("verifiedWranglerConfig", verifiedWranglerConfig);
 
   const metadata = {
     main_module: mainModule,
@@ -374,6 +376,7 @@ Important Notes:
     const wranglerConfig = filesRecord["wrangler.toml"]
       ? tomlParse(filesRecord["wrangler.toml"])
       : undefined;
+    console.log("wranglerConfig", wranglerConfig);
     delete filesRecord["wrangler.toml"];
 
     await createNamespaceOnce(c);

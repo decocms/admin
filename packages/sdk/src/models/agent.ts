@@ -1,5 +1,16 @@
 import { z } from "zod";
-import { DEFAULT_MODEL } from "../constants.ts";
+import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
+
+/**
+ * Schema for agent model validation
+ * Accepts either well-known model IDs or UUIDs for BYOK models
+ */
+const ModelSchema = z.union([
+  // Well-known model IDs
+  z.enum(WELL_KNOWN_MODELS.map(m => m.id) as [string, ...string[]]),
+  // UUID format for BYOK models
+  z.string().uuid()
+]);
 
 /**
  * Zod schema for an AI Agent
@@ -33,8 +44,8 @@ export const AgentSchema = z.object({
     "Maximum number of tokens the agent can use, defaults to 8192",
   ),
   /** Model to use for the agent */
-  model: z.string().default(DEFAULT_MODEL.id)
-    .describe("Model to use for the agent"),
+  model: ModelSchema.default(DEFAULT_MODEL.id)
+    .describe("Model to use for the agent - either a well-known model ID or UUID for BYOK"),
   /** Memory to use for the agent */
   memory: z.object({
     discriminator: z.string().optional().describe(

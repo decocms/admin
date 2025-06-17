@@ -163,8 +163,6 @@ async function deployToCloudflare({
     ? acceptedWranglerConfigSchema.parse(wranglerConfig)
     : {};
 
-  console.log("verifiedWranglerConfig", verifiedWranglerConfig);
-
   const metadata = {
     main_module: mainModule,
     compatibility_flags: ["nodejs_compat"],
@@ -376,7 +374,6 @@ Important Notes:
     const wranglerConfig = filesRecord["wrangler.toml"]
       ? tomlParse(filesRecord["wrangler.toml"])
       : undefined;
-    console.log("wranglerConfig", wranglerConfig);
     delete filesRecord["wrangler.toml"];
 
     await createNamespaceOnce(c);

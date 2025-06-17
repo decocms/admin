@@ -40,7 +40,7 @@ const readEnvFile = async (rootDir: string) => {
 const gatherFiles = async (rootDir: string) => {
   const tsFiles: string[] = [];
   const walker = walk(rootDir, {
-    exts: [".ts", ".mjs", ".js", ".cjs"],
+    exts: [".ts", ".mjs", ".js", ".cjs", ".toml"],
     includeDirs: false,
     skip: [/node_modules/],
   });

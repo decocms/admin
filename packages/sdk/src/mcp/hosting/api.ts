@@ -145,7 +145,7 @@ const acceptedWranglerConfigSchema = z.object({
       name: z.string(),
       namespace_id: z.string(),
     }),
-  ),
+  ).optional(),
 });
 
 async function deployToCloudflare({

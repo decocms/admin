@@ -165,6 +165,7 @@ export interface Tab {
   maximumHeight?: number;
   maximumWidth?: number;
   hideFromViews?: boolean;
+  renderer?: "always" | "onlyWhenVisible";
 }
 
 type Props =
@@ -257,6 +258,7 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
+          renderer: value.renderer,
           initialHeight: !isMobile ? value.initialHeight : undefined,
           initialWidth: !isMobile ? value.initialWidth : undefined,
           maximumHeight: !isMobile ? value.maximumHeight : undefined,

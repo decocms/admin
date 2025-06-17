@@ -52,6 +52,7 @@ export function useTabsForAgent(
         Component: () => <Preview src={view.url} title={view.name} />,
         title: view.name,
         initialOpen: index === 0 ? "within" : false, // Open first view by default
+        renderer: "always",
       };
     });
     return viewTabs;

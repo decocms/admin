@@ -13,7 +13,6 @@ const isPartsMessage = (message: AIMessage) => {
 export async function convertToAIMessage({
   message,
   agent,
-  workspace,
   aiAgent,
 }: {
   message: AIMessage;
@@ -44,17 +43,19 @@ export async function convertToAIMessage({
             }
             if ((part as unknown as { type: "image" }).type === "image") {
               const imagePath = (part as unknown as { image: string }).image;
-              
+
               if (!aiAgent?.metadata?.mcpClient) {
                 return null;
               }
 
-              const result = await aiAgent.metadata.mcpClient.FS_READ({ path: imagePath });
+              const result = await aiAgent.metadata.mcpClient.FS_READ({
+                path: imagePath,
+              });
               return `![image](${result.url})`;
             }
           })
-          .filter(Boolean) || []
-      ).then(results => results.join("\n")) ?? message.content ?? "",
+          .filter(Boolean) || [],
+      ).then((results) => results.join("\n")) ?? message.content ?? "",
     };
   }
   return message;

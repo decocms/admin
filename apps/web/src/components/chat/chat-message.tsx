@@ -89,13 +89,12 @@ function mergeParts(parts: Part[] | undefined): MessagePart[] {
   };
 
   const flushImage = () => {
-
     if (currentImage.length > 0) {
       mergedParts.push({
         type: "image",
         image: currentImage.join("\n").trim(),
       });
-      currentImage = [];  
+      currentImage = [];
     }
   };
 
@@ -240,11 +239,8 @@ export function ChatMessage(
                     );
                   } else if (part.type === "image") {
                     if (!part.image) return null;
-                    return (
-                      <ImagePart image={part.image} key={index} />
-                    );
-                  }
-                  else if (
+                    return <ImagePart image={part.image} key={index} />;
+                  } else if (
                     part.type === "tool-invocation-group" &&
                     part.toolInvocations
                   ) {
@@ -353,6 +349,10 @@ function ImagePart({ image }: { image: string }) {
   if (!fileUrl) return null;
 
   return (
-    <img src={fileUrl} alt={image} className="rounded-lg max-w-[300px] max-h-[300px] object-cover" />
+    <img
+      src={fileUrl}
+      alt={image}
+      className="rounded-lg max-w-[300px] max-h-[300px] object-cover"
+    />
   );
 }

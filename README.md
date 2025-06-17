@@ -1,6 +1,6 @@
 # deco.chat
 
-The code for https://deco.chat
+The code for <https://deco.chat>
 
 _An extensible, self-hosted AI workspace for building intelligent, UI-rich AI
 Agents that integrate seamlessly with your internal tools and data._

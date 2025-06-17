@@ -96,6 +96,7 @@ export const WORKSPACE_TOOLS = [
   triggersAPI.updateTrigger,
   knowledgeAPI.createBase,
   knowledgeAPI.deleteBase,
+  knowledgeAPI.listKnowledgeBases,
   knowledgeAPI.forget,
   knowledgeAPI.remember,
   knowledgeAPI.search,

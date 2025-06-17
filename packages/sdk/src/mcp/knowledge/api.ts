@@ -39,7 +39,9 @@ async function getVector(c: AppContext) {
     tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
     tursoOrganization: c.envVars.TURSO_ORGANIZATION,
     tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+    openAPIKey: c.envVars.OPENAI_API_KEY,
     discriminator: KNOWLEDGE_BASE_GROUP,
+    options: { semanticRecall: true },
   });
   const vector = mem.vector;
   if (!vector) {
@@ -83,7 +85,7 @@ export const deleteBase = createTool({
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const vector = await getVector(c);
-    await vector.deleteIndex(name);
+    await vector.deleteIndex({ indexName: name });
     return {
       name,
     };
@@ -113,10 +115,7 @@ export const createBase = createTool({
       indexName: name,
       dimension: dimension ?? KNOWLEDGE_BASE_DIMENSION,
     });
-    return {
-      name,
-      dimension,
-    };
+    return { name, dimension };
   },
 });
 
@@ -135,7 +134,7 @@ export const forget = createKnowledgeBaseTool({
 
     const vector = await getVector(c);
     await Promise.all(docIds.map(
-      (docId) => vector.deleteIndexById(c.name, docId),
+      (docId) => vector.deleteVector({ indexName: c.name, id: docId }),
     ));
     return {
       docIds,
@@ -173,10 +172,14 @@ export const remember = createKnowledgeBaseTool({
         model: embedder,
         value: content,
       });
-      await vector.upsert(c.name, [embedding], [{
-        id: docId,
-        metadata: { ...metadata ?? {}, content },
-      }]);
+      await vector.upsert({
+        indexName: c.name,
+        vectors: [embedding],
+        metadata: [{
+          id: docId,
+          metadata: { ...metadata ?? {}, content },
+        }],
+      });
 
       return {
         docId,
@@ -209,9 +212,7 @@ export const search = createKnowledgeBaseTool({
       discriminator: KNOWLEDGE_BASE_GROUP, // used to create a unique database for the knowledge base
     });
     const vector = mem.vector;
-    if (!vector) {
-      throw new InternalServerError("Missing vector");
-    }
+
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
@@ -223,11 +224,11 @@ export const search = createKnowledgeBaseTool({
       value: query,
     });
 
-    return await vector.query({
+    return await vector?.query({
       indexName,
       queryVector: embedding,
       topK: topK ?? 1,
-    });
+    }) ?? { results: [] };
   },
 });
 
@@ -260,7 +261,9 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
     };
 
     const chunks = await Promise.all(
-      proccessedFile.chunks.map((chunk) =>
+      proccessedFile.chunks.map((
+        chunk: { text: string; metadata: Record<string, string> },
+      ) =>
         remember.handler({
           content: chunk.text,
           metadata: {
@@ -271,7 +274,7 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
       ),
     );
 
-    const docIds = chunks.map((chunk) => chunk.docId);
+    const docIds = chunks.map((chunk: { docId: string }) => chunk.docId);
 
     assertHasWorkspace(c);
     if (path) {

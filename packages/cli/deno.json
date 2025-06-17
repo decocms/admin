@@ -1,6 +1,7 @@
 {
   "name": "@deco/cli",
-  "version": "0.1.4",
+  "version": "0.1.13",
+  "description": "A CLI for interacting with deco.chat.",
   "license": "MIT",
   "exports": "./cli.ts",
   "imports": {
@@ -11,6 +12,8 @@
     "@std/fs": "jsr:@std/fs@^1.0.18",
     "@supabase/ssr": "npm:@supabase/ssr@^0.6.1",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.50.0",
-    "zod": "npm:zod@^3.25.64"
+    "zod": "npm:zod@^3.25.64",
+    "@deco/warp": "jsr:@deco/warp@^0.3.8",
+    "@std/fmt": "jsr:@std/fmt@^1.0.8"
   }
 }

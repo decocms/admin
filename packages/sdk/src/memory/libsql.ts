@@ -1,13 +1,13 @@
 import { WebCache } from "@deco/sdk/cache";
 import { singleFlight } from "@deco/sdk/common";
 import { createClient } from "@libsql/client";
-import type { MessageType, StorageThreadType } from "@mastra/core";
+import type { StorageThreadType } from "@mastra/core";
 import type { TABLE_NAMES } from "@mastra/core/storage";
 import {
   type LibSQLConfig,
   LibSQLStore as MastraLibSQLStore,
-} from "@mastra/core/storage/libsql";
-import { LibSQLVector } from "@mastra/core/vector/libsql";
+  LibSQLVector,
+} from "@mastra/libsql";
 import { createClient as createTursoAPIClient } from "@tursodatabase/api";
 import * as uuid from "uuid";
 
@@ -20,7 +20,7 @@ export interface TokenStorage {
 export class LibSQLStore extends MastraLibSQLStore {
   private threadCache: WebCache<StorageThreadType>;
   constructor(config: { config: LibSQLConfig; memoryId: string }) {
-    super(config);
+    super(config.config);
     this.threadCache = new WebCache<StorageThreadType>(
       `${config.memoryId}-threads`,
       WebCache.MAX_SAFE_TTL,
@@ -50,27 +50,6 @@ export class LibSQLStore extends MastraLibSQLStore {
     return super.saveThread({ thread }).then(async () => {
       await this.threadCache.set(thread.id, thread);
       return thread;
-    });
-  }
-
-  override saveMessages(
-    { messages }: { messages: MessageType[] },
-  ): Promise<MessageType[]> {
-    return super.saveMessages({ messages }).then(async (messages) => {
-      const thread = await this.getThreadById({
-        threadId: messages[0].threadId,
-      });
-      if (!thread) {
-        throw new Error(`Thread ${messages[0].threadId} not found`);
-      }
-
-      await this.saveThread({
-        thread: {
-          ...thread,
-          updatedAt: new Date(),
-        },
-      });
-      return messages;
     });
   }
 

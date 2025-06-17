@@ -5,7 +5,6 @@ import { createWorkspaceClient } from "../mcp.ts";
 
 interface Options {
   workspace: string;
-  authCookie: string;
   appSlug: string;
 }
 
@@ -39,16 +38,14 @@ const readEnvFile = async (rootDir: string) => {
 
 const gatherFiles = async (rootDir: string) => {
   const tsFiles: string[] = [];
-  for await (
-    const entry of walk(rootDir, {
-      exts: [".ts"],
-      includeDirs: false,
-      skip: [/node_modules/],
-    })
-  ) {
-    if (entry.name !== "build.ts") {
-      tsFiles.push(entry.path.slice(rootDir.length + 1));
-    }
+  const walker = walk(rootDir, {
+    exts: [".ts", ".mjs", ".js", ".cjs"],
+    includeDirs: false,
+    skip: [/node_modules/],
+  });
+
+  for await (const entry of walker) {
+    tsFiles.push(entry.path.slice(rootDir.length + 1));
   }
 
   return tsFiles;
@@ -82,11 +79,11 @@ const manifestFrom = ({ appSlug, files, envVars }: BuildManifest) => ({
   envVars,
 });
 
-export const deploy = async ({ workspace, authCookie, appSlug }: Options) => {
+export const deploy = async ({ workspace, appSlug }: Options) => {
   const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
-  const client = await createWorkspaceClient({ workspace, authCookie });
+  const client = await createWorkspaceClient({ workspace });
   const envVars = await readEnvFile(rootDir);
   const filePaths = await gatherFiles(rootDir);
   const files = await readFiles(rootDir, filePaths);
@@ -96,7 +93,7 @@ export const deploy = async ({ workspace, authCookie, appSlug }: Options) => {
   console.log(`  App: ${appSlug}`);
   console.log(`  Files: ${files.length}`);
 
-  const confirmed = await Confirm.prompt("Proceed with deployment? (y/N)");
+  const confirmed = await Confirm.prompt("Proceed with deployment?");
   if (!confirmed) {
     console.log("❌ Deployment cancelled");
     Deno.exit(0);

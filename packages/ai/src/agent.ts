@@ -52,7 +52,7 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import type { StorageThreadType } from "@mastra/core";
+import { type StorageThreadType, Telemetry } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
@@ -70,14 +70,6 @@ import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
-import { convertToAIMessage } from "./agent/ai-message.ts";
-import { createAgentOpenAIVoice } from "./agent/audio.ts";
-import {
-  createLLMInstance,
-  DEFAULT_ACCOUNT_ID,
-  getLLMConfig,
-} from "./agent/llm.ts";
-import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
@@ -88,6 +80,14 @@ import type {
   ThreadQueryOptions,
 } from "./types.ts";
 import type { GenerateOptions } from "./types.ts";
+import { AgentWallet } from "./agent/wallet.ts";
+import { convertToAIMessage } from "./agent/ai-message.ts";
+import { createAgentOpenAIVoice } from "./agent/audio.ts";
+import {
+  createLLMInstance,
+  DEFAULT_ACCOUNT_ID,
+  getLLMConfig,
+} from "./agent/llm.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -177,6 +177,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private db: Awaited<ReturnType<typeof createServerClient>>;
   private agentScoppedMcpClient: MCPClientStub<WorkspaceTools>;
   private llmVault?: LLMVault;
+  private telemetry?: Telemetry;
+
   constructor(
     public readonly state: ActorState,
     protected actorEnv: any,
@@ -408,6 +410,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     await this._initMemory(memoryId, config, tokenLimit);
 
+    this.telemetry = Telemetry.init({ serviceName: "agent" });
+    this.telemetry.tracer = trace.getTracer("agent");
+
     // Process instructions to replace prompt mentions
     const processedInstructions = await replacePromptMentions(
       config.instructions,
@@ -419,10 +424,13 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: config.name,
       instructions: processedInstructions,
       model: llm,
+      mastra: {
+        // @ts-ignore: Mastra requires a logger, but we don't use it
+        getLogger: () => undefined,
+        getTelemetry: () => this.telemetry,
+      },
       voice: this.env.OPENAI_API_KEY
-        ? createAgentOpenAIVoice({
-          apiKey: this.env.OPENAI_API_KEY,
-        })
+        ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
         : undefined,
     });
   }
@@ -437,10 +445,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       memory: this._memory as unknown as MastraMemory,
       name: ANONYMOUS_NAME,
       instructions: ANONYMOUS_INSTRUCTIONS,
-      model: createLLMInstance({
-        model: DEFAULT_MODEL.id,
-        envs: this.env,
-      }).llm,
+      model: createLLMInstance({ model: DEFAULT_MODEL.id, envs: this.env }).llm,
+      mastra: {
+        // @ts-ignore: Mastra requires a logger, but we don't use it
+        getLogger: () => undefined,
+        getTelemetry: () => this.telemetry,
+      },
     });
   }
   private get _agent(): Agent {
@@ -490,7 +500,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return toolsets;
   }
 
-  private async _withAgentOverrides(options?: GenerateOptions): Promise<Agent> {
+  private async _withAgentOverrides(
+    options?: GenerateOptions,
+  ): Promise<Agent> {
     let agent = this._agent;
     if (!options) {
       return agent;
@@ -505,18 +517,22 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ...llmConfig,
         envs: this.env,
       });
+
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.
       agent = new Agent({
         memory: this._memory,
         name: this._configuration?.name ?? ANONYMOUS_NAME,
+        model: llm,
         instructions: this._configuration?.instructions ??
           ANONYMOUS_INSTRUCTIONS,
-        model: llm,
         voice: this.env.OPENAI_API_KEY
-          ? createAgentOpenAIVoice({
-            apiKey: this.env.OPENAI_API_KEY,
-          })
+          ? createAgentOpenAIVoice({ apiKey: this.env.OPENAI_API_KEY })
           : undefined,
+        mastra: {
+          // @ts-ignore: Mastra requires a logger, but we don't use it
+          getLogger: () => undefined,
+          getTelemetry: () => this.telemetry,
+        },
       });
     }
 
@@ -871,13 +887,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       maxTokens: this._maxTokens(),
     }) as GenerateObjectResult<TObject>;
 
-    await this.memory.addMessage({
-      ...this.thread,
-      type: "text",
-      role: "assistant",
-      content: `\`\`\`json\n${JSON.stringify(result)}\`\`\``,
-    });
-
     assertConfiguration(this._configuration);
     this._handleGenerationFinish({
       threadId: this.thread.threadId,
@@ -929,7 +938,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     options?: StreamOptions,
   ): Promise<Response> {
-    const tracer = trace.getTracer("stream-tracer");
+    const tracer = this.telemetry?.tracer;
     const timings = this.metadata?.timings ?? createServerTimings();
 
     const thread = {
@@ -971,7 +980,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Insufficient funds");
     }
 
-    const ttfbSpan = tracer.startSpan("stream-ttfb", {
+    const ttfbSpan = tracer?.startSpan("stream-ttfb", {
       attributes: {
         "agent.id": this.state.id,
         model: options?.model ?? this._configuration?.model,
@@ -985,7 +994,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         return;
       }
       ended = true;
-      ttfbSpan.end();
+      ttfbSpan?.end();
     };
     const streamTiming = timings.start("stream");
 

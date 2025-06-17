@@ -9,6 +9,7 @@ import { type AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 import { parse as tomlParse } from "smol-toml";
 import { polyfill } from "./fs-polyfill.ts";
+import { USER_WORKER_APP_ENTRYPOINTS } from "../../constants.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -280,9 +281,6 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
-// main.ts or main.mjs or main.js or main.cjs
-const ENTRYPOINTS = ["main.ts", "main.mjs", "main.js", "main.cjs"];
-
 // First, let's define a new type for the file structure
 const FileSchema = z.object({
   path: z.string(),
@@ -293,7 +291,7 @@ const FileSchema = z.object({
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
-    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINTS}.
+    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${USER_WORKER_APP_ENTRYPOINTS}.
 
 Common patterns:
 1. Use a deps.ts file to centralize dependencies:
@@ -362,13 +360,13 @@ Important Notes:
     }, {} as Record<string, string>);
 
     // check if the entrypoint is in the files
-    const entrypoint = ENTRYPOINTS.find((entrypoint) =>
+    const entrypoint = USER_WORKER_APP_ENTRYPOINTS.find((entrypoint) =>
       entrypoint in filesRecord
     );
     if (!entrypoint) {
       throw new UserInputError(
         `Entrypoint not found in files. Entrypoint must be one of: ${
-          ENTRYPOINTS.join(", ")
+          USER_WORKER_APP_ENTRYPOINTS.join(", ")
         }`,
       );
     }

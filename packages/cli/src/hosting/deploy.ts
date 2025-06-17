@@ -5,7 +5,7 @@ import { createWorkspaceClient } from "../mcp.ts";
 
 interface Options {
   workspace: string;
-  appSlug: string;
+  app: string;
   local: boolean;
 }
 
@@ -80,7 +80,7 @@ const manifestFrom = ({ appSlug, files, envVars }: BuildManifest) => ({
   envVars,
 });
 
-export const deploy = async ({ workspace, appSlug, local }: Options) => {
+export const deploy = async ({ workspace, app: appSlug, local }: Options) => {
   const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
@@ -111,6 +111,4 @@ export const deploy = async ({ workspace, appSlug, local }: Options) => {
 
   const { entrypoint } = response.structuredContent as { entrypoint: string };
   console.log(`\n🎉 Deployed! Available at: ${entrypoint}\n`);
-
-  await client.close();
 };

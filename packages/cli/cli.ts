@@ -1,4 +1,5 @@
 import { Command } from "@cliffy/command";
+import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
@@ -7,6 +8,8 @@ import { loginCommand } from "./src/login.ts";
 import { deleteSession, getSessionToken } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
+import { startDevServer } from "./src/dev.ts";
+import { getConfig, writeConfigFile } from "./src/config.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -34,6 +37,21 @@ const whoami = new Command()
   .description("Print info about the current session.")
   .action(whoamiCommand);
 
+const configure = new Command()
+  .description("Save configuration options for the current directory.")
+  .action(async () => {
+    const workspace = await Input.prompt({
+      message: "Enter workspace name:",
+    });
+
+    const app = await Input.prompt({
+      message: "Enter app name:",
+    });
+
+    await writeConfigFile({ workspace, app });
+    console.log("✅ Configuration saved successfully!");
+  });
+
 // Placeholder for hosting list command implementation
 const hostingList = new Command()
   .description("List all apps in the current workspace.")
@@ -46,17 +64,18 @@ const hostingList = new Command()
 const hostingDeploy = new Command()
   .description("Deploy the current directory into the current workspace.")
   .option("-w, --workspace <workspace:string>", "Workspace name", {
-    required: true,
+    required: false,
   })
-  .option("-a, --app <app:string>", "App name", { required: true })
+  .option("-a, --app <app:string>", "App name", { required: false })
   .option(
     "-l, --local",
     `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
     { required: false },
   )
-  .action((args) =>
-    deploy({ ...args, appSlug: args.app, local: args.local ?? false })
-  );
+  .action(async (args) => {
+    const config = await getConfig({ inlineOptions: args });
+    await deploy(config);
+  });
 
 const linkCmd = new Command()
   .description("Link the project to be accessed through a remote domain.")
@@ -90,6 +109,10 @@ const linkCmd = new Command()
     });
   });
 
+const dev = new Command()
+  .description("Start the development server for the current project.")
+  .action(startDevServer);
+
 // Hosting parent command
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
@@ -105,5 +128,8 @@ await new Command()
   .command("logout", logout)
   .command("whoami", whoami)
   .command("hosting", hosting)
+  .command("deploy", hostingDeploy)
+  .command("configure", configure)
+  .command("dev", dev)
   .command("link", linkCmd)
   .parse(Deno.args);

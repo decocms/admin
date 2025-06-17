@@ -228,7 +228,7 @@ export const search = createKnowledgeBaseTool({
       indexName,
       queryVector: embedding,
       topK: topK ?? 1,
-    });
+    }) ?? { results: [] };
   },
 });
 

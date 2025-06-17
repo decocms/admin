@@ -126,7 +126,7 @@ deployments directly from your terminal.
 To install the CLI, simply run:
 
 ```sh
-deno install -A -g -n deco jsr:@deco/cli
+deno install -Ar -g -n deco jsr:@deco/cli
 ```
 
 Then, to use it

@@ -8,7 +8,6 @@ import { loginCommand } from "./src/login.ts";
 import { deleteSession, getSessionToken } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
-import { startDevServer } from "./src/dev.ts";
 import { getConfig, writeConfigFile } from "./src/config.ts";
 
 // Placeholder for login command implementation
@@ -109,10 +108,6 @@ const linkCmd = new Command()
     });
   });
 
-const dev = new Command()
-  .description("Start the development server for the current project.")
-  .action(startDevServer);
-
 // Hosting parent command
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
@@ -130,6 +125,5 @@ await new Command()
   .command("hosting", hosting)
   .command("deploy", hostingDeploy)
   .command("configure", configure)
-  .command("dev", dev)
   .command("link", linkCmd)
   .parse(Deno.args);

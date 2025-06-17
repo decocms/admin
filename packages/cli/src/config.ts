@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { parse, stringify } from "smol-toml";
 
-export const CONFIG_FILE = "deco.json";
+export const CONFIG_FILE = "wrangler.toml";
 
 const requiredErrorForProp = (prop: string) =>
   `Property ${prop} is required. Please provide an inline value using --${prop} or configure it using 'deco configure'.`;
 
-export const configSchema = z.object({
+const decoConfigSchema = z.object({
   workspace: z.string({
     required_error: requiredErrorForProp("workspace"),
   }),
@@ -15,7 +16,26 @@ export const configSchema = z.object({
   local: z.boolean().optional().default(false),
 });
 
-export type Config = z.infer<typeof configSchema>;
+export type Config = z.infer<typeof decoConfigSchema>;
+
+interface WranglerConfig {
+  [key: string]: unknown;
+  deco?: Partial<Config>;
+}
+
+const readWranglerConfig = async () => {
+  const configPath = getConfigFilePath(Deno.cwd());
+  console.log("configPath", configPath);
+  if (!configPath) {
+    return {};
+  }
+  const config = await Deno.readTextFile(configPath).catch(() => null);
+  console.log("config", config);
+  if (!config) {
+    return {};
+  }
+  return parse(config) as WranglerConfig;
+};
 
 /**
  * Read the config file from the current directory or any parent directory.
@@ -25,19 +45,9 @@ export type Config = z.infer<typeof configSchema>;
  * @returns The partial config.
  */
 const readConfigFile = async () => {
-  const configPath = getConfigFilePath(Deno.cwd());
-
-  if (!configPath) {
-    return {};
-  }
-
-  const config = await Deno.readTextFile(configPath).catch(() => null);
-
-  if (!config) {
-    return {};
-  }
-
-  return JSON.parse(config) as Partial<Config>;
+  const wranglerConfig = await readWranglerConfig();
+  const decoConfig = wranglerConfig.deco ?? {} as Partial<Config>;
+  return decoConfig;
 };
 
 /**
@@ -47,12 +57,18 @@ const readConfigFile = async () => {
 export const writeConfigFile = async (
   config: Partial<Config>,
 ) => {
-  const parsedConfig = configSchema.parse(config);
-  const current = await readConfigFile();
-  const mergedConfig = { ...current, ...parsedConfig };
+  const wranglerConfig = await readWranglerConfig();
+  const current = wranglerConfig.deco ?? {} as Partial<Config>;
+  const mergedConfig = { ...current, ...config };
   const configPath = getConfigFilePath(Deno.cwd()) ??
     `${Deno.cwd()}/${CONFIG_FILE}`;
-  await Deno.writeTextFile(configPath, JSON.stringify(mergedConfig, null, 2));
+  await Deno.writeTextFile(
+    configPath,
+    stringify({
+      ...wranglerConfig,
+      deco: mergedConfig,
+    }),
+  );
 };
 
 /**
@@ -67,7 +83,7 @@ export const getConfig = async (
   },
 ) => {
   const config = await readConfigFile();
-  return configSchema.parse({ ...config, ...inlineOptions });
+  return decoConfigSchema.parse({ ...config, ...inlineOptions });
 };
 
 /**

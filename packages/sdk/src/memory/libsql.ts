@@ -53,25 +53,6 @@ export class LibSQLStore extends MastraLibSQLStore {
     });
   }
 
-  // deno-lint-ignore no-explicit-any
-  override saveMessages(args: any): any {
-    return super.saveMessages(args).then(async (messages) => {
-      const threadId = messages[0].threadId;
-      if (!threadId) {
-        throw new Error("Thread ID is required");
-      }
-      const thread = await this.getThreadById({ threadId });
-      if (!thread) {
-        throw new Error(`Thread ${threadId} not found`);
-      }
-
-      await this.saveThread({
-        thread: { ...thread, updatedAt: new Date() },
-      });
-      return messages;
-    });
-  }
-
   override async deleteThread(
     { threadId }: { threadId: string },
   ): Promise<void> {

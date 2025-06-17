@@ -9,7 +9,7 @@ const ModelSchema = z.union([
   // Well-known model IDs
   z.enum(WELL_KNOWN_MODELS.map(m => m.id) as [string, ...string[]]),
   // UUID format for BYOK models
-  z.string().uuid()
+  z.string().uuid().describe("UUID for BYOK models"),
 ]);
 
 /**
@@ -45,7 +45,7 @@ export const AgentSchema = z.object({
   ),
   /** Model to use for the agent */
   model: ModelSchema.default(DEFAULT_MODEL.id)
-    .describe("Model to use for the agent - either a well-known model ID or UUID for BYOK"),
+    .describe("Model to use for the agent - either a well-known model ID or UUID for BYOK models"),
   /** Memory to use for the agent */
   memory: z.object({
     discriminator: z.string().optional().describe(

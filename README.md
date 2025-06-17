@@ -137,10 +137,8 @@ deco login
 
 This will prompt you to log in and set up your session.
 
-### More Commands
+### All Commands
 
-For additional commands and usage, check the [@cli.ts](./packages/cli/cli.ts)
-file in the repository. You can find commands for deploying, listing apps,
-managing sessions, and more.
+For a complete reference of all available commands, see the [CLI Documentation](./packages/cli/README.md).
 
 ---

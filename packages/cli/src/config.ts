@@ -25,12 +25,10 @@ interface WranglerConfig {
 
 const readWranglerConfig = async () => {
   const configPath = getConfigFilePath(Deno.cwd());
-  console.log("configPath", configPath);
   if (!configPath) {
     return {};
   }
   const config = await Deno.readTextFile(configPath).catch(() => null);
-  console.log("config", config);
   if (!config) {
     return {};
   }

@@ -4,7 +4,10 @@ export * from "./context.ts";
 export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 export { createResourceAccess } from "./auth/index.ts";
-export { getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION, getWorkspaceBucketName } from "./fs/api.ts";
+export {
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
+} from "./fs/api.ts";
 
 import * as agentsAPI from "./agents/api.ts";
 import * as channelsAPI from "./channels/api.ts";

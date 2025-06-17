@@ -19,9 +19,9 @@ import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import {
+  assertWorkspaceResourceAccess,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
-  assertWorkspaceResourceAccess,
 } from "@deco/sdk/mcp";
 import { fetchScript } from "./apps.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
@@ -239,7 +239,7 @@ Object.entries(loginRoutes).forEach(([route, honoApp]) => {
 app.get("/files/:root/:slug/:path{.+}", async (c) => {
   const root = c.req.param("root");
   const slug = c.req.param("slug");
-  const filePath = c.req.param("path"); 
+  const filePath = c.req.param("path");
 
   if (!filePath) {
     throw new HTTPException(400, { message: "File path is required" });

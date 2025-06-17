@@ -8,9 +8,12 @@ export const DECO_CHAT_WEB = LOCAL_DEBUGGER
   ? "http://localhost:3000"
   : "https://deco.chat";
 
+export const DECO_CHAT_API_PROD = "https://api.deco.chat";
+export const DECO_CHAT_API_LOCAL = "http://localhost:3001";
+
 export const DECO_CHAT_API = LOCAL_DEBUGGER
-  ? "http://localhost:3001"
-  : "https://api.deco.chat";
+  ? DECO_CHAT_API_LOCAL
+  : DECO_CHAT_API_PROD;
 
 export const AUTH_PORT_CLI = 3457;
 export const AUTH_URL_CLI = `http://localhost:${AUTH_PORT_CLI}`;

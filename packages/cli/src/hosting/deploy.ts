@@ -6,6 +6,7 @@ import { createWorkspaceClient } from "../mcp.ts";
 interface Options {
   workspace: string;
   appSlug: string;
+  local: boolean;
 }
 
 const readEnvFile = async (rootDir: string) => {
@@ -79,11 +80,11 @@ const manifestFrom = ({ appSlug, files, envVars }: BuildManifest) => ({
   envVars,
 });
 
-export const deploy = async ({ workspace, appSlug }: Options) => {
+export const deploy = async ({ workspace, appSlug, local }: Options) => {
   const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
-  const client = await createWorkspaceClient({ workspace });
+  const client = await createWorkspaceClient({ workspace, local });
   const envVars = await readEnvFile(rootDir);
   const filePaths = await gatherFiles(rootDir);
   const files = await readFiles(rootDir, filePaths);

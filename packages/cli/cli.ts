@@ -6,6 +6,7 @@ import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
 import { deleteSession, getSessionToken } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
+import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -48,7 +49,14 @@ const hostingDeploy = new Command()
     required: true,
   })
   .option("-a, --app <app:string>", "App name", { required: true })
-  .action((args) => deploy({ ...args, appSlug: args.app }));
+  .option(
+    "-l, --local",
+    `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
+    { required: false },
+  )
+  .action((args) =>
+    deploy({ ...args, appSlug: args.app, local: args.local ?? false })
+  );
 
 const linkCmd = new Command()
   .description("Link the project to be accessed through a remote domain.")

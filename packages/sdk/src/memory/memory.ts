@@ -1,6 +1,6 @@
 import type { Workspace } from "@deco/sdk/path";
 import type { Client as LibSQLClient } from "@libsql/client";
-import type { StorageThreadType } from "@mastra/core";
+import type { CoreMessage, StorageThreadType } from "@mastra/core";
 import type { SharedMemoryConfig } from "@mastra/core/memory";
 import { Memory as MastraMemory } from "@mastra/memory";
 import { slugify, slugifyForDNS, toAlphanumericId } from "../mcp/slugify.ts";
@@ -95,6 +95,26 @@ export class WorkspaceMemory extends MastraMemory {
       console.error("Error listing threads", error);
       return [];
     }
+  }
+
+  /**
+   * This is a workaround to remove the tool-call and tool-result messages from the processed messages when they are the first two messages, because Anthropic fails to process them in this case.
+   */
+  override processMessages(
+    { messages, systemMessage, memorySystemMessage }: {
+      messages: CoreMessage[];
+      systemMessage: string;
+      memorySystemMessage: string;
+    },
+  ): CoreMessage[] {
+    // deno-lint-ignore no-explicit-any
+    const processedMessages: any[] = super.processMessages({ messages, systemMessage, memorySystemMessage });
+
+    if (processedMessages.length > 0 && processedMessages[0].role === 'assistant' && processedMessages[0].type === 'tool-call' && processedMessages[1].role === 'tool') {
+      processedMessages.splice(0, 2);
+    }
+  
+    return processedMessages;
   }
 }
 

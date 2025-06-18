@@ -131,7 +131,14 @@ async function deployToCloudflare(
     compatibility_flags,
     compatibility_date,
     vars,
-    bindings: _bindings = [],
+    kv_namespaces,
+    deco,
+    ai,
+    browser,
+    durable_objects,
+    queues,
+    workflows,
+    triggers,
     ...rest
   }: WranglerConfig,
   mainModule: string,
@@ -144,15 +151,33 @@ async function deployToCloudflare(
     ..._envVars,
     ...vars,
   };
-  const [decoBindings, wranglerBindings] = _bindings.reduce(
-    ([decoBindings, wranglerBindings], binding) => {
-      const set = binding.type === "mcp" ? decoBindings : wranglerBindings;
-      set.push(binding);
-      return [decoBindings, wranglerBindings];
-    },
-    // deno-lint-ignore no-explicit-any
-    [[], []] as [Binding[], any[]],
-  );
+  const wranglerBindings = [
+    ...kv_namespaces?.map((kv) => ({
+      type: "kv_namespace" as const,
+      name: kv.binding,
+      namespace_id: kv.id,
+    })) ?? [],
+    ...ai ? [{ type: "ai" as const, name: ai.binding }] : [],
+    ...browser ? [{ type: "browser" as const, name: browser.binding }] : [],
+    ...durable_objects?.bindings?.map((binding) => ({
+      type: "durable_object_namespace" as const,
+      name: binding.name,
+      class_name: binding.class_name,
+    })) ?? [],
+    ...queues?.producers?.map((producer) => ({
+      type: "queue" as const,
+      queue_name: producer.queue,
+      name: producer.binding,
+    })) ?? [],
+    ...workflows?.map((workflow) => ({
+      type: "workflow" as const,
+      name: workflow.name,
+      workflow_name: workflow.name,
+      binding: workflow.binding,
+      class_name: workflow.class_name,
+    })) ?? [],
+  ];
+  const decoBindings = deco?.bindings ?? [];
   if (decoBindings.length > 0) {
     envVars["DECO_CHAT_BINDINGS"] = WorkersMCPBindings.stringify(decoBindings);
   }
@@ -163,6 +188,7 @@ async function deployToCloudflare(
     compatibility_date: compatibility_date ?? "2024-11-27",
     tags: [c.workspace.value],
     bindings: wranglerBindings,
+    triggers,
   };
 
   addPolyfills(files, metadata, [polyfill]);
@@ -297,9 +323,38 @@ export interface WranglerConfig {
   vars?: Record<string, string>;
   kv_namespaces?: KVNamespace[];
   triggers?: Triggers;
-  bindings?: Binding[];
+  //
+  ai?: {
+    binding: string;
+  };
+  browser?: {
+    binding: string;
+  };
+  durable_objects?: {
+    bindings?: { name: string; class_name: string }[];
+  };
+  queues?: {
+    consumers?: {
+      queue: string;
+      max_batch_timeout: number;
+    }[];
+    producers?: {
+      queue: string;
+      binding: string;
+    }[];
+  };
+  workflows?: {
+    name: string;
+    binding: string;
+    class_name: string;
+  }[];
+  //
+  deco?: {
+    bindings?: Binding[];
+  };
 }
 
+const DECO_WORKER_RUNTIME_VERSION = "0.1.1";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
@@ -317,31 +372,54 @@ Common patterns:
    // main.ts
    import { lodash, z, createClient } from "./deps.ts";
 
-3. Use wrangler.toml to configure your app (Workers for Platforms format):
+3. Use wrangler.toml to configure your app:
    // wrangler.toml
    name = "app-slug"
    compatibility_date = "2025-06-17"
    main_module = "main.ts"
+   kv_namespaces = [
+     { binding = "TODO", id = "06779da6940b431db6e566b4846d64db" }
+   ]
+
+   browser = { binding = "MYBROWSER" }
 
    [triggers]
    # Schedule cron triggers:
    crons = [ "*/3 * * * *", "0 15 1 * *", "59 23 LW * *" ]
 
-   [[bindings]]
-   type = "kv_namespace"
-   name = "KV_NAME"
-   namespace_id = "KV_ID"
+  [[durable_objects.bindings]]
+  name = "MY_DURABLE_OBJECT"
+  class_name = "MyDurableObject"
 
-   [[bindings]]
+   [ai]
+   binding = "AI"
+
+   [[queues.consumers]]
+    queue = "queues-web-crawler"
+    max_batch_timeout = 60
+
+    [[queues.producers]]
+    queue = "queues-web-crawler"
+    binding = "CRAWLER_QUEUE"
+
+   [[deco.bindings]]
    type = "MCP"
    name = "MY_BINDING"
    value = "INTEGRATION_ID"
+
+   [[workflows]]
+    # name of your workflow
+    name = "workflows-starter"
+    # binding name env.MY_WORKFLOW
+    binding = "MY_WORKFLOW"
+    # this is class that extends the Workflow class in src/index.ts
+    class_name = "MyWorkflow"
 
    # You can add any supported binding type as per Workers for Platforms documentation.
 4. You should always surround the user fetch with the withRuntime function.
 
 
-import { withRuntime } from "jsr:@deco/workers-runtime@0.1.0";
+import { withRuntime } from "jsr:@deco/workers-runtime@${DECO_WORKER_RUNTIME_VERSION}";
 
 export default withRuntime({
   fetch: async (request: Request, env: any) => {
@@ -357,7 +435,7 @@ Example of files deployment:
     "path": "main.ts",
     "content": \`
       import { z } from "./deps.ts";
-      import { withRuntime } from "jsr:@deco/workers-runtime@0.1.0";
+      import { withRuntime } from "jsr:@deco/workers-runtime@${DECO_WORKER_RUNTIME_VERSION}";
 
 
       export default withRuntime({
@@ -386,6 +464,7 @@ Example of files deployment:
       [[bindings]]
       type = "kv_namespace"
       name = "KV_NAME"
+      namespace_id = "KV_ID"
       namespace_id = "KV_ID"
 
       [[bindings]]

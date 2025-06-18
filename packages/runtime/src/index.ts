@@ -1,6 +1,7 @@
 import type {
   ExecutionContext,
   ForwardableEmailMessage,
+  MessageBatch,
   ScheduledController,
 } from "@cloudflare/workers-types";
 
@@ -50,6 +51,11 @@ export const WorkersMCPBindings = {
 export interface UserDefaultExport<
   TUserEnv extends Record<string, unknown> = Record<string, unknown>,
 > {
+  queue?: (
+    batch: MessageBatch,
+    env: TUserEnv,
+    ctx: ExecutionContext,
+  ) => Promise<void> | void;
   fetch?: (
     req: Request,
     env: TUserEnv,
@@ -142,5 +148,12 @@ export const withRuntime = <TEnv extends DefaultEnv>(
         },
       }
       : {}),
+    ...userFns.queue
+      ? {
+        queue: (batch: MessageBatch, env: TEnv, ctx: ExecutionContext) => {
+          return userFns.queue!(batch, withBindings(env), ctx);
+        },
+      }
+      : {},
   };
 };

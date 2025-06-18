@@ -877,12 +877,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({
-          message: msg,
-          agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
-        })
+        convertToAIMessage({ message: msg, agent: this._agent })
       ),
     );
     const result = await this._agent.generate(aiMessages, {
@@ -917,12 +912,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({
-          message: msg,
-          agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
-        })
+        convertToAIMessage({ message: msg, agent: this._agent })
       ),
     );
 
@@ -1025,12 +1015,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const aiMessages = await Promise.all(
       payload.map((msg) =>
-        convertToAIMessage({
-          message: msg,
-          agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
-        })
+        convertToAIMessage({ message: msg, agent: this._agent })
       ),
     );
 

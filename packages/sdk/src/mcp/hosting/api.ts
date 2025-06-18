@@ -562,8 +562,6 @@ Important Notes:
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
     };
 
-    console.log({ wranglerConfig });
-
     const result = await deployToCloudflare(
       c,
       wranglerConfig,

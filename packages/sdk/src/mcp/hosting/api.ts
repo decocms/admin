@@ -7,7 +7,9 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
+import { parse as tomlParse } from "smol-toml";
 import { polyfill } from "./fs-polyfill.ts";
+import { USER_WORKER_APP_ENTRYPOINTS } from "../../constants.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -127,20 +129,55 @@ const addPolyfills = (
     }
   }
 };
-async function deployToCloudflare(
-  c: AppContext,
-  scriptSlug: string,
-  mainModule: string,
-  files: Record<string, File>,
-  envVars?: Record<string, string>,
-): Promise<DeployResult> {
+interface DeployToCloudflareParams {
+  c: AppContext;
+  scriptSlug: string;
+  mainModule: string;
+  files: Record<string, File>;
+  wranglerConfig?: Record<string, unknown>;
+  envVars?: Record<string, string>;
+}
+
+const acceptedWranglerConfigSchema = z.object({
+  kv_namespaces: z.array(
+    z.object({
+      binding: z.string(),
+      id: z.string(),
+    }),
+  ).optional(),
+}).transform((data) => {
+  const kv_namespace_bindings = data.kv_namespaces?.map((namespace) => ({
+    type: "kv_namespace" as const,
+    name: namespace.binding,
+    namespace_id: namespace.id,
+  })) ?? [];
+
+  return {
+    bindings: [...kv_namespace_bindings],
+  };
+});
+
+async function deployToCloudflare({
+  c,
+  scriptSlug,
+  mainModule,
+  files,
+  wranglerConfig,
+  envVars,
+}: DeployToCloudflareParams): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
+
+  const verifiedWranglerConfig = acceptedWranglerConfigSchema.parse(
+    wranglerConfig ?? {},
+  );
+
   const metadata = {
     main_module: mainModule,
     compatibility_flags: ["nodejs_compat"],
     compatibility_date: "2024-11-27",
     tags: [c.workspace.value],
+    ...verifiedWranglerConfig,
   };
 
   addPolyfills(files, metadata, [polyfill]);
@@ -161,6 +198,7 @@ async function deployToCloudflare(
         metadata: {
           main_module: mainModule,
           compatibility_flags: ["nodejs_compat"],
+          ...verifiedWranglerConfig,
         },
       },
       {
@@ -252,9 +290,6 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
-// main.ts or main.mjs or main.js or main.cjs
-const ENTRYPOINTS = ["main.ts", "main.mjs", "main.js", "main.cjs"];
-
 // First, let's define a new type for the file structure
 const FileSchema = z.object({
   path: z.string(),
@@ -265,7 +300,7 @@ const FileSchema = z.object({
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
-    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${ENTRYPOINTS}.
+    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${USER_WORKER_APP_ENTRYPOINTS}.
 
 Common patterns:
 1. Use a deps.ts file to centralize dependencies:
@@ -334,16 +369,21 @@ Important Notes:
     }, {} as Record<string, string>);
 
     // check if the entrypoint is in the files
-    const entrypoint = ENTRYPOINTS.find((entrypoint) =>
+    const entrypoint = USER_WORKER_APP_ENTRYPOINTS.find((entrypoint) =>
       entrypoint in filesRecord
     );
     if (!entrypoint) {
       throw new UserInputError(
         `Entrypoint not found in files. Entrypoint must be one of: ${
-          ENTRYPOINTS.join(", ")
+          USER_WORKER_APP_ENTRYPOINTS.join(", ")
         }`,
       );
     }
+
+    const wranglerConfig = filesRecord["wrangler.toml"]
+      ? tomlParse(filesRecord["wrangler.toml"])
+      : undefined;
+    delete filesRecord["wrangler.toml"];
 
     await createNamespaceOnce(c);
     const { workspace, slug: scriptSlug } = getWorkspaceParams(c, appSlug);
@@ -366,13 +406,14 @@ Important Notes:
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
     };
 
-    const result = await deployToCloudflare(
+    const result = await deployToCloudflare({
       c,
       scriptSlug,
-      SCRIPT_FILE_NAME,
-      fileObjects,
-      { ...envVars, ...appEnvVars },
-    );
+      mainModule: SCRIPT_FILE_NAME,
+      files: fileObjects,
+      wranglerConfig,
+      envVars: { ...envVars, ...appEnvVars },
+    });
     const data = await updateDatabase(
       c,
       workspace,

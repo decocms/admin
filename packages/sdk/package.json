@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@mastra/rag": "^0.10.3",
     "jose": "6.0.11",
     "@aws-sdk/s3-request-presigner": "^3.812.0",
     "@ai-sdk/openai": "1.3.22",
@@ -22,6 +23,7 @@
     "jwt-decode": "^4.0.0",
     "lru-cache": "^11.1.0",
     "react": "^19.1.0",
+    "smol-toml": "^1.3.4",
     "stripe": "18.0.0",
     "zod": "^3.24.3",
     "@aws-sdk/client-s3": "^3.808.0",

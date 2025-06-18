@@ -245,3 +245,11 @@ check if the agent is active and configure the agent.
 export const WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH =
   "i:knowledge-base";
 export const KNOWLEDGE_BASE_DIMENSION = 1536;
+
+// main.ts or main.mjs or main.js or main.cjs
+export const USER_WORKER_APP_ENTRYPOINTS = [
+  "main.ts",
+  "main.mjs",
+  "main.js",
+  "main.cjs",
+];

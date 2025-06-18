@@ -14,7 +14,8 @@ export const withActorsMiddleware: Handler<AppEnv> = async (ctx, next) => {
   ctx.set("immutableRes", true);
   startTime(ctx, "actor");
   return await actorsRoute(
-    ctx,
+    // deno-lint-ignore no-explicit-any
+    ctx as any, // TODO: maybe bump hono version in deco/actors
     next,
   ).finally(() => endTime(ctx, "actor"));
 };

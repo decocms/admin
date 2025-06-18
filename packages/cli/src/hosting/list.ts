@@ -39,6 +39,4 @@ export const listApps = async ({ workspace }: Options) => {
       );
     });
   }
-
-  await client.close();
 };

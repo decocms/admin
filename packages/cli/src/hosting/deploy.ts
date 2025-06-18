@@ -5,7 +5,8 @@ import { createWorkspaceClient } from "../mcp.ts";
 
 interface Options {
   workspace: string;
-  appSlug: string;
+  app: string;
+  local: boolean;
 }
 
 const readEnvFile = async (rootDir: string) => {
@@ -39,7 +40,7 @@ const readEnvFile = async (rootDir: string) => {
 const gatherFiles = async (rootDir: string) => {
   const tsFiles: string[] = [];
   const walker = walk(rootDir, {
-    exts: [".ts", ".mjs", ".js", ".cjs"],
+    exts: [".ts", ".mjs", ".js", ".cjs", ".toml"],
     includeDirs: false,
     skip: [/node_modules/],
   });
@@ -79,11 +80,11 @@ const manifestFrom = ({ appSlug, files, envVars }: BuildManifest) => ({
   envVars,
 });
 
-export const deploy = async ({ workspace, appSlug }: Options) => {
+export const deploy = async ({ workspace, app: appSlug, local }: Options) => {
   const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
-  const client = await createWorkspaceClient({ workspace });
+  const client = await createWorkspaceClient({ workspace, local });
   const envVars = await readEnvFile(rootDir);
   const filePaths = await gatherFiles(rootDir);
   const files = await readFiles(rootDir, filePaths);
@@ -110,6 +111,4 @@ export const deploy = async ({ workspace, appSlug }: Options) => {
 
   const { entrypoint } = response.structuredContent as { entrypoint: string };
   console.log(`\n🎉 Deployed! Available at: ${entrypoint}\n`);
-
-  await client.close();
 };

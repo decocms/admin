@@ -1072,7 +1072,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           }
           : {}),
         onChunk: endTtfbSpan,
-        onError: () => {
+        onError: (err) => {
+          console.error("agent stream error", err);
           // TODO(@mcandeia): add error tracking with posthog
         },
         onFinish: (result) => {

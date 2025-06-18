@@ -7,7 +7,6 @@ import {
 import { type AppContext, createTool } from "../context.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
-import { THEME_VARIABLES } from "../../theme.ts";
 import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,

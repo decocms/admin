@@ -880,8 +880,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         convertToAIMessage({
           message: msg,
           agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
         })
       ),
     );
@@ -920,8 +918,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         convertToAIMessage({
           message: msg,
           agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
         })
       ),
     );
@@ -1028,8 +1024,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         convertToAIMessage({
           message: msg,
           agent: this._agent,
-          workspace: this.workspace,
-          aiAgent: this,
         })
       ),
     );

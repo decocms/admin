@@ -19,7 +19,6 @@ import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import {
-  assertWorkspaceResourceAccess,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "@deco/sdk/mcp";
@@ -249,8 +248,6 @@ app.get("/files/:root/:slug/:path{.+}", async (c) => {
 
   const appCtx = honoCtxToAppCtx(c);
 
-  await assertWorkspaceResourceAccess("FS_READ", appCtx);
-
   const bucketName = getWorkspaceBucketName(workspace);
   const url = await getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION({
     c: appCtx,
@@ -259,7 +256,6 @@ app.get("/files/:root/:slug/:path{.+}", async (c) => {
     expiresIn: 3600,
   });
 
-  c.header("Cache-Control", "public, max-age=180");
   return c.redirect(url, 301);
 });
 

@@ -259,7 +259,8 @@ app.get("/files/:root/:slug/:path{.+}", async (c) => {
     expiresIn: 3600,
   });
 
-  return c.redirect(url, 302);
+  c.header("Cache-Control", "public, max-age=180");
+  return c.redirect(url, 301);
 });
 
 // External webhooks

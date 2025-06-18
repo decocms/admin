@@ -77,12 +77,10 @@ const hostingDeploy = new Command()
     { required: false },
   )
   .action(async (args) => {
-    const config = await getConfig({ inlineOptions: args });
-    return deploy({
-      ...config,
-      workspace: config.workspace ??
-        await readSession().then((session) => session?.workspace!),
+    const config = await getConfig({
+      inlineOptions: args,
     });
+    return deploy(config);
   });
 
 const linkCmd = new Command()
@@ -94,6 +92,7 @@ const linkCmd = new Command()
   .action(async function ({ port }) {
     const runCommand = this.getLiteralArgs();
     const token = await getSessionToken();
+    const config = await getConfig({});
 
     await link({
       port,
@@ -109,7 +108,11 @@ const linkCmd = new Command()
           args,
           stdout: "inherit",
           stderr: "inherit",
-          env: { ...Deno.env.toObject(), DECO_CHAT_API_TOKEN: token },
+          env: {
+            ...Deno.env.toObject(),
+            DECO_CHAT_API_TOKEN: token,
+            DECO_CHAT_BINDINGS: btoa(JSON.stringify(config.bindings)),
+          },
         }).spawn();
 
         return process;
@@ -122,6 +125,18 @@ const update = new Command()
   .action(async () => {
     const deno = new Deno.Command("deno", {
       args: ["install", "-Ar", "-g", "-n", "deco", "jsr:@deco/cli", "-f"],
+      stdout: "inherit",
+      stderr: "inherit",
+    }).spawn();
+
+    await deno.status;
+  });
+
+const dev = new Command()
+  .description("Start a development server.")
+  .action(async () => {
+    const deno = new Deno.Command("deco", {
+      args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],
       stdout: "inherit",
       stderr: "inherit",
     }).spawn();
@@ -145,6 +160,7 @@ await new Command()
   .command("whoami", whoami)
   .command("hosting", hosting)
   .command("deploy", hostingDeploy)
+  .command("dev", dev)
   .command("configure", configure)
   .command("update", update)
   .command("link", linkCmd)

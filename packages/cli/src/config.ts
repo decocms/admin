@@ -5,11 +5,18 @@
  */
 import { z } from "zod";
 import { parse, stringify } from "smol-toml";
+import { readSession } from "./session.ts";
 
 export const CONFIG_FILE = "wrangler.toml";
 
 const requiredErrorForProp = (prop: string) =>
   `Property ${prop} is required. Please provide an inline value using --${prop} or configure it using 'deco configure'.`;
+
+const DecoBindingSchema = z.object({
+  name: z.string().min(1),
+  type: z.string().min(1),
+  integration_id: z.string().min(1),
+});
 
 const decoConfigSchema = z.object({
   workspace: z.string({
@@ -18,6 +25,7 @@ const decoConfigSchema = z.object({
   app: z.string({
     required_error: requiredErrorForProp("app"),
   }),
+  bindings: z.array(DecoBindingSchema).optional().default([]),
   local: z.boolean().optional().default(false),
 });
 
@@ -81,12 +89,17 @@ export const writeConfigFile = async (
  * @returns The config.
  */
 export const getConfig = async (
-  { inlineOptions }: {
-    inlineOptions: Partial<Config>;
+  { inlineOptions = {} }: {
+    inlineOptions?: Partial<Config>;
   },
 ) => {
   const config = await readConfigFile();
-  return decoConfigSchema.parse({ ...config, ...inlineOptions });
+  const merged = { ...config, ...inlineOptions };
+  if (!merged.workspace) {
+    const session = await readSession();
+    merged.workspace = session?.workspace;
+  }
+  return decoConfigSchema.parse(merged);
 };
 
 /**

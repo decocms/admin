@@ -1,5 +1,5 @@
 import { type Binding, WorkersMCPBindings } from "@deco/workers-runtime";
-import { parse as parseToml } from "toml";
+import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";

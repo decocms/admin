@@ -1,9 +1,16 @@
-/// <reference types="@cloudflare/workers-types" />
+import type {
+  ExecutionContext,
+  ForwardableEmailMessage,
+  ScheduledController,
+} from "@cloudflare/workers-types";
 
 import { createIntegrationBinding } from "./bindings.ts";
 import { MCPClient } from "./mcp.ts";
-export { createMCPFetchStub, type CreateStubAPIOptions } from "./mcp.ts";
-export { type ToolBinder } from "./mcp.ts";
+export {
+  createMCPFetchStub,
+  type CreateStubAPIOptions,
+  type ToolBinder,
+} from "./mcp.ts";
 
 export interface DefaultEnv {
   DECO_CHAT_WORKSPACE: string;
@@ -13,11 +20,11 @@ export interface DefaultEnv {
 
 export interface BindingBase {
   name: string;
-  value: string;
 }
 
 export interface MCPBinding extends BindingBase {
-  type: "MCP";
+  type: "mcp";
+  integration_id: string;
 }
 
 export type Binding = MCPBinding;
@@ -26,38 +33,56 @@ export interface BindingsObject {
   bindings?: Binding[];
 }
 
-const parseBindings = (bindings?: string) => {
-  if (!bindings) return [];
-  try {
-    return JSON.parse(atob(bindings)) as Binding[];
-  } catch {
-    return [];
-  }
+export const WorkersMCPBindings = {
+  parse: (bindings?: string): Binding[] => {
+    if (!bindings) return [];
+    try {
+      return JSON.parse(atob(bindings)) as Binding[];
+    } catch {
+      return [];
+    }
+  },
+  stringify: (bindings: Binding[]): string => {
+    return btoa(JSON.stringify(bindings));
+  },
 };
 
-export interface UserDefaultExport<TUserEnv extends Record<string, unknown>> {
+export interface UserDefaultExport<
+  TUserEnv extends Record<string, unknown> = Record<string, unknown>,
+> {
   fetch?: (
     req: Request,
     env: TUserEnv,
     ctx: ExecutionContext,
-  ) => Promise<Response>;
+  ) => Promise<Response> | Response;
   scheduled?: (
     controller: ScheduledController,
     env: TUserEnv,
     ctx: ExecutionContext,
-  ) => Promise<void>;
+  ) => Promise<void> | void;
   email?: (
     message: ForwardableEmailMessage,
     env: TUserEnv,
     ctx: ExecutionContext,
-  ) => Promise<void>;
+  ) => Promise<void> | void;
 }
 
-const creatorByType: Record<
-  Binding["type"],
-  (value: string, env: DefaultEnv) => unknown
-> = {
-  MCP: createIntegrationBinding,
+// 1. Map binding type to its interface
+interface BindingTypeMap {
+  mcp: MCPBinding;
+}
+
+// 2. Map binding type to its creator function
+type CreatorByType = {
+  [K in keyof BindingTypeMap]: (
+    value: BindingTypeMap[K],
+    env: DefaultEnv,
+  ) => unknown;
+};
+
+// 3. Strongly type creatorByType
+const creatorByType: CreatorByType = {
+  mcp: createIntegrationBinding,
 };
 
 const withDefaultBindings = (env: DefaultEnv) => {
@@ -69,10 +94,13 @@ const withDefaultBindings = (env: DefaultEnv) => {
 
 const withBindings = <TEnv extends DefaultEnv>(_env: TEnv) => {
   const env = _env as DefaultEnv;
-  const bindings = parseBindings(env.DECO_CHAT_BINDINGS);
+  const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
-    env[binding.name] = creatorByType[binding.type](binding.value, env);
+    env[binding.name] = creatorByType[binding.type](
+      binding,
+      env,
+    );
   }
 
   withDefaultBindings(env);
@@ -81,8 +109,8 @@ const withBindings = <TEnv extends DefaultEnv>(_env: TEnv) => {
 };
 
 export const withRuntime = <TEnv extends DefaultEnv>(
-  userFns: UserDefaultExport<TEnv>,
-) => {
+  userFns: UserDefaultExport,
+): UserDefaultExport<TEnv> => {
   return {
     ...userFns,
     ...userFns.email

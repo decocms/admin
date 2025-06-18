@@ -14,12 +14,16 @@ export const createWorkspaceClient = async (
   const cookie = await getSessionCookies();
 
   const client = new Client({ name: "deco-chat-cli", version: "1.0.0" });
-
   const api = local ? DECO_CHAT_API_LOCAL : DECO_CHAT_API_PROD;
 
   await client.connect(
     new StreamableHTTPClientTransport(
-      new URL(`/shared/${workspace}/mcp`, api),
+      new URL(
+        workspace.startsWith("/")
+          ? `${workspace}/mcp`
+          : `/shared/${workspace}/mcp`,
+        api,
+      ),
       { requestInit: { headers: { "cookie": cookie } } },
     ),
   );

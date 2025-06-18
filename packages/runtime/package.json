@@ -9,7 +9,8 @@
     "zod": "^3.25.67"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./proxy": "./src/proxy.ts"
   },
   "devDependencies": {
     "wrangler": "^4.13.2"

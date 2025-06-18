@@ -1,5 +1,5 @@
-import { AUTH_PORT_CLI, DECO_CHAT_LOGIN } from "./constants.ts";
 import type { Provider } from "@supabase/supabase-js";
+import { AUTH_PORT_CLI, DECO_CHAT_LOGIN } from "./constants.ts";
 import { saveSession } from "./session.ts";
 import { createClient } from "./supabase.ts";
 
@@ -52,7 +52,7 @@ export const loginCommand = async () => {
 
       // Save session data securely
       try {
-        await saveSession(data.session);
+        await saveSession(data);
       } catch (e) {
         console.error("Failed to save session data:", e);
       }

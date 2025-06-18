@@ -3,6 +3,7 @@ import { getErrorByStatusCode } from "../errors.ts";
 import type { MCPConnection } from "../models/mcp.ts";
 import type { AppContext } from "./context.ts";
 import type { ToolBinder } from "./index.ts";
+import { createMCPClientProxy } from "@deco/workers-runtime/proxy";
 
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
   [K in TDefinition[number] as K["name"]]: K extends
@@ -47,66 +48,10 @@ export function isStubHandlerOptions<TDefinition extends ToolBinder[]>(
 export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
-  return new Proxy<MCPClientFetchStub<TDefinition>>(
-    {} as MCPClientFetchStub<TDefinition>,
-    {
-      get(_, name) {
-        if (typeof name !== "string") {
-          throw new Error("Name must be a string");
-        }
-
-        return async (args: unknown, init?: RequestInit) => {
-          const traceDebugId = getTraceDebugId();
-          const workspace = options?.workspace ?? "";
-          let payload = args;
-          let toolName = name;
-          let mapper = (data: unknown) => data;
-          if (options?.connection && typeof args === "object") {
-            payload = {
-              connection: options.connection,
-              params: {
-                name: name,
-                arguments: args,
-              },
-            };
-            toolName = "INTEGRATIONS_CALL_TOOL";
-            mapper = (data) =>
-              (data as {
-                structuredContent: unknown;
-              }).structuredContent;
-          }
-          const response = await fetch(
-            new URL(`${workspace}/tools/call/${toolName}`, DECO_CHAT_API),
-            {
-              body: JSON.stringify(payload),
-              method: "POST",
-              credentials: "include",
-              ...init,
-              headers: {
-                "content-type": "application/json",
-                ...init?.headers,
-                "accept": "application/json",
-                "x-trace-debug-id": traceDebugId,
-              },
-            },
-          );
-
-          const { data, error } = await response.json() as {
-            data: Record<string, unknown>;
-            error: string | undefined;
-          };
-
-          if (!response.ok) {
-            throw getErrorByStatusCode(
-              response.status,
-              error || "Internal Server Error",
-              traceDebugId,
-            );
-          }
-
-          return mapper(data);
-        };
-      },
-    },
-  );
+  return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
+    ...options,
+    decoChatApiUrl: DECO_CHAT_API,
+    debugId: getTraceDebugId,
+    getErrorByStatusCode,
+  });
 }

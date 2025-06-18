@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "@mastra/rag": "^0.10.3",
+    "@deco/workers-runtime": "^0.1.0",
     "jose": "6.0.11",
     "@aws-sdk/s3-request-presigner": "^3.812.0",
     "@ai-sdk/openai": "1.3.22",
@@ -42,7 +43,8 @@
     "@opentelemetry/semantic-conventions": "^1.21.0",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.53.0",
     "@opentelemetry/otlp-exporter-base": "^0.53.0",
-    "@opentelemetry/otlp-transformer": "^0.53.0"
+    "@opentelemetry/otlp-transformer": "^0.53.0",
+    "toml": "^3.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250510.0",

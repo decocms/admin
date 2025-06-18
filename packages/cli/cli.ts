@@ -5,7 +5,7 @@ import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
 import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
-import { deleteSession, getSessionToken } from "./src/session.ts";
+import { deleteSession, getSessionToken, readSession } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { getConfig, writeConfigFile } from "./src/config.ts";
@@ -55,9 +55,14 @@ const configure = new Command()
 const hostingList = new Command()
   .description("List all apps in the current workspace.")
   .option("-w, --workspace <workspace:string>", "Workspace name", {
-    required: true,
+    required: false,
   })
-  .action(listApps);
+  .action(async (args) => {
+    return listApps({
+      workspace: args.workspace ??
+        await readSession().then((session) => session?.workspace!),
+    });
+  });
 
 // Placeholder for hosting deploy command implementation
 const hostingDeploy = new Command()
@@ -73,7 +78,11 @@ const hostingDeploy = new Command()
   )
   .action(async (args) => {
     const config = await getConfig({ inlineOptions: args });
-    await deploy(config);
+    return deploy({
+      ...config,
+      workspace: config.workspace ??
+        await readSession().then((session) => session?.workspace!),
+    });
   });
 
 const linkCmd = new Command()

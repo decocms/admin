@@ -1,4 +1,5 @@
 // Utility functions for saving and reading session data securely
+import type { User } from "@supabase/supabase-js";
 import z from "zod";
 import { createClient } from "./supabase.ts";
 
@@ -22,9 +23,19 @@ function getSessionPath(): string {
  * Save session data securely to the filesystem.
  * @param data The session data to save (object).
  */
-export async function saveSession(data: SessionData) {
+export async function saveSession(
+  data: { session: SessionData | null; user: User | null },
+) {
+  const { session, user } = data;
   const sessionPath = getSessionPath();
-  await Deno.writeTextFile(sessionPath, JSON.stringify(data, null, 2));
+  await Deno.writeTextFile(
+    sessionPath,
+    JSON.stringify(
+      { ...session, workspace: user ? `/users/${user.id}` : undefined },
+      null,
+      2,
+    ),
+  );
   // Set file permissions to 600 (read/write for user only)
   await Deno.chmod(sessionPath, 0o600);
 }
@@ -76,7 +87,7 @@ export async function getSessionCookies(): Promise<string> {
     throw new Error("Session expired. Please login again.");
   }
 
-  await saveSession(data.session ?? {});
+  await saveSession(data);
 
   const setCookie = responseHeaders.getSetCookie();
 

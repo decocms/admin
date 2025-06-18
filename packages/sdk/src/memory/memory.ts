@@ -108,12 +108,21 @@ export class WorkspaceMemory extends MastraMemory {
     },
   ): CoreMessage[] {
     // deno-lint-ignore no-explicit-any
-    const processedMessages: any[] = super.processMessages({ messages, systemMessage, memorySystemMessage });
+    const processedMessages: any[] = super.processMessages({
+      messages,
+      systemMessage,
+      memorySystemMessage,
+    });
 
-    if (processedMessages.length > 0 && processedMessages[0].role === 'assistant' && processedMessages[0].type === 'tool-call' && processedMessages[1].role === 'tool') {
+    if (
+      processedMessages.length > 0 &&
+      processedMessages[0].role === "assistant" &&
+      processedMessages[0].type === "tool-call" &&
+      processedMessages[1].role === "tool"
+    ) {
       processedMessages.splice(0, 2);
     }
-  
+
     return processedMessages;
   }
 }

@@ -512,8 +512,9 @@ Important Notes:
 
     const wranglerFile = CONFIGS.find((file) => file in filesRecord);
     const wranglerConfig: WranglerConfig = wranglerFile
-      ? parseToml(filesRecord[wranglerFile])
-      : { name: _appSlug };
+      // deno-lint-ignore no-explicit-any
+      ? parseToml(filesRecord[wranglerFile]) as any as WranglerConfig
+      : { name: _appSlug } as WranglerConfig;
 
     // check if the entrypoint is in the files
     const entrypoints = [

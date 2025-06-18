@@ -12,7 +12,6 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import {
   AddFileToKnowledgeButton,
   AgentKnowledgeBaseFileList,
-  KnowledgeBaseFileList,
   type UploadFile,
   useAgentFiles,
 } from "../agent/upload-knowledge-asset.tsx";

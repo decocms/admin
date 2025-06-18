@@ -78,7 +78,7 @@ import process from "node:process";
 import { Readable } from "node:stream";
 import { z } from "zod";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
-import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
+import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
 import {
@@ -446,7 +446,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     this.telemetry.tracer = trace.getTracer("agent");
 
     // Process instructions to replace prompt mentions
-    const processedInstructions = await replacePromptMentions(
+    const processedInstructions = await resolveMentions(
       config.instructions,
       this.workspace,
       this.metadata?.mcpClient,
@@ -1065,7 +1065,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     // Process instructions if provided in options
     let processedInstructions = options?.instructions;
     if (processedInstructions) {
-      processedInstructions = await replacePromptMentions(
+      processedInstructions = await resolveMentions(
         processedInstructions,
         this.workspace,
         this.metadata?.mcpClient,

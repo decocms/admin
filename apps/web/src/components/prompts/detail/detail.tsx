@@ -65,7 +65,7 @@ const TABS: Record<string, Tab> = {
 };
 
 export default function Page() {
-  const agentId = WELL_KNOWN_AGENT_IDS.setupAgent;
+  const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
 
   const { id } = useParams();
   const promptId = id!;
@@ -92,8 +92,6 @@ export default function Page() {
       content: prompt.content,
     },
   });
-
-  const promptContent = form.watch("content");
 
   const updatePrompt = useUpdatePrompt();
   const isMutating = updatePrompt.isPending;
@@ -145,9 +143,10 @@ export default function Page() {
 
     updateAgentCache({
       ...agent,
-      instructions: promptContent,
+      instructions:
+        `${agent.instructions}\n\nThe current prompt Id is "${prompt.id}"`,
     });
-  }, [prompt, promptContent]);
+  }, [prompt]);
 
   return (
     <>

@@ -3,7 +3,11 @@ import type { Prompt } from "../models/index.ts";
 
 export const listPrompts = (
   workspace: string,
-  input?: { ids?: string[] },
+  input?: {
+    ids?: string[];
+    resolveMentions?: boolean;
+    excludeIds?: string[];
+  },
   init?: RequestInit,
   client?: ReturnType<typeof MCPClient["forWorkspace"]>,
 ): Promise<Prompt[]> =>

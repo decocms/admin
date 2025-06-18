@@ -79,6 +79,8 @@ export function DetailForm() {
                     placeholder="The prompt content"
                     className="min-h-[49lvh]"
                     disabled={isReadonly}
+                    enableMentions
+                    excludeIds={[form.getValues("id")]}
                     {...field}
                   />
                 </FormControl>

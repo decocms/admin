@@ -9,9 +9,7 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createTool, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
-import { parse as tomlParse } from "smol-toml";
 import { polyfill } from "./fs-polyfill.ts";
-import { USER_WORKER_APP_ENTRYPOINTS } from "../../constants.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -126,49 +124,27 @@ const addPolyfills = (
     }
   }
 };
-interface DeployToCloudflareParams {
-  c: AppContext;
-  scriptSlug: string;
-  mainModule: string;
-  files: Record<string, File>;
-  wranglerConfig?: Record<string, unknown>;
-  envVars?: Record<string, string>;
-}
-
-const acceptedWranglerConfigSchema = z.object({
-  kv_namespaces: z.array(
-    z.object({
-      binding: z.string(),
-      id: z.string(),
-    }),
-  ).optional(),
-}).transform((data) => {
-  const kv_namespace_bindings = data.kv_namespaces?.map((namespace) => ({
-    type: "kv_namespace" as const,
-    name: namespace.binding,
-    namespace_id: namespace.id,
-  })) ?? [];
-
-  return {
-    bindings: [...kv_namespace_bindings],
-  };
-});
-
-async function deployToCloudflare({
-  c,
-  scriptSlug,
-  mainModule,
-  files,
-  wranglerConfig,
-  envVars,
-}: DeployToCloudflareParams): Promise<DeployResult> {
+async function deployToCloudflare(
+  c: AppContext,
+  {
+    name: scriptSlug,
+    compatibility_flags,
+    compatibility_date,
+    vars,
+    bindings: _bindings = [],
+    ...rest
+  }: WranglerConfig,
+  mainModule: string,
+  files: Record<string, File>,
+  _envVars?: Record<string, string>,
+): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
-
-  const verifiedWranglerConfig = acceptedWranglerConfigSchema.parse(
-    wranglerConfig ?? {},
-  );
-
+  const envVars = {
+    ..._envVars,
+    ...vars,
+  };
+  const [decoBindings, wranglerBindings] = _bindings.reduce(
     ([decoBindings, wranglerBindings], binding) => {
       const set = binding.type === "mcp" ? decoBindings : wranglerBindings;
       set.push(binding);
@@ -186,7 +162,7 @@ async function deployToCloudflare({
     compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
     compatibility_date: compatibility_date ?? "2024-11-27",
     tags: [c.workspace.value],
-    ...verifiedWranglerConfig,
+    bindings: wranglerBindings,
   };
 
   addPolyfills(files, metadata, [polyfill]);
@@ -205,7 +181,6 @@ async function deployToCloudflare({
       {
         account_id: env.CF_ACCOUNT_ID,
         metadata,
-          ...verifiedWranglerConfig,
       },
       {
         method: "put",
@@ -296,7 +271,10 @@ const createNamespaceOnce = async (c: AppContext) => {
   }).catch(() => {});
 };
 
+// main.ts or main.mjs or main.js or main.cjs
+const ENTRYPOINTS = ["main.ts", "main.mjs", "main.js", "main.cjs"];
 const CONFIGS = ["wrangler.toml"];
+
 // First, let's define a new type for the file structure
 const FileSchema = z.object({
   path: z.string(),
@@ -326,7 +304,7 @@ export interface WranglerConfig {
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
   description:
-    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. The entrypoint should always be ${USER_WORKER_APP_ENTRYPOINTS}.
+    `Deploy multiple TypeScript files that use Deno as runtime for Cloudflare Workers. You must provide a wrangler.toml file matching the Workers for Platforms format. Use 'main_module' instead of 'main', and define bindings using the [[bindings]] array, where each binding is a table specifying its type and properties. To add custom Deco bindings, set type = "MCP" in a binding entry (these will be filtered and handled automatically).
 
 Common patterns:
 1. Use a deps.ts file to centralize dependencies:
@@ -459,7 +437,7 @@ Important Notes:
       : { name: _appSlug };
 
     // check if the entrypoint is in the files
-    const entrypoint = USER_WORKER_APP_ENTRYPOINTS.find((entrypoint) =>
+    const entrypoints = [
       ...ENTRYPOINTS,
       wranglerConfig.main ?? wranglerConfig.main_module ?? "main.ts",
     ];
@@ -469,16 +447,16 @@ Important Notes:
     if (!entrypoint) {
       throw new UserInputError(
         `Entrypoint not found in files. Entrypoint must be one of: ${
-          USER_WORKER_APP_ENTRYPOINTS.join(", ")
+          [...new Set(entrypoints)].join(", ")
         }`,
       );
     }
 
-    const wranglerConfig = filesRecord["wrangler.toml"]
-      ? tomlParse(filesRecord["wrangler.toml"])
-      : undefined;
-    delete filesRecord["wrangler.toml"];
-
+    if (!wranglerConfig?.name) {
+      throw new UserInputError(
+        `App slug not found in wrangler.toml`,
+      );
+    }
 
     const appSlug = wranglerConfig.name;
 
@@ -505,15 +483,15 @@ Important Notes:
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
     };
 
-    const result = await deployToCloudflare({
+    console.log({ wranglerConfig });
 
+    const result = await deployToCloudflare(
       c,
       wranglerConfig,
-      mainModule: SCRIPT_FILE_NAME,
-      files: fileObjects,
-      wranglerConfig,
-      envVars: { ...envVars, ...appEnvVars },
-    });
+      SCRIPT_FILE_NAME,
+      fileObjects,
+      { ...envVars, ...appEnvVars },
+    );
     const data = await updateDatabase(
       c,
       workspace,

@@ -114,8 +114,9 @@ export class WorkspaceMemory extends MastraMemory {
       memorySystemMessage,
     });
 
-    if (
-      processedMessages.length > 0 &&
+    // Keep removing tool-call + tool pairs from the beginning until we don't have this pattern
+    while (
+      processedMessages.length >= 2 &&
       processedMessages[0].role === "assistant" &&
       processedMessages[0].type === "tool-call" &&
       processedMessages[1].role === "tool"

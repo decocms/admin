@@ -85,20 +85,22 @@ export function IntegrationListItem({
   // Helper function to check if a tool matches the search term
   const toolMatchesSearch = (tool: MCPTool, searchTerm: string) => {
     if (!searchTerm) return true;
-    
+
     const lowerSearchTerm = searchTerm.toLowerCase();
     const toolNameFormatted = beautifyToolName(tool.name).toLowerCase();
     const toolNameOriginal = tool.name.toLowerCase();
     const toolDescription = tool.description?.toLowerCase() || "";
-    
+
     return toolNameFormatted.includes(lowerSearchTerm) ||
-           toolNameOriginal.includes(lowerSearchTerm) ||
-           toolDescription.includes(lowerSearchTerm);
+      toolNameOriginal.includes(lowerSearchTerm) ||
+      toolDescription.includes(lowerSearchTerm);
   };
 
   // Filter tools based on search term
-  const filteredTools = allTools.filter((tool) => toolMatchesSearch(tool, searchTerm));
-  
+  const filteredTools = allTools.filter((tool) =>
+    toolMatchesSearch(tool, searchTerm)
+  );
+
   // Hide integration if searching and no tools match
   if (searchTerm && filteredTools.length === 0 && !isLoading) {
     return null;
@@ -197,7 +199,11 @@ export function IntegrationListItem({
                     isLoading && "animate-pulse",
                   )}
                 >
-                  {isLoading ? "Loading tools..." : searchTerm ? `${filteredTools.length} matching tools` : "All tools"}
+                  {isLoading
+                    ? "Loading tools..."
+                    : searchTerm
+                    ? `${filteredTools.length} matching tools`
+                    : "All tools"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -261,12 +267,12 @@ function ToolList({
   className?: string;
 }) {
   const { data: profile } = useProfile();
-  
+
   // Apply client-side filtering for hidden tools on top of search filtering
   const displayTools = filteredTools.filter((tool) =>
     !(clientHiddenTools.includes(tool.name) && hideFor(profile?.email))
   );
-  
+
   if (isLoading) {
     return (
       <div className={cn("space-y-2", className)}>

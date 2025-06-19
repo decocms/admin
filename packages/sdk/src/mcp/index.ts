@@ -10,6 +10,7 @@ export {
 } from "./fs/api.ts";
 
 import * as agentsAPI from "./agents/api.ts";
+import * as aiAPI from "./ai/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
@@ -131,6 +132,10 @@ export const WORKSPACE_TOOLS = [
   promptsAPI.listPrompts,
   promptsAPI.getPrompt,
   promptsAPI.searchPrompts,
+  // AI Integration tools
+  aiAPI.generateText,
+  aiAPI.generateObject,
+  aiAPI.listModels,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

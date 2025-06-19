@@ -38,7 +38,6 @@ import { Channels } from "./channels.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
 
-
 function CopyLinkButton(
   { className, link }: { className: string; link: string },
 ) {

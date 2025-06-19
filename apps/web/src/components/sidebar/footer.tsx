@@ -1,4 +1,9 @@
-import { DECO_CHAT_API, UnauthorizedError, useInvites } from "@deco/sdk";
+import {
+  DECO_CHAT_API,
+  DEFAULT_MEMORY_LAST_MESSAGES,
+  UnauthorizedError,
+  useInvites,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -19,6 +24,7 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -33,18 +39,18 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { Suspense, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { Link, useLocation, useMatch } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
-import { useUser } from "../../hooks/use-user.ts";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useGitHubStars } from "../../hooks/use-github-stars.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { Avatar } from "../common/avatar/index.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
-import { trackEvent } from "../../hooks/analytics.ts";
 
 /** Wrapped component to be suspended */
 function NotificationDot({ className }: { className?: string }) {
@@ -83,11 +89,19 @@ function UserPreferencesModal({ open, onOpenChange }: {
       defaultModel: preferences.defaultModel,
       useOpenRouter: preferences.useOpenRouter,
       smoothStream: preferences.smoothStream,
+      lastMessages: preferences.lastMessages,
+      sendReasoning: preferences.sendReasoning,
     },
   });
   const { handleSubmit, formState: { isDirty } } = form;
 
-  function onSubmit(data: { defaultModel: string; useOpenRouter: boolean }) {
+  function onSubmit(data: {
+    defaultModel: string;
+    useOpenRouter: boolean;
+    sendReasoning: boolean;
+    smoothStream: boolean;
+    lastMessages: number;
+  }) {
     setPreferences(data);
     form.reset(data);
     onOpenChange(false);
@@ -175,6 +189,61 @@ function UserPreferencesModal({ open, onOpenChange }: {
                   <FormDescription>
                     Smooth out the stream of AI responses.
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="sendReasoning"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <FormControl>
+                      <Switch
+                        id="sendReasoning"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="sendReasoning"
+                      className="cursor-pointer"
+                    >
+                      Reasoning
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Display AI reasoning tokens in the chat.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="lastMessages"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <FormLabel
+                    htmlFor="lastMessages"
+                    className="cursor-pointer"
+                  >
+                    Last Messages
+                  </FormLabel>
+                  <FormDescription>
+                    The size of the message window for the AI to use as context.
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      id="lastMessages"
+                      type="number"
+                      min={1}
+                      max={100}
+                      defaultValue={DEFAULT_MEMORY_LAST_MESSAGES}
+                      value={field.value}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+
                   <FormMessage />
                 </FormItem>
               )}

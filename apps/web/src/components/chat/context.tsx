@@ -126,8 +126,9 @@ export function ChatProvider({
             : agent?.model,
           instructions: agent?.instructions,
           bypassOpenRouter,
-          lastMessages: DEFAULT_MEMORY_LAST_MESSAGES,
-          sendReasoning: true,
+          lastMessages: preferences.lastMessages ??
+            DEFAULT_MEMORY_LAST_MESSAGES,
+          sendReasoning: preferences.sendReasoning ?? true,
           tools: agent?.tools_set,
           smoothStream: preferences.smoothStream !== false
             ? { delayInMs: 25, chunk: "word" }

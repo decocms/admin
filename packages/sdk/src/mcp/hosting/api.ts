@@ -354,7 +354,7 @@ export interface WranglerConfig {
   };
 }
 
-const DECO_WORKER_RUNTIME_VERSION = "0.1.1";
+const DECO_WORKER_RUNTIME_VERSION = "0.1.2";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",

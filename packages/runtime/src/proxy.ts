@@ -47,6 +47,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
               credentials: "include",
               ...init,
               headers: {
+                ...options?.token
+                  ? {
+                    Authorization: `Bearer ${options.token}`,
+                  }
+                  : {},
                 "content-type": "application/json",
                 ...init?.headers,
                 "accept": "application/json",

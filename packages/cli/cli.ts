@@ -1,14 +1,27 @@
 import { Command } from "@cliffy/command";
 import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
+import { getConfig, writeConfigFile } from "./src/config.ts";
+import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
 import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
-import { deleteSession, getSessionToken, readSession } from "./src/session.ts";
+import { deleteSession, readSession } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
-import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
-import { getConfig, writeConfigFile } from "./src/config.ts";
+
+async function getEnvVars() {
+  const session = await readSession();
+  const config = await getConfig({});
+  const encodedBindings = btoa(JSON.stringify(config.bindings));
+
+  return {
+    ...Deno.env.toObject(),
+    DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
+    DECO_CHAT_API_TOKEN: session?.access_token ?? "",
+    DECO_CHAT_BINDINGS: encodedBindings,
+  };
+}
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -91,9 +104,8 @@ const linkCmd = new Command()
   .arguments("[...build-cmd]")
   .action(async function ({ port }) {
     const runCommand = this.getLiteralArgs();
-    const token = await getSessionToken();
-    const config = await getConfig({});
 
+    const env = await getEnvVars();
     await link({
       port,
       onBeforeRegister: () => {
@@ -108,11 +120,7 @@ const linkCmd = new Command()
           args,
           stdout: "inherit",
           stderr: "inherit",
-          env: {
-            ...Deno.env.toObject(),
-            DECO_CHAT_API_TOKEN: token,
-            DECO_CHAT_BINDINGS: btoa(JSON.stringify(config.bindings)),
-          },
+          env,
         }).spawn();
 
         return process;
@@ -135,6 +143,15 @@ const update = new Command()
 const dev = new Command()
   .description("Start a development server.")
   .action(async () => {
+    const env = await getEnvVars();
+    const envFile = ".dev.vars";
+    await Deno.writeTextFile(
+      envFile,
+      Object.entries(env)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("\n"),
+    );
+
     const deno = new Deno.Command("deco", {
       args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],
       stdout: "inherit",

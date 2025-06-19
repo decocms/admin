@@ -23,6 +23,7 @@ export const MCPClient = new Proxy(
   {} as typeof global & {
     forWorkspace: (
       workspace: string,
+      token?: string,
     ) => MCPClientFetchStub<typeof workspaceTools>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnectionProvider,
@@ -31,7 +32,8 @@ export const MCPClient = new Proxy(
   {
     get(_, name) {
       if (name === "forWorkspace") {
-        return (workspace: string) => createMCPFetchStub<[]>({ workspace });
+        return (workspace: string, token?: string) =>
+          createMCPFetchStub<[]>({ workspace, token });
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(
@@ -79,6 +81,7 @@ export type MCPConnectionProvider =
 export interface CreateStubAPIOptions {
   decoChatApiUrl?: string;
   workspace?: string;
+  token?: string;
   connection?: MCPConnectionProvider;
   debugId?: () => string;
   getErrorByStatusCode?: (

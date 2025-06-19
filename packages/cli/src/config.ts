@@ -33,6 +33,7 @@ export type Config = z.infer<typeof decoConfigSchema>;
 
 interface WranglerConfig {
   [key: string]: unknown;
+  name?: string;
   deco?: Partial<Config>;
 }
 
@@ -58,7 +59,10 @@ const readWranglerConfig = async () => {
 const readConfigFile = async () => {
   const wranglerConfig = await readWranglerConfig();
   const decoConfig = wranglerConfig.deco ?? {} as Partial<Config>;
-  return decoConfig;
+  return {
+    ...decoConfig,
+    app: decoConfig.app ?? wranglerConfig.name,
+  };
 };
 
 /**

@@ -2,6 +2,7 @@ import { Confirm } from "@cliffy/prompt";
 import { parse } from "@std/dotenv";
 import { walk } from "@std/fs";
 import { createWorkspaceClient } from "../mcp.ts";
+import { join } from "node:path";
 
 interface Options {
   workspace: string;
@@ -37,6 +38,7 @@ const readEnvFile = async (rootDir: string) => {
   return envVars;
 };
 
+const PACKAGE_JSON = "package.json";
 const gatherFiles = async (rootDir: string) => {
   const tsFiles: string[] = [];
   const walker = walk(rootDir, {
@@ -47,6 +49,17 @@ const gatherFiles = async (rootDir: string) => {
 
   for await (const entry of walker) {
     tsFiles.push(entry.path.slice(rootDir.length + 1));
+  }
+
+  // Add package.json if it exists
+  const packageJsonPath = join(rootDir, PACKAGE_JSON);
+  try {
+    const stat = await Deno.stat(packageJsonPath);
+    if (stat.isFile) {
+      tsFiles.push(PACKAGE_JSON);
+    }
+  } catch (_) {
+    // package.json does not exist, skip
   }
 
   return tsFiles;

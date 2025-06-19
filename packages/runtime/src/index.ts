@@ -5,7 +5,7 @@ import type {
   ScheduledController,
 } from "@cloudflare/workers-types";
 
-import { createIntegrationBinding } from "./bindings.ts";
+import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { MCPClient } from "./mcp.ts";
 export {
   createMCPFetchStub,
@@ -16,6 +16,7 @@ export {
 export interface DefaultEnv {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_BINDINGS: string;
+  DECO_CHAT_API_TOKEN?: string;
   [key: string]: unknown;
 }
 
@@ -93,9 +94,7 @@ const creatorByType: CreatorByType = {
 
 const withDefaultBindings = (env: DefaultEnv) => {
   env["DECO_CHAT_API"] = MCPClient;
-  env["DECO_CHAT_WORKSPACE_API"] = MCPClient.forWorkspace(
-    env.DECO_CHAT_WORKSPACE,
-  );
+  env["DECO_CHAT_WORKSPACE_API"] = workspaceClient(env);
 };
 
 const withBindings = <TEnv extends DefaultEnv>(_env: TEnv) => {

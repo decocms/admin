@@ -58,7 +58,7 @@ import {
 import { type StorageThreadType, Telemetry } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
-import { type MastraMemory } from "@mastra/core/memory";
+import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
 import {

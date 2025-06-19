@@ -23,7 +23,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createTool } from "../context.ts";
+import { createToolGroup } from "../context.ts";
 import { convertFromDatabase, parseId } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
 
@@ -73,6 +73,13 @@ export const buildWebhookUrl = (
 ) => {
   return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}&output_tool=${outputTool}`;
 };
+
+const createTool = createToolGroup("triggers-management", {
+  name: "Triggers & Automation",
+  description: "Create cron jobs and webhook-based workflows.",
+  icon:
+    "https://assets.decocache.com/mcp/ca2b0d62-731c-4232-b72b-92a0df5afb5b/Triggers--Automation.png",
+});
 
 export const listTriggers = createTool({
   name: "TRIGGERS_LIST",

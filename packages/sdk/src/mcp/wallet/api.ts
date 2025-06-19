@@ -1,23 +1,23 @@
-import { z } from "zod";
-import { type AppContext, createTool } from "../context.ts";
-import {
-  createWalletClient,
-  MicroDollar,
-  type WalletAPI,
-  WellKnownWallets,
-} from "./index.ts";
 import type { ClientOf } from "@deco/sdk/http";
-import {
-  assertHasWorkspace,
-  assertWorkspaceResourceAccess,
-} from "../assertions.ts";
-import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
+import { z } from "zod";
 import {
   FeatureNotAvailableError,
   InternalServerError,
   UserInputError,
 } from "../../errors.ts";
 import { type Feature, type Plan, PLANS_FEATURES } from "../../plan.ts";
+import {
+  assertHasWorkspace,
+  assertWorkspaceResourceAccess,
+} from "../assertions.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
+import {
+  createWalletClient,
+  MicroDollar,
+  type WalletAPI,
+  WellKnownWallets,
+} from "./index.ts";
+import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 
 const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
@@ -137,6 +137,13 @@ const AgentsUsage = {
     };
   },
 };
+
+const createTool = createToolGroup("wallet-management", {
+  name: "Wallet & Billing",
+  description: "Handle payments and subscriptions.",
+  icon:
+    "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
+});
 
 export const getWalletAccount = createTool({
   name: "GET_WALLET_ACCOUNT",

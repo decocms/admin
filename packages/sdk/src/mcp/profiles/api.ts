@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 import { assertHasUser, assertPrincipalIsUser } from "../assertions.ts";
-import { createTool } from "../context.ts";
 import { UnauthorizedError } from "../index.ts";
+import { createTool } from "../members/api.ts";
 import { userFromDatabase } from "../user.ts";
 
 export const getProfile = createTool({

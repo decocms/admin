@@ -4,7 +4,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createTool } from "../context.ts";
+import { createToolGroup } from "../context.ts";
 import type { AppContext } from "../index.ts";
 import { SupabaseLLMVault } from "./llm-vault.ts";
 
@@ -48,6 +48,13 @@ export const createModelSchema = z.object({
 });
 
 export type CreateModelInput = z.infer<typeof createModelSchema>;
+
+const createTool = createToolGroup("model-management", {
+  name: "Model Management",
+  description: "Configure custom language models.",
+  icon:
+    "https://assets.decocache.com/mcp/8d655881-941f-4b5b-8c30-5cf80bd00c9e/Model-Management.png",
+});
 
 export const createModel = createTool({
   name: "MODELS_CREATE",

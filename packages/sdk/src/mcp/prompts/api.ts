@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { assertHasWorkspace } from "../assertions.ts";
-import { createTool } from "../context.ts";
+import { createToolGroup } from "../context.ts";
+
+const createTool = createToolGroup("prompt-management", {
+  name: "Prompt Management",
+  description: "Manage reusable prompt templates.",
+  icon:
+    "https://assets.decocache.com/mcp/9861d914-141d-4236-b616-d73ef6559ca1/Prompt-Management.png",
+});
 
 export const createPrompt = createTool({
   name: "PROMPTS_CREATE",

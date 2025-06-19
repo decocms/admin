@@ -10,16 +10,21 @@ import {
   assertWorkspaceResourceAccess,
   type WithTool,
 } from "../assertions.ts";
-import { type AppContext, createTool } from "../context.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
 import {
   ForbiddenError,
   InternalServerError,
   NotFoundError,
 } from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
+const createTool = createToolGroup("agent-management", {
+  name: "Agent Management",
+  description: "Manage your agents",
+  icon:
+    "https://assets.decocache.com/mcp/6f6bb7ac-e2bd-49fc-a67c-96d09ef84993/Agent-Management.png",
+});
 
 const NO_DATA_ERROR = "PGRST116";
-
 export const getAgentsByIds = async (
   ids: string[],
   c: AppContext,
@@ -177,7 +182,15 @@ export const createAgent = createTool({
   },
 });
 
-export const updateAgent = createTool({
+export const createAgentSetupTool = createToolGroup("agent-setup", {
+  name: "Agent Setup",
+  description:
+    "Configure agent identity, update settings, and list available integrations.",
+  icon:
+    "https://assets.decocache.com/mcp/42dcf0d2-5a2f-4d50-87a6-0e9ebaeae9b5/Agent-Setup.png",
+});
+
+export const updateAgent = createAgentSetupTool({
   name: "AGENTS_UPDATE",
   description: "Update an existing agent",
   inputSchema: z.object({

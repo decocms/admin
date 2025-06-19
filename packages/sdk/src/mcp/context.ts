@@ -12,6 +12,7 @@ import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
 import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
+import { addGroup, type GroupIntegration } from "./groups.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 export type AgentPrincipal = JWTPayload;
@@ -160,36 +161,53 @@ export interface Tool<
   ) => Promise<TReturn> | TReturn;
 }
 
+export const createToolGroup = (
+  group: string,
+  integration: GroupIntegration,
+) =>
+  createToolFactory<WithTool<AppContext>>(
+    (c) => c as unknown as WithTool<AppContext>,
+    group,
+    integration,
+  );
+
 export const createToolFactory = <
   TAppContext extends AppContext = AppContext,
->(contextFactory: (c: AppContext) => TAppContext, group?: string) =>
+>(
+  contextFactory: (c: AppContext) => TAppContext,
+  group?: string,
+  integration?: GroupIntegration,
+) =>
 <
   TName extends string = string,
   TInput = any,
   TReturn extends object | null | boolean = object,
 >(
   def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
-): Tool<TName, TInput, TReturn> => ({
-  group,
-  ...def,
-  handler: async (props: TInput): Promise<TReturn> => {
-    const context = contextFactory(State.getStore());
-    context.tool = { name: def.name };
+): Tool<TName, TInput, TReturn> => {
+  group && integration && addGroup(group, integration);
+  return {
+    group,
+    ...def,
+    handler: async (props: TInput): Promise<TReturn> => {
+      const context = contextFactory(State.getStore());
+      context.tool = { name: def.name };
 
-    const result = await def.handler(props, context);
+      const result = await def.handler(props, context);
 
-    if (!context.resourceAccess.granted()) {
-      console.warn(
-        `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-      );
-      throw new ForbiddenError(
-        `User cannot access this tool ${def.name}.`,
-      );
-    }
+      if (!context.resourceAccess.granted()) {
+        console.warn(
+          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+        );
+        throw new ForbiddenError(
+          `User cannot access this tool ${def.name}.`,
+        );
+      }
 
-    return result;
-  },
-});
+      return result;
+    },
+  };
+};
 
 export const withMCPErrorHandling = <
   TInput = any,

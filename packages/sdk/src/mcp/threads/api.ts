@@ -11,9 +11,16 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createTool } from "../context.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
+
+const createTool = createToolGroup("thread-management", {
+  name: "Thread Management",
+  description: "Track conversation history and usage.",
+  icon:
+    "https://assets.decocache.com/mcp/4306211f-3d5e-4f1b-b55f-b46787ac82fe/Thread-Management.png",
+});
 
 async function getWorkspaceMemory(c: AppContext) {
   assertHasWorkspace(c);

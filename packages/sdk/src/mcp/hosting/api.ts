@@ -7,7 +7,7 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createTool, getEnv } from "../context.ts";
+import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
@@ -68,6 +68,13 @@ const Mappers = {
     };
   },
 };
+
+const createTool = createToolGroup("hosting", {
+  name: "Hosting & Deployment",
+  description: "Deploy serverless apps via Cloudflare Workers.",
+  icon:
+    "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
+});
 
 // 1. List apps for a given workspace
 export const listApps = createTool({

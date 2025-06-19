@@ -11,7 +11,7 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { ChannelBinding } from "../bindings/binder.ts";
-import { type AppContext, createTool } from "../context.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 
 const SELECT_CHANNEL_QUERY = `
@@ -44,6 +44,13 @@ function mapChannel(
       : null,
   };
 }
+
+const createTool = createToolGroup("channel-management", {
+  name: "Channel Management",
+  description: "Create and manage communication channels.",
+  icon:
+    "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/Channel-Management.png",
+});
 
 export const listChannels = createTool({
   name: "CHANNELS_LIST",

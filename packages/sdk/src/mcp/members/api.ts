@@ -9,7 +9,7 @@ import {
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createTool } from "../context.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
 import { userFromDatabase } from "../user.ts";
 import { getPlan } from "../wallet/api.ts";
 import {
@@ -100,6 +100,14 @@ const mapMember = (
   roles: c.policy.filterTeamRoles(
     member_roles.map((memberRole) => memberRole.roles).filter(isRole),
   ),
+});
+
+export const createTool = createToolGroup("team-management", {
+  name: "Team & User Management",
+  description: "Manage workspace access and roles.",
+  workspace: false,
+  icon:
+    "https://assets.decocache.com/mcp/de7e81f6-bf2b-4bf5-a96c-867682f7d2ca/Team--User-Management.png",
 });
 
 export const getTeamMembers = createTool({

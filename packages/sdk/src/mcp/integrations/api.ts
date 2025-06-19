@@ -27,10 +27,17 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { createTool } from "../context.ts";
-import { Binding, NotFoundError, WellKnownBindings } from "../index.ts";
+import { getGroups } from "../groups.ts";
+import {
+  Binding,
+  createToolGroup,
+  NotFoundError,
+  WellKnownBindings,
+} from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
 import { createServerClient } from "../utils.ts";
+
+// Tool factories for each group
 
 const ensureStartingSlash = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -58,7 +65,17 @@ const agentAsIntegrationFor =
     },
   });
 
-export const callTool = createTool({
+const createIntegrationManagementTool = createToolGroup(
+  "integration-management",
+  {
+    name: "Integration Management",
+    description:
+      "Install, authorize, and manage third-party integrations and their tools.",
+    icon:
+      "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
+  },
+);
+export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
   inputSchema: IntegrationSchema.pick({
@@ -110,7 +127,7 @@ export const callTool = createTool({
   },
 });
 
-export const listTools = createTool({
+export const listTools = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST_TOOLS",
   description: "List tools of a given integration",
   inputSchema: IntegrationSchema.pick({
@@ -138,13 +155,14 @@ const virtualIntegrationsFor = (
   knowledgeBases: string[],
 ) => {
   // Create a virtual User Management integration
+  const decoChatMcp = new URL("/mcp", DECO_CHAT_API);
   const userManagementIntegration = {
     id: formatId("i", "user-management"),
     name: "User Management",
     description: "Manage your teams, invites and profile",
     connection: {
       type: "HTTP",
-      url: new URL("/mcp", DECO_CHAT_API).href,
+      url: decoChatMcp.href,
     },
     icon: "https://i.imgur.com/GD4o7vx.png",
     workspace,
@@ -166,9 +184,31 @@ const virtualIntegrationsFor = (
     created_at: new Date().toISOString(),
   };
 
+  const integrationGroups = Object.entries(getGroups()).map(
+    ([group, { name, description, icon, workspace }]) => {
+      const url = workspace === false
+        ? new URL(decoChatMcp)
+        : new URL(workspaceMcp);
+      url.searchParams.set("group", group);
+      return {
+        id: formatId("i", group),
+        name,
+        icon,
+        description,
+        connection: {
+          type: "HTTP",
+          url: url.href,
+        },
+        workspace,
+        created_at: new Date().toISOString(),
+      };
+    },
+  );
+
   return [
     userManagementIntegration,
     workspaceManagementIntegration,
+    ...integrationGroups,
     ...knowledgeBases.map((kb) => {
       const url = new URL(workspaceMcp);
       url.searchParams.set("group", KNOWLEDGE_BASE_GROUP);
@@ -176,12 +216,13 @@ const virtualIntegrationsFor = (
       return {
         id: getKnowledgeBaseIntegrationId(kb),
         name: `${kb} (Knowledge Base)`,
-        description: "A knowledge base for your workspace",
+        description: "Ingest, search, and manage contextual data.",
         connection: {
           type: "HTTP",
           url: url.href,
         },
-        icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
+        icon:
+          "https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png",
         workspace,
         created_at: new Date().toISOString(),
       };
@@ -189,7 +230,7 @@ const virtualIntegrationsFor = (
   ];
 };
 
-export const listIntegrations = createTool({
+export const listIntegrations = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations",
   inputSchema: z.object({
@@ -294,7 +335,7 @@ export const convertFromDatabase = (
   });
 };
 
-export const getIntegration = createTool({
+export const getIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_GET",
   description: "Get an integration by id",
   inputSchema: z.object({
@@ -371,7 +412,7 @@ export const getIntegration = createTool({
   },
 });
 
-export const createIntegration = createTool({
+export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
   inputSchema: IntegrationSchema.partial(),
@@ -400,7 +441,7 @@ export const createIntegration = createTool({
   },
 });
 
-export const updateIntegration = createTool({
+export const updateIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_UPDATE",
   description: "Update an existing integration",
   inputSchema: z.object({
@@ -439,7 +480,7 @@ export const updateIntegration = createTool({
   },
 });
 
-export const deleteIntegration = createTool({
+export const deleteIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_DELETE",
   description: "Delete an integration by id",
   inputSchema: z.object({
@@ -497,7 +538,7 @@ const searchMarketplaceIntegations = async (
   }
 };
 
-export const DECO_INTEGRATIONS_SEARCH = createTool({
+export const DECO_INTEGRATIONS_SEARCH = createIntegrationManagementTool({
   name: "DECO_INTEGRATIONS_SEARCH",
   description: `
 Search for integrations in both marketplace and installed.
@@ -536,7 +577,7 @@ It's always handy to search for installed integrations with no query, since all 
   },
 });
 
-export const DECO_INTEGRATION_OAUTH_START = createTool({
+export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_OAUTH_START",
   description: "Start the OAuth flow for an integration",
   inputSchema: z.object({
@@ -596,61 +637,63 @@ interface ToolCallResult {
   }[];
 }
 
-export const COMPOSIO_INTEGRATION_OAUTH_START = createTool({
-  name: "COMPOSIO_INTEGRATION_OAUTH_START",
-  description: "Start the OAuth flow for a Composio integration",
-  inputSchema: z.object({
-    url: z.string().describe("The url of the Composio MCP server"),
-  }),
-  handler: async ({ url }, c) => {
-    assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+export const COMPOSIO_INTEGRATION_OAUTH_START = createIntegrationManagementTool(
+  {
+    name: "COMPOSIO_INTEGRATION_OAUTH_START",
+    description: "Start the OAuth flow for a Composio integration",
+    inputSchema: z.object({
+      url: z.string().describe("The url of the Composio MCP server"),
+    }),
+    handler: async ({ url }, c) => {
+      assertHasWorkspace(c);
+      await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const client = await createServerClient({
-      name: "composio-authenticator",
-      connection: { type: "HTTP", url },
-    });
+      const client = await createServerClient({
+        name: "composio-authenticator",
+        connection: { type: "HTTP", url },
+      });
 
-    const { tools } = await client.listTools();
+      const { tools } = await client.listTools();
 
-    const initiateConnectionTool = tools.find((tool) =>
-      tool.name.endsWith("_INITIATE_CONNECTION")
-    );
-    const getRequiredParametersTool = tools.find((tool) =>
-      tool.name.endsWith("_GET_REQUIRED_PARAMETERS")
-    );
+      const initiateConnectionTool = tools.find((tool) =>
+        tool.name.endsWith("_INITIATE_CONNECTION")
+      );
+      const getRequiredParametersTool = tools.find((tool) =>
+        tool.name.endsWith("_GET_REQUIRED_PARAMETERS")
+      );
 
-    if (!initiateConnectionTool) {
-      throw new Error("Composio authenticator has no required tools");
-    }
+      if (!initiateConnectionTool) {
+        throw new Error("Composio authenticator has no required tools");
+      }
 
-    if (getRequiredParametersTool) {
-      const getRequiredParametersResult = await client.callTool({
-        name: getRequiredParametersTool.name,
+      if (getRequiredParametersTool) {
+        const getRequiredParametersResult = await client.callTool({
+          name: getRequiredParametersTool.name,
+          arguments: {},
+        });
+
+        const getRequiredParametersData = parseComposioToolResult(
+          getRequiredParametersResult as ToolCallResult,
+        );
+
+        if (!canAutoConnect(getRequiredParametersData)) {
+          return { redirectUrl: null };
+        }
+      }
+
+      const initiateConnectionResult = await client.callTool({
+        name: initiateConnectionTool.name,
         arguments: {},
       });
 
-      const getRequiredParametersData = parseComposioToolResult(
-        getRequiredParametersResult as ToolCallResult,
+      const data = parseComposioToolResult(
+        initiateConnectionResult as ToolCallResult,
       );
-
-      if (!canAutoConnect(getRequiredParametersData)) {
-        return { redirectUrl: null };
-      }
-    }
-
-    const initiateConnectionResult = await client.callTool({
-      name: initiateConnectionTool.name,
-      arguments: {},
-    });
-
-    const data = parseComposioToolResult(
-      initiateConnectionResult as ToolCallResult,
-    );
-    const redirectUrl = data.data?.response_data?.redirect_url ?? null;
-    return { redirectUrl };
+      const redirectUrl = data.data?.response_data?.redirect_url ?? null;
+      return { redirectUrl };
+    },
   },
-});
+);
 
 const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
   success: z.boolean().describe("Whether the configuration was successful"),
@@ -662,7 +705,7 @@ const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
   installId: z.string().optional(),
 });
 
-export const DECO_INTEGRATION_INSTALL = createTool({
+export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
   name: "DECO_INTEGRATION_INSTALL",
   description:
     "Install an integration. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool. Also, after installing, enable the integration using the INTEGRATION_ENABLE tool.",

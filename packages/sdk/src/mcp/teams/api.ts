@@ -1,16 +1,17 @@
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
+import type { Json } from "../../storage/index.ts";
+import type { Theme } from "../../theme.ts";
 import {
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createTool } from "../context.ts";
-import type { Json } from "../../storage/index.ts";
-import type { Theme } from "../../theme.ts";
+import type { AppContext } from "../context.ts";
 import {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "../fs/api.ts";
+import { createTool } from "../members/api.ts";
 import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;

@@ -2,7 +2,7 @@ import { Form, FormItem } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useCallback, useState } from "react";
+import { useCallback, useDeferredValue, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
@@ -65,7 +65,8 @@ function Connections() {
     installedIntegrations,
     disableAllTools,
   } = useAgentSettingsToolsSet();
-  const [search, setSearch] = useState("");
+  const [_search, setSearch] = useState("");
+  const search = useDeferredValue(_search.toLowerCase());
 
   const onConfigureConnection = useConfigureConnection();
 
@@ -112,7 +113,7 @@ function Connections() {
                   />
                   <Input
                     placeholder="Search tools..."
-                    value={search}
+                    value={_search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
                   />

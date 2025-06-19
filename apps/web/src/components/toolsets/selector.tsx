@@ -83,10 +83,9 @@ export function IntegrationListItem({
   const isEmpty = !isLoading && allTools.length === 0;
 
   // Helper function to check if a tool matches the search term
-  const toolMatchesSearch = (tool: MCPTool, searchTerm: string) => {
-    if (!searchTerm) return true;
+  const toolMatchesSearch = (tool: MCPTool, lowerSearchTerm: string) => {
+    if (!lowerSearchTerm) return true;
 
-    const lowerSearchTerm = searchTerm.toLowerCase();
     const toolNameFormatted = beautifyToolName(tool.name).toLowerCase();
     const toolNameOriginal = tool.name.toLowerCase();
     const toolDescription = tool.description?.toLowerCase() || "";

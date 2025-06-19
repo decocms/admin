@@ -9,19 +9,7 @@ import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
 import { deleteSession, readSession } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
-
-async function getEnvVars() {
-  const session = await readSession();
-  const config = await getConfig({});
-  const encodedBindings = btoa(JSON.stringify(config.bindings));
-
-  return {
-    ...Deno.env.toObject(),
-    DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
-    DECO_CHAT_API_TOKEN: session?.access_token ?? "",
-    DECO_CHAT_BINDINGS: encodedBindings,
-  };
-}
+import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -143,14 +131,7 @@ const update = new Command()
 const dev = new Command()
   .description("Start a development server.")
   .action(async () => {
-    const env = await getEnvVars();
-    const envFile = ".dev.vars";
-    await Deno.writeTextFile(
-      envFile,
-      Object.entries(env)
-        .map(([key, value]) => `${key}=${value}`)
-        .join("\n"),
-    );
+    await ensureDevEnvironment();
 
     const deno = new Deno.Command("deco", {
       args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],

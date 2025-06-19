@@ -1,0 +1,87 @@
+import { join } from "node:path";
+import { getConfig, getConfigFilePath } from "./config.ts";
+import { readSession } from "./session.ts";
+
+const envFile = ".dev.vars";
+
+export async function getCurrentEnvVars(projectRoot: string) {
+  const devVarsFile = await Deno.readTextFile(
+    join(projectRoot, envFile),
+  ).catch(() => "");
+  return devVarsFile.split("\n").reduce((acc, line) => {
+    if (!line) {
+      return acc;
+    }
+    const [key, value] = line.split("=");
+    acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+export async function writeEnvVars(
+  projectRoot: string,
+  envVars: Record<string, string>,
+) {
+  await Deno.writeTextFile(
+    join(projectRoot, envFile),
+    Object.entries(envVars)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n"),
+  );
+}
+
+const getProjectRoot = () => {
+  const configPath = getConfigFilePath(Deno.cwd()) ?? Deno.cwd();
+  return configPath.replace("/wrangler.toml", "");
+};
+export async function getEnvVars(projectRoot?: string) {
+  if (!projectRoot) {
+    projectRoot = getProjectRoot();
+  }
+  const [currentEnvVars, session, config] = await Promise.all([
+    getCurrentEnvVars(projectRoot),
+    readSession(),
+    getConfig({}),
+  ]);
+  const encodedBindings = btoa(JSON.stringify(config.bindings));
+
+  return {
+    ...currentEnvVars,
+    DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
+    DECO_CHAT_API_TOKEN: session?.access_token ?? "",
+    DECO_CHAT_BINDINGS: encodedBindings,
+  };
+}
+
+async function ensureEnvVarsGitIgnore(
+  projectRoot: string,
+) {
+  const gitignorePath = join(projectRoot, ".gitignore");
+
+  try {
+    const gitignoreContent = await Deno.readTextFile(gitignorePath);
+    const lines = gitignoreContent.split("\n");
+
+    // Check if entry already exists (exact match or as part of a line)
+    const entryExists = lines.some((line) =>
+      line.trim() === envFile || line.trim() === `/${envFile}`
+    );
+
+    if (!entryExists) {
+      const newContent = gitignoreContent.endsWith("\n")
+        ? gitignoreContent + envFile + "\n"
+        : gitignoreContent + "\n" + envFile + "\n";
+      await Deno.writeTextFile(gitignorePath, newContent);
+    }
+  } catch {
+    // .gitignore doesn't exist, create it
+    await Deno.writeTextFile(gitignorePath, envFile + "\n");
+  }
+}
+
+export async function ensureDevEnvironment() {
+  const projectRoot = getProjectRoot();
+  await ensureEnvVarsGitIgnore(projectRoot);
+  const env = await getEnvVars(projectRoot);
+  await writeEnvVars(projectRoot, env);
+}

@@ -71,14 +71,7 @@ function Connections() {
 
   const connections = installedIntegrations
     .filter(connectionFilter)
-    .filter((connection) => !!toolsSet[connection.id])
-    .filter((connection) => {
-      const searchTerm = search.toLowerCase();
-      return (
-        connection?.name?.toLowerCase().includes(searchTerm) ||
-        connection?.description?.toLowerCase().includes(searchTerm)
-      );
-    });
+    .filter((connection) => !!toolsSet[connection.id]);
 
   const showAddConnectionEmptyState = connections.length === 0 && !search;
   return (
@@ -118,7 +111,7 @@ function Connections() {
                     className="text-muted-foreground"
                   />
                   <Input
-                    placeholder="Search"
+                    placeholder="Search tools..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
@@ -138,6 +131,7 @@ function Connections() {
                       onConfigure={onConfigureConnection}
                       onRemove={(integrationId) =>
                         disableAllTools(integrationId)}
+                      searchTerm={search}
                     />
                   ))}
                 </div>

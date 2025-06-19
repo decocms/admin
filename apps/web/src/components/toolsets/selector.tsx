@@ -60,6 +60,7 @@ export function IntegrationListItem({
   onRemove,
   onConfigure,
   hideTools,
+  searchTerm = "",
 }: {
   toolsSet: ToolsMap;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
@@ -67,6 +68,7 @@ export function IntegrationListItem({
   onConfigure: (integration: Integration) => void;
   onRemove: (integrationId: string) => void;
   hideTools?: boolean;
+  searchTerm?: string;
 }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
@@ -79,6 +81,32 @@ export function IntegrationListItem({
       .length;
   const isAll = enabledCount === total && total > 0;
   const isEmpty = !isLoading && allTools.length === 0;
+
+  // Helper function to check if a tool matches the search term
+  const toolMatchesSearch = (tool: MCPTool, searchTerm: string) => {
+    if (!searchTerm) return true;
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const toolNameFormatted = beautifyToolName(tool.name).toLowerCase();
+    const toolNameOriginal = tool.name.toLowerCase();
+    const toolDescription = tool.description?.toLowerCase() || "";
+    
+    return toolNameFormatted.includes(lowerSearchTerm) ||
+           toolNameOriginal.includes(lowerSearchTerm) ||
+           toolDescription.includes(lowerSearchTerm);
+  };
+
+  // Filter tools based on search term
+  const filteredTools = allTools.filter((tool) => toolMatchesSearch(tool, searchTerm));
+  
+  // Hide integration if searching and no tools match
+  if (searchTerm && filteredTools.length === 0 && !isLoading) {
+    return null;
+  }
+
+  // Auto-expand tools when searching
+  const shouldExpandTools = searchTerm && filteredTools.length > 0;
+  const effectiveToolsOpen = toolsOpen || shouldExpandTools;
 
   function handleAll(checked: boolean) {
     setIntegrationTools(
@@ -142,14 +170,14 @@ export function IntegrationListItem({
         <div
           className={cn(
             "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-primary-foreground rounded-b-xl",
-            !toolsOpen && "hover:bg-muted",
+            !effectiveToolsOpen && "hover:bg-muted",
           )}
         >
           <span
             onClick={() => setToolsOpen(!toolsOpen)}
             className={cn(
               "text-muted-foreground text-sm h-10 flex items-center w-full hover:bg-muted pl-2 pr-4",
-              !toolsOpen && "rounded-b-xl",
+              !effectiveToolsOpen && "rounded-b-xl",
             )}
           >
             <div className="w-full flex items-center justify-between">
@@ -160,7 +188,7 @@ export function IntegrationListItem({
                   size={14}
                   className={cn(
                     "inline-block mr-1 align-text-bottom text-foreground",
-                    toolsOpen && "rotate-90",
+                    effectiveToolsOpen && "rotate-90",
                   )}
                 />
                 <span
@@ -169,7 +197,7 @@ export function IntegrationListItem({
                     isLoading && "animate-pulse",
                   )}
                 >
-                  {isLoading ? "Loading tools..." : "All tools"}
+                  {isLoading ? "Loading tools..." : searchTerm ? `${filteredTools.length} matching tools` : "All tools"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -189,13 +217,15 @@ export function IntegrationListItem({
               </div>
             </div>
           </span>
-          {toolsOpen && (
+          {effectiveToolsOpen && (
             <ToolList
               integration={integration}
               toolsSet={toolsSet}
               isLoading={isLoading}
               allTools={allTools}
               setIntegrationTools={setIntegrationTools}
+              searchTerm={searchTerm}
+              filteredTools={filteredTools}
             />
           )}
         </div>
@@ -224,18 +254,25 @@ function ToolList({
   isLoading,
   allTools,
   setIntegrationTools,
+  searchTerm,
+  filteredTools,
 }: {
   integration: Integration;
   toolsSet: ToolsMap;
   isLoading: boolean;
   allTools: MCPTool[];
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
+  searchTerm?: string;
+  filteredTools: MCPTool[];
   className?: string;
 }) {
   const { data: profile } = useProfile();
-  const filteredTools = allTools.filter((tool) =>
+  
+  // Apply client-side filtering for hidden tools on top of search filtering
+  const displayTools = filteredTools.filter((tool) =>
     !(clientHiddenTools.includes(tool.name) && hideFor(profile?.email))
   );
+  
   if (isLoading) {
     return (
       <div className={cn("space-y-2", className)}>
@@ -248,7 +285,7 @@ function ToolList({
 
   return (
     <div className="space-y-2 rounded-b-xl max-h-[350px] w-full overflow-y-auto">
-      {filteredTools?.map((tool) => {
+      {displayTools?.map((tool) => {
         const enabled = toolsSet[integration.id]?.includes(tool.name) ??
           false;
 

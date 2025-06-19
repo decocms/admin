@@ -8,7 +8,9 @@ export function ChatMaxSteps() {
   const { agentId, chat: { append, status, messages } } = useChatContext();
   const { data: { max_steps = DEFAULT_MAX_STEPS } } = useAgent(agentId);
 
-  /** go up on the messages and count the number of tool calls. If the number of tool calls is greater than max_steps, true */
+  /**
+   * Reverse search for the number of llm calls in the last agent run
+   */
   const toolCalls = useMemo(() => {
     let toolCalls = 0;
 

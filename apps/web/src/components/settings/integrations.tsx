@@ -158,6 +158,9 @@ function KnowledgeHeading() {
 
 function Knowledge() {
   const { agent } = useAgentSettingsForm();
+  const {
+    setIntegrationTools,
+  } = useAgentSettingsToolsSet();
   const [uploadingFiles, setUploadedFiles] = useState<
     UploadFile[]
   >([]);
@@ -183,6 +186,7 @@ function Knowledge() {
           <AddFileToKnowledgeButton
             agent={agent}
             onAddFile={setUploadedFiles}
+            setIntegrationTools={setIntegrationTools}
           />
         </div>
       </div>
@@ -196,7 +200,11 @@ function Knowledge() {
           <KnowledgeHeading />
         </div>
 
-        <AddFileToKnowledgeButton agent={agent} onAddFile={setUploadedFiles} />
+        <AddFileToKnowledgeButton
+          agent={agent}
+          onAddFile={setUploadedFiles}
+          setIntegrationTools={setIntegrationTools}
+        />
       </div>
       <AgentKnowledgeBaseFileList
         agentId={agent.id}

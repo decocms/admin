@@ -222,9 +222,7 @@ export function IntegrationListItem({
               integration={integration}
               toolsSet={toolsSet}
               isLoading={isLoading}
-              allTools={allTools}
               setIntegrationTools={setIntegrationTools}
-              searchTerm={searchTerm}
               filteredTools={filteredTools}
             />
           )}
@@ -252,17 +250,13 @@ function ToolList({
   integration,
   toolsSet,
   isLoading,
-  allTools,
   setIntegrationTools,
-  searchTerm,
   filteredTools,
 }: {
   integration: Integration;
   toolsSet: ToolsMap;
   isLoading: boolean;
-  allTools: MCPTool[];
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
-  searchTerm?: string;
   filteredTools: MCPTool[];
   className?: string;
 }) {

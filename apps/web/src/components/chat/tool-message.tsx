@@ -5,7 +5,6 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
-import { ChatMaxSteps } from "./chat-max-steps.tsx";
 import { Picker } from "./chat-picker.tsx";
 import { useChatContext } from "./context.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
@@ -324,9 +323,6 @@ export function ToolMessage({
               isSingle={timelineTools.length === 1}
             />
           ))}
-          {isLastMessage && (
-            <ChatMaxSteps.UI llmCalls={toolInvocations.length} />
-          )}
         </div>
       )}
 

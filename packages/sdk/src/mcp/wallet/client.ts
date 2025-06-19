@@ -132,6 +132,20 @@ export interface AgentGeneration extends BaseGeneration {
   usage: AgentUsageEvent;
 }
 
+export interface AIIntegrationUsageEvent {
+  toolName: string;
+  model: string;
+  usage: TextModelUsage;
+  workspace: string;
+  userId?: string;
+  provider: string;
+}
+
+export interface AIIntegrationGeneration extends BaseGeneration {
+  type: "AIIntegrationGeneration";
+  usage: AIIntegrationUsageEvent;
+}
+
 export interface PreAuthorization extends TransactionOperation {
   type: "PreAuthorization";
   amount: number | string;
@@ -154,6 +168,7 @@ export interface CommitPreAuthorized extends TransactionOperation {
 export type Transaction =
   | Generation
   | AgentGeneration
+  | AIIntegrationGeneration
   | CashIn
   | WorkspaceCashIn
   | CashOut

@@ -26,6 +26,7 @@ import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 import * as whatsappAPI from "./whatsapp/api.ts";
+import * as aiIntegrationAPI from "./ai-integration/api.ts";
 
 export * from "./bindings/binder.ts";
 
@@ -131,6 +132,8 @@ export const WORKSPACE_TOOLS = [
   promptsAPI.listPrompts,
   promptsAPI.getPrompt,
   promptsAPI.searchPrompts,
+  aiIntegrationAPI.AI_GENERATE_TEXT,
+  aiIntegrationAPI.AI_GENERATE_OBJECT,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

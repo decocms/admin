@@ -476,9 +476,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     };
   }
 
-  private _maxSteps(): number {
+  private _maxSteps(override?: number): number {
     return Math.min(
-      this._configuration?.max_steps ?? DEFAULT_MAX_STEPS,
+      override ?? this._configuration?.max_steps ?? DEFAULT_MAX_STEPS,
       MAX_MAX_STEPS,
     );
   }
@@ -930,7 +930,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
     const result = await agent.generate(aiMessages, {
       ...this.thread,
-      maxSteps: this._maxSteps(),
+      maxSteps: this._maxSteps(options?.maxSteps),
       maxTokens: this._maxTokens(),
       instructions: options?.instructions,
       toolsets,
@@ -1050,7 +1050,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         context,
         toolsets,
         instructions: processedInstructions,
-        maxSteps: this._maxSteps(),
+        maxSteps: this._maxSteps(options?.maxSteps),
         maxTokens: this._maxTokens(),
         experimental_transform: experimentalTransform,
         providerOptions: budgetTokens > DEFAULT_MIN_THINKING_TOKENS

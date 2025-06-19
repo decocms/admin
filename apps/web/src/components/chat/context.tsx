@@ -130,6 +130,7 @@ export function ChatProvider({
             DEFAULT_MEMORY_LAST_MESSAGES,
           sendReasoning: preferences.sendReasoning ?? true,
           tools: agent?.tools_set,
+          maxSteps: agent?.max_steps,
           smoothStream: preferences.smoothStream !== false
             ? { delayInMs: 25, chunk: "word" }
             : undefined,

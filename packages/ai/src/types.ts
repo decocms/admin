@@ -54,6 +54,7 @@ export interface GenerateOptions {
   threadId?: string;
   resourceId?: string;
   enableSemanticRecall?: boolean;
+  maxSteps?: number;
 }
 
 export interface StreamOptions extends GenerateOptions {

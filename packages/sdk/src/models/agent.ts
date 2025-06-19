@@ -1,6 +1,49 @@
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
 
+/**
+ * Schema for view setup configuration
+ */
+const ViewSetupSchema = z.object({
+  /** ID of the panel */
+  id: z.string(),
+  /** Component identifier */
+  component: z.string(),
+  /** Panel title */
+  title: z.string(),
+  /** Initial position/direction */
+  position: z.object({
+    direction: z.enum(["right", "within", "below", "above", "left"]).optional(),
+    referenceGroup: z.string().optional(),
+  }).optional(),
+  /** Panel dimensions */
+  initialHeight: z.number().optional(),
+  initialWidth: z.number().optional(),
+  maximumHeight: z.number().optional(),
+  maximumWidth: z.number().optional(),
+  /** Rendering options */
+  renderer: z.enum(["always", "onlyWhenVisible"]).optional(),
+}).describe("Configuration for a view panel");
+
+/**
+ * Schema for a Space (saved tab/dock arrangement)
+ */
+export const SpaceSchema = z.object({
+  /** Unique identifier for the space */
+  id: z.string().describe("Unique identifier for the space"),
+  /** Human-readable title of the space */
+  title: z.string().describe("Human-readable title of the space"),
+  /** View setup configuration for this space */
+  viewSetup: z.array(ViewSetupSchema).describe("Array of view panel configurations"),
+  /** Theme settings for this space */
+  theme: z.enum(["light", "dark", "auto"]).optional().describe("Theme preference for this space"),
+}).describe("A saved tab/dock arrangement");
+
+/**
+ * Type representing a Space derived from the Zod schema
+ */
+export type Space = z.infer<typeof SpaceSchema>;
+
 const wellKnownModelIds = [
   ...WELL_KNOWN_MODELS.map((m) => m.id),
   ...WELL_KNOWN_MODELS.map((m) => m.legacyId).filter(Boolean),
@@ -76,6 +119,10 @@ export const AgentSchema = z.object({
     .describe("Visibility of the agent"),
   access: z.string().optional().nullable().describe(
     "Access control by role",
+  ),
+  /** Saved spaces (tab/dock arrangements) for this agent */
+  spaces: z.array(SpaceSchema).optional().describe(
+    "Saved spaces (tab/dock arrangements) for this agent",
   ),
 });
 

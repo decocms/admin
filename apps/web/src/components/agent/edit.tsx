@@ -2,12 +2,14 @@ import {
   type Agent,
   AgentSchema,
   type Integration,
+  type Space,
   NotFoundError,
   useAgent,
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
   WELL_KNOWN_AGENTS,
+  DEFAULT_EDIT_SPACE,
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -26,7 +28,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
-import { useBlocker, useParams } from "react-router";
+import { useBlocker, useParams, useSearchParams } from "react-router";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
@@ -43,6 +45,7 @@ import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
+import { SpaceSelector } from "./space-selector.tsx";
 import { lazy } from "react";
 import { wrapWithUILoadingFallback } from "../../main.tsx";
 import { useTabsForAgent } from "./preview.tsx";
@@ -152,6 +155,52 @@ const TABS: Record<string, Tab> = {
   },
 };
 
+/**
+ * Converts a Space configuration to the Tabs format expected by the dock system
+ */
+function spaceToTabs(space: Space): Record<string, Tab> {
+  const tabs: Record<string, Tab> = { ...TABS };
+  
+  // Update tabs based on space configuration
+  space.viewSetup.forEach((view) => {
+    if (tabs[view.id]) {
+      tabs[view.id] = {
+        ...tabs[view.id],
+        title: view.title,
+        initialOpen: view.position?.direction || tabs[view.id].initialOpen || false,
+        initialHeight: view.initialHeight || tabs[view.id].initialHeight,
+        initialWidth: view.initialWidth || tabs[view.id].initialWidth,
+        maximumHeight: view.maximumHeight || tabs[view.id].maximumHeight,
+        maximumWidth: view.maximumWidth || tabs[view.id].maximumWidth,
+        renderer: view.renderer || tabs[view.id].renderer,
+      };
+    }
+  });
+  
+  return tabs;
+}
+
+/**
+ * Converts current tab configuration to a Space format
+ */
+function getCurrentSpaceConfig(tabs: Record<string, Tab>): Space['viewSetup'] {
+  return Object.entries(tabs)
+    .filter(([_, tab]) => !tab.hideFromViews)
+    .map(([id, tab]) => ({
+      id,
+      component: id,
+      title: tab.title,
+      position: tab.initialOpen && typeof tab.initialOpen === 'string' 
+        ? { direction: tab.initialOpen as Space['viewSetup'][0]['position']['direction'] }
+        : undefined,
+      initialHeight: tab.initialHeight,
+      initialWidth: tab.initialWidth,
+      maximumHeight: tab.maximumHeight,
+      maximumWidth: tab.maximumWidth,
+      renderer: tab.renderer,
+    }));
+}
+
 // --- AgentSettingsFormContext ---
 interface AgentSettingsFormContextValue {
   form: ReturnType<typeof useForm<Agent>>;
@@ -179,15 +228,30 @@ function ActionButtons({
   discardChanges,
   numberOfChanges,
   isWellKnownAgent,
+  spaces,
+  currentSpaceId,
+  onSpaceChange,
+  onSaveNewSpace,
 }: {
   discardChanges: () => void;
   numberOfChanges: number;
   isWellKnownAgent: boolean;
+  spaces: Space[];
+  currentSpaceId?: string;
+  onSpaceChange: (spaceId: string) => void;
+  onSaveNewSpace: (title: string, spaceId: string) => void;
 }) {
   const { form, hasChanges, handleSubmit } = useAgentSettingsForm();
 
   return (
     <div className="flex items-center gap-2 bg-sidebar transition-opacity">
+      <SpaceSelector
+        spaces={spaces}
+        currentSpaceId={currentSpaceId}
+        onSpaceChange={onSpaceChange}
+        onSaveNewSpace={onSaveNewSpace}
+      />
+      
       {!isWellKnownAgent && (
         <Button
           type="button"
@@ -236,8 +300,19 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const updateAgent = useUpdateAgent();
   const updateAgentCache = useUpdateAgentCache();
   const createAgent = useCreateAgent();
+  const [searchParams] = useSearchParams();
 
-  const tabs = useTabsForAgent(agent, TABS);
+  // Get current space from URL params or default to first space
+  // Handle backward compatibility for agents without spaces
+  const currentSpaceId = searchParams.get('space');
+  const agentSpaces = agent?.spaces && agent.spaces.length > 0 
+    ? agent.spaces 
+    : [DEFAULT_EDIT_SPACE];
+  const currentSpace = agentSpaces.find(s => s.id === currentSpaceId) || agentSpaces[0];
+  
+  // Convert space configuration to tabs format
+  const spaceTabs = spaceToTabs(currentSpace);
+  const tabs = useTabsForAgent(agent, spaceTabs);
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],
@@ -295,6 +370,30 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     blocked.proceed?.();
   }
 
+  function handleSpaceChange(spaceId: string) {
+    // Space change is handled by URL update in SpaceSelector
+    // This component will re-render with new space when URL changes
+  }
+
+  function handleSaveNewSpace(title: string, spaceId: string) {
+    // Get current tab configuration and create new space
+    const currentViewSetup = getCurrentSpaceConfig(tabs);
+    
+    const newSpace: Space = {
+      id: spaceId,
+      title,
+      viewSetup: currentViewSetup,
+      theme: currentSpace.theme || "auto",
+    };
+
+    // Update agent with new space
+    const updatedSpaces = [...agentSpaces, newSpace];
+    const updatedAgent = { ...agent, spaces: updatedSpaces } as Agent;
+    
+    form.setValue('spaces', updatedSpaces);
+    updateAgentCache(updatedAgent);
+  }
+
   return (
     <>
       <AlertDialog open={blocked.state === "blocked"}>
@@ -347,6 +446,10 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
                 discardChanges={discardChanges}
                 numberOfChanges={numberOfChanges}
                 isWellKnownAgent={isWellKnownAgent}
+                spaces={agentSpaces}
+                currentSpaceId={currentSpace.id}
+                onSpaceChange={handleSpaceChange}
+                onSaveNewSpace={handleSaveNewSpace}
               />
             }
             breadcrumb={

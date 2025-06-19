@@ -6,7 +6,7 @@
  * it will use the localhost version.
  */
 
-import type { Agent } from "./models/agent.ts";
+import type { Agent, Space } from "./models/agent.ts";
 import type { Integration } from "./models/mcp.ts";
 
 // @ts-ignore - Vite injects env variables at build time
@@ -205,6 +205,42 @@ export const DEFAULT_MEMORY_LAST_MESSAGES = 8;
 export const MIN_MAX_TOKENS = 4096;
 export const MAX_MAX_TOKENS = 64000;
 
+/**
+ * Default "Edit" space configuration that matches the current hardcoded tabs setup
+ */
+export const DEFAULT_EDIT_SPACE: Space = {
+  id: "edit",
+  title: "Edit",
+  viewSetup: [
+    {
+      id: "setup",
+      component: "setup",
+      title: "Settings",
+      position: { direction: "right" },
+    },
+    {
+      id: "prompt",
+      component: "prompt", 
+      title: "System prompt",
+      position: { direction: "within" },
+    },
+    {
+      id: "integrations",
+      component: "integrations",
+      title: "Tools & Knowledge", 
+      position: { direction: "within" },
+      maximumWidth: 500,
+    },
+    {
+      id: "chat",
+      component: "chat",
+      title: "Chat",
+      position: { direction: "left" },
+    },
+  ],
+  theme: "auto",
+};
+
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
@@ -219,6 +255,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   memory: {
     last_messages: DEFAULT_MEMORY_LAST_MESSAGES,
   },
+  spaces: [DEFAULT_EDIT_SPACE],
 };
 
 /**
@@ -248,6 +285,7 @@ Also, try running a tool for testing if the integration is working.
 For setting up an agent, you should start by running tools that setup the agent. For instance, you should
 check if the agent is active and configure the agent.
 `,
+    spaces: [DEFAULT_EDIT_SPACE],
   },
 } satisfies Record<string, Agent>;
 

@@ -17,6 +17,9 @@ import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
 import {
   type Agent as Configuration,
+  DEFAULT_MAX_STEPS,
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_MEMORY_LAST_MESSAGES,
   DEFAULT_MODEL,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk";
@@ -127,10 +130,7 @@ const normalizeMCPId = (mcpId: string) => {
     : mcpId;
 };
 
-const DEFAULT_MEMORY_LAST_MESSAGES = 8;
-const DEFAULT_MAX_STEPS = 25;
 const MAX_STEPS = 25;
-const DEFAULT_MAX_TOKENS = 8192;
 const MAX_TOKENS = 64000;
 const MAX_THINKING_TOKENS = 12000;
 const MIN_THINKING_TOKENS = 1024;

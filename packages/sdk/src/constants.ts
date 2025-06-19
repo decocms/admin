@@ -196,6 +196,10 @@ export const INNATE_INTEGRATIONS = {
   },
 } satisfies Record<string, Integration>;
 
+export const DEFAULT_MEMORY_LAST_MESSAGES = 8;
+export const DEFAULT_MAX_STEPS = 25;
+export const DEFAULT_MAX_TOKENS = 8192;
+
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
   avatar: "https://assets.webdraw.app/uploads/capy-5.png",
@@ -205,10 +209,10 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   tools_set: {},
   views: [],
   instructions: "",
-  max_steps: 10,
-  max_tokens: 16000,
+  max_steps: DEFAULT_MAX_STEPS,
+  max_tokens: DEFAULT_MAX_TOKENS,
   memory: {
-    last_messages: 10,
+    last_messages: DEFAULT_MEMORY_LAST_MESSAGES,
   },
 };
 

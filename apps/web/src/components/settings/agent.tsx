@@ -1,4 +1,10 @@
 import { useSDK, useTeam, useTeamRoles, useWriteFile } from "@deco/sdk";
+import {
+  DEFAULT_MAX_STEPS,
+  MAX_MAX_STEPS,
+  MAX_MAX_TOKENS,
+  MIN_MAX_TOKENS,
+} from "@deco/sdk/constants";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
@@ -32,9 +38,6 @@ import { Channels } from "./channels.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
 
-// Token limits for Anthropic models
-const ANTHROPIC_MIN_MAX_TOKENS = 4096;
-const ANTHROPIC_MAX_MAX_TOKENS = 64000;
 
 function CopyLinkButton(
   { className, link }: { className: string; link: string },
@@ -205,15 +208,36 @@ function SettingsTab() {
             />
 
             <FormField
-              name="max_tokens"
+              name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max Tokens</FormLabel>
+                  <FormLabel>Default Model</FormLabel>
+                  <FormControl>
+                    <ModelSelector
+                      model={field.value}
+                      onModelChange={(newValue) => field.onChange(newValue)}
+                      variant="bordered"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="max_steps"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Max Steps</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    Maximum number of sequential LLM calls an agent can make.
+                  </FormDescription>
                   <FormControl>
                     <Input
                       type="number"
-                      min={ANTHROPIC_MIN_MAX_TOKENS}
-                      max={ANTHROPIC_MAX_MAX_TOKENS}
+                      min={1}
+                      max={MAX_MAX_STEPS}
+                      defaultValue={DEFAULT_MAX_STEPS}
                       {...field}
                       onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
@@ -224,15 +248,20 @@ function SettingsTab() {
             />
 
             <FormField
-              name="model"
+              name="max_tokens"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default Model</FormLabel>
+                  <FormLabel>Max Tokens</FormLabel>
+                  <FormDescription className="text-xs text-muted-foreground">
+                    The maximum number of tokens the agent can generate.
+                  </FormDescription>
                   <FormControl>
-                    <ModelSelector
-                      model={field.value}
-                      onModelChange={(newValue) => field.onChange(newValue)}
-                      variant="bordered"
+                    <Input
+                      type="number"
+                      min={MIN_MAX_TOKENS}
+                      max={MAX_MAX_TOKENS}
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />

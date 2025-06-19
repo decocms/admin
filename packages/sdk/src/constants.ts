@@ -196,9 +196,14 @@ export const INNATE_INTEGRATIONS = {
   },
 } satisfies Record<string, Integration>;
 
-export const DEFAULT_MEMORY_LAST_MESSAGES = 8;
-export const DEFAULT_MAX_STEPS = 25;
+export const MAX_MAX_STEPS = 100;
+export const DEFAULT_MAX_STEPS = 10;
 export const DEFAULT_MAX_TOKENS = 8192;
+export const DEFAULT_MAX_THINKING_TOKENS = 12000;
+export const DEFAULT_MIN_THINKING_TOKENS = 1024;
+export const DEFAULT_MEMORY_LAST_MESSAGES = 8;
+export const MIN_MAX_TOKENS = 4096;
+export const MAX_MAX_TOKENS = 64000;
 
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",

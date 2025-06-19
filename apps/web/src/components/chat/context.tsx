@@ -7,6 +7,7 @@ import {
   useAgentRoot,
   useThreadMessages,
 } from "@deco/sdk";
+import { DEFAULT_MEMORY_LAST_MESSAGES } from "@deco/sdk/constants";
 import {
   createContext,
   type PropsWithChildren,
@@ -17,8 +18,6 @@ import {
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
-
-const LAST_MESSAGES_COUNT = 10;
 interface FileData {
   name: string;
   contentType: string;
@@ -127,7 +126,7 @@ export function ChatProvider({
             : agent?.model,
           instructions: agent?.instructions,
           bypassOpenRouter,
-          lastMessages: LAST_MESSAGES_COUNT,
+          lastMessages: DEFAULT_MEMORY_LAST_MESSAGES,
           sendReasoning: true,
           tools: agent?.tools_set,
           smoothStream: preferences.smoothStream !== false

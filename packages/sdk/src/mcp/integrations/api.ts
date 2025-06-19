@@ -222,7 +222,7 @@ const virtualIntegrationsFor = (
           url: url.href,
         },
         icon:
-          "https://assets.decocache.com/mcp/85269424-f5c7-4473-a67e-c3d6a120f586/knowledgebase.png",
+          "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
         workspace,
         created_at: new Date().toISOString(),
       };

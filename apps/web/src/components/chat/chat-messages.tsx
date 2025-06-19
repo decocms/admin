@@ -2,9 +2,10 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useCallback, useLayoutEffect } from "react";
 import { ChatError } from "./chat-error.tsx";
+import { ChatMaxSteps } from "./chat-max-steps.tsx";
+import { ChatMessage } from "./chat-message.tsx";
 import { useChatContext } from "./context.tsx";
 import { EmptyState } from "./empty-state.tsx";
-import { ChatMessage } from "./chat-message.tsx";
 
 function Dots() {
   const { chat: { status } } = useChatContext();
@@ -94,6 +95,9 @@ export function ChatMessages() {
             />
           ))}
           <ChatError />
+          <div className="px-4">
+            <ChatMaxSteps />
+          </div>
           <Dots />
         </div>
       )}

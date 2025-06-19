@@ -3,14 +3,15 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { openPanel } from "../dock/index.tsx";
-import { useChatContext } from "./context.tsx";
+import { ChatMaxSteps } from "./chat-max-steps.tsx";
 import { Picker } from "./chat-picker.tsx";
+import { useChatContext } from "./context.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
 import { Preview } from "./tools/render-preview.tsx";
-import { parseHandoffTool } from "./utils/parse.ts";
 import { formatToolName } from "./utils/format-tool-name.ts";
+import { parseHandoffTool } from "./utils/parse.ts";
 
 interface ConfirmOption {
   value: string;
@@ -289,17 +290,21 @@ export function ToolMessage({
   toolInvocations,
   isLastMessage,
 }: ToolMessageProps) {
-  // Separate tools into timeline tools and custom UI tools
-  const timelineTools: ToolInvocation[] = [];
-  const customUITools: ToolInvocation[] = [];
+  // Separate tools into timeline tools and custom UI tools using memoization
+  const { timelineTools, customUITools } = useMemo(() => {
+    const timeline: ToolInvocation[] = [];
+    const customUI: ToolInvocation[] = [];
 
-  toolInvocations.forEach((tool: ToolInvocation) => {
-    if (isCustomUITool(tool.toolName)) {
-      customUITools.push(tool);
-    } else {
-      timelineTools.push(tool);
-    }
-  });
+    toolInvocations.forEach((tool: ToolInvocation) => {
+      if (isCustomUITool(tool.toolName)) {
+        customUI.push(tool);
+      } else {
+        timeline.push(tool);
+      }
+    });
+
+    return { timelineTools: timeline, customUITools: customUI };
+  }, [toolInvocations]);
 
   return (
     <div className="w-full space-y-4">
@@ -319,6 +324,9 @@ export function ToolMessage({
               isSingle={timelineTools.length === 1}
             />
           ))}
+          {isLastMessage && (
+            <ChatMaxSteps.UI llmCalls={toolInvocations.length} />
+          )}
         </div>
       )}
 

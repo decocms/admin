@@ -10,6 +10,7 @@ export {
 } from "./fs/api.ts";
 
 import * as agentsAPI from "./agents/api.ts";
+import * as aiIntegrationAPI from "./ai-integration/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
@@ -61,6 +62,8 @@ export const WORKSPACE_TOOLS = [
   agentsAPI.createAgent,
   agentsAPI.updateAgent,
   agentsAPI.listAgents,
+  aiIntegrationAPI.generateTextTool,
+  aiIntegrationAPI.generateObjectTool,
   integrationsAPI.getIntegration,
   integrationsAPI.createIntegration,
   integrationsAPI.updateIntegration,

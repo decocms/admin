@@ -49,7 +49,7 @@ export function IntegrationIcon({ icon, className }: IntegrationIconProps) {
               url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className={cn("w-full h-full", "rounded-lg")}
+              className={cn("w-full h-full rounded-lg", className)}
               objectFit="contain"
             />
           )

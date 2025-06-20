@@ -117,7 +117,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg overflow-hidden">
             <IntegrationIcon
               icon={icon}
-              className="h-full w-full"
+              className="h-full w-full border-none rounded-none"
             />
           </div>
         </TooltipTrigger>

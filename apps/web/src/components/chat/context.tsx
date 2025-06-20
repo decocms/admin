@@ -1,3 +1,4 @@
+import type { LanguageModelV1FinishReason } from "ai";
 import { useChat } from "@ai-sdk/react";
 import {
   DECO_CHAT_API,
@@ -14,15 +15,11 @@ import {
   type RefObject,
   useContext,
   useRef,
+  useState,
 } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
-interface FileData {
-  name: string;
-  contentType: string;
-  url: string;
-}
 
 const setAutoScroll = (e: HTMLDivElement | null, enabled: boolean) => {
   if (!e) return;
@@ -35,7 +32,9 @@ const isAutoScrollEnabled = (e: HTMLDivElement | null) => {
 };
 
 type IContext = {
-  chat: ReturnType<typeof useChat>;
+  chat: ReturnType<typeof useChat> & {
+    finishReason: LanguageModelV1FinishReason | null;
+  };
   agentId: string;
   agentRoot: string;
   threadId: string;
@@ -78,6 +77,9 @@ export function ChatProvider({
   initialInput,
   children,
 }: PropsWithChildren<Props>) {
+  const [finishReason, setFinishReason] = useState<
+    LanguageModelV1FinishReason | null
+  >(null);
   const agentRoot = useAgentRoot(agentId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const options = { ...DEFAULT_UI_OPTIONS, ...uiOptions };
@@ -136,6 +138,9 @@ export function ChatProvider({
             : undefined,
         }],
       };
+    },
+    onFinish: (_result, { finishReason }) => {
+      setFinishReason(finishReason);
     },
     onError: (error) => {
       console.error("Chat error:", error);
@@ -214,7 +219,11 @@ export function ChatProvider({
         agentId,
         threadId,
         agentRoot,
-        chat: { ...chat, handleSubmit: handleSubmit },
+        chat: {
+          ...chat,
+          finishReason,
+          handleSubmit: handleSubmit,
+        },
         scrollRef,
         uiOptions: options,
         setAutoScroll,

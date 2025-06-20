@@ -117,8 +117,6 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg overflow-hidden">
             <IntegrationIcon
               icon={icon}
-              name={integration.name}
-              variant="small"
               className="h-full w-full"
             />
           </div>

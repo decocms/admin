@@ -28,9 +28,7 @@ function AppCard({
       <CardContent className="p-0">
         <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
           <IntegrationIcon
-            id={app.id}
             icon={app.icon}
-            name={app.name}
             className="h-10 w-10"
           />
 

@@ -65,11 +65,8 @@ function ChannelCard(
     >
       <div className="flex items-center gap-2">
         <IntegrationIcon
-          name={integration?.name ?? "Unknown"}
           icon={integration?.icon ?? ""}
-          className={cn(
-            "before:hidden w-10 h-10",
-          )}
+          className="w-10 h-10"
         />
 
         <p className="text-sm text-foreground font-medium">
@@ -427,7 +424,6 @@ export function Channels({ className }: ChannelsProps) {
                               ? (
                                 <IntegrationIcon
                                   className="before:hidden w-10 h-10"
-                                  name={binding.name}
                                   icon={binding.icon}
                                 />
                               )

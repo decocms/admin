@@ -60,7 +60,6 @@ function IntegrationList(
         >
           <IntegrationIcon
             icon={integration.icon}
-            name={integration.name}
             className="h-8 w-8 shrink-0"
           />
           <div className="flex flex-col min-w-0">
@@ -120,7 +119,6 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
             >
               <IntegrationIcon
                 icon={integration.icon}
-                name={integration.name}
                 className="h-8 w-8 shrink-0"
               />
               <div className="flex flex-col min-w-0 flex-1">
@@ -270,7 +268,6 @@ export function SingleToolSelector(
             <span className="flex items-center gap-2">
               <IntegrationIcon
                 icon={selected.integration.icon}
-                name={selected.integration.name}
                 className="h-8 w-8"
               />
               <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">

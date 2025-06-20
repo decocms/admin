@@ -11,167 +11,68 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { isWellKnownApp } from "./apps.ts";
 
-function FileIcon({ path, fallback, className, variant }: {
-  path: string;
-  fallback: React.ReactNode;
+export interface IntegrationIconProps {
+  icon?: string;
   className?: string;
-  variant: "default" | "small";
-}) {
-  const { data: fileUrl } = useFile(path);
+}
 
-  if (variant === "small") {
-    return (
-      <Suspense
-        fallback={
-          <Skeleton
-            className={cn(
-              "rounded-xl w-16 h-16 border border-border",
-            )}
-          />
-        }
-      >
-        <div className="relative w-full h-full">
-          <Avatar
-            url={typeof fileUrl === "string" ? fileUrl : undefined}
-            fallback={fallback}
-            fallbackClassName="!bg-transparent"
-            className={cn(
-              "w-full h-full rounded-none",
-              className,
-            )}
-            objectFit="contain"
-          />
-        </div>
-      </Suspense>
-    );
-  }
+export function IntegrationIcon({ icon, className }: IntegrationIconProps) {
+  const fallback = (
+    <Icon name="conversion_path" className="text-muted-foreground" />
+  );
+
+  const size = "w-16 h-16";
+  const rounded = "rounded-xl";
 
   return (
     <Suspense
       fallback={
         <Skeleton
-          className={cn(
-            "rounded-2xl w-16 h-16 border border-border",
-          )}
+          className={cn(rounded, size, "border border-border", className)}
         />
       }
     >
       <div
         className={cn(
-          "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
-          "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-          "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
+          rounded,
+          size,
+          "relative flex items-center justify-center overflow-hidden border border-border",
           className,
         )}
       >
-        <Avatar
-          url={typeof fileUrl === "string" ? fileUrl : undefined}
-          fallback={fallback}
-          fallbackClassName="!bg-transparent"
-          className="w-full h-full rounded-lg"
-          objectFit="contain"
-        />
-      </div>
-    </Suspense>
-  );
-}
-
-function IntegrationIconContent(
-  { icon, className, variant = "default" }: Props,
-) {
-  const fallback = (
-    <Icon name="conversion_path" className="text-muted-foreground" />
-  );
-
-  if (icon && isFilePath(icon)) {
-    return (
-      <FileIcon
-        path={icon}
-        fallback={fallback}
-        className={className}
-        variant={variant}
-      />
-    );
-  }
-
-  if (variant === "small") {
-    return (
-      <div
-        className={cn(
-          "w-full h-full flex items-center justify-center",
-          className,
-        )}
-      >
-        {icon
+        {icon && isFilePath(icon)
+          ? <FileAvatar path={icon} fallback={fallback} />
+          : icon
           ? (
             <Avatar
               url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className={cn(
-                "w-full h-full rounded-none",
-                className,
-              )}
+              className={cn("w-full h-full", "rounded-lg")}
               objectFit="contain"
             />
           )
           : fallback}
       </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl relative flex items-center justify-center p-2 h-16 w-16",
-        "before:content-[''] before:absolute before:inset-0 before:rounded-xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-        "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)] overflow-hidden",
-        className,
-      )}
-    >
-      {icon
-        ? (
-          <Avatar
-            url={icon}
-            fallback={fallback}
-            fallbackClassName="!bg-transparent"
-            className="w-full h-full rounded-none"
-            objectFit="contain"
-          />
-        )
-        : fallback}
-    </div>
+    </Suspense>
   );
 }
 
-export interface Props {
-  id?: string;
-  icon?: string;
-  name: string;
-  className?: string;
-  variant?: "default" | "small";
-}
+function FileAvatar({ path, fallback }: {
+  path: string;
+  fallback: React.ReactNode;
+}) {
+  const { data: fileUrl } = useFile(path);
 
-export function IntegrationIcon(props: Props) {
   return (
-    <Suspense
-      fallback={
-        <Skeleton
-          className={cn(
-            "rounded-xl w-16 h-16 border border-border",
-            props.variant === "default" ? "p-2" : "",
-            props.className,
-          )}
-        />
-      }
-    >
-      <IntegrationIconContent
-        {...props}
-        className={cn(props.className, "rounded-xl p-0")}
-      />
-    </Suspense>
+    <Avatar
+      url={typeof fileUrl === "string" ? fileUrl : undefined}
+      fallback={fallback}
+      fallbackClassName="!bg-transparent"
+      className={cn("w-full h-full", "rounded-lg")}
+      objectFit="contain"
+    />
   );
 }
 

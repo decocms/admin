@@ -107,7 +107,6 @@ export function ConfirmMarketplaceInstallDialog({
               <div className="grid grid-cols-[80px_1fr] items-start gap-4">
                 <IntegrationIcon
                   icon={integration?.icon}
-                  name={integration?.name || ""}
                 />
                 <div>
                   <div className="text-sm text-muted-foreground">

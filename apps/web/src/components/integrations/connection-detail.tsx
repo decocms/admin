@@ -275,7 +275,6 @@ function ConfigureConnectionInstanceForm(
                         <div onClick={triggerFileInput} className="w-14 h-14">
                           <IntegrationIcon
                             icon={iconValue}
-                            name={form.getValues("name") || "Integration"}
                             className={cn(
                               "w-14 h-14 bg-background",
                               isUploading && "opacity-50",
@@ -535,9 +534,7 @@ function ConnectionInstanceItem(
       key={instance.id}
     >
       <IntegrationIcon
-        id={instance.id}
         icon={instance.icon}
-        name={instance.name}
         className="h-10 w-10"
       />
       <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
@@ -627,9 +624,7 @@ function Overview({ data, appKey }: {
     <div className="w-full p-4 flex items-center justify-between gap-2">
       <div className="flex items-center gap-4 h-12">
         <IntegrationIcon
-          id={appKey}
           icon={data.info?.icon}
-          name={data.info?.name}
           className="h-12 w-12"
         />
         <div className="h-12 flex flex-col gap-1">
@@ -943,7 +938,6 @@ function ToolsInspector({ data, selectedConnectionId }: {
             {data.instances.map((instance) => (
               <SelectItem key={instance.id} value={instance.id}>
                 <IntegrationIcon
-                  name={instance.name}
                   icon={instance.icon}
                   className="w-8 h-8 flex-shrink-0"
                 />
@@ -1062,9 +1056,7 @@ export default function Page() {
                 label: (
                   <div className="flex items-center gap-2">
                     <IntegrationIcon
-                      id={appKey}
                       icon={info.icon}
-                      name={info.name}
                       className="h-7 w-7"
                     />
                     <span>{info.name}</span>

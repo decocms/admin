@@ -126,12 +126,10 @@ export function IntegrationListItem({
     >
       <div className="flex gap-4 p-2 rounded-t-xl">
         <div className="flex gap-4 items-center justify-between w-full">
-          <div className="p-1 rounded-xl border border-border">
+          <div>
             <IntegrationIcon
               icon={integration.icon}
-              name={integration.name}
-              variant="small"
-              className="h-9 w-9 p-0 rounded-lg"
+              className="h-9 w-9"
             />
           </div>
           <div className="flex flex-col gap-1 w-full">

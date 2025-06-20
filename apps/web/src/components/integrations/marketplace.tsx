@@ -54,7 +54,6 @@ export function SetupIntegrationModal({
               <div className="grid grid-cols-[80px_1fr] items-start gap-4">
                 <IntegrationIcon
                   icon={integration?.icon}
-                  name={integration?.name || ""}
                 />
                 <div>
                   <div className="text-sm text-muted-foreground">
@@ -139,7 +138,6 @@ function CardsView(
               <div className="grid grid-cols-[min-content_1fr] gap-4">
                 <IntegrationIcon
                   icon={integration.icon}
-                  name={integration.name}
                   className="h-10 w-10"
                 />
                 <div className="grid grid-cols-1 gap-1">

@@ -20,12 +20,17 @@ export function ChatFinishReason() {
     chat: { append, status, finishReason },
   } = useChatContext();
 
-  console.log({ status, finishReason });
-
   if (
     status !== "ready" ||
     (finishReason !== "tool-calls" && finishReason !== "length")
   ) {
+    if (finishReason !== "stop") {
+      console.warn(
+        "Unknown finish reason. Consider adding it to REPORTS_BY_FINISH_REASON in chat-finish-reason.tsx. Finish reason: ",
+        finishReason,
+      );
+    }
+
     return null;
   }
 
@@ -48,16 +53,14 @@ export function ChatFinishReason() {
           </div>
         </div>
 
-        
-          <Button
-            variant="secondary"
-            onClick={() => {
-              append({ role: "user", content: "Continue" });
-            }}
-          >
-            Continue from here
-          </Button>
-        
+        <Button
+          variant="secondary"
+          onClick={() => {
+            append({ role: "user", content: "Continue" });
+          }}
+        >
+          Continue from here
+        </Button>
       </div>
     </div>
   );

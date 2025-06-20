@@ -10,6 +10,7 @@ import { loginCommand } from "./src/login.ts";
 import { deleteSession, readSession } from "./src/session.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
+import { genEnv } from "./src/typings.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -148,6 +149,18 @@ const hosting = new Command()
   .command("list", hostingList)
   .command("deploy", hostingDeploy);
 
+const gen = new Command()
+  .description("Generate the environment that will be used to run the app.")
+  .action(async () => {
+    const config = await getConfig({});
+    const env = await genEnv({
+      workspace: config.workspace,
+      local: config.local,
+      bindings: config.bindings,
+    });
+    console.log(env);
+  });
+
 // Main CLI
 await new Command()
   .name(denoJson.name)
@@ -162,4 +175,5 @@ await new Command()
   .command("configure", configure)
   .command("update", update)
   .command("link", linkCmd)
+  .command("gen", gen)
   .parse(Deno.args);

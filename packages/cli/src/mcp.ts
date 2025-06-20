@@ -4,7 +4,7 @@ import { DECO_CHAT_API_LOCAL, DECO_CHAT_API_PROD } from "./constants.ts";
 import { getSessionCookies } from "./session.ts";
 
 interface Options {
-  workspace: string;
+  workspace?: string;
   local?: boolean;
 }
 
@@ -17,7 +17,9 @@ export const createWorkspaceClient = async (
   const api = local ? DECO_CHAT_API_LOCAL : DECO_CHAT_API_PROD;
 
   const url = new URL(
-    workspace.startsWith("/") ? `${workspace}/mcp` : `/shared/${workspace}/mcp`,
+    !workspace || workspace.startsWith("/")
+      ? `${workspace ?? ""}/mcp`
+      : `/shared/${workspace}/mcp`,
     api,
   );
 

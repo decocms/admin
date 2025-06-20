@@ -18,6 +18,8 @@ const DecoBindingSchema = z.object({
   integration_id: z.string().min(1),
 });
 
+export type DecoBinding = z.infer<typeof DecoBindingSchema>;
+
 const decoConfigSchema = z.object({
   workspace: z.string({
     required_error: requiredErrorForProp("workspace"),
@@ -31,7 +33,7 @@ const decoConfigSchema = z.object({
 
 export type Config = z.infer<typeof decoConfigSchema>;
 
-interface WranglerConfig {
+export interface WranglerConfig {
   [key: string]: unknown;
   name?: string;
   deco?: Partial<Config>;

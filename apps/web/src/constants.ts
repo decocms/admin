@@ -130,3 +130,8 @@ export const POSTHOG_ORIGIN = "https://posthog.decocluster.com";
 
 export const POSTHOG_SHOULD_TRACK =
   globalThis.location.hostname !== "localhost";
+
+export const LEGACY_INTEGRATIONS = [
+  "i:user-management",
+  "i:workspace-management",
+];

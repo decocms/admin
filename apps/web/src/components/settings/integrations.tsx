@@ -1,20 +1,14 @@
+import { type Integration, listTools, useIntegrations } from "@deco/sdk";
+import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Form, FormItem } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useCallback, useDeferredValue, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
-import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { IntegrationListItem } from "../toolsets/selector.tsx";
-import { type Integration, listTools, useIntegrations } from "@deco/sdk";
-import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
+import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import {
-  AppKeys,
-  getConnectionAppKey,
-  useRefetchIntegrationsOnNotification,
-} from "../integrations/apps.ts";
+import { useAgentSettingsForm } from "../agent/edit.tsx";
 import {
   AddFileToKnowledgeButton,
   AgentKnowledgeBaseFileList,
@@ -22,10 +16,16 @@ import {
   type UploadFile,
   useAgentFiles,
 } from "../agent/upload-knowledge-asset.tsx";
+import {
+  AppKeys,
+  getConnectionAppKey,
+  useRefetchIntegrationsOnNotification,
+} from "../integrations/apps.ts";
+import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
+import { IntegrationListItem } from "../toolsets/selector.tsx";
 
 const ADVANCED_INTEGRATIONS = [
-  "i:user-management",
-  "i:workspace-management",
+  ...LEGACY_INTEGRATIONS,
   getKnowledgeBaseIntegrationId("standard"),
   "DECO_INTEGRATIONS",
   "DECO_UTILS",

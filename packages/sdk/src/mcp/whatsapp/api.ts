@@ -12,7 +12,7 @@ const createTool = createToolGroup("whatsapp-management", {
   name: "WhatsApp",
   description: "Manage WhatsApp user interactions.",
   icon:
-    "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/Channel-Management.png",
+    "https://assets.decocache.com/mcp/5775ad49-916a-45cf-a82e-3a2d2b36360d/whatsapp-management.png",
 });
 
 export const sendWhatsAppTemplateMessage = createTool({

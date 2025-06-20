@@ -20,6 +20,7 @@ import {
   INTEGRATION_CHANNEL,
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
+import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 
 export interface GroupedApp {
   id: string;
@@ -79,8 +80,20 @@ export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
 } as const;
 
 const WELL_KNOWN_DECO_CHAT_CONNECTION_IDS = [
-  "i:workspace-management",
-  "i:user-management",
+  "i:file-system",
+  "i:hosting",
+  "i:wallet-management",
+  "i:team-management",
+  "i:model-management",
+  "i:prompt-management",
+  "i:thread-management",
+  "i:whatsapp-management",
+  "i:integration-management",
+  "i:triggers-management",
+  "i:agent-management",
+  "i:agent-setup",
+  "i:channel-management",
+  "i:knowledge-base-",
 ];
 
 export function isWellKnownApp(appKey: string): boolean {
@@ -218,8 +231,16 @@ export function useGroupedApps({
     const apps: GroupedApp[] = [];
 
     for (const [key, integrations] of Object.entries(grouped)) {
+      if (
+        LEGACY_INTEGRATIONS.some((id) =>
+          key.endsWith(id)
+        )
+      ) {
+        continue;
+      }
+
       if (WELL_KNOWN_APPS[key]) {
-        apps.push(WELL_KNOWN_APPS[key]);
+        apps.push({ ...WELL_KNOWN_APPS[key], instances: integrations.length });
         continue;
       }
 

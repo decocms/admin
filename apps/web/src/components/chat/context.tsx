@@ -1,4 +1,3 @@
-import type { LanguageModelV1FinishReason } from "ai";
 import { useChat } from "@ai-sdk/react";
 import {
   DECO_CHAT_API,
@@ -9,6 +8,7 @@ import {
   useThreadMessages,
 } from "@deco/sdk";
 import { DEFAULT_MEMORY_LAST_MESSAGES } from "@deco/sdk/constants";
+import type { LanguageModelV1FinishReason } from "@ai-sdk/provider";
 import {
   createContext,
   type PropsWithChildren,

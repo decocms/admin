@@ -170,7 +170,7 @@ export function IntegrationListItem({
       {(!isEmpty && !hideTools) && (
         <div
           className={cn(
-            "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-primary-foreground rounded-b-xl",
+            "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-background rounded-b-xl",
             !effectiveToolsOpen && "hover:bg-muted",
           )}
         >

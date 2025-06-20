@@ -63,7 +63,7 @@ const STATIC_ITEMS = [
   },
   {
     url: "/connections",
-    title: "Connections",
+    title: "Integrations",
     icon: "linked_services",
   },
   {
@@ -73,13 +73,18 @@ const STATIC_ITEMS = [
   },
   {
     url: "/prompts",
-    title: "Prompt Library",
+    title: "Prompts",
     icon: "local_library",
   },
   {
     url: "/audits",
     title: "Activity",
     icon: "forum",
+  },
+  {
+    url: "/settings",
+    title: "Monitor",
+    icon: "monitoring",
   },
 ];
 

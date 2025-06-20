@@ -155,8 +155,6 @@ export interface Props {
 }
 
 export function IntegrationIcon(props: Props) {
-  const isWellKnown = props.id ? isWellKnownApp(props.id) : false;
-
   return (
     <Suspense
       fallback={
@@ -171,7 +169,7 @@ export function IntegrationIcon(props: Props) {
     >
       <IntegrationIconContent
         {...props}
-        className={cn(props.className, isWellKnown ? "rounded-xl p-0" : "")}
+        className={cn(props.className, "rounded-xl p-0")}
       />
     </Suspense>
   );

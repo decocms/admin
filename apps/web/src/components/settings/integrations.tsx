@@ -43,7 +43,7 @@ function AddConnectionButton() {
       filter={connectionFilter}
       trigger={
         <Button variant="outline">
-          <Icon name="add" /> Add connection
+          <Icon name="add" /> Add integration
         </Button>
       }
     />
@@ -77,7 +77,7 @@ function Connections() {
   const showAddConnectionEmptyState = connections.length === 0 && !search;
   return (
     <div className="flex flex-col gap-2">
-      <h6 className="text-sm font-medium">Connections</h6>
+      <h6 className="text-sm font-medium">Integrations</h6>
       <div className="flex justify-between items-center">
         <span className="block text-sm text-muted-foreground pb-2">
           Connect and configure integrations to extend your agent's capabilities

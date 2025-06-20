@@ -26,7 +26,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         displayViewsTrigger={false}
         breadcrumb={
           <DefaultBreadcrumb
-            items={[{ label: "Connections", link: "/connections" }]}
+            items={[{ label: "Integrations", link: "/connections" }]}
           />
         }
         actionButtons={<SelectConnectionDialog forceTab="new-connection" />}

@@ -154,7 +154,7 @@ export function ConfirmMarketplaceInstallDialog({
 }
 
 function AddConnectionDialogContent({
-  title = "Add connection",
+  title = "Add integration",
   filter,
   onSelect,
   forceTab,
@@ -207,7 +207,7 @@ function AddConnectionDialogContent({
                 size={16}
                 className="text-muted-foreground"
               />
-              <span>My connections</span>
+              <span>My integrations</span>
             </Button>
             <Button
               variant="ghost"
@@ -218,7 +218,7 @@ function AddConnectionDialogContent({
               onClick={() => setTab("new-connection")}
             >
               <Icon name="add" size={16} className="text-muted-foreground" />
-              <span>New connection</span>
+              <span>New integration</span>
             </Button>
             <Button
               variant="ghost"
@@ -228,7 +228,7 @@ function AddConnectionDialogContent({
               onClick={() => navigateWorkspace("/connections")}
             >
               <Icon name="arrow_outward" size={16} />
-              <span className="group-hover:underline">Manage connections</span>
+              <span className="group-hover:underline">Manage integrations</span>
             </Button>
             {/* Filters will go here */}
           </aside>
@@ -236,7 +236,7 @@ function AddConnectionDialogContent({
 
         <div className="h-full overflow-y-hidden p-4 pb-20 w-full">
           <Input
-            placeholder="Find connection..."
+            placeholder="Find integration..."
             value={search}
             className="mb-4"
             onChange={(e) => setSearch(e.target.value)}
@@ -248,7 +248,7 @@ function AddConnectionDialogContent({
                 <div className="flex flex-col h-full min-h-[200px] gap-4">
                   <div className="flex flex-col gap-2 py-8 w-full items-center">
                     <h3 className="text-2xl font-medium">
-                      No connections found for the search "{search}"
+                      No integrations found for the search "{search}"
                     </h3>
                     <p className="text-sm text-muted-foreground w-full text-center">
                       You can{" "}
@@ -257,7 +257,7 @@ function AddConnectionDialogContent({
                         className="px-0"
                         onClick={() => setTab("my-connections")}
                       >
-                        create a new custom connection
+                        create a new custom integration
                       </Button>{" "}
                       instead.
                     </p>
@@ -281,10 +281,10 @@ function AddConnectionDialogContent({
                   <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
                     <div className="w-full flex items-center flex-col gap-2 py-8">
                       <h3 className="text-2xl font-medium">
-                        No connections found
+                        No integrations found
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Create a new connection to get started
+                        Create a new integration to get started
                       </p>
                     </div>
                     <Marketplace
@@ -292,7 +292,7 @@ function AddConnectionDialogContent({
                       emptyState={
                         <div className="flex flex-col gap-2 py-8 w-full items-center">
                           <p className="text-sm text-muted-foreground">
-                            No connections found for the search "{search}"
+                            No integrations found for the search "{search}"
                           </p>
                         </div>
                       }
@@ -363,7 +363,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
 
     return (
       <Button variant="special">
-        <span className="hidden md:inline">Add connection</span>
+        <span className="hidden md:inline">Add integration</span>
       </Button>
     );
   }, [props.trigger]);

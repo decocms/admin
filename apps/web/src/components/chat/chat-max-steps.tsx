@@ -1,32 +1,13 @@
-import { DEFAULT_MAX_STEPS, useAgent } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo } from "react";
 import { useChatContext } from "./context.tsx";
 
 export function ChatMaxSteps() {
-  const { agentId, chat: { append, status, messages } } = useChatContext();
-  const { data: { max_steps = DEFAULT_MAX_STEPS } } = useAgent(agentId);
+  const {
+    chat: { append, status, finishReason },
+  } = useChatContext();
 
-  /**
-   * Reverse search for the number of llm calls in the last agent run
-   */
-  const toolCalls = useMemo(() => {
-    let toolCalls = 0;
-
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role !== "assistant") {
-        break;
-      }
-
-      toolCalls += messages[i].toolInvocations?.length ?? 1;
-    }
-    return toolCalls;
-  }, [messages]);
-
-  const hasReachedMaxSteps = toolCalls >= max_steps;
-
-  if (!hasReachedMaxSteps || status !== "ready") {
+  if (status !== "ready" || finishReason !== "tool-calls") {
     return null;
   }
 

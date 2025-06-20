@@ -17,7 +17,7 @@ import {
   NotFoundError,
 } from "../index.ts";
 import { deleteTrigger, listTriggers } from "../triggers/api.ts";
-const createTool = createToolGroup("agent-management", {
+const createTool = createToolGroup("Agent", {
   name: "Agent Management",
   description: "Manage your agents",
   icon:
@@ -182,7 +182,7 @@ export const createAgent = createTool({
   },
 });
 
-export const createAgentSetupTool = createToolGroup("agent-setup", {
+export const createAgentSetupTool = createToolGroup("AgentSetup", {
   name: "Agent Setup",
   description:
     "Configure agent identity, update settings, and list available integrations.",

@@ -102,7 +102,7 @@ const mapMember = (
   ),
 });
 
-export const createTool = createToolGroup("team-management", {
+export const createTool = createToolGroup("Team", {
   name: "Team & User Management",
   description: "Manage workspace access and roles.",
   workspace: false,

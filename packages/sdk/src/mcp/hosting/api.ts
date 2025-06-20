@@ -69,7 +69,7 @@ const Mappers = {
   },
 };
 
-const createTool = createToolGroup("hosting", {
+const createTool = createToolGroup("Hosting", {
   name: "Hosting & Deployment",
   description: "Deploy serverless apps via Cloudflare Workers.",
   icon:

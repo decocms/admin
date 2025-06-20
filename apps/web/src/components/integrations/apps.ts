@@ -14,6 +14,7 @@ import {
   useIntegrations,
   useMarketplaceIntegrations,
   WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
+  WellKnownMcpGroupIds,
 } from "@deco/sdk";
 import { useEffect, useMemo } from "react";
 import {
@@ -79,23 +80,6 @@ export const WELL_KNOWN_APPS: Record<string, GroupedApp> = {
   },
 } as const;
 
-const WELL_KNOWN_DECO_CHAT_CONNECTION_IDS = [
-  "i:file-system",
-  "i:hosting",
-  "i:wallet-management",
-  "i:team-management",
-  "i:model-management",
-  "i:prompt-management",
-  "i:thread-management",
-  "i:whatsapp-management",
-  "i:integration-management",
-  "i:triggers-management",
-  "i:agent-management",
-  "i:agent-setup",
-  "i:channel-management",
-  "i:knowledge-base-",
-];
-
 export function isWellKnownApp(appKey: string): boolean {
   return WELL_KNOWN_DECO_CHAT_APP_KEY === appKey ||
     WELL_KNOWN_KNOWLEDGE_BASE_APP_KEY === appKey;
@@ -104,9 +88,7 @@ export function isWellKnownApp(appKey: string): boolean {
 export function getConnectionAppKey(connection: Integration): AppKey {
   try {
     if (
-      WELL_KNOWN_DECO_CHAT_CONNECTION_IDS.some((id) =>
-        connection.id.startsWith(id)
-      )
+      WellKnownMcpGroupIds.some((id) => connection.id.startsWith(id))
     ) {
       return AppKeys.parse(WELL_KNOWN_DECO_CHAT_APP_KEY);
     }

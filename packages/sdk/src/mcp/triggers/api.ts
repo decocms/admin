@@ -74,7 +74,7 @@ export const buildWebhookUrl = (
   return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}&output_tool=${outputTool}`;
 };
 
-const createTool = createToolGroup("triggers-management", {
+const createTool = createToolGroup("Triggers", {
   name: "Triggers & Automation",
   description: "Create cron jobs and webhook-based workflows.",
   icon:

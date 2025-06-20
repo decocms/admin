@@ -45,7 +45,7 @@ function mapChannel(
   };
 }
 
-const createTool = createToolGroup("channel-management", {
+const createTool = createToolGroup("Channel", {
   name: "Channel Management",
   description: "Create and manage communication channels.",
   icon:

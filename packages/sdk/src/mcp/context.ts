@@ -10,6 +10,7 @@ import { z } from "zod";
 import type { JWTPayload } from "../auth/jwt.ts";
 import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
+import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
@@ -162,12 +163,12 @@ export interface Tool<
 }
 
 export const createToolGroup = (
-  group: string,
+  group: WellKnownMcpGroup,
   integration: GroupIntegration,
 ) =>
   createToolFactory<WithTool<AppContext>>(
     (c) => c as unknown as WithTool<AppContext>,
-    group,
+    WellKnownMcpGroups[group],
     integration,
   );
 

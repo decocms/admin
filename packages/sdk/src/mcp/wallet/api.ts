@@ -138,7 +138,7 @@ const AgentsUsage = {
   },
 };
 
-const createTool = createToolGroup("wallet-management", {
+const createTool = createToolGroup("Wallet", {
   name: "Wallet & Billing",
   description: "Handle payments and subscriptions.",
   icon:

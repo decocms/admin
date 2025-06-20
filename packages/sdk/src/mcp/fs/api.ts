@@ -98,7 +98,7 @@ export const getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION = ({
   return getSignedUrl(s3Client, getCommand, { expiresIn });
 };
 
-const createTool = createToolGroup("file-system", {
+const createTool = createToolGroup("FS", {
   name: "File System",
   description: "Manage file uploads, downloads, and metadata.",
   icon:

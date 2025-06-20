@@ -49,7 +49,7 @@ export const createModelSchema = z.object({
 
 export type CreateModelInput = z.infer<typeof createModelSchema>;
 
-const createTool = createToolGroup("model-management", {
+const createTool = createToolGroup("Model", {
   name: "Model Management",
   description: "Configure custom language models.",
   icon:

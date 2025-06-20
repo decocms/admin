@@ -2,7 +2,7 @@ import { z } from "zod";
 import { assertHasWorkspace } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 
-const createTool = createToolGroup("prompt-management", {
+const createTool = createToolGroup("Prompt", {
   name: "Prompt Management",
   description: "Manage reusable prompt templates.",
   icon:

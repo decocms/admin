@@ -66,7 +66,7 @@ const agentAsIntegrationFor =
   });
 
 const createIntegrationManagementTool = createToolGroup(
-  "integration-management",
+  "Integration",
   {
     name: "Integration Management",
     description:

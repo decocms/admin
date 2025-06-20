@@ -15,7 +15,7 @@ import { type AppContext, createToolGroup } from "../context.ts";
 import { InternalServerError, NotFoundError } from "../index.ts";
 import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
 
-const createTool = createToolGroup("thread-management", {
+const createTool = createToolGroup("Thread", {
   name: "Thread Management",
   description: "Track conversation history and usage.",
   icon:

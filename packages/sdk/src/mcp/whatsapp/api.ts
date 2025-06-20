@@ -8,7 +8,7 @@ import { NotFoundError } from "../index.ts";
 
 const ALLOWED_WORKSPACES = ["/shared/deco.cx"];
 
-const createTool = createToolGroup("whatsapp-management", {
+const createTool = createToolGroup("Whatsapp", {
   name: "WhatsApp",
   description: "Manage WhatsApp user interactions.",
   icon:

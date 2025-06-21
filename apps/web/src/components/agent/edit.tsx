@@ -130,12 +130,12 @@ const TABS: Record<string, Tab> = {
   integrations: {
     Component: ToolsAndKnowledgeTab,
     title: "Tools",
-    initialOpen: "within",
+    initialOpen: "right",
   },
   advanced: {
     Component: AdvancedTab,
     title: "Advanced",
-    initialOpen: "within",
+    initialOpen: "right",
   },
   audit: {
     Component: Threads,

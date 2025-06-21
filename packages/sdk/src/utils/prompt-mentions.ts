@@ -12,13 +12,13 @@ const PARTIAL_ESCAPED_MENTION_REGEX =
 const ESCAPED_MENTION_REGEX =
   /&lt;span\s+data-type=&quot;mention&quot;\s+[^&]*?data-id=&quot;([^&]+)&quot;[^&]*?&gt;.*?&lt;\/span&gt;/gs;
 
-// DateTime span regex patterns
+// DateTime span regex patterns - matches empty spans as datetime
 const DATETIME_REGEX =
-  /<span\s+data-type="datetime"[^>]*?>.*?<\/span>/gs;
+  /<span\s*><\/span>/gs;
 const PARTIAL_ESCAPED_DATETIME_REGEX =
-  /&lt;span\s+data-type="datetime"[^&]*?&gt;.*?&lt;\/span&gt;/gs;
+  /&lt;span\s*&gt;&lt;\/span&gt;/gs;
 const ESCAPED_DATETIME_REGEX =
-  /&lt;span\s+data-type=&quot;datetime&quot;[^&]*?&gt;.*?&lt;\/span&gt;/gs;
+  /&lt;span\s*&gt;&lt;\/span&gt;/gs;
 
 /**
  * Normalizes mentions and datetime spans in a content string
@@ -27,7 +27,7 @@ const ESCAPED_DATETIME_REGEX =
  */
 export function normalizeMentions(content: string): string {
   const mentionReplaceTo = '<span data-type="mention" data-id="$1"></span>';
-  const datetimeReplaceTo = '<span data-type="datetime"></span>';
+  const datetimeReplaceTo = '<span></span>';
 
   return content
     .replaceAll(MENTION_REGEX, mentionReplaceTo)
@@ -64,7 +64,7 @@ export function replaceDateTimeSpans(content: string): string {
   }`;
 
   return content.replaceAll(
-    '<span data-type="datetime"></span>',
+    '<span></span>',
     currentDateTime,
   );
 }

@@ -30,7 +30,7 @@ function PromptTab() {
           if (!prompt) return null;
           // Handle special datetime prompts
           if (prompt.name === "Date/Time Now") {
-            return '<span data-type="datetime"></span>';
+            return '<span></span>';
           }
           // Regular prompt mention
           return `<span data-type="mention" data-id="${id}"></span>`;

@@ -33,7 +33,7 @@ import { Header } from "./common.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 
 const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = '<span data-type="datetime"></span>';
+const DATE_TIME_PROMPT_CONTENT = '<span></span>';
 
 interface ListState {
   filter: string;
@@ -398,9 +398,13 @@ function ListPrompts() {
   const dateTimeCreationAttemptedRef = useRef(false);
 
   // Auto-create Date/Time Now prompt if it doesn't exist in main library
+  // Only create once per session to prevent duplicates
   useEffect(() => {
-    if (prompts && !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && 
-        !create.isPending && !dateTimeCreationAttemptedRef.current) {
+    if (prompts && 
+        prompts.length > 0 && 
+        !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && 
+        !create.isPending && 
+        !dateTimeCreationAttemptedRef.current) {
       
       dateTimeCreationAttemptedRef.current = true;
       create.mutateAsync({
@@ -409,11 +413,9 @@ function ListPrompts() {
         content: DATE_TIME_PROMPT_CONTENT,
       }).catch((error) => {
         console.error('Failed to create Date/Time prompt in main library:', error);
-        // Reset flag on error so it can be retried
-        dateTimeCreationAttemptedRef.current = false;
       });
     }
-  }, [prompts, create]);
+  }, [prompts]);
 
   const filteredPrompts =
     prompts?.filter((prompt) =>

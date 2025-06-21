@@ -107,8 +107,8 @@ function PromptsGrid({
   onTogglePrompt: (prompt: Prompt) => void;
 }) {
   // Separate native and custom prompts
-  const nativePrompts = prompts.filter((p) => p.name === DATE_TIME_PROMPT_NAME);
-  const customPrompts = prompts.filter((p) => p.name !== DATE_TIME_PROMPT_NAME);
+  const nativePrompts = prompts.filter((p) => p.id === DATETIME_NOW_PROMPT_ID);
+  const customPrompts = prompts.filter((p) => p.id !== DATETIME_NOW_PROMPT_ID);
 
   return (
     <div className="space-y-8">

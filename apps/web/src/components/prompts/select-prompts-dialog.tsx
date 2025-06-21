@@ -15,6 +15,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 
 function PromptCard({
   prompt,
@@ -68,22 +69,62 @@ function PromptsGrid({
   selectedPrompts: Set<string>;
   onTogglePrompt: (prompt: Prompt) => void;
 }) {
+  const nativePrompts = prompts.filter(isNativePrompt);
+  const userPrompts = prompts.filter(prompt => !isNativePrompt(prompt));
+  
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {prompts.map((prompt) => (
-        <PromptCard
-          key={prompt.id}
-          prompt={prompt}
-          onSelect={onTogglePrompt}
-          isSelected={selectedPrompts.has(prompt.id)}
-        />
-      ))}
+    <div className="space-y-6">
+      {/* Native Prompts Section */}
+      {nativePrompts.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold">Native Prompts</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add or reference these utilitary prompts in your agents and chats
+            </p>
+            <Separator />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {nativePrompts.map((prompt) => (
+              <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onSelect={onTogglePrompt}
+                isSelected={selectedPrompts.has(prompt.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* User Prompts Section */}
+      {userPrompts.length > 0 && (
+        <div>
+          {nativePrompts.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold">Your Prompts</h3>
+              </div>
+              <Separator />
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {userPrompts.map((prompt) => (
+              <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onSelect={onTogglePrompt}
+                isSelected={selectedPrompts.has(prompt.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = "Current date and time: {{new Date().toLocaleString()}}";
 
 function SelectPromptsDialogContent({
   selectedPromptIds = [],
@@ -110,7 +151,7 @@ function SelectPromptsDialogContent({
         console.error('Failed to create Date/Time prompt:', error);
       });
     }
-  }, [prompts, createPrompt]);
+  }, [prompts?.length, createPrompt.isPending]); // Fixed dependency to prevent unnecessary re-runs
 
   const filteredPrompts = prompts?.filter(prompt => 
     prompt.name.toLowerCase().includes(search.toLowerCase()) ||

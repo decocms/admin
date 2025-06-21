@@ -24,12 +24,21 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useReducer, useState } from "react";
+import { useReducer, useState, useEffect } from "react";
 import { useNavigateWorkspace } from "../../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Separator } from "@deco/ui/components/separator.tsx";
 import { Header } from "./common.tsx";
+
+const DATE_TIME_PROMPT_NAME = "Date/Time Now";
+const DATE_TIME_PROMPT_CONTENT = "Current date and time: {{new Date().toLocaleString()}}";
+
+function isNativePrompt(prompt: Prompt): boolean {
+  return prompt.name === DATE_TIME_PROMPT_NAME;
+}
 
 interface ListState {
   filter: string;
@@ -177,6 +186,8 @@ function PromptCard({
   onConfigure: (prompt: Prompt) => void;
   onDelete: (promptId: string) => void;
 }) {
+  const isNative = isNativePrompt(prompt);
+  
   return (
     <Card
       className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
@@ -185,17 +196,26 @@ function PromptCard({
       <CardContent className="p-4">
         <div className="grid grid-cols-[1fr_min-content] gap-4 items-start">
           <div className="flex flex-col gap-1 min-w-0">
-            <div className="text-base font-semibold truncate">
-              {prompt.name}
+            <div className="flex items-center gap-2">
+              <div className="text-base font-semibold truncate">
+                {prompt.name}
+              </div>
+              {isNative && (
+                <Badge variant="secondary" className="text-xs">
+                  Dynamic
+                </Badge>
+              )}
             </div>
             <div className="text-sm text-muted-foreground line-clamp-3">
               {prompt.description || prompt.content}
             </div>
           </div>
 
-          <div onClick={(e) => e.stopPropagation()}>
-            <PromptActions onDelete={() => onDelete(prompt.id)} />
-          </div>
+          {!isNative && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <PromptActions onDelete={() => onDelete(prompt.id)} />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -209,16 +229,59 @@ function CardsView(
     onDelete: (promptId: string) => void;
   },
 ) {
+  const nativePrompts = prompts.filter(isNativePrompt);
+  const userPrompts = prompts.filter(prompt => !isNativePrompt(prompt));
+  
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 peer">
-      {prompts.map((prompt) => (
-        <PromptCard
-          key={prompt.id}
-          prompt={prompt}
-          onConfigure={onConfigure}
-          onDelete={onDelete}
-        />
-      ))}
+    <div className="space-y-6">
+      {/* Native Prompts Section */}
+      {nativePrompts.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold">Native Prompts</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add or reference these utilitary prompts in your agents and chats
+            </p>
+            <Separator />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {nativePrompts.map((prompt) => (
+              <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onConfigure={onConfigure}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* User Prompts Section */}
+      {userPrompts.length > 0 && (
+        <div>
+          {nativePrompts.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold">Your Prompts</h3>
+              </div>
+              <Separator />
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {userPrompts.map((prompt) => (
+              <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onConfigure={onConfigure}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -249,7 +312,16 @@ function TableView(
     {
       id: "name",
       header: "Name",
-      render: (prompt) => prompt.name,
+      render: (prompt) => (
+        <div className="flex items-center gap-2">
+          <span>{prompt.name}</span>
+          {isNativePrompt(prompt) && (
+            <Badge variant="secondary" className="text-xs">
+              Dynamic
+            </Badge>
+          )}
+        </div>
+      ),
       sortable: true,
     },
     {
@@ -263,9 +335,11 @@ function TableView(
       id: "actions",
       header: "",
       render: (prompt) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <PromptActions onDelete={() => onDelete(prompt.id)} />
-        </div>
+        !isNativePrompt(prompt) ? (
+          <div onClick={(e) => e.stopPropagation()}>
+            <PromptActions onDelete={() => onDelete(prompt.id)} />
+          </div>
+        ) : null
       ),
     },
   ];
@@ -300,6 +374,19 @@ function ListPrompts() {
   const navigateWorkspace = useNavigateWorkspace();
 
   const { filter, deleteDialogOpen, promptToDelete, deleting } = state;
+
+  // Auto-create Date/Time Now prompt if it doesn't exist
+  useEffect(() => {
+    if (prompts && !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && !create.isPending) {
+      create.mutateAsync({
+        name: DATE_TIME_PROMPT_NAME,
+        description: "Adds the current date and time to your prompt",
+        content: DATE_TIME_PROMPT_CONTENT,
+      }).catch((error) => {
+        console.error('Failed to create Date/Time prompt:', error);
+      });
+    }
+  }, [prompts?.length, create.isPending]);
 
   const filteredPrompts =
     prompts?.filter((prompt) =>

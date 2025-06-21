@@ -125,7 +125,7 @@ const TABS: Record<string, Tab> = {
   audit: {
     Component: Threads,
     title: "Threads",
-    initialOpen: "left",
+    initialOpen: "within",
   },
   chat: {
     Component: Chat,
@@ -139,6 +139,7 @@ const TABS: Record<string, Tab> = {
     title: "Profile",
     initialOpen: "right",
     initialWidth: 600,
+    active: true,
   },
   integrations: {
     Component: ToolsAndKnowledgeTab,

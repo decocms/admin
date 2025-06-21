@@ -36,7 +36,8 @@ import { AgentAvatar } from "../common/avatar/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
-import PromptTab from "../settings/prompt.tsx";
+import AgentProfileTab from "../settings/agent-profile.tsx";
+import AdvancedTab from "../settings/advanced.tsx";
 import { AgentTriggers } from "../triggers/agent-triggers.tsx";
 import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview from "./preview.tsx";
@@ -104,9 +105,6 @@ const Chat = () => {
   );
 };
 
-const AgentSettings = lazy(() =>
-  wrapWithUILoadingFallback(import("../settings/agent.tsx"))
-);
 
 const TABS: Record<string, Tab> = {
   chatView: {
@@ -123,32 +121,32 @@ const TABS: Record<string, Tab> = {
     Component: AgentTriggers,
     title: "Agent Triggers",
   },
-  setup: {
-    Component: AgentSettings,
-    title: "Settings",
+  profile: {
+    Component: AgentProfileTab,
+    title: "Profile",
     initialOpen: "right",
-  },
-  prompt: {
-    Component: PromptTab,
-    title: "System prompt",
-    initialOpen: "within",
+    initialWidth: 600,
   },
   integrations: {
     Component: ToolsAndKnowledgeTab,
-    title: "Tools & Knowledge",
+    title: "Tools",
     initialOpen: "within",
-    // it is not the ideal solution
-    // but initialWidth is not working as expected
-    maximumWidth: 500,
+  },
+  advanced: {
+    Component: AdvancedTab,
+    title: "Advanced",
+    initialOpen: "within",
   },
   audit: {
     Component: Threads,
     title: "Threads",
+    initialOpen: "left",
   },
   chat: {
     Component: Chat,
     title: "Chat",
     initialOpen: "left",
+    initialWidth: 600,
   },
 };
 

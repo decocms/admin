@@ -121,6 +121,17 @@ const TABS: Record<string, Tab> = {
     Component: AgentTriggers,
     title: "Agent Triggers",
   },
+  audit: {
+    Component: Threads,
+    title: "Threads",
+    initialOpen: "left",
+  },
+  chat: {
+    Component: Chat,
+    title: "Chat",
+    initialOpen: "left",
+    initialWidth: 600,
+  },
   profile: {
     Component: AgentProfileTab,
     title: "Profile",
@@ -136,17 +147,6 @@ const TABS: Record<string, Tab> = {
     Component: AdvancedTab,
     title: "Advanced",
     initialOpen: "right",
-  },
-  audit: {
-    Component: Threads,
-    title: "Threads",
-    initialOpen: "left",
-  },
-  chat: {
-    Component: Chat,
-    title: "Chat",
-    initialOpen: "left",
-    initialWidth: 600,
   },
 };
 

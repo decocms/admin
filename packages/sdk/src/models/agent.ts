@@ -30,7 +30,9 @@ export const AgentSchema = z.object({
   /** System prompt/instructions for the agent */
   instructions: z.string().describe("System prompt/instructions for the agent"),
   /** Additional prompts to append to instructions */
-  additional_prompts: z.array(z.string()).optional().describe("Additional prompt IDs to append to instructions"),
+  additional_prompts: z.array(z.string()).optional().describe(
+    "Additional prompt IDs to append to instructions",
+  ),
   /** Brief description of the agent's purpose or capabilities */
   description: z.string().optional().describe(
     "Brief description of the agent's purpose or capabilities",

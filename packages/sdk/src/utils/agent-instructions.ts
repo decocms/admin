@@ -25,14 +25,14 @@ export async function processAgentInstructions(
     const additionalPrompts = await listPrompts(workspace, {
       ids: config.additional_prompts,
     }).catch((error) => {
-      console.error('Failed to fetch additional prompts:', error);
+      console.error("Failed to fetch additional prompts:", error);
       return [];
     });
 
     // Resolve prompt contents, handling Date/Time Now specially
     const additionalContents = config.additional_prompts
-      .map(promptId => {
-        const prompt = additionalPrompts.find(p => p.id === promptId);
+      .map((promptId) => {
+        const prompt = additionalPrompts.find((p) => p.id === promptId);
         if (!prompt) {
           console.warn(`Additional prompt with ID ${promptId} not found`);
           return "";
@@ -42,7 +42,7 @@ export async function processAgentInstructions(
         if (prompt.name === "Date/Time Now") {
           return `Current date and time: ${new Date().toLocaleString()}`;
         }
-        
+
         return prompt.content;
       })
       .filter(Boolean);
@@ -54,7 +54,7 @@ export async function processAgentInstructions(
 
     return [processedInstructions, ...additionalContents].join("\n\n");
   } catch (error) {
-    console.error('Error processing agent instructions:', error);
+    console.error("Error processing agent instructions:", error);
     // Return the original instructions as fallback
     return config.instructions;
   }

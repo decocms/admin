@@ -121,6 +121,7 @@ const TABS: Record<string, Tab> = {
     Component: AgentTriggers,
     title: "Agent Triggers",
   },
+  // Left side group
   audit: {
     Component: Threads,
     title: "Threads",
@@ -132,6 +133,7 @@ const TABS: Record<string, Tab> = {
     initialOpen: "left",
     initialWidth: 600,
   },
+  // Right side group  
   profile: {
     Component: AgentProfileTab,
     title: "Profile",
@@ -141,12 +143,12 @@ const TABS: Record<string, Tab> = {
   integrations: {
     Component: ToolsAndKnowledgeTab,
     title: "Tools",
-    initialOpen: "right",
+    initialOpen: "within",
   },
   advanced: {
     Component: AdvancedTab,
     title: "Advanced",
-    initialOpen: "right",
+    initialOpen: "within",
   },
 };
 

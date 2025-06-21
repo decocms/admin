@@ -29,18 +29,13 @@ export async function processAgentInstructions(
       return [];
     });
 
-    // Resolve prompt contents, handling Date/Time Now specially
+    // Resolve prompt contents
     const additionalContents = config.additional_prompts
       .map((promptId) => {
         const prompt = additionalPrompts.find((p) => p.id === promptId);
         if (!prompt) {
           console.warn(`Additional prompt with ID ${promptId} not found`);
           return "";
-        }
-        
-        // Handle Date/Time Now prompt specially
-        if (prompt.name === "Date/Time Now") {
-          return `Current date and time: ${new Date().toLocaleString()}`;
         }
 
         return prompt.content;

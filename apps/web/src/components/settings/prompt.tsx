@@ -25,10 +25,13 @@ function PromptTab() {
     try {
       // Merge with existing prompts, avoiding duplicates
       const existingPrompts = new Set(additionalPrompts);
-      const newPrompts = promptIds.filter(id => !existingPrompts.has(id));
-      
+      const newPrompts = promptIds.filter((id) => !existingPrompts.has(id));
+
       if (newPrompts.length > 0) {
-        form.setValue("additional_prompts", [...additionalPrompts, ...newPrompts]);
+        form.setValue("additional_prompts", [
+          ...additionalPrompts,
+          ...newPrompts,
+        ]);
       }
     } catch (error) {
       console.error('Error adding prompts:', error);

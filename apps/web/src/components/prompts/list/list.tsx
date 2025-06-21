@@ -33,7 +33,7 @@ import { Header } from "./common.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 
 const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = "Current date and time: {{new Date().toLocaleString()}}";
+const DATE_TIME_PROMPT_CONTENT = '<span data-type="datetime"></span>';
 
 interface ListState {
   filter: string;
@@ -187,10 +187,16 @@ function PromptCard({
   onConfigure: (prompt: Prompt) => void;
   onDelete: (promptId: string) => void;
 }) {
+  const isNativePrompt = prompt.name === DATE_TIME_PROMPT_NAME;
+  
   return (
     <Card
-      className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-      onClick={() => onConfigure(prompt)}
+      className={`group transition-shadow rounded-xl relative border-border ${
+        isNativePrompt 
+          ? "cursor-default" 
+          : "cursor-pointer hover:shadow-md"
+      }`}
+      onClick={isNativePrompt ? undefined : () => onConfigure(prompt)}
     >
       <CardContent className="p-4">
         <div className="grid grid-cols-[1fr_min-content] gap-4 items-start">
@@ -359,6 +365,14 @@ function TableView(
     }
   }
 
+  const handleRowClick = (prompt: Prompt) => {
+    // Don't allow clicking on native prompts
+    if (prompt.name === DATE_TIME_PROMPT_NAME) {
+      return;
+    }
+    onConfigure(prompt);
+  };
+
   return (
     <Table
       columns={columns}
@@ -366,7 +380,7 @@ function TableView(
       sortKey={sortKey}
       sortDirection={sortDirection}
       onSort={handleSort}
-      onRowClick={onConfigure}
+      onRowClick={handleRowClick}
     />
   );
 }

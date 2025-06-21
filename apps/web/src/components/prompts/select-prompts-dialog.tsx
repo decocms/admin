@@ -6,7 +6,7 @@ import {
   DialogTrigger,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { type Prompt, usePrompts, useCreatePrompt } from "@deco/sdk";
@@ -59,6 +59,43 @@ function PromptCard({
   );
 }
 
+function PromptSection({
+  title,
+  description,
+  prompts,
+  selectedPrompts,
+  onTogglePrompt,
+}: {
+  title: string;
+  description?: string;
+  prompts: Prompt[];
+  selectedPrompts: Set<string>;
+  onTogglePrompt: (prompt: Prompt) => void;
+}) {
+  if (prompts.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="border-b pb-2">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {prompts.map((prompt) => (
+          <PromptCard
+            key={prompt.id}
+            prompt={prompt}
+            onSelect={onTogglePrompt}
+            isSelected={selectedPrompts.has(prompt.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PromptsGrid({
   prompts,
   selectedPrompts,
@@ -68,22 +105,33 @@ function PromptsGrid({
   selectedPrompts: Set<string>;
   onTogglePrompt: (prompt: Prompt) => void;
 }) {
+  // Separate native and custom prompts
+  const nativePrompts = prompts.filter((p) => p.name === DATE_TIME_PROMPT_NAME);
+  const customPrompts = prompts.filter((p) => p.name !== DATE_TIME_PROMPT_NAME);
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {prompts.map((prompt) => (
-        <PromptCard
-          key={prompt.id}
-          prompt={prompt}
-          onSelect={onTogglePrompt}
-          isSelected={selectedPrompts.has(prompt.id)}
-        />
-      ))}
+    <div className="space-y-8">
+      <PromptSection
+        title="Native Prompts"
+        description="Add or reference these utility prompts in your agents and chats"
+        prompts={nativePrompts}
+        selectedPrompts={selectedPrompts}
+        onTogglePrompt={onTogglePrompt}
+      />
+      
+      <PromptSection
+        title="Custom Prompts"
+        description="Your custom prompts and templates"
+        prompts={customPrompts}
+        selectedPrompts={selectedPrompts}
+        onTogglePrompt={onTogglePrompt}
+      />
     </div>
   );
 }
 
 const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = "Current date and time: {{new Date().toLocaleString()}}";
+const DATE_TIME_PROMPT_CONTENT = '<span data-type="datetime"></span>';
 
 function SelectPromptsDialogContent({
   selectedPromptIds = [],
@@ -99,25 +147,7 @@ function SelectPromptsDialogContent({
     new Set(selectedPromptIds)
   );
   
-  const dateTimeCreationAttemptedRef = useRef(false);
-  
-  // Auto-create Date/Time Now prompt if it doesn't exist
-  useEffect(() => {
-    if (prompts && !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && 
-        !createPrompt.isPending && !dateTimeCreationAttemptedRef.current) {
-      
-      dateTimeCreationAttemptedRef.current = true;
-      createPrompt.mutateAsync({
-        name: DATE_TIME_PROMPT_NAME,
-        description: "Adds the current date and time to your prompt",
-        content: DATE_TIME_PROMPT_CONTENT,
-      }).catch((error) => {
-        console.error('Failed to create Date/Time prompt:', error);
-        // Reset flag on error so it can be retried
-        dateTimeCreationAttemptedRef.current = false;
-      });
-    }
-  }, [prompts, createPrompt]);
+  // Note: Date/Time Now prompt auto-creation is handled in main prompt library
 
   const filteredPrompts = prompts?.filter(prompt => 
     prompt.name.toLowerCase().includes(search.toLowerCase()) ||

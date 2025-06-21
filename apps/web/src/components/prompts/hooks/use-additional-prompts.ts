@@ -14,18 +14,28 @@ export function useAdditionalPrompts() {
   }, [allPrompts]);
 
   const createDateTimePrompt = async () => {
-    return await createPrompt.mutateAsync({
-      name: DATE_TIME_PROMPT_NAME,
-      description: "Adds the current date and time to your prompt",
-      content: DATE_TIME_PROMPT_CONTENT,
-    });
+    try {
+      return await createPrompt.mutateAsync({
+        name: DATE_TIME_PROMPT_NAME,
+        description: "Adds the current date and time to your prompt",
+        content: DATE_TIME_PROMPT_CONTENT,
+      });
+    } catch (error) {
+      console.error('Failed to create Date/Time prompt:', error);
+      throw error;
+    }
   };
 
   const ensureDateTimePromptExists = async () => {
-    if (!dateTimePrompt) {
-      return await createDateTimePrompt();
+    try {
+      if (!dateTimePrompt) {
+        return await createDateTimePrompt();
+      }
+      return dateTimePrompt;
+    } catch (error) {
+      console.error('Failed to ensure Date/Time prompt exists:', error);
+      throw error;
     }
-    return dateTimePrompt;
   };
 
   return {
@@ -38,18 +48,26 @@ export function useAdditionalPrompts() {
 }
 
 export function resolvePromptContent(prompts: Prompt[], promptIds: string[]): string {
-  return promptIds
-    .map(id => {
-      const prompt = prompts.find(p => p.id === id);
-      if (!prompt) return "";
-      
-      // Handle Date/Time Now prompt specially
-      if (prompt.name === DATE_TIME_PROMPT_NAME) {
-        return `Current date and time: ${new Date().toLocaleString()}`;
-      }
-      
-      return prompt.content;
-    })
-    .filter(Boolean)
-    .join("\n\n");
+  try {
+    return promptIds
+      .map(id => {
+        const prompt = prompts.find(p => p.id === id);
+        if (!prompt) {
+          console.warn(`Prompt with ID ${id} not found`);
+          return "";
+        }
+        
+        // Handle Date/Time Now prompt specially
+        if (prompt.name === DATE_TIME_PROMPT_NAME) {
+          return `Current date and time: ${new Date().toLocaleString()}`;
+        }
+        
+        return prompt.content;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+  } catch (error) {
+    console.error('Error resolving prompt content:', error);
+    return "";
+  }
 }

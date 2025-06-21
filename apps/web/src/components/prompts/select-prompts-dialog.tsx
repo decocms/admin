@@ -101,12 +101,14 @@ function SelectPromptsDialogContent({
   
   // Auto-create Date/Time Now prompt if it doesn't exist
   useEffect(() => {
-    if (prompts && !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME)) {
+    if (prompts && !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && !createPrompt.isPending) {
       createPrompt.mutateAsync({
         name: DATE_TIME_PROMPT_NAME,
         description: "Adds the current date and time to your prompt",
         content: DATE_TIME_PROMPT_CONTENT,
-      }).catch(console.error);
+      }).catch((error) => {
+        console.error('Failed to create Date/Time prompt:', error);
+      });
     }
   }, [prompts, createPrompt]);
 

@@ -12,35 +12,26 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
 import { SelectPromptsDialog } from "../prompts/select-prompts-dialog.tsx";
 import { SelectedPrompts } from "../prompts/selected-prompts.tsx";
-import { useAdditionalPrompts } from "../prompts/hooks/use-additional-prompts.ts";
 
 function PromptTab() {
   const {
     form,
     handleSubmit,
   } = useAgentSettingsForm();
-  
-  const { ensureDateTimePromptExists } = useAdditionalPrompts();
 
   const additionalPrompts = form.watch("additional_prompts") || [];
 
   const handleAddPrompts = async (promptIds: string[]) => {
-    // Ensure Date/Time Now prompt exists if it's being added
-    const finalPromptIds = [...promptIds];
-    for (let i = 0; i < finalPromptIds.length; i++) {
-      const prompt = await ensureDateTimePromptExists();
-      if (prompt && promptIds.some(id => id === prompt.id)) {
-        // Replace any temporary ID with the actual created prompt ID
-        finalPromptIds[i] = prompt.id;
+    try {
+      // Merge with existing prompts, avoiding duplicates
+      const existingPrompts = new Set(additionalPrompts);
+      const newPrompts = promptIds.filter(id => !existingPrompts.has(id));
+      
+      if (newPrompts.length > 0) {
+        form.setValue("additional_prompts", [...additionalPrompts, ...newPrompts]);
       }
-    }
-    
-    // Merge with existing prompts, avoiding duplicates
-    const existingPrompts = new Set(additionalPrompts);
-    const newPrompts = finalPromptIds.filter(id => !existingPrompts.has(id));
-    
-    if (newPrompts.length > 0) {
-      form.setValue("additional_prompts", [...additionalPrompts, ...newPrompts]);
+    } catch (error) {
+      console.error('Error adding prompts:', error);
     }
   };
 

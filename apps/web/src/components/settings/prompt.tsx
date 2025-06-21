@@ -21,7 +21,7 @@ function PromptTab() {
 
   const additionalPrompts = form.watch("additional_prompts") || [];
 
-  const handleAddPrompts = async (promptIds: string[]) => {
+  const handleAddPrompts = (promptIds: string[]) => {
     try {
       // Merge with existing prompts, avoiding duplicates
       const existingPrompts = new Set(additionalPrompts);

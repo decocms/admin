@@ -1,3 +1,4 @@
+import { useUpdatePrompt } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -6,23 +7,50 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
-import { useNavigateWorkspace } from "../../../../../hooks/use-navigate-workspace.ts";
+import { mentionToTag } from "../../common.ts";
+import { Option } from "../suggestions/dropdown.tsx";
 
-export default function MentionNode(
-  { node, extension }: ReactNodeViewProps<HTMLSpanElement>,
-) {
-  const navigateWorkspace = useNavigateWorkspace();
-
+export default function MentionNode({
+  node,
+  extension,
+  editor,
+  getPos,
+}: ReactNodeViewProps<HTMLSpanElement>) {
   const label = node.attrs.label;
   const id = node.attrs.id;
+  const { mutateAsync: updatePrompt } = useUpdatePrompt();
 
   const items = extension.options.suggestion?.items?.({ query: label })
-    ?.flatMap(
-      (item: { options: { id: string }[] }) => item?.options,
-    );
-  const prompt = items?.find((item: { id: string }) => item?.id === id) as
-    | { id: string; icon: string; label: string; tooltip: string }
-    | undefined;
+    ?.find((option: Option) => option.id === "references")
+    ?.children?.flatMap((options: Option) => options.children) || [];
+
+  const prompt = items?.find((option: Option) => option?.id === id);
+
+  const handleDetach = () => {
+    const pos = getPos();
+
+    editor
+      .chain()
+      .deleteRange({ from: pos, to: pos + node.nodeSize })
+      .insertContentAt(pos, mentionToTag(prompt?.tooltip || ""))
+      .run();
+  };
+
+  const handleChange = async (e: React.FocusEvent<HTMLParagraphElement>) => {
+    const content = e.target.textContent;
+    if (!content || !prompt || content === prompt.label) return;
+
+    try {
+      await updatePrompt({
+        id: prompt.id,
+        data: {
+          name: content,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update prompt:", error);
+    }
+  };
 
   return (
     <NodeViewWrapper
@@ -31,41 +59,41 @@ export default function MentionNode(
       data-type="mention"
     >
       <Tooltip>
-        <TooltipTrigger className="inline-flex items-center rounded-md bg-purple-light/20 transition-colors duration-300 hover:bg-purple-light/70 px-2 py-0.5 font-medium border border-purple-light text-xs group relative text-purple-dark">
-          {prompt?.icon && <Icon name={prompt.icon} size={12} />}
-          <span className="ml-1">
+        <TooltipTrigger className="inline-flex items-end rounded-md bg-muted px-1 group text-foreground gap-1 py-0.5 -mb-0.5">
+          {prompt?.icon && (
+            <span className="bg-purple-light rounded-md p-0.5 text-black aspect-square flex">
+              <Icon name={prompt.icon} size={12} />
+            </span>
+          )}
+          <span className="leading-none">
             {prompt?.label || "Prompt not found"}
           </span>
         </TooltipTrigger>
         {prompt && (
           <TooltipContent
             side="bottom"
-            className="max-w-xs space-y-2 bg-background text-background-foreground shadow-2xs border [&>span>svg]:!bg-background [&>span>svg]:!fill-background"
+            className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
           >
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-medium text-base flex items-center gap-2">
-                {prompt.icon &&
-                  (
-                    <div className="bg-secondary rounded-md p-1 flex justify-center items-center border">
-                      <Icon name={prompt.icon} size={18} />
-                    </div>
-                  )}
-                <span className="line-clamp-2">{prompt.label}</span>
+            <div className="flex items-center justify-between gap-2 text-muted-foreground">
+              <p
+                contentEditable={!!prompt}
+                suppressContentEditableWarning
+                onBlur={handleChange}
+                className="font-medium text-xs line-clamp-1 px-3"
+              >
+                {prompt.label}
               </p>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  navigateWorkspace(`/prompt/${prompt.id}`);
-                }}
+                onClick={handleDetach}
+                type="button"
               >
-                <Icon name="edit" size={16} />
+                <Icon name="link_off" size={16} />
               </Button>
             </div>
-            <div className="bg-secondary rounded-md p-2 border">
-              <span className="line-clamp-3">
-                {prompt.tooltip || "Prompt not found"}
-              </span>
+            <div className="px-2.5 py-1.5 italic text-sm max-h-96 overflow-y-auto">
+              {prompt.tooltip || "Prompt not found"}
             </div>
           </TooltipContent>
         )}

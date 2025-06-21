@@ -1,37 +1,67 @@
 import type { Prompt } from "@deco/sdk";
 import { ReactRenderer } from "@tiptap/react";
 import type { SuggestionOptions } from "@tiptap/suggestion";
-import tippy from "tippy.js";
-import MentionDropdown, { type Category } from "./dropdown.tsx";
+import tippy, { type Instance, type Props } from "tippy.js";
+import MentionDropdown, { type Option } from "./dropdown.tsx";
 
 export const suggestion: (
   items: Prompt[],
-) => Partial<SuggestionOptions<Category>> = (
+) => Partial<SuggestionOptions<Option>> = (
   items,
 ) => {
   return {
     char: "/",
-    items: ({ query }) => {
+    items: () => {
       return [
         {
-          name: "Prompts",
-          icon: "library_books",
-          options: items
-            .map((item) => ({
-              icon: "library_books",
-              id: item.id,
-              label: item.name,
-              tooltip: item.content,
-            }))
-            .filter((item) =>
-              item.label.toLowerCase().includes(query?.toLowerCase())
-            ).slice(0, 5),
+          id: "references",
+          type: "category",
+          label: "References",
+          children: [
+            {
+              id: "prompts",
+              type: "category",
+              label: "Prompts",
+              icon: "text_snippet",
+              children: items.map((prompt) => ({
+                id: prompt.id,
+                type: "option",
+                label: prompt.name,
+                icon: "text_snippet",
+                tooltip: prompt.content,
+                handle: ({ command }) =>
+                  command({ id: prompt.id, label: prompt.name }),
+              })),
+            },
+            {
+              id: "tools",
+              type: "category",
+              label: "Tools",
+              icon: "build",
+            },
+            {
+              id: "tool_placeholder",
+              type: "category",
+              label: "Tool placeholder",
+              icon: "build",
+            },
+          ],
+          // items
+          //   .map((item) => ({
+          //     icon: "library_books",
+          //     id: item.id,
+          //     label: item.name,
+          //     tooltip: item.content,
+          //   }))
+          //   .filter((item) =>
+          //     item.label.toLowerCase().includes(query?.toLowerCase())
+          //   ).slice(0, 5),
         },
       ];
     },
     render: () => {
-      let component: ReactRenderer<unknown> | null = null;
-      let popup: tippy.Instance | null = null;
+      let component: ReactRenderer | null = null;
+      let popup: Instance<Props>[] | null = null;
 
       return {
         onStart: (props) => {
@@ -40,21 +70,7 @@ export const suggestion: (
           }
 
           component = new ReactRenderer(MentionDropdown, {
-            props: {
-              ...props,
-              items: props.items.map((item) => ({
-                ...item,
-                options: item.options.map((option) => ({
-                  ...option,
-                  handle: () => {
-                    props.command({
-                      id: option.id,
-                      label: option.label,
-                    });
-                  },
-                })),
-              })),
-            },
+            props,
             editor: props.editor,
           });
 
@@ -75,27 +91,17 @@ export const suggestion: (
         },
 
         onUpdate(props) {
-          component?.updateProps({
-            ...props,
-            items: props.items.map((item) => ({
-              ...item,
-              options: item.options.map((option) => ({
-                ...option,
-                handle: () => {
-                  props.command({
-                    id: option.id,
-                    label: option.label,
-                  });
-                },
-              })),
-            })),
+          component?.updateProps(props);
+
+          popup?.[0]?.setProps({
+            // @ts-expect-error - tippy is not well typed
+            getReferenceClientRect: props.clientRect,
           });
         },
 
         onKeyDown(props) {
           if (props.event.key === "Escape") {
-            popup?.destroy?.();
-            component?.destroy?.();
+            popup?.[0]?.hide();
 
             return true;
           }
@@ -105,7 +111,7 @@ export const suggestion: (
         },
 
         onExit() {
-          popup?.destroy?.();
+          popup?.[0]?.destroy?.();
           component?.destroy?.();
         },
       };

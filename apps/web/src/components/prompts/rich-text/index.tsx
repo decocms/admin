@@ -6,6 +6,7 @@ import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
+import BubbleMenu from "./bubble-menu.tsx";
 import { mentionToTag, tagToMention } from "./common.ts";
 import { Comment } from "./extensions/comment.tsx";
 import { mentions } from "./extensions/mentions/mentions.ts";
@@ -85,20 +86,19 @@ export default function RichTextArea({
     editorProps: {
       attributes: {
         class: cn(
-          "h-full border-border border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 field-sizing-content w-full rounded-xl border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm prose leading-7",
-          disabled && "opacity-100 text-muted-foreground",
+          "h-full placeholder:text-muted-foreground field-sizing-content w-full bg-transparent text-base transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 prose",
           className,
         ),
       },
     },
-  });
+  }, [prompts]);
 
   // sync external value changes to the editor
   useEffect(() => {
     if (!editor) return;
 
     if (value !== tagToMention(editor.storage.markdown.getMarkdown())) {
-      editor.commands.setContent(value, false);
+      editor.commands.setContent(mentionToTag(value), false);
     }
   }, [value, editor]);
 
@@ -109,13 +109,14 @@ export default function RichTextArea({
   return (
     <div className="h-full flex flex-col">
       {enableMentions && (
-        <div className="rounded-full flex gap-1 bg-muted text-muted-foreground border px-2 py-1 mb-2 select-none">
-          <Icon name="info" className="size-4" />
-          <p className="text-xs font-normal">
-            Type <span className="font-bold">/</span> to insert a prompt.
+        <div className="rounded-full flex gap-1 bg-secondary text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
+          <Icon name="info" size={10} />
+          <p className="text-xs font-medium">
+            Type / to add tools and more
           </p>
         </div>
       )}
+      <BubbleMenu editor={editor} />
       <EditorContent
         className="h-full"
         editor={editor}

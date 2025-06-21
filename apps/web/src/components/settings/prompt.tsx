@@ -12,6 +12,7 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
 import { SelectPromptsDialog } from "../prompts/select-prompts-dialog.tsx";
 import { usePrompts } from "@deco/sdk";
+import { DATETIME_NOW_PROMPT_ID } from "@deco/sdk/utils/prompt-mentions.ts";
 
 function PromptTab() {
   const {
@@ -28,11 +29,7 @@ function PromptTab() {
         .map((id) => {
           const prompt = prompts?.find((p) => p.id === id);
           if (!prompt) return null;
-          // Handle special datetime prompts
-          if (prompt.name === "Date/Time Now") {
-            return '<span></span>';
-          }
-          // Regular prompt mention
+          // All prompts use mention format, including Date/Time Now
           return `<span data-type="mention" data-id="${id}"></span>`;
         })
         .filter(Boolean);

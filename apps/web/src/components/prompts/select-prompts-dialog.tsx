@@ -15,6 +15,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { DATETIME_NOW_PROMPT_ID } from "@deco/sdk/utils/prompt-mentions.ts";
 
 function PromptCard({
   prompt,
@@ -40,7 +41,7 @@ function PromptCard({
               <div className="text-base font-semibold truncate">
                 {prompt.name}
               </div>
-              {prompt.name === "Date/Time Now" && (
+              {prompt.id === DATETIME_NOW_PROMPT_ID && (
                 <Badge variant="secondary" className="text-xs">
                   Dynamic
                 </Badge>

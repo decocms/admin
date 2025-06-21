@@ -31,9 +31,10 @@ import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Header } from "./common.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { DATETIME_NOW_PROMPT_ID } from "@deco/sdk/utils/prompt-mentions.ts";
 
 const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = '<span></span>';
+const DATE_TIME_PROMPT_CONTENT = "Provides current date and time when referenced in agents and chats.";
 
 interface ListState {
   filter: string;
@@ -187,7 +188,7 @@ function PromptCard({
   onConfigure: (prompt: Prompt) => void;
   onDelete: (promptId: string) => void;
 }) {
-  const isNativePrompt = prompt.name === DATE_TIME_PROMPT_NAME;
+  const isNativePrompt = prompt.id === DATETIME_NOW_PROMPT_ID;
   
   return (
     <Card
@@ -205,7 +206,7 @@ function PromptCard({
               <div className="text-base font-semibold truncate">
                 {prompt.name}
               </div>
-              {prompt.name === DATE_TIME_PROMPT_NAME && (
+              {prompt.id === DATETIME_NOW_PROMPT_ID && (
                 <Badge variant="secondary" className="text-xs">
                   Dynamic
                 </Badge>
@@ -219,7 +220,7 @@ function PromptCard({
           <div onClick={(e) => e.stopPropagation()}>
             <PromptActions 
               onDelete={() => onDelete(prompt.id)} 
-              isNativePrompt={prompt.name === DATE_TIME_PROMPT_NAME}
+              isNativePrompt={prompt.id === DATETIME_NOW_PROMPT_ID}
             />
           </div>
         </div>
@@ -326,7 +327,7 @@ function TableView(
       render: (prompt) => (
         <div className="flex items-center gap-2">
           <span>{prompt.name}</span>
-          {prompt.name === DATE_TIME_PROMPT_NAME && (
+          {prompt.id === DATETIME_NOW_PROMPT_ID && (
             <Badge variant="secondary" className="text-xs">
               Dynamic
             </Badge>
@@ -349,7 +350,7 @@ function TableView(
         <div onClick={(e) => e.stopPropagation()}>
           <PromptActions 
             onDelete={() => onDelete(prompt.id)} 
-            isNativePrompt={prompt.name === DATE_TIME_PROMPT_NAME}
+            isNativePrompt={prompt.id === DATETIME_NOW_PROMPT_ID}
           />
         </div>
       ),
@@ -367,7 +368,7 @@ function TableView(
 
   const handleRowClick = (prompt: Prompt) => {
     // Don't allow clicking on native prompts
-    if (prompt.name === DATE_TIME_PROMPT_NAME) {
+    if (prompt.id === DATETIME_NOW_PROMPT_ID) {
       return;
     }
     onConfigure(prompt);
@@ -402,12 +403,13 @@ function ListPrompts() {
   useEffect(() => {
     if (prompts && 
         prompts.length > 0 && 
-        !prompts.find(p => p.name === DATE_TIME_PROMPT_NAME) && 
+        !prompts.find(p => p.id === DATETIME_NOW_PROMPT_ID) && 
         !create.isPending && 
         !dateTimeCreationAttemptedRef.current) {
       
       dateTimeCreationAttemptedRef.current = true;
       create.mutateAsync({
+        id: DATETIME_NOW_PROMPT_ID,
         name: DATE_TIME_PROMPT_NAME,
         description: "Adds the current date and time to your prompt",
         content: DATE_TIME_PROMPT_CONTENT,

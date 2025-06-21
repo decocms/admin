@@ -1,6 +1,9 @@
 import { listPrompts } from "../crud/prompts.ts";
 import { unescapeHTML } from "./html.ts";
 
+// Fixed ID for Date/Time Now prompt (consistent across workspaces)
+export const DATETIME_NOW_PROMPT_ID = "datetime-now";
+
 interface PromptMention {
   id: string;
 }
@@ -12,7 +15,7 @@ const PARTIAL_ESCAPED_MENTION_REGEX =
 const ESCAPED_MENTION_REGEX =
   /&lt;span\s+data-type=&quot;mention&quot;\s+[^&]*?data-id=&quot;([^&]+)&quot;[^&]*?&gt;.*?&lt;\/span&gt;/gs;
 
-// DateTime span regex patterns - matches empty spans as datetime
+// Legacy DateTime span regex patterns - keeping for backward compatibility
 const DATETIME_REGEX =
   /<span\s*><\/span>/gs;
 const PARTIAL_ESCAPED_DATETIME_REGEX =
@@ -21,7 +24,7 @@ const ESCAPED_DATETIME_REGEX =
   /&lt;span\s*&gt;&lt;\/span&gt;/gs;
 
 /**
- * Normalizes mentions and datetime spans in a content string
+ * Normalizes mentions and legacy datetime spans in a content string
  * @param content - The content string to normalize
  * @returns The normalized content string
  */
@@ -91,6 +94,16 @@ export async function replacePromptMentions(
   }).catch(() => []);
 
   for (const mention of mentions) {
+    // Handle Date/Time Now prompt specially
+    if (mention.id === DATETIME_NOW_PROMPT_ID) {
+      const currentDateTime = `Current date and time: ${new Date().toLocaleString()}`;
+      result = result.replaceAll(
+        `<span data-type="mention" data-id="${mention.id}"></span>`,
+        currentDateTime,
+      );
+      continue;
+    }
+
     const prompt = prompts.find((prompt) => prompt.id === mention.id);
     result = result.replaceAll(
       `<span data-type="mention" data-id="${mention.id}"></span>`,

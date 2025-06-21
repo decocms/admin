@@ -131,7 +131,6 @@ function PromptsGrid({
 }
 
 const DATE_TIME_PROMPT_NAME = "Date/Time Now";
-const DATE_TIME_PROMPT_CONTENT = '<span data-type="datetime"></span>';
 
 function SelectPromptsDialogContent({
   selectedPromptIds = [],
@@ -142,7 +141,6 @@ function SelectPromptsDialogContent({
 }) {
   const [search, setSearch] = useState("");
   const { data: prompts } = usePrompts();
-  const createPrompt = useCreatePrompt();
   const [selectedPrompts, setSelectedPrompts] = useState<Set<string>>(
     new Set(selectedPromptIds)
   );

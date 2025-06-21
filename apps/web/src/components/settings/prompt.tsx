@@ -11,7 +11,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
 import { SelectPromptsDialog } from "../prompts/select-prompts-dialog.tsx";
-import { SelectedPrompts } from "../prompts/selected-prompts.tsx";
+import { usePrompts } from "@deco/sdk";
 
 function PromptTab() {
   const {
@@ -19,28 +19,32 @@ function PromptTab() {
     handleSubmit,
   } = useAgentSettingsForm();
 
-  const additionalPrompts = form.watch("additional_prompts") || [];
+  const { data: prompts } = usePrompts();
 
   const handleAddPrompts = (promptIds: string[]) => {
     try {
-      // Merge with existing prompts, avoiding duplicates
-      const existingPrompts = new Set(additionalPrompts);
-      const newPrompts = promptIds.filter((id) => !existingPrompts.has(id));
+      const currentInstructions = form.getValues("instructions") || "";
+      const promptsToAdd = promptIds
+        .map((id) => {
+          const prompt = prompts?.find((p) => p.id === id);
+          if (!prompt) return null;
+          // Handle special datetime prompts
+          if (prompt.name === "Date/Time Now") {
+            return '<span data-type="datetime"></span>';
+          }
+          // Regular prompt mention
+          return `<span data-type="mention" data-id="${id}"></span>`;
+        })
+        .filter(Boolean);
 
-      if (newPrompts.length > 0) {
-        form.setValue("additional_prompts", [
-          ...additionalPrompts,
-          ...newPrompts,
-        ]);
+      if (promptsToAdd.length > 0) {
+        const separator = currentInstructions.trim() ? "\n\n" : "";
+        const newInstructions = currentInstructions + separator + promptsToAdd.join("\n\n");
+        form.setValue("instructions", newInstructions);
       }
     } catch (error) {
-      console.error('Error adding prompts:', error);
+      console.error("Error adding prompts:", error);
     }
-  };
-
-  const handleRemovePrompt = (promptId: string) => {
-    const updated = additionalPrompts.filter((id: string) => id !== promptId);
-    form.setValue("additional_prompts", updated);
   };
 
   return (
@@ -67,24 +71,15 @@ function PromptTab() {
               )}
             />
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Additional Prompts</div>
-                <SelectPromptsDialog
-                  selectedPromptIds={additionalPrompts}
-                  onSelect={handleAddPrompts}
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      <Icon name="add" size={16} />
-                      <span>Add Prompts</span>
-                    </Button>
-                  }
-                />
-              </div>
-              
-              <SelectedPrompts
-                promptIds={additionalPrompts}
-                onRemovePrompt={handleRemovePrompt}
+            <div className="flex justify-end">
+              <SelectPromptsDialog
+                onSelect={handleAddPrompts}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Icon name="add" size={16} />
+                    <span>Add Prompts</span>
+                  </Button>
+                }
               />
             </div>
           </form>

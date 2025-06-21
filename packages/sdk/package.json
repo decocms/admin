@@ -70,6 +70,8 @@
     "./hooks": "./src/hooks/index.ts",
     "./hooks/profile": "./src/hooks/profile.ts",
     "./utils": "./src/utils/index.ts",
+    "./utils/prompt-mentions": "./src/utils/prompt-mentions.ts",
+    "./utils/agent-instructions": "./src/utils/agent-instructions.ts",
     "./mcp/bindings": "./src/mcp/bindings/index.ts",
     "./mcp/binder": "./src/mcp/bindings/binder.ts",
     "./models": "./src/models/index.ts"

@@ -76,9 +76,9 @@ import {
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
-import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
-import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
-import { processAgentInstructions } from "../../sdk/src/utils/agent-instructions.ts";
+import { createWalletClient } from "@deco/sdk/mcp/wallet";
+import { replacePromptMentions } from "@deco/sdk/utils/prompt-mentions";
+import { processAgentInstructions } from "@deco/sdk/utils/agent-instructions";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
 import {

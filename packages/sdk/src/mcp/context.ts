@@ -231,37 +231,6 @@ export const createToolFactory = <
   };
 };
 
-export const createResourceFactory = <
-  TAppContext extends AppContext = AppContext,
->(contextFactory: (c: AppContext) => TAppContext, group?: string) =>
-<
-  RName extends string = string,
-  RInput = any,
-  RReturn extends object | null | boolean = object,
->(
-  def: ResourceDefinition<TAppContext, RName, RInput, RReturn>,
-): Resource<TAppContext, RName, RInput, RReturn> => ({
-  group,
-  ...def,
-  handler: async (props: RInput) => {
-    const context = contextFactory(State.getStore());
-    context.resource = { name: def.name };
-
-    const result = await def.handler(props, context);
-
-    if (!context.resourceAccess.granted()) {
-      console.warn(
-        `User cannot access this resource ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-      );
-      throw new ForbiddenError(
-        `User cannot access this resource ${def.name}.`,
-      );
-    }
-
-    return result;
-  },
-});
-
 export const withMCPErrorHandling = <
   TInput = any,
   TReturn extends object | null | boolean = object,
@@ -284,10 +253,6 @@ async (props: TInput) => {
 
 export const createTool = createToolFactory<WithTool<AppContext>>(
   (c) => c as unknown as WithTool<AppContext>,
-);
-
-export const createResource = createResourceFactory<WithResource<AppContext>>(
-  (c) => c as unknown as WithResource<AppContext>,
 );
 
 export type MCPDefinition = Tool[];

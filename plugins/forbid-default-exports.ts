@@ -5,6 +5,11 @@ const plugin: Deno.lint.Plugin = {
       create(context) {
         return {
           ExportDefaultDeclaration(node) {
+            // Skip the rule if the file is in the plugins folder
+            if (context.filename && context.filename.includes("plugins/")) {
+              return;
+            }
+
             context.report({
               node,
               message:
@@ -17,5 +22,4 @@ const plugin: Deno.lint.Plugin = {
   },
 };
 
-// deno-lint-ignore forbid-default-exports/no-default-export
-export default plugin; 
+export default plugin;

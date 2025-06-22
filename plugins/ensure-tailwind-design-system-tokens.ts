@@ -101,5 +101,4 @@ const ensureTailwindDesignSystemTokens: Deno.lint.Plugin = {
   },
 };
 
-// deno-lint-ignore forbid-default-exports/no-default-export
 export default ensureTailwindDesignSystemTokens;

@@ -76,7 +76,6 @@ import {
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
-import { Readable } from "node:stream";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
@@ -735,20 +734,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     } catch (error) {
       throw error;
     }
-  }
-
-  async listen(buffer: Uint8Array) {
-    if (!this._maybeAgent) {
-      throw new Error("Agent not initialized");
-    }
-    const nodeStream = new Readable({
-      read() {
-        this.push(buffer);
-        this.push(null);
-      },
-    });
-    const transcription = await this._maybeAgent.voice.listen(nodeStream);
-    return transcription;
   }
 
   public async updateThreadTools(tool_set: Configuration["tools_set"]) {

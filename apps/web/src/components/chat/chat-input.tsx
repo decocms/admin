@@ -139,9 +139,7 @@ ChatInput.UI = (
   const selectedModel = models.find((m) => m.id === model) || DEFAULT_MODEL;
 
   const getAcceptedFileTypes = () => {
-    const acceptTypes: string[] = [
-      "audio/*",
-    ];
+    const acceptTypes: string[] = [];
     if (selectedModel.capabilities.includes("image-upload")) {
       acceptTypes.push("image/jpeg", "image/png", "image/gif", "image/webp");
     }

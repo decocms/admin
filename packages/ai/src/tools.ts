@@ -655,87 +655,6 @@ export const SPEAK = createInnateTool({
   },
 });
 
-const TranscribeAudioInputSchema = z.object({
-  audioUrl: z.string().describe(
-    "URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)",
-  ),
-});
-
-const TranscribeAudioOutputSchema = z.object({
-  transcription: z.string().describe("The transcribed text from the audio"),
-  success: z.boolean().describe("Whether the transcription was successful"),
-  message: z.string().describe("Status message about the transcription"),
-});
-
-export const TRANSCRIBE_AUDIO = createInnateTool({
-  id: "TRANSCRIBE_AUDIO",
-  description:
-    "Transcribe audio content to text using OpenAI's Whisper model. " +
-    "This tool accepts a URL to an audio file and returns the transcribed text. " +
-    "Supports common audio formats like mp3, wav, m4a, and more. " +
-    "Perfect for converting voice messages, audio recordings, or any audio content into readable text. " +
-    "Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, " +
-    "or convert speech to text for further processing. This tool is only available if the agent has voice transcription capabilities.",
-  inputSchema: TranscribeAudioInputSchema,
-  outputSchema: TranscribeAudioOutputSchema,
-  execute: (agent) => async ({ context }) => {
-    try {
-      const { audioUrl } = context;
-
-      if (!audioUrl) {
-        return {
-          transcription: "",
-          success: false,
-          message: "Invalid audio data: audioUrl must be a non-empty string",
-        };
-      }
-
-      const audioBuffer = await fetch(audioUrl).then((res) =>
-        res.arrayBuffer()
-      );
-      const audioBufferUint8Array = new Uint8Array(audioBuffer);
-
-      // Perform transcription using existing infrastructure
-      const transcription = await agent.listen(audioBufferUint8Array) as string;
-
-      if (!transcription) {
-        return {
-          transcription: "",
-          success: false,
-          message: "Failed to transcribe audio",
-        };
-      }
-
-      return {
-        transcription,
-        success: true,
-        message: `Successfully transcribed audio (${
-          Math.round(audioBufferUint8Array.length * 0.75 / 1024)
-        }KB)`,
-      };
-    } catch (error) {
-      console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);
-
-      let errorMessage = "Failed to transcribe audio";
-      if (error instanceof Error) {
-        if (error.message.includes("exceeds the maximum")) {
-          errorMessage = "Audio file too large (maximum 25MB allowed)";
-        } else if (error.message.includes("Invalid audio")) {
-          errorMessage = "Invalid audio format or corrupted audio data";
-        } else {
-          errorMessage = `Transcription failed: ${error.message}`;
-        }
-      }
-
-      return {
-        transcription: "",
-        success: false,
-        message: errorMessage,
-      };
-    }
-  },
-});
-
 // Helper function to process audio stream with memory efficiency
 async function processAudioStream(
   // deno-lint-ignore no-explicit-any
@@ -943,5 +862,4 @@ export const tools = {
   CREATE_PRESIGNED_URL,
   WHO_AM_I,
   SPEAK,
-  TRANSCRIBE_AUDIO,
 };

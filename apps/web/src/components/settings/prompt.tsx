@@ -29,7 +29,7 @@ function PromptTab() {
                 <FormItem>
                   <FormControl>
                     <PromptInput
-                      placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
+                      placeholder="Add context or behavior to shape responses. TIP: Use / to add saved prompts."
                       enableMentions
                       {...field}
                     />

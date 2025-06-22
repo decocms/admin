@@ -21,6 +21,11 @@ export interface PromptInputProps {
   placeholder?: string;
   className?: string;
   enableMentions?: boolean;
+  showToggle?: boolean;
+  renderToggle?: (
+    view: "raw" | "markdown",
+    setView: (view: "raw" | "markdown") => void,
+  ) => React.ReactNode;
 }
 
 export default function PromptInput({
@@ -33,39 +38,44 @@ export default function PromptInput({
   placeholder,
   className,
   enableMentions = false,
+  showToggle = true,
+  renderToggle,
 }: PromptInputProps) {
-  const [view, setView] = useState<"raw" | "markdown">("raw");
+  const [view, setView] = useState<"raw" | "markdown">("markdown");
 
   return (
     <div>
-      <div className="flex justify-between items-center gap-2 mb-3 mt-1 px-3 py-2 rounded-xl border">
-        <p className="text-xs text-muted-foreground">
-          You can use{" "}
-          <a
-            href="https://www.commonmark.org/help/"
-            className="underline text-primary-dark font-medium"
-          >
-            markdown
-          </a>{" "}
-          here.
-        </p>
-        <div className="flex items-center gap-2">
-          <Switch
-            id="markdown-view"
-            checked={view === "markdown"}
-            onCheckedChange={(checked: boolean) => {
-              setView(checked ? "markdown" : "raw");
-            }}
-            className="cursor-pointer"
-          />
-          <Label
-            htmlFor="markdown-view"
-            className="text-xs text-foreground cursor-pointer"
-          >
-            Markdown
-          </Label>
+      {showToggle && (
+        <div className="flex justify-between items-center gap-2 mb-3 mt-1 px-3 py-2 rounded-xl border">
+          <p className="text-xs text-muted-foreground">
+            You can use{" "}
+            <a
+              href="https://www.commonmark.org/help/"
+              className="underline text-primary-dark font-medium"
+            >
+              markdown
+            </a>{" "}
+            here.
+          </p>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="markdown-view"
+              checked={view === "markdown"}
+              onCheckedChange={(checked: boolean) => {
+                setView(checked ? "markdown" : "raw");
+              }}
+              className="cursor-pointer"
+            />
+            <Label
+              htmlFor="markdown-view"
+              className="text-xs text-foreground cursor-pointer"
+            >
+              Markdown
+            </Label>
+          </div>
         </div>
-      </div>
+      )}
+      {renderToggle?.(view, setView)}
       {view === "markdown"
         ? (
           <RichTextArea

@@ -44,8 +44,6 @@ import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
-import { lazy } from "react";
-import { wrapWithUILoadingFallback } from "../../main.tsx";
 import { useTabsForAgent } from "./preview.tsx";
 
 interface Props {
@@ -105,7 +103,6 @@ const Chat = () => {
   );
 };
 
-
 const TABS: Record<string, Tab> = {
   chatView: {
     Component: ThreadView,
@@ -134,7 +131,7 @@ const TABS: Record<string, Tab> = {
     title: "Threads",
     initialOpen: "within",
   },
-  // Right side group  
+  // Right side group
   profile: {
     Component: AgentProfileTab,
     title: "Profile",

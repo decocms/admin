@@ -136,7 +136,7 @@ export function ModelSelector({
     >
       <ResponsiveSelectTrigger
         className={cn(
-          "!h-8 text-xs hover:bg-muted py-0 px-2 shadow-none",
+          "!h-9 text-xs hover:bg-muted py-0 px-2 shadow-none cursor-pointer",
           variant === "borderless" && "md:border-none",
         )}
       >
@@ -151,7 +151,7 @@ export function ModelSelector({
             value={model.id}
             hideCheck
             className={cn(
-              "p-0 focus:bg-muted focus:text-foreground",
+              "p-0 focus:bg-muted focus:text-foreground cursor-pointer",
               model.id === selectedModel?.id && "bg-muted/50",
             )}
           >

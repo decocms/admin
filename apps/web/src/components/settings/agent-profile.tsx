@@ -29,6 +29,8 @@ import { ModelSelector } from "../chat/model-selector.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
 import { useWriteFile } from "@deco/sdk";
+import { Switch } from "@deco/ui/components/switch.tsx";
+import { Label } from "@deco/ui/components/label.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
 
@@ -214,41 +216,74 @@ function AgentProfileTab() {
               )}
             />
 
-            {/* Model Selector */}
-            <FormField
-              name="model"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Model</FormLabel>
-                  <FormControl>
-                    <ModelSelector
-                      model={field.value}
-                      onModelChange={(newValue) => field.onChange(newValue)}
-                      variant="bordered"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* System Prompt */}
-            <FormField
-              name="instructions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>System prompt</FormLabel>
-                  <FormControl>
-                    <PromptInput
-                      placeholder="Add context or behavior to shape responses (e.g., 'Be concise and reply in English.')"
-                      enableMentions
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Model & System Prompt */}
+            <FormItem>
+              <FormLabel>Model & System Prompt</FormLabel>
+              <FormField
+                name="instructions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <PromptInput
+                        placeholder="Add context or behavior to shape responses. TIP: Use / to add saved prompts."
+                        enableMentions
+                        showToggle={false}
+                        renderToggle={(view, setView) => (
+                          <div className="flex items-center gap-4 mb-3 pt-1">
+                            <FormField
+                              name="model"
+                              render={({ field }) => (
+                                <FormItem className="w-1/3">
+                                  <FormControl>
+                                    <ModelSelector
+                                      model={field.value}
+                                      onModelChange={(newValue) =>
+                                        field.onChange(newValue)}
+                                      variant="bordered"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="flex-1 flex justify-between items-center gap-2 px-3 py-2 rounded-xl border">
+                              <p className="text-xs text-muted-foreground">
+                                You can use{" "}
+                                <a
+                                  href="https://www.commonmark.org/help/"
+                                  className="underline text-primary-dark font-medium"
+                                >
+                                  markdown
+                                </a>{" "}
+                                here.
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  id="markdown-view"
+                                  checked={view === "markdown"}
+                                  onCheckedChange={(checked: boolean) => {
+                                    setView(checked ? "markdown" : "raw");
+                                  }}
+                                  className="cursor-pointer"
+                                />
+                                <Label
+                                  htmlFor="markdown-view"
+                                  className="text-xs text-foreground cursor-pointer"
+                                >
+                                  Markdown
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormItem>
 
             {/* Visibility Section */}
             <FormField

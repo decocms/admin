@@ -320,66 +320,6 @@ export const createServerClient = async (
     },
   );
 
-  mcpServer.connection.type === "Websocket" && client.setNotificationHandler(
-    ResourceListChangedNotificationSchema,
-    async (notification) => {
-      console.log(
-        "Resource list changed, re-fetching resources...",
-        notification,
-      );
-
-      // Check if the client is still connected before attempting to fetch resources
-      if (!isConnected) {
-        console.log("Client is not connected, skipping resource re-fetch");
-        return;
-      }
-
-      try {
-        // Re-fetch resources when the list changes
-        const { resources: updatedResources } = await client.listResources({});
-        console.log("Updated resources:", updatedResources);
-
-        // Notify client-side if in browser environment
-        if (typeof BroadcastChannel !== "undefined") {
-          try {
-            const streamingChannel = new BroadcastChannel(
-              "streaming-tool-updates",
-            );
-            streamingChannel.postMessage({
-              type: "STREAMING_TOOL_NOTIFICATION",
-              toolName: "resource_notification", // Generic name for resource notifications
-              connectionId: mcpServer.name,
-              notification: {
-                type: "resource_list_changed",
-                resources: updatedResources,
-                timestamp: new Date().toISOString(),
-              },
-            });
-            console.log("Broadcasted resource notification to client-side");
-          } catch (broadcastError) {
-            console.log(
-              "Could not broadcast to client (not in browser environment):",
-              broadcastError,
-            );
-          }
-        }
-      } catch (error) {
-        // Only log the error if it's not a connection closed error
-        if (
-          error instanceof Error && !error.message.includes("Connection closed")
-        ) {
-          console.error(
-            "Failed to re-fetch resources after list change:",
-            error,
-          );
-        } else {
-          console.log("Connection closed during resource re-fetch, ignoring");
-        }
-        isConnected = false;
-      }
-    },
-  );
-
   await client.connect(transport);
   isConnected = true;
 

@@ -207,8 +207,8 @@ export default function RichTextArea({
       />
       {enableMentions && (
         <p className="text-muted-foreground text-xs font-normal mt-2">
-          Hint: You can use the <span className="font-bold">/</span>{" "}
-          to insert a prompt.
+          Hint: Press <span className="font-bold">/</span>{" "}
+          to insert a saved prompt.
         </p>
       )}
     </>

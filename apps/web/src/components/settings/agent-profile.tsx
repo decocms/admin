@@ -225,7 +225,7 @@ function AgentProfileTab() {
                   <FormItem>
                     <FormControl>
                       <PromptInput
-                        placeholder="Add context or behavior to shape responses. TIP: Use / to add saved prompts."
+                        placeholder="Add context or behavior to shape responses."
                         enableMentions
                         showToggle={false}
                         renderToggle={(view, setView) => (

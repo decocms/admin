@@ -23,7 +23,6 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   return (
     <>
       <PageLayout
-        displayViewsTrigger={false}
         breadcrumb={
           <DefaultBreadcrumb
             items={[{ label: "Integrations", link: "/connections" }]}

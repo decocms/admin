@@ -120,7 +120,6 @@ export default function Page() {
 
   return (
     <PageLayout
-      displayViewsTrigger={false}
       breadcrumb={
         <DefaultBreadcrumb
           items={[

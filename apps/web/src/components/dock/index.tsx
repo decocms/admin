@@ -1,11 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
@@ -30,6 +25,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { ViewsButton } from "./views-button.tsx";
 
 const Context = createContext<
   {
@@ -156,6 +152,10 @@ export const initialOpenDirections: initialOpen[] = [
   "left",
 ];
 
+interface TabMetadata {
+  isSavedView?: boolean;
+}
+
 export interface Tab {
   Component: ComponentType;
   title: string;
@@ -165,8 +165,8 @@ export interface Tab {
   maximumHeight?: number;
   maximumWidth?: number;
   hideFromViews?: boolean;
-  renderer?: "always" | "onlyWhenVisible";
   active?: boolean;
+  metadata?: TabMetadata;
 }
 
 type Props =
@@ -235,10 +235,6 @@ function Docked(
         adapter(value.Component),
       ]);
 
-      if (entries.length > 1) {
-        entries.push([DOCKED_VIEWS_TAB.id, Docked.Views]);
-      }
-
       return Object.fromEntries(entries);
     },
     [tabs],
@@ -259,7 +255,7 @@ function Docked(
           id: key,
           component: key,
           title: value.title,
-          renderer: value.renderer,
+          renderer: value.metadata?.isSavedView ? "always" : "onlyWhenVisible",
           initialHeight: !isMobile ? value.initialHeight : undefined,
           initialWidth: !isMobile ? value.initialWidth : undefined,
           maximumHeight: !isMobile ? value.maximumHeight : undefined,
@@ -343,6 +339,7 @@ function Docked(
         hideBorders
         {...props}
       />
+      {api && <ViewsButton />}
     </div>
   );
 }
@@ -365,78 +362,6 @@ Docked.Provider = (
     >
       {children}
     </Context.Provider>
-  );
-};
-
-Docked.Views = () => {
-  const { tabs, openPanels } = useDock();
-  const disabled = openPanels.has(DOCKED_VIEWS_TAB.id)
-    ? openPanels.size <= 2
-    : openPanels.size <= 1;
-
-  return (
-    <div className="h-full flex flex-col gap-2 p-2 bg-sidebar">
-      {Object.entries(tabs)
-        .filter(([_id, tab]) => !tab.hideFromViews)
-        .map(([id, tab]) => {
-          const isActive = openPanels.has(id);
-
-          return (
-            <button
-              key={id}
-              type="button"
-              disabled={disabled && isActive}
-              onClick={() =>
-                togglePanel({ id, component: id, title: tab.title })}
-              className={cn(
-                "flex items-center justify-between gap-3",
-                "p-2 rounded-xl",
-                "cursor-pointer disabled:cursor-not-allowed",
-                "hover:bg-muted text-foreground",
-                isActive && "bg-muted",
-              )}
-            >
-              <span className="flex-1 truncate text-sm text-left">
-                {tab.title}
-              </span>
-              <div
-                className={cn(
-                  "p-1 flex items-center justify-center",
-                  isActive ? "visible" : "invisible",
-                )}
-              >
-                <Icon name="check" size={16} />
-              </div>
-            </button>
-          );
-        })}
-    </div>
-  );
-};
-
-Docked.ViewsTrigger = () => {
-  const { openPanels } = useDock();
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          onClick={() =>
-            togglePanel({
-              id: DOCKED_VIEWS_TAB.id,
-              component: DOCKED_VIEWS_TAB.id,
-              title: DOCKED_VIEWS_TAB.title,
-            })}
-          className={openPanels.has(DOCKED_VIEWS_TAB.id) ? "opacity-70" : ""}
-        >
-          <Icon name="layers" />
-          Views
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        Views
-      </TooltipContent>
-    </Tooltip>
   );
 };
 

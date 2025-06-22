@@ -121,14 +121,12 @@ export interface PageLayoutProps {
   breadcrumb?: ReactNode;
   actionButtons?: ReactNode;
   tabs: Record<string, Tab>;
-  displayViewsTrigger?: boolean;
 }
 
 export function PageLayout({
   breadcrumb,
   actionButtons,
   tabs,
-  displayViewsTrigger = true,
 }: PageLayoutProps) {
   const { toggleSidebar, open } = useSidebar();
 
@@ -172,7 +170,6 @@ export function PageLayout({
           )}
         >
           {actionButtons}
-          {displayViewsTrigger && <Docked.ViewsTrigger />}
         </div>
         {!open && (
           <div className="peer-empty:flex items-center justify-center hidden fixed left-0 top-0 z-10 h-14 px-3">

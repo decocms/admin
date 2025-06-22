@@ -98,7 +98,6 @@ function ListPromptsLayout() {
 
   return (
     <PageLayout
-      displayViewsTrigger={false}
       breadcrumb={
         <DefaultBreadcrumb
           items={[

@@ -70,7 +70,6 @@ export default function ListTriggersLayout() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   return (
     <PageLayout
-      displayViewsTrigger={false}
       tabs={TABS}
       breadcrumb={
         <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />

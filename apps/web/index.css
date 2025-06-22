@@ -49,11 +49,15 @@
     }
 
     .dv-void-container {
-      @apply bg-muted border-b;
+      @apply bg-muted;
     }
 
     .dv-tab {
-      @apply border-b;
+      @apply border-none p-0! h-9!;
+    }
+
+    .dv-react-part > div > div[data-active="true"] {
+      @apply h-9!;
     }
 
     .dv-inactive-tab .dv-react-part {
@@ -61,7 +65,7 @@
     }
 
     .dv-tabs-container {
-      @apply bg-muted;
+      @apply bg-muted pt-1 px-1 h-10!;
     }
 
     .dv-inactive-group {
@@ -80,13 +84,31 @@
       @apply bg-background;
     }
 
-    .dv-tab {
-      @apply p-0!;
+    .dv-active-tab [data-active="true"] {
+      @apply bg-background! rounded-t-xl relative z-10;
+      border-bottom: 1px solid var(--color-background);
     }
 
-    .dv-active-tab [data-active="true"] {
-      @apply bg-white! rounded-t-xl! border border-b-2 border-b-white m-[-1px]
-        mr-0 mb-[-2px];
+    .dv-active-tab [data-active="true"]::before,
+    .dv-active-tab [data-active="true"]::after {
+      content: "";
+      position: absolute;
+      bottom: -3px;
+      width: 1rem;
+      height: 1.5rem;
+      background: transparent;
+    }
+
+    .dv-active-tab [data-active="true"]::before {
+      left: -1rem;
+      border-bottom-right-radius: 16px;
+      box-shadow: 8px 8px 0 0 var(--color-background);
+    }
+
+    .dv-active-tab [data-active="true"]::after {
+      right: -1rem;
+      border-bottom-left-radius: 16px;
+      box-shadow: -8px 8px 0 0 var(--color-background);
     }
 
     .one-tab .dv-scrollable {

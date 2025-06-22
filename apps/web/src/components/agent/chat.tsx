@@ -217,7 +217,6 @@ function Page(props: Props) {
         <PageLayout
           tabs={TABS}
           key={agentId}
-          displayViewsTrigger={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent}
           actionButtons={<ActionsButtons />}
           breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
             <Breadcrumb agentId={agentId} />

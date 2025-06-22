@@ -52,7 +52,6 @@ function Page() {
             ]}
           />
         }
-        displayViewsTrigger={false}
       />
     </ChatProvider>
   );

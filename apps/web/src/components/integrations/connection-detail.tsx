@@ -1046,7 +1046,6 @@ export default function Page() {
           initialOpen: true,
         },
       }}
-      displayViewsTrigger={false}
       breadcrumb={
         <DefaultBreadcrumb
           items={[

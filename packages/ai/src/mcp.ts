@@ -19,12 +19,18 @@ import {
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
+import {
+  CreateMessageRequestSchema,
+  ResourceListChangedNotificationSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { AIAgent, Env } from "./agent.ts";
+import { createLLMInstance, getLLMConfig } from "./agent/llm.ts";
 import { getTools } from "./deco.ts";
 import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
+import process from "node:process";
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
@@ -91,7 +97,18 @@ const getMCPServerTools = async (
                 },
               ),
               execute: async ({ context }) => {
-                const innerClient = await createServerClient(mcpServer).catch(
+                console.log("execute", { context });
+                const innerClient = await createServerClient({
+                  ...mcpServer,
+                  connection: {
+                    ...mcpServer.connection,
+                    type: "Websocket",
+                    url: (mcpServer.connection as any).url.replace(
+                      "messages",
+                      "ws",
+                    ),
+                  },
+                }).catch(
                   console.error,
                 );
                 if (!innerClient) {
@@ -230,9 +247,141 @@ export const createServerClient = async (
     name: mcpServer.name,
     version: "1.0.0",
     timeout: 180000, // 3 minutes
+  }, {
+    capabilities: {
+      sampling: {},
+    },
   });
 
+  // Track connection state to avoid errors on closed connections
+  let isConnected = false;
+
+  // Handle connection events
+  client.onerror = (error) => {
+    console.error("MCP client error:", error);
+    isConnected = false;
+  };
+
+  // Override the close method to track connection state
+  const originalClose = client.close.bind(client);
+  client.close = () => {
+    isConnected = false;
+    return originalClose();
+  };
+
+  mcpServer.connection.type === "Websocket" &&
+    console.log("Setting up notification handler for resource list changed");
+
+  mcpServer.connection.type === "Websocket" && client.setRequestHandler(
+    CreateMessageRequestSchema,
+    async (request) => {
+      // console.log("Create message request:", request);
+
+      const llmConfig = await getLLMConfig({
+        modelId: "anthropic:claude-sonnet-4",
+      });
+
+      const { llm } = createLLMInstance({
+        ...llmConfig,
+        envs: {
+          CF_ACCOUNT_ID: "c95fc4cec7fc52453228d9db170c372c",
+          ...process.env,
+        },
+      });
+
+      const result = await llm.doGenerate({
+        prompt: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: request.params.messages[0].content.text as string,
+              },
+            ],
+          },
+        ],
+        inputFormat: "messages",
+        mode: {
+          type: "regular",
+        },
+      });
+
+      console.log({ result });
+
+      return {
+        model: "anthropic:claude-sonnet-4",
+        role: "assistant",
+        content: {
+          type: "text",
+          text: result.text,
+        },
+      };
+    },
+  );
+
+  mcpServer.connection.type === "Websocket" && client.setNotificationHandler(
+    ResourceListChangedNotificationSchema,
+    async (notification) => {
+      console.log(
+        "Resource list changed, re-fetching resources...",
+        notification,
+      );
+
+      // Check if the client is still connected before attempting to fetch resources
+      if (!isConnected) {
+        console.log("Client is not connected, skipping resource re-fetch");
+        return;
+      }
+
+      try {
+        // Re-fetch resources when the list changes
+        const { resources: updatedResources } = await client.listResources({});
+        console.log("Updated resources:", updatedResources);
+
+        // Notify client-side if in browser environment
+        if (typeof BroadcastChannel !== "undefined") {
+          try {
+            const streamingChannel = new BroadcastChannel(
+              "streaming-tool-updates",
+            );
+            streamingChannel.postMessage({
+              type: "STREAMING_TOOL_NOTIFICATION",
+              toolName: "resource_notification", // Generic name for resource notifications
+              connectionId: mcpServer.name,
+              notification: {
+                type: "resource_list_changed",
+                resources: updatedResources,
+                timestamp: new Date().toISOString(),
+              },
+            });
+            console.log("Broadcasted resource notification to client-side");
+          } catch (broadcastError) {
+            console.log(
+              "Could not broadcast to client (not in browser environment):",
+              broadcastError,
+            );
+          }
+        }
+      } catch (error) {
+        // Only log the error if it's not a connection closed error
+        if (
+          error instanceof Error && !error.message.includes("Connection closed")
+        ) {
+          console.error(
+            "Failed to re-fetch resources after list change:",
+            error,
+          );
+        } else {
+          console.log("Connection closed during resource re-fetch, ignoring");
+        }
+        isConnected = false;
+      }
+    },
+  );
+
   await client.connect(transport);
+  isConnected = true;
 
   return client;
 };
@@ -280,6 +429,7 @@ export const createTransport = (
 
     return new SSEClientTransport(new URL(connection.url), config);
   }
+
   return new StreamableHTTPClientTransport(new URL(connection.url), {
     requestInit: { headers, signal },
   });
@@ -353,4 +503,14 @@ export async function listToolsByConnectionType(
       return { error: "Invalid connection type" };
     }
   }
+}
+
+export async function listResourcesByConnectionType(
+  connection: MCPConnection,
+) {
+  const client = await createServerClient({
+    connection,
+    name: connection.type,
+  });
+  return client.listResources();
 }

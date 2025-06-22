@@ -411,6 +411,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...llmConfig,
       envs: this.env,
     });
+
     await this._initMemory(memoryId, config, tokenLimit);
 
     this.telemetry = Telemetry.init({ serviceName: "agent" });
@@ -857,6 +858,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
 
     const tool = callable?.[integrationId]?.[toolName];
+    console.log({ tool });
     if (!tool) {
       return {
         success: false,

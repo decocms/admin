@@ -47,6 +47,12 @@ export const assertHasUser = (c: AppContext) => {
   }
 };
 
+export type WithResource<TAppContext extends AppContext = AppContext> =
+  & Omit<TAppContext, "resource">
+  & {
+    resource: { name: string };
+  };
+
 export const assertWorkspaceResourceAccess = async (
   resource: string,
   c: AppContext,

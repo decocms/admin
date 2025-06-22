@@ -1,6 +1,7 @@
 import {
   createServerClient as createMcpServerClient,
   isApiDecoChatMCPConnection,
+  listResourcesByConnectionType,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
@@ -19,6 +20,7 @@ import {
   UserInputError,
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
+import type { WebsocketConnection } from "../../models/mcp.ts";
 import type { Workspace } from "../../path.ts";
 import type { QueryResult } from "../../storage/supabase/client.ts";
 import { getKnowledgeBaseIntegrationId } from "../../utils/index.ts";
@@ -75,13 +77,21 @@ const createIntegrationManagementTool = createToolGroup(
       "https://assets.decocache.com/mcp/2ead84c2-2890-4d37-b61c-045f4760f2f7/Integration-Management.png",
   },
 );
+
 export const callTool = createIntegrationManagementTool({
   name: "INTEGRATIONS_CALL_TOOL",
   description: "Call a given tool",
   inputSchema: IntegrationSchema.pick({
     connection: true,
-  }).merge(CallToolRequestSchema.pick({ params: true })),
-  handler: async ({ connection: reqConnection, params: toolCall }, c) => {
+  }).merge(CallToolRequestSchema.pick({ params: true })).extend({
+    timeout: z.number().optional().describe(
+      "Timeout in milliseconds for streaming tools (default: 180000)",
+    ),
+  }),
+  handler: async (
+    { connection: reqConnection, params: toolCall, timeout = 180000 },
+    c,
+  ) => {
     c.resourceAccess.grant();
 
     const connection = isApiDecoChatMCPConnection(reqConnection)
@@ -95,9 +105,20 @@ export const callTool = createIntegrationManagementTool({
       return { error: "Missing url parameter" };
     }
 
+    // Check if tool requires streaming (websocket) communication
+    const isStreamingTool = toolCall.name.startsWith("_ws_");
+
+    console.log(
+      `Tool ${toolCall.name} is ${isStreamingTool ? "streaming" : "regular"}`,
+    );
+
     const client = await createMcpServerClient({
       name: "deco-chat-client",
-      connection,
+      connection: {
+        ...connection,
+        type: "Websocket",
+        url: (connection as WebsocketConnection).url.replace("messages", "ws"),
+      },
     });
 
     if (!client) {
@@ -105,15 +126,29 @@ export const callTool = createIntegrationManagementTool({
     }
 
     try {
-      const result = await client.callTool({
-        name: toolCall.name,
-        arguments: toolCall.arguments || {},
-        // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
-      }, CallToolResultSchema);
+      if (isStreamingTool) {
+        console.log("Calling streaming tool:", toolCall.name);
 
-      await client.close();
+        // For streaming tools, we call the tool and keep the connection open
+        const result = await client.callTool({
+          name: toolCall.name,
+          arguments: toolCall.arguments || {},
+          // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+        }, CallToolResultSchema);
 
-      return result;
+        return result;
+      } else {
+        // Regular tools - call and close immediately as before
+        const result = await client.callTool({
+          name: toolCall.name,
+          arguments: toolCall.arguments || {},
+          // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+        }, CallToolResultSchema);
+
+        await client.close();
+
+        return result;
+      }
     } catch (error) {
       console.error(
         "Failed to call tool:",
@@ -145,6 +180,21 @@ export const listTools = createIntegrationManagementTool({
     if (Array.isArray(result?.tools)) {
       result.tools.sort((a, b) => a.name.localeCompare(b.name));
     }
+
+    return result;
+  },
+});
+
+export const listResources = createIntegrationManagementTool({
+  name: "INTEGRATIONS_LIST_RESOURCES",
+  description: "List resources of a given integration",
+  inputSchema: IntegrationSchema.pick({
+    connection: true,
+  }),
+  handler: async ({ connection }, c) => {
+    c.resourceAccess.grant();
+
+    const result = await listResourcesByConnectionType(connection);
 
     return result;
   },

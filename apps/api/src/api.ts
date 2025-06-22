@@ -59,9 +59,33 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 };
 
 const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
-  if ("code" in err) {
+  if ("code" in err && typeof err.code === "number") {
+    // Map MCP JSON-RPC error codes to appropriate HTTP status codes
+    let httpStatus: ContentfulStatusCode;
+
+    switch (err.code) {
+      case -32700: // Parse error
+      case -32600: // Invalid Request
+      case -32602: // Invalid params
+        httpStatus = 400;
+        break;
+      case -32601: // Method not found
+        httpStatus = 404;
+        break;
+      case -32603: // Internal error
+        httpStatus = 500;
+        break;
+      case -32000: // Server error (custom)
+        httpStatus = 500;
+        break;
+      default:
+        // For any other error codes, default to 500
+        httpStatus = 500;
+        break;
+    }
+
     throw new HTTPException(
-      (err.code as ContentfulStatusCode | undefined) ?? 500,
+      httpStatus,
       { message: err.message ?? "Internal server error" },
     );
   }
@@ -134,7 +158,7 @@ const createToolCallHandlerFor = <
 >(
   tools: TDefinition,
 ) => {
-  const toolMap = new Map(tools.map((t) => [t.name, t]));
+  const toolMap = new Map(tools.map((t) => [t?.name, t]));
 
   return async (c: Context) => {
     const client = createMCPToolsStub({ tools });
@@ -170,7 +194,7 @@ const createToolCallHandlerFor = <
 };
 
 // Add logger middleware
-app.use(logger());
+// app.use(logger());
 
 // Enable CORS for all routes on api.deco.chat and localhost
 app.use(cors({

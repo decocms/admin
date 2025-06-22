@@ -28,6 +28,7 @@ import {
   type Integration,
   type MCPConnection,
   type MCPTool,
+  useResources,
   useToolCall,
   useTools,
 } from "@deco/sdk";
@@ -71,6 +72,7 @@ import {
 } from "./select-connection-dialog.tsx";
 import type { MarketplaceIntegration } from "./marketplace.tsx";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { useStreamingToolNotifications } from "@deco/sdk/hooks";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -747,6 +749,27 @@ function Tool({ tool, connection }: ToolProps) {
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Listen for streaming tool notifications
+  useStreamingToolNotifications(connection, (notification: {
+    toolName: string;
+    connectionId: string;
+    notification: unknown;
+  }) => {
+    console.log(
+      "🔔 Streaming notification received in Tool component:",
+      notification,
+    );
+
+    // If this notification is for the current tool, we could update the UI
+    if (
+      notification.toolName === tool.name ||
+      notification.toolName === "resource_notification"
+    ) {
+      console.log("📡 Notification is relevant to current tool/connection");
+      // Here you could update the toolCallResponse or trigger other UI updates
+    }
+  });
+
   const handleToolCall = async (payload: Record<string, unknown>) => {
     setIsLoading(true);
     abortControllerRef.current = new AbortController();
@@ -756,6 +779,8 @@ function Tool({ tool, connection }: ToolProps) {
       const response = await toolCall.mutateAsync({
         name: tool.name,
         arguments: payload,
+        // Add timeout for streaming tools
+        timeout: tool.name.startsWith("_ws_") ? 300000 : undefined, // 5 minutes for streaming tools
       });
 
       const endTime = performance.now();
@@ -890,6 +915,9 @@ function ToolsInspector({ data, selectedConnectionId }: {
   const toolsRef = useRef<HTMLDivElement>(null);
   const connection = selectedIntegration?.connection;
   const tools = useTools(connection as MCPConnection);
+  // const { data: resources } = useResources(connection as MCPConnection);
+
+  // console.log({ resources });
 
   // Update selected integration when selectedConnectionId changes
   useEffect(() => {

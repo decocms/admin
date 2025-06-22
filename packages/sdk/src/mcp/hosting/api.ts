@@ -67,34 +67,6 @@ const Mappers = {
       files,
     };
   },
-  toResource: (
-    data: AppRow,
-  ): {
-    uri: string;
-    name: string;
-    description?: string;
-    mimeType?: string;
-  } => {
-    const uri = Entrypoint.build(data.slug);
-    return {
-      uri,
-      name: data.slug,
-      description: "Hosting App",
-    };
-  },
-  toContents: (
-    data: AppRow,
-  ): {
-    contents: Map<string, string>;
-  } => {
-    const contents = new Map<string, string>();
-    for (const [path, content] of Object.entries(data.files ?? {})) {
-      contents.set(path, content);
-    }
-    return {
-      contents,
-    };
-  },
 };
 
 const createTool = createToolGroup("Hosting", {

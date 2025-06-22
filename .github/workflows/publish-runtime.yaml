@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'packages/runtime/**'
+      - "packages/runtime/**"
 
 jobs:
   publish:

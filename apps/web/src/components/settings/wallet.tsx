@@ -19,7 +19,7 @@ function AccountBalance() {
 function BalanceCard() {
   const account = useWorkspaceWalletBalance();
   return (
-    <Card className="w-full p-4 flex flex-col items-center border-none mt-8">
+    <Card className="bg-background w-full p-4 flex flex-col items-center border-none mt-8">
       <CardContent className="flex flex-col items-center justify-center gap-2 p-0">
         <div className="flex items-center justify-center w-full text-base mb-1 gap-2">
           <span>Team balance</span>
@@ -67,7 +67,7 @@ function BalanceCard() {
 
 function RecentTransactions() {
   return (
-    <Card className="w-full p-4 flex flex-col items-center border-none">
+    <Card className="bg-background w-full p-4 flex flex-col items-center border-none">
       <CardContent className="flex flex-col items-center justify-center gap-2 p-0">
         <div className="flex items-center gap-1 text-base mb-1">
           Recent Transactions
@@ -83,7 +83,7 @@ function RecentTransactions() {
 
 export default function Wallet() {
   return (
-    <div className="h-full text-foreground">
+    <div className="h-full text-foreground bg-background">
       <SettingsMobileHeader currentPage="wallet" />
 
       <div className="flex flex-col items-center h-full gap-4 w-full mt-12">

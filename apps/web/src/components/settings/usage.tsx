@@ -148,7 +148,7 @@ function CreditsUsedPerAgentCard({
 
   if (enrichedAgents.length === 0) {
     return (
-      <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
+      <Card className="bg-background w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
         <div className="w-full text-sm mb-8 flex justify-between items-center">
           <span>Credits Used Per Agent</span>
           <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ function CreditsUsedPerAgentCard({
   }));
 
   return (
-    <Card className="w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
+    <Card className="bg-background w-full md:max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
       <div className="w-full text-sm mb-8 flex justify-between items-center">
         <span>Credits Used Per Agent</span>
         <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ function CreditsUsedPerAgentCard({
 }
 
 CreditsUsedPerAgentCard.Fallback = () => (
-  <Card className="w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
+  <Card className="bg-background w-full max-w-xl p-4 flex flex-col items-center rounded-md min-h-[340px] border-none">
     <div className="w-full text-sm mb-8 flex justify-between items-center">
       <span>Credits Used Per Agent</span>
     </div>
@@ -340,7 +340,7 @@ function CreditsUsedPerThread({
   });
 
   return (
-    <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
+    <Card className="bg-background w-full h-full flex flex-col rounded-md border-none gap-0">
       <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
         <span>Credits Used Per Thread</span>
         <Select
@@ -412,7 +412,7 @@ function CreditsUsedPerThread({
 }
 
 CreditsUsedPerThread.Fallback = () => (
-  <Card className="w-full h-full flex flex-col rounded-md border-none gap-0">
+  <Card className="bg-background w-full h-full flex flex-col rounded-md border-none gap-0">
     <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
       <span>Credits Used Per Thread</span>
     </div>
@@ -566,7 +566,7 @@ export default function Usage() {
   const members = useMembers();
 
   return (
-    <div className="h-full text-foreground">
+    <div className="h-full text-foreground bg-background">
       <SettingsMobileHeader currentPage="usage" />
 
       <div className="flex flex-col items-center h-full gap-4 w-full">

@@ -166,6 +166,7 @@ export interface Tab {
   maximumWidth?: number;
   hideFromViews?: boolean;
   renderer?: "always" | "onlyWhenVisible";
+  active?: boolean;
 }
 
 type Props =
@@ -271,6 +272,13 @@ function Docked(
         event.api,
         isMobile,
       );
+    }
+
+    const activeTabs = Object.entries(tabs).filter(([, tab]) => tab.active);
+    if (activeTabs.length > 0) {
+      for (const [id] of activeTabs) {
+        event.api.getPanel(id)?.api.setActive();
+      }
     }
 
     setOpenPanels(initialPanels);

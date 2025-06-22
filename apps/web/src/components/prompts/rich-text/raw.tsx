@@ -22,7 +22,7 @@ export default function RawTextArea({
       disabled={disabled}
       placeholder={placeholder}
       className={cn(
-        "min-h-[80lvh] whitespace-pre-wrap [overflow-wrap:anywhere]",
+        "min-h-[25lvh] whitespace-pre-wrap [overflow-wrap:anywhere]",
         className,
       )}
     />

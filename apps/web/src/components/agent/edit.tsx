@@ -122,16 +122,17 @@ const TABS: Record<string, Tab> = {
     title: "Agent Triggers",
   },
   // Left side group
-  audit: {
-    Component: Threads,
-    title: "Threads",
-    initialOpen: "within",
-  },
   chat: {
     Component: Chat,
     title: "Chat",
     initialOpen: "left",
     initialWidth: 600,
+    active: true,
+  },
+  audit: {
+    Component: Threads,
+    title: "Threads",
+    initialOpen: "within",
   },
   // Right side group  
   profile: {

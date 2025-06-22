@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/cli/**'
 
 jobs:
   publish:

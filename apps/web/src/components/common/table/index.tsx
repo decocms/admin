@@ -25,6 +25,7 @@ export interface TableProps<T> {
   sortDirection?: "asc" | "desc";
   onSort?: (key: string) => void;
   onRowClick?: (row: T) => void;
+  getRowHref?: (row: T) => string;
 }
 
 export function Table<T>({
@@ -34,6 +35,7 @@ export function Table<T>({
   sortDirection,
   onSort,
   onRowClick,
+  getRowHref,
 }: TableProps<T>) {
   function renderSortIcon(key: string) {
     if (!sortKey || sortKey !== key) {
@@ -86,30 +88,49 @@ export function Table<T>({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row, i) => (
-            <TableRow
-              key={i}
-              className={onRowClick ? "cursor-pointer hover:bg-muted" : ""}
-              onClick={onRowClick
-                ? () => onRowClick(row)
-                : undefined}
-            >
-              {columns.map((col, idx) => (
-                <TableCell
-                  key={col.id}
-                  className={(idx === 0 ? "px-4 " : "") +
-                    (col.cellClassName ? col.cellClassName + " " : "") +
-                    "truncate overflow-hidden whitespace-nowrap"}
-                >
-                  {col.render
-                    ? col.render(row)
-                    : col.accessor
-                    ? col.accessor(row)
-                    : null}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+          {data.map((row, i) => {
+            const href = getRowHref?.(row);
+            
+            return (
+              <TableRow
+                key={i}
+                className={
+                  (href || onRowClick) ? "cursor-pointer hover:bg-muted relative" : ""
+                }
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+              >
+                {href && (
+                  <a
+                    href={href}
+                    className="absolute inset-0 z-10"
+                    aria-label={`View details for row ${i + 1}`}
+                    onClick={(e) => {
+                      // Let the anchor handle the navigation
+                      // This enables right-click, Ctrl+click, etc.
+                      if (e.metaKey || e.ctrlKey || e.button === 1) {
+                        return; // Let browser handle
+                      }
+                      // For regular clicks, we can still handle programmatically if needed
+                    }}
+                  />
+                )}
+                {columns.map((col, idx) => (
+                  <TableCell
+                    key={col.id}
+                    className={(idx === 0 ? "px-4 " : "") +
+                      (col.cellClassName ? col.cellClassName + " " : "") +
+                      "truncate overflow-hidden whitespace-nowrap relative z-20"}
+                  >
+                    {col.render
+                      ? col.render(row)
+                      : col.accessor
+                      ? col.accessor(row)
+                      : null}
+                  </TableCell>
+                ))}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </UITable>
     </div>

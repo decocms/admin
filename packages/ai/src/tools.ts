@@ -8,7 +8,6 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Buffer } from "node:buffer";
-import { transcribeBase64Audio } from "./agent/audio.ts";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
@@ -657,11 +656,11 @@ export const SPEAK = createInnateTool({
 });
 
 const TranscribeAudioInputSchema = z.object({
-  audioBase64: z.string().describe(
-    "Base64 encoded audio data to transcribe (supports mp3, wav, m4a, etc.)"
+  audioUrl: z.string().describe(
+    "URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)",
   ),
   language: z.string().optional().describe(
-    "Optional language code to help with transcription accuracy (e.g., 'en', 'pt', 'es')"
+    "Optional language code to help with transcription accuracy (e.g., 'en', 'pt', 'es')",
   ),
 });
 
@@ -683,52 +682,42 @@ export const TRANSCRIBE_AUDIO = createInnateTool({
   outputSchema: TranscribeAudioOutputSchema,
   execute: (agent) => async ({ context }) => {
     try {
-      const { audioBase64, language } = context;
+      const { audioUrl, language } = context;
 
-      // Validate base64 format
-      if (!audioBase64 || typeof audioBase64 !== "string") {
+      if (!audioUrl) {
         return {
           transcription: "",
           success: false,
-          message: "Invalid audio data: audioBase64 must be a non-empty string",
+          message: "Invalid audio data: audioUrl must be a non-empty string",
         };
       }
 
-      // Basic base64 validation
-      const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-      if (!base64Pattern.test(audioBase64)) {
-        return {
-          transcription: "",
-          success: false,
-          message: "Invalid base64 format in audioBase64",
-        };
-      }
-
-      // Check if agent has voice capabilities
-      if (!agent.voice) {
-        return {
-          transcription: "",
-          success: false,
-          message: "Voice transcription is not available for this agent. Ensure OpenAI API key is configured.",
-        };
-      }
+      const audioBuffer = await fetch(audioUrl).then((res) =>
+        res.arrayBuffer()
+      );
+      const audioBufferUint8Array = new Uint8Array(audioBuffer);
 
       // Perform transcription using existing infrastructure
-      const transcription = await transcribeBase64Audio({
-        audio: audioBase64,
-        agent,
-      });
+      const transcription = await agent.listen(audioBufferUint8Array) as string;
+
+      if (!transcription) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Failed to transcribe audio",
+        };
+      }
 
       return {
         transcription,
         success: true,
-        message: `Successfully transcribed audio (${Math.round(audioBase64.length * 0.75 / 1024)}KB)${
-          language ? ` with language hint: ${language}` : ""
-        }`,
+        message: `Successfully transcribed audio (${
+          Math.round(audioBufferUint8Array.length * 0.75 / 1024)
+        }KB)${language ? ` with language hint: ${language}` : ""}`,
       };
     } catch (error) {
       console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);
-      
+
       let errorMessage = "Failed to transcribe audio";
       if (error instanceof Error) {
         if (error.message.includes("exceeds the maximum")) {

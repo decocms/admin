@@ -82,13 +82,9 @@ export const callTool = createIntegrationManagementTool({
   description: "Call a given tool",
   inputSchema: IntegrationSchema.pick({
     connection: true,
-  }).merge(CallToolRequestSchema.pick({ params: true })).extend({
-    timeout: z.number().optional().describe(
-      "Timeout in milliseconds for streaming tools (default: 180000)",
-    ),
-  }),
+  }).merge(CallToolRequestSchema.pick({ params: true })),
   handler: async (
-    { connection: reqConnection, params: toolCall, timeout = 180000 },
+    { connection: reqConnection, params: toolCall },
     c,
   ) => {
     c.resourceAccess.grant();

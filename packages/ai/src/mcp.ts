@@ -19,10 +19,7 @@ import {
 } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
-import {
-  CreateMessageRequestSchema,
-  ResourceListChangedNotificationSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { CreateMessageRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { AIAgent, Env } from "./agent.ts";
 import { createLLMInstance, getLLMConfig } from "./agent/llm.ts";
 import { getTools } from "./deco.ts";
@@ -252,25 +249,6 @@ export const createServerClient = async (
       sampling: {},
     },
   });
-
-  // Track connection state to avoid errors on closed connections
-  let isConnected = false;
-
-  // Handle connection events
-  client.onerror = (error) => {
-    console.error("MCP client error:", error);
-    isConnected = false;
-  };
-
-  // Override the close method to track connection state
-  const originalClose = client.close.bind(client);
-  client.close = () => {
-    isConnected = false;
-    return originalClose();
-  };
-
-  mcpServer.connection.type === "Websocket" &&
-    console.log("Setting up notification handler for resource list changed");
 
   mcpServer.connection.type === "Websocket" && client.setRequestHandler(
     CreateMessageRequestSchema,

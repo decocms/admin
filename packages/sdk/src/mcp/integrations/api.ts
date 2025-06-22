@@ -1,7 +1,6 @@
 import {
   createServerClient as createMcpServerClient,
   isApiDecoChatMCPConnection,
-  listResourcesByConnectionType,
   listToolsByConnectionType,
   patchApiDecoChatTokenHTTPConnection,
 } from "@deco/ai/mcp";
@@ -180,21 +179,6 @@ export const listTools = createIntegrationManagementTool({
     if (Array.isArray(result?.tools)) {
       result.tools.sort((a, b) => a.name.localeCompare(b.name));
     }
-
-    return result;
-  },
-});
-
-export const listResources = createIntegrationManagementTool({
-  name: "INTEGRATIONS_LIST_RESOURCES",
-  description: "List resources of a given integration",
-  inputSchema: IntegrationSchema.pick({
-    connection: true,
-  }),
-  handler: async ({ connection }, c) => {
-    c.resourceAccess.grant();
-
-    const result = await listResourcesByConnectionType(connection);
 
     return result;
   },

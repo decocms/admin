@@ -51,7 +51,6 @@ export const GLOBAL_TOOLS = [
   profilesAPI.updateProfile,
   integrationsAPI.callTool,
   integrationsAPI.listTools,
-  integrationsAPI.listResources,
 ] as const;
 
 // Tools tied to an specific workspace
@@ -134,14 +133,8 @@ export const WORKSPACE_TOOLS = [
   promptsAPI.searchPrompts,
 ] as const;
 
-export const WORKSPACE_RESOURCES = [
-  hostingAPI.listAppsResource,
-  hostingAPI.readAppResource,
-] as const;
-
 export type GlobalTools = typeof GLOBAL_TOOLS;
 export type WorkspaceTools = typeof WORKSPACE_TOOLS;
-export type WorkspaceResources = typeof WORKSPACE_RESOURCES;
 export type ToolLike<
   TName extends string = string,
   // deno-lint-ignore no-explicit-any

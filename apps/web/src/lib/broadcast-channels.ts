@@ -14,35 +14,3 @@ export const notifyIntegrationUpdate = () => {
     { type: "INTEGRATION_UPDATED" } as IntegrationMessage,
   );
 };
-
-/**
- * Channel for streaming tool notifications
- */
-export const STREAMING_TOOL_CHANNEL = new BroadcastChannel(
-  "streaming-tool-updates",
-);
-
-export type StreamingToolMessage = {
-  type: "STREAMING_TOOL_NOTIFICATION";
-  toolName: string;
-  connectionId: string;
-  notification: unknown;
-};
-
-export const notifyStreamingToolUpdate = (
-  toolName: string,
-  connectionId: string,
-  notification: unknown,
-) => {
-  console.log("Broadcasting streaming tool notification:", {
-    toolName,
-    connectionId,
-    notification,
-  });
-  STREAMING_TOOL_CHANNEL.postMessage({
-    type: "STREAMING_TOOL_NOTIFICATION",
-    toolName,
-    connectionId,
-    notification,
-  } as StreamingToolMessage);
-};

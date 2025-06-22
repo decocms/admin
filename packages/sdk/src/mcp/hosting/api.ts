@@ -11,7 +11,6 @@ import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
-import { createResource } from "../context.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -124,47 +123,6 @@ export const listApps = createTool({
     if (error) throw error;
 
     return data.map(Mappers.toApp);
-  },
-});
-
-export const listAppsResource = createResource({
-  name: "HOSTING_APPS_LIST_RESOURCE",
-  description: "List resources of a given app",
-  handler: async (_, c) => {
-    assertHasWorkspace(c);
-
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", c.workspace.value);
-
-    if (error) throw error;
-
-    return data.map(Mappers.toResource) as unknown as {
-      uri: string;
-      name: string;
-      description?: string;
-      mimeType?: string;
-    }[];
-  },
-});
-
-export const readAppResource = createResource({
-  name: "HOSTING_APP_READ_RESOURCE",
-  description: "Read a given app",
-  handler: async ({ uri }, c) => {
-    assertHasWorkspace(c);
-
-    const { data, error } = await c.db
-      .from(DECO_CHAT_HOSTING_APPS_TABLE)
-      .select("*")
-      .eq("workspace", c.workspace.value)
-      .eq("slug", uri.split(HOSTING_APPS_DOMAIN)[0])
-      .single();
-
-    if (error) throw error;
-
-    return Mappers.toContents(data);
   },
 });
 

@@ -659,9 +659,6 @@ const TranscribeAudioInputSchema = z.object({
   audioUrl: z.string().describe(
     "URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)",
   ),
-  language: z.string().optional().describe(
-    "Optional language code to help with transcription accuracy (e.g., 'en', 'pt', 'es')",
-  ),
 });
 
 const TranscribeAudioOutputSchema = z.object({
@@ -673,16 +670,17 @@ const TranscribeAudioOutputSchema = z.object({
 export const TRANSCRIBE_AUDIO = createInnateTool({
   id: "TRANSCRIBE_AUDIO",
   description:
-    "Transcribe audio content to text using OpenAI Whisper. This tool accepts base64 encoded audio data " +
-    "and returns the transcribed text. Supports common audio formats like mp3, wav, m4a, and more. " +
+    "Transcribe audio content to text using OpenAI's Whisper model. " +
+    "This tool accepts a URL to an audio file and returns the transcribed text. " +
+    "Supports common audio formats like mp3, wav, m4a, and more. " +
     "Perfect for converting voice messages, audio recordings, or any audio content into readable text. " +
     "Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, " +
-    "or convert speech to text for further processing.",
+    "or convert speech to text for further processing. This tool is only available if the agent has voice transcription capabilities.",
   inputSchema: TranscribeAudioInputSchema,
   outputSchema: TranscribeAudioOutputSchema,
   execute: (agent) => async ({ context }) => {
     try {
-      const { audioUrl, language } = context;
+      const { audioUrl } = context;
 
       if (!audioUrl) {
         return {
@@ -713,7 +711,7 @@ export const TRANSCRIBE_AUDIO = createInnateTool({
         success: true,
         message: `Successfully transcribed audio (${
           Math.round(audioBufferUint8Array.length * 0.75 / 1024)
-        }KB)${language ? ` with language hint: ${language}` : ""}`,
+        }KB)`,
       };
     } catch (error) {
       console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);

@@ -118,6 +118,12 @@ export function ChatProvider({
           })) || lastMessage?.annotations;
       }
 
+      const audioAttachments = lastMessage?.["experimental_attachments"]?.filter((attachment) => attachment.contentType?.startsWith("audio/"));
+
+      if (audioAttachments && audioAttachments.length > 0 && lastMessage) {
+        lastMessage.experimental_attachments = audioAttachments.filter((attachment) => !attachment.contentType?.startsWith("audio/"));
+      }
+
       const bypassOpenRouter = !preferences.useOpenRouter;
 
       return {

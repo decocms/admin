@@ -11,7 +11,7 @@ import type { JWTPayload } from "../auth/jwt.ts";
 import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
-import type { WithResource, WithTool } from "./assertions.ts";
+import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 
@@ -30,7 +30,6 @@ export interface Vars {
   resourceAccess: ResourceAccess;
   /** Current tool being executed definitions */
   tool?: { name: string };
-  resource?: { name: string };
   cookie?: string;
   db: Client;
   user: Principal;
@@ -115,26 +114,6 @@ export const AUTH_URL = (ctx: AppContext) =>
   getEnv(ctx).VITE_USE_LOCAL_BACKEND === "true"
     ? "http://localhost:3001"
     : "https://api.deco.chat";
-
-export interface ResourceDefinition<
-  TAppContext extends AppContext = AppContext,
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
-> {
-  group?: string;
-  name: TName;
-  description?: string;
-  mimeType?: string;
-  handler: (props: TInput, c: TAppContext) => Promise<TReturn>;
-}
-
-export interface Resource<
-  TAppContext extends AppContext = AppContext,
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
-> extends ResourceDefinition<TAppContext, TName, TInput, TReturn> {}
 
 type ToolCallResultSuccess<T> = {
   isError: false;
@@ -256,7 +235,6 @@ export const createTool = createToolFactory<WithTool<AppContext>>(
 );
 
 export type MCPDefinition = Tool[];
-export type MCPResourceDefinition = Resource[];
 
 const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
 

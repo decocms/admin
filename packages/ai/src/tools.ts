@@ -8,6 +8,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Buffer } from "node:buffer";
+import { transcribeBase64Audio } from "./agent/audio.ts";
 
 export type Tool = ReturnType<typeof createInnateTool>;
 
@@ -655,6 +656,99 @@ export const SPEAK = createInnateTool({
   },
 });
 
+const TranscribeAudioInputSchema = z.object({
+  audioBase64: z.string().describe(
+    "Base64 encoded audio data to transcribe (supports mp3, wav, m4a, etc.)"
+  ),
+  language: z.string().optional().describe(
+    "Optional language code to help with transcription accuracy (e.g., 'en', 'pt', 'es')"
+  ),
+});
+
+const TranscribeAudioOutputSchema = z.object({
+  transcription: z.string().describe("The transcribed text from the audio"),
+  success: z.boolean().describe("Whether the transcription was successful"),
+  message: z.string().describe("Status message about the transcription"),
+});
+
+export const TRANSCRIBE_AUDIO = createInnateTool({
+  id: "TRANSCRIBE_AUDIO",
+  description:
+    "Transcribe audio content to text using OpenAI Whisper. This tool accepts base64 encoded audio data " +
+    "and returns the transcribed text. Supports common audio formats like mp3, wav, m4a, and more. " +
+    "Perfect for converting voice messages, audio recordings, or any audio content into readable text. " +
+    "Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, " +
+    "or convert speech to text for further processing.",
+  inputSchema: TranscribeAudioInputSchema,
+  outputSchema: TranscribeAudioOutputSchema,
+  execute: (agent) => async ({ context }) => {
+    try {
+      const { audioBase64, language } = context;
+
+      // Validate base64 format
+      if (!audioBase64 || typeof audioBase64 !== "string") {
+        return {
+          transcription: "",
+          success: false,
+          message: "Invalid audio data: audioBase64 must be a non-empty string",
+        };
+      }
+
+      // Basic base64 validation
+      const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+      if (!base64Pattern.test(audioBase64)) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Invalid base64 format in audioBase64",
+        };
+      }
+
+      // Check if agent has voice capabilities
+      if (!agent.voice) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Voice transcription is not available for this agent. Ensure OpenAI API key is configured.",
+        };
+      }
+
+      // Perform transcription using existing infrastructure
+      const transcription = await transcribeBase64Audio({
+        audio: audioBase64,
+        agent,
+      });
+
+      return {
+        transcription,
+        success: true,
+        message: `Successfully transcribed audio (${Math.round(audioBase64.length * 0.75 / 1024)}KB)${
+          language ? ` with language hint: ${language}` : ""
+        }`,
+      };
+    } catch (error) {
+      console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);
+      
+      let errorMessage = "Failed to transcribe audio";
+      if (error instanceof Error) {
+        if (error.message.includes("exceeds the maximum")) {
+          errorMessage = "Audio file too large (maximum 25MB allowed)";
+        } else if (error.message.includes("Invalid audio")) {
+          errorMessage = "Invalid audio format or corrupted audio data";
+        } else {
+          errorMessage = `Transcription failed: ${error.message}`;
+        }
+      }
+
+      return {
+        transcription: "",
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+});
+
 // Helper function to process audio stream with memory efficiency
 async function processAudioStream(
   // deno-lint-ignore no-explicit-any
@@ -862,4 +956,5 @@ export const tools = {
   CREATE_PRESIGNED_URL,
   WHO_AM_I,
   SPEAK,
+  TRANSCRIBE_AUDIO,
 };

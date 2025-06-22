@@ -114,10 +114,6 @@ const TABS: Record<string, Tab> = {
     title: "Preview",
     hideFromViews: true,
   },
-  triggers: {
-    Component: AgentTriggers,
-    title: "Agent Triggers",
-  },
   // Left side group
   chat: {
     Component: Chat,
@@ -142,6 +138,11 @@ const TABS: Record<string, Tab> = {
   integrations: {
     Component: ToolsAndKnowledgeTab,
     title: "Tools",
+    initialOpen: "within",
+  },
+  triggers: {
+    Component: AgentTriggers,
+    title: "Triggers",
     initialOpen: "within",
   },
   advanced: {

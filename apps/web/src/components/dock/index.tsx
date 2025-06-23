@@ -73,12 +73,7 @@ const TAB_COMPONENTS = {
     }
 
     return (
-      <div
-        className="w-min"
-        onDrag={() => {
-          console.log("dragging");
-        }}
-      >
+      <div className="w-min">
         <div
           data-active
           className="flex items-center justify-between gap-1 p-2 px-3 group"

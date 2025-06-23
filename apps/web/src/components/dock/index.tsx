@@ -171,7 +171,10 @@ export interface Tab {
 
 type Props =
   & Partial<Omit<ComponentProps<typeof DockviewReact>, "components">>
-  & { tabs: Record<string, Tab> };
+  & {
+    tabs: Record<string, Tab>;
+    hideViewsButton?: boolean;
+  };
 
 const addPanel = (
   options: AddPanelOptions,
@@ -223,7 +226,7 @@ const equals = (a: Set<string>, b: Set<string>) => {
 };
 
 function Docked(
-  { tabs, ...props }: Props,
+  { tabs, hideViewsButton, ...props }: Props,
 ) {
   const isMobile = useIsMobile();
   const [api, setApi] = useState<DockviewApi | null>(null);
@@ -339,7 +342,12 @@ function Docked(
         hideBorders
         {...props}
       />
-      {api && <ViewsButton />}
+      {api && !hideViewsButton && (
+        <>
+          <ViewsButton.Styles />
+          <ViewsButton />
+        </>
+      )}
     </div>
   );
 }

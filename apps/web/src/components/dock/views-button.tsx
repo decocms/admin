@@ -29,6 +29,7 @@ export const createPrependPortal = (
   );
 };
 
+// The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {
   "chat": "chat",
   "setup": "settings",
@@ -52,17 +53,11 @@ function ViewsButtonInner(
   const sortedViews = views.sort(([idA], [idB]) => {
     const indexA = Object.keys(WELL_KNOWN_VIEW_ICONS).indexOf(idA);
     const indexB = Object.keys(WELL_KNOWN_VIEW_ICONS).indexOf(idB);
-
-    // If both are in WELL_KNOWN_VIEW_ICONS, sort by their order
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
-
-    // If only one is in WELL_KNOWN_VIEW_ICONS, prioritize it
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-
-    // If neither is in WELL_KNOWN_VIEW_ICONS, sort alphabetically
     return idA.localeCompare(idB);
   });
 
@@ -73,7 +68,7 @@ function ViewsButtonInner(
           <Icon name="layers" size={16} />
         </div>
       </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent className="p-2">
+      <ResponsiveDropdownContent align="start" className="p-2">
         <span className="p-1 text-xs text-muted-foreground font-medium">
           Views
         </span>
@@ -88,7 +83,7 @@ function ViewsButtonInner(
                 isActive && "bg-muted",
                 "hover:bg-muted",
               )}
-              onClick={() => {
+              onSelect={() => {
                 togglePanel({ id, component: id, title: tab.title });
               }}
             >
@@ -117,7 +112,7 @@ function ViewsButtonInner(
                 isActive && "bg-muted",
                 "hover:bg-muted",
               )}
-              onClick={() => {
+              onSelect={() => {
                 togglePanel({ id, component: id, title: tab.title });
               }}
             >
@@ -141,9 +136,23 @@ export function ViewsButton() {
   const firstContainer = containers[0];
 
   return createPrependPortal(
-    <div className="flex items-center justify-center w-10 h-8">
+    <div className="flex items-center justify-center w-9 h-8 pr-1">
       <ViewsButtonInner tabs={tabs} openPanels={openPanels} />
     </div>,
     firstContainer,
   );
 }
+
+ViewsButton.Styles = () => {
+  return (
+    <style>
+      {`
+        .dv-tabs-container {
+          padding-top: 0.25rem;
+          padding-left: 0.25rem;
+          padding-right: 0.25rem;
+
+      `}
+    </style>
+  );
+};

@@ -121,12 +121,14 @@ export interface PageLayoutProps {
   breadcrumb?: ReactNode;
   actionButtons?: ReactNode;
   tabs: Record<string, Tab>;
+  hideViewsButton?: boolean;
 }
 
 export function PageLayout({
   breadcrumb,
   actionButtons,
   tabs,
+  hideViewsButton,
 }: PageLayoutProps) {
   const { toggleSidebar, open } = useSidebar();
 
@@ -185,7 +187,7 @@ export function PageLayout({
         )}
       </div>
       <div className="h-full p-0 md:p-1">
-        <Docked tabs={tabs} />
+        <Docked tabs={tabs} hideViewsButton={hideViewsButton} />
       </div>
     </Docked.Provider>
   );

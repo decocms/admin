@@ -65,7 +65,7 @@
     }
 
     .dv-tabs-container {
-      @apply bg-muted pt-1 px-1 h-10!;
+      @apply bg-muted h-10!;
     }
 
     .dv-inactive-group {
@@ -92,6 +92,7 @@
     .dv-active-tab [data-active="true"]::before,
     .dv-active-tab [data-active="true"]::after {
       content: "";
+      pointer-events: none;
       position: absolute;
       bottom: -3px;
       width: 1rem;

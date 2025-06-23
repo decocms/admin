@@ -554,6 +554,7 @@ export default function Page() {
     <Context.Provider value={{ handleCreate }}>
       <PageLayout
         tabs={TABS}
+        hideViewsButton
         breadcrumb={
           <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
         }

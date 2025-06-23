@@ -23,6 +23,7 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   return (
     <>
       <PageLayout
+        hideViewsButton
         breadcrumb={
           <DefaultBreadcrumb
             items={[{ label: "Integrations", link: "/connections" }]}

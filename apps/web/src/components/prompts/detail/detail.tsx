@@ -179,6 +179,7 @@ export default function Page() {
           value={{ form, prompt, onSubmit }}
         >
           <PageLayout
+            hideViewsButton
             tabs={TABS}
             actionButtons={
               <div

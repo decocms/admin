@@ -1039,6 +1039,7 @@ export default function Page() {
 
   return (
     <PageLayout
+      hideViewsButton
       tabs={{
         main: {
           Component: () => <AppDetail appKey={appKey} />,

@@ -43,6 +43,7 @@ function Page() {
       threadId={id}
     >
       <PageLayout
+        hideViewsButton
         tabs={TABS}
         breadcrumb={
           <DefaultBreadcrumb

@@ -18,6 +18,10 @@ const WELL_KNOWN_VIEW_ICONS = {
   "triggers": "webhook",
   "audit": "forum",
   "usage": "monitoring",
+  "wallet": "wallet",
+  "models": "batch_prediction",
+  "general": "settings",
+  "members": "group",
 };
 
 function ViewsButtonInner(

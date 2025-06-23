@@ -98,6 +98,7 @@ function ListPromptsLayout() {
 
   return (
     <PageLayout
+      hideViewsButton
       breadcrumb={
         <DefaultBreadcrumb
           items={[

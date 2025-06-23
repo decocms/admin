@@ -340,6 +340,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         >
           <PageLayout
             tabs={tabs}
+            hideViewsButton
             key={agentId}
             actionButtons={
               <ActionButtons

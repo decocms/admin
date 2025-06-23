@@ -12,16 +12,17 @@ import { createPrependPortal } from "../../utils/react-prepend-portal.ts";
 // The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {
   "chat": "chat",
-  "profile": "settings",
+  "profile": "robot_2",
   "prompt": "assignment",
   "integrations": "linked_services",
-  "triggers": "webhook",
+  "triggers": "conversion_path",
   "general": "settings",
   "members": "group",
   "models": "batch_prediction",
   "usage": "monitoring",
   "wallet": "wallet",
   "audit": "forum",
+  "advanced": "settings",
 };
 
 function ViewsButtonInner(

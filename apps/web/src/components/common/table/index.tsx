@@ -65,7 +65,7 @@ export function Table<T>({
   }
 
   return (
-    <div className="overflow-auto w-full">
+    <div className="flex-1 overflow-auto w-full">
       <UITable className="w-full min-w-max">
         <TableHeader className="sticky top-0 z-10 border-b-0 [&>*:first-child]:border-b-0">
           <TableRow className="h-14">

@@ -74,7 +74,19 @@ function AdvancedTab() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex flex-col gap-2">
-                    <FormLabel>Max Steps</FormLabel>
+                    <FormLabel>
+                      Max Steps{" "}
+                      <a
+                        href="https://mastra.ai/en/docs/agents/overview#using-maxsteps"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Icon
+                          name="open_in_new"
+                          className="w-4 h-4"
+                        />
+                      </a>
+                    </FormLabel>
                     <FormDescription className="text-xs text-muted-foreground">
                       Maximum number of sequential LLM calls an agent can make.
                     </FormDescription>
@@ -125,10 +137,22 @@ function AdvancedTab() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex flex-col gap-2">
-                    <FormLabel>Conversation History</FormLabel>
+                    <FormLabel>
+                      Context Window{" "}
+                      <a
+                        href="https://mastra.ai/en/docs/memory/overview#conversation-history"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Icon
+                          name="open_in_new"
+                          className="w-4 h-4"
+                        />
+                      </a>
+                    </FormLabel>
                     <FormDescription className="text-xs text-muted-foreground">
-                      The number of recent messages to keep in memory for
-                      context.
+                      The number of recent messages to keep in memory context
+                      window.
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -152,7 +176,19 @@ function AdvancedTab() {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between">
                   <div className="flex flex-col gap-2">
-                    <FormLabel>Semantic Recall</FormLabel>
+                    <FormLabel>
+                      Semantic Recall{" "}
+                      <a
+                        href="https://mastra.ai/en/docs/memory/semantic-recall"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Icon
+                          name="open_in_new"
+                          className="w-4 h-4"
+                        />
+                      </a>
+                    </FormLabel>
                     <FormDescription className="text-xs text-muted-foreground">
                       Enable the agent to recall relevant information from past
                       conversations.
@@ -175,7 +211,19 @@ function AdvancedTab() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between w-full">
                       <div className="flex flex-col gap-2">
-                        <FormLabel>Working Memory</FormLabel>
+                        <FormLabel>
+                          Working Memory{" "}
+                          <a
+                            href="https://mastra.ai/en/docs/memory/working-memory"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Icon
+                              name="open_in_new"
+                              className="w-4 h-4"
+                            />
+                          </a>
+                        </FormLabel>
                         <FormDescription className="text-xs text-muted-foreground">
                           Allow the agent to maintain a short-term memory for
                           ongoing tasks.

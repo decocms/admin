@@ -179,6 +179,7 @@ const agentWorkingMemoryToWorkingMemoryConfig = (
       if (typeof parsed === "object") {
         const getSchema = new Function(
           "z",
+          // @ts-ignore: jsonSchemaToZod is a function
           `return ${jsonSchemaToZod(parsed)}`,
         );
         return { enabled: true, schema: getSchema(z) };
@@ -704,6 +705,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         id: parsed.id,
       });
 
+      if (!dbConfig) {
+        throw new Error("Failed to update agent");
+      }
+
       await this._initAgent(dbConfig);
       this._configuration = dbConfig;
 
@@ -849,7 +854,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const manifest = this.agentId in WELL_KNOWN_AGENTS
       ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
-      : await client.AGENTS_GET({ id: this.agentId }).catch((err) => {
+      : await client.AGENTS_GET({ id: this.agentId }).catch((err: unknown) => {
         console.error("Error getting agent", err);
         return null;
       });

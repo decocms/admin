@@ -28,7 +28,6 @@ const parseOptions: {
   ) => StreamOptions[key];
 } = {
   bypassOpenRouter: (val) => val === "true",
-  lastMessages: (val) => val ? parseInt(val) : undefined,
   sendReasoning: (val) => val === "true",
   enableSemanticRecall: (val) => val === "true",
 };

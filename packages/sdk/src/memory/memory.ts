@@ -63,22 +63,6 @@ export class WorkspaceMemory extends MastraMemory {
     };
   }
 
-  override async getThreadById({ threadId }: { threadId: string }) {
-    const thread = await super.getThreadById({ threadId });
-    console.log("getThreadById", thread);
-    return thread;
-  }
-
-  override async saveThread({ thread }: { thread: StorageThreadType }) {
-    const result = await super.saveThread({ thread });
-    console.log(
-      "saveThread",
-      { thread, result },
-      Error.captureStackTrace(this, new Error("saveThread")),
-    );
-    return result;
-  }
-
   static async create(opts: CreateWorkspaceMemoryOpts) {
     const config = await WorkspaceMemory.buildWorkspaceMemoryOpts(opts);
     return new WorkspaceMemory(config);

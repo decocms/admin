@@ -1,5 +1,5 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { type Tab, togglePanel, useDock } from "./index.tsx";
+import { openPanel, type Tab, useDock } from "./index.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -12,20 +12,20 @@ import { createPrependPortal } from "../../utils/react-prepend-portal.ts";
 // The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {
   "chat": "chat",
-  "setup": "settings",
+  "profile": "settings",
   "prompt": "assignment",
   "integrations": "linked_services",
   "triggers": "webhook",
-  "audit": "forum",
-  "usage": "monitoring",
-  "wallet": "wallet",
-  "models": "batch_prediction",
   "general": "settings",
   "members": "group",
+  "models": "batch_prediction",
+  "usage": "monitoring",
+  "wallet": "wallet",
+  "audit": "forum",
 };
 
 function ViewsButtonInner(
-  { tabs, openPanels }: { tabs: Record<string, Tab>; openPanels: Set<string> },
+  { tabs }: { tabs: Record<string, Tab> },
 ) {
   const all = Object.entries(tabs);
   const saved = all.filter(([_, tab]) => tab.metadata?.isSavedView);
@@ -52,65 +52,55 @@ function ViewsButtonInner(
           <Icon name="layers" size={16} />
         </div>
       </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent align="start" className="p-2">
+      <ResponsiveDropdownContent align="start" className="p-2 md:min-w-48">
         <span className="p-1 text-xs text-muted-foreground font-medium">
           Views
         </span>
-        {sortedViews.map(([id, tab]) => {
-          const isActive = openPanels.has(id);
-
-          return (
-            <ResponsiveDropdownItem
-              key={id}
-              className={cn(
-                "text-xs mb-1 rounded-lg",
-                isActive && "bg-muted",
-                "hover:bg-muted",
-              )}
-              onSelect={() => {
-                togglePanel({ id, component: id, title: tab.title });
-              }}
-            >
-              <Icon
-                name={WELL_KNOWN_VIEW_ICONS[
-                  id as keyof typeof WELL_KNOWN_VIEW_ICONS
-                ] || "atr"}
-                className="text-muted-foreground"
-                size={16}
-              />
-              {tab.title}
-            </ResponsiveDropdownItem>
-          );
-        })}
-        <span className="p-1 text-xs text-muted-foreground font-medium">
-          Saved
-        </span>
-        {saved.map(([id, tab]) => {
-          const isActive = openPanels.has(id);
-
-          return (
-            <ResponsiveDropdownItem
-              key={id}
-              className={cn(
-                "text-xs",
-                isActive && "bg-muted",
-                "hover:bg-muted",
-              )}
-              onSelect={() => {
-                togglePanel({ id, component: id, title: tab.title });
-              }}
-            >
-              {tab.title}
-            </ResponsiveDropdownItem>
-          );
-        })}
+        {sortedViews.map(([id, tab]) => (
+          <ResponsiveDropdownItem
+            key={id}
+            className={cn(
+              "text-xs mb-1 rounded-lg hover:bg-muted",
+            )}
+            onSelect={() => {
+              openPanel({ id, component: id, title: tab.title });
+            }}
+          >
+            <Icon
+              name={WELL_KNOWN_VIEW_ICONS[
+                id as keyof typeof WELL_KNOWN_VIEW_ICONS
+              ] || "atr"}
+              className="text-muted-foreground"
+              size={16}
+            />
+            {tab.title}
+          </ResponsiveDropdownItem>
+        ))}
+        {saved.length > 0 && (
+          <>
+            <span className="p-1 text-xs text-muted-foreground font-medium">
+              Saved
+            </span>
+            {saved.map(([id, tab]) => (
+              <ResponsiveDropdownItem
+                key={id}
+                className={cn("text-xs hover:bg-muted")}
+                onSelect={() => {
+                  openPanel({ id, component: id, title: tab.title });
+                }}
+              >
+                {tab.title}
+              </ResponsiveDropdownItem>
+            ))}
+          </>
+        )}
       </ResponsiveDropdownContent>
     </ResponsiveDropdown>
   );
 }
 
 export function ViewsButton() {
-  const { tabs, openPanels } = useDock();
+  const { tabs } = useDock();
   const containers = document.querySelectorAll(".dv-tabs-container");
 
   if (!containers || containers.length === 0) {
@@ -124,7 +114,7 @@ export function ViewsButton() {
       key="views-button"
       className="flex items-center justify-center w-9 h-8 pr-1"
     >
-      <ViewsButtonInner tabs={tabs} openPanels={openPanels} />
+      <ViewsButtonInner tabs={tabs} />
     </div>,
     firstContainer,
   );

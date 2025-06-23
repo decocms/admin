@@ -11,10 +11,16 @@ const TABS: Record<string, Tab> = {
     title: "General",
     Component: GeneralSettings,
     initialOpen: true,
+    active: true,
   },
   members: {
     title: "Members",
     Component: MembersSettings,
+    initialOpen: true,
+  },
+  models: {
+    title: "Models",
+    Component: ModelsSettings,
     initialOpen: true,
   },
   usage: {
@@ -26,10 +32,6 @@ const TABS: Record<string, Tab> = {
     title: "Wallet",
     Component: WalletSettings,
     initialOpen: true,
-  },
-  models: {
-    title: "Models",
-    Component: ModelsSettings,
   },
 };
 

@@ -164,5 +164,17 @@
     .prose hr {
       @apply my-4 border-border;
     }
+
+    .dv-active-tab [data-active="true"] button {
+      @apply opacity-100;
+    }
+
+    .dv-inactive-tab [data-active="true"] button {
+      @apply opacity-0 group-hover:opacity-100;
+    }
+
+    .one-tab .dv-scrollable {
+      @apply grow-0!;
+    }
   }
 }

@@ -36,7 +36,6 @@ const Context = createContext<
   } | null
 >(null);
 
-const DOCKED_VIEWS_TAB = { id: "chat-docked-views", title: "Views" };
 const NO_DROP_TARGET = "no-drop-target";
 
 export const useDock = () => {
@@ -69,41 +68,20 @@ const TAB_COMPONENTS = {
   default: (props: IDockviewPanelHeaderProps) => {
     const { openPanels } = useDock();
 
-    if (props.api.component === DOCKED_VIEWS_TAB.id) {
-      return (
-        <div className="flex items-center justify-between gap-2 py-3 px-2 bg-sidebar">
-          <Icon name="layers" size={16} className="text-muted-foreground p-1" />
-          <span className="flex-1 text-sm">Views</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() =>
-              togglePanel({
-                id: DOCKED_VIEWS_TAB.id,
-                component: DOCKED_VIEWS_TAB.id,
-                title: DOCKED_VIEWS_TAB.title,
-              })}
-            aria-label="Close views menu"
-          >
-            <Icon name="close" size={16} />
-          </Button>
-        </div>
-      );
-    }
-
-    const shouldRenderTabs = openPanels.has(DOCKED_VIEWS_TAB.id)
-      ? openPanels.size > 2
-      : openPanels.size > 1;
-
-    if (!shouldRenderTabs) {
+    if (openPanels.size <= 1) {
       return null;
     }
 
     return (
-      <div className="w-min">
+      <div
+        className="w-min"
+        onDrag={() => {
+          console.log("dragging");
+        }}
+      >
         <div
           data-active
-          className="flex items-center justify-between gap-1 p-2 px-3"
+          className="flex items-center justify-between gap-1 p-2 px-3 group"
         >
           <p className="text-sm whitespace-nowrap">{props.api.title}</p>
           <Button
@@ -185,34 +163,18 @@ const addPanel = (
     group.locked !== NO_DROP_TARGET
   );
 
-  const views = options.id === DOCKED_VIEWS_TAB.id;
   const { position, ...otherOptions } = options;
 
-  const panelOptions: AddPanelOptions = views
-    ? {
-      maximumWidth: 256,
-      minimumWidth: 256,
-      initialWidth: 256,
-      position: isMobile && targetGroup?.id
-        ? { direction: "within" }
-        : { direction: "right" },
-      ...options,
-      floating: false,
-    }
-    : {
-      position: {
-        direction: isMobile ? "within" : (position?.direction || "within"),
-        referenceGroup: targetGroup?.id,
-      },
-      ...otherOptions,
-      floating: false,
-    };
+  const panelOptions: AddPanelOptions = {
+    position: {
+      direction: isMobile ? "within" : (position?.direction || "within"),
+      referenceGroup: targetGroup?.id,
+    },
+    ...otherOptions,
+    floating: false,
+  };
 
   const panel = api.addPanel(panelOptions);
-
-  if (views) {
-    panel.group.locked = NO_DROP_TARGET;
-  }
 
   return panel;
 };
@@ -311,6 +273,7 @@ function Docked(
           panel.api.close();
         } else if (type === "open") {
           panel.api.updateParameters(payload.params || {});
+          panel.api.setActive();
         }
       } else {
         addPanel(payload, api, isMobile);

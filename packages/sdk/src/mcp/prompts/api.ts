@@ -104,8 +104,20 @@ export const deletePrompt = createTool({
   },
 });
 
-const virtualPromptsFor = (workspace: string) => {
-  return [
+const virtualPromptsFor = (
+  workspace: string,
+  ids?: string[],
+): [
+  {
+    id: string;
+    content: string;
+    name: string;
+    description: string;
+    created_at: string;
+  }[],
+  string[],
+] => {
+  const virtualPrompts = [
     {
       content: workspace,
       created_at: new Date().toISOString(),
@@ -120,6 +132,14 @@ const virtualPromptsFor = (workspace: string) => {
       id: `date:now`,
       name: "now",
     },
+  ];
+  if (!ids || ids.length === 0) {
+    return [virtualPrompts, []];
+  }
+
+  return [
+    virtualPrompts.filter((p) => ids.includes(p.id)),
+    ids.filter((id) => !virtualPrompts.some((p) => p.id === id)),
   ];
 };
 export const listPrompts = createTool({
@@ -136,20 +156,22 @@ export const listPrompts = createTool({
 
     const { ids = [] } = props;
 
+    const [virtualPrompts, remainingIds] = virtualPromptsFor(workspace, ids);
+
     let query = c.db
       .from("deco_chat_prompts")
       .select("*")
       .eq("workspace", workspace);
 
-    if (ids.length > 0) {
-      query = query.in("id", ids);
+    if (remainingIds.length > 0) {
+      query = query.in("id", remainingIds);
     }
 
     const { data, error } = await query;
 
     if (error) throw error;
 
-    return [...data, ...virtualPromptsFor(workspace)];
+    return [...data, ...virtualPrompts];
   },
 });
 
@@ -163,10 +185,11 @@ export const getPrompt = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
     const { id } = props;
+    const [virtualPrompts, _] = virtualPromptsFor(workspace, [id]);
+    const prompt = virtualPrompts[0];
+    if (prompt) return prompt;
 
-    c.resourceAccess.grant();
-
-    // await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_prompts")
@@ -193,9 +216,7 @@ export const searchPrompts = createTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    c.resourceAccess.grant();
-
-    // await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { query, limit = 10, offset = 0 } = props;
 

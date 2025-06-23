@@ -460,6 +460,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const processedInstructions = await replacePromptMentions(
       config.instructions,
       this.workspace,
+      this.metadata?.mcpClient,
     );
 
     this._maybeAgent = new Agent({
@@ -1078,6 +1079,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       processedInstructions = await replacePromptMentions(
         processedInstructions,
         this.workspace,
+        this.metadata?.mcpClient,
       );
     }
 

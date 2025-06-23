@@ -1,4 +1,5 @@
 import { listPrompts } from "../crud/prompts.ts";
+import type { MCPClient } from "../fetcher.ts";
 import { unescapeHTML } from "./html.ts";
 
 interface PromptMention {
@@ -49,6 +50,7 @@ export function extractPromptMentions(systemPrompt: string): PromptMention[] {
 export async function replacePromptMentions(
   systemPrompt: string,
   workspace: string,
+  client?: ReturnType<typeof MCPClient["forWorkspace"]>,
 ): Promise<string> {
   const mentions = extractPromptMentions(normalizeMentions(systemPrompt));
   let result = systemPrompt;
@@ -57,9 +59,17 @@ export async function replacePromptMentions(
     return result;
   }
 
-  const prompts = await listPrompts(workspace, {
-    ids: mentions.map((mention) => mention.id),
-  }).catch(() => []);
+  const prompts = await listPrompts(
+    workspace,
+    {
+      ids: mentions.map((mention) => mention.id),
+    },
+    undefined,
+    client,
+  ).catch((err) => {
+    console.error(err);
+    return [];
+  });
 
   for (const mention of mentions) {
     const prompt = prompts.find((prompt) => prompt.id === mention.id);

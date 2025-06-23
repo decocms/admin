@@ -35,16 +35,15 @@ import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
-import AgentProfileTab from "../settings/agent-profile.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
+import AgentProfileTab from "../settings/agent-profile.tsx";
+import ToolsAndKnowledgeTab from "../settings/integrations.tsx";
 import { AgentTriggers } from "../triggers/agent-triggers.tsx";
 import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
-import AgentPreview from "./preview.tsx";
+import AgentPreview, { useTabsForAgent } from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
-import { useTabsForAgent } from "./preview.tsx";
 
 interface Props {
   agentId?: string;

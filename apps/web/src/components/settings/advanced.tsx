@@ -1,4 +1,4 @@
-import { useTeamRoles } from "@deco/sdk";
+import { useTeam, useTeamRoles } from "@deco/sdk";
 import {
   DEFAULT_MAX_STEPS,
   MAX_MAX_STEPS,
@@ -24,10 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { Switch } from "@deco/ui/components/switch.tsx";
+import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { useEffect } from "react";
+import { useWatch } from "react-hook-form";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
-import { useTeam } from "@deco/sdk";
 
 export const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
@@ -44,6 +47,20 @@ function AdvancedTab() {
   } = useAgentSettingsForm();
   const roles = useCurrentTeamRoles();
 
+  // --- Working Memory Tab Logic (from memory.tsx) ---
+  const useWorkingMemory = useWatch({
+    control: form.control,
+    name: "memory.working_memory.enabled",
+    defaultValue: form.getValues("memory.working_memory.enabled"),
+  });
+
+  useEffect(() => {
+    if (useWorkingMemory === false) {
+      form.setValue("memory.working_memory.template", undefined);
+    }
+  }, [useWorkingMemory, form.setValue]);
+  // --- End Working Memory Tab Logic ---
+
   return (
     <ScrollArea className="h-full w-full">
       <Form {...form}>
@@ -56,10 +73,12 @@ function AdvancedTab() {
               name="max_steps"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max Steps</FormLabel>
-                  <FormDescription className="text-xs text-muted-foreground">
-                    Maximum number of sequential LLM calls an agent can make.
-                  </FormDescription>
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>Max Steps</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      Maximum number of sequential LLM calls an agent can make.
+                    </FormDescription>
+                  </div>
                   <FormControl>
                     <Input
                       type="number"
@@ -79,10 +98,12 @@ function AdvancedTab() {
               name="max_tokens"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max Tokens</FormLabel>
-                  <FormDescription className="text-xs text-muted-foreground">
-                    The maximum number of tokens the agent can generate.
-                  </FormDescription>
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>Max Tokens</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      The maximum number of tokens the agent can generate.
+                    </FormDescription>
+                  </div>
                   <FormControl>
                     <Input
                       type="number"
@@ -96,6 +117,124 @@ function AdvancedTab() {
                 </FormItem>
               )}
             />
+
+            {/* --- Memory Settings Section (migrated from memory.tsx) --- */}
+            <FormField
+              control={form.control}
+              name="memory.last_messages"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>Conversation History</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      The number of recent messages to keep in memory for
+                      context.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="Number of past messages to remember"
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="memory.semantic_recall"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between">
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>Semantic Recall</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      Enable the agent to recall relevant information from past
+                      conversations.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <div className="flex flex-col items-center justify-between gap-4">
+              <div className="flex flex-row items-center justify-between w-full">
+                <FormField
+                  control={form.control}
+                  name="memory.working_memory.enabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between w-full">
+                      <div className="flex flex-col gap-2">
+                        <FormLabel>Working Memory</FormLabel>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          Allow the agent to maintain a short-term memory for
+                          ongoing tasks.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              {useWorkingMemory && (
+                <FormField
+                  control={form.control}
+                  name="memory.working_memory.template"
+                  render={({ field }) => {
+                    let isJson = false;
+                    try {
+                      if (field.value && typeof field.value === "string") {
+                        JSON.parse(field.value);
+                        isJson = true;
+                      }
+                    } catch {
+                      isJson = false;
+                    }
+                    return (
+                      <FormItem>
+                        <div className="flex items-center gap-2">
+                          <FormLabel>Working Memory Template</FormLabel>
+                          {isJson && (
+                            <span className="px-2 py-0.5 text-xs bg-muted rounded text-muted-foreground border border-muted-foreground/20">
+                              Schema
+                            </span>
+                          )}
+                        </div>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Define a template (markdown or JSON schema) for the working memory..."
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          Use markdown for a text template, or paste a JSON
+                          schema to structure the agent's working memory.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              )}
+            </div>
+
+            {/* --- End Memory Settings Section --- */}
 
             {/* Team Access Section */}
             {roles.length > 0 && (

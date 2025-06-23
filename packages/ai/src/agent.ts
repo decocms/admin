@@ -11,7 +11,6 @@
 // Also, visibility modifiers (like 'private' or 'protected') from TypeScript
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 
-import { createOpenAI } from "@ai-sdk/openai";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
@@ -22,7 +21,7 @@ import {
   DEFAULT_MAX_STEPS,
   DEFAULT_MAX_THINKING_TOKENS,
   DEFAULT_MAX_TOKENS,
-  DEFAULT_MEMORY_LAST_MESSAGES,
+  DEFAULT_MEMORY,
   DEFAULT_MIN_THINKING_TOKENS,
   DEFAULT_MODEL,
   MAX_MAX_STEPS,
@@ -60,7 +59,11 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import { type StorageThreadType, Telemetry } from "@mastra/core";
+import {
+  type StorageThreadType,
+  Telemetry,
+  type WorkingMemory,
+} from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
@@ -75,8 +78,10 @@ import {
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
+import jsonSchemaToZod from "json-schema-to-zod";
 import process from "node:process";
 import { Readable } from "node:stream";
+import { z } from "zod";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import { replacePromptMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
@@ -158,6 +163,36 @@ interface ThreadLocator {
   resourceId: string;
 }
 
+const agentWorkingMemoryToWorkingMemoryConfig = (
+  workingMemory: NonNullable<Configuration["memory"]>["working_memory"],
+): WorkingMemory => {
+  if (!workingMemory?.enabled) {
+    return { enabled: false };
+  }
+
+  const template = workingMemory.template;
+  if (template) {
+    try {
+      const parsed = JSON.parse(template);
+
+      // in case parsed is a string
+      if (typeof parsed === "object") {
+        const getSchema = new Function(
+          "z",
+          `return ${jsonSchemaToZod(parsed)}`,
+        );
+        return { enabled: true, schema: getSchema(z) };
+      }
+
+      return { enabled: true, template };
+    } catch {
+      // Not JSON, treat as markdown template
+      return { enabled: true, template };
+    }
+  }
+  return { enabled: true };
+};
+
 @Actor()
 export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   private _maybeAgent?: Agent;
@@ -220,13 +255,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         await this._init();
       });
     });
-  }
-
-  public get _embedder() {
-    const openai = createOpenAI({
-      apiKey: this.env.OPENAI_API_KEY,
-    });
-    return openai.embedding("text-embedding-3-small");
   }
 
   private _createAppContext(metadata?: AgentMetadata): AppContext {
@@ -359,44 +387,54 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     config: Configuration,
     tokenLimit: number,
   ) {
-    if (this.memoryId !== memoryId || !this._memory) {
-      const tursoOrganization = this.env.TURSO_ORGANIZATION ?? "decoai";
-      const tokenStorage = this.env.TURSO_GROUP_DATABASE_TOKEN ?? {
-        getToken: (memoryId: string) => {
-          return this.state.storage.get<string>(
-            `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
-          );
-        },
-        setToken: async (memoryId: string, token: string) => {
-          await this.state.storage.put(
-            `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
-            token,
-          );
-        },
-      };
+    const tursoOrganization = this.env.TURSO_ORGANIZATION ?? "decoai";
+    const tokenStorage = this.env.TURSO_GROUP_DATABASE_TOKEN ?? {
+      getToken: (memoryId: string) => {
+        return this.state.storage.get<string>(
+          `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
+        );
+      },
+      setToken: async (memoryId: string, token: string) => {
+        await this.state.storage.put(
+          `${TURSO_AUTH_TOKEN_KEY}-${memoryId}-${tursoOrganization}`,
+          token,
+        );
+      },
+    };
 
-      // @ts-ignore: "ignore this for now"
-      this.agentMemoryConfig = await AgentMemory.buildAgentMemoryConfig({
-        agentId: config.id,
-        tursoAdminToken: this.env.TURSO_ADMIN_TOKEN,
-        tursoOrganization,
-        tokenStorage,
-        processors: [
-          new TokenLimiter({ limit: tokenLimit }),
-        ],
-        embedder: this._embedder,
-        workspace: this.workspace,
-        options: {
-          semanticRecall: false,
-          lastMessages: Math.min(
-            DEFAULT_MEMORY_LAST_MESSAGES,
-            this._configuration?.memory?.last_messages ??
-              DEFAULT_MEMORY_LAST_MESSAGES,
-          ),
+    const { id: agentId, memory } = config;
+
+    // @ts-ignore: "ignore this for now"
+    this.agentMemoryConfig = await AgentMemory.buildAgentMemoryConfig({
+      agentId,
+      tursoAdminToken: this.env.TURSO_ADMIN_TOKEN,
+      tursoOrganization,
+      tokenStorage,
+      processors: [
+        new TokenLimiter({ limit: tokenLimit }),
+      ],
+      openAPIKey: this.env.OPENAI_API_KEY ?? undefined,
+      workspace: this.workspace,
+      options: {
+        threads: {
+          /**
+           * Thread title generation breaks the Working Memory
+           * TODO(@gimenes): Bring this back once this is fixed: https://github.com/mastra-ai/mastra/issues/5354
+           * Maybe we can create a custom thread title generator that uses a small LLM to generate a title.
+           */
+          generateTitle: false,
         },
-      });
-      this.memoryId = memoryId;
-    }
+        workingMemory: agentWorkingMemoryToWorkingMemoryConfig(
+          memory?.working_memory ?? DEFAULT_MEMORY.working_memory,
+        ),
+        semanticRecall: memory?.semantic_recall ??
+          DEFAULT_MEMORY.semantic_recall,
+        lastMessages: memory?.last_messages ??
+          DEFAULT_MEMORY.last_messages,
+      },
+    });
+
+    this.memoryId = memoryId;
   }
 
   private async _initAgent(config: Configuration) {
@@ -411,6 +449,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       ...llmConfig,
       envs: this.env,
     });
+
     await this._initMemory(memoryId, config, tokenLimit);
 
     this.telemetry = Telemetry.init({ serviceName: "agent" });
@@ -440,6 +479,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   public async _init(config?: Configuration | null) {
     config ??= await this.configuration();
+
     await this._initAgent(config);
   }
 
@@ -659,15 +699,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         avatar: config.avatar || parsed.avatar || pickCapybaraAvatar(),
       };
 
-      await this.metadata?.mcpClient?.AGENTS_UPDATE({
+      const dbConfig = await this.metadata?.mcpClient?.AGENTS_UPDATE({
         agent: updatedConfig,
         id: parsed.id,
       });
 
-      await this._init(updatedConfig);
-      this._configuration = updatedConfig;
+      await this._initAgent(dbConfig);
+      this._configuration = dbConfig;
 
-      return updatedConfig;
+      return dbConfig;
     } catch (error) {
       console.error("Error configuring agent", error);
       throw new Error(`Error configuring agent: ${error}`);
@@ -798,13 +838,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return tool_set ?? this.getTools();
   }
 
-  public async updateTools(tool_set: Configuration["tools_set"]) {
-    this._resetCallableToolSet();
-    await this.configure({
-      tools_set: tool_set,
-    });
-  }
-
   public getTools(): Promise<Configuration["tools_set"]> {
     return Promise.resolve(
       this._configuration?.tools_set ?? {},
@@ -816,9 +849,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const client = this.metadata?.mcpClient ?? this.agentScoppedMcpClient;
     const manifest = this.agentId in WELL_KNOWN_AGENTS
       ? WELL_KNOWN_AGENTS[this.agentId as keyof typeof WELL_KNOWN_AGENTS]
-      : await client.AGENTS_GET({
-        id: this.agentId,
-      }).catch((err) => {
+      : await client.AGENTS_GET({ id: this.agentId }).catch((err) => {
         console.error("Error getting agent", err);
         return null;
       });
@@ -1065,14 +1096,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
             },
           }
           : {},
-        ...(typeof options?.lastMessages === "number"
-          ? {
-            memoryOptions: {
-              lastMessages: options.lastMessages,
-              semanticRecall: options.enableSemanticRecall,
-            },
-          }
-          : {}),
         onChunk: endTtfbSpan,
         onError: (err) => {
           console.error("agent stream error", err);

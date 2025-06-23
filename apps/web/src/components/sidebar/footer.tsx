@@ -1,9 +1,4 @@
-import {
-  DECO_CHAT_API,
-  DEFAULT_MEMORY_LAST_MESSAGES,
-  UnauthorizedError,
-  useInvites,
-} from "@deco/sdk";
+import { DECO_CHAT_API, UnauthorizedError, useInvites } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -24,7 +19,6 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -89,7 +83,6 @@ function UserPreferencesModal({ open, onOpenChange }: {
       defaultModel: preferences.defaultModel,
       useOpenRouter: preferences.useOpenRouter,
       smoothStream: preferences.smoothStream,
-      lastMessages: preferences.lastMessages,
       sendReasoning: preferences.sendReasoning,
     },
   });
@@ -100,7 +93,6 @@ function UserPreferencesModal({ open, onOpenChange }: {
     useOpenRouter: boolean;
     sendReasoning: boolean;
     smoothStream: boolean;
-    lastMessages: number;
   }) {
     setPreferences(data);
     form.reset(data);
@@ -215,35 +207,6 @@ function UserPreferencesModal({ open, onOpenChange }: {
                   <FormDescription>
                     Display AI reasoning tokens in the chat.
                   </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="lastMessages"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-center items-start gap-2">
-                  <FormLabel
-                    htmlFor="lastMessages"
-                    className="cursor-pointer"
-                  >
-                    Last Messages
-                  </FormLabel>
-                  <FormDescription>
-                    The size of the message window for the AI to use as context.
-                  </FormDescription>
-                  <FormControl>
-                    <Input
-                      id="lastMessages"
-                      type="number"
-                      min={1}
-                      max={100}
-                      defaultValue={DEFAULT_MEMORY_LAST_MESSAGES}
-                      value={field.value}
-                      onChange={(e) => field.onChange(parseInt(e.target.value))}
-                    />
-                  </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}

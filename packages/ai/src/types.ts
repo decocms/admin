@@ -49,7 +49,6 @@ export interface GenerateOptions {
   instructions?: string;
   model?: string;
   tools?: Record<string, string[]>;
-  lastMessages?: number;
   bypassOpenRouter?: boolean;
   threadId?: string;
   resourceId?: string;

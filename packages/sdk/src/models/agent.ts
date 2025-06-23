@@ -61,6 +61,17 @@ export const AgentSchema = z.object({
     last_messages: z.number().optional().describe(
       "The number of messages to keep in memory",
     ),
+    semantic_recall: z.boolean().optional().describe(
+      "Whether to use semantic recall",
+    ),
+    working_memory: z.object({
+      enabled: z.boolean().optional().describe(
+        "Whether to use working memory",
+      ),
+      template: z.string().optional().describe(
+        "The template or JSON schema string to use for working memory",
+      ),
+    }).optional().describe("Working memory to use for the agent"),
   }).optional().describe("Memory to use for the agent"),
   /** Views where the agent can be used */
   views: z.array(

@@ -201,9 +201,14 @@ export const DEFAULT_MAX_STEPS = 3;
 export const DEFAULT_MAX_TOKENS = 8192;
 export const DEFAULT_MAX_THINKING_TOKENS = 12000;
 export const DEFAULT_MIN_THINKING_TOKENS = 1024;
-export const DEFAULT_MEMORY_LAST_MESSAGES = 8;
 export const MIN_MAX_TOKENS = 4096;
 export const MAX_MAX_TOKENS = 64000;
+
+export const DEFAULT_MEMORY = {
+  last_messages: 8,
+  semantic_recall: false,
+  working_memory: { enabled: false },
+};
 
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
@@ -216,9 +221,7 @@ export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   instructions: "",
   max_steps: DEFAULT_MAX_STEPS,
   max_tokens: DEFAULT_MAX_TOKENS,
-  memory: {
-    last_messages: DEFAULT_MEMORY_LAST_MESSAGES,
-  },
+  memory: DEFAULT_MEMORY,
 };
 
 /**
@@ -237,6 +240,7 @@ export const WELL_KNOWN_AGENTS = {
     visibility: "PUBLIC",
     tools_set: {},
     views: [],
+    memory: DEFAULT_MEMORY,
     instructions: `
 You are an assistant that helps users set up integrations and agents. 
 

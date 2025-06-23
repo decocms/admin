@@ -3,6 +3,11 @@ import { type Context, Hono } from "hono";
 import { getRuntimeKey } from "hono/adapter";
 import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import type { AppEnv } from "./utils/context.ts";
+import { withContextMiddleware } from "./middlewares/context.ts";
+import { SWRCache } from "@deco/sdk/cache/swr";
+
+const ONE_HOUR_SECONDS = 60 * 60;
+const domainSWRCache = new SWRCache<string>("domain-swr", ONE_HOUR_SECONDS);
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
 
@@ -43,14 +48,36 @@ export const fetchScript = async (
   }
   return response;
 };
-app.all("/*", (c) => {
+
+app.use(withContextMiddleware);
+app.all("/*", async (c: Context<AppEnv>) => {
   const url = new URL(c.req.url);
   const host = appsDomainOf(c.req.raw) ?? c.req.header("host") ??
     url.host;
   if (!host) {
     return new Response("No host", { status: 400 });
   }
-  const script = Entrypoint.script(host);
+  let script = Entrypoint.script(host);
+  if (!script) {
+    script = await domainSWRCache.cache(async () => {
+      const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
+        .select("*, deco_chat_hosting_apps(slug)").eq(
+          "route_pattern",
+          host,
+        ).maybeSingle();
+      if (error) {
+        throw error;
+      }
+      const slug = data?.deco_chat_hosting_apps?.slug;
+      if (!slug) {
+        throw new Error("No slug found");
+      }
+      return slug;
+    }, host).catch(() => null);
+  }
+  if (!script) {
+    return new Response("Not found", { status: 404 });
+  }
   if (url.host !== host) {
     url.host = host;
     url.protocol = "https";

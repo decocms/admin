@@ -32,6 +32,7 @@ jobs:
             TURSO_ADMIN_TOKEN
             CF_ACCOUNT_ID
             CF_API_TOKEN
+            CF_ZONE_ID
             CF_DISPATCH_NAMESPACE
             CF_R2_ACCESS_KEY_ID
             CF_R2_SECRET_ACCESS_KEY
@@ -65,6 +66,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_DISPATCH_NAMESPACE: "deco-chat-prod"
           CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}

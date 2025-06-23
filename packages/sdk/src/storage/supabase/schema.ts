@@ -566,6 +566,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_hosting_routes: {
+        Row: {
+          created_at: string;
+          custom_domain: boolean;
+          deleted_at: string | null;
+          hosting_app_id: string;
+          id: string;
+          route_pattern: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          custom_domain?: boolean;
+          deleted_at?: string | null;
+          hosting_app_id: string;
+          id?: string;
+          route_pattern: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          custom_domain?: boolean;
+          deleted_at?: string | null;
+          hosting_app_id?: string;
+          id?: string;
+          route_pattern?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fk_hosting_app";
+            columns: ["hosting_app_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_hosting_apps";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_integrations: {
         Row: {
           access: string | null;

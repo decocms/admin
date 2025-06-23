@@ -1,4 +1,4 @@
-import type { Migration } from "./api.ts";
+import type { Migration } from "./deployment.ts";
 
 interface SingleStepMigration {
   old_tag?: string;

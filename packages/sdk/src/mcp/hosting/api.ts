@@ -1,4 +1,3 @@
-import { type Binding, WorkersMCPBindings } from "@deco/workers-runtime";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
@@ -9,12 +8,15 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
-import { polyfill } from "./fs-polyfill.ts";
-import { isDoBinding, migrationDiff } from "./migrations.ts";
+import { assertsDomainUniqueness } from "./custom-domains.ts";
+import {
+  type DeployResult,
+  deployToCloudflare,
+  type WranglerConfig,
+} from "./deployment.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
-const HOSTING_APPS_DOMAIN = ".deco.page";
-const METADATA_FILE_NAME = "metadata.json";
+export const HOSTING_APPS_DOMAIN = ".deco.page";
 export const Entrypoint = {
   host: (appSlug: string) => {
     return `${appSlug}${HOSTING_APPS_DOMAIN}`;
@@ -23,7 +25,10 @@ export const Entrypoint = {
     return `https://${Entrypoint.host(appSlug)}`;
   },
   script: (domain: string) => {
-    return domain.split(HOSTING_APPS_DOMAIN)[0];
+    if (domain.endsWith(HOSTING_APPS_DOMAIN)) {
+      return domain.split(HOSTING_APPS_DOMAIN)[0];
+    }
+    return null;
   },
 };
 // Zod schemas for input
@@ -37,6 +42,7 @@ const AppInputSchema = z.object({
 });
 
 const DECO_CHAT_HOSTING_APPS_TABLE = "deco_chat_hosting_apps" as const;
+const DECO_CHAT_HOSTING_ROUTES_TABLE = "deco_chat_hosting_routes" as const;
 
 type AppRow =
   Database["public"]["Tables"][typeof DECO_CHAT_HOSTING_APPS_TABLE]["Row"];
@@ -98,171 +104,8 @@ export const listApps = createTool({
   },
 });
 
-// Common types and utilities
-type DeployResult = {
-  etag?: string;
-  id?: string;
-};
-export interface Polyfill {
-  fileName: string;
-  aliases: string[];
-  content: string;
-}
-
-const addPolyfills = (
-  files: Record<string, File>,
-  metadata: Record<string, unknown>,
-  polyfills: Polyfill[],
-) => {
-  const aliases: Record<string, string> = {};
-  metadata.alias = aliases;
-
-  for (const polyfill of polyfills) {
-    const filePath = `${polyfill.fileName}.mjs`;
-    files[filePath] ??= new File(
-      [polyfill.content],
-      filePath,
-      {
-        type: "application/javascript+module",
-      },
-    );
-
-    for (const alias of polyfill.aliases) {
-      aliases[alias] = `./${polyfill.fileName}`;
-    }
-  }
-};
-
-async function deployToCloudflare(
-  c: AppContext,
-  {
-    name: scriptSlug,
-    compatibility_flags,
-    compatibility_date,
-    vars,
-    kv_namespaces,
-    deco,
-    ai,
-    browser,
-    durable_objects,
-    queues,
-    workflows,
-    triggers,
-    migrations,
-  }: WranglerConfig,
-  mainModule: string,
-  files: Record<string, File>,
-  _envVars?: Record<string, string>,
-): Promise<DeployResult> {
-  assertHasWorkspace(c);
-  const env = getEnv(c);
-  const envVars = {
-    ..._envVars,
-    ...vars,
-  };
-  const wranglerBindings = [
-    ...kv_namespaces?.map((kv) => ({
-      type: "kv_namespace" as const,
-      name: kv.binding,
-      namespace_id: kv.id,
-    })) ?? [],
-    ...ai ? [{ type: "ai" as const, name: ai.binding }] : [],
-    ...browser ? [{ type: "browser" as const, name: browser.binding }] : [],
-    ...durable_objects?.bindings?.map((binding) => ({
-      type: "durable_object_namespace" as const,
-      name: binding.name,
-      class_name: binding.class_name,
-    })) ?? [],
-    ...queues?.producers?.map((producer) => ({
-      type: "queue" as const,
-      queue_name: producer.queue,
-      name: producer.binding,
-    })) ?? [],
-    ...workflows?.map((workflow) => ({
-      type: "workflow" as const,
-      name: workflow.binding,
-      workflow_name: workflow.name,
-      class_name: workflow.class_name,
-      script_name: workflow.script_name,
-    })) ?? [],
-  ];
-
-  const decoBindings = deco?.bindings ?? [];
-  if (decoBindings.length > 0) {
-    envVars["DECO_CHAT_BINDINGS"] = WorkersMCPBindings.stringify(decoBindings);
-  }
-
-  const { bindings } = await c.cf
-    .workersForPlatforms
-    .dispatch.namespaces
-    .scripts.settings.get(env.CF_DISPATCH_NAMESPACE, scriptSlug, {
-      account_id: env.CF_ACCOUNT_ID,
-    }).catch(() => ({
-      bindings: [],
-    }));
-
-  const doMigrations = migrationDiff(
-    migrations ?? [],
-    (bindings ?? []).filter(isDoBinding),
-  );
-  const metadata = {
-    main_module: mainModule,
-    compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
-    compatibility_date: compatibility_date ?? "2024-11-27",
-    tags: [c.workspace.value],
-    bindings: wranglerBindings,
-    triggers,
-    observability: {
-      enabled: true,
-    },
-    migrations: doMigrations,
-  };
-
-  addPolyfills(files, metadata, [polyfill]);
-
-  const body = {
-    metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
-      type: "application/json",
-    }),
-    ...files,
-  };
-
-  const result = await c.cf.workersForPlatforms.dispatch.namespaces
-    .scripts.update(
-      env.CF_DISPATCH_NAMESPACE,
-      scriptSlug,
-      {
-        account_id: env.CF_ACCOUNT_ID,
-        metadata,
-      },
-      {
-        method: "put",
-        body,
-      },
-    );
-
-  if (envVars) {
-    const promises = [];
-    for (const [key, value] of Object.entries(envVars)) {
-      promises.push(
-        c.cf.workersForPlatforms.dispatch.namespaces.scripts.secrets.update(
-          env.CF_DISPATCH_NAMESPACE,
-          scriptSlug,
-          {
-            account_id: env.CF_ACCOUNT_ID,
-            name: key,
-            text: value,
-            type: "secret_text",
-          },
-        ),
-      );
-    }
-    await Promise.all(promises);
-  }
-  return {
-    etag: result.etag,
-    id: result.id,
-  };
+function routeKey(route: { route_pattern: string; custom_domain?: boolean }) {
+  return `${route.route_pattern}|${!!route.custom_domain}`;
 }
 
 async function updateDatabase(
@@ -270,10 +113,11 @@ async function updateDatabase(
   workspace: string,
   scriptSlug: string,
   result: DeployResult,
+  wranglerConfig: WranglerConfig,
   files?: Record<string, string>,
 ) {
   // Try to update first
-  const { data: updated, error: updateError } = await c.db
+  let { data: app, error: updateError } = await c.db
     .from(DECO_CHAT_HOSTING_APPS_TABLE)
     .update({
       updated_at: new Date().toISOString(),
@@ -282,6 +126,7 @@ async function updateDatabase(
       files,
     })
     .eq("slug", scriptSlug)
+    .eq("workspace", workspace)
     .select("*")
     .single();
 
@@ -289,27 +134,92 @@ async function updateDatabase(
     throw updateError;
   }
 
-  if (updated) {
-    return Mappers.toApp(updated);
+  if (!app) {
+    // If not updated, insert
+    const { data: inserted, error: insertError } = await c.db
+      .from(DECO_CHAT_HOSTING_APPS_TABLE)
+      .insert({
+        workspace,
+        slug: scriptSlug,
+        updated_at: new Date().toISOString(),
+        cloudflare_script_hash: result.etag,
+        cloudflare_worker_id: result.id,
+        files,
+      })
+      .select("*")
+      .single();
+
+    if (insertError) throw insertError;
+    app = inserted;
   }
+  if (!app) {
+    throw new Error("Failed to create or update app.");
+  }
+  // calculate route diff
+  const routes = wranglerConfig.routes ?? [];
+  const mappedRoutes = routes.map((r) => ({
+    route_pattern: r.pattern,
+    custom_domain: r.custom_domain ?? false,
+  }));
 
-  // If not updated, insert
-  const { data: inserted, error: insertError } = await c.db
-    .from(DECO_CHAT_HOSTING_APPS_TABLE)
-    .insert({
-      workspace,
-      slug: scriptSlug,
-      updated_at: new Date().toISOString(),
-      cloudflare_script_hash: result.etag,
-      cloudflare_worker_id: result.id,
-      files,
-    })
-    .select("*")
-    .single();
+  // 1. Fetch current routes for this app
+  const { data: currentRoutes, error: fetchRoutesError } = await c.db
+    .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
+    .select("id, route_pattern, custom_domain")
+    .eq("hosting_app_id", app.id);
+  if (fetchRoutesError) throw fetchRoutesError;
 
-  if (insertError) throw insertError;
+  // 2. Build sets for diffing
+  const currentRouteMap = new Map(
+    (currentRoutes ?? []).map((r) => [routeKey(r), r]),
+  );
 
-  return Mappers.toApp(inserted);
+  const newRouteMap = new Map(
+    mappedRoutes.map((
+      r,
+    ) => [
+      routeKey(r),
+      r,
+    ]),
+  );
+
+  // 3. Find routes to delete (in current, not in new)
+  const toDelete = (currentRoutes ?? []).filter(
+    (r) => !newRouteMap.has(routeKey(r)),
+  );
+  // 4. Find routes to insert (in new, not in current)
+  const toInsert = mappedRoutes.filter(
+    (r) =>
+      !currentRouteMap.has(
+        routeKey(r),
+      ),
+  );
+
+  // 5. Perform insertions and deletions in parallel
+  await Promise.all([
+    toDelete.length > 0
+      ? c.db
+        .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
+        .delete()
+        .in(
+          "id",
+          toDelete.map((r) => r.id),
+        )
+      : Promise.resolve(),
+    toInsert.length > 0
+      ? c.db
+        .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
+        .insert(
+          toInsert.map((route) => ({
+            hosting_app_id: app.id,
+            route_pattern: route.route_pattern,
+            custom_domain: route.custom_domain ?? false,
+          })),
+        )
+      : Promise.resolve(),
+  ]);
+
+  return Mappers.toApp(app);
 }
 
 let created = false;
@@ -333,79 +243,6 @@ const FileSchema = z.object({
   path: z.string(),
   content: z.string(),
 });
-
-export interface MigrationBase {
-  tag: string;
-}
-
-export interface NewClassMigration extends MigrationBase {
-  new_classes: string[];
-}
-
-export interface DeletedClassMigration extends MigrationBase {
-  deleted_classes: string[];
-}
-
-export interface RenamedClassMigration extends MigrationBase {
-  renamed_classes: {
-    from: string;
-    to: string;
-  }[];
-}
-
-export type Migration =
-  | NewClassMigration
-  | DeletedClassMigration
-  | RenamedClassMigration;
-
-export interface KVNamespace {
-  binding: string;
-  id: string;
-}
-export interface Triggers {
-  crons: string[];
-}
-export interface WranglerConfig {
-  name: string;
-  main?: string;
-  main_module?: string;
-  compatibility_date?: string;
-  compatibility_flags?: string[];
-  vars?: Record<string, string>;
-  kv_namespaces?: KVNamespace[];
-  triggers?: Triggers;
-  //
-  ai?: {
-    binding: string;
-  };
-  browser?: {
-    binding: string;
-  };
-  durable_objects?: {
-    bindings?: { name: string; class_name: string }[];
-  };
-  queues?: {
-    consumers?: {
-      queue: string;
-      max_batch_timeout: number;
-    }[];
-    producers?: {
-      queue: string;
-      binding: string;
-    }[];
-  };
-  workflows?: {
-    name: string;
-    binding: string;
-    class_name?: string;
-    script_name?: string;
-  }[];
-  migrations?: Migration[];
-  //
-  deco?: {
-    bindings?: Binding[];
-  };
-}
 
 const DECO_WORKER_RUNTIME_VERSION = "0.1.2";
 // Update the schema in deployFiles
@@ -432,6 +269,9 @@ Common patterns:
    main_module = "main.ts"
    kv_namespaces = [
      { binding = "TODO", id = "06779da6940b431db6e566b4846d64db" }
+   ]
+   routes = [
+     { pattern = "my.example.com", custom_domain = true }
    ]
 
    browser = { binding = "MYBROWSER" }
@@ -482,6 +322,7 @@ export default withRuntime({
 });
 
 You must use the Workers for Platforms TOML format for wrangler.toml. The bindings supports all standard binding types (ai, analytics_engine, assets, browser_rendering, d1, durable_object_namespace, hyperdrive, kv_namespace, mtls_certificate, plain_text, queue, r2_bucket, secret_text, service, tail_consumer, vectorize, version_metadata, etc). For Deco-specific bindings, use type = "MCP".
+For routes, only custom domains are supported. The user must point their DNS to the script endpoint. $SCRIPT.deco.page using DNS-Only. The user needs to wait for the DNS to propagate before the app will be available.
 
 Example of files deployment:
 [
@@ -640,6 +481,12 @@ Important Notes:
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
     };
 
+    await Promise.all(
+      (wranglerConfig.routes ?? []).map((route) =>
+        route.custom_domain && assertsDomainUniqueness(c, route.pattern)
+      ),
+    );
+
     const result = await deployToCloudflare(
       c,
       wranglerConfig,
@@ -652,6 +499,7 @@ Important Notes:
       workspace,
       scriptSlug,
       result,
+      wranglerConfig,
       filesRecord,
     );
     return {

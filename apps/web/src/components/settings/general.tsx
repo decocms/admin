@@ -31,7 +31,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { DEFAULT_THEME, THEME_VARIABLES, type ThemeVariable } from "@deco/sdk";
 import {
@@ -415,7 +414,6 @@ export function GeneralSettings() {
   return (
     <ScrollArea className="h-full text-foreground">
       <div className="container h-full max-w-7xl text-foreground">
-        <SettingsMobileHeader currentPage="general" />
         <div className="h-full overflow-auto py-20 md:px-[120px]">
           <div className="flex flex-col gap-6 w-full">
             <div className="w-full hidden md:block">

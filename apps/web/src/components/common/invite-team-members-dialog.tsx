@@ -92,16 +92,24 @@ function InviteTeamMembersDialogFeatureWall() {
 
 interface InviteTeamMembersDialogProps {
   teamId?: number;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   onComplete?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function InviteTeamMembersDialog({
   teamId,
   trigger,
   onComplete,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: InviteTeamMembersDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = controlledOnOpenChange || setInternalOpen;
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -191,12 +199,14 @@ export function InviteTeamMembersDialog({
   };
 
   // Create a cloned trigger with an onClick handler
-  const wrappedTrigger = cloneElement(
-    trigger as ReactElement<{ onClick?: MouseEventHandler }>,
-    {
-      onClick: openDialog,
-    },
-  );
+  const wrappedTrigger = trigger
+    ? cloneElement(
+      trigger as ReactElement<{ onClick?: MouseEventHandler }>,
+      {
+        onClick: openDialog,
+      },
+    )
+    : null;
 
   return (
     <>

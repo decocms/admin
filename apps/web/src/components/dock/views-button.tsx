@@ -63,7 +63,7 @@ function ViewsButtonInner(
             className={cn(
               "text-xs mb-1 rounded-lg hover:bg-muted",
             )}
-            onSelect={() => {
+            onClick={() => {
               openPanel({ id, component: id, title: tab.title });
             }}
           >
@@ -86,7 +86,7 @@ function ViewsButtonInner(
               <ResponsiveDropdownItem
                 key={id}
                 className={cn("text-xs hover:bg-muted")}
-                onSelect={() => {
+                onClick={() => {
                   openPanel({ id, component: id, title: tab.title });
                 }}
               >

@@ -50,7 +50,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Avatar } from "../common/avatar/index.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 
 interface ModelLogoProps {
   logo: string;
@@ -119,7 +118,6 @@ function Models() {
   return (
     <ModalProvider>
       <ScrollArea className="h-full text-foreground">
-        <SettingsMobileHeader currentPage="models" />
         <Suspense fallback={<span>Loading...</span>}>
           <ModelsView />
         </Suspense>

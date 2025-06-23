@@ -108,9 +108,10 @@ function CurrentTeamDropdownTrigger() {
   );
 }
 
-function CurrentTeamDropdownOptions() {
+function CurrentTeamDropdownOptions(
+  { onRequestInvite }: { onRequestInvite: () => void },
+) {
   const buildWorkspaceLink = useWorkspaceLink();
-  const { id: teamId } = useCurrentTeam();
 
   return (
     <>
@@ -127,29 +128,25 @@ function CurrentTeamDropdownOptions() {
           </span>
         </Link>
       </ResponsiveDropdownItem>
-      <InviteTeamMembersDialog
-        teamId={typeof teamId === "number" ? teamId : undefined}
-        trigger={
-          <ResponsiveDropdownItem
-            className="gap-2 cursor-pointer"
-            onClick={(e) => {
-              // Prevent event from bubbling up to parent elements
-              e.stopPropagation();
-            }}
-          >
-            <span className="grid place-items-center p-1">
-              <Icon
-                name="person_add"
-                size={16}
-                className="text-muted-foreground"
-              />
-            </span>
-            <span className="md:text-sm flex-grow justify-self-start">
-              Invite members
-            </span>
-          </ResponsiveDropdownItem>
-        }
-      />
+      <ResponsiveDropdownItem
+        className="gap-2 cursor-pointer"
+        onClick={(e) => {
+          // Prevent event from bubbling up to parent elements
+          e.stopPropagation();
+          onRequestInvite();
+        }}
+      >
+        <span className="grid place-items-center p-1">
+          <Icon
+            name="person_add"
+            size={16}
+            className="text-muted-foreground"
+          />
+        </span>
+        <span className="md:text-sm flex-grow justify-self-start">
+          Invite members
+        </span>
+      </ResponsiveDropdownItem>
     </>
   );
 }
@@ -279,6 +276,9 @@ function SwitchTeam(
 
 export function TeamSelector() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const { id: teamId } = useCurrentTeam();
+
   return (
     <>
       <ResponsiveDropdown>
@@ -287,7 +287,9 @@ export function TeamSelector() {
         </Suspense>
         <ResponsiveDropdownContent align="start" className="md:w-[240px]">
           <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
-            <CurrentTeamDropdownOptions />
+            <CurrentTeamDropdownOptions
+              onRequestInvite={() => setIsInviteDialogOpen(true)}
+            />
           </Suspense>
           <ResponsiveDropdownSeparator />
           <Suspense
@@ -306,6 +308,11 @@ export function TeamSelector() {
       <CreateTeamDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
+      />
+      <InviteTeamMembersDialog
+        teamId={typeof teamId === "number" ? teamId : undefined}
+        open={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
       />
     </>
   );

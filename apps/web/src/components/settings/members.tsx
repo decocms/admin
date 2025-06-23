@@ -39,7 +39,6 @@ import {
 import { timeAgo } from "../../utils/time-ago.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { RolesDropdown } from "../common/roles-dropdown.tsx";
@@ -482,7 +481,6 @@ function MembersViewContent() {
 export default function MembersSettings() {
   return (
     <ScrollArea className="h-full text-foreground">
-      <SettingsMobileHeader currentPage="members" />
       <Suspense fallback={<MembersViewLoading />}>
         <MembersViewContent />
       </Suspense>

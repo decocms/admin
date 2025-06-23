@@ -8,7 +8,6 @@ import { ErrorBoundary } from "../../error-boundary.tsx";
 import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { Protect } from "../wallet/plan.tsx";
 import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
-import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { EmptyStateCard } from "./usage.tsx";
 
 function AccountBalance() {
@@ -84,8 +83,6 @@ function RecentTransactions() {
 export default function Wallet() {
   return (
     <div className="h-full text-foreground bg-background">
-      <SettingsMobileHeader currentPage="wallet" />
-
       <div className="flex flex-col items-center h-full gap-4 w-full mt-12">
         <BalanceCard />
         <RecentTransactions />

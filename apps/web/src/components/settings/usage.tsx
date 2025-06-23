@@ -36,7 +36,6 @@ import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { SettingsMobileHeader } from "./settings-mobile-header.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 
 interface UserAvatarProps {
@@ -567,8 +566,6 @@ export default function Usage() {
 
   return (
     <div className="h-full text-foreground bg-background">
-      <SettingsMobileHeader currentPage="usage" />
-
       <div className="flex flex-col items-center h-full gap-4 w-full">
         <div className="w-full flex items-center justify-center">
           <Suspense fallback={<CreditsUsedPerAgentCard.Fallback />}>

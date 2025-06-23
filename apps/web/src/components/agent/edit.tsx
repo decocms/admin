@@ -247,6 +247,91 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     resolver: zodResolver(AgentSchema),
   });
 
+  // BEGIN: Dynamic document metadata update
+  useEffect(() => {
+    if (!agent) return;
+
+    // Store previous values to restore on unmount
+    const previousTitle = document.title;
+    const trackedMeta: Array<{
+      selector: string;
+      prevContent: string | null;
+    }> = [];
+
+    function setMeta(
+      attr: "name" | "property",
+      value: string,
+      content: string | undefined,
+    ) {
+      if (!content) return;
+      const selector = `meta[${attr}="${value}"]`;
+      let element = document.querySelector<HTMLMetaElement>(selector);
+      if (!element) {
+        element = document.createElement("meta");
+        element.setAttribute(attr, value);
+        document.head.appendChild(element);
+      }
+      // Save previous value only the first time we touch the tag
+      if (!trackedMeta.find((m) => m.selector === selector)) {
+        trackedMeta.push({
+          selector,
+          prevContent: element.getAttribute("content"),
+        });
+      }
+      element.setAttribute("content", content);
+    }
+
+    // Update title
+    document.title = agent.name + ` — deco.chat`;
+
+    // Update description (fallback to instructions if description not present)
+    const description = agent.description ?? agent.instructions ?? "";
+
+    setMeta("property", "og:title", agent.name);
+    setMeta("name", "twitter:title", agent.name);
+    setMeta("name", "description", description);
+    setMeta("property", "og:description", description);
+    setMeta("name", "twitter:description", description);
+    setMeta("property", "og:image", agent.avatar);
+    setMeta("name", "twitter:image", agent.avatar);
+
+    // ---- Handle favicon ----
+    const faviconSelector = 'link[rel="icon"]';
+    let faviconEl = document.querySelector<HTMLLinkElement>(faviconSelector);
+    if (!faviconEl) {
+      faviconEl = document.createElement("link");
+      faviconEl.setAttribute("rel", "icon");
+      document.head.appendChild(faviconEl);
+    }
+    const prevFaviconHref = faviconEl.getAttribute("href");
+    faviconEl.setAttribute("href", agent.avatar);
+
+    return () => {
+      // Restore title
+      document.title = previousTitle;
+      // Restore favicon
+      if (faviconEl) {
+        if (prevFaviconHref) {
+          faviconEl.setAttribute("href", prevFaviconHref);
+        } else {
+          faviconEl.remove();
+        }
+      }
+      // Restore meta tags
+      trackedMeta.forEach(({ selector, prevContent }) => {
+        const element = document.querySelector<HTMLMetaElement>(selector);
+        if (!element) return;
+        if (prevContent === null) {
+          // Tag did not exist originally – remove it
+          element.remove();
+        } else {
+          element.setAttribute("content", prevContent);
+        }
+      });
+    };
+  }, [agent]);
+  // END: Dynamic document metadata update
+
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;
   const hasChanges = numberOfChanges > 0;
 

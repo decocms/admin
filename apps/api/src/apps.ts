@@ -1,10 +1,9 @@
-import { Entrypoint } from "@deco/sdk/mcp";
-import { type Context, Hono } from "hono";
-import { getRuntimeKey } from "hono/adapter";
-import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
-import type { AppEnv } from "./utils/context.ts";
-import { withContextMiddleware } from "./middlewares/context.ts";
 import { SWRCache } from "@deco/sdk/cache/swr";
+import { Entrypoint, HOSTING_APPS_DOMAIN } from "@deco/sdk/mcp";
+import { type Context, Hono } from "hono";
+import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
+import { withContextMiddleware } from "./middlewares/context.ts";
+import type { AppEnv } from "./utils/context.ts";
 
 const ONE_HOUR_SECONDS = 60 * 60;
 const domainSWRCache = new SWRCache<string>("domain-swr", ONE_HOUR_SECONDS);
@@ -43,37 +42,39 @@ export const fetchScript = async (
     throw err;
   });
 
-  if (getRuntimeKey() === "workerd") { // needs to be copied when resp is from an a external dispatcher.
-    return new Response(response.body, response);
-  }
-  return response;
+  return new Response(response.body, response);
 };
 
 app.use(withContextMiddleware);
 app.all("/*", async (c: Context<AppEnv>) => {
   const url = new URL(c.req.url);
-  const host = appsDomainOf(c.req.raw) ?? c.req.header("host") ??
+  let host = appsDomainOf(c.req.raw) ?? c.req.header("host") ??
     url.host;
   if (!host) {
     return new Response("No host", { status: 400 });
   }
   let script = Entrypoint.script(host);
   if (!script) {
-    script = await domainSWRCache.cache(async () => {
-      const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
-        .select("*, deco_chat_hosting_apps(slug)").eq(
-          "route_pattern",
-          host,
-        ).maybeSingle();
-      if (error) {
-        throw error;
-      }
-      const slug = data?.deco_chat_hosting_apps?.slug;
-      if (!slug) {
-        throw new Error("No slug found");
-      }
-      return slug;
-    }, host).catch(() => null);
+    script = await domainSWRCache.cache(
+      async () => {
+        const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
+          .select("*, deco_chat_hosting_apps(slug)").eq(
+            "route_pattern",
+            host,
+          ).maybeSingle();
+        if (error) {
+          throw error;
+        }
+        const slug = data?.deco_chat_hosting_apps?.slug;
+        if (!slug) {
+          throw new Error("No slug found");
+        }
+        return slug;
+      },
+      host,
+      false,
+    ).catch(() => null);
+    host = `${script}${HOSTING_APPS_DOMAIN}`;
   }
   if (!script) {
     return new Response("Not found", { status: 404 });
@@ -85,6 +86,7 @@ app.all("/*", async (c: Context<AppEnv>) => {
     url.searchParams.delete(APPS_DOMAIN_QS);
   }
   const req = new Request(url, c.req.raw);
-  return fetchScript(c, script, req);
+
+  return await fetchScript(c, script, req);
 });
 export default app;

@@ -197,7 +197,7 @@ export async function deployToCloudflare(
     (routes ?? []).map((route) =>
       route.custom_domain &&
       assertsDomainOwnership(route.pattern, scriptSlug).then(() => {
-        c.cf.customHostnames.create({
+        return c.cf.customHostnames.create({
           hostname: route.pattern,
           zone_id: env.CF_ZONE_ID,
           ...CUSTOM_HOSTNAME_POST_BODY,

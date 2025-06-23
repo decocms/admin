@@ -1,13 +1,15 @@
 export * from "../errors.ts";
 export * from "./assertions.ts";
-export * from "./context.ts";
-export * from "./models/llm-vault.ts";
-export * from "./wallet/stripe/webhook.ts";
 export { createResourceAccess } from "./auth/index.ts";
+export * from "./bindings/binder.ts";
+export * from "./context.ts";
 export {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "./fs/api.ts";
+export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
+export * from "./models/llm-vault.ts";
+export * from "./wallet/stripe/webhook.ts";
 
 import * as agentsAPI from "./agents/api.ts";
 import * as channelsAPI from "./channels/api.ts";
@@ -26,8 +28,6 @@ import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 import * as whatsappAPI from "./whatsapp/api.ts";
-
-export * from "./bindings/binder.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [

@@ -23,24 +23,27 @@ export class SWRCache<T> {
    * @param key - The cache key
    * @returns Promise<T>
    */
-  cache(fn: () => Promise<T>, key: string): Promise<T> {
+  async cache(
+    fn: () => Promise<T>,
+    key: string,
+    revalidate = true,
+  ): Promise<T> {
     // Start both cache and fresh fetch in parallel
     const cachePromise = this._cache.get(key);
-    const freshPromise = fn().then(async (result) => {
-      await this._cache.set(key, result);
-      return result;
-    });
+    const freshPromise = () =>
+      fn().then(async (result) => {
+        await this._cache.set(key, result);
+        return result;
+      });
 
-    contextStorage.getStore()?.ctx?.waitUntil?.(freshPromise);
+    const cached = await cachePromise;
+    if (cached != null) {
+      if (revalidate) {
+        contextStorage.getStore()?.ctx?.waitUntil?.(freshPromise());
+      }
+      return cached;
+    }
 
-    // Return whichever resolves first, but always update cache with fresh
-    return Promise.race([
-      cachePromise.then((cached: T | null) => {
-        if (cached !== null && cached !== undefined) return cached;
-        // If cache is empty, wait for fresh
-        return freshPromise;
-      }),
-      freshPromise,
-    ]);
+    return freshPromise();
   }
 }

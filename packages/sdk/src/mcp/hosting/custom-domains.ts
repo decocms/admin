@@ -1,4 +1,4 @@
-import { resolve } from "node:dns";
+import { resolveCname } from "node:dns";
 import { UserInputError } from "../../errors.ts";
 import type { AppContext } from "../context.ts";
 import { HOSTING_APPS_DOMAIN } from "./api.ts";
@@ -8,7 +8,7 @@ export const assertsDomainOwnership = async (
   scriptSlug: string,
 ) => {
   const resolvePromise = Promise.withResolvers<string[]>();
-  resolve(domain, (err, addrs) => {
+  resolveCname(domain, (err, addrs) => {
     if (err) {
       resolvePromise.reject(err);
     } else {
@@ -16,8 +16,12 @@ export const assertsDomainOwnership = async (
     }
   });
   const addresses = await resolvePromise.promise;
-  const targetAddress = `${scriptSlug}.${HOSTING_APPS_DOMAIN}`;
-  if (!addresses.includes(targetAddress)) {
+  const targetAddress = `${scriptSlug}${HOSTING_APPS_DOMAIN}`;
+  if (
+    !addresses.some((addr) =>
+      addr === targetAddress || addr === `${targetAddress}.`
+    )
+  ) {
     throw new UserInputError(
       `The domain ${domain} does not point to the script ${targetAddress}`,
     );

@@ -1,10 +1,12 @@
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   SSEClientTransport,
   type SSEClientTransportOptions,
 } from "@modelcontextprotocol/sdk/client/sse.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import {
+  StreamableHTTPClientTransport,
+} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js";
 import type { Integration, MCPConnection } from "../models/mcp.ts";
 
 export const createTransport = (

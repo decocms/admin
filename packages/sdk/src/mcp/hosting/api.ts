@@ -414,11 +414,6 @@ Important Notes:
       "An optional object of environment variables to be set on the worker",
     ),
   }),
-  outputSchema: z.object({
-    entrypoint: z.string(),
-    id: z.string(),
-    workspace: z.string(),
-  }),
   handler: async ({ appSlug: _appSlug, files, envVars }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
 

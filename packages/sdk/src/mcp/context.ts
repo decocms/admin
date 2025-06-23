@@ -9,8 +9,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import type { JWTPayload } from "../auth/jwt.ts";
 import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
-import { ForbiddenError, type HttpError } from "../errors.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
+import { ForbiddenError, type HttpError } from "../errors.ts";
 import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
@@ -173,6 +173,26 @@ export const createToolGroup = (
     integration,
   );
 
+export const withMCPErrorHandling = <
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+>(f: (props: TInput) => Promise<TReturn>) =>
+async (props: TInput) => {
+  try {
+    const result = await f(props);
+
+    return {
+      isError: false,
+      structuredContent: result,
+    };
+  } catch (error) {
+    return {
+      isError: true,
+      content: [{ type: "text", text: serializeError(error) }],
+    };
+  }
+};
+
 export const createToolFactory = <
   TAppContext extends AppContext = AppContext,
 >(
@@ -209,26 +229,6 @@ export const createToolFactory = <
       return result;
     },
   };
-};
-
-export const withMCPErrorHandling = <
-  TInput = any,
-  TReturn extends object | null | boolean = object,
->(f: (props: TInput) => Promise<TReturn>) =>
-async (props: TInput) => {
-  try {
-    const result = await f(props);
-
-    return {
-      isError: false,
-      structuredContent: result,
-    };
-  } catch (error) {
-    return {
-      isError: true,
-      content: [{ type: "text", text: serializeError(error) }],
-    };
-  }
 };
 
 export const createTool = createToolFactory<WithTool<AppContext>>(

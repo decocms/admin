@@ -1,6 +1,4 @@
-import { createPortal } from "react-dom";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { type ReactNode, type ReactPortal, useEffect, useMemo } from "react";
 import { type Tab, togglePanel, useDock } from "./index.tsx";
 import {
   ResponsiveDropdown,
@@ -9,25 +7,7 @@ import {
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-
-export const createPrependPortal = (
-  component: ReactNode,
-  container: Element,
-): ReactPortal => {
-  const portalContainer = document.createElement("div");
-
-  useEffect(() => {
-    container.prepend(portalContainer);
-    return () => {
-      container.removeChild(portalContainer);
-    };
-  }, [container, portalContainer]);
-
-  return createPortal(
-    component,
-    portalContainer,
-  );
-};
+import { createPrependPortal } from "../../utils/react-prepend-portal.ts";
 
 // The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {
@@ -136,7 +116,10 @@ export function ViewsButton() {
   const firstContainer = containers[0];
 
   return createPrependPortal(
-    <div className="flex items-center justify-center w-9 h-8 pr-1">
+    <div
+      key="views-button"
+      className="flex items-center justify-center w-9 h-8 pr-1"
+    >
       <ViewsButtonInner tabs={tabs} openPanels={openPanels} />
     </div>,
     firstContainer,
@@ -147,7 +130,18 @@ ViewsButton.Styles = () => {
   return (
     <style>
       {`
+        .dv-tab {
+          border-radius: none !important;
+          padding: 0 !important;
+          height: 2.25rem !important;
+        }
+
+        .dv-react-part > div > div[data-active="true"] {
+          height: 2.25rem !important;
+        }
+
         .dv-tabs-container {
+          height: 2.5rem !important;
           padding-top: 0.25rem;
           padding-left: 0.25rem;
           padding-right: 0.25rem;

@@ -52,20 +52,12 @@
       @apply bg-muted;
     }
 
-    .dv-tab {
-      @apply border-none p-0! h-9!;
-    }
-
-    .dv-react-part > div > div[data-active="true"] {
-      @apply h-9!;
-    }
-
     .dv-inactive-tab .dv-react-part {
       @apply border-b-0;
     }
 
     .dv-tabs-container {
-      @apply bg-muted h-10!;
+      @apply bg-muted;
     }
 
     .dv-inactive-group {

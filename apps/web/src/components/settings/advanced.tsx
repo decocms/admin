@@ -26,7 +26,6 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { useEffect } from "react";
 import { useWatch } from "react-hook-form";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
@@ -47,19 +46,11 @@ function AdvancedTab() {
   } = useAgentSettingsForm();
   const roles = useCurrentTeamRoles();
 
-  // --- Working Memory Tab Logic (from memory.tsx) ---
   const useWorkingMemory = useWatch({
     control: form.control,
     name: "memory.working_memory.enabled",
     defaultValue: form.getValues("memory.working_memory.enabled"),
   });
-
-  useEffect(() => {
-    if (useWorkingMemory === false) {
-      form.setValue("memory.working_memory.template", undefined);
-    }
-  }, [useWorkingMemory, form.setValue]);
-  // --- End Working Memory Tab Logic ---
 
   return (
     <ScrollArea className="h-full w-full">

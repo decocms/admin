@@ -30,6 +30,7 @@
     "./packages/sdk",
     "./packages/ai",
     "./packages/cli",
+    "./packages/cli/template/hello-world",
     "./packages/runtime"
   ],
   "compilerOptions": {

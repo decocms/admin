@@ -1,4 +1,4 @@
-import { useTeam, useTeams } from "@deco/sdk";
+import { useTeam, useTeams, DECO_CHAT_API } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -11,8 +11,8 @@ import {
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Suspense, useState, useMemo } from "react";
+import { Link, useParams, useLocation } from "react-router";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
@@ -112,6 +112,17 @@ function CurrentTeamDropdownOptions(
   { onRequestInvite }: { onRequestInvite: () => void },
 ) {
   const buildWorkspaceLink = useWorkspaceLink();
+  const location = useLocation();
+
+  const logoutUrl = useMemo(() => {
+    const url = new URL(DECO_CHAT_API);
+    url.pathname = "/auth/logout";
+
+    const next = new URL(location.pathname, globalThis.location.origin);
+    url.searchParams.set("next", next.href);
+
+    return url.href;
+  }, [location.pathname]);
 
   return (
     <>
@@ -146,6 +157,19 @@ function CurrentTeamDropdownOptions(
         <span className="md:text-sm flex-grow justify-self-start">
           Invite members
         </span>
+      </ResponsiveDropdownItem>
+      <ResponsiveDropdownItem asChild>
+        <a
+          href={logoutUrl}
+          className="w-full flex items-center gap-2 cursor-pointer"
+        >
+          <span className="grid place-items-center p-1">
+            <Icon name="logout" size={16} className="text-muted-foreground" />
+          </span>
+          <span className="md:text-sm">
+            Log out
+          </span>
+        </a>
       </ResponsiveDropdownItem>
     </>
   );

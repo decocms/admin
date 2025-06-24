@@ -261,6 +261,7 @@ export const createServerClient = async (
 
       const { llm } = createLLMInstance({
         ...llmConfig,
+        bypassOpenRouter: true,
         envs: {
           CF_ACCOUNT_ID: "c95fc4cec7fc52453228d9db170c372c",
           ...process.env,
@@ -269,6 +270,16 @@ export const createServerClient = async (
 
       const result = await llm.doGenerate({
         prompt: [
+          {
+            role: "system",
+            content: `
+           Voce ira receber uma transcriçao de um video que fala sobre comportamento canino.
+           Entenda o contexto da transcriçao, identifique os assuntos importantes e transforme as informaçoes em um FAQ.
+           exemplo:
+           Pergunta: "Por que meu cao late muito"
+           Resposta: "O cao late muito porque ele esta nervoso ou ansioso.
+           `,
+          },
           {
             role: "user",
             content: [
@@ -298,8 +309,8 @@ export const createServerClient = async (
     },
   );
 
+
   await client.connect(transport);
-  isConnected = true;
 
   return client;
 };

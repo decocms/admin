@@ -37,29 +37,19 @@ export const suggestion: (
                   command({ id: prompt.id, label: prompt.name }),
               })).slice(0, 10),
             },
-            {
-              id: "tools",
-              type: "category",
-              label: "Tools",
-              icon: "build",
-            },
-            {
-              id: "tool_placeholder",
-              type: "category",
-              label: "Tool placeholder",
-              icon: "build",
-            },
+            // {
+            //   id: "tools",
+            //   type: "category",
+            //   label: "Tools",
+            //   icon: "build",
+            // },
+            // {
+            //   id: "tool_placeholder",
+            //   type: "category",
+            //   label: "Tool placeholder",
+            //   icon: "build",
+            // },
           ],
-          // items
-          //   .map((item) => ({
-          //     icon: "library_books",
-          //     id: item.id,
-          //     label: item.name,
-          //     tooltip: item.content,
-          //   }))
-          //   .filter((item) =>
-          //     item.label.toLowerCase().includes(query?.toLowerCase())
-          //   ).slice(0, 5),
         },
       ];
     },

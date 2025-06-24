@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { Editor, type Range } from "@tiptap/react";
+import type { Editor, Range } from "@tiptap/react";
 import { type Ref, useImperativeHandle, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import { mentionToTag } from "../../common.ts";

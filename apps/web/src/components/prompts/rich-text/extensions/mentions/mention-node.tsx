@@ -8,7 +8,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { NodeViewWrapper, type ReactNodeViewProps } from "@tiptap/react";
 import { mentionToTag } from "../../common.ts";
-import { Option } from "../suggestions/dropdown.tsx";
+import type { Option } from "../suggestions/dropdown.tsx";
 
 export default function MentionNode({
   node,

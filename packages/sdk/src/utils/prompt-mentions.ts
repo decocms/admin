@@ -1,6 +1,6 @@
 import { listPrompts } from "../crud/prompts.ts";
 import type { MCPClient } from "../fetcher.ts";
-import { Prompt } from "../index.ts";
+import type { Prompt } from "../index.ts";
 import { unescapeHTML } from "./html.ts";
 
 export const MENTION_REGEX =

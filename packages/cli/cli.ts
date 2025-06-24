@@ -139,7 +139,9 @@ const dev = new Command()
 
 const create = new Command()
   .description("Create a new project from a template.")
-  .option("-t, --template <template:string>", "Template to use", { required: false })
+  .option("-t, --template <template:string>", "Template to use", {
+    required: false,
+  })
   .arguments("[project-name]")
   .action(async (options, projectName?: string) => {
     await createCommand(projectName, options.template);

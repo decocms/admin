@@ -1,6 +1,6 @@
 import { Input, Select } from "@cliffy/prompt";
 import { join } from "https://deno.land/std@0.212.0/path/mod.ts";
-import { ensureDir, copy } from "https://deno.land/std@0.212.0/fs/mod.ts";
+import { copy, ensureDir } from "https://deno.land/std@0.212.0/fs/mod.ts";
 
 interface Template {
   name: string;
@@ -15,28 +15,33 @@ const AVAILABLE_TEMPLATES: Template[] = [
     name: "hello-world",
     description: "A simple Hello World template",
     repo: "deco-cx/chat",
-    branch: "main",
-    path: "packages/cli/template/hello-world"
+    branch: "cli-templates",
+    path: "packages/cli/template/hello-world",
   },
-// TODO: Add react-app template
-//   {
-//     name: "react-app",
-//     description: "A React application template",
-//     repo: "deco-cx/chat",
-//     branch: "main",
-//     path: "packages/cli/template/react-app"
-//   },
+  // TODO: Add react-app template
+  //   {
+  //     name: "react-app",
+  //     description: "A React application template",
+  //     repo: "deco-cx/chat",
+  //     branch: "main",
+  //     path: "packages/cli/template/react-app"
+  //   },
 ];
 
-async function downloadTemplate(template: Template, targetDir: string): Promise<void> {
+async function downloadTemplate(
+  template: Template,
+  targetDir: string,
+): Promise<void> {
   const tempDir = await Deno.makeTempDir();
-  
+
   try {
     const cloneCmd = new Deno.Command("git", {
       args: [
         "clone",
-        "--depth", "1",
-        "--branch", template.branch || "main",
+        "--depth",
+        "1",
+        "--branch",
+        template.branch || "main",
         `https://github.com/${template.repo}.git`,
         tempDir,
       ],
@@ -49,7 +54,7 @@ async function downloadTemplate(template: Template, targetDir: string): Promise<
 
     const templatePath = join(tempDir, template.path || "");
     const templateExists = await Deno.stat(templatePath).catch(() => false);
-    
+
     if (!templateExists) {
       throw new Error(`Template '${template.name}' not found in repository`);
     }
@@ -63,18 +68,27 @@ async function downloadTemplate(template: Template, targetDir: string): Promise<
   }
 }
 
-async function customizeTemplate(targetDir: string, projectName: string): Promise<void> {
+async function customizeTemplate(
+  targetDir: string,
+  projectName: string,
+): Promise<void> {
   const packageJsonPath = join(targetDir, "package.json");
-  
+
   try {
     const packageJsonContent = await Deno.readTextFile(packageJsonPath);
     const packageJson = JSON.parse(packageJsonContent);
-    
+
     packageJson.name = projectName;
-    
-    await Deno.writeTextFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+    await Deno.writeTextFile(
+      packageJsonPath,
+      JSON.stringify(packageJson, null, 2),
+    );
   } catch (error) {
-    console.warn("⚠️  Could not customize package.json:", error instanceof Error ? error.message : String(error));
+    console.warn(
+      "⚠️  Could not customize package.json:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 
@@ -83,13 +97,20 @@ export function listTemplates(): void {
   AVAILABLE_TEMPLATES.forEach((template, index) => {
     console.log(`${index + 1}. ${template.name} - ${template.description}`);
   });
-  console.log("\nUse 'deco create <project-name> --template <template-name>' to create a project with a specific template.");
+  console.log(
+    "\nUse 'deco create <project-name> --template <template-name>' to create a project with a specific template.",
+  );
 }
 
-export async function createCommand(projectName?: string, templateName?: string): Promise<void> {
+export async function createCommand(
+  projectName?: string,
+  templateName?: string,
+): Promise<void> {
   try {
     if (templateName) {
-      const validTemplate = AVAILABLE_TEMPLATES.find(t => t.name === templateName);
+      const validTemplate = AVAILABLE_TEMPLATES.find((t) =>
+        t.name === templateName
+      );
       if (!validTemplate) {
         console.error(`❌ Template '${templateName}' not found.`);
         console.log("\nAvailable templates:");
@@ -113,47 +134,51 @@ export async function createCommand(projectName?: string, templateName?: string)
 
     const targetDir = join(Deno.cwd(), finalProjectName);
     const dirExists = await Deno.stat(targetDir).catch(() => false);
-    
+
     if (dirExists) {
       const overwrite = await Select.prompt({
         message: `Directory '${finalProjectName}' already exists. Overwrite?`,
         options: ["No", "Yes"],
       });
-      
+
       if (overwrite === "No") {
         console.log("❌ Project creation cancelled.");
         return;
       }
-      
+
       await Deno.remove(targetDir, { recursive: true });
     }
 
     const finalTemplateName = templateName || await Select.prompt({
       message: "Select a template:",
-      options: AVAILABLE_TEMPLATES.map(t => ({
+      options: AVAILABLE_TEMPLATES.map((t) => ({
         name: `${t.name} - ${t.description}`,
         value: t.name,
       })),
     });
 
-    const selectedTemplate = AVAILABLE_TEMPLATES.find(t => t.name === finalTemplateName);
+    const selectedTemplate = AVAILABLE_TEMPLATES.find((t) =>
+      t.name === finalTemplateName
+    );
     if (!selectedTemplate) {
       throw new Error(`Template '${finalTemplateName}' not found`);
     }
 
     console.log(`📦 Downloading template '${selectedTemplate.name}'...`);
-    
+
     await downloadTemplate(selectedTemplate, targetDir);
     await customizeTemplate(targetDir, finalProjectName);
-    
+
     console.log(`\n🎉 Project '${finalProjectName}' created successfully!`);
     console.log(`\nNext steps:`);
     console.log(`  cd ${finalProjectName}`);
     console.log(`  npm install`);
     console.log(`  deco dev`);
-    
   } catch (error) {
-    console.error("❌ Failed to create project:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "❌ Failed to create project:",
+      error instanceof Error ? error.message : String(error),
+    );
     Deno.exit(1);
   }
-} 
+}

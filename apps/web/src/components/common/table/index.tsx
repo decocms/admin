@@ -60,7 +60,7 @@ export function Table<T>({
     let base =
       "px-4 text-left bg-muted font-semibold text-foreground text-sm h-10";
     if (idx === 0) base += " rounded-l-md";
-    if (idx === total - 1) base += " rounded-r-md w-8";
+    if (idx === total - 1) base += " rounded-r-md";
     return base;
   }
 

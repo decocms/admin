@@ -749,7 +749,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     if (virtual) {
       const workspaceMcp = new URL(
         `${c.workspace.value}/${virtual.group}/mcp`,
-        "http://localhost:3001",
+        DECO_CHAT_API,
       );
       workspaceMcp.searchParams.set("group", virtual.group);
 

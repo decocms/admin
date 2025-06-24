@@ -350,7 +350,7 @@ function LoggedUser() {
         </ResponsiveDropdownItem>
         <ResponsiveDropdownItem asChild>
           <a
-            href="/"
+            href="/about"
             target="_blank"
             rel="noopener noreferrer"
             className="flex w-full items-center gap-2 text-sm cursor-pointer"

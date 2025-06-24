@@ -156,7 +156,7 @@ function ErrorFallback() {
     }
 
     if (pathname === "/") {
-      globalThis.location.href = "/";
+      globalThis.location.href = "/about";
 
       return;
     }

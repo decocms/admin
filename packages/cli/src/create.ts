@@ -15,7 +15,7 @@ const AVAILABLE_TEMPLATES: Template[] = [
     name: "hello-world",
     description: "A simple Hello World template",
     repo: "deco-cx/chat",
-    branch: "cli-templates",
+    branch: "main",
     path: "packages/cli/template/hello-world",
   },
   // TODO: Add react-app template

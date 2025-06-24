@@ -117,9 +117,11 @@ export function Table<T>({
                 {columns.map((col, idx) => (
                   <TableCell
                     key={col.id}
-                    className={(idx === 0 ? "px-4 " : "") +
+                    className={
+                      "px-4 py-2 relative z-20 " +
                       (col.cellClassName ? col.cellClassName + " " : "") +
-                      "truncate overflow-hidden whitespace-nowrap relative z-20"}
+                      "text-left align-top"
+                    }
                   >
                     {col.render
                       ? col.render(row)

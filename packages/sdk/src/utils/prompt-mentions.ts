@@ -3,7 +3,10 @@ import type { MCPClient } from "../fetcher.ts";
 import { Prompt } from "../index.ts";
 import { unescapeHTML } from "./html.ts";
 
-export const MENTION_REGEX = /(?:<|&lt;)(\w+):([\w-]+)(?:>|&gt;)/g;
+export const MENTION_REGEX =
+  /<span\s+[^>]*data-id=["']?([^"'\s>]+)["']?\s+[^>]*data-mention-type=["']?([^"'\s>]+)["']?[^>]*>.*?<\/span>/g;
+export const COMMENT_REGEX =
+  /<span\s+data-type="comment"\s*?[^>]*?>.*?<\/span>/gs;
 
 type Mentionables = "prompt";
 
@@ -23,11 +26,11 @@ export function extractMentionsFromString(systemPrompt: string): Mention[] {
   let match;
 
   while ((match = MENTION_REGEX.exec(unescapedSystemPrompt)) !== null) {
-    const type = match[1] as Mentionables;
+    const type = match[2] as Mentionables;
     if (mentionableTypes.includes(type)) {
       mentions.push({
         type,
-        id: match[2],
+        id: match[1],
       });
     }
   }
@@ -36,31 +39,34 @@ export function extractMentionsFromString(systemPrompt: string): Mention[] {
 }
 
 export function toMention(id: string, type: Mentionables = "prompt") {
-  return `<${type}:${id}>`;
+  return `<span data-type="mention" data-id=${id} data-mention-type=${type}></span>`;
 }
 
 // TODO: Resolve all types of mentions
 export async function resolveMentions(
   content: string,
   workspace: string,
+  client?: ReturnType<typeof MCPClient["forWorkspace"]>,
   options?: {
     /**
      * The id of the parent prompt. If provided, the resolution will skip the parent id to avoid infinite recursion.
      */
     parentPromptId?: string;
   },
-  client?: ReturnType<typeof MCPClient["forWorkspace"]>,
 ): Promise<string> {
-  const contentWithoutComments = content.replaceAll(
-    /<span\s+data-type="comment"\s*?[^>]*?>.*?<\/span>/gs,
-    "",
-  );
+  const contentWithoutComments = content.replaceAll(COMMENT_REGEX, "");
+  console.log("contentWithoutComments", contentWithoutComments.slice(0, 100));
 
   const mentions = extractMentionsFromString(content);
+
+  console.log("mentions", mentions);
 
   const promptIds = mentions.filter((mention) => mention.type === "prompt").map(
     (mention) => mention.id,
   );
+
+  console.log("promptIds", promptIds);
+
   if (!promptIds.length) {
     return contentWithoutComments;
   }
@@ -78,6 +84,8 @@ export async function resolveMentions(
     return [];
   });
 
+  console.log("prompts", prompts.map((p) => p.id));
+
   if (!prompts.length) {
     return contentWithoutComments;
   }
@@ -87,7 +95,8 @@ export async function resolveMentions(
   );
 
   return contentWithoutComments
-    .replaceAll(MENTION_REGEX, (_match, type, id) => {
+    .replaceAll(MENTION_REGEX, (_match, id, type) => {
+      console.log("match", { _match, id, type });
       if (type === "prompt") {
         if (id === options?.parentPromptId) {
           return "";

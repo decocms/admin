@@ -1,10 +1,11 @@
-import { useTeam, useTeamRoles } from "@deco/sdk";
+import { useSDK, useTeam, useTeamRoles } from "@deco/sdk";
 import {
   DEFAULT_MAX_STEPS,
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
   MIN_MAX_TOKENS,
 } from "@deco/sdk/constants";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Form,
   FormControl,
@@ -26,7 +27,10 @@ import {
 } from "@deco/ui/components/select.tsx";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
 import { useWatch } from "react-hook-form";
+import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
@@ -39,9 +43,35 @@ export const useCurrentTeamRoles = () => {
   return roles;
 };
 
+function CopyLinkButton(
+  { className, link }: { className: string; link: string },
+) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      aria-label="Copy link"
+      className={className}
+      onClick={() => {
+        navigator.clipboard.writeText(link);
+        setIsCopied(true);
+        setTimeout(() => {
+          setIsCopied(false);
+        }, 2000);
+      }}
+    >
+      <Icon name={isCopied ? "check" : "link"} size={16} />
+      Copy link
+    </Button>
+  );
+}
+
 function AdvancedTab() {
   const {
     form,
+    agent,
     handleSubmit,
   } = useAgentSettingsForm();
   const roles = useCurrentTeamRoles();
@@ -60,6 +90,66 @@ function AdvancedTab() {
             onSubmit={handleSubmit}
             className="space-y-6 py-2 pb-16"
           >
+            <FormField
+              name="visibility"
+              render={({ field }) => {
+                const { workspace } = useSDK();
+                const isPublic = field.value === "PUBLIC";
+                const publicLink = getPublicChatLink(agent.id, workspace);
+
+                return (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2">
+                        <FormLabel>Visibility</FormLabel>
+                        <FormDescription className="text-xs text-muted-foreground">
+                          Control who can interact with this agent.
+                        </FormDescription>
+                      </div>
+
+                      <CopyLinkButton
+                        link={publicLink}
+                        className={cn(isPublic ? "visible" : "invisible")}
+                      />
+                    </div>
+
+                    <FormControl>
+                      <Select
+                        value={field.value ?? "PRIVATE"}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="WORKSPACE">
+                            <div className="flex items-center gap-2">
+                              <Icon name="groups" />
+                              <span>Team</span>
+                              <span className="text-xs text-muted-foreground">
+                                Members of your team can access and edit the
+                                agent
+                              </span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="PUBLIC">
+                            <div className="flex items-center gap-2">
+                              <Icon name="public" />
+                              <span>Public</span>
+                              <span className="text-xs text-muted-foreground">
+                                Anyone with the link can view and use the agent.
+                              </span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
             <FormField
               name="max_steps"
               render={({ field }) => (

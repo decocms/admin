@@ -452,6 +452,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.metadata?.mcpClient,
     );
 
+    console.log("processedInstructions", processedInstructions);
+
     this._maybeAgent = new Agent({
       memory: this._memory as unknown as MastraMemory,
       name: config.name,
@@ -1070,6 +1072,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         this.workspace,
         this.metadata?.mcpClient,
       );
+      console.log("processedInstructions", processedInstructions);
     }
 
     const response = await agent.stream(

@@ -108,36 +108,45 @@
       @apply grow-0!;
     }
 
+    .prose {
+      @apply whitespace-pre-wrap break-words;
+      overflow-wrap: anywhere;
+    }
+
+    .prose p {
+      @apply mb-2;
+    }
+
     .prose ul {
-      @apply list-disc pl-6;
+      @apply list-disc pl-6 mb-2;
     }
 
     .prose ol {
-      @apply list-decimal pl-6;
+      @apply list-decimal pl-6 mb-2;
     }
 
     .prose h1 {
-      @apply text-2xl font-bold;
+      @apply text-2xl font-bold mb-2;
     }
 
     .prose h2 {
-      @apply text-xl font-bold;
+      @apply text-xl font-bold mb-2;
     }
 
     .prose h3 {
-      @apply text-lg font-bold;
+      @apply text-lg font-bold mb-2;
     }
 
     .prose h4 {
-      @apply text-base font-bold;
+      @apply text-base font-bold mb-2;
     }
 
     .prose h5 {
-      @apply text-sm font-bold;
+      @apply text-sm font-bold mb-2;
     }
 
     .prose h6 {
-      @apply text-xs font-bold;
+      @apply text-xs font-bold mb-2;
     }
 
     .prose a {

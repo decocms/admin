@@ -11,7 +11,9 @@ export const suggestion: (
 ) => {
   return {
     char: "/",
-    items: () => {
+    items: (props) => {
+      const { query } = props;
+
       return [
         {
           id: "references",
@@ -23,7 +25,9 @@ export const suggestion: (
               type: "category",
               label: "Prompts",
               icon: "text_snippet",
-              children: items.map((prompt) => ({
+              children: items.filter((prompt) =>
+                prompt.name.toLowerCase().includes(query?.toLowerCase())
+              ).map((prompt): Option => ({
                 id: prompt.id,
                 type: "option",
                 label: prompt.name,
@@ -31,7 +35,7 @@ export const suggestion: (
                 tooltip: prompt.content,
                 handle: ({ command }) =>
                   command({ id: prompt.id, label: prompt.name }),
-              })),
+              })).slice(0, 10),
             },
             {
               id: "tools",

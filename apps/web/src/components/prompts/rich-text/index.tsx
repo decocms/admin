@@ -7,7 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef } from "react";
 import { Markdown } from "tiptap-markdown";
 import BubbleMenu from "./bubble-menu.tsx";
-import { mentionToTag, tagToMention } from "./common.ts";
+import { mentionToTag, removeMarkdownCodeBlock } from "./common.ts";
 import { Comment } from "./extensions/comment.tsx";
 import { mentions } from "./extensions/mentions/mentions.ts";
 
@@ -70,10 +70,10 @@ export default function RichTextArea({
 
   const editor = useEditor({
     extensions,
-    content: mentionToTag(value),
+    content: mentionToTag(removeMarkdownCodeBlock(value), true),
     editable: !disabled,
     onUpdate: ({ editor }) => {
-      const markdown = tagToMention(editor.storage.markdown.getMarkdown());
+      const markdown = editor.storage.markdown.getMarkdown();
 
       if (!hadUserInteraction.current && editor.isFocused) {
         hadUserInteraction.current = true;
@@ -86,7 +86,7 @@ export default function RichTextArea({
     editorProps: {
       attributes: {
         class: cn(
-          "h-full placeholder:text-muted-foreground field-sizing-content w-full bg-transparent text-base transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 prose",
+          "h-full placeholder:text-muted-foreground field-sizing-content w-full bg-transparent text-base transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 prose whitespace-pre-wrap break-words wrap-anywhere",
           className,
         ),
       },
@@ -97,8 +97,11 @@ export default function RichTextArea({
   useEffect(() => {
     if (!editor) return;
 
-    if (value !== tagToMention(editor.storage.markdown.getMarkdown())) {
-      editor.commands.setContent(mentionToTag(value), false);
+    const _value = removeMarkdownCodeBlock(value);
+    if (mentionToTag(_value) !== editor.storage.markdown.getMarkdown()) {
+      editor.commands.setContent(mentionToTag(_value, true), false, {
+        preserveWhitespace: "full",
+      });
     }
   }, [value, editor]);
 

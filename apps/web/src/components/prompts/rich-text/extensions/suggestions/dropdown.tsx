@@ -70,6 +70,12 @@ export default function MentionDropdown({
       }
     }
 
+    if (query) {
+      return defaultOptions.flatMap((category) =>
+        category.children?.map((option) => option) ?? []
+      );
+    }
+
     return [
       ...defaultOptions,
       {
@@ -244,7 +250,7 @@ export default function MentionDropdown({
   }, [currentCategory]);
 
   const isSelected = (item: Option) => {
-    return selectedIndex !== null && items[selectedIndex].id === item.id;
+    return selectedIndex !== null && items[selectedIndex]?.id === item.id;
   };
 
   useImperativeHandle(ref, () => ({

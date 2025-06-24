@@ -1,9 +1,7 @@
-import { useSDK } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
+import { useWriteFile } from "@deco/sdk";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -12,52 +10,16 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
-import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { AgentAvatar } from "../common/avatar/index.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
-import { useWriteFile } from "@deco/sdk";
-import { Switch } from "@deco/ui/components/switch.tsx";
-import { Label } from "@deco/ui/components/label.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
-
-function CopyLinkButton(
-  { className, link }: { className: string; link: string },
-) {
-  const [isCopied, setIsCopied] = useState(false);
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      aria-label="Copy link"
-      className={className}
-      onClick={() => {
-        navigator.clipboard.writeText(link);
-        setIsCopied(true);
-        setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      }}
-    >
-      <Icon name={isCopied ? "check" : "link"} size={16} />
-      Copy link
-    </Button>
-  );
-}
 
 const useAvatarFilename = () => {
   const generate = (originalFile: File) => {
@@ -69,7 +31,7 @@ const useAvatarFilename = () => {
   return { generate };
 };
 
-function AgentProfileTab() {
+function PromptTab() {
   const {
     form,
     agent,
@@ -118,233 +80,132 @@ function AgentProfileTab() {
   };
 
   return (
-    <ScrollArea className="h-full w-full">
+    <ScrollArea className="h-full w-full [&>div>div]:h-full">
       <Form {...form}>
-        <div className="h-full w-full p-4 max-w-3xl mx-auto">
+        <div className="h-full w-full p-6 mx-auto">
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 py-2 pb-16"
+            className="space-y-6 h-full"
           >
-            {/* Icon and Name */}
-            <FormField
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center gap-6">
-                    <FormField
-                      control={form.control}
-                      name="avatar"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex justify-center items-center">
-                            <input
-                              type="file"
-                              ref={fileInputRef}
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleFileChange}
-                            />
-                            <FormControl>
-                              <div
-                                className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
-                                onClick={triggerFileInput}
-                              >
-                                {isUploading
-                                  ? (
-                                    <Skeleton
-                                      className={cn(
-                                        "w-full h-full rounded-xl",
-                                      )}
-                                    />
-                                  )
-                                  : (
-                                    <>
-                                      <AgentAvatar
-                                        name={agent.name}
-                                        avatar={field.value || agent.avatar}
-                                      />
-                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <Icon
-                                          name="upload"
-                                          className="text-white text-xl"
-                                        />
-                                      </div>
-                                      <Input type="hidden" {...field} />
-                                    </>
-                                  )}
-                              </div>
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="flex-1 flex flex-col gap-1">
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter agent name"
-                          {...field}
+            <div className="flex gap-3 w-full">
+              <div className="flex items-center gap-6 flex-1">
+                <FormField
+                  control={form.control}
+                  name="avatar"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-center items-center">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileChange}
                         />
-                      </FormControl>
+                        <FormControl>
+                          <div
+                            className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                            onClick={triggerFileInput}
+                          >
+                            {isUploading
+                              ? (
+                                <Skeleton
+                                  className={cn(
+                                    "w-full h-full rounded-xl",
+                                  )}
+                                />
+                              )
+                              : (
+                                <>
+                                  <AgentAvatar
+                                    name={agent.name}
+                                    avatar={field.value || agent.avatar}
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <Icon
+                                      name="upload"
+                                      className="text-white text-xl"
+                                    />
+                                  </div>
+                                  <Input type="hidden" {...field} />
+                                </>
+                              )}
+                          </div>
+                        </FormControl>
+                      </div>
                       <FormMessage />
-                    </div>
-                  </div>
-                </FormItem>
-              )}
-            />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex flex-col w-full">
+                  <FormField
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Untitled agent"
+                            className="border-none p-0 focus-visible:ring-0 font-medium rounded text-2xl md:text-2xl h-auto placeholder:text-muted-foreground placeholder:opacity-25 hover:bg-muted transition-colors"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Describe what this agent does..."
+                            className="border-none resize-none min-h-auto p-0 shadow-none focus-visible:ring-0 text-sm rounded h-auto placeholder:text-muted-foreground hover:bg-muted transition-colors"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="shrink-0">
+                <FormField
+                  name="model"
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <FormControl>
+                          <ModelSelector
+                            model={field.value}
+                            onModelChange={(newValue) =>
+                              field.onChange(newValue)}
+                            variant="borderless"
+                          />
+                        </FormControl>
 
-            {/* Description */}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </div>
+            </div>
             <FormField
-              name="description"
+              name="instructions"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormDescription className="text-xs text-muted-foreground">
-                    Used for search and organization, it does not affect agent
-                    behavior.
-                  </FormDescription>
-                  <FormControl>
-                    <Textarea
-                      placeholder="e.g. Helps write product descriptions for the online store"
-                      className="min-h-18 border-border"
+                <FormItem className="flex flex-col h-full w-full">
+                  <FormLabel>Instructions</FormLabel>
+                  <FormControl className="h-full">
+                    <PromptInput
+                      className="mt-2"
+                      placeholder="Add context and behavior to shape responses, or '/' for tools and more..."
+                      enableMentions
                       {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-            />
-
-            {/* Model & System Prompt */}
-            <FormItem>
-              <FormLabel>Model & System Prompt</FormLabel>
-              <FormField
-                name="instructions"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <PromptInput
-                        placeholder="Add context or behavior to shape responses."
-                        enableMentions
-                        showToggle={false}
-                        renderToggle={(view, setView) => (
-                          <div className="flex items-center gap-4 mb-3 pt-1">
-                            <FormField
-                              name="model"
-                              render={({ field }) => (
-                                <FormItem className="w-1/3">
-                                  <FormControl>
-                                    <ModelSelector
-                                      model={field.value}
-                                      onModelChange={(newValue) =>
-                                        field.onChange(newValue)}
-                                      variant="bordered"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <div className="flex-1 flex justify-between items-center gap-2 px-3 py-2 rounded-xl border">
-                              <p className="text-xs text-muted-foreground">
-                                You can use{" "}
-                                <a
-                                  href="https://www.commonmark.org/help/"
-                                  className="underline text-primary-dark font-medium"
-                                >
-                                  markdown
-                                </a>{" "}
-                                here.
-                              </p>
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  id="markdown-view"
-                                  checked={view === "markdown"}
-                                  onCheckedChange={(checked: boolean) => {
-                                    setView(checked ? "markdown" : "raw");
-                                  }}
-                                  className="cursor-pointer"
-                                />
-                                <Label
-                                  htmlFor="markdown-view"
-                                  className="text-xs text-foreground cursor-pointer"
-                                >
-                                  Markdown
-                                </Label>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </FormItem>
-
-            {/* Visibility Section */}
-            <FormField
-              name="visibility"
-              render={({ field }) => {
-                const { workspace } = useSDK();
-                const isPublic = field.value === "PUBLIC";
-                const publicLink = getPublicChatLink(agent.id, workspace);
-
-                return (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-2">
-                        <FormLabel>Visibility</FormLabel>
-                        <FormDescription className="text-xs text-muted-foreground">
-                          Control who can interact with this agent.
-                        </FormDescription>
-                      </div>
-
-                      <CopyLinkButton
-                        link={publicLink}
-                        className={cn(isPublic ? "visible" : "invisible")}
-                      />
-                    </div>
-
-                    <FormControl>
-                      <Select
-                        value={field.value ?? "PRIVATE"}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="WORKSPACE">
-                            <div className="flex items-center gap-2">
-                              <Icon name="groups" />
-                              <span>Team</span>
-                              <span className="text-xs text-muted-foreground">
-                                Members of your team can access and edit the
-                                agent
-                              </span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="PUBLIC">
-                            <div className="flex items-center gap-2">
-                              <Icon name="public" />
-                              <span>Public</span>
-                              <span className="text-xs text-muted-foreground">
-                                Anyone with the link can view and use the agent.
-                              </span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
             />
           </form>
         </div>
@@ -353,4 +214,4 @@ function AgentProfileTab() {
   );
 }
 
-export default AgentProfileTab;
+export default PromptTab;

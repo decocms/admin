@@ -293,3 +293,11 @@ export const USER_WORKER_APP_ENTRYPOINTS = [
 ];
 
 export const DECO_BOTS_DOMAIN = "deco.bot";
+
+export const WELL_KNOWN_PROMPT_IDS = {
+  workspace: "dynamic-workspace",
+  now: "dynamic-now",
+} as const;
+
+export const isWellKnownPromptId = (id: string): boolean =>
+  (Object.values(WELL_KNOWN_PROMPT_IDS) as string[]).includes(id);

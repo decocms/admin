@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { WELL_KNOWN_PROMPT_IDS } from "../../constants.ts";
 import { resolveMentions as resolveMentionsFn } from "../../utils/prompt-mentions.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
+import { MCPClient } from "../index.ts";
 
 const createTool = createToolGroup("Prompt", {
   name: "Prompt Management",
@@ -125,7 +127,7 @@ const virtualPromptsFor = (
       content: workspace,
       created_at: now,
       description: "The workspace name",
-      id: `dynamic-workspace`,
+      id: WELL_KNOWN_PROMPT_IDS.workspace,
       name: "workspace",
       readonly: true,
     },
@@ -133,7 +135,7 @@ const virtualPromptsFor = (
       content: now,
       created_at: now,
       description: `The current date and time ${now}`,
-      id: `date:now`,
+      id: WELL_KNOWN_PROMPT_IDS.now,
       name: "now",
       readonly: true,
     },
@@ -169,6 +171,12 @@ export const listPrompts = createTool({
 
     const [virtualPrompts, remainingIds] = virtualPromptsFor(workspace, ids);
 
+    // If the ids filter list contains some id, and after getting the virtual prompts
+    // no ids are left, we can return the virtual prompts
+    if (ids.length > 0 && remainingIds.length === 0) {
+      return virtualPrompts;
+    }
+
     let query = c.db
       .from("deco_chat_prompts")
       .select("*")
@@ -190,7 +198,9 @@ export const listPrompts = createTool({
 
     if (resolveMentions) {
       const resolvedPrompts = await Promise.allSettled(
-        prompts.map((prompt) => resolveMentionsFn(prompt.content, workspace)),
+        prompts.map((prompt) =>
+          resolveMentionsFn(prompt.content, workspace, MCPClient.forContext(c))
+        ),
       );
 
       prompts = prompts.map((prompt, index) => ({

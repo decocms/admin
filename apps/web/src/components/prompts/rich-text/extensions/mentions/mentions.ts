@@ -16,6 +16,14 @@ export const mentions = (
     addNodeView() {
       return ReactNodeViewRenderer(MentionNode);
     },
+    addAttributes() {
+      return {
+        type: { default: "mention" },
+        id: { default: "" },
+        label: { default: "" },
+        mentionType: { default: "prompt" },
+      };
+    },
     parseHTML() {
       return [
         {
@@ -28,6 +36,7 @@ export const mentions = (
 
             return {
               id,
+              mentionType: node.getAttribute("data-mention-type"),
               label: promptMap.get(id)?.name,
             };
           },
@@ -40,6 +49,7 @@ export const mentions = (
         {
           "data-type": "mention",
           "data-id": node.attrs.id,
+          "data-mention-type": node.attrs.mentionType,
         },
         `${node.attrs.label}`,
       ];

@@ -59,7 +59,10 @@ export default function MentionNode({
       data-type="mention"
     >
       <Tooltip>
-        <TooltipTrigger className="inline-flex items-end rounded-md bg-muted px-1 group text-foreground gap-1 py-0.5 -mb-0.5">
+        <TooltipTrigger
+          type="button"
+          className="inline-flex items-end rounded-md bg-muted px-1 group text-foreground gap-1 py-0.5 -mb-0.5"
+        >
           {prompt?.icon && (
             <span className="bg-purple-light rounded-md p-0.5 text-black aspect-square flex">
               <Icon name={prompt.icon} size={12} />

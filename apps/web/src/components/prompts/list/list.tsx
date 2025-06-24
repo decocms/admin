@@ -4,6 +4,7 @@ import {
   useDeletePrompt,
   usePrompts,
 } from "@deco/sdk";
+import { isWellKnownPromptId } from "@deco/sdk/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -303,7 +304,8 @@ function ListPrompts() {
 
   const filteredPrompts =
     prompts?.filter((prompt) =>
-      prompt.name.toLowerCase().includes(filter.toLowerCase())
+      prompt.name.toLowerCase().includes(filter.toLowerCase()) &&
+      !isWellKnownPromptId(prompt.id)
     ) ?? [];
 
   const handleConfigure = (prompt: Prompt) => {

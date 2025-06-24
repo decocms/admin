@@ -12,6 +12,7 @@ import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
+import { createCommand, listTemplates } from "./src/create.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -136,6 +137,20 @@ const dev = new Command()
     await deno.status;
   });
 
+const create = new Command()
+  .description("Create a new project from a template.")
+  .option("-t, --template <template:string>", "Template to use", { required: false })
+  .arguments("[project-name]")
+  .action(async (options, projectName?: string) => {
+    await createCommand(projectName, options.template);
+  });
+
+const listTemplatesCommand = new Command()
+  .description("List available templates.")
+  .action(() => {
+    listTemplates();
+  });
+
 // Hosting parent command
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
@@ -170,4 +185,6 @@ await new Command()
   .command("update", update)
   .command("link", linkCmd)
   .command("gen", gen)
+  .command("create", create)
+  .command("templates", listTemplatesCommand)
   .parse(Deno.args);

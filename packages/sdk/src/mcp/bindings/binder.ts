@@ -4,6 +4,7 @@ import type { MCPConnection } from "../../models/mcp.ts";
 import {
   type AppContext,
   createGlobalForContext,
+  createTool,
   type ToolBinder,
   type ToolLike,
 } from "../index.ts";
@@ -16,17 +17,33 @@ export type Binder<TDefinition extends readonly ToolBinder[] = any> = {
 export type BinderImplementation<
   TBinder extends Binder<any>,
 > = TBinder extends Binder<infer TDefinition> ? {
-    [K in keyof TDefinition]: Omit<
-      ToolLike<
-        TDefinition[K]["name"],
-        z.infer<TDefinition[K]["inputSchema"]>,
-        TDefinition[K] extends { outputSchema: infer Schema }
-          ? Schema extends z.ZodType ? z.infer<Schema>
-          : never
-          : never
-      >,
-      "name" | "inputSchema" | "outputSchema"
-    >;
+    [K in keyof TDefinition]:
+      & Omit<
+        ToolLike<
+          TDefinition[K]["name"],
+          z.infer<TDefinition[K]["inputSchema"]>,
+          TDefinition[K] extends { outputSchema: infer Schema }
+            ? Schema extends z.ZodType ? z.infer<Schema>
+            : never
+            : never
+        >,
+        "name" | "inputSchema" | "outputSchema" | "handler"
+      >
+      & {
+        handler: (
+          props: z.infer<TDefinition[K]["inputSchema"]>,
+          c: AppContext,
+        ) => ReturnType<
+          ToolLike<
+            TDefinition[K]["name"],
+            z.infer<TDefinition[K]["inputSchema"]>,
+            TDefinition[K] extends { outputSchema: infer Schema }
+              ? Schema extends z.ZodType ? z.infer<Schema>
+              : never
+              : never
+          >["handler"]
+        >;
+      };
   }
   : never;
 
@@ -93,13 +110,14 @@ export * from "./index.ts";
 export const impl = <TBinder extends Binder<any>>(
   schema: TBinder,
   implementation: BinderImplementation<TBinder>,
+  createToolFn: typeof createTool = createTool,
 ) => {
   const impl = [];
   for (const key in schema) {
-    impl.push({
+    impl.push(createToolFn({
       ...schema[key],
       ...implementation[key],
-    });
+    }));
   }
   return impl satisfies ToolLike[];
 };

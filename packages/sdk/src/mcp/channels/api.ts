@@ -98,16 +98,32 @@ export const createChannel = createTool({
   handler: async ({ discriminator, integrationId, agentId, name }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
+    const workspace = c.workspace.value;
+
+    const integrationIdWithoutPrefix = integrationId.replace("i:", "");
+    const { data: integration, error: integrationError } = await c.db.from(
+      "deco_chat_integrations",
+    )
+      .select("*")
+      .eq("workspace", workspace) // this ensures the integration is in the same workspace as the channel
+      .eq("id", integrationIdWithoutPrefix)
+      .maybeSingle();
+    if (integrationError) {
+      throw new InternalServerError(integrationError.message);
+    }
+
+    if (!integration) {
+      throw new NotFoundError("Integration not found");
+    }
 
     const db = c.db;
-    const workspace = c.workspace.value;
 
     // Insert the new channel
     const { data: channel, error } = await db.from("deco_chat_channels")
       .insert({
         discriminator,
         workspace,
-        integration_id: integrationId.replace("i:", ""),
+        integration_id: integrationIdWithoutPrefix,
         name,
       })
       .select(SELECT_CHANNEL_QUERY)
@@ -119,10 +135,6 @@ export const createChannel = createTool({
 
     // Link agents if provided
     if (agentId) {
-      await db.from("deco_chat_channel_agents").insert({
-        channel_id: channel.id,
-        agent_id: agentId,
-      });
       const binding = ChannelBinding.forConnection(
         convertFromDatabase(channel.integration).connection,
       );
@@ -145,6 +157,11 @@ export const createChannel = createTool({
         agentName: data.name,
         agentId,
         callbacks: trigger.callbacks,
+      });
+
+      await db.from("deco_chat_channel_agents").insert({
+        channel_id: channel.id,
+        agent_id: agentId,
       });
     }
 
@@ -195,12 +212,6 @@ export const channelJoin = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
-    // Insert into join table (if not exists)
-    await db.from("deco_chat_channel_agents")
-      .upsert({ channel_id: id, agent_id: agentId }, {
-        onConflict: "channel_id,agent_id",
-      });
-
     // Fetch channel with agents
     const { data: channel, error } = await db.from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
@@ -233,7 +244,14 @@ export const channelJoin = createTool({
       });
     }
 
-    return mapChannel(channel);
+    // Insert into join table (if not exists)
+    await db.from("deco_chat_channel_agents")
+      .upsert({ channel_id: id, agent_id: agentId }, {
+        onConflict: "channel_id,agent_id",
+      });
+
+    const result = mapChannel(channel);
+    return { ...result, agentIds: [...new Set([...result.agentIds, agentId])] };
   },
 });
 
@@ -255,12 +273,6 @@ export const channelLeave = createTool({
     const db = c.db;
     const workspace = c.workspace.value;
 
-    // Remove from join table
-    await db.from("deco_chat_channel_agents")
-      .delete()
-      .eq("channel_id", id)
-      .eq("agent_id", agentId);
-
     // Fetch channel with agents
     const { data: channel, error } = await db.from("deco_chat_channels")
       .select(SELECT_CHANNEL_QUERY)
@@ -271,7 +283,6 @@ export const channelLeave = createTool({
     if (error) {
       throw new InternalServerError(error.message);
     }
-
     // Call LEAVE_CHANNEL if integration exists
     if (channel.integration) {
       const binding = ChannelBinding.forConnection(
@@ -283,7 +294,16 @@ export const channelLeave = createTool({
       });
     }
 
-    return mapChannel(channel);
+    // Remove from join table
+    await db.from("deco_chat_channel_agents")
+      .delete()
+      .eq("channel_id", id)
+      .eq("agent_id", agentId);
+
+    return mapChannel({
+      ...channel,
+      agents: channel.agents.filter((a) => a.agent_id !== agentId),
+    });
   },
 });
 

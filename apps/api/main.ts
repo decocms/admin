@@ -6,6 +6,7 @@ import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
 import process from "node:process";
 import { default as app } from "./src/app.ts";
+import { email } from "./src/email.ts";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
@@ -65,6 +66,7 @@ globalThis.fetch = async function patchedFetch(
 
 // Default export that wraps app with per-request context initializer
 export default {
+  email,
   fetch(
     request: Request,
     env: any,

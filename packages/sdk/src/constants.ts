@@ -266,3 +266,5 @@ export const USER_WORKER_APP_ENTRYPOINTS = [
   "main.js",
   "main.cjs",
 ];
+
+export const DECO_BOTS_DOMAIN = "deco.bot";

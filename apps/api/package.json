@@ -20,10 +20,13 @@
     "ai": "^4.3.13",
     "cloudflare": "^4.2.0",
     "hono": "^4.7.7",
+    "mimetext": "^3.0.27",
     "unpdf": "^1.0.5",
-    "zod": "^3.24.3"
+    "zod": "^3.24.3",
+    "@ai-sdk/ui-utils": "^1.2.11"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250620.0",
     "supabase": "^2.22.12",
     "wrangler": "^4.13.2"
   },

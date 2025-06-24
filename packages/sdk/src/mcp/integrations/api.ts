@@ -17,6 +17,7 @@ import {
   InternalServerError,
   NEW_INTEGRATION_TEMPLATE,
   UserInputError,
+  WellKnownMcpGroups,
 } from "../../index.ts";
 import { CallToolResultSchema } from "../../models/tool-call.ts";
 import type { Workspace } from "../../path.ts";
@@ -538,6 +539,18 @@ const searchMarketplaceIntegations = async (
   }
 };
 
+const virtualInstallableIntegrations = () => {
+  return [{
+    id: "AGENTS_EMAIL",
+    name: "Agents Email",
+    group: WellKnownMcpGroups.Email,
+    description: "Manage your agents email",
+    icon:
+      "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/Channel-Management.png",
+    provider: "deco",
+  }];
+};
+
 export const DECO_INTEGRATIONS_SEARCH = createIntegrationManagementTool({
   name: "DECO_INTEGRATIONS_SEARCH",
   description: `
@@ -571,8 +584,14 @@ It's always handy to search for installed integrations with no query, since all 
       provider,
     }));
 
+    const virtualIntegrations = virtualInstallableIntegrations();
     return {
-      integrations: list,
+      integrations: [
+        ...list,
+        ...virtualIntegrations.filter((integration) =>
+          !query || integration.name.includes(query)
+        ),
+      ],
     };
   },
 });
@@ -723,44 +742,66 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const client = await getDecoRegistryServerClient();
-
-    try {
-      const result = await client.callTool({
-        name: "CONFIGURE",
-        arguments: { id: args.id },
-        // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
-      }, CallToolResultSchema);
-
-      const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
-        result.structuredContent,
+    let integration: Integration;
+    const virtual = virtualInstallableIntegrations().find((i) =>
+      i.id === args.id
+    );
+    if (virtual) {
+      const workspaceMcp = new URL(
+        `${c.workspace.value}/${virtual.group}/mcp`,
+        "http://localhost:3001",
       );
+      workspaceMcp.searchParams.set("group", virtual.group);
 
-      const pattern = new URLPattern({
-        pathname: "/apps/:appName/:installId/mcp/messages",
-      });
-      const match = parsed.data && "url" in parsed.data.connection &&
-          typeof parsed.data.connection.url === "string"
-        ? pattern.exec(parsed.data.connection.url)
-        : null;
-      const id = parsed.installId ?? match?.pathname.groups.installId ??
-        crypto.randomUUID();
+      integration = {
+        id: crypto.randomUUID(),
+        name: virtual.name,
+        description: virtual.description,
+        icon: virtual.icon,
+        connection: {
+          type: "HTTP",
+          url: workspaceMcp.href,
+        },
+      };
+    } else {
+      const client = await getDecoRegistryServerClient();
 
-      const created = await createIntegration.handler({
-        id,
-        ...(parsed.data as Omit<Integration, "id">),
-      });
+      try {
+        const result = await client.callTool({
+          name: "CONFIGURE",
+          arguments: { id: args.id },
+          // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+        }, CallToolResultSchema);
 
-      client.close();
+        const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
+          result.structuredContent,
+        );
 
-      if (!created?.id) {
-        throw new Error("Failed to create integration");
+        const pattern = new URLPattern({
+          pathname: "/apps/:appName/:installId/mcp/messages",
+        });
+        const match = parsed.data && "url" in parsed.data.connection &&
+            typeof parsed.data.connection.url === "string"
+          ? pattern.exec(parsed.data.connection.url)
+          : null;
+        const id = parsed.installId ?? match?.pathname.groups.installId ??
+          crypto.randomUUID();
+
+        client.close();
+        integration = {
+          id,
+          ...(parsed.data as Omit<Integration, "id">),
+        };
+      } finally {
+        client.close();
       }
-
-      return { installationId: created.id };
-    } catch (error) {
-      client.close();
-      throw error;
     }
+    const created = await createIntegration.handler(integration);
+
+    if (!created?.id) {
+      throw new Error("Failed to create integration");
+    }
+
+    return { installationId: created.id };
   },
 });

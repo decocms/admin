@@ -13,6 +13,7 @@ export const WellKnownMcpGroups = {
   AgentSetup: "agent-setup",
   Channel: "channel-management",
   KnowledgeBase: "knowledge-base-",
+  Email: "email-management",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

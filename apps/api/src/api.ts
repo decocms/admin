@@ -1,8 +1,12 @@
 import { HttpServerTransport } from "@deco/mcp/http";
+import { WellKnownMcpGroups } from "@deco/sdk";
 import {
   AuthorizationClient,
   createMCPToolsStub,
+  EMAIL_TOOLS,
   Entrypoint,
+  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
+  getWorkspaceBucketName,
   GLOBAL_TOOLS,
   PolicyClient,
   type ToolLike,
@@ -18,10 +22,6 @@ import { logger } from "hono/logger";
 import { endTime, startTime } from "hono/timing";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
-import {
-  getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
-  getWorkspaceBucketName,
-} from "@deco/sdk/mcp";
 import { fetchScript } from "./apps.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
 import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
@@ -72,7 +72,7 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
  * Creates and sets up an MCP server for the given tools
  */
 const createMCPHandlerFor = (
-  tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS,
+  tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS | typeof EMAIL_TOOLS,
 ) => {
   return async (c: Context) => {
     const group = c.req.query("group");
@@ -228,6 +228,11 @@ app.post(
 app.post(
   "/:root/:slug/tools/call/:tool",
   createToolCallHandlerFor(WORKSPACE_TOOLS),
+);
+
+app.post(
+  `/:root/:slug/${WellKnownMcpGroups.Email}/mcp`,
+  createMCPHandlerFor(EMAIL_TOOLS),
 );
 
 // Login and auth routes

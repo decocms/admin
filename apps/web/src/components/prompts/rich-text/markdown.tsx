@@ -9,7 +9,7 @@ import Mention from "@tiptap/extension-mention";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, type Extensions, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Markdown } from "tiptap-markdown";
 import { useWorkspaceLink } from "../../../hooks/use-navigate-workspace.ts";
 import suggestion from "../common.ts";
@@ -28,6 +28,7 @@ export default function RichTextArea({
 }: PromptInputProps) {
   const { data: prompts } = usePrompts();
   const withWorkspace = useWorkspaceLink();
+  const [hadUserInteraction, setHadUserInteraction] = useState(false);
 
   const promptMap = useMemo(() => {
     if (!prompts) return new Map();
@@ -137,7 +138,13 @@ export default function RichTextArea({
         editor.storage.markdown.getMarkdown(),
       );
 
-      onChange(markdown);
+      if (!hadUserInteraction && editor.isFocused) {
+        setHadUserInteraction(true);
+      }
+
+      if (hadUserInteraction) {
+        onChange(markdown);
+      }
     },
     editorProps: {
       handlePaste(view, event) {

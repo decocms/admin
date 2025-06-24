@@ -1,5 +1,6 @@
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
 import type { PromptInputProps } from "./index.tsx";
 
 export default function RawTextArea({
@@ -12,10 +13,23 @@ export default function RawTextArea({
   placeholder,
   className,
 }: PromptInputProps) {
+  const [hadUserInteraction, setHadUserInteraction] = useState(false);
+
   return (
     <Textarea
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        if (!hadUserInteraction) {
+          return;
+        }
+
+        onChange(e.target.value);
+      }}
+      onFocus={() => {
+        if (!hadUserInteraction) {
+          setHadUserInteraction(true);
+        }
+      }}
       onKeyDown={(e) => onKeyDown?.(e)}
       onKeyUp={(e) => onKeyUp?.(e)}
       onPaste={(e) => onPaste?.(e)}

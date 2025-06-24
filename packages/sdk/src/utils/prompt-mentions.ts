@@ -55,17 +55,12 @@ export async function resolveMentions(
   },
 ): Promise<string> {
   const contentWithoutComments = content.replaceAll(COMMENT_REGEX, "");
-  console.log("contentWithoutComments", contentWithoutComments.slice(0, 100));
 
   const mentions = extractMentionsFromString(content);
-
-  console.log("mentions", mentions);
 
   const promptIds = mentions.filter((mention) => mention.type === "prompt").map(
     (mention) => mention.id,
   );
-
-  console.log("promptIds", promptIds);
 
   if (!promptIds.length) {
     return contentWithoutComments;
@@ -84,8 +79,6 @@ export async function resolveMentions(
     return [];
   });
 
-  console.log("prompts", prompts.map((p) => p.id));
-
   if (!prompts.length) {
     return contentWithoutComments;
   }
@@ -96,7 +89,6 @@ export async function resolveMentions(
 
   return contentWithoutComments
     .replaceAll(MENTION_REGEX, (_match, id, type) => {
-      console.log("match", { _match, id, type });
       if (type === "prompt") {
         if (id === options?.parentPromptId) {
           return "";

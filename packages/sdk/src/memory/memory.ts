@@ -31,6 +31,9 @@ export class WorkspaceMemory extends MastraMemory {
   constructor(protected config: WorkspaceMemoryConfig) {
     // @ts-ignore: "ignore this for now"
     super(config);
+    if (!this.vector && config.vector) {
+      this.vector = config.vector;
+    }
   }
 
   static async buildWorkspaceMemoryOpts({

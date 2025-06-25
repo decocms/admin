@@ -1,19 +1,8 @@
+import { useMemo, useRef, useState } from "react";
 import {
-  type Dispatch,
-  type SetStateAction,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  type Agent,
   type Integration,
-  useAddFileToKnowledge,
   useDeleteFile,
-  useFiles,
-  useReadFile,
   useRemoveFromKnowledge,
-  useWriteFile,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -31,28 +20,13 @@ import {
   isAllowedContentType,
   isAllowedFileExt,
 } from "@deco/sdk/utils";
-import { useAgentKnowledgeIntegration } from "./hooks/use-agent-knowledge.ts";
-
-export interface UploadFile {
-  file: File;
-  file_url?: string;
-  uploading?: boolean;
-  docIds?: string[];
-}
+import { type UploadFile, useAgentFiles } from "./hooks/use-agent-knowledge.ts";
 
 const agentKnowledgeBasePath = (agentId: string) =>
   `agent/${agentId}/knowledge`;
 
-const agentKnowledgeBaseFilepath = (agentId: string, path: string) =>
-  `${agentKnowledgeBasePath(agentId)}/${path}`;
-
 const useAgentKnowledgeRootPath = (agentId: string) =>
   useMemo(() => agentKnowledgeBasePath(agentId), [agentId]);
-
-export const useAgentFiles = (agentId: string) => {
-  const prefix = useAgentKnowledgeRootPath(agentId);
-  return useFiles({ root: prefix });
-};
 
 function FileIcon({ filename }: { filename: string }) {
   const ext = useMemo<FileExt>(() => extname(filename) as FileExt, [filename]);
@@ -240,114 +214,15 @@ export function AgentKnowledgeBaseFileList(
 }
 
 interface AddFileToKnowledgeProps {
-  agent: Agent;
-  onAddFile: Dispatch<SetStateAction<UploadFile[]>>;
-  setIntegrationTools: (integrationId: string, tools: string[]) => void;
   disabled?: boolean;
+  uploadKnowledgeFiles: (files: File[]) => Promise<void>;
 }
 
 export function AddFileToKnowledgeButton(
-  { agent, onAddFile, setIntegrationTools, disabled = false }:
-    AddFileToKnowledgeProps,
+  { uploadKnowledgeFiles, disabled = false }: AddFileToKnowledgeProps,
 ) {
-  const { refetch: refetchAgentKnowledgeFiles } = useAgentFiles(agent.id);
   const [isUploading, setIsUploading] = useState(false);
   const knowledgeFileInputRef = useRef<HTMLInputElement>(null);
-  const writeFileMutation = useWriteFile();
-  const addFileToKnowledgeBase = useAddFileToKnowledge();
-  const readFile = useReadFile();
-  const { integration: knowledgeIntegration, createAgentKnowledge } =
-    useAgentKnowledgeIntegration({
-      agent,
-      setIntegrationTools,
-    });
-
-  const uploadKnowledgeFiles = async (files: File[]) => {
-    try {
-      // Upload each file using the writeFileMutation
-      const uploadPromises = files.map(async (file) => {
-        try {
-          const filename = file.name;
-          const path = agentKnowledgeBaseFilepath(agent.id, filename);
-          const buffer = await file.arrayBuffer();
-
-          // TODO: add filesize at metadata
-          const fileMetadata = {
-            agentId: agent.id,
-            type: file.type,
-            bytes: file.size.toString(),
-          };
-
-          const fileMutateData = {
-            path,
-            contentType: file.type || "application/octet-stream",
-            content: new Uint8Array(buffer),
-            metadata: fileMetadata,
-          };
-
-          const savedResponse = await writeFileMutation.mutateAsync(
-            fileMutateData,
-          );
-
-          if (!savedResponse.ok) {
-            // TODO: handle erro
-            return;
-          }
-
-          const fileUrl = await readFile(
-            path,
-          );
-
-          if (!fileUrl) {
-            // TODO: delete file if failed
-            return;
-          }
-
-          const content = await addFileToKnowledgeBase.mutateAsync({
-            connection: knowledgeIntegration?.connection,
-            fileUrl,
-            metadata: {
-              path,
-            },
-            path,
-          });
-
-          // TODO: fix this when forContext is fixed the return
-          // deno-lint-ignore no-explicit-any
-          const docIds = (content as any).docIds ??
-            // deno-lint-ignore no-explicit-any
-            (content as any)?.structuredContent?.docIds;
-
-          await writeFileMutation.mutateAsync({
-            ...fileMutateData,
-            skipWrite: true,
-            metadata: {
-              ...fileMetadata,
-              docIds,
-            },
-          });
-        } catch (error) {
-          console.error(`Failed to upload ${file.name}:`, error);
-
-          // Remove failed upload from the list
-          onAddFile((prev) => prev.filter((fileObj) => fileObj.file !== file));
-
-          throw error;
-        }
-      });
-
-      await Promise.all(uploadPromises);
-      await refetchAgentKnowledgeFiles();
-
-      // Small delay to ensure UI has updated with refetched files before clearing uploading files
-      // This prevents the flickering effect where files disappear and reappear
-      setTimeout(() => {
-        onAddFile([]);
-      }, 100);
-    } catch (error) {
-      console.error("Failed to upload some knowledge files:", error);
-    }
-  };
 
   const triggerFileInput = () => {
     knowledgeFileInputRef.current?.click();
@@ -361,16 +236,7 @@ export function AddFileToKnowledgeButton(
     });
 
     if (validFiles.length > 0) {
-      // Add files to state with uploading status
-      const fileObjects = validFiles.map((file) => ({ file, uploading: true }));
-      onAddFile((prev) => [...prev, ...fileObjects]);
-
       setIsUploading(true);
-      // Upload files
-      if (!knowledgeIntegration) {
-        await createAgentKnowledge();
-      }
-
       await uploadKnowledgeFiles(validFiles);
       setIsUploading(false);
     }

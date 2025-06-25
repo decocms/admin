@@ -12,9 +12,12 @@ import { useAgentSettingsForm } from "../agent/edit.tsx";
 import {
   AddFileToKnowledgeButton,
   AgentKnowledgeBaseFileList,
+} from "../agent/upload-knowledge-asset.tsx";
+import {
   type UploadFile,
   useAgentFiles,
-} from "../agent/upload-knowledge-asset.tsx";
+  useUploadAgentKnowledgeFiles,
+} from "../agent/hooks/use-agent-knowledge.ts";
 import {
   AppKeys,
   getConnectionAppKey,
@@ -165,6 +168,11 @@ function Knowledge() {
     UploadFile[]
   >([]);
   const { data: files, isLoading } = useAgentFiles(agent.id);
+  const { uploadKnowledgeFiles } = useUploadAgentKnowledgeFiles({
+    agent,
+    onAddFile: setUploadedFiles,
+    setIntegrationTools,
+  });
 
   // Show empty view only if there are no uploaded files AND no uploading files
   const hasNoFiles = (files?.length === 0 || !files) &&
@@ -187,9 +195,7 @@ function Knowledge() {
             Supports: PDF, TXT, MD, CSV, JSON
           </span>
           <AddFileToKnowledgeButton
-            agent={agent}
-            onAddFile={setUploadedFiles}
-            setIntegrationTools={setIntegrationTools}
+            uploadKnowledgeFiles={uploadKnowledgeFiles}
             disabled={shouldDisableAddButton}
           />
         </div>
@@ -205,9 +211,7 @@ function Knowledge() {
         </div>
 
         <AddFileToKnowledgeButton
-          agent={agent}
-          onAddFile={setUploadedFiles}
-          setIntegrationTools={setIntegrationTools}
+          uploadKnowledgeFiles={uploadKnowledgeFiles}
           disabled={shouldDisableAddButton}
         />
       </div>

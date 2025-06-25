@@ -85,7 +85,7 @@ function PromptTab() {
         <div className="h-full w-full p-6 mx-auto">
           <form
             onSubmit={handleSubmit}
-            className="space-y-6 h-full"
+            className="flex flex-col gap-6 h-full"
           >
             <div className="flex gap-3 w-full">
               <div className="flex items-center gap-6 flex-1">

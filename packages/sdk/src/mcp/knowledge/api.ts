@@ -209,6 +209,7 @@ export const search = createKnowledgeBaseTool({
       tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
       tursoOrganization: c.envVars.TURSO_ORGANIZATION,
       tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+      openAPIKey: c.envVars.OPENAI_API_KEY,
       discriminator: KNOWLEDGE_BASE_GROUP, // used to create a unique database for the knowledge base
     });
     const vector = mem.vector;

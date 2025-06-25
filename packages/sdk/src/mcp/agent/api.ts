@@ -44,9 +44,7 @@ export const agentGenerateText = createAgentTool(
         content: message,
       }]);
 
-      return {
-        text: response.text,
-      };
+      return response;
     },
   },
 );
@@ -77,9 +75,7 @@ export const agentGenerateObject = createAgentTool(
         content: message,
       }], schema);
 
-      return {
-        object: response.object,
-      };
+      return response;
     },
   },
 );

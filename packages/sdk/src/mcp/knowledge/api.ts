@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { embed } from "ai";
 import { z } from "zod";
+import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
@@ -8,9 +9,12 @@ import {
   assertWorkspaceResourceAccess,
   type WithTool,
 } from "../assertions.ts";
-import { type AppContext, createTool, createToolFactory } from "../context.ts";
+import {
+  type AppContext,
+  createToolFactory,
+  createToolGroup,
+} from "../context.ts";
 import { FileProcessor } from "../file-processor.ts";
-import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -49,6 +53,13 @@ async function getVector(c: AppContext) {
   }
   return vector;
 }
+
+const createTool = createToolGroup("KnowledgeBaseManagement", {
+  name: "Knowledge Base Management",
+  description: "Delete, create and list knowledge bases.",
+  icon:
+    "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+});
 
 export const listKnowledgeBases = createTool({
   name: "KNOWLEDGE_BASE_LIST",

@@ -14,6 +14,7 @@ export const WellKnownMcpGroups = {
   Channel: "channel-management",
   KnowledgeBase: "knowledge-base-",
   Email: "email-management",
+  KnowledgeBaseManagement: "kb-management",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

@@ -156,6 +156,13 @@ export const genEnv = async ({ workspace, local, bindings }: Options) => {
         };
       };
 
+      if (!Array.isArray(tools.structuredContent?.tools)) {
+        console.warn(
+          `⚠️ No tools found for integration ${binding.name}. Skipping...`,
+        );
+        return null;
+      }
+
       const compiledTools = await Promise.all(
         tools.structuredContent.tools
           .filter((t) => isValidJavaScriptPropertyName(t.name))
@@ -219,7 +226,7 @@ ${tsTypes}
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     ${
-    props.map(([propName, tools]) => {
+    props.filter((p) => p !== null).map(([propName, tools]) => {
       return `${propName}: {
         ${
         tools.map(([toolName, inputName, outputName]) => {

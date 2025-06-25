@@ -25,5 +25,5 @@ export const bundler = async (
   }
 
   const responseJson: { base64: string } = await response.json();
-  return atob(responseJson.base64);
+  return decodeURIComponent(escape(atob(responseJson.base64)));
 };

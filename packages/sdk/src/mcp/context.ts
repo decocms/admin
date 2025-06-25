@@ -31,6 +31,7 @@ export interface Vars {
   /** Current tool being executed definitions */
   tool?: { name: string };
   cookie?: string;
+  token?: string;
   db: Client;
   user: Principal;
   policy: PolicyClient;

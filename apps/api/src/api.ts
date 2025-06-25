@@ -49,6 +49,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     cookie: c.req.header("Cookie"),
     policy: policyClient,
     authorization: authorizationClient,
+    token: c.req.header("Authorization")?.replace("Bearer ", ""),
     workspace: slug && root
       ? {
         root,

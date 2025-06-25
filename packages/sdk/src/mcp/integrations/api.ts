@@ -51,7 +51,7 @@ export const parseId = (id: string) => {
 const formatId = (type: "i" | "a", uuid: string) => `${type}:${uuid}`;
 
 const agentAsIntegrationFor =
-  (workspace: string) => (agent: Agent): Integration => ({
+  (workspace: string, token?: string) => (agent: Agent): Integration => ({
     id: formatId("a", agent.id),
     icon: agent.avatar,
     name: agent.name,
@@ -59,6 +59,7 @@ const agentAsIntegrationFor =
     connection: {
       type: "HTTP",
       url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CHAT_API).href,
+      token,
     },
   });
 
@@ -292,7 +293,7 @@ export const listIntegrations = createIntegrationManagementTool({
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
-        .map(agentAsIntegrationFor(workspace)),
+        .map(agentAsIntegrationFor(workspace, c.token)),
       ...Object.values(INNATE_INTEGRATIONS),
     ]
       .map((i) => IntegrationSchema.safeParse(i)?.data)
@@ -395,6 +396,7 @@ export const getIntegration = createIntegrationManagementTool({
     if (type === "a") {
       const mapAgentToIntegration = agentAsIntegrationFor(
         c.workspace.value as Workspace,
+        c.token,
       );
       return IntegrationSchema.parse({
         ...mapAgentToIntegration(data as unknown as Agent),

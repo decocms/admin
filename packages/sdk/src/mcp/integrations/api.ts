@@ -40,9 +40,6 @@ import { createServerClient } from "../utils.ts";
 
 // Tool factories for each group
 
-const ensureStartingSlash = (path: string) =>
-  path.startsWith("/") ? path : `/${path}`;
-
 export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
@@ -60,9 +57,8 @@ const agentAsIntegrationFor =
     name: agent.name,
     description: agent.description,
     connection: {
-      name: formatId("a", agent.id),
-      type: "INNATE",
-      workspace: ensureStartingSlash(workspace),
+      type: "HTTP",
+      url: new URL(`${workspace}/agents/${agent.id}/mcp`, DECO_CHAT_API).href,
     },
   });
 

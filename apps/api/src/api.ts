@@ -1,6 +1,7 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import { WellKnownMcpGroups } from "@deco/sdk";
 import {
+  AGENT_TOOLS,
   AuthorizationClient,
   createMCPToolsStub,
   EMAIL_TOOLS,
@@ -72,7 +73,11 @@ const mapMCPErrorToHTTPExceptionOrThrow = (err: Error) => {
  * Creates and sets up an MCP server for the given tools
  */
 const createMCPHandlerFor = (
-  tools: typeof GLOBAL_TOOLS | typeof WORKSPACE_TOOLS | typeof EMAIL_TOOLS,
+  tools:
+    | typeof GLOBAL_TOOLS
+    | typeof WORKSPACE_TOOLS
+    | typeof EMAIL_TOOLS
+    | typeof AGENT_TOOLS,
 ) => {
   return async (c: Context) => {
     const group = c.req.query("group");
@@ -219,6 +224,10 @@ app.all(
   "/:root/:slug/mcp",
   createMCPHandlerFor(WORKSPACE_TOOLS),
 );
+app.all(
+  "/:root/:slug/agents/:agentId/mcp",
+  createMCPHandlerFor(AGENT_TOOLS),
+);
 
 // Tool call endpoint handlers
 app.post(
@@ -228,6 +237,10 @@ app.post(
 app.post(
   "/:root/:slug/tools/call/:tool",
   createToolCallHandlerFor(WORKSPACE_TOOLS),
+);
+app.post(
+  "/:root/:slug/tools/call/agents/:agentId/:tool",
+  createToolCallHandlerFor(AGENT_TOOLS),
 );
 
 app.post(

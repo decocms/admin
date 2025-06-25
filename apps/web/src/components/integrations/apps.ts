@@ -194,6 +194,13 @@ export function useRefetchIntegrationsOnNotification() {
   }, [refetchIntegrations]);
 }
 
+const isAgentIntegration = (integration: Integration) =>
+  integration.connection.type === "HTTP" &&
+  integration.connection.url?.includes("/agents/");
+
+const isInnateIntegration = (integration: Integration) =>
+  integration.connection.type === "INNATE";
+
 export function useGroupedApps({
   filter,
 }: {
@@ -206,7 +213,8 @@ export function useGroupedApps({
   const groupedApps: GroupedApp[] = useMemo(() => {
     const filteredIntegrations = installedIntegrations?.filter((integration) =>
       integration.name.toLowerCase().includes(filter.toLowerCase()) &&
-      integration.connection.type !== "INNATE"
+      !isAgentIntegration(integration) &&
+      !isInnateIntegration(integration)
     ) ?? [];
 
     const grouped = groupConnections(filteredIntegrations);

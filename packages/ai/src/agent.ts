@@ -44,12 +44,7 @@ import {
   type WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
-import {
-  AgentMemory,
-  buildMemoryId,
-  slugify,
-  toAlphanumericId,
-} from "@deco/sdk/memory";
+import { AgentMemory, slugify, toAlphanumericId } from "@deco/sdk/memory";
 import { trace } from "@deco/sdk/observability";
 import {
   getTwoFirstSegments as getWorkspace,
@@ -207,7 +202,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   public workspace: Workspace;
   private id: string;
   public _configuration?: Configuration;
-  private memoryId?: string;
   private agentMemoryConfig: AgentMemoryConfig;
   private agentId: string;
   private wallet: AgentWallet;
@@ -384,7 +378,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   private async _initMemory(
-    memoryId: string,
     config: Configuration,
     tokenLimit: number,
   ) {
@@ -434,13 +427,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           DEFAULT_MEMORY.last_messages,
       },
     });
-
-    this.memoryId = memoryId;
   }
 
   private async _initAgent(config: Configuration) {
-    const memoryId = buildMemoryId(this.workspace, config.id);
-
     const llmConfig = await getLLMConfig({
       modelId: config.model,
       llmVault: this.llmVault,
@@ -451,7 +440,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       envs: this.env,
     });
 
-    await this._initMemory(memoryId, config, tokenLimit);
+    await this._initMemory(config, tokenLimit);
 
     this.telemetry = Telemetry.init({ serviceName: "agent" });
     this.telemetry.tracer = trace.getTracer("agent");

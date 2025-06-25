@@ -3,14 +3,12 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { openPanel } from "../dock/index.tsx";
+import { useMemo, useRef, useState } from "react";
 import { Picker } from "./chat-picker.tsx";
 import { useChatContext } from "./context.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
 import { Preview } from "./tools/render-preview.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
-import { parseHandoffTool } from "./utils/parse.ts";
 
 interface ConfirmOption {
   value: string;
@@ -69,8 +67,8 @@ function ToolStatus({
   };
 
   const getToolName = () => {
-    if (tool.toolName.startsWith("HANDOFF_")) {
-      return `Delegating to ${parseHandoffTool(tool.toolName)}`;
+    if (tool.toolName.startsWith("AGENT_GENERATE_")) {
+      return `Delegating to agent`;
     }
     return formatToolName(tool.toolName);
   };
@@ -88,36 +86,6 @@ function ToolStatus({
       2,
     ).replace(/"(\w+)":/g, '"$1":');
   };
-
-  useEffect(() => {
-    if (
-      tool.state === "result" &&
-      tool.result?.data &&
-      tool.toolName.startsWith("HANDOFF_")
-    ) {
-      const { threadId, agentId } = tool.result.data as {
-        threadId: string;
-        agentId: string;
-      };
-
-      const panelId = `chat-${threadId}`;
-
-      openPanel({
-        id: panelId,
-        component: "chatView",
-        title: "Agent chat",
-        params: {
-          threadId,
-          agentId,
-          key: `${panelId}-${Date.now()}`,
-        },
-        initialWidth: 420,
-        position: {
-          direction: "right",
-        },
-      });
-    }
-  }, [tool.state]);
 
   const onClick = () => {
     setIsExpanded((prev) => {

@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { Actor } from "@deco/actors";
+import type { GenerateOptions, StreamOptions } from "@deco/sdk/models";
 import type { StorageThreadType } from "@mastra/core";
 import type {
   GenerateObjectResult,
@@ -8,7 +9,10 @@ import type {
   Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
+
 export type { TriggerData } from "./triggers/trigger.ts";
+export type { GenerateOptions, StreamOptions };
+
 /**
  * Represents a tool that can be used by an AI agent
  */
@@ -45,25 +49,6 @@ export interface ThreadQueryOptions {
  */
 export type Thread = StorageThreadType;
 
-export interface GenerateOptions {
-  instructions?: string;
-  model?: string;
-  tools?: Record<string, string[]>;
-  bypassOpenRouter?: boolean;
-  threadId?: string;
-  resourceId?: string;
-  enableSemanticRecall?: boolean;
-  maxSteps?: number;
-}
-
-export interface StreamOptions extends GenerateOptions {
-  sendReasoning?: boolean;
-  smoothStream?: {
-    delayInMs: number;
-    chunking: "word" | "line";
-  };
-}
-
 /**
  * Interface for an AI agent that can generate responses and use tools
  * Extends the base Actor interface
@@ -77,7 +62,7 @@ export interface AIAgent extends Actor {
    * @returns Promise containing the generated text result
    */
   generate(
-    payload: Message[],
+    payload: Omit<Message, "id">[],
     options?: GenerateOptions,
   ): Promise<GenerateTextResult<any, any>>;
 
@@ -88,7 +73,7 @@ export interface AIAgent extends Actor {
    * @returns Promise containing the generated object result
    */
   generateObject<TObject = any>(
-    payload: Message[],
+    payload: Omit<Message, "id">[],
     jsonSchema: JSONSchema7,
   ): Promise<GenerateObjectResult<TObject>>;
 

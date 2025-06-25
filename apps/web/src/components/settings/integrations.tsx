@@ -245,7 +245,7 @@ function AddAgentConnectionButton() {
         </div>
       }
       onSelect={(integration) =>
-        setIntegrationTools(integration.id, ["HANDOFF_AGENT"])}
+        setIntegrationTools(integration.id, ["AGENT_GENERATE_TEXT"])}
       trigger={
         <Button variant="outline">
           <Icon name="add" /> Add agent

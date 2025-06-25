@@ -18,9 +18,13 @@ export const createHandoffToolsFor = (
     description: descriptionFrom(integration),
     inputSchema: z.object({
       message: z.string().describe("The message to send to the agent"),
+      schema: z.any().optional().describe(
+        "The JSON schema to use for a structured response. If provided, the response will be an object.",
+      ),
     }),
     outputSchema: z.object({
-      text: z.string().describe("The response from the agent"),
+      text: z.string().optional().describe("The response from the agent"),
+      object: z.any().optional().describe("The object response from the agent"),
       threadId: z.string().describe("The ID of the new thread"),
       agentId: z.string().describe("The ID of the new agent"),
     }),
@@ -41,6 +45,18 @@ export const createHandoffToolsFor = (
           role: "user" as const,
           content: context.message,
         };
+
+        if (context.schema) {
+          const response = await targetAgent.generateObject(
+            [userMessage],
+            context.schema,
+          );
+          return {
+            object: response.object,
+            threadId,
+            agentId,
+          };
+        }
 
         const response = await targetAgent.generate([userMessage]);
 

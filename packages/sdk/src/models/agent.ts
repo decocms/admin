@@ -90,6 +90,29 @@ export const AgentSchema = z.object({
   ),
 });
 
+export const AgentGenerateOptions = z.object({
+  instructions: z.string().optional(),
+  model: z.string().optional(),
+  tools: z.record(z.string(), z.array(z.string())).optional(),
+  bypassOpenRouter: z.boolean().optional(),
+  threadId: z.string().optional(),
+  resourceId: z.string().optional(),
+  enableSemanticRecall: z.boolean().optional(),
+  maxSteps: z.number().optional(),
+});
+
+export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;
+
+export const AgentStreamOptions = AgentGenerateOptions.extend({
+  sendReasoning: z.boolean().optional(),
+  smoothStream: z.object({
+    delayInMs: z.number().optional(),
+    chunking: z.enum(["word", "line"]).optional(),
+  }).optional(),
+});
+
+export type StreamOptions = z.infer<typeof AgentStreamOptions>;
+
 /**
  * Type representing an AI Agent derived from the Zod schema
  */

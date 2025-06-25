@@ -45,11 +45,9 @@ function Login() {
             return (
               <div
                 key={provider.name}
-                className={
-                  isLastUsed
-                    ? "relative w-full min-w-80 border-2 border-primary rounded-lg bg-primary/5"
-                    : "w-full min-w-80"
-                }
+                className={isLastUsed
+                  ? "relative w-full min-w-80 border-2 border-primary rounded-lg bg-primary/5"
+                  : "w-full min-w-80"}
               >
                 <Button
                   variant="outline"

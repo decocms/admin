@@ -155,12 +155,6 @@ function ErrorFallback() {
       return;
     }
 
-    if (pathname === "/") {
-      globalThis.location.href = "/about";
-
-      return;
-    }
-
     const next = new URL(pathname, globalThis.location.origin);
     globalThis.location.href = `/login?next=${next}`;
   }, [isUnauthorized, pathname]);

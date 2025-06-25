@@ -72,8 +72,7 @@ export const agentGenerateObject = createAgentTool(
       assertHasWorkspace(c);
       await assertWorkspaceResourceAccess(c.tool.name, c);
 
-      // deno-lint-ignore no-explicit-any
-      const agentStub = stub<any>("AIAgent")
+      const agentStub = stub<AIAgent>("AIAgent")
         .new(`${c.workspace.value}/Agents/${c.agent}`);
 
       const response = await agentStub.generateObject(messages, schema);

@@ -16,10 +16,10 @@ import {
   useReadFile,
   useWriteFile,
 } from "@deco/sdk";
-import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
-
-/* Must start with a letter or underscore, contain only letters, numbers, or underscores, and be at most 63 characters long. */
-const parseToValidIndexName = (uuid: string) => `_${uuid.replaceAll("-", "_")}`;
+import {
+  getKnowledgeBaseIntegrationId,
+  parseToValidIndexName,
+} from "@deco/sdk/utils";
 
 interface UseAgentKnowledgeIntegrationProps {
   setIntegrationTools: (integrationId: string, tools: string[]) => void;

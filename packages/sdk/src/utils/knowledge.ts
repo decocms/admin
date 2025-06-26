@@ -36,3 +36,37 @@ export const formatFileSize = (bytes: number) => {
 
 export const getKnowledgeBaseIntegrationId = (index: string) =>
   `${WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH}-${index}`;
+
+/* Must start with a letter or underscore, contain only letters, numbers, or underscores, and be at most 63 characters long. */
+export const parseToValidIndexName = (uuid: string) =>
+  `_${uuid.replaceAll("-", "_")}`;
+
+/**
+ * Extracts agent UUID from knowledge base integration ID
+ * Format: i:knowledge-base-_<agent_uuid_with_underscores>
+ * Returns: <agent_uuid_with_dashes>
+ */
+export const extractAgentUuidFromKnowledgeBaseId = (
+  integrationId: string,
+): string | null => {
+  if (
+    !integrationId.startsWith(
+      WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH,
+    )
+  ) {
+    return null;
+  }
+
+  // Remove the prefix "i:knowledge-base-"
+  const indexPart = integrationId.replace(
+    WELL_KNOWN_KNOWLEDGE_BASE_CONNECTION_ID_STARTSWITH + "-",
+    "",
+  );
+
+  // Remove the leading underscore and convert underscores back to dashes
+  if (indexPart.startsWith("_")) {
+    return indexPart.slice(1).replaceAll("_", "-");
+  }
+
+  return null;
+};

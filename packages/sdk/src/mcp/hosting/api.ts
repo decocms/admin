@@ -5,6 +5,7 @@ import type { Database } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
+  type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { bundler } from "./bundler.ts";
@@ -575,5 +576,219 @@ export const getAppInfo = createTool({
     }
 
     return Mappers.toApp(data);
+  },
+});
+
+const InputPaginationListSchema = z.object({
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+});
+
+const OutputPaginationListSchema = z.object({
+  page: z.number().optional(),
+  per_page: z.number().optional(),
+});
+
+const getScriptsSetOnWorkspace = async (c: WithTool<AppContext>) => {
+  assertHasWorkspace(c);
+  const workspace = c.workspace.value;
+
+  const { data, error } = await c.db
+    .from(DECO_CHAT_HOSTING_APPS_TABLE)
+    .select("cloudflare_worker_id")
+    .eq("workspace", workspace);
+
+  if (error) throw error;
+
+  return new Set(data.map((d) => d.cloudflare_worker_id));
+};
+
+export const listWorkflows = createTool({
+  name: "HOSTING_APP_WORKFLOWS_LIST",
+  description: "List all workflows on the workspace",
+  inputSchema: InputPaginationListSchema,
+  outputSchema: z.object({
+    workflows: z.array(z.object({
+      created_on: z.string(),
+      modified_on: z.string(),
+      workflowName: z.string(),
+    })).describe("The workflow list names"),
+    pagination: OutputPaginationListSchema,
+  }),
+  handler: async ({ page = 1, per_page = 10 }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const env = getEnv(c);
+
+    const [scripts, workflows] = await Promise.all([
+      getScriptsSetOnWorkspace(c),
+      c.cf.workflows.list({
+        account_id: env.CF_ACCOUNT_ID,
+        page,
+        per_page,
+      }),
+    ]);
+
+    return {
+      workflows: workflows.result
+        .filter((w) => scripts.has(w.script_name))
+        .map((w) => ({
+          created_on: w.created_on,
+          modified_on: w.modified_on,
+          workflowName: w.name,
+        })),
+      pagination: {
+        page: workflows.result_info.page,
+        per_page: workflows.result_info.per_page,
+      },
+    };
+  },
+});
+
+/**
+ * TODO: Currently there is no way to filter by script name,
+ * this leads to a security issue where a user can see all instances of a workflow
+ * on all workspaces.
+ *
+ * If the user has the workflow id, it can see the workflow details
+ */
+export const listWorkflowInstances = createTool({
+  name: "HOSTING_APP_WORKFLOWS_INSTANCES_LIST",
+  description: "List all instances of a workflow",
+  inputSchema: InputPaginationListSchema.extend({
+    workflowName: z.string(),
+  }),
+  outputSchema: z.object({
+    instances: z.array(z.object({
+      created_on: z.string(),
+      ended_on: z.string().nullable().optional(),
+      modified_on: z.string().optional(),
+      started_on: z.string().nullable().optional(),
+      status: z.string().describe("The status of the workflow instance"),
+      instanceId: z.string(),
+      workflowName: z.string(),
+    })),
+    pagination: OutputPaginationListSchema,
+  }),
+  handler: async ({ workflowName, page = 1, per_page = 10 }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const env = getEnv(c);
+
+    const instances = await c.cf.workflows.instances.list(
+      workflowName,
+      { account_id: env.CF_ACCOUNT_ID, page, per_page },
+    );
+
+    return {
+      instances: instances.result.map((
+        { version_id: _, workflow_id: __, id, ...i },
+      ) => ({
+        ...i,
+        instanceId: id,
+        workflowName,
+      })),
+      pagination: {
+        page: instances.result_info.page,
+        per_page: instances.result_info.per_page,
+      },
+    };
+  },
+});
+
+/**
+ * TODO: Currently there is no way to filter by script name,
+ * this leads to a security issue where a user can see all instances of a workflow
+ * on all workspaces.
+ *
+ * If the user has the workflow id, it can see the workflow details
+ */
+export const startWorkflow = createTool({
+  name: "HOSTING_APP_WORKFLOWS_START",
+  description: "Start a workflow and return the instance ID",
+  inputSchema: z.object({
+    workflowName: z.string(),
+    params: z.array(z.object({
+      name: z.string(),
+      value: z.string(),
+    })).optional(),
+  }),
+  outputSchema: z.object({
+    instanceId: z.string().describe("The instance ID of the workflow"),
+    workflowName: z.string().describe("The name of the workflow"),
+  }),
+  handler: async ({ workflowName, params }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const env = getEnv(c);
+
+    const instance = await c.cf.workflows.instances.create(workflowName, {
+      account_id: env.CF_ACCOUNT_ID,
+      params: params?.reduce((acc, { name, value }) => {
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>),
+    });
+
+    return {
+      instanceId: instance.id,
+      workflowName,
+    };
+  },
+});
+
+/**
+ * TODO: Currently there is no way to filter by script name,
+ * this leads to a security issue where a user can see all instances of a workflow
+ * on all workspaces.
+ *
+ * If the user has the workflow id, it can see the workflow details
+ */
+export const getWorkflowStatus = createTool({
+  name: "HOSTING_APP_WORKFLOWS_STATUS",
+  description: "Get the status of a workflow instance",
+  inputSchema: z.object({
+    instanceId: z.string().describe(
+      "The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.",
+    ),
+    workflowName: z.string(),
+  }),
+  handler: async ({ instanceId, workflowName }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const env = getEnv(c);
+
+    const workflow = await c.cf.workflows.instances.get(
+      workflowName,
+      instanceId,
+      { account_id: env.CF_ACCOUNT_ID },
+    );
+
+    return workflow;
+  },
+});
+
+export const deleteWorkflow = createTool({
+  name: "HOSTING_APP_WORKFLOWS_DELETE",
+  description:
+    "Permanently delete a workflow from the workspace. DO NOT USE THIS TO STOP A WORKFLOW.",
+  inputSchema: z.object({
+    workflowName: z.string().describe("The name of the workflow"),
+  }),
+  outputSchema: z.object({
+    success: z.boolean().describe(
+      "Whether the workflow was deleted successfully",
+    ),
+  }),
+  handler: async ({ workflowName }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const env = getEnv(c);
+
+    await c.cf.workflows.delete(workflowName, {
+      account_id: env.CF_ACCOUNT_ID,
+    });
+
+    return { success: true };
   },
 });

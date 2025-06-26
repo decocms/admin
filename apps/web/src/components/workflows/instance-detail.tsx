@@ -78,7 +78,7 @@ function getStatusBadgeVariant(
   status: string,
 ): "default" | "destructive" | "secondary" | "outline" {
   if (status === "success" || status === "completed") return "default";
-  if (status === "failed" || status === "error") return "destructive";
+  if (status === "failed" || status === "errored") return "destructive";
   if (status === "running" || status === "in_progress") return "secondary";
   return "outline";
 }
@@ -88,7 +88,7 @@ function getStatusIcon(status: string) {
     // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     return <Icon name="check_circle" className="text-green-500" size={20} />;
   }
-  if (status === "failed" || status === "error") {
+  if (status === "failed" || status === "errored") {
     // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     return <Icon name="error" className="text-red-500" size={20} />;
   }
@@ -158,10 +158,14 @@ function DonutChart(
   );
 }
 
-function getStepStatus(step: WorkflowStep): string {
+function getStepStatus(step: WorkflowStep, workflowStatus: string): string {
   if (step.success) return "success";
   if (step.error) return "failed";
   if (step.status) return step.status;
+  // If the workflow is running and the step status is unknown, the step is currently running
+  if (workflowStatus === "running") return "running";
+  // If the workflow is errored and the step status is unknown, the step is errored
+  if (workflowStatus === "errored") return "failed";
   return "unknown";
 }
 
@@ -176,9 +180,9 @@ function StepStats({ attempts }: { attempts: WorkflowStepAttempt[] }) {
   );
 }
 
-function StepCard({ step }: { step: WorkflowStep }) {
+function StepCard({ step, workflowStatus }: { step: WorkflowStep; workflowStatus: string }) {
   const [open, setOpen] = useState(false);
-  const stepStatus = getStepStatus(step);
+  const stepStatus = getStepStatus(step, workflowStatus);
   const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
   const stepStatusIcon = getStatusIcon(stepStatus);
   const attempts: WorkflowStepAttempt[] = Array.isArray(step.attempts)
@@ -393,7 +397,7 @@ function InstanceDetailTab() {
         <div className="space-y-4">
           {steps.length > 0
             ? (
-              steps.map((step, i) => <StepCard key={i} step={step} />)
+              steps.map((step, i) => <StepCard key={i} step={step} workflowStatus={status} />)
             )
             : <div className="text-muted-foreground">No steps found.</div>}
         </div>

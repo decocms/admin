@@ -180,7 +180,9 @@ function StepStats({ attempts }: { attempts: WorkflowStepAttempt[] }) {
   );
 }
 
-function StepCard({ step, workflowStatus }: { step: WorkflowStep; workflowStatus: string }) {
+function StepCard(
+  { step, workflowStatus }: { step: WorkflowStep; workflowStatus: string },
+) {
   const [open, setOpen] = useState(false);
   const stepStatus = getStepStatus(step, workflowStatus);
   const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
@@ -397,7 +399,9 @@ function InstanceDetailTab() {
         <div className="space-y-4">
           {steps.length > 0
             ? (
-              steps.map((step, i) => <StepCard key={i} step={step} workflowStatus={status} />)
+              steps.map((step, i) => (
+                <StepCard key={i} step={step} workflowStatus={status} />
+              ))
             )
             : <div className="text-muted-foreground">No steps found.</div>}
         </div>

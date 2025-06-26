@@ -6,6 +6,9 @@ import type {
 } from "@cloudflare/workers-types";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { MCPClient } from "./mcp.ts";
+import {
+  WorkflowEntrypoint as CloudflareWorkflowEntrypoint,
+} from "cloudflare:workers";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -111,6 +114,16 @@ export const withBindings = <TEnv extends DefaultEnv>(_env: TEnv): TEnv => {
 
   return env as TEnv;
 };
+
+export class WorkflowEntrypoint<
+  Env = unknown,
+  T extends Rpc.Serializable<T> | unknown = unknown,
+> extends CloudflareWorkflowEntrypoint<Env, T> {
+  constructor(ctx: ExecutionContext, env: Env) {
+    super(ctx, env);
+    this.env = withBindings(env as DefaultEnv) as Env;
+  }
+}
 
 export const withRuntime = <TEnv extends DefaultEnv>(
   userFns: UserDefaultExport,

@@ -1,0 +1,409 @@
+import { useWorkflowStatus } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { useState } from "react";
+import { useParams } from "react-router";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import type { Tab } from "../dock/index.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+
+function tryParseJson(str: unknown): unknown {
+  if (typeof str !== "string") return str;
+  try {
+    const parsed = JSON.parse(str);
+    // Only treat as JSON if it's an object or array
+    if (typeof parsed === "object" && parsed !== null) return parsed;
+  } catch {}
+  return str;
+}
+
+function CopyButton({ value }: { value: unknown }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(
+      typeof value === "string" ? value : JSON.stringify(value, null, 2),
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="ml-2"
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy to clipboard"}
+    >
+      <Icon name={copied ? "check" : "content_copy"} size={16} />
+    </Button>
+  );
+}
+
+function JsonBlock({ value }: { value: unknown }) {
+  const parsed = tryParseJson(value);
+  return (
+    <pre className="bg-muted rounded p-2 text-xs w-full max-w-full max-h-64 overflow-x-auto overflow-y-auto">
+      {typeof parsed === "string"
+        ? parsed
+        : JSON.stringify(parsed, null, 2)}
+    </pre>
+  );
+}
+
+function OutputField({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-semibold mr-0">{label}:</span>
+        <CopyButton value={value} />
+      </div>
+      {<JsonBlock value={value} />}
+    </div>
+  );
+}
+
+function getStatusBadgeVariant(
+  status: string,
+): "default" | "destructive" | "secondary" | "outline" {
+  if (status === "success" || status === "completed") return "default";
+  if (status === "failed" || status === "error") return "destructive";
+  if (status === "running" || status === "in_progress") return "secondary";
+  return "outline";
+}
+
+function getStatusIcon(status: string) {
+  if (status === "success" || status === "completed") {
+    return <Icon name="check_circle" className="text-green-600" size={20} />;
+  }
+  if (status === "failed" || status === "error") {
+    return <Icon name="error" className="text-red-600" size={20} />;
+  }
+  if (status === "running" || status === "in_progress") {
+    return (
+      <Icon name="autorenew" className="text-blue-600 animate-spin" size={20} />
+    );
+  }
+  return <Icon name="info" className="text-muted-foreground" size={20} />;
+}
+
+function formatDuration(start?: string, end?: string): string {
+  if (!start || !end) return "-";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 0) return "-";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m ${s % 60}s`;
+}
+
+const DONUT_COLORS = ["#22c55e", "#ef4444", "#a3a3a3"];
+
+function DonutChart(
+  { success, errors, total }: {
+    success: number;
+    errors: number;
+    total: number;
+  },
+) {
+  const rest = Math.max(total - success - errors, 0);
+  const data = [
+    { name: "Success", value: success },
+    { name: "Error", value: errors },
+    { name: "Other", value: rest },
+  ];
+  return (
+    <div className="relative w-[60px] h-[60px]">
+      <ResponsiveContainer width={60} height={60}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={20}
+            outerRadius={28}
+            stroke="none"
+          >
+            {data.map((_entry, idx) => (
+              <Cell key={`cell-${idx}`} fill={DONUT_COLORS[idx]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+        <span className="text-xs font-bold text-foreground leading-none">
+          {total}
+        </span>
+        <span className="text-[10px] text-muted-foreground leading-none">
+          total
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function getStepStatus(step: any): string {
+  if (step.success) return "success";
+  if (step.error) return "failed";
+  if (step.status) return step.status;
+  return "unknown";
+}
+
+function StepStats({ attempts }: { attempts: any[] }) {
+  const total = attempts.length;
+  const errors = attempts.filter((a: any) => a.error).length;
+  const successes = attempts.filter((a: any) => a.success).length;
+  return (
+    <div className="min-w-[60px] flex-shrink-0 flex items-center justify-center">
+      <DonutChart success={successes} errors={errors} total={total} />
+    </div>
+  );
+}
+
+function StepCard({ step, index }: { step: any; index: number }) {
+  const [open, setOpen] = useState(false);
+  const stepStatus = getStepStatus(step);
+  const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
+  const stepStatusIcon = getStatusIcon(stepStatus);
+  const attempts = Array.isArray(step.attempts) ? step.attempts : [];
+  const successfulAttempt = attempts.find((a: any) => a.success);
+  const lastAttempt = attempts[attempts.length - 1] || {};
+  const durationAttempt = successfulAttempt || lastAttempt;
+  const stepDuration = formatDuration(
+    durationAttempt.start ?? undefined,
+    durationAttempt.end ?? undefined,
+  );
+
+  return (
+    <Card className="p-0 shadow border border-muted">
+      <div
+        className="flex items-center justify-between cursor-pointer px-4 py-3 border-b"
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="flex items-center gap-3">
+          {stepStatusIcon}
+          <span className="text-base font-bold">{step.name}</span>
+          <Badge
+            variant={stepBadgeVariant}
+            className="text-xs px-2 py-0.5 capitalize"
+          >
+            {stepStatus}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Icon name="timer" size={14} className="text-muted-foreground" />
+          <span className="font-semibold text-xs">Duration:</span>
+          <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+            {stepDuration}
+          </span>
+          <Icon
+            name={open ? "expand_less" : "expand_more"}
+            size={18}
+            className="ml-2 text-muted-foreground"
+          />
+        </div>
+      </div>
+      {open && (
+        <CardContent className="p-4 flex flex-col gap-2">
+          <div className="flex flex-row items-center gap-4 mb-2">
+            <div className="flex flex-wrap gap-4 items-center flex-1">
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-xs">Started:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {durationAttempt.start
+                    ? new Date(durationAttempt.start).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-xs">Ended:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {durationAttempt.end
+                    ? new Date(durationAttempt.end).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+            </div>
+            <StepStats attempts={attempts} />
+          </div>
+          {step.output && <OutputField label="Output" value={step.output} />}
+          {Array.isArray(step.attempts) && step.attempts.length > 0 && (
+            <div className="mb-1">
+              <span className="font-semibold">Attempts:</span>
+              <ul className="list-disc ml-4">
+                {step.attempts.map((attempt: any, j: number) => (
+                  <li key={j}>
+                    <span className="text-xs">
+                      Start: {attempt.start &&
+                        new Date(attempt.start).toLocaleString()}, End:{" "}
+                      {attempt.end && new Date(attempt.end).toLocaleString()},
+                      Success: {String(attempt.success)}
+                    </span>
+                    {attempt.output && (
+                      <OutputField label="Output" value={attempt.output} />
+                    )}
+                    {attempt.error && (
+                      <OutputField label="Error" value={attempt.error} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {step.error && <OutputField label="Step Error" value={step.error} />}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function InstanceDetailTab() {
+  const { workflowName = "", instanceId = "" } = useParams();
+  const { data } = useWorkflowStatus(workflowName, instanceId);
+
+  const status = data.status || "unknown";
+  const badgeVariant = getStatusBadgeVariant(status);
+  const statusIcon = getStatusIcon(status);
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  const duration = formatDuration(
+    data.start ?? undefined,
+    data.end ?? undefined,
+  );
+  const errors = steps.filter((s: any) => s.error).length;
+  const successes = steps.filter((s: any) => s.success).length;
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="max-w-2xl mx-auto py-8">
+        <Card className="p-0 mb-6 shadow-lg border-2 border-muted">
+          <CardContent className="p-6 flex flex-col gap-4">
+            <div className="flex flex-row items-center gap-4 mb-2">
+              <div className="flex items-center gap-3 flex-1">
+                {statusIcon}
+                <span className="text-xl font-bold">Status</span>
+                <Badge
+                  variant={badgeVariant}
+                  className="text-base px-3 py-1 capitalize"
+                >
+                  {status}
+                </Badge>
+                <Icon
+                  name="timer"
+                  size={18}
+                  className="text-muted-foreground ml-4"
+                />
+                <span className="font-semibold text-base">Duration:</span>
+                <span className="text-sm font-mono bg-muted rounded px-2 py-1">
+                  {duration}
+                </span>
+              </div>
+              <div className="min-w-[60px] flex-shrink-0 flex items-center justify-center">
+                <DonutChart
+                  success={successes}
+                  errors={errors}
+                  total={steps.length}
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Icon name="key" size={16} className="text-muted-foreground" />
+                <span className="font-semibold text-sm">Instance ID:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {instanceId}
+                </span>
+                <CopyButton value={instanceId} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-sm">Started:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {data.start ? new Date(data.start).toLocaleString() : "-"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-sm">Ended:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {data.end ? new Date(data.end).toLocaleString() : "-"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="p-4 mb-4">
+          <OutputField label="Input Params" value={data.params} />
+          <OutputField label="Output" value={data.output} />
+          {data.error && <OutputField label="Error" value={data.error} />}
+        </Card>
+        <h2 className="text-lg font-semibold mb-2">Steps</h2>
+        <div className="space-y-4">
+          {steps.length > 0
+            ? (
+              steps.map((step: any, i: number) => (
+                <StepCard key={i} step={step} index={i} />
+              ))
+            )
+            : <div className="text-muted-foreground">No steps found.</div>}
+        </div>
+      </div>
+    </ScrollArea>
+  );
+}
+
+const tabs: Record<string, Tab> = {
+  instance: {
+    Component: InstanceDetailTab,
+    title: "Instance Details",
+    active: true,
+    initialOpen: true,
+  },
+};
+
+export function WorkflowInstanceDetailPage() {
+  const { workflowName = "", instanceId = "" } = useParams();
+  return (
+    <PageLayout
+      hideViewsButton
+      tabs={tabs}
+      breadcrumb={
+        <DefaultBreadcrumb
+          items={[
+            { label: "Workflows", link: "/workflows" },
+            {
+              label: String(workflowName ?? ""),
+              link: `/workflows/${String(workflowName ?? "")}`,
+            },
+            { label: String(instanceId ?? "") },
+          ]}
+        />
+      }
+    />
+  );
+}
+
+export default WorkflowInstanceDetailPage;

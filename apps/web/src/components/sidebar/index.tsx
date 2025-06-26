@@ -72,6 +72,11 @@ const STATIC_ITEMS = [
     icon: "conversion_path",
   },
   {
+    url: "/workflows",
+    title: "Workflows",
+    icon: "conversion_path",
+  },
+  {
     url: "/prompts",
     title: "Prompts",
     icon: "local_library",

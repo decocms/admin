@@ -125,6 +125,30 @@ const PromptDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/prompts/detail/detail.tsx"))
 );
 
+const WorkflowListPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/list.tsx").then((mod) => ({
+      default: mod.WorkflowListPage,
+    })),
+  )
+);
+
+const WorkflowDetailPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/detail.tsx").then((mod) => ({
+      default: mod.WorkflowDetailPage,
+    })),
+  )
+);
+
+const WorkflowInstanceDetailPage = lazy(() =>
+  wrapWithUILoadingFallback(
+    import("./components/workflows/instance-detail.tsx").then((mod) => ({
+      default: mod.WorkflowInstanceDetailPage,
+    })),
+  )
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -286,6 +310,12 @@ const router = createBrowserRouter([
           { path: "audit/:id", Component: AuditDetail },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
+          { path: "workflows", Component: WorkflowListPage },
+          { path: "workflows/:workflowName", Component: WorkflowDetailPage },
+          {
+            path: "workflows/:workflowName/instances/:instanceId",
+            Component: WorkflowInstanceDetailPage,
+          },
         ],
       },
       { path: "*", Component: NotFound },

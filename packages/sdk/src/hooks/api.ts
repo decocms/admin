@@ -146,4 +146,37 @@ export const KEYS = {
     range: "day" | "week" | "month",
   ) => ["wallet-usage-threads", workspace, range],
   WORKSPACE_PLAN: (workspace: Workspace) => ["workspace-plan", workspace],
+  WORKFLOWS: (workspace: Workspace, page?: number, per_page?: number) => [
+    "workflows",
+    workspace,
+    page,
+    per_page,
+  ],
+  WORKFLOW: (workspace: Workspace, workflowName: string) => [
+    "workflow",
+    workspace,
+    workflowName,
+  ],
+  WORKFLOW_INSTANCES: (
+    workspace: Workspace,
+    workflowName: string,
+    page?: number,
+    per_page?: number,
+  ) => [
+    "workflow-instances",
+    workspace,
+    workflowName,
+    page,
+    per_page,
+  ],
+  WORKFLOW_STATUS: (
+    workspace: Workspace,
+    workflowName: string,
+    instanceId: string,
+  ) => [
+    "workflow-status",
+    workspace,
+    workflowName,
+    instanceId,
+  ],
 };

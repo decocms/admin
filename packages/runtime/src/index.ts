@@ -4,7 +4,7 @@ import type {
   MessageBatch,
   ScheduledController,
 } from "@cloudflare/workers-types";
-
+import { WorkerEntrypoint } from "cloudflare:workers";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { MCPClient } from "./mcp.ts";
 export {
@@ -97,7 +97,7 @@ const withDefaultBindings = (env: DefaultEnv) => {
   env["DECO_CHAT_WORKSPACE_API"] = workspaceClient(env);
 };
 
-const withBindings = <TEnv extends DefaultEnv>(_env: TEnv) => {
+export const withBindings = <TEnv extends DefaultEnv>(_env: TEnv) => {
   const env = _env as DefaultEnv;
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 

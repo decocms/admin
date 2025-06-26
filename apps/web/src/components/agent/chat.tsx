@@ -257,17 +257,15 @@ function Page(props: Props) {
           showThreadMessages: props.showThreadMessages ?? true,
         }}
       >
-        <>
-          <AgentMetadataUpdater agentId={agentId} />
-          <PageLayout
-            tabs={TABS}
-            key={agentId}
-            actionButtons={<ActionsButtons />}
-            breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
-              <Breadcrumb agentId={agentId} />
-            )}
-          />
-        </>
+        <AgentMetadataUpdater agentId={agentId} />
+        <PageLayout
+          tabs={TABS}
+          key={agentId}
+          actionButtons={<ActionsButtons />}
+          breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
+            <Breadcrumb agentId={agentId} />
+          )}
+        />
       </ChatProvider>
     </Suspense>
   );

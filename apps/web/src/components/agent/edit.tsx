@@ -55,9 +55,6 @@ interface Props {
 const Chat = () => {
   const { agentId, chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
-  const { data: resolvedAvatar } = useFile(
-    agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
-  );
   const { chat: { messages } } = useChatContext();
   const { hasChanges } = useAgentSettingsForm();
   const focusChat = useFocusChat();

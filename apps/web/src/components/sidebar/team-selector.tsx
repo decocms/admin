@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
@@ -19,6 +19,7 @@ import { Avatar } from "../common/avatar/index.tsx";
 import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import type { Theme } from "@deco/sdk";
+import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
 interface CurrentTeam {
   avatarUrl: string | undefined;
@@ -279,45 +280,10 @@ export function TeamSelector() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { id: teamId, label, avatarUrl } = useCurrentTeam();
 
-  /**
-   * Sync the browser tab metadata (title and favicon) with the currently selected workspace.
-   *
-   * This effect purposely only depends on the workspace identifying props so it
-   * runs strictly when the workspace actually changes, avoiding unnecessary
-   * updates that could override agent-specific overrides that take precedence
-   * while the user is inside an agent page.
-   */
-  useEffect(() => {
-    if (!label) return;
-
-    // Store previous values so that, if the whole TeamSelector ever unmounts,
-    // we can restore them. In practice this rarely happens but it makes the
-    // effect self-contained and safe.
-    const previousTitle = document.title;
-
-    const faviconSelector = 'link[rel="icon"]';
-    let faviconEl = document.querySelector<HTMLLinkElement>(faviconSelector);
-    if (!faviconEl) {
-      faviconEl = document.createElement("link");
-      faviconEl.setAttribute("rel", "icon");
-      document.head.appendChild(faviconEl);
-    }
-    const prevFaviconHref = faviconEl.getAttribute("href");
-
-    // Apply workspace title & favicon
-    document.title = `${label} | deco.chat`;
-    if (avatarUrl) {
-      faviconEl.setAttribute("href", avatarUrl);
-    }
-
-    // Cleanup – restore previous metadata when workspace changes or component unmounts.
-    return () => {
-      document.title = previousTitle;
-      if (avatarUrl && prevFaviconHref) {
-        faviconEl.setAttribute("href", prevFaviconHref);
-      }
-    };
-  }, [label, avatarUrl]);
+  useDocumentMetadata({
+    title: label ? `${label} | deco.chat` : undefined,
+    favicon: avatarUrl,
+  });
 
   return (
     <>

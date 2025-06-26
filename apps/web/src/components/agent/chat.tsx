@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
@@ -26,6 +26,7 @@ import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { isFilePath } from "../../utils/path.ts";
+import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -184,38 +185,15 @@ function AgentMetadataUpdater({ agentId }: { agentId: string }) {
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
 
-  useEffect(() => {
-    if (!agent) return;
+  // Compute favicon href, favouring resolved file URLs for local files.
+  const faviconHref = isFilePath(agent?.avatar)
+    ? (typeof resolvedAvatar === "string" ? resolvedAvatar : undefined)
+    : agent?.avatar;
 
-    const previousTitle = document.title;
-
-    const faviconSelector = 'link[rel="icon"]';
-    let faviconEl = document.querySelector<HTMLLinkElement>(faviconSelector);
-    if (!faviconEl) {
-      faviconEl = document.createElement("link");
-      faviconEl.setAttribute("rel", "icon");
-      document.head.appendChild(faviconEl);
-    }
-    const prevFaviconHref = faviconEl.getAttribute("href");
-
-    // Update title and favicon
-    document.title = `${agent.name} | deco.chat`;
-    const avatarHref = isFilePath(agent.avatar)
-      ? (typeof resolvedAvatar === "string" ? resolvedAvatar : undefined)
-      : agent.avatar;
-    if (avatarHref) {
-      faviconEl.setAttribute("href", avatarHref);
-    }
-
-    return () => {
-      document.title = previousTitle;
-      if (prevFaviconHref) {
-        faviconEl.setAttribute("href", prevFaviconHref);
-      } else {
-        faviconEl.remove();
-      }
-    };
-  }, [agent, resolvedAvatar]);
+  useDocumentMetadata({
+    title: agent ? `${agent.name} | deco.chat` : undefined,
+    favicon: faviconHref,
+  });
 
   return null;
 }

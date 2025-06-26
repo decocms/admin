@@ -44,7 +44,7 @@ const gatherFiles = async (rootDir: string) => {
   const walker = walk(rootDir, {
     exts: [".ts", ".mjs", ".js", ".cjs", ".toml"],
     includeDirs: false,
-    skip: [/node_modules/],
+    skip: [/node_modules/, /\.wrangler/],
   });
 
   for await (const entry of walker) {

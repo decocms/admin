@@ -84,6 +84,7 @@ function UserPreferencesModal({ open, onOpenChange }: {
       useOpenRouter: preferences.useOpenRouter,
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
+      displayWorkflow: preferences.displayWorkflow,
     },
   });
   const { handleSubmit, formState: { isDirty } } = form;
@@ -93,6 +94,7 @@ function UserPreferencesModal({ open, onOpenChange }: {
     useOpenRouter: boolean;
     sendReasoning: boolean;
     smoothStream: boolean;
+    displayWorkflow: boolean;
   }) {
     setPreferences(data);
     form.reset(data);
@@ -206,6 +208,32 @@ function UserPreferencesModal({ open, onOpenChange }: {
                   </div>
                   <FormDescription>
                     Display AI reasoning tokens in the chat.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="displayWorkflow"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <FormControl>
+                      <Switch
+                        id="displayWorkflow"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="displayWorkflow"
+                      className="cursor-pointer"
+                    >
+                      Workflows
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Enable developer preview for deterministic workflows.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -7,7 +7,7 @@ export function EmptyState({
   icon,
   title,
   description,
-  buttonProps = {},
+  buttonProps,
   buttonComponent,
 }: {
   icon: string;
@@ -45,12 +45,14 @@ export function EmptyState({
         </div>
       </div>
       {buttonComponent ?? (
-        <Button
-          variant="outline"
-          size="default"
-          className={cn("gap-2", buttonProps?.className)}
-          {...buttonProps}
-        />
+        buttonProps && (
+          <Button
+            variant="outline"
+            size="default"
+            className={cn("gap-2", buttonProps?.className)}
+            {...buttonProps}
+          />
+        )
       )}
     </div>
   );

@@ -12,10 +12,14 @@ import {
   type Workflow,
   type WorkflowDeleteParams,
   type WorkflowInstance,
-  type WorkflowStartParams
+  type WorkflowStartParams,
+  type WorkflowStatusResult,
+  type WorkflowStep,
+  type WorkflowStepAttempt,
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
+import type { UseSuspenseQueryResult } from "@tanstack/react-query";
 
 export const useWorkflows = (page = 1, per_page = 10) => {
   const { workspace } = useSDK();
@@ -80,9 +84,12 @@ export const useStartWorkflow = () => {
   });
 };
 
-export const useWorkflowStatus = (workflowName: string, instanceId: string) => {
+export const useWorkflowStatus = (
+  workflowName: string,
+  instanceId: string,
+): UseSuspenseQueryResult<WorkflowStatusResult> => {
   const { workspace } = useSDK();
-  return useSuspenseQuery({
+  return useSuspenseQuery<WorkflowStatusResult>({
     queryKey: ["workflow-status", workspace, workflowName, instanceId],
     queryFn: ({ signal }) =>
       getWorkflowStatus(workspace, { workflowName, instanceId }, signal),
@@ -97,4 +104,12 @@ export const useDeleteWorkflow = () => {
     mutationFn: (params: WorkflowDeleteParams) =>
       deleteWorkflow(workspace, params),
   });
+};
+
+export type {
+  Workflow,
+  WorkflowInstance,
+  WorkflowStatusResult,
+  WorkflowStep,
+  WorkflowStepAttempt,
 };

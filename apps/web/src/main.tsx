@@ -126,26 +126,16 @@ const PromptDetail = lazy(() =>
 );
 
 const WorkflowListPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/list.tsx").then((mod) => ({
-      default: mod.WorkflowListPage,
-    })),
-  )
+  wrapWithUILoadingFallback(import("./components/workflows/list.tsx"))
 );
 
 const WorkflowDetailPage = lazy(() =>
-  wrapWithUILoadingFallback(
-    import("./components/workflows/detail.tsx").then((mod) => ({
-      default: mod.WorkflowDetailPage,
-    })),
-  )
+  wrapWithUILoadingFallback(import("./components/workflows/detail.tsx"))
 );
 
 const WorkflowInstanceDetailPage = lazy(() =>
   wrapWithUILoadingFallback(
-    import("./components/workflows/instance-detail.tsx").then((mod) => ({
-      default: mod.WorkflowInstanceDetailPage,
-    })),
+    import("./components/workflows/instance-detail.tsx"),
   )
 );
 

@@ -1,13 +1,6 @@
-import { useParams, useSearchParams } from "react-router";
+import type { WorkflowInstance } from "@deco/sdk";
 import { useWorkflowInstances } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import type { Tab } from "../dock/index.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useState } from "react";
-import { Table, type TableColumn } from "../common/table/index.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -15,12 +8,20 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@deco/ui/components/pagination.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { EmptyState } from "../common/empty-state.tsx";
+import { ListPageHeader } from "../common/list-page-header.tsx";
+import { Table, type TableColumn } from "../common/table/index.tsx";
+import type { Tab } from "../dock/index.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 
 function InstancesCardView(
   { instances, onClick }: {
-    instances: any[];
-    onClick: (instance: any) => void;
+    instances: WorkflowInstance[];
+    onClick: (instance: WorkflowInstance) => void;
   },
 ) {
   return (
@@ -59,14 +60,14 @@ function InstancesCardView(
 
 function InstancesTableView(
   { instances, onClick }: {
-    instances: any[];
-    onClick: (instance: any) => void;
+    instances: WorkflowInstance[];
+    onClick: (instance: WorkflowInstance) => void;
   },
 ) {
   const [sortKey, setSortKey] = useState<string>("created_on");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  function getSortValue(row: any, key: string): string {
+  function getSortValue(row: WorkflowInstance, key: string): string {
     if (key === "created_on") return row.created_on || "";
     if (key === "ended_on") return row.ended_on || "";
     if (key === "status") return row.status || "";
@@ -81,7 +82,7 @@ function InstancesTableView(
     return 0;
   });
 
-  const columns: TableColumn<any>[] = [
+  const columns: TableColumn<WorkflowInstance>[] = [
     {
       id: "instanceId",
       header: "Instance ID",
@@ -152,8 +153,8 @@ function InstancesTab() {
   const navigateWorkspace = useNavigateWorkspace();
 
   const filteredInstances = useMemo(() => {
-    if (!filter) return data.instances;
-    return data.instances.filter((i: any) =>
+    if (!filter) return data.instances as WorkflowInstance[];
+    return (data.instances as WorkflowInstance[]).filter((i) =>
       i.instanceId.toLowerCase().includes(filter.toLowerCase())
     );
   }, [data.instances, filter]);
@@ -162,7 +163,7 @@ function InstancesTab() {
     setSearchParams({ page: String(newPage), per_page: String(per_page) });
   }
 
-  function handleInstanceClick(instance: any) {
+  function handleInstanceClick(instance: WorkflowInstance) {
     navigateWorkspace(
       `workflows/${encodeURIComponent(workflowName)}/instances/${
         encodeURIComponent(instance.instanceId)
@@ -259,7 +260,7 @@ const tabs: Record<string, Tab> = {
   },
 };
 
-export function WorkflowDetailPage() {
+function WorkflowDetailPage() {
   const { workflowName = "" } = useParams();
   return (
     <PageLayout

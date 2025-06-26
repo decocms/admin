@@ -54,6 +54,7 @@ import { AgentAvatar } from "../common/avatar/index.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 
 const STATIC_ITEMS = [
   {
@@ -484,6 +485,7 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const workspaceLink = useWorkspaceLink();
   const focusChat = useFocusChat();
+  const { preferences } = useUserPreferences();
 
   return (
     <Sidebar variant="sidebar">
@@ -521,7 +523,9 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {STATIC_ITEMS.map((item) => {
+                  {STATIC_ITEMS.filter((item) =>
+                    item.title !== "Workflows" || preferences.displayWorkflow
+                  ).map((item) => {
                     const href = workspaceLink(item.url);
 
                     return (

@@ -1,3 +1,8 @@
+import type {
+  WorkflowStatusResult,
+  WorkflowStep,
+  WorkflowStepAttempt,
+} from "@deco/sdk";
 import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -15,9 +20,13 @@ function tryParseJson(str: unknown): unknown {
   try {
     const parsed = JSON.parse(str);
     // Only treat as JSON if it's an object or array
-    if (typeof parsed === "object" && parsed !== null) return parsed;
-  } catch {}
-  return str;
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed;
+    }
+    return str;
+  } catch {
+    return str;
+  }
 }
 
 function CopyButton({ value }: { value: unknown }) {
@@ -76,14 +85,17 @@ function getStatusBadgeVariant(
 
 function getStatusIcon(status: string) {
   if (status === "success" || status === "completed") {
-    return <Icon name="check_circle" className="text-green-600" size={20} />;
+    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+    return <Icon name="check_circle" className="text-green-500" size={20} />;
   }
   if (status === "failed" || status === "error") {
-    return <Icon name="error" className="text-red-600" size={20} />;
+    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+    return <Icon name="error" className="text-red-500" size={20} />;
   }
   if (status === "running" || status === "in_progress") {
     return (
-      <Icon name="autorenew" className="text-blue-600 animate-spin" size={20} />
+      // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+      <Icon name="autorenew" className="text-blue-500 animate-spin" size={20} />
     );
   }
   return <Icon name="info" className="text-muted-foreground" size={20} />;
@@ -146,17 +158,17 @@ function DonutChart(
   );
 }
 
-function getStepStatus(step: any): string {
+function getStepStatus(step: WorkflowStep): string {
   if (step.success) return "success";
   if (step.error) return "failed";
   if (step.status) return step.status;
   return "unknown";
 }
 
-function StepStats({ attempts }: { attempts: any[] }) {
+function StepStats({ attempts }: { attempts: WorkflowStepAttempt[] }) {
   const total = attempts.length;
-  const errors = attempts.filter((a: any) => a.error).length;
-  const successes = attempts.filter((a: any) => a.success).length;
+  const errors = attempts.filter((a) => a.error).length;
+  const successes = attempts.filter((a) => a.success).length;
   return (
     <div className="min-w-[60px] flex-shrink-0 flex items-center justify-center">
       <DonutChart success={successes} errors={errors} total={total} />
@@ -164,13 +176,15 @@ function StepStats({ attempts }: { attempts: any[] }) {
   );
 }
 
-function StepCard({ step, index }: { step: any; index: number }) {
+function StepCard({ step }: { step: WorkflowStep }) {
   const [open, setOpen] = useState(false);
   const stepStatus = getStepStatus(step);
   const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
   const stepStatusIcon = getStatusIcon(stepStatus);
-  const attempts = Array.isArray(step.attempts) ? step.attempts : [];
-  const successfulAttempt = attempts.find((a: any) => a.success);
+  const attempts: WorkflowStepAttempt[] = Array.isArray(step.attempts)
+    ? step.attempts
+    : [];
+  const successfulAttempt = attempts.find((a) => a.success);
   const lastAttempt = attempts[attempts.length - 1] || {};
   const durationAttempt = successfulAttempt || lastAttempt;
   const stepDuration = formatDuration(
@@ -242,27 +256,40 @@ function StepCard({ step, index }: { step: any; index: number }) {
             </div>
             <StepStats attempts={attempts} />
           </div>
-          {step.output && <OutputField label="Output" value={step.output} />}
+          {step.output
+            ? <OutputField label="Output" value={step.output} />
+            : null}
           {Array.isArray(step.attempts) && step.attempts.length > 0 && (
             <div className="mb-1">
               <span className="font-semibold">Attempts:</span>
               <ul className="list-disc ml-4">
-                {step.attempts.map((attempt: any, j: number) => (
-                  <li key={j}>
-                    <span className="text-xs">
-                      Start: {attempt.start &&
-                        new Date(attempt.start).toLocaleString()}, End:{" "}
-                      {attempt.end && new Date(attempt.end).toLocaleString()},
-                      Success: {String(attempt.success)}
-                    </span>
-                    {attempt.output && (
-                      <OutputField label="Output" value={attempt.output} />
-                    )}
-                    {attempt.error && (
-                      <OutputField label="Error" value={attempt.error} />
-                    )}
-                  </li>
-                ))}
+                {step.attempts.map(
+                  function (attempt: WorkflowStepAttempt, j: number) {
+                    return (
+                      <li key={j}>
+                        <span className="text-xs">
+                          Start: {attempt.start &&
+                            new Date(attempt.start).toLocaleString()}, End:{" "}
+                          {attempt.end &&
+                            new Date(attempt.end).toLocaleString()}, Success:
+                          {" "}
+                          {String(attempt.success)}
+                        </span>
+                        {attempt.output
+                          ? (
+                            <OutputField
+                              label="Output"
+                              value={attempt.output}
+                            />
+                          )
+                          : null}
+                        {attempt.error && (
+                          <OutputField label="Error" value={attempt.error} />
+                        )}
+                      </li>
+                    );
+                  },
+                )}
               </ul>
             </div>
           )}
@@ -275,18 +302,20 @@ function StepCard({ step, index }: { step: any; index: number }) {
 
 function InstanceDetailTab() {
   const { workflowName = "", instanceId = "" } = useParams();
-  const { data } = useWorkflowStatus(workflowName, instanceId);
+  const { data } = useWorkflowStatus(workflowName, instanceId) as {
+    data: WorkflowStatusResult;
+  };
 
   const status = data.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
   const statusIcon = getStatusIcon(status);
-  const steps = Array.isArray(data.steps) ? data.steps : [];
+  const steps: WorkflowStep[] = Array.isArray(data.steps) ? data.steps : [];
   const duration = formatDuration(
     data.start ?? undefined,
     data.end ?? undefined,
   );
-  const errors = steps.filter((s: any) => s.error).length;
-  const successes = steps.filter((s: any) => s.success).length;
+  const errors = steps.filter((s) => s.error).length;
+  const successes = steps.filter((s) => s.success).length;
 
   return (
     <ScrollArea className="h-full">
@@ -364,9 +393,7 @@ function InstanceDetailTab() {
         <div className="space-y-4">
           {steps.length > 0
             ? (
-              steps.map((step: any, i: number) => (
-                <StepCard key={i} step={step} index={i} />
-              ))
+              steps.map((step, i) => <StepCard key={i} step={step} />)
             )
             : <div className="text-muted-foreground">No steps found.</div>}
         </div>
@@ -384,7 +411,7 @@ const tabs: Record<string, Tab> = {
   },
 };
 
-export function WorkflowInstanceDetailPage() {
+function WorkflowInstanceDetailPage() {
   const { workflowName = "", instanceId = "" } = useParams();
   return (
     <PageLayout

@@ -47,6 +47,27 @@ export interface WorkflowStatusParams {
   workflowName: string;
 }
 
+export interface WorkflowStepAttempt {
+  start?: string;
+  end?: string;
+  success?: boolean;
+  error?: { message: string; name?: string } | null;
+  output?: unknown;
+}
+
+export interface WorkflowStep {
+  name: string;
+  type?: string;
+  start?: string;
+  end?: string;
+  success?: boolean;
+  error?: { message: string; name?: string } | null;
+  output?: unknown;
+  config?: unknown;
+  attempts?: WorkflowStepAttempt[];
+  status?: string;
+}
+
 export interface WorkflowStatusResult {
   status: string;
   params?: unknown;
@@ -56,8 +77,8 @@ export interface WorkflowStatusResult {
   start?: string | null;
   end?: string | null;
   success?: boolean;
-  steps?: unknown[];
-  error?: unknown;
+  steps?: WorkflowStep[];
+  error?: { message: string; name?: string } | string | null;
   output?: unknown;
 }
 

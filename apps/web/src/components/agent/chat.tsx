@@ -1,4 +1,4 @@
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { useAgent, useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
@@ -25,6 +25,7 @@ import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
+import { isFilePath } from "../../utils/path.ts";
 
 export type WellKnownAgents =
   typeof WELL_KNOWN_AGENT_IDS[keyof typeof WELL_KNOWN_AGENT_IDS];
@@ -177,6 +178,48 @@ function Breadcrumb({ agentId }: { agentId: string }) {
   );
 }
 
+function AgentMetadataUpdater({ agentId }: { agentId: string }) {
+  const { data: agent } = useAgent(agentId);
+  const { data: resolvedAvatar } = useFile(
+    agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
+  );
+
+  useEffect(() => {
+    if (!agent) return;
+
+    const previousTitle = document.title;
+
+    const faviconSelector = 'link[rel="icon"]';
+    let faviconEl = document.querySelector<HTMLLinkElement>(faviconSelector);
+    if (!faviconEl) {
+      faviconEl = document.createElement("link");
+      faviconEl.setAttribute("rel", "icon");
+      document.head.appendChild(faviconEl);
+    }
+    const prevFaviconHref = faviconEl.getAttribute("href");
+
+    // Update title and favicon
+    document.title = `${agent.name} | deco.chat`;
+    const avatarHref = isFilePath(agent.avatar)
+      ? (typeof resolvedAvatar === "string" ? resolvedAvatar : undefined)
+      : agent.avatar;
+    if (avatarHref) {
+      faviconEl.setAttribute("href", avatarHref);
+    }
+
+    return () => {
+      document.title = previousTitle;
+      if (prevFaviconHref) {
+        faviconEl.setAttribute("href", prevFaviconHref);
+      } else {
+        faviconEl.remove();
+      }
+    };
+  }, [agent, resolvedAvatar]);
+
+  return null;
+}
+
 function Page(props: Props) {
   const params = useParams();
   const agentId = useMemo(
@@ -214,14 +257,17 @@ function Page(props: Props) {
           showThreadMessages: props.showThreadMessages ?? true,
         }}
       >
-        <PageLayout
-          tabs={TABS}
-          key={agentId}
-          actionButtons={<ActionsButtons />}
-          breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
-            <Breadcrumb agentId={agentId} />
-          )}
-        />
+        <>
+          <AgentMetadataUpdater agentId={agentId} />
+          <PageLayout
+            tabs={TABS}
+            key={agentId}
+            actionButtons={<ActionsButtons />}
+            breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
+              <Breadcrumb agentId={agentId} />
+            )}
+          />
+        </>
       </ChatProvider>
     </Suspense>
   );

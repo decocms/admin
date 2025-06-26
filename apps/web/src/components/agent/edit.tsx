@@ -4,6 +4,7 @@ import {
   type Integration,
   NotFoundError,
   useAgent,
+  useFile,
   useIntegrations,
   useUpdateAgent,
   useUpdateAgentCache,
@@ -44,6 +45,7 @@ import AgentPreview, { useTabsForAgent } from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
+import { isFilePath } from "../../utils/path.ts";
 
 interface Props {
   agentId?: string;
@@ -53,6 +55,9 @@ interface Props {
 const Chat = () => {
   const { agentId, chat } = useChatContext();
   const { data: agent } = useAgent(agentId);
+  const { data: resolvedAvatar } = useFile(
+    agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
+  );
   const { chat: { messages } } = useChatContext();
   const { hasChanges } = useAgentSettingsForm();
   const focusChat = useFocusChat();
@@ -231,6 +236,9 @@ function ActionButtons({
 function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { agentId, threadId } = props;
   const { data: agent } = useAgent(agentId);
+  const { data: resolvedAvatar } = useFile(
+    agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
+  );
   const { data: installedIntegrations } = useIntegrations();
   const updateAgent = useUpdateAgent();
   const updateAgentCache = useUpdateAgentCache();
@@ -282,7 +290,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     }
 
     // Update title
-    document.title = agent.name + ` — deco.chat`;
+    document.title = `${agent.name} | deco.chat`;
 
     // Update description (fallback to instructions if description not present)
     const description = agent.description ?? agent.instructions ?? "";
@@ -304,7 +312,12 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
       document.head.appendChild(faviconEl);
     }
     const prevFaviconHref = faviconEl.getAttribute("href");
-    faviconEl.setAttribute("href", agent.avatar);
+    const avatarHref = isFilePath(agent.avatar)
+      ? (typeof resolvedAvatar === "string" ? resolvedAvatar : undefined)
+      : agent.avatar;
+    if (avatarHref) {
+      faviconEl.setAttribute("href", avatarHref);
+    }
 
     return () => {
       // Restore title
@@ -329,7 +342,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         }
       });
     };
-  }, [agent]);
+  }, [agent, resolvedAvatar]);
   // END: Dynamic document metadata update
 
   const numberOfChanges = Object.keys(form.formState.dirtyFields).length;

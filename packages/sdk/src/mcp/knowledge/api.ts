@@ -196,7 +196,7 @@ export const remember = createKnowledgeBaseTool({
         docId,
       };
     } catch (e) {
-      console.log(e);
+      console.error("Error embedding content", e);
       throw e;
     }
   },

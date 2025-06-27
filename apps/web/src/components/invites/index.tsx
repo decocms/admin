@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import {
@@ -24,30 +24,120 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 
+type ViewMode = "table" | "cards";
+
+function InviteCard({ 
+  invite, 
+  onAccept, 
+  onReject, 
+  isAcceptLoading, 
+  isRejectLoading,
+  isAnyLoading 
+}: {
+  invite: Invite;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  isAcceptLoading: boolean;
+  isRejectLoading: boolean;
+  isAnyLoading: boolean;
+}) {
+  return (
+    <Card className="overflow-hidden border rounded-xl hover:shadow-md transition-shadow">
+      <CardContent className="p-6 flex flex-col gap-4">
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg font-semibold text-foreground">
+              {invite.teamName}
+            </h3>
+            <div className="flex gap-1 flex-wrap">
+              {invite.roles.map((role) => (
+                <Badge key={role.id} variant="outline" className="text-xs">
+                  {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-muted">
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(invite.inviter.name || invite.inviter.email || "Unknown")}`}
+              alt="Inviter avatar"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <span>
+            Invited by {invite.inviter.name || invite.inviter.email || "Unknown"}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {timeAgo(invite.createdAt)}
+          </span>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onAccept(invite.id)}
+              disabled={isAnyLoading}
+              size="sm"
+              className="h-8"
+            >
+              {isAcceptLoading
+                ? <Spinner size="xs" />
+                : <Icon name="check" className="mr-1" size={14} />}
+              Accept
+            </Button>
+            <Button
+              onClick={() => onReject(invite.id)}
+              disabled={isAnyLoading}
+              variant="outline"
+              size="sm"
+              className="h-8"
+            >
+              {isRejectLoading
+                ? <Spinner size="xs" />
+                : <Icon name="close" className="mr-1" size={14} />}
+              Reject
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function InvitesListSkeleton() {
   return (
     <div className="flex flex-col gap-4 h-full p-4">
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div className="flex items-center gap-2"></div>
-        <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1">
-          <div className="w-80 h-10 bg-muted rounded-md animate-pulse"></div>
-        </div>
-      </div>
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-muted rounded animate-pulse w-48"></div>
-                <div className="h-3 bg-muted rounded animate-pulse w-32"></div>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Card key={index} className="overflow-hidden border rounded-xl">
+            <CardContent className="p-6 flex flex-col gap-4">
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-2 flex-1">
+                  <div className="h-6 bg-muted rounded animate-pulse w-3/4"></div>
+                  <div className="flex gap-1">
+                    <div className="h-5 bg-muted rounded animate-pulse w-16"></div>
+                    <div className="h-5 bg-muted rounded animate-pulse w-20"></div>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <div className="h-8 w-16 bg-muted rounded animate-pulse"></div>
-                <div className="h-8 w-16 bg-muted rounded animate-pulse"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-muted rounded-full animate-pulse"></div>
+                <div className="h-4 bg-muted rounded animate-pulse w-32"></div>
               </div>
-            </div>
-          ))}
-        </div>
+              <div className="flex items-center justify-between">
+                <div className="h-4 bg-muted rounded animate-pulse w-20"></div>
+                <div className="flex gap-2">
+                  <div className="h-8 bg-muted rounded animate-pulse w-16"></div>
+                  <div className="h-8 bg-muted rounded animate-pulse w-16"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
@@ -86,6 +176,26 @@ function InvitesListContent() {
   const [sortKey, setSortKey] = useState<string>("teamName");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [loadingStates, setLoadingStates] = useState<Record<string, "accept" | "reject" | null>>({});
+  
+  // Default to cards on mobile, table on desktop
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768 ? "cards" : "table";
+    }
+    return "cards";
+  });
+
+  // Update view mode based on screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768 && viewMode === "table") {
+        setViewMode("cards");
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [viewMode]);
 
   const filteredInvites = search.trim().length > 0
     ? invites.filter((invite) =>
@@ -125,32 +235,38 @@ function InvitesListContent() {
     }
   };
 
-  const handleReject = async (id: string) => {
-    setLoadingStates(prev => ({ ...prev, [id]: "reject" }));
+  const handleReject = async (inviteId: string) => {
+    setLoadingStates(prev => ({ ...prev, [inviteId]: "reject" }));
     try {
-      await rejectInviteMutation.mutateAsync({ id });
+      await rejectInviteMutation.mutateAsync(inviteId);
       toast.success("Invitation rejected");
     } catch (error) {
       console.error("Reject invitation error:", error);
       toast.error("Failed to reject invitation");
     } finally {
-      setLoadingStates(prev => ({ ...prev, [id]: null }));
+      setLoadingStates(prev => ({ ...prev, [inviteId]: null }));
     }
   };
 
-  function getSortValue(invite: Invite, key: string): string {
-    if (key === "teamName") return invite.teamName.toLowerCase();
-    if (key === "inviter") return (invite.inviter.name || invite.inviter.email || "").toLowerCase();
-    if (key === "createdAt") return invite.createdAt;
-    return "";
-  }
-
   function handleSort(key: string) {
     if (sortKey === key) {
-      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDirection("asc");
+    }
+  }
+
+  function getSortValue(invite: Invite, key: string): string {
+    switch (key) {
+      case "teamName":
+        return invite.teamName.toLowerCase();
+      case "inviter":
+        return (invite.inviter.name || invite.inviter.email || "").toLowerCase();
+      case "createdAt":
+        return invite.createdAt;
+      default:
+        return "";
     }
   }
 
@@ -162,6 +278,59 @@ function InvitesListContent() {
     return 0;
   });
 
+  return (
+    <div className="flex flex-col gap-4 h-full p-4">
+      <ListPageHeader
+        input={{
+          placeholder: "Search invitations",
+          value: search,
+          onChange: (e) => setSearch(e.target.value),
+        }}
+        view={{
+          viewMode,
+          onChange: setViewMode,
+        }}
+      />
+
+      <div className="flex-1 min-h-0 overflow-x-auto">
+        {viewMode === "table"
+          ? <TableView 
+              invites={sortedInvites} 
+              onAccept={handleAccept}
+              onReject={handleReject}
+              loadingStates={loadingStates}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+            />
+          : <CardsView 
+              invites={sortedInvites}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              loadingStates={loadingStates}
+            />}
+      </div>
+    </div>
+  );
+}
+
+function TableView({ 
+  invites, 
+  onAccept, 
+  onReject, 
+  loadingStates, 
+  sortKey, 
+  sortDirection, 
+  onSort 
+}: {
+  invites: Invite[];
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  loadingStates: Record<string, "accept" | "reject" | null>;
+  sortKey: string;
+  sortDirection: "asc" | "desc";
+  onSort: (key: string) => void;
+}) {
   const columns: TableColumn<Invite>[] = [
     {
       id: "teamName",
@@ -214,7 +383,7 @@ function InvitesListContent() {
         return (
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
-              onClick={() => handleAccept(invite.id)}
+              onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
               size="sm"
               className="h-8"
@@ -225,7 +394,7 @@ function InvitesListContent() {
               Accept
             </Button>
             <Button
-              onClick={() => handleReject(invite.id)}
+              onClick={() => onReject(invite.id)}
               disabled={isAnyLoading}
               variant="outline"
               size="sm"
@@ -243,24 +412,47 @@ function InvitesListContent() {
   ];
 
   return (
-    <div className="flex flex-col gap-4 h-full p-4">
-      <ListPageHeader
-        input={{
-          placeholder: "Search invitations",
-          value: search,
-          onChange: (e) => setSearch(e.target.value),
-        }}
-      />
+    <Table
+      columns={columns}
+      data={invites}
+      sortKey={sortKey}
+      sortDirection={sortDirection}
+      onSort={onSort}
+    />
+  );
+}
 
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        <Table
-          columns={columns}
-          data={sortedInvites}
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
-      </div>
+function CardsView({ 
+  invites, 
+  onAccept, 
+  onReject, 
+  loadingStates 
+}: {
+  invites: Invite[];
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  loadingStates: Record<string, "accept" | "reject" | null>;
+}) {
+  return (
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+      {invites.map((invite) => {
+        const loading = loadingStates[invite.id];
+        const isAcceptLoading = loading === "accept";
+        const isRejectLoading = loading === "reject";
+        const isAnyLoading = isAcceptLoading || isRejectLoading;
+
+        return (
+          <InviteCard
+            key={invite.id}
+            invite={invite}
+            onAccept={onAccept}
+            onReject={onReject}
+            isAcceptLoading={isAcceptLoading}
+            isRejectLoading={isRejectLoading}
+            isAnyLoading={isAnyLoading}
+          />
+        );
+      })}
     </div>
   );
 }

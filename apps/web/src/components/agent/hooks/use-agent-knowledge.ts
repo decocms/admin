@@ -158,7 +158,6 @@ export const useUploadAgentKnowledgeFiles = (
           );
 
           if (!savedResponse.ok) {
-            toast.error(`Failed to upload file ${filename}`);
             throw new Error(`Failed to upload file ${filename}`);
           }
 
@@ -169,7 +168,6 @@ export const useUploadAgentKnowledgeFiles = (
           );
 
           if (!fileUrl) {
-            toast.error(`Failed to read uploaded file ${filename}`);
             throw new Error(`Failed to read uploaded file ${filename}`);
           }
 
@@ -190,7 +188,6 @@ export const useUploadAgentKnowledgeFiles = (
 
           // Check if docIds are empty or invalid
           if (!docIds || !Array.isArray(docIds) || docIds.length === 0) {
-            toast.error(`Failed to add ${filename} to knowledge base`);
             throw new Error(
               `Failed to add ${filename} to knowledge base: no docIds returned`,
             );

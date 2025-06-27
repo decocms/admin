@@ -39,7 +39,7 @@ const createTool = createToolGroup("APIKeys", {
   name: "API Key Management",
   description: "Create and manage API keys securely.",
   icon:
-    "https://assets.decocache.com/mcp/9e5d7fcd-3a3a-469b-9450-f2af05cdcc7e/API-Key-Management.png",
+    "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
 });
 
 export const listApiKeys = createTool({
@@ -77,14 +77,16 @@ const StatementSchema = z.object({
   resource: z.string(),
 });
 
+const policiesSchema = z.array(StatementSchema).optional().describe(
+  "Policies for the API key",
+);
+
 export const createApiKey = createTool({
   name: "API_KEYS_CREATE",
   description: "Create a new API key",
   inputSchema: z.object({
     name: z.string().describe("The name of the API key"),
-    policies: z.array(StatementSchema).optional().describe(
-      "Policies for the API key",
-    ),
+    policies: policiesSchema,
   }),
   handler: async ({ name, policies }, c) => {
     assertHasWorkspace(c);
@@ -99,7 +101,7 @@ export const createApiKey = createTool({
         name,
         workspace,
         enabled: true,
-        policies: policies || {},
+        policies: policies || [],
       })
       .select(SELECT_API_KEY_QUERY)
       .single();
@@ -112,8 +114,8 @@ export const createApiKey = createTool({
     const value = await issuer.create({
       sub: `api-key:${apiKey.id}`,
       aud: workspace,
-      policies: policies || [],
       iat: new Date().getTime(),
+      exp: undefined,
     });
 
     return { ...mapApiKey(apiKey), value };
@@ -159,9 +161,7 @@ export const updateApiKey = createTool({
     id: z.string().describe("The ID of the API key"),
     name: z.string().optional().describe("New name for the API key"),
     enabled: z.boolean().optional().describe("Whether the API key is enabled"),
-    policies: z.record(z.any()).optional().describe(
-      "Updated policies for the API key",
-    ),
+    policies: policiesSchema,
   }),
   handler: async ({ id, name, enabled, policies }, c) => {
     assertHasWorkspace(c);

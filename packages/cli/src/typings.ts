@@ -145,6 +145,7 @@ export const genEnv = async ({ workspace, local, bindings }: Options) => {
           id: binding.integration_id,
         },
       }) as { structuredContent: { connection: unknown } };
+
       const tools = await apiClient.callTool({
         name: "INTEGRATIONS_LIST_TOOLS",
         arguments: {

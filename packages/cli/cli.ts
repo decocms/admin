@@ -1,18 +1,18 @@
 import { Command } from "@cliffy/command";
 import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
-import { getConfig, writeConfigFile } from "./src/config.ts";
+import { getConfig, setLocal, writeConfigFile } from "./src/config.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
+import { createCommand, listTemplates } from "./src/create.ts";
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
 import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
-import { deleteSession, readSession } from "./src/session.ts";
-import { whoamiCommand } from "./src/whoami.ts";
-import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
+import { deleteSession, readSession, setToken } from "./src/session.ts";
 import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
-import { createCommand, listTemplates } from "./src/create.ts";
+import { whoamiCommand } from "./src/whoami.ts";
+import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -75,11 +75,6 @@ const hostingDeploy = new Command()
     required: false,
   })
   .option("-a, --app <app:string>", "App name", { required: false })
-  .option(
-    "-l, --local",
-    `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
-    { required: false },
-  )
   .action(async (args) => {
     const config = await getConfig({
       inlineOptions: args,
@@ -177,6 +172,26 @@ await new Command()
   .name(denoJson.name)
   .version(denoJson.version)
   .description(denoJson.description)
+  .globalOption(
+    "-t, --token <token:string>",
+    "Authentication token to use for API requests",
+    {
+      required: false,
+      action: (opt) => {
+        opt.token && setToken(opt.token);
+      },
+    },
+  )
+  .globalOption(
+    "-l, --local",
+    `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
+    {
+      required: false,
+      action: (opt) => {
+        opt.local && setLocal(true);
+      },
+    },
+  )
   .command("login", login)
   .command("logout", logout)
   .command("whoami", whoami)

@@ -369,6 +369,7 @@ export const getIntegration = createIntegrationManagementTool({
       .select("*")
       .eq("id", uuid)
       .single().then((r) => r);
+
     const knowledgeBases = await listKnowledgeBases.handler({});
 
     const virtualIntegrations = virtualIntegrationsFor(

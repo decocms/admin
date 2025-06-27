@@ -31,6 +31,14 @@ const decoConfigSchema = z.object({
   local: z.boolean().optional().default(false),
 });
 
+let local: boolean;
+export const setLocal = (l: boolean): void => {
+  local = l;
+};
+export const getLocal = (): boolean => {
+  return local;
+};
+
 export type Config = z.infer<typeof decoConfigSchema>;
 
 export interface WranglerConfig {
@@ -105,6 +113,7 @@ export const getConfig = async (
     const session = await readSession();
     merged.workspace = session?.workspace;
   }
+  merged.local = getLocal() ?? merged.local;
   return decoConfigSchema.parse(merged);
 };
 

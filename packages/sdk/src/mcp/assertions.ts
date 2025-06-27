@@ -1,3 +1,4 @@
+import type { Statement } from "../auth/policy.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import type { Workspace } from "../path.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
@@ -47,6 +48,15 @@ export const assertHasUser = (c: AppContext) => {
   }
 };
 
+const assertPoliciesIsStatementArray = (
+  policies: unknown,
+): policies is Statement[] => {
+  return Array.isArray(policies) &&
+    policies.every((p) =>
+      typeof p === "object" && "effect" in p && "resource" in p
+    );
+};
+
 export const assertWorkspaceResourceAccess = async (
   resource: string,
   c: AppContext,
@@ -63,18 +73,6 @@ export const assertWorkspaceResourceAccess = async (
 
   // agent tokens
   if ("aud" in user && user.aud === c.workspace.value) {
-    // scopes should be a space-separated list of resourcesAdd commentMore actions
-    if (
-      user.policies && !await c.authorization.canAccess(
-        user.policies,
-        slug,
-        resource,
-      )
-    ) {
-      throw new ForbiddenError(
-        `Cannot access ${resource} in workspace ${c.workspace.value}`,
-      );
-    }
     // API keys
     const [sub, id] = user.sub?.split(":") ?? [];
     if (sub === "api-key") {
@@ -90,7 +88,22 @@ export const assertWorkspaceResourceAccess = async (
           `Cannot access ${resource} in workspace ${c.workspace.value}`,
         );
       }
+
+      // scopes should be a space-separated list of resourcesAdd commentMore actions
+      if (
+        assertPoliciesIsStatementArray(data.policies) &&
+        !(await c.authorization.canAccess(
+          [{ statements: data.policies ?? [] }],
+          slug,
+          resource,
+        ))
+      ) {
+        throw new ForbiddenError(
+          `Cannot access ${resource} in workspace ${c.workspace.value}`,
+        );
+      }
     }
+
     return c.resourceAccess.grant();
   }
 

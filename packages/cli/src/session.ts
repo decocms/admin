@@ -7,7 +7,16 @@ const SessionSchema = z.object({
   access_token: z.string().optional(),
   refresh_token: z.string().optional(),
   workspace: z.string().optional(),
+  api_token: z.string().optional(),
 });
+
+let token: string;
+export function setToken(t: string): void {
+  token = t;
+}
+export function getToken(): string {
+  return token;
+}
 
 export type SessionData = z.infer<typeof SessionSchema>;
 
@@ -47,7 +56,10 @@ export async function saveSession(
 export async function readSession(): Promise<SessionData | null> {
   const sessionPath = getSessionPath();
   const content = await Deno.readTextFile(sessionPath);
-  return SessionSchema.safeParse(JSON.parse(content)).data ?? null;
+  const sessionData = SessionSchema.safeParse(JSON.parse(content)).data;
+  return getToken()
+    ? { ...sessionData ?? {}, api_token: getToken() }
+    : sessionData ?? null;
 }
 
 export async function deleteSession() {
@@ -61,8 +73,14 @@ export async function deleteSession() {
   await client.auth.signOut();
 }
 
-export async function getSessionCookies(): Promise<string> {
+export async function getRequestAuthHeaders(): Promise<Record<string, string>> {
   const session = await readSession();
+
+  if (session?.api_token) {
+    return {
+      Authorization: `Bearer ${session.api_token}`,
+    };
+  }
 
   if (!session) {
     throw new Error("Session not found. Please login again.");
@@ -97,7 +115,7 @@ export async function getSessionCookies(): Promise<string> {
 
   const cookies = setCookie.map((cookie) => cookie.split(";")[0]).join("; ");
 
-  return cookies;
+  return { cookie: cookies };
 }
 
 export async function getSessionToken(): Promise<string> {

@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { embed } from "ai";
+import { embed, embedMany } from "ai";
 import { z } from "zod";
 import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
@@ -52,6 +52,53 @@ async function getVector(c: AppContext) {
     throw new InternalServerError("Missing vector");
   }
   return vector;
+}
+
+async function batchUpsertVectorContent(
+  items: Array<{
+    content: string;
+    metadata?: Record<string, string>;
+    docId?: string;
+  }>,
+  c: WithTool<KnowledgeBaseContext>,
+): Promise<string[]> {
+  assertHasWorkspace(c);
+
+  if (!c.envVars.OPENAI_API_KEY) {
+    throw new InternalServerError("Missing OPENAI_API_KEY");
+  }
+
+  const vector = await getVector(c);
+  const embedder = openAIEmbedder(c.envVars.OPENAI_API_KEY);
+
+  try {
+    // Generate docIds for items that don't have one
+    const itemsWithIds = items.map((item) => ({
+      ...item,
+      docId: item.docId ?? crypto.randomUUID(),
+    }));
+
+    // Create embeddings for all items
+    const { embeddings } = await embedMany({
+      model: embedder,
+      values: itemsWithIds.map((item) => item.content),
+    });
+
+    // Upsert all vectors at once
+    await vector.upsert({
+      indexName: c.name,
+      vectors: embeddings,
+      metadata: itemsWithIds.map((item) => ({
+        id: item.docId,
+        metadata: { ...item.metadata ?? {}, content: item.content },
+      })),
+    });
+
+    return itemsWithIds.map((item) => item.docId);
+  } catch (e) {
+    console.error("Error embedding content", e);
+    throw e;
+  }
 }
 
 const createTool = createToolGroup("KnowledgeBaseManagement", {
@@ -165,40 +212,20 @@ export const remember = createKnowledgeBaseTool({
       "The metadata to remember",
     ).optional(),
   }),
-  handler: async ({ content, metadata, docId: _id }, c) => {
+  handler: async ({ content, metadata, docId }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    if (!c.envVars.OPENAI_API_KEY) {
-      throw new InternalServerError("Missing OPENAI_API_KEY");
-    }
 
-    const vector = await getVector(c);
-    const docId = _id ?? crypto.randomUUID();
-    const embedder = openAIEmbedder(c.envVars.OPENAI_API_KEY);
+    const [resultDocId] = await batchUpsertVectorContent([{
+      content,
+      metadata,
+      docId,
+    }], c);
 
-    try {
-      // Create embeddings using OpenAI
-      const { embedding } = await embed({
-        model: embedder,
-        value: content,
-      });
-      await vector.upsert({
-        indexName: c.name,
-        vectors: [embedding],
-        metadata: [{
-          id: docId,
-          metadata: { ...metadata ?? {}, content },
-        }],
-      });
-
-      return {
-        docId,
-      };
-    } catch (e) {
-      console.error("Error embedding content", e);
-      throw e;
-    }
+    return {
+      docId: resultDocId,
+    };
   },
 });
 
@@ -218,14 +245,7 @@ export const search = createKnowledgeBaseTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const mem = await WorkspaceMemory.create({
-      workspace: c.workspace.value,
-      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-      discriminator: KNOWLEDGE_BASE_GROUP, // used to create a unique database for the knowledge base
-    });
-    const vector = mem.vector;
+    const vector = await getVector(c);
 
     const indexName = c.name;
     const embedder = openAIEmbedder(c.envVars.OPENAI_API_KEY);
@@ -270,21 +290,17 @@ export const addFileToKnowledgeBase = createKnowledgeBaseTool({
       chunkCount: proccessedFile.metadata.chunkCount.toString(),
     };
 
-    const chunks = await Promise.all(
-      proccessedFile.chunks.map((
-        chunk: { text: string; metadata: Record<string, string> },
-      ) =>
-        remember.handler({
-          content: chunk.text,
-          metadata: {
-            ...fileMetadata,
-            ...chunk.metadata,
-          },
-        })
-      ),
-    );
+    const contentItems = proccessedFile.chunks.map((
+      chunk: { text: string; metadata: Record<string, string> },
+    ) => ({
+      content: chunk.text,
+      metadata: {
+        ...fileMetadata,
+        ...chunk.metadata,
+      },
+    }));
 
-    const docIds = chunks.map((chunk: { docId: string }) => chunk.docId);
+    const docIds = await batchUpsertVectorContent(contentItems, c);
 
     assertHasWorkspace(c);
     if (path) {

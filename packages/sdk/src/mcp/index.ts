@@ -1,3 +1,4 @@
+export { HOSTING_APPS_DOMAIN } from "../constants.ts";
 export * from "../errors.ts";
 export * from "./assertions.ts";
 export { createResourceAccess } from "./auth/index.ts";
@@ -7,13 +8,12 @@ export {
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
 } from "./fs/api.ts";
-export { HOSTING_APPS_DOMAIN } from "./hosting/api.ts";
 export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export { EMAIL_TOOLS } from "./email/api.ts";
-import * as agentsAPI from "./agents/api.ts";
 import * as agentAPI from "./agent/api.ts";
+import * as agentsAPI from "./agents/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";

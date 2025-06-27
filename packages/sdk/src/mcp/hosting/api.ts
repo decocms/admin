@@ -1,5 +1,7 @@
+import { getSandbox } from "@cloudflare/sandbox";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
+import { HOSTING_APPS_DOMAIN } from "../../constants.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";
 import {
@@ -8,7 +10,7 @@ import {
   type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup, getEnv } from "../context.ts";
-import { bundler } from "./bundler.ts";
+import { bundle } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import {
   type DeployResult,
@@ -17,7 +19,7 @@ import {
 } from "./deployment.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
-export const HOSTING_APPS_DOMAIN = ".deco.page";
+
 export const Entrypoint = {
   host: (appSlug: string) => {
     return `${appSlug}${HOSTING_APPS_DOMAIN}`;
@@ -463,7 +465,11 @@ Important Notes:
     const scriptSlug = appSlug;
 
     // Bundle the files
-    const bundledScript = await bundler(filesRecord, entrypoint);
+    const sandbox = getSandbox(c.SANDBOX, "bundler");
+    const bundledScript = await bundle(
+      filesRecord,
+      { workspace, appSlug, sandbox },
+    );
 
     const fileObjects = {
       [SCRIPT_FILE_NAME]: new File(

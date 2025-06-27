@@ -4,11 +4,20 @@ import { defineConfig, type PluginOption } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react() as PluginOption[], tailwindcss() as PluginOption[]],
+  plugins: [
+    react() as PluginOption[],
+    tailwindcss() as PluginOption[],
+  ],
   server: { port: 3000, allowedHosts: [".deco.host"] },
   optimizeDeps: {
     esbuildOptions: {
       target: "es2022",
+    },
+    exclude: ["cloudflare:workers"],
+  },
+  build: {
+    rollupOptions: {
+      external: ["cloudflare:workers"],
     },
   },
 });

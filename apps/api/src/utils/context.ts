@@ -1,3 +1,4 @@
+import type { Sandbox } from "@cloudflare/sandbox";
 import type { EnvVars, Vars } from "@deco/sdk/mcp";
 import type { Context } from "hono";
 import type { TimingVariables } from "hono/timing";
@@ -5,6 +6,7 @@ import type { TimingVariables } from "hono/timing";
 export * from "@deco/sdk/mcp";
 
 export type Bindings = EnvVars & {
+  SANDBOX: DurableObjectNamespace<Sandbox>;
   DECO_CHAT_APP_ORIGIN?: string;
   PROD_DISPATCHER: {
     get: <

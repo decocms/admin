@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 export * from "./src/actors.ts";
+import { Sandbox } from "@cloudflare/sandbox";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import { instrument } from "@deco/sdk/observability";
@@ -81,3 +82,5 @@ export default {
     });
   },
 };
+
+export { Sandbox };

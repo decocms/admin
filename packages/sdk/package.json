@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@cloudflare/sandbox": "^0.0.7",
     "@mastra/rag": "^0.10.3",
     "@deco/workers-runtime": "^0.1.0",
     "jose": "6.0.11",

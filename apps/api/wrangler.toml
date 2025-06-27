@@ -9,6 +9,9 @@ routes = [
   { pattern = "*/*", zone_name = "deco.page" },
 ]
 
+[dev]
+port = 3001
+
 [vars]
 VITE_USE_LOCAL_BACKEND = false
 
@@ -32,6 +35,10 @@ class_name = "AIAgent"
 name = "TRIGGER"
 class_name = "Trigger"
 
+[[durable_objects.bindings]]
+class_name = "Sandbox"
+name = "SANDBOX"
+
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#migrations
 [[migrations]]
@@ -48,3 +55,12 @@ new_classes = ["TestDO"]
 [[migrations]]
 tag = "v3"
 deleted_classes = ["TestDO"]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Sandbox"]
+
+[[containers]]
+class_name = "Sandbox"
+image = "./sandbox/Dockerfile"
+name = "bundler"

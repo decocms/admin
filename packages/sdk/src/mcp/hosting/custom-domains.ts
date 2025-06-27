@@ -1,7 +1,7 @@
 import { resolveCname } from "node:dns";
+import { HOSTING_APPS_DOMAIN } from "../../constants.ts";
 import { UserInputError } from "../../errors.ts";
 import type { AppContext } from "../context.ts";
-import { HOSTING_APPS_DOMAIN } from "./api.ts";
 
 export const assertsDomainOwnership = async (
   domain: string,

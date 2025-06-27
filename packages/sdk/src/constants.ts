@@ -25,6 +25,8 @@ if (isLocalhost && import.meta.env?.VITE_USE_LOCAL_BACKEND === undefined) {
 
 export const SUPABASE_URL = "https://auth.deco.cx";
 
+export const HOSTING_APPS_DOMAIN = ".deco.page";
+
 export const DECO_CHAT_WEB = LOCAL_DEBUGGER
   ? "http://localhost:3000"
   : "https://deco.chat";

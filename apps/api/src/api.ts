@@ -44,6 +44,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
 
   return {
     ...c.var,
+    SANDBOX: c.env.SANDBOX,
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),

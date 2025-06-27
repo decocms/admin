@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import type { Sandbox } from "@cloudflare/sandbox";
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
 import type { Client } from "@deco/sdk/storage";
@@ -52,6 +53,7 @@ export interface Vars {
 export type EnvVars = z.infer<typeof envSchema>;
 export type AppContext = Vars & {
   envVars: EnvVars;
+  SANDBOX: DurableObjectNamespace<Sandbox>;
 };
 
 const isErrorLike = (error: unknown): error is Error =>
@@ -216,18 +218,23 @@ export const createToolFactory = <
       const context = contextFactory(State.getStore());
       context.tool = { name: def.name };
 
-      const result = await def.handler(props, context);
+      try {
+        const result = await def.handler(props, context);
 
-      if (!context.resourceAccess.granted()) {
-        console.warn(
-          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-        );
-        throw new ForbiddenError(
-          `User cannot access this tool ${def.name}.`,
-        );
+        if (!context.resourceAccess.granted()) {
+          console.warn(
+            `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+          );
+          throw new ForbiddenError(
+            `User cannot access this tool ${def.name}.`,
+          );
+        }
+
+        return result;
+      } catch (error) {
+        console.error(error);
+        throw error;
       }
-
-      return result;
     },
   };
 };

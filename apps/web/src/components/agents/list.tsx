@@ -463,6 +463,19 @@ function List() {
       agent.name.toLowerCase().includes(filter.toLowerCase())
     ) ?? [];
 
+  // Ordenação por uso recente
+  const recentIds = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("recentAgents") || "[]");
+    } catch {
+      return [];
+    }
+  })();
+  const agentsSorted = [
+    ...filteredAgents.filter((a) => recentIds.includes(a.id)).sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id)),
+    ...filteredAgents.filter((a) => !recentIds.includes(a.id)),
+  ];
+
   return (
     <div className="flex flex-col h-full gap-4 p-4">
       <ListPageHeader
@@ -484,12 +497,12 @@ function List() {
         view={{ viewMode, onChange: setViewMode }}
       />
 
-      {filteredAgents.length > 0
+      {agentsSorted.length > 0
         ? (
           <div className="flex-1 min-h-0 overflow-x-auto">
             {viewMode === "table"
-              ? <TableView agents={filteredAgents} />
-              : <CardsView agents={filteredAgents} />}
+              ? <TableView agents={agentsSorted} />
+              : <CardsView agents={agentsSorted} />}
           </div>
         )
         : (

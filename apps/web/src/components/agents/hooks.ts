@@ -16,6 +16,18 @@ export const useFocusChat = () => {
 
   const navigateToAgent = useCallback(
     (agentId: string, threadId: string, options?: AgentNavigationOptions) => {
+      // Atualiza lista de agents recentes no localStorage
+      const key = "recentAgents";
+      const stored = localStorage.getItem(key);
+      let recent: string[] = stored ? JSON.parse(stored) : [];
+      // Remove se já existe
+      recent = recent.filter((id) => id !== agentId);
+      // Adiciona no início
+      recent.unshift(agentId);
+      // Limita a 20
+      if (recent.length > 20) recent = recent.slice(0, 20);
+      localStorage.setItem(key, JSON.stringify(recent));
+
       // If history is false, disable fetching history for faster navigation
       if (options?.history === false) {
         updateMessages(threadId);

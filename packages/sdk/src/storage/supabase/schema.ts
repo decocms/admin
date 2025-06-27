@@ -414,6 +414,39 @@ export type Database = {
           },
         ];
       };
+      deco_chat_api_keys: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          enabled: boolean;
+          id: string;
+          name: string;
+          policies: Json | null;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          enabled?: boolean;
+          id?: string;
+          name: string;
+          policies?: Json | null;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          enabled?: boolean;
+          id?: string;
+          name?: string;
+          policies?: Json | null;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [];
+      };
       deco_chat_assets: {
         Row: {
           created_at: string;
@@ -780,7 +813,7 @@ export type Database = {
           accepted_at: string | null;
           created_at: string;
           phone: string;
-          trigger_id: string;
+          trigger_id: string | null;
           updated_at: string | null;
           user_id: string | null;
           wpp_message_id: string;
@@ -790,7 +823,7 @@ export type Database = {
           accepted_at?: string | null;
           created_at?: string;
           phone: string;
-          trigger_id: string;
+          trigger_id?: string | null;
           updated_at?: string | null;
           user_id?: string | null;
           wpp_message_id: string;
@@ -800,7 +833,7 @@ export type Database = {
           accepted_at?: string | null;
           created_at?: string;
           phone?: string;
-          trigger_id?: string;
+          trigger_id?: string | null;
           updated_at?: string | null;
           user_id?: string | null;
           wpp_message_id?: string;

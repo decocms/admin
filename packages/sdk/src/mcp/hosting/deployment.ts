@@ -64,6 +64,11 @@ export interface WranglerConfig {
   durable_objects?: {
     bindings?: { name: string; class_name: string }[];
   };
+  d1_databases?: {
+    database_name: string;
+    database_id?: string;
+    binding: string;
+  }[];
   queues?: {
     consumers?: {
       queue: string;
@@ -155,6 +160,7 @@ export async function deployToCloudflare(
     workflows,
     routes,
     triggers,
+    d1_databases,
     migrations,
   }: WranglerConfig,
   mainModule: string,
@@ -191,6 +197,11 @@ export async function deployToCloudflare(
       workflow_name: workflow.name,
       class_name: workflow.class_name,
       script_name: workflow.script_name,
+    })) ?? [],
+    ...d1_databases?.map((d1) => ({
+      type: "d1" as const,
+      name: d1.binding,
+      id: d1.database_id!,
     })) ?? [],
   ];
 

@@ -14,6 +14,7 @@ export * from "./wallet/stripe/webhook.ts";
 export { EMAIL_TOOLS } from "./email/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as agentAPI from "./agent/api.ts";
+import * as apiKeysAPI from "./api-keys/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
 import * as fsAPI from "./fs/api.ts";
@@ -138,6 +139,14 @@ export const WORKSPACE_TOOLS = [
   promptsAPI.listPrompts,
   promptsAPI.getPrompt,
   promptsAPI.searchPrompts,
+  apiKeysAPI.listApiKeys,
+  apiKeysAPI.createApiKey,
+  apiKeysAPI.getApiKey,
+  apiKeysAPI.updateApiKey,
+  apiKeysAPI.deleteApiKey,
+  apiKeysAPI.enableApiKey,
+  apiKeysAPI.disableApiKey,
+  apiKeysAPI.validateApiKey,
 ] as const;
 
 export const AGENT_TOOLS = [

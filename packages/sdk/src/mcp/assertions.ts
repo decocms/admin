@@ -63,6 +63,34 @@ export const assertWorkspaceResourceAccess = async (
 
   // agent tokens
   if ("aud" in user && user.aud === c.workspace.value) {
+    // scopes should be a space-separated list of resourcesAdd commentMore actions
+    if (
+      user.policies && !await c.authorization.canAccess(
+        user.policies,
+        slug,
+        resource,
+      )
+    ) {
+      throw new ForbiddenError(
+        `Cannot access ${resource} in workspace ${c.workspace.value}`,
+      );
+    }
+    // API keys
+    const [sub, id] = user.sub?.split(":") ?? [];
+    if (sub === "api-key") {
+      const { data, error } = await c.db.from("deco_chat_api_keys").select("*")
+        .eq("id", id)
+        .eq("enabled", true)
+        .maybeSingle();
+      if (error) {
+        throw new ForbiddenError(error.message);
+      }
+      if (!data) {
+        throw new ForbiddenError(
+          `Cannot access ${resource} in workspace ${c.workspace.value}`,
+        );
+      }
+    }
     return c.resourceAccess.grant();
   }
 

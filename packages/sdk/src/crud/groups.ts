@@ -15,6 +15,7 @@ export const WellKnownMcpGroups = {
   KnowledgeBase: "knowledge-base-",
   Email: "email-management",
   KnowledgeBaseManagement: "kb-management",
+  APIKeys: "api-keys-management",
 };
 
 export type WellKnownMcpGroup = keyof typeof WellKnownMcpGroups;

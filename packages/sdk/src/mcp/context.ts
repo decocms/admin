@@ -8,7 +8,11 @@ import type Cloudflare from "cloudflare";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import type { JWTPayload } from "../auth/jwt.ts";
-import type { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+import type {
+  AuthorizationClient,
+  Policy,
+  PolicyClient,
+} from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
 import type { WithTool } from "./assertions.ts";
@@ -16,10 +20,14 @@ import type { ResourceAccess } from "./auth/index.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
-export type AgentPrincipal = JWTPayload;
+
+export interface JWTPrincipal extends JWTPayload {
+  policies?: Pick<Policy, "statements">[];
+}
+
 export type Principal =
   | UserPrincipal
-  | AgentPrincipal;
+  | JWTPrincipal;
 export interface Vars {
   params: Record<string, string>;
   workspace?: {

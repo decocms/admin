@@ -420,14 +420,16 @@ export class AuthorizationClient {
    * Check if a user has access to a specific resource
    */
   public async canAccess(
-    userId: string,
+    userOrPolicies: string | Pick<Policy, "statements">[],
     teamIdOrSlug: number | string,
     resource: string,
   ): Promise<boolean> {
-    const policies = await this.policyClient.getUserPolicies(
-      userId,
-      teamIdOrSlug,
-    );
+    const policies = typeof userOrPolicies === "string"
+      ? await this.policyClient.getUserPolicies(
+        userOrPolicies,
+        teamIdOrSlug,
+      )
+      : userOrPolicies;
 
     if (!policies.length) {
       return false;

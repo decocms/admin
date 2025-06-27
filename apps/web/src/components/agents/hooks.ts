@@ -10,6 +10,9 @@ interface AgentNavigationOptions {
 const getChatPath = (agentId: string, threadId: string): string =>
   `/agent/${agentId}/${threadId}`;
 
+// Maximum number of recent agents to store
+export const MAX_RECENT_ITEMS = 20;
+
 export const useFocusChat = () => {
   const navigateWorkspace = useNavigateWorkspace();
   const updateMessages = useUpdateThreadMessages();
@@ -25,7 +28,7 @@ export const useFocusChat = () => {
       // Adiciona no início
       recent.unshift(agentId);
       // Limita a 20
-      if (recent.length > 20) recent = recent.slice(0, 20);
+      if (recent.length > MAX_RECENT_ITEMS) recent = recent.slice(0, MAX_RECENT_ITEMS);
       localStorage.setItem(key, JSON.stringify(recent));
 
       // If history is false, disable fetching history for faster navigation

@@ -96,7 +96,10 @@ export const useWorkflowStatus = (
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     refetchInterval: (query) => {
-      if (query.state.data?.status === "complete") {
+      if (
+        query.state.data?.status === "complete" ||
+        query.state.data?.status === "errored"
+      ) {
         return false;
       }
       return 1000; // Poll every 1 second by default

@@ -41,7 +41,18 @@ export const deploy = async (
   for await (
     const entry of walk(cwd, {
       includeDirs: false,
-      exts: [".ts", ".mjs", ".js", ".cjs", ".toml", ".json", ".css", ".html", ".txt", ".wasm"],
+      exts: [
+        ".ts",
+        ".mjs",
+        ".js",
+        ".cjs",
+        ".toml",
+        ".json",
+        ".css",
+        ".html",
+        ".txt",
+        ".wasm",
+      ],
     })
   ) {
     const realPath = relative(cwd, entry.path);

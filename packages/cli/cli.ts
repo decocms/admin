@@ -82,7 +82,7 @@ const hostingDeploy = new Command()
     const config = await getConfig({
       inlineOptions: args,
     });
-    return deploy({ ...config, skipConfirmation: args.yes, cwd});
+    return deploy({ ...config, skipConfirmation: args.yes, cwd });
   });
 
 const linkCmd = new Command()

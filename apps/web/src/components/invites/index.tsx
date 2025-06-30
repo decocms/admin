@@ -13,9 +13,6 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
@@ -143,8 +140,6 @@ function InvitesListSkeleton() {
 }
 
 function InvitesListEmpty() {
-  const navigate = useNavigate();
-
   return (
     <div className="flex flex-col gap-4 h-full p-4">
       <ListPageHeader

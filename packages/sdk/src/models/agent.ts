@@ -97,7 +97,6 @@ export const AgentSchema = z.object({
   ),
 });
 
-// Zod schema for MCPConnection
 const MCPConnectionSchema = z.discriminatedUnion("type", [
   HTTPConnectionSchema,
   SSEConnectionSchema,
@@ -106,12 +105,12 @@ const MCPConnectionSchema = z.discriminatedUnion("type", [
   InnateConnectionSchema,
 ]);
 
-export const Toolset = z.object({
+export const ToolsetSchema = z.object({
   connection: MCPConnectionSchema,
   filters: z.array(z.string()).optional(),
 });
 
-export type Toolset = z.infer<typeof Toolset>;
+export type Toolset = z.infer<typeof ToolsetSchema>;
 
 export const AgentGenerateOptions = z.object({
   instructions: z.string().optional(),
@@ -122,7 +121,7 @@ export const AgentGenerateOptions = z.object({
   resourceId: z.string().optional(),
   enableSemanticRecall: z.boolean().optional(),
   maxSteps: z.number().optional(),
-  toolsets: z.array(Toolset).optional(),
+  toolsets: z.array(ToolsetSchema).optional(),
 });
 
 export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;

@@ -1,7 +1,4 @@
-import type {
-  WorkflowStep,
-  WorkflowStepAttempt
-} from "@deco/sdk";
+import type { WorkflowStep, WorkflowStepAttempt } from "@deco/sdk";
 import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";

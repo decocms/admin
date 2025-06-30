@@ -17,6 +17,7 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 function WorkflowsCardView(
   { workflows, onClick }: {
@@ -132,7 +133,7 @@ function WorkflowsTableView(
 
 function WorkflowsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
+  const [viewMode, setViewMode] = useViewMode();
   const [filter, setFilter] = useState("");
   const page = Number(searchParams.get("page") || 1);
   const per_page = Number(searchParams.get("per_page") || 10);

@@ -12,6 +12,7 @@ import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 function AppCard({
   app,
@@ -157,7 +158,7 @@ function TableView(
 }
 
 export function ConnectedAppsList() {
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useViewMode();
   const [filter, setFilter] = useState<string>("");
   const navigateWorkspace = useNavigateWorkspace();
   const apps = useGroupedApps({

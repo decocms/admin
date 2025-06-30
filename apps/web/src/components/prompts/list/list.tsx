@@ -31,6 +31,7 @@ import { EmptyState } from "../../common/empty-state.tsx";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Header } from "./common.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 interface ListState {
   filter: string;
@@ -294,7 +295,7 @@ function TableView(
 
 function ListPrompts() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useViewMode();
   const { data: prompts } = usePrompts();
   const create = useCreatePrompt();
   const deletePrompt = useDeletePrompt();

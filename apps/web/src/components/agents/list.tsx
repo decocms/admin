@@ -57,6 +57,7 @@ import { IntegrationIcon } from "../integrations/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useFocusChat } from "./hooks.ts";
 import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);
@@ -440,7 +441,7 @@ function List() {
   const { handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useViewMode();
   const { value: visibility, update: setVisibility } = useLocalStorage<
     Visibility
   >({ key: "agents-visibility", defaultValue: "all" });

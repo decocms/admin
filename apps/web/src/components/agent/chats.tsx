@@ -65,7 +65,7 @@ function Page() {
 
       return {
         connection: {
-          type: connectionType,
+          type: connectionType as "HTTP" | "SSE",
           url: mcpUrl,
         },
         filters: [],

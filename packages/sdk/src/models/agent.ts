@@ -1,12 +1,11 @@
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
-import type { MCPConnection } from "./mcp.ts";
-import { 
-  SSEConnectionSchema, 
-  WebsocketConnectionSchema, 
-  DecoConnectionSchema, 
-  InnateConnectionSchema, 
-  HTTPConnectionSchema 
+import {
+  DecoConnectionSchema,
+  HTTPConnectionSchema,
+  InnateConnectionSchema,
+  SSEConnectionSchema,
+  WebsocketConnectionSchema,
 } from "./mcp.ts";
 
 const wellKnownModelIds = [

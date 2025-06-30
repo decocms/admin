@@ -99,7 +99,7 @@ import type {
   Toolset,
 } from "./types.ts";
 import type { TextPart } from "ai";
-import { type MCPConnection } from "../../sdk/src/index.ts";
+import type { MCPConnection } from "../../sdk/src/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -138,7 +138,11 @@ const normalizeMCPId = (mcpId: string | MCPConnection) => {
       : mcpId;
   }
 
-  return decodeURIComponent(mcpId.url);
+  if ("url" in mcpId) {
+    return decodeURIComponent(mcpId.url);
+  }
+
+  return crypto.randomUUID();
 };
 
 const NON_SERIALIZABLE_FIELDS = ["WALLET"];
@@ -290,31 +294,27 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     }
   }
   protected async _getOrCreateCallableToolSet(
-    connectionInput: string | MCPConnection,
+    connection: string | MCPConnection,
     signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
-    const [mcpId, connection] = typeof connectionInput === "string"
+    const [mcpId, integration] = typeof connection === "string"
       ? [
-        connectionInput,
+        connection,
         await this.metadata?.mcpClient?.INTEGRATIONS_GET({
-          id: connectionInput,
+          id: connection,
         }),
       ]
-      : [normalizeMCPId(connectionInput), connectionInput];
+      : [normalizeMCPId(connection), {
+        connection,
+      }];
 
-    if (!connection) {
+    if (!integration) {
       console.log("integration not found", mcpId);
       return null;
     }
 
-    const integration = {
-      connection,
-      name: mcpId,
-      id: mcpId,
-    };
-
     const serverTools = await mcpServerTools(
-      { ...integration, id: mcpId },
+      { ...integration, id: mcpId, name: mcpId },
       this,
       signal,
       this.env as any,

@@ -32,6 +32,7 @@ export const Entrypoint = {
     return null;
   },
 };
+
 // Zod schemas for input
 const AppSchema = z.object({
   slug: z.string().optional(), // defaults to 'default'

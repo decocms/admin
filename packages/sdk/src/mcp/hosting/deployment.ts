@@ -4,7 +4,43 @@ import { type AppContext, getEnv } from "../context.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
+import { WorkspaceMemory } from "../../memory/memory.ts";
+import type { SettingGetResponse } from "cloudflare/resources/workers-for-platforms/dispatch/namespaces/scripts";
+
 const METADATA_FILE_NAME = "metadata.json";
+async function memoryDatabase(c: AppContext) {
+  assertHasWorkspace(c);
+  return await WorkspaceMemory.ref({
+    workspace: c.workspace.value,
+    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
+    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
+  });
+}
+
+const DECO_CHAT_MEMORY_DB_URL = "DECO_CHAT_MEMORY_DB_URL";
+const DECO_CHAT_MEMORY_DB_AUTH_TOKEN = "DECO_CHAT_MEMORY_DB_AUTH_TOKEN";
+
+async function memoryBindings(
+  c: AppContext,
+  bindings: SettingGetResponse["bindings"],
+): Promise<Record<string, string>> {
+  const found: Record<string, boolean> = {};
+  for (const binding of bindings ?? []) {
+    if (
+      binding.type === "secret_text"
+    ) {
+      found[binding.name] = true;
+    }
+  }
+  if (found[DECO_CHAT_MEMORY_DB_URL] && found[DECO_CHAT_MEMORY_DB_AUTH_TOKEN]) {
+    return {};
+  }
+  const { url, authToken } = await memoryDatabase(c);
+  return {
+    [DECO_CHAT_MEMORY_DB_URL]: url,
+    [DECO_CHAT_MEMORY_DB_AUTH_TOKEN]: authToken,
+  };
+}
 
 export interface MigrationBase {
   tag: string;
@@ -171,7 +207,7 @@ export async function deployToCloudflare(
 ): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
-  const envVars = {
+  let envVars = {
     ..._envVars,
     ...vars,
   };
@@ -253,6 +289,13 @@ export async function deployToCloudflare(
     }).catch(() => ({
       bindings: [],
     }));
+
+  const memoryBindingsEnvVars = await memoryBindings(c, bindings);
+
+  envVars = {
+    ...envVars,
+    ...memoryBindingsEnvVars,
+  };
 
   const doMigrations = migrationDiff(
     migrations ?? [],

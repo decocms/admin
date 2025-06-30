@@ -36,6 +36,24 @@ export class WorkspaceMemory extends MastraMemory {
     }
   }
 
+  // returns the database url and auth token for the memory
+  static ref({
+    workspace,
+    tursoAdminToken,
+    tursoOrganization,
+    tokenStorage,
+    discriminator,
+  }: CreateWorkspaceMemoryOpts) {
+    const memoryId = buildMemoryId(workspace, discriminator);
+
+    const libsqlFactory = new LibSQLFactory({
+      tursoAdminToken,
+      tursoOrganization,
+      tokenStorage,
+    });
+    return libsqlFactory.database(memoryId);
+  }
+
   static async buildWorkspaceMemoryOpts({
     workspace,
     tursoAdminToken,

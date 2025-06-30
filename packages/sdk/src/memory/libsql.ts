@@ -13,7 +13,7 @@ import * as uuid from "uuid";
 
 const sf = singleFlight();
 export interface TokenStorage {
-  getToken(memoryId: string): Promise<string>;
+  getToken(memoryId: string): Promise<string | undefined>;
   setToken(memoryId: string, token: string): Promise<void>;
 }
 
@@ -87,7 +87,7 @@ type AdminToken = string;
 export interface LibSQLFactoryOpts {
   tursoAdminToken: string;
   tursoOrganization: string;
-  tokenStorage: TokenStorage | AdminToken;
+  tokenStorage?: TokenStorage | AdminToken;
 }
 
 type TursoAPIClient = ReturnType<typeof createTursoAPIClient>;
@@ -109,7 +109,7 @@ export class LibSQLFactory {
     });
   }
 
-  private async database(
+  public async database(
     memoryId: string,
   ): Promise<{ url: string; authToken: string; created: boolean }> {
     const uniqueDbName = uuid.v5(`${memoryId}-${TURSO_GROUP}`, uuid.v5.URL);
@@ -117,12 +117,12 @@ export class LibSQLFactory {
       if (typeof this.opts.tokenStorage === "string") {
         return this.opts.tokenStorage;
       }
-      const token = await this.opts.tokenStorage.getToken(uniqueDbName);
+      const token = await this.opts.tokenStorage?.getToken?.(uniqueDbName);
       if (token && !regenerate) {
         return token;
       }
       const newToken = await this.turso.databases.createToken(uniqueDbName);
-      await this.opts.tokenStorage.setToken(uniqueDbName, newToken.jwt);
+      await this.opts.tokenStorage?.setToken?.(uniqueDbName, newToken.jwt);
       return newToken.jwt;
     };
 

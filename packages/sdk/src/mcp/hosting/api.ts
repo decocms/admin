@@ -226,6 +226,23 @@ async function updateDatabase(
   return Mappers.toApp(app);
 }
 
+const MIME_TYPES: Record<string, string> = {
+  "js": "application/javascript+module",
+  "mjs": "application/javascript+module",
+  "ts": "application/javascript+module",
+  "json": "application/json",
+  "wasm": "application/wasm",
+  "css": "text/css",
+  "html": "text/html",
+  "txt": "text/plain",
+  "toml": "text/plain",
+};
+
+const getMimeType = (path: string): string => {
+  const ext = path.split(".").pop()?.toLowerCase() ?? "txt";
+  return MIME_TYPES[ext] ?? "text/plain";
+};
+
 let created = false;
 const createNamespaceOnce = async (c: AppContext) => {
   if (created) return;
@@ -477,15 +494,10 @@ Important Notes:
         ),
       };
     } else {
-      // Use files as-is
       fileObjects = Object.fromEntries(
         Object.entries(filesRecord).map(([path, content]) => [
           path,
-          new File(
-            [content],
-            path,
-            { type: "application/javascript+module" },
-          ),
+          new File([content], path, { type: getMimeType(path) }),
         ]),
       );
     }

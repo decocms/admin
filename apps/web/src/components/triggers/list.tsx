@@ -1,6 +1,6 @@
 import { useListTriggers } from "@deco/sdk";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -20,12 +20,12 @@ import { TriggerToggle } from "./trigger-toggle.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useAgents } from "@deco/sdk";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 
 type SortKey = typeof SORTABLE_KEYS[number];
 type SortDirection = "asc" | "desc";
-type ViewMode = "table" | "cards";
 
 function ListTriggersSkeleton() {
   return (
@@ -106,26 +106,7 @@ export function ListTriggers() {
 function ListTriggersSuspended() {
   const { data, isLoading } = useListTriggers();
   const [search, setSearch] = useState("");
-  
-  // Default to cards on mobile, table on desktop
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768 ? "cards" : "table";
-    }
-    return "cards";
-  });
-
-  // Update view mode based on screen size changes
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768 && viewMode === "table") {
-        setViewMode("cards");
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [viewMode]);
+  const [viewMode, setViewMode] = useViewMode();
 
   const triggers = (data?.triggers || []) as z.infer<
     typeof TriggerOutputSchema

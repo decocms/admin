@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import {
@@ -23,8 +23,7 @@ import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
-
-type ViewMode = "table" | "cards";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 function InviteCard({ 
   invite, 
@@ -176,26 +175,7 @@ function InvitesListContent() {
   const [sortKey, setSortKey] = useState<string>("teamName");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [loadingStates, setLoadingStates] = useState<Record<string, "accept" | "reject" | null>>({});
-  
-  // Default to cards on mobile, table on desktop
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768 ? "cards" : "table";
-    }
-    return "cards";
-  });
-
-  // Update view mode based on screen size changes
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768 && viewMode === "table") {
-        setViewMode("cards");
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [viewMode]);
+  const [viewMode, setViewMode] = useViewMode();
 
   const filteredInvites = search.trim().length > 0
     ? invites.filter((invite) =>

@@ -1,7 +1,6 @@
 import type {
-  WorkflowStatusResult,
   WorkflowStep,
-  WorkflowStepAttempt,
+  WorkflowStepAttempt
 } from "@deco/sdk";
 import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";

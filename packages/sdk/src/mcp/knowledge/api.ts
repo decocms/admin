@@ -241,10 +241,10 @@ export const search = createKnowledgeBaseTool({
         comparison ($eq, $ne, $gt, $gte, $lt, $lte), array ($in, $nin), logical ($and, $or), and existence ($exists).
         Only returns documents whose metadata matches the specified filter conditions.
         Examples:
-        {"category": "documents"},
-        {"priority": {"$gte": 3}},
-        {"status": {"$in": ["active", "pending"]}},
-        {"$and": [{"type": "pdf"}, {"size": {"$lt": 1000}}]}`,
+        { "metadata": {{"category": "documents"}},
+        { "metadata": {{"priority": {"$gte": 3}}},
+        { "metadata": {{"status": {"$in": ["active", "pending"]}}},
+        { "metadata": {{"$and": [{"type": "pdf"}, {"size": {"$lt": 1000}}]}}}`,
     ).optional(),
   }),
   handler: async ({ query, topK, filter }, c) => {

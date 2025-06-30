@@ -199,7 +199,7 @@ function InvitesListContent() {
   const handleAccept = async (inviteId: string) => {
     setLoadingStates((prev) => ({ ...prev, [inviteId]: "accept" }));
     try {
-      const result = await acceptInviteMutation.mutateAsync(inviteId);
+      const result = await acceptInviteMutation.mutateAsync({ id: inviteId });
 
       if (!result.teamId) {
         toast.error("Failed to get team information");
@@ -225,7 +225,7 @@ function InvitesListContent() {
   const handleReject = async (inviteId: string) => {
     setLoadingStates((prev) => ({ ...prev, [inviteId]: "reject" }));
     try {
-      await rejectInviteMutation.mutateAsync(inviteId);
+      await rejectInviteMutation.mutateAsync({ id: inviteId });
       toast.success("Invitation rejected");
     } catch (error) {
       console.error("Reject invitation error:", error);

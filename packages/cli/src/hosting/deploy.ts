@@ -2,6 +2,7 @@ import { Confirm } from "@cliffy/prompt";
 import { walk } from "@std/fs";
 import { createWorkspaceClient } from "../mcp.ts";
 import { getCurrentEnvVars } from "../wrangler.ts";
+import { relative } from "@std/path/relative";
 
 export type FileLike = {
   path: string;
@@ -9,6 +10,7 @@ export type FileLike = {
 };
 
 interface Options {
+  cwd: string;
   workspace: string;
   app: string;
   local: boolean;
@@ -16,56 +18,52 @@ interface Options {
 }
 
 export const deploy = async (
-  { workspace, app: appSlug, local, skipConfirmation }: Options,
+  { cwd, workspace, app: appSlug, local, skipConfirmation }: Options,
 ) => {
-  const rootDir = Deno.cwd();
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
-  // 1. Run wrangler deploy --dry-run --outdir dist
-  const wranglerCmd = new Deno.Command("wrangler", {
-    args: ["deploy", "--dry-run", "--outdir", "dist"],
-    cwd: rootDir,
-    stdout: "null",
-    stderr: "null",
-  });
-  const wranglerResult = await wranglerCmd.output();
-  if (wranglerResult.code !== 0) {
-    throw new Error("wrangler deploy --dry-run failed");
-  }
-
-  // 2. Prepare files to upload: all files in dist/ and wrangler.toml (if exists)
+  // 1. Prepare files to upload: all files in dist/ and wrangler.toml (if exists)
   const files: FileLike[] = [];
-  const distDir = `${rootDir}/dist`;
+  let hasTsFile = false;
 
-  // Recursively walk dist/ and add all files
+  // Recursively walk cwd/ and add all files
   for await (
-    const entry of walk(distDir, {
+    const entry of walk(cwd, {
       includeDirs: false,
       exts: [".ts", ".mjs", ".js", ".cjs", ".toml", ".json", ".css", ".html"],
     })
   ) {
-    const relPath = entry.path.slice(distDir.length + 1);
+    const realPath = relative(cwd, entry.path);
     const content = await Deno.readTextFile(entry.path);
-    files.push({ path: relPath, content });
+    files.push({ path: realPath, content });
+    if (realPath.endsWith(".ts")) {
+      hasTsFile = true;
+    }
   }
 
-  // wrangler.toml (optional)
+  // 2. wrangler.toml (optional)
   let wranglerTomlStatus = "";
+  let wranglerTomlPath = `${cwd}/wrangler.toml`;
   try {
-    const wranglerTomlContent = await Deno.readTextFile(
-      `${rootDir}/wrangler.toml`,
-    );
+    const wranglerTomlContent = await Deno.readTextFile(wranglerTomlPath);
     files.push({ path: "wrangler.toml", content: wranglerTomlContent });
-    wranglerTomlStatus = "wrangler.toml ✅";
+    wranglerTomlStatus = `wrangler.toml ✅ (found in ${wranglerTomlPath})`;
   } catch (_) {
-    // Not present, skip
-    wranglerTomlStatus = "wrangler.toml ❌";
+    // Not found in cwd, try Deno.cwd()
+    wranglerTomlPath = `${Deno.cwd()}/wrangler.toml`;
+    try {
+      const wranglerTomlContent = await Deno.readTextFile(wranglerTomlPath);
+      files.push({ path: "wrangler.toml", content: wranglerTomlContent });
+      wranglerTomlStatus = `wrangler.toml ✅ (found in ${wranglerTomlPath})`;
+    } catch (_) {
+      wranglerTomlStatus = "wrangler.toml ❌";
+    }
   }
 
   // 3. Load envVars from .dev.vars
-  const envVars = await getCurrentEnvVars(rootDir);
+  const envVars = await getCurrentEnvVars(cwd);
 
-  const manifest = { appSlug, files, envVars, bundle: false };
+  const manifest = { appSlug, files, envVars, bundle: hasTsFile };
 
   console.log("🚚 Deployment summary:");
   console.log(`  App: ${appSlug}`);

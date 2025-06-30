@@ -76,11 +76,13 @@ const hostingDeploy = new Command()
   })
   .option("-a, --app <app:string>", "App name", { required: false })
   .option("-y, --yes", "Skip confirmation", { required: false })
-  .action(async (args) => {
+  .arguments("[cwd:string]")
+  .action(async (args, folder) => {
+    const cwd = folder ?? Deno.cwd();
     const config = await getConfig({
       inlineOptions: args,
     });
-    return deploy({ ...config, skipConfirmation: args.yes });
+    return deploy({ ...config, skipConfirmation: args.yes, cwd});
   });
 
 const linkCmd = new Command()

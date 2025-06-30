@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { Actor } from "@deco/actors";
-import type { GenerateOptions, StreamOptions } from "@deco/sdk/models";
+import type { GenerateOptions, StreamOptions, Toolset } from "@deco/sdk/models";
 import type { StorageThreadType } from "@mastra/core";
 import type {
   GenerateObjectResult,
@@ -9,9 +9,8 @@ import type {
   Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
-import { type MCPConnection } from "../../sdk/src/index.ts";
 export type { TriggerData } from "./triggers/trigger.ts";
-export type { GenerateOptions, StreamOptions };
+export type { GenerateOptions, StreamOptions, Toolset };
 
 /**
  * Represents a tool that can be used by an AI agent
@@ -48,31 +47,6 @@ export interface ThreadQueryOptions {
  * Represents a thread in the memory
  */
 export type Thread = StorageThreadType;
-
-export interface GenerateOptions {
-  instructions?: string;
-  model?: string;
-  tools?: Record<string, string[]>;
-  lastMessages?: number;
-  bypassOpenRouter?: boolean;
-  threadId?: string;
-  resourceId?: string;
-  enableSemanticRecall?: boolean;
-  toolsets?: Toolset[];
-}
-
-export interface Toolset {
-  connection: MCPConnection;
-  filters: string[];
-}
-
-export interface StreamOptions extends GenerateOptions {
-  sendReasoning?: boolean;
-  smoothStream?: {
-    delayInMs: number;
-    chunking: "word" | "line";
-  };
-}
 
 /**
  * Interface for an AI agent that can generate responses and use tools

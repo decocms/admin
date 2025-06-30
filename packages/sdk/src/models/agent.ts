@@ -1,5 +1,13 @@
 import { z } from "zod";
 import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../constants.ts";
+import type { MCPConnection } from "./mcp.ts";
+import { 
+  SSEConnectionSchema, 
+  WebsocketConnectionSchema, 
+  DecoConnectionSchema, 
+  InnateConnectionSchema, 
+  HTTPConnectionSchema 
+} from "./mcp.ts";
 
 const wellKnownModelIds = [
   ...WELL_KNOWN_MODELS.map((m) => m.id),
@@ -90,6 +98,22 @@ export const AgentSchema = z.object({
   ),
 });
 
+// Zod schema for MCPConnection
+const MCPConnectionSchema = z.discriminatedUnion("type", [
+  HTTPConnectionSchema,
+  SSEConnectionSchema,
+  WebsocketConnectionSchema,
+  DecoConnectionSchema,
+  InnateConnectionSchema,
+]);
+
+export const Toolset = z.object({
+  connection: MCPConnectionSchema,
+  filters: z.array(z.string()).optional(),
+});
+
+export type Toolset = z.infer<typeof Toolset>;
+
 export const AgentGenerateOptions = z.object({
   instructions: z.string().optional(),
   model: z.string().optional(),
@@ -99,6 +123,7 @@ export const AgentGenerateOptions = z.object({
   resourceId: z.string().optional(),
   enableSemanticRecall: z.boolean().optional(),
   maxSteps: z.number().optional(),
+  toolsets: z.array(Toolset).optional(),
 });
 
 export type GenerateOptions = z.infer<typeof AgentGenerateOptions>;

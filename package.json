@@ -47,7 +47,8 @@
     "jsxImportSource": "react"
   },
   "exclude": [
-    ".github/"
+    ".github/",
+    "**/.wrangler"
   ],
   "unstable": [
     "kv"

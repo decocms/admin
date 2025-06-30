@@ -417,11 +417,14 @@ Important Notes:
     envVars: z.record(z.string(), z.string()).optional().describe(
       "An optional object of environment variables to be set on the worker",
     ),
+    bundle: z.boolean().optional().default(true).describe(
+      "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
+    ),
   }),
-  handler: async ({ appSlug: _appSlug, files, envVars }, c) => {
+  handler: async ({ appSlug: _appSlug, files, envVars, bundle = true }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    // Convert array to record for bundler
+    // Convert array to record for bundler or direct upload
     const filesRecord = files.reduce((acc, file) => {
       acc[file.path] = file.content;
       return acc;
@@ -462,18 +465,30 @@ Important Notes:
     const workspace = c.workspace.value;
     const scriptSlug = appSlug;
 
-    // Bundle the files
-    const bundledScript = await bundler(filesRecord, entrypoint);
-
-    const fileObjects = {
-      [SCRIPT_FILE_NAME]: new File(
-        [bundledScript],
-        SCRIPT_FILE_NAME,
-        {
-          type: "application/javascript+module",
-        },
-      ),
-    };
+    let fileObjects: Record<string, File>;
+    if (bundle) {
+      // Bundle the files
+      const bundledScript = await bundler(filesRecord, entrypoint);
+      fileObjects = {
+        [SCRIPT_FILE_NAME]: new File(
+          [bundledScript],
+          SCRIPT_FILE_NAME,
+          { type: "application/javascript+module" },
+        ),
+      };
+    } else {
+      // Use files as-is
+      fileObjects = Object.fromEntries(
+        Object.entries(filesRecord).map(([path, content]) => [
+          path,
+          new File(
+            [content],
+            path,
+            { type: "application/javascript+module" },
+          ),
+        ]),
+      );
+    }
 
     const appEnvVars = {
       DECO_CHAT_WORKSPACE: workspace,
@@ -490,7 +505,7 @@ Important Notes:
     const result = await deployToCloudflare(
       c,
       wranglerConfig,
-      SCRIPT_FILE_NAME,
+      bundle ? SCRIPT_FILE_NAME : entrypoint,
       fileObjects,
       { ...envVars, ...appEnvVars },
     );

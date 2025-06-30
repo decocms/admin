@@ -13,7 +13,7 @@ interface ProcessedDocument {
   content: string;
   chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>["chunk"]>>;
   metadata: {
-    fileType: string;
+    fileType: FileExt;
     fileSize: number;
     chunkCount: number;
     fileHash: string;

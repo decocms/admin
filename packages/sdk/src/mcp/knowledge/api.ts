@@ -236,8 +236,18 @@ export const search = createKnowledgeBaseTool({
     query: z.string().describe("The query to search the knowledge base"),
     topK: z.number().describe("The number of results to return").optional(),
     content: z.boolean().describe("Whether to return the content").optional(),
+    filter: z.record(z.string(), z.any()).describe(
+      `Filters to match against document metadata and narrow search results. Supports MongoDB-style query operators:
+        comparison ($eq, $ne, $gt, $gte, $lt, $lte), array ($in, $nin), logical ($and, $or), and existence ($exists).
+        Only returns documents whose metadata matches the specified filter conditions.
+        Examples:
+        {"category": "documents"},
+        {"priority": {"$gte": 3}},
+        {"status": {"$in": ["active", "pending"]}},
+        {"$and": [{"type": "pdf"}, {"size": {"$lt": 1000}}]}`,
+    ).optional(),
   }),
-  handler: async ({ query, topK }, c) => {
+  handler: async ({ query, topK, filter }, c) => {
     assertHasWorkspace(c);
     if (!c.envVars.OPENAI_API_KEY) {
       throw new InternalServerError("Missing OPENAI_API_KEY");
@@ -258,6 +268,7 @@ export const search = createKnowledgeBaseTool({
       indexName,
       queryVector: embedding,
       topK: topK ?? 1,
+      filter,
     }) ?? { results: [] };
   },
 });

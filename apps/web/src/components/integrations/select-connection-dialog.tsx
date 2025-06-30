@@ -17,17 +17,45 @@ import {
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
 import { type Integration, useInstallFromMarketplace } from "@deco/sdk";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { IntegrationIcon } from "./common.tsx";
-import {
-  useNavigateWorkspace,
-  useWorkspaceLink,
-} from "../../hooks/use-navigate-workspace.ts";
-import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
+
+type ConnectionsDialogEvent = {
+  type: "select_connections";
+  integrations: Integration[];
+} | {
+  type: "start_oauth";
+  integration: MarketplaceIntegration;
+};
+
+type onEvent = (e: ConnectionsDialogEvent) => void | Promise<void>;
+
+type AddConnectionDialogContentProps = {
+  title?: string;
+  filter?: (integration: Integration) => boolean;
+  forceTab?: "my-connections" | "new-connection";
+  myConnectionsEmptyState?: React.ReactNode;
+  onEvent: onEvent;
+};
+
+type SelectConnectionDialogProps = AddConnectionDialogContentProps & {
+  trigger?: React.ReactNode;
+};
+
+export function useOAuthInstall() {
+  const [installingIntegration, setInstallingIntegration] = useState<
+    MarketplaceIntegration | null
+  >(null);
+
+  return {
+    installingIntegration,
+    setInstallingIntegration,
+  };
+}
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -156,50 +184,66 @@ export function ConfirmMarketplaceInstallDialog({
 function AddConnectionDialogContent({
   title = "Add integration",
   filter,
-  onSelect,
   forceTab,
   myConnectionsEmptyState,
-}: {
-  title?: string;
-  filter?: (integration: Integration) => boolean;
-  onSelect?: (integration: Integration) => void;
-  forceTab?: "my-connections" | "new-connection";
-  myConnectionsEmptyState?: React.ReactNode;
-}) {
+  onEvent,
+}: AddConnectionDialogContentProps) {
   const [_tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
   );
   const tab = forceTab ?? _tab;
   const [search, setSearch] = useState("");
   const createCustomConnection = useCreateCustomConnection();
-  const [installingIntegration, setInstallingIntegration] = useState<
-    MarketplaceIntegration | null
-  >(null);
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
-    open: boolean;
-    url: string;
-    integrationName: string;
-  }>({ open: false, url: "", integrationName: "" });
+  const [selectedConnections, setSelectedConnections] = useState<Integration[]>(
+    [],
+  );
   const showEmptyState = search.length > 0;
+
+  const handleConnectionSelect = (integration: Integration) => {
+    setSelectedConnections((prev) => {
+      const isSelected = prev.some((conn) => conn.id === integration.id);
+      if (isSelected) {
+        return prev.filter((conn) => conn.id !== integration.id);
+      } else {
+        return [...prev, integration];
+      }
+    });
+  };
+
+  const handleConfirmMultiple = () => {
+    onEvent({
+      type: "select_connections",
+      integrations: selectedConnections,
+    });
+  };
+
+  const isConnectionSelected = (integration: Integration) => {
+    return selectedConnections.some((conn) => conn.id === integration.id);
+  };
 
   return (
     <DialogContent
       className="p-0 min-w-[80vw] min-h-[80vh] gap-0"
       closeButtonClassName="top-5 right-4"
     >
-      <DialogHeader className="flex flex-row items-center p-2 h-auto px-5 pt-8 pb-2">
+      <DialogHeader className="flex flex-row items-center p-4 h-auto">
         <DialogTitle className="text-left w-full">{title}</DialogTitle>
       </DialogHeader>
       {!forceTab && (
         <div className="flex justify-center w-full mt-2 mb-4">
           <Tabs
             value={tab}
-            onValueChange={(v) => setTab(v as "my-connections" | "new-connection")}
+            onValueChange={(v) =>
+              setTab(v as "my-connections" | "new-connection")}
             className="w-fit"
           >
             <TabsList>
-              <TabsTrigger value="new-connection" className="w-48">New integration</TabsTrigger>
-              <TabsTrigger value="my-connections" className="w-48">Connected</TabsTrigger>
+              <TabsTrigger value="new-connection" className="w-48">
+                New integration
+              </TabsTrigger>
+              <TabsTrigger value="my-connections" className="w-48">
+                Connected
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -240,7 +284,10 @@ function AddConnectionDialogContent({
                   await createCustomConnection();
                   return;
                 }
-                setInstallingIntegration(integration);
+                onEvent({
+                  type: "start_oauth",
+                  integration,
+                });
               }}
             />
           )}
@@ -272,57 +319,35 @@ function AddConnectionDialogContent({
                           await createCustomConnection();
                           return;
                         }
-                        setInstallingIntegration(integration);
+                        onEvent({
+                          type: "start_oauth",
+                          integration,
+                        });
                       }}
                     />
                   </div>
                 )
                 : null}
               filter={filter}
-              onClick={(integration) => onSelect?.(integration)}
+              onClick={handleConnectionSelect}
+              isSelected={isConnectionSelected}
             />
           )}
         </div>
       </div>
-      <ConfirmMarketplaceInstallDialog
-        integration={installingIntegration}
-        setIntegration={setInstallingIntegration}
-        onConfirm={({ connection, authorizeOauthUrl }) => {
-          onSelect?.(connection);
-          if (authorizeOauthUrl) {
-            const popup = globalThis.open(
-              authorizeOauthUrl,
-              "_blank",
-            );
-            if (!popup || popup.closed || typeof popup.closed === "undefined") {
-              setOauthCompletionDialog({
-                open: true,
-                url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
-              });
-            }
-          }
-        }}
-      />
-
-      <OAuthCompletionDialog
-        open={oauthCompletionDialog.open}
-        onOpenChange={(open) =>
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
-        authorizeOauthUrl={oauthCompletionDialog.url}
-        integrationName={oauthCompletionDialog.integrationName}
-      />
+      {tab === "my-connections" && selectedConnections.length > 0 && (
+        <DialogFooter className="p-2 absolute bottom-0 left-0 right-0 border-t bg-background rounded-b-xl">
+          <Button
+            onClick={handleConfirmMultiple}
+            disabled={selectedConnections.length === 0}
+          >
+            Select {selectedConnections.length}{" "}
+            connection{selectedConnections.length !== 1 ? "s" : ""}
+          </Button>
+        </DialogFooter>
+      )}
     </DialogContent>
   );
-}
-
-interface SelectConnectionDialogProps {
-  trigger?: React.ReactNode;
-  title?: string;
-  filter?: (integration: Integration) => boolean;
-  onSelect?: (integration: Integration) => void;
-  forceTab?: "my-connections" | "new-connection";
-  myConnectionsEmptyState?: React.ReactNode;
 }
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
@@ -349,8 +374,8 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
         filter={props.filter}
         forceTab={props.forceTab}
         myConnectionsEmptyState={props.myConnectionsEmptyState}
-        onSelect={(integration) => {
-          props.onSelect?.(integration);
+        onEvent={(e) => {
+          props.onEvent(e);
           setIsOpen(false);
         }}
       />

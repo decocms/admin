@@ -1,3 +1,4 @@
+import type { UseSuspenseQueryResult } from "@tanstack/react-query";
 import {
   useMutation,
   useQueryClient,
@@ -19,7 +20,6 @@ import {
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
-import type { UseSuspenseQueryResult } from "@tanstack/react-query";
 
 export const useWorkflows = (page = 1, per_page = 10) => {
   const { workspace } = useSDK();
@@ -95,6 +95,12 @@ export const useWorkflowStatus = (
       getWorkflowStatus(workspace, { workflowName, instanceId }, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
+    refetchInterval: (query) => {
+      if (query.state.data?.status === "complete") {
+        return false;
+      }
+      return 1000; // Poll every 1 second by default
+    },
   });
 };
 

@@ -308,9 +308,7 @@ function StepCard(
 
 function InstanceDetailTab() {
   const { workflowName = "", instanceId = "" } = useParams();
-  const { data } = useWorkflowStatus(workflowName, instanceId) as {
-    data: WorkflowStatusResult;
-  };
+  const { data } = useWorkflowStatus(workflowName, instanceId);
 
   const status = data.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);

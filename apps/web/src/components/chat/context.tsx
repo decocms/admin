@@ -19,7 +19,7 @@ import {
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { IMAGE_REGEXP, openPreviewPanel } from "./utils/preview.ts";
-import { Toolset } from "../../../../../packages/ai/src/types.ts";
+import { type Toolset } from "../../../../../packages/ai/src/types.ts";
 
 const setAutoScroll = (e: HTMLDivElement | null, enabled: boolean) => {
   if (!e) return;

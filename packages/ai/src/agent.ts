@@ -99,7 +99,7 @@ import type {
   Toolset,
 } from "./types.ts";
 import type { TextPart } from "ai";
-import { MCPConnection } from "../../sdk/src/index.ts";
+import { type MCPConnection } from "../../sdk/src/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -289,33 +289,29 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       this.callableToolSet = {};
     }
   }
-
   protected async _getOrCreateCallableToolSet(
-    connection: string | MCPConnection,
+    connectionInput: string | MCPConnection,
     signal?: AbortSignal,
   ): Promise<ToolsInput | null> {
-    const isConnectionMcpId = typeof connection === "string";
+    const [mcpId, connection] = typeof connectionInput === "string"
+      ? [
+        connectionInput,
+        await this.metadata?.mcpClient?.INTEGRATIONS_GET({
+          id: connectionInput,
+        }),
+      ]
+      : [normalizeMCPId(connectionInput), connectionInput];
 
-    if (isConnectionMcpId && this.callableToolSet[connection]) {
-      return this.callableToolSet[connection];
-    }
-
-    const mcpId = normalizeMCPId(connection);
-
-    const integration = isConnectionMcpId
-      ? await this.metadata?.mcpClient?.INTEGRATIONS_GET({
-        id: connection,
-      })
-      : {
-        connection,
-        name: mcpId,
-        id: mcpId,
-      };
-
-    if (!integration) {
+    if (!connection) {
       console.log("integration not found", mcpId);
       return null;
     }
+
+    const integration = {
+      connection,
+      name: mcpId,
+      id: mcpId,
+    };
 
     const serverTools = await mcpServerTools(
       { ...integration, id: mcpId },

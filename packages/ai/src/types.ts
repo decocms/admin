@@ -9,7 +9,7 @@ import type {
   Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
-import { MCPConnection } from "../../sdk/src/index.ts";
+import { type MCPConnection } from "../../sdk/src/index.ts";
 export type { TriggerData } from "./triggers/trigger.ts";
 export type { GenerateOptions, StreamOptions };
 

@@ -133,7 +133,7 @@ function WorkflowsTableView(
 
 function WorkflowsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
   const page = Number(searchParams.get("page") || 1);
   const per_page = Number(searchParams.get("per_page") || 10);

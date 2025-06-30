@@ -106,7 +106,7 @@ export function ListTriggers() {
 function ListTriggersSuspended() {
   const { data, isLoading } = useListTriggers();
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("triggers");
 
   const triggers = (data?.triggers || []) as z.infer<
     typeof TriggerOutputSchema

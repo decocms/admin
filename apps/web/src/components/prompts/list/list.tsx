@@ -295,7 +295,7 @@ function TableView(
 
 function ListPrompts() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("prompts");
   const { data: prompts } = usePrompts();
   const create = useCreatePrompt();
   const deletePrompt = useDeletePrompt();

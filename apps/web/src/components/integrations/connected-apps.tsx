@@ -158,7 +158,7 @@ function TableView(
 }
 
 export function ConnectedAppsList() {
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("integrations");
   const [filter, setFilter] = useState<string>("");
   const navigateWorkspace = useNavigateWorkspace();
   const apps = useGroupedApps({

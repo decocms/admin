@@ -180,7 +180,7 @@ function InvitesListContent() {
   const [loadingStates, setLoadingStates] = useState<
     Record<string, "accept" | "reject" | null>
   >({});
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("invites");
 
   const filteredInvites = search.trim().length > 0
     ? invites.filter((invite) =>

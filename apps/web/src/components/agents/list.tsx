@@ -441,7 +441,7 @@ function List() {
   const { handleCreate } = useContext(Context)!;
   const { filter } = state;
   const { data: agents } = useAgents();
-  const [viewMode, setViewMode] = useViewMode();
+  const [viewMode, setViewMode] = useViewMode("agents");
   const { value: visibility, update: setVisibility } = useLocalStorage<
     Visibility
   >({ key: "agents-visibility", defaultValue: "all" });

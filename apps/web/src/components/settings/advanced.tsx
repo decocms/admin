@@ -413,6 +413,7 @@ function AdvancedTab() {
             )}
 
             <div className="border-t pt-6">
+              <Channels />
             </div>
           </form>
         </div>

@@ -1,4 +1,3 @@
-import type { UseSuspenseQueryResult } from "@tanstack/react-query";
 import {
   useMutation,
   useQueryClient,
@@ -7,16 +6,10 @@ import {
 import {
   deleteWorkflow,
   getWorkflowStatus,
-  listWorkflowInstances,
   listWorkflows,
   startWorkflow,
-  type Workflow,
   type WorkflowDeleteParams,
-  type WorkflowInstance,
   type WorkflowStartParams,
-  type WorkflowStatusResult,
-  type WorkflowStep,
-  type WorkflowStepAttempt,
 } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
@@ -33,39 +26,7 @@ export const useWorkflows = (page = 1, per_page = 10) => {
       for (const workflow of result.workflows) {
         const itemKey = ["workflow", workspace, workflow.workflowName];
         client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<Workflow>(itemKey, workflow);
-      }
-      return result;
-    },
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-  });
-
-  return data;
-};
-
-export const useWorkflowInstances = (
-  workflowName: string,
-  page = 1,
-  per_page = 10,
-) => {
-  const { workspace } = useSDK();
-  const client = useQueryClient();
-
-  const data = useSuspenseQuery({
-    queryKey: ["workflow-instances", workspace, workflowName, page, per_page],
-    queryFn: async ({ signal }) => {
-      const result = await listWorkflowInstances(
-        workspace,
-        workflowName,
-        page,
-        per_page,
-        signal,
-      );
-      for (const instance of result.instances) {
-        const itemKey = ["workflow-instance", workspace, instance.instanceId];
-        client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData<WorkflowInstance>(itemKey, instance);
+        client.setQueryData(itemKey, workflow);
       }
       return result;
     },
@@ -87,9 +48,9 @@ export const useStartWorkflow = () => {
 export const useWorkflowStatus = (
   workflowName: string,
   instanceId: string,
-): UseSuspenseQueryResult<WorkflowStatusResult> => {
+) => {
   const { workspace } = useSDK();
-  return useSuspenseQuery<WorkflowStatusResult>({
+  return useSuspenseQuery({
     queryKey: ["workflow-status", workspace, workflowName, instanceId],
     queryFn: ({ signal }) =>
       getWorkflowStatus(workspace, { workflowName, instanceId }, signal),
@@ -97,8 +58,8 @@ export const useWorkflowStatus = (
       error instanceof InternalServerError && failureCount < 2,
     refetchInterval: (query) => {
       if (
-        query.state.data?.status === "complete" ||
-        query.state.data?.status === "errored"
+        query.state.data?.snapshot.status === "success" ||
+        query.state.data?.snapshot.status === "failed"
       ) {
         return false;
       }
@@ -113,12 +74,4 @@ export const useDeleteWorkflow = () => {
     mutationFn: (params: WorkflowDeleteParams) =>
       deleteWorkflow(workspace, params),
   });
-};
-
-export type {
-  Workflow,
-  WorkflowInstance,
-  WorkflowStatusResult,
-  WorkflowStep,
-  WorkflowStepAttempt,
 };

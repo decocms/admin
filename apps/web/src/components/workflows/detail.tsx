@@ -1,251 +1,357 @@
-import type { WorkflowInstance } from "@deco/sdk";
-import { useWorkflowInstances } from "@deco/sdk";
+import { useWorkflowStatus } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@deco/ui/components/pagination.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { EmptyState } from "../common/empty-state.tsx";
-import { ListPageHeader } from "../common/list-page-header.tsx";
-import { Table, type TableColumn } from "../common/table/index.tsx";
+import { useState } from "react";
+import { useParams } from "react-router";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
-function InstancesCardView(
-  { instances, onClick }: {
-    instances: WorkflowInstance[];
-    onClick: (instance: WorkflowInstance) => void;
-  },
-) {
+function tryParseJson(str: unknown): unknown {
+  if (typeof str !== "string") return str;
+  try {
+    const parsed = JSON.parse(str);
+    if (typeof parsed === "object" && parsed !== null) {
+      return parsed;
+    }
+    return str;
+  } catch {
+    return str;
+  }
+}
+
+function CopyButton({ value }: { value: unknown }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(
+      typeof value === "string" ? value : JSON.stringify(value, null, 2),
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
-      {instances.map((instance) => (
-        <Card
-          key={instance.instanceId}
-          className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-          onClick={() => onClick(instance)}
-        >
-          <CardContent className="p-0">
-            <div className="grid grid-cols-[1fr_min-content] gap-4 items-start p-4">
-              <div className="flex flex-col gap-0 min-w-0">
-                <div className="text-sm font-semibold truncate">
-                  Instance ID: {instance.instanceId}
-                </div>
-                <div className="text-sm text-muted-foreground line-clamp-1">
-                  Status: {instance.status}
-                </div>
-                <div className="text-xs text-muted-foreground line-clamp-1">
-                  Created: {new Date(instance.created_on).toLocaleString()}
-                </div>
-                {instance.ended_on && (
-                  <div className="text-xs text-muted-foreground line-clamp-1">
-                    Ended: {new Date(instance.ended_on).toLocaleString()}
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <Button
+      size="icon"
+      variant="ghost"
+      className="ml-2"
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy to clipboard"}
+    >
+      <Icon name={copied ? "check" : "content_copy"} size={16} />
+    </Button>
+  );
+}
+
+function JsonBlock({ value }: { value: unknown }) {
+  const parsed = tryParseJson(value);
+  return (
+    <pre className="bg-muted rounded p-2 text-xs w-full max-w-full max-h-64 overflow-x-auto overflow-y-auto">
+      {typeof parsed === "string"
+        ? parsed
+        : JSON.stringify(parsed, null, 2)}
+    </pre>
+  );
+}
+
+function OutputField({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-semibold mr-0">{label}:</span>
+        <CopyButton value={value} />
+      </div>
+      {<JsonBlock value={value} />}
     </div>
   );
 }
 
-function InstancesTableView(
-  { instances, onClick }: {
-    instances: WorkflowInstance[];
-    onClick: (instance: WorkflowInstance) => void;
+function getStatusBadgeVariant(
+  status: string,
+): "default" | "destructive" | "secondary" | "outline" {
+  if (status === "success" || status === "completed") return "default";
+  if (status === "failed" || status === "errored") return "destructive";
+  if (status === "running" || status === "in_progress") return "secondary";
+  return "outline";
+}
+
+function getStatusIcon(status: string) {
+  if (status === "success" || status === "completed") {
+    return <Icon name="check_circle" className="text-green-500" size={20} />;
+  }
+  if (status === "failed" || status === "errored") {
+    return <Icon name="error" className="text-red-500" size={20} />;
+  }
+  if (status === "running" || status === "in_progress") {
+    return (
+      <Icon name="autorenew" className="text-blue-500 animate-spin" size={20} />
+    );
+  }
+  return <Icon name="info" className="text-muted-foreground" size={20} />;
+}
+
+function formatDuration(start?: string, end?: string): string {
+  if (!start || !end) return "-";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 0) return "-";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m ${s % 60}s`;
+}
+
+const DONUT_COLORS = ["#22c55e", "#ef4444", "#a3a3a3"];
+
+function DonutChart(
+  { success, errors, total }: {
+    success: number;
+    errors: number;
+    total: number;
   },
 ) {
-  const [sortKey, setSortKey] = useState<string>("created_on");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
-  function getSortValue(row: WorkflowInstance, key: string): string {
-    if (key === "created_on") return row.created_on || "";
-    if (key === "ended_on") return row.ended_on || "";
-    if (key === "status") return row.status || "";
-    return row.instanceId?.toLowerCase() || "";
-  }
-
-  const sortedInstances = [...instances].sort((a, b) => {
-    const aVal = getSortValue(a, sortKey);
-    const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const columns: TableColumn<WorkflowInstance>[] = [
-    {
-      id: "instanceId",
-      header: "Instance ID",
-      render: (instance) => (
-        <span className="font-semibold">{instance.instanceId}</span>
-      ),
-      sortable: true,
-    },
-    {
-      id: "status",
-      header: "Status",
-      render: (instance) => <span className="text-xs">{instance.status}</span>,
-      sortable: true,
-    },
-    {
-      id: "created_on",
-      header: "Created",
-      render: (instance) => (
-        <span className="text-xs">
-          {new Date(instance.created_on).toLocaleString()}
-        </span>
-      ),
-      sortable: true,
-    },
-    {
-      id: "ended_on",
-      header: "Ended",
-      render: (instance) => (
-        <span className="text-xs">
-          {instance.ended_on
-            ? new Date(instance.ended_on).toLocaleString()
-            : "-"}
-        </span>
-      ),
-      sortable: true,
-    },
+  const rest = Math.max(total - success - errors, 0);
+  const data = [
+    { name: "Success", value: success },
+    { name: "Error", value: errors },
+    { name: "Other", value: rest },
   ];
-
-  function handleSort(key: string) {
-    if (sortKey === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDirection("asc");
-    }
-  }
-
   return (
-    <Table
-      columns={columns}
-      data={sortedInstances}
-      sortKey={sortKey}
-      sortDirection={sortDirection}
-      onSort={handleSort}
-      onRowClick={onClick}
-    />
+    <div className="relative w-[60px] h-[60px]">
+      <ResponsiveContainer width={60} height={60}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={20}
+            outerRadius={28}
+            stroke="none"
+          >
+            {data.map((_entry, idx) => (
+              <Cell key={`cell-${idx}`} fill={DONUT_COLORS[idx]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+        <span className="text-xs font-bold text-foreground leading-none">
+          {total}
+        </span>
+        <span className="text-[10px] text-muted-foreground leading-none">
+          total
+        </span>
+      </div>
+    </div>
   );
 }
 
-function InstancesTab() {
-  const { workflowName = "" } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useViewMode("workflows");
-  const [filter, setFilter] = useState("");
-  const page = Number(searchParams.get("page") || 1);
-  const per_page = Number(searchParams.get("per_page") || 10);
-  const { data } = useWorkflowInstances(workflowName, page, per_page);
-  const navigateWorkspace = useNavigateWorkspace();
+function StepCard(
+  { step, workflowStatus }: { step: [string, any]; workflowStatus: string },
+) {
+  const [open, setOpen] = useState(false);
+  const [stepName, stepData] = step;
+  const stepStatus = getStepStatus(stepData, workflowStatus);
+  const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
+  const stepStatusIcon = getStatusIcon(stepStatus);
+  const stepDuration = formatDuration(
+    stepData.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
+    stepData.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+  );
 
-  const filteredInstances = useMemo(() => {
-    if (!filter) return data.instances as WorkflowInstance[];
-    return (data.instances as WorkflowInstance[]).filter((i) =>
-      i.instanceId.toLowerCase().includes(filter.toLowerCase())
-    );
-  }, [data.instances, filter]);
+  return (
+    <Card className="p-0 shadow border border-muted">
+      <div
+        className="flex items-center justify-between cursor-pointer px-4 py-3 border-b"
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="flex items-center gap-3">
+          {stepStatusIcon}
+          <span className="text-base font-bold">{stepName}</span>
+          <Badge
+            variant={stepBadgeVariant}
+            className="text-xs px-2 py-0.5 capitalize"
+          >
+            {stepStatus}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Icon name="timer" size={14} className="text-muted-foreground" />
+          <span className="font-semibold text-xs">Duration:</span>
+          <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+            {stepDuration}
+          </span>
+          <Icon
+            name={open ? "expand_less" : "expand_more"}
+            size={18}
+            className="ml-2 text-muted-foreground"
+          />
+        </div>
+      </div>
+      {open && (
+        <CardContent className="p-4 flex flex-col gap-2">
+          <div className="flex flex-row items-center gap-4 mb-2">
+            <div className="flex flex-wrap gap-4 items-center flex-1">
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-xs">Started:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {stepData.startedAt
+                    ? new Date(stepData.startedAt).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={14}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-xs">Ended:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {stepData.endedAt
+                    ? new Date(stepData.endedAt).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+            </div>
+          </div>
+          {stepData.output && (
+            <OutputField label="Output" value={stepData.output} />
+          )}
+          {stepData.error && (
+            <OutputField label="Error" value={stepData.error} />
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
-  function handlePageChange(newPage: number) {
-    setSearchParams({ page: String(newPage), per_page: String(per_page) });
-  }
+function InstanceDetailTab() {
+  const { workflowName = "", instanceId = "" } = useParams();
+  const { data } = useWorkflowStatus(workflowName, instanceId);
 
-  function handleInstanceClick(instance: WorkflowInstance) {
-    navigateWorkspace(
-      `workflows/${encodeURIComponent(workflowName)}/instances/${
-        encodeURIComponent(instance.instanceId)
-      }`,
-    );
-  }
+  const status = data?.snapshot?.status || "unknown";
+  const badgeVariant = getStatusBadgeVariant(status);
+  const statusIcon = getStatusIcon(status);
+  const steps = data?.snapshot?.context
+    ? Object.entries(data.snapshot.context).filter(([name]) => name !== "input")
+    : [];
+  // For duration, use the earliest startedAt and latest endedAt among steps
+  const startedAts = steps
+    .map(([, s]) => s.startedAt)
+    .filter((v): v is number => typeof v === "number");
+  const endedAts = steps
+    .map(([, s]) => s.endedAt)
+    .filter((v): v is number => typeof v === "number");
+  const duration = formatDuration(
+    startedAts.length
+      ? new Date(Math.min(...startedAts)).toISOString()
+      : undefined,
+    endedAts.length ? new Date(Math.max(...endedAts)).toISOString() : undefined,
+  );
+
+  const errors = steps.filter(([, s]) => s.error).length;
+  const successes = steps.filter(([, s]) => s.output && !s.error).length;
 
   return (
     <ScrollArea className="h-full">
-      <div className="flex flex-col gap-4 h-full py-4">
-        <div className="px-4 overflow-x-auto">
-          <ListPageHeader
-            input={{
-              placeholder: "Search instance",
-              value: filter,
-              onChange: (e) => setFilter(e.target.value),
-            }}
-            view={{ viewMode, onChange: setViewMode }}
+      <div className="max-w-2xl mx-auto py-8">
+        <Card className="p-0 mb-6 shadow-lg border-2 border-muted">
+          <CardContent className="p-6 flex flex-col gap-4">
+            <div className="flex flex-row items-center gap-4 mb-2">
+              <div className="flex items-center gap-3 flex-1">
+                {statusIcon}
+                <span className="text-xl font-bold">Status</span>
+                <Badge
+                  variant={badgeVariant}
+                  className="text-base px-3 py-1 capitalize"
+                >
+                  {status}
+                </Badge>
+                <Icon
+                  name="timer"
+                  size={18}
+                  className="text-muted-foreground ml-4"
+                />
+                <span className="font-semibold text-base">Duration:</span>
+                <span className="text-sm font-mono bg-muted rounded px-2 py-1">
+                  {duration}
+                </span>
+              </div>
+              <div className="min-w-[60px] flex-shrink-0 flex items-center justify-center">
+                <DonutChart
+                  success={successes}
+                  errors={errors}
+                  total={steps.length}
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <Icon name="key" size={16} className="text-muted-foreground" />
+                <span className="font-semibold text-sm">Instance ID:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {instanceId}
+                </span>
+                <CopyButton value={instanceId} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-sm">Started:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {startedAts.length
+                    ? new Date(Math.min(...startedAts)).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Icon
+                  name="calendar_today"
+                  size={16}
+                  className="text-muted-foreground"
+                />
+                <span className="font-semibold text-sm">Ended:</span>
+                <span className="text-xs font-mono bg-muted rounded px-2 py-1">
+                  {endedAts.length
+                    ? new Date(Math.max(...endedAts)).toLocaleString()
+                    : "-"}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="p-4 mb-4">
+          <OutputField
+            label="Input Params"
+            value={data?.snapshot?.context?.input}
           />
-        </div>
-        <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {filteredInstances.length === 0
+          <OutputField label="Output" value={data?.snapshot?.result} />
+        </Card>
+        <h2 className="text-lg font-semibold mb-2">Steps</h2>
+        <div className="space-y-4">
+          {steps.length > 0
             ? (
-              <EmptyState
-                icon="conversion_path"
-                title="No instances yet"
-                description="No workflow instances found."
-              />
+              steps
+                .map((step, i) => (
+                  <StepCard key={i} step={step} workflowStatus={status} />
+                ))
             )
-            : viewMode === "cards"
-            ? (
-              <InstancesCardView
-                instances={filteredInstances}
-                onClick={handleInstanceClick}
-              />
-            )
-            : (
-              <InstancesTableView
-                instances={filteredInstances}
-                onClick={handleInstanceClick}
-              />
-            )}
-        </div>
-        <div className="mt-6 flex items-center justify-center gap-2">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (page > 1) handlePageChange(page - 1);
-                  }}
-                  aria-disabled={page <= 1}
-                  tabIndex={page <= 1 ? -1 : 0}
-                  className={page <= 1 ? "opacity-50 pointer-events-none" : ""}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-2 text-sm">Page {page}</span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (filteredInstances.length >= per_page) {
-                      handlePageChange(
-                        page + 1,
-                      );
-                    }
-                  }}
-                  aria-disabled={filteredInstances.length < per_page}
-                  tabIndex={filteredInstances.length < per_page ? -1 : 0}
-                  className={filteredInstances.length < per_page
-                    ? "opacity-50 pointer-events-none"
-                    : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+            : <div className="text-muted-foreground">No steps found.</div>}
         </div>
       </div>
     </ScrollArea>
@@ -253,16 +359,16 @@ function InstancesTab() {
 }
 
 const tabs: Record<string, Tab> = {
-  instances: {
-    Component: InstancesTab,
-    title: "Instances",
+  instance: {
+    Component: InstanceDetailTab,
+    title: "Instance Details",
     active: true,
     initialOpen: true,
   },
 };
 
 function WorkflowDetailPage() {
-  const { workflowName = "" } = useParams();
+  const { workflowName = "", instanceId = "" } = useParams();
   return (
     <PageLayout
       hideViewsButton
@@ -271,7 +377,9 @@ function WorkflowDetailPage() {
         <DefaultBreadcrumb
           items={[
             { label: "Workflows", link: "/workflows" },
-            { label: workflowName },
+            {
+              label: String(workflowName ?? ""),
+            },
           ]}
         />
       }

@@ -1,4 +1,3 @@
-import type { Workflow } from "@deco/sdk";
 import { useWorkflows } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
@@ -19,6 +18,16 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
+// Instead, define the Workflow type here to match the API response
+interface Workflow {
+  workflowName: string;
+  runId: string;
+  createdAt: string;
+  updatedAt: string;
+  resourceId: string | null;
+  status: string;
+}
+
 function WorkflowsCardView(
   { workflows, onClick }: {
     workflows: Workflow[];
@@ -29,7 +38,7 @@ function WorkflowsCardView(
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
       {workflows.map((workflow) => (
         <Card
-          key={workflow.workflowName}
+          key={workflow.runId}
           className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
           onClick={() => onClick(workflow)}
         >
@@ -40,13 +49,13 @@ function WorkflowsCardView(
                   {workflow.workflowName}
                 </div>
                 <div className="text-sm text-muted-foreground line-clamp-1">
-                  Created: {new Date(workflow.created_on).toLocaleString()}
+                  Created: {new Date(workflow.createdAt).toLocaleString()}
                 </div>
               </div>
             </div>
             <div className="px-4 py-3 border-t border-border">
               <span className="text-xs text-muted-foreground">
-                Modified: {new Date(workflow.modified_on).toLocaleString()}
+                Modified: {new Date(workflow.updatedAt).toLocaleString()}
               </span>
             </div>
           </CardContent>
@@ -66,8 +75,9 @@ function WorkflowsTableView(
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   function getSortValue(row: Workflow, key: string): string {
-    if (key === "created_on") return row.created_on || "";
-    if (key === "modified_on") return row.modified_on || "";
+    if (key === "createdAt") return row.createdAt || "";
+    if (key === "updatedAt") return row.updatedAt || "";
+    if (key === "status") return row.status || "";
     return row.workflowName?.toLowerCase() || "";
   }
 
@@ -89,21 +99,29 @@ function WorkflowsTableView(
       sortable: true,
     },
     {
-      id: "created_on",
+      id: "status",
+      header: "Status",
+      render: (workflow) => (
+        <span className="text-xs">{workflow.status}</span>
+      ),
+      sortable: true,
+    },
+    {
+      id: "createdAt",
       header: "Created",
       render: (workflow) => (
         <span className="text-xs">
-          {new Date(workflow.created_on).toLocaleString()}
+          {new Date(workflow.createdAt).toLocaleString()}
         </span>
       ),
       sortable: true,
     },
     {
-      id: "modified_on",
+      id: "updatedAt",
       header: "Modified",
       render: (workflow) => (
         <span className="text-xs">
-          {new Date(workflow.modified_on).toLocaleString()}
+          {new Date(workflow.updatedAt).toLocaleString()}
         </span>
       ),
       sortable: true,
@@ -140,19 +158,22 @@ function WorkflowsTab() {
   const { data } = useWorkflows(page, per_page);
   const navigateWorkspace = useNavigateWorkspace();
 
+  const workflows: Workflow[] = data.workflows as Workflow[];
   const filteredWorkflows = useMemo(() => {
-    if (!filter) return data.workflows as Workflow[];
-    return (data.workflows as Workflow[]).filter((w) =>
+    if (!filter) return workflows;
+    return workflows.filter((w) =>
       w.workflowName.toLowerCase().includes(filter.toLowerCase())
     );
-  }, [data.workflows, filter]);
+  }, [workflows, filter]);
 
   function handlePageChange(newPage: number) {
     setSearchParams({ page: String(newPage), per_page: String(per_page) });
   }
 
   function handleWorkflowClick(workflow: Workflow) {
-    navigateWorkspace(`workflows/${encodeURIComponent(workflow.workflowName)}`);
+    navigateWorkspace(
+      `/workflows/${encodeURIComponent(workflow.workflowName)}/instances/${workflow.runId}`,
+    );
   }
 
   return (

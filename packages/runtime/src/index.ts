@@ -5,7 +5,7 @@ import type {
   ScheduledController,
 } from "@cloudflare/workers-types";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
-import { MCPClient } from "./mcp.ts";
+import { MCPClient, QueryResult } from "./mcp.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -16,7 +16,11 @@ export interface DefaultEnv {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_BINDINGS: string;
   DECO_CHAT_API_TOKEN?: string;
-  DECO_CHAT_WORKSPACE_DB: D1Database;
+  DECO_CHAT_WORKSPACE_DB: {
+    query: (
+      params: { sql: string; params: string[] },
+    ) => Promise<{ result: QueryResult[] }>;
+  };
   [key: string]: unknown;
 }
 
@@ -93,8 +97,17 @@ const creatorByType: CreatorByType = {
 };
 
 const withDefaultBindings = (env: DefaultEnv) => {
+  const client = workspaceClient(env);
   env["DECO_CHAT_API"] = MCPClient;
-  env["DECO_CHAT_WORKSPACE_API"] = workspaceClient(env);
+  env["DECO_CHAT_WORKSPACE_API"] = client;
+  env["DECO_CHAT_WORKSPACE_DB"] = {
+    query: ({ sql, params }) => {
+      return client.DATABASES_RUN_SQL({
+        sql,
+        params,
+      });
+    },
+  };
 };
 
 export const withBindings = <TEnv>(_env: TEnv): TEnv => {

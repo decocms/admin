@@ -7,13 +7,50 @@ export interface FetchOptions extends RequestInit {
   segments?: string[];
 }
 
+const Timings = z.object({
+  sql_duration_ms: z.number().optional(),
+});
+
+const Meta = z.object({
+  changed_db: z.boolean().optional(),
+  changes: z.number().optional(),
+  duration: z.number().optional(),
+  last_row_id: z.number().optional(),
+  rows_read: z.number().optional(),
+  rows_written: z.number().optional(),
+  served_by_primary: z.boolean().optional(),
+  served_by_region: z.enum(["WNAM", "ENAM", "WEUR", "EEUR", "APAC", "OC"])
+    .optional(),
+  size_after: z.number().optional(),
+  timings: Timings.optional(),
+});
+
+const QueryResult = z.object({
+  meta: Meta.optional(),
+  results: z.array(z.unknown()).optional(),
+  success: z.boolean().optional(),
+});
+
+export type QueryResult = z.infer<typeof QueryResult>;
+
 const workspaceTools = [{
-  name: "INTEGRATIONS_GET",
+  name: "INTEGRATIONS_GET" as const,
   inputSchema: z.object({
     id: z.string(),
   }),
   outputSchema: z.object({
     connection: z.object({}),
+  }),
+}, {
+  name: "DATABASES_RUN_SQL" as const,
+  inputSchema: z.object({
+    sql: z.string().describe("The SQL query to run"),
+    params: z.array(z.string()).describe(
+      "The parameters to pass to the SQL query",
+    ),
+  }),
+  outputSchema: z.object({
+    result: z.array(QueryResult),
   }),
 }] satisfies ToolBinder<string, unknown, object>[];
 

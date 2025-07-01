@@ -1,5 +1,4 @@
 import { type Binding, WorkersMCPBindings } from "@deco/workers-runtime";
-import type { SettingGetResponse } from "cloudflare/resources/workers-for-platforms/dispatch/namespaces/scripts";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
@@ -146,79 +145,6 @@ const addPolyfills = (
   }
 };
 
-const DECO_CHAT_WORKSPACE_DB_BINDING_NAME = "DECO_CHAT_WORKSPACE_DB";
-const workspaceD1Database = async (
-  c: AppContext,
-  bindings: SettingGetResponse["bindings"],
-  d1Databases: { type: "d1"; name: string; id: string }[],
-): Promise<{ type: "d1"; name: string; id: string }[]> => {
-  assertHasWorkspace(c);
-  const env = getEnv(c);
-  const workspace = c.workspace.value;
-
-  // Slugify workspace name to meet D1 naming requirements (lowercase letters, numbers, underscores, hyphens)
-  const dbName = workspace.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
-
-  // Check if D1 workspace binding already exists in current bindings
-  const existingD1Binding = bindings?.find(
-    (binding) =>
-      binding.type === "d1" &&
-      binding.name === DECO_CHAT_WORKSPACE_DB_BINDING_NAME,
-  );
-
-  let databaseId: string | undefined;
-
-  if (existingD1Binding && "id" in existingD1Binding) {
-    // Use existing database
-    databaseId = existingD1Binding.id;
-  } else {
-    // Create new D1 database
-    try {
-      const createResult = await c.cf.d1.database.create({
-        account_id: env.CF_ACCOUNT_ID,
-        name: dbName,
-      });
-      databaseId = createResult.uuid;
-    } catch (err) {
-      const isConflict = typeof err === "object" && err && "status" in err &&
-        typeof err.status === "number" && err.status === 409;
-      if (!isConflict) {
-        throw err;
-      }
-      // If database already exists (409 conflict), try to find it
-      const databases = await c.cf.d1.database.list({
-        account_id: env.CF_ACCOUNT_ID,
-      });
-      const existingDb = databases.result?.find((db) => db.name === dbName);
-      if (!existingDb) {
-        throw new Error(`Failed to create or find D1 database: ${dbName}`);
-      }
-      databaseId = existingDb.uuid;
-    }
-  }
-  if (!databaseId) {
-    throw new Error(`Failed to create or find D1 database: ${dbName}`);
-  }
-
-  const workspaceBinding = {
-    type: "d1" as const,
-    name: DECO_CHAT_WORKSPACE_DB_BINDING_NAME,
-    id: databaseId,
-  };
-
-  // Check if binding already exists in d1Databases array
-  const bindingExists = d1Databases.some(
-    (db) =>
-      db.name === DECO_CHAT_WORKSPACE_DB_BINDING_NAME && db.id === databaseId,
-  );
-
-  if (bindingExists) {
-    return [];
-  }
-
-  return [workspaceBinding];
-};
-
 export async function deployToCloudflare(
   c: AppContext,
   {
@@ -295,13 +221,6 @@ export async function deployToCloudflare(
     (bindings ?? []).filter(isDoBinding),
   );
 
-  const d1Databases = d1_databases?.map((d1) => ({
-    type: "d1" as const,
-    name: d1.binding,
-    id: d1.database_id!,
-  })) ?? [];
-
-  d1Databases.push(...await workspaceD1Database(c, bindings, d1Databases));
   const wranglerBindings = [
     ...kv_namespaces?.map((kv) => ({
       type: "kv_namespace" as const,
@@ -327,7 +246,11 @@ export async function deployToCloudflare(
       class_name: workflow.class_name,
       script_name: workflow.script_name,
     })) ?? [],
-    ...d1Databases,
+    ...d1_databases?.map((d1) => ({
+      type: "d1" as const,
+      name: d1.binding,
+      id: d1.database_id!,
+    })) ?? [],
     ...hyperdrive?.map((hd) => ({
       type: "hyperdrive" as const,
       name: hd.binding,

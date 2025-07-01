@@ -14,7 +14,7 @@ const cache = new WebCache<string>(
 );
 const inMemoryCache = new Map<string, string>();
 
-const getWorkspaceD1Database = async (c: AppContext): Promise<string> => {
+export const getWorkspaceD1Database = async (c: AppContext): Promise<string> => {
   assertHasWorkspace(c);
   const cacheKey = `${c.workspace.value}-d1-database`;
   const inMemory = inMemoryCache.get(cacheKey);
@@ -95,7 +95,7 @@ export const runSql = createTool({
   description: "Run a SQL query against the workspace database",
   inputSchema: z.object({
     sql: z.string().describe("The SQL query to run"),
-    params: z.array(z.string()).describe(
+    params: z.array(z.any()).describe(
       "The parameters to pass to the SQL query",
     ),
   }),

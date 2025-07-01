@@ -55,8 +55,8 @@ const adapter =
 
     useEffect(() => {
       const { dispose } = props.api.onDidActiveChange((e) => {
-        console.log(props.api.id);
-        setIsActive(e.isActive);
+        // set true once, to prevent mount/unmount
+        setIsActive((prevIsActive) => prevIsActive || e.isActive);
       });
 
       return dispose;

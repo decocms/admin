@@ -88,7 +88,6 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.listWorkflows,
   hostingAPI.startWorkflow,
   hostingAPI.getWorkflowStatus,
-  hostingAPI.listWorkflowInstances,
   hostingAPI.deleteWorkflow,
   triggersAPI.getTrigger,
   triggersAPI.listTriggers,

@@ -1,3 +1,4 @@
+import { D1Store } from "@mastra/cloudflare-d1";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
@@ -631,95 +632,59 @@ const getScriptsSetOnWorkspace = async (c: WithTool<AppContext>) => {
   return new Set(data.map((d) => d.cloudflare_worker_id));
 };
 
+const getStore = (c: WithTool<AppContext>) => {
+  assertHasWorkspace(c);
+
+  return new D1Store({
+    accountId: c.envVars.CF_ACCOUNT_ID,
+    apiToken: c.envVars.CF_API_TOKEN,
+    databaseId: `10fb43b5-d7a7-4fad-92ae-4da127013dfc`,// c.workspace.slug,
+  });
+};
+
 export const listWorkflows = createTool({
   name: "HOSTING_APP_WORKFLOWS_LIST",
   description: "List all workflows on the workspace",
-  inputSchema: InputPaginationListSchema,
+  inputSchema: InputPaginationListSchema.extend({
+    workflowName: z.string().optional(),
+    fromDate: z.string().optional(),
+    toDate: z.string().optional(),
+  }),
   outputSchema: z.object({
     workflows: z.array(z.object({
-      created_on: z.string(),
-      modified_on: z.string(),
       workflowName: z.string(),
+      runId: z.string(),
+      createdAt: z.string(),
+      updatedAt: z.string(),
+      resourceId: z.string().nullable(),
+      status: z.string(),
     })).describe("The workflow list names"),
     pagination: OutputPaginationListSchema,
   }),
-  handler: async ({ page = 1, per_page = 10 }, c) => {
+  handler: async (
+    { page = 1, per_page = 10, workflowName, fromDate, toDate },
+    c,
+  ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
+    const storageWorkers = getStore(c);
 
-    const env = getEnv(c);
-
-    const [scripts, workflows] = await Promise.all([
-      getScriptsSetOnWorkspace(c),
-      c.cf.workflows.list({
-        account_id: env.CF_ACCOUNT_ID,
-        page,
-        per_page,
-      }),
-    ]);
-
-    return {
-      workflows: workflows.result
-        .filter((w) => scripts.has(w.script_name))
-        .map((w) => ({
-          created_on: w.created_on,
-          modified_on: w.modified_on,
-          workflowName: w.name,
-        })),
-      pagination: {
-        page: workflows.result_info.page,
-        per_page: workflows.result_info.per_page,
-      },
-    };
-  },
-});
-
-/**
- * TODO: Currently there is no way to filter by script name,
- * this leads to a security issue where a user can see all instances of a workflow
- * on all workspaces.
- *
- * If the user has the workflow id, it can see the workflow details
- */
-export const listWorkflowInstances = createTool({
-  name: "HOSTING_APP_WORKFLOWS_INSTANCES_LIST",
-  description: "List all instances of a workflow",
-  inputSchema: InputPaginationListSchema.extend({
-    workflowName: z.string(),
-  }),
-  outputSchema: z.object({
-    instances: z.array(z.object({
-      created_on: z.string(),
-      ended_on: z.string().nullable().optional(),
-      modified_on: z.string().optional(),
-      started_on: z.string().nullable().optional(),
-      status: z.string().describe("The status of the workflow instance"),
-      instanceId: z.string(),
-      workflowName: z.string(),
-    })),
-    pagination: OutputPaginationListSchema,
-  }),
-  handler: async ({ workflowName, page = 1, per_page = 10 }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
-
-    const env = getEnv(c);
-
-    const instances = await c.cf.workflows.instances.list(
+    const { runs } = await storageWorkers.getWorkflowRuns({
       workflowName,
-      { account_id: env.CF_ACCOUNT_ID, page, per_page },
-    );
+      fromDate: fromDate ? new Date(fromDate) : undefined,
+      toDate: toDate ? new Date(toDate) : undefined,
+      limit: per_page,
+      offset: (page - 1) * per_page,
+      resourceId: undefined,
+    });
+
+    const transformed = runs.map(({ snapshot, ...run }) => ({
+      ...run,
+      status: typeof snapshot === "string" ? snapshot : snapshot.status,
+    }));
 
     return {
-      instances: instances.result.map((
-        { version_id: _, workflow_id: __, id, ...i },
-      ) => ({
-        ...i,
-        instanceId: id,
-        workflowName,
-      })),
-      pagination: {
-        page: instances.result_info.page,
-        per_page: instances.result_info.per_page,
-      },
+      workflows: transformed,
+      pagination: { page, per_page },
     };
   },
 });
@@ -781,16 +746,15 @@ export const getWorkflowStatus = createTool({
     ),
     workflowName: z.string(),
   }),
+  outputSchema: z.any(),
   handler: async ({ instanceId, workflowName }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
+    const store = getStore(c);
 
-    const env = getEnv(c);
-
-    const workflow = await c.cf.workflows.instances.get(
+    const workflow = await store.getWorkflowRunById({
+      runId: instanceId,
       workflowName,
-      instanceId,
-      { account_id: env.CF_ACCOUNT_ID },
-    );
+    });
 
     return workflow;
   },

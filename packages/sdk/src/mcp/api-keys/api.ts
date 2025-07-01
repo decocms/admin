@@ -115,7 +115,6 @@ export const createApiKey = createTool({
       sub: `api-key:${apiKey.id}`,
       aud: workspace,
       iat: new Date().getTime(),
-      exp: undefined,
     });
 
     return { ...mapApiKey(apiKey), value };

@@ -6,13 +6,14 @@ export async function createJWT<T extends JWTPayload = JWTPayload>(
   secret: string,
   expiresIn?: number | string | Date,
 ): Promise<string> {
-  const jwt = await new SignJWT(payload)
+  let jwt = new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(expiresIn ?? "1h")
-    .sign(new TextEncoder().encode(secret));
+    .setIssuedAt();
+  if (expiresIn) {
+    jwt = jwt.setExpirationTime(expiresIn);
+  }
 
-  return jwt;
+  return await jwt.sign(new TextEncoder().encode(secret));
 }
 
 export async function verifyJWT<T extends JWTPayload = JWTPayload>(

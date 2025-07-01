@@ -109,12 +109,14 @@ interface ModelSelectorProps {
   model?: string;
   onModelChange?: (model: string) => void;
   variant?: "borderless" | "bordered";
+  side?: "top" | "bottom" | "left" | "right";
 }
 
 export function ModelSelector({
   model = DEFAULT_MODEL.id,
   onModelChange,
   variant = "borderless",
+  side = "top",
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const { data: models } = useModels({ excludeDisabled: true });
@@ -144,7 +146,12 @@ export function ModelSelector({
           <SelectedModelDisplay model={selectedModel} />
         </ResponsiveSelectValue>
       </ResponsiveSelectTrigger>
-      <ResponsiveSelectContent title="Select model">
+      <ResponsiveSelectContent 
+        title="Select model" 
+        side={side} 
+        avoidCollisions={false}
+        sideOffset={4}
+      >
         {models.map((model) => (
           <ResponsiveSelectItem
             key={model.id}

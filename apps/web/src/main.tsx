@@ -139,6 +139,10 @@ const WorkflowInstanceDetailPage = lazy(() =>
   )
 );
 
+const NewChatPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/chat/new-chat-page.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -284,6 +288,10 @@ const router = createBrowserRouter([
       {
         path: "/chats",
         Component: PublicChats,
+      },
+      {
+        path: "/new-chat",
+        Component: NewChatPage,
       },
       {
         path: "/:teamSlug?",

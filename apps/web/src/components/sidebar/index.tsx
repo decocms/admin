@@ -484,13 +484,12 @@ export function AppSidebar() {
                 <SidebarMenu className="gap-0.5">
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      asChild
                       className="cursor-pointer"
+                    >
+                      <Link
+                        to={workspaceLink("/new-chat")}
                       onClick={() => {
-                        focusChat(
-                          WELL_KNOWN_AGENT_IDS.teamAgent,
-                          crypto.randomUUID(),
-                          { history: false },
-                        );
                         isMobile && toggleSidebar();
                       }}
                     >
@@ -500,6 +499,7 @@ export function AppSidebar() {
                         className="text-muted-foreground"
                       />
                       <span className="truncate">New chat</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 

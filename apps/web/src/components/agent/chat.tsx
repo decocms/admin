@@ -240,7 +240,20 @@ function Page(props: Props) {
           tabs={TABS}
           key={agentId}
           actionButtons={<ActionsButtons />}
-          breadcrumb={agentId !== WELL_KNOWN_AGENT_IDS.teamAgent && (
+          breadcrumb={agentId === WELL_KNOWN_AGENT_IDS.teamAgent ? (
+            <DefaultBreadcrumb
+              items={[{
+                label: (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-[#A8A29E] flex items-center justify-center border border-[#78716C]/10 shadow-sm">
+                      <Icon name="edit_square" size={14} className="text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-[#292524]">New chat</span>
+                  </div>
+                ),
+              }]}
+            />
+          ) : (
             <Breadcrumb agentId={agentId} />
           )}
         />

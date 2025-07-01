@@ -49,7 +49,7 @@ export function IntegrationIcon({ icon, className }: IntegrationIconProps) {
               url={icon}
               fallback={fallback}
               fallbackClassName="!bg-transparent"
-              className={cn("w-full h-full rounded-lg", className)}
+              className={cn("w-full h-full !rounded-xl", className)}
               objectFit="contain"
             />
           )
@@ -70,7 +70,7 @@ function FileAvatar({ path, fallback }: {
       url={typeof fileUrl === "string" ? fileUrl : undefined}
       fallback={fallback}
       fallbackClassName="!bg-transparent"
-      className={cn("w-full h-full", "rounded-lg")}
+      className={cn("w-full h-full", "!rounded-xl")}
       objectFit="contain"
     />
   );

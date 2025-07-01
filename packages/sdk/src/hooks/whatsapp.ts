@@ -92,6 +92,7 @@ export function useWhatsAppUser(phone: string) {
   return useQuery({
     queryKey: KEYS.WHATSAPP_USER(workspace, phone),
     queryFn: () => getWhatsAppUser(workspace, phone),
+    retry: false,
   });
 }
 

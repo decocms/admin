@@ -12,15 +12,11 @@ export {
   type ToolBinder,
 } from "./mcp.ts";
 
-import { LibSQLStore } from "@mastra/libsql";
-
 export interface DefaultEnv {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_BINDINGS: string;
   DECO_CHAT_API_TOKEN?: string;
-  DECO_CHAT_MEMORY_DB_URL?: string;
-  DECO_CHAT_MEMORY_DB_AUTH_TOKEN?: string;
-  DECO_CHAT_MEMORY: LibSQLStore;
+  DECO_CHAT_WORKSPACE_DB: D1Database;
   [key: string]: unknown;
 }
 
@@ -99,10 +95,6 @@ const creatorByType: CreatorByType = {
 const withDefaultBindings = (env: DefaultEnv) => {
   env["DECO_CHAT_API"] = MCPClient;
   env["DECO_CHAT_WORKSPACE_API"] = workspaceClient(env);
-  env["DECO_CHAT_MEMORY"] = new LibSQLStore({
-    url: env.DECO_CHAT_MEMORY_DB_URL ?? ":memory:",
-    authToken: env.DECO_CHAT_MEMORY_DB_AUTH_TOKEN,
-  });
 };
 
 export const withBindings = <TEnv>(_env: TEnv): TEnv => {

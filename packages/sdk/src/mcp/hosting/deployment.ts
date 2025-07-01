@@ -1,47 +1,12 @@
 import { type Binding, WorkersMCPBindings } from "@deco/workers-runtime";
+import type { SettingGetResponse } from "cloudflare/resources/workers-for-platforms/dispatch/namespaces/scripts";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
-import { WorkspaceMemory } from "../../memory/memory.ts";
-import type { SettingGetResponse } from "cloudflare/resources/workers-for-platforms/dispatch/namespaces/scripts";
 
 const METADATA_FILE_NAME = "metadata.json";
-async function memoryDatabase(c: AppContext) {
-  assertHasWorkspace(c);
-  return await WorkspaceMemory.ref({
-    workspace: c.workspace.value,
-    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-  });
-}
-
-const DECO_CHAT_MEMORY_DB_URL = "DECO_CHAT_MEMORY_DB_URL";
-const DECO_CHAT_MEMORY_DB_AUTH_TOKEN = "DECO_CHAT_MEMORY_DB_AUTH_TOKEN";
-
-async function memoryBindings(
-  c: AppContext,
-  bindings: SettingGetResponse["bindings"],
-): Promise<Record<string, string>> {
-  const found: Record<string, boolean> = {};
-  for (const binding of bindings ?? []) {
-    if (
-      binding.type === "secret_text"
-    ) {
-      found[binding.name] = true;
-    }
-  }
-  if (found[DECO_CHAT_MEMORY_DB_URL] && found[DECO_CHAT_MEMORY_DB_AUTH_TOKEN]) {
-    return {};
-  }
-  const { url, authToken } = await memoryDatabase(c);
-  return {
-    [DECO_CHAT_MEMORY_DB_URL]: url,
-    [DECO_CHAT_MEMORY_DB_AUTH_TOKEN]: authToken,
-  };
-}
-
 export interface MigrationBase {
   tag: string;
 }
@@ -181,6 +146,79 @@ const addPolyfills = (
   }
 };
 
+const DECO_CHAT_WORKSPACE_DB_BINDING_NAME = "DECO_CHAT_WORKSPACE_DB";
+const workspaceD1Database = async (
+  c: AppContext,
+  bindings: SettingGetResponse["bindings"],
+  d1Databases: { type: "d1"; name: string; id: string }[],
+): Promise<{ type: "d1"; name: string; id: string }[]> => {
+  assertHasWorkspace(c);
+  const env = getEnv(c);
+  const workspace = c.workspace.value;
+
+  // Slugify workspace name to meet D1 naming requirements (lowercase letters, numbers, underscores, hyphens)
+  const dbName = workspace.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+
+  // Check if D1 workspace binding already exists in current bindings
+  const existingD1Binding = bindings?.find(
+    (binding) =>
+      binding.type === "d1" &&
+      binding.name === DECO_CHAT_WORKSPACE_DB_BINDING_NAME,
+  );
+
+  let databaseId: string | undefined;
+
+  if (existingD1Binding && "id" in existingD1Binding) {
+    // Use existing database
+    databaseId = existingD1Binding.id;
+  } else {
+    // Create new D1 database
+    try {
+      const createResult = await c.cf.d1.database.create({
+        account_id: env.CF_ACCOUNT_ID,
+        name: dbName,
+      });
+      databaseId = createResult.uuid;
+    } catch (err) {
+      const isConflict = typeof err === "object" && err && "status" in err &&
+        typeof err.status === "number" && err.status === 409;
+      if (!isConflict) {
+        throw err;
+      }
+      // If database already exists (409 conflict), try to find it
+      const databases = await c.cf.d1.database.list({
+        account_id: env.CF_ACCOUNT_ID,
+      });
+      const existingDb = databases.result?.find((db) => db.name === dbName);
+      if (!existingDb) {
+        throw new Error(`Failed to create or find D1 database: ${dbName}`);
+      }
+      databaseId = existingDb.uuid;
+    }
+  }
+  if (!databaseId) {
+    throw new Error(`Failed to create or find D1 database: ${dbName}`);
+  }
+
+  const workspaceBinding = {
+    type: "d1" as const,
+    name: DECO_CHAT_WORKSPACE_DB_BINDING_NAME,
+    id: databaseId,
+  };
+
+  // Check if binding already exists in d1Databases array
+  const bindingExists = d1Databases.some(
+    (db) =>
+      db.name === DECO_CHAT_WORKSPACE_DB_BINDING_NAME && db.id === databaseId,
+  );
+
+  if (bindingExists) {
+    return [];
+  }
+
+  return [workspaceBinding];
+};
+
 export async function deployToCloudflare(
   c: AppContext,
   {
@@ -207,48 +245,10 @@ export async function deployToCloudflare(
 ): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
-  let envVars = {
+  const envVars = {
     ..._envVars,
     ...vars,
   };
-  const wranglerBindings = [
-    ...kv_namespaces?.map((kv) => ({
-      type: "kv_namespace" as const,
-      name: kv.binding,
-      namespace_id: kv.id,
-    })) ?? [],
-    ...ai ? [{ type: "ai" as const, name: ai.binding }] : [],
-    ...browser ? [{ type: "browser" as const, name: browser.binding }] : [],
-    ...durable_objects?.bindings?.map((binding) => ({
-      type: "durable_object_namespace" as const,
-      name: binding.name,
-      class_name: binding.class_name,
-    })) ?? [],
-    ...queues?.producers?.map((producer) => ({
-      type: "queue" as const,
-      queue_name: producer.queue,
-      name: producer.binding,
-    })) ?? [],
-    ...workflows?.map((workflow) => ({
-      type: "workflow" as const,
-      name: workflow.binding,
-      workflow_name: workflow.name,
-      class_name: workflow.class_name,
-      script_name: workflow.script_name,
-    })) ?? [],
-    ...d1_databases?.map((d1) => ({
-      type: "d1" as const,
-      name: d1.binding,
-      id: d1.database_id!,
-    })) ?? [],
-    ...hyperdrive?.map((hd) => ({
-      type: "hyperdrive" as const,
-      name: hd.binding,
-      id: hd.id,
-      localConnectionString: hd.localConnectionString,
-    })) ?? [],
-  ];
-
   const zoneId = env.CF_ZONE_ID;
   if (!zoneId) {
     throw new Error("CF_ZONE_ID is not set");
@@ -290,17 +290,51 @@ export async function deployToCloudflare(
       bindings: [],
     }));
 
-  const memoryBindingsEnvVars = await memoryBindings(c, bindings);
-
-  envVars = {
-    ...envVars,
-    ...memoryBindingsEnvVars,
-  };
-
   const doMigrations = migrationDiff(
     migrations ?? [],
     (bindings ?? []).filter(isDoBinding),
   );
+
+  const d1Databases = d1_databases?.map((d1) => ({
+    type: "d1" as const,
+    name: d1.binding,
+    id: d1.database_id!,
+  })) ?? [];
+
+  d1Databases.push(...await workspaceD1Database(c, bindings, d1Databases));
+  const wranglerBindings = [
+    ...kv_namespaces?.map((kv) => ({
+      type: "kv_namespace" as const,
+      name: kv.binding,
+      namespace_id: kv.id,
+    })) ?? [],
+    ...ai ? [{ type: "ai" as const, name: ai.binding }] : [],
+    ...browser ? [{ type: "browser" as const, name: browser.binding }] : [],
+    ...durable_objects?.bindings?.map((binding) => ({
+      type: "durable_object_namespace" as const,
+      name: binding.name,
+      class_name: binding.class_name,
+    })) ?? [],
+    ...queues?.producers?.map((producer) => ({
+      type: "queue" as const,
+      queue_name: producer.queue,
+      name: producer.binding,
+    })) ?? [],
+    ...workflows?.map((workflow) => ({
+      type: "workflow" as const,
+      name: workflow.binding,
+      workflow_name: workflow.name,
+      class_name: workflow.class_name,
+      script_name: workflow.script_name,
+    })) ?? [],
+    ...d1Databases,
+    ...hyperdrive?.map((hd) => ({
+      type: "hyperdrive" as const,
+      name: hd.binding,
+      id: hd.id,
+      localConnectionString: hd.localConnectionString,
+    })) ?? [],
+  ];
 
   const metadata = {
     main_module: mainModule,

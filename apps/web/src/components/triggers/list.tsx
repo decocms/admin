@@ -29,26 +29,26 @@ type ViewMode = "table" | "cards";
 
 function ListTriggersSkeleton() {
   return (
-    <div className="mx-8 my-6 bg-pink-50">
+    <div className="mx-8 my-6 bg-blue-50">
       <div className="mb-4 flex items-center justify-between">
-        <Skeleton className="w-80 h-10 rounded-full bg-pink-200" />
+        <Skeleton className="w-80 h-10 rounded-full bg-blue-200" />
         <div className="flex items-center gap-2">
-          <Skeleton className="w-10 h-10 rounded-full bg-pink-200" />
-          <Skeleton className="w-10 h-10 rounded-full bg-pink-200" />
-          <Skeleton className="w-36 h-10 rounded-full bg-pink-200" />
+          <Skeleton className="w-10 h-10 rounded-full bg-blue-200" />
+          <Skeleton className="w-10 h-10 rounded-full bg-blue-200" />
+          <Skeleton className="w-36 h-10 rounded-full bg-blue-200" />
         </div>
       </div>
       <div className="overflow-x-auto">
         <div>
-          <div className="flex flex-col divide-y divide-pink-200">
+          <div className="flex flex-col divide-y divide-blue-200">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4 bg-pink-100">
-                <Skeleton className="w-64 h-6 rounded bg-pink-200" />
-                <Skeleton className="w-44 h-6 rounded bg-pink-200" />
-                <Skeleton className="w-32 h-6 rounded bg-pink-200" />
-                <Skeleton className="w-64 h-6 rounded bg-pink-200" />
-                <Skeleton className="w-40 h-6 rounded bg-pink-200" />
-                <Skeleton className="w-8 h-6 rounded-full ml-auto bg-pink-200" />
+              <div key={i} className="flex items-center gap-4 px-6 py-4 bg-blue-100">
+                <Skeleton className="w-64 h-6 rounded bg-blue-200" />
+                <Skeleton className="w-44 h-6 rounded bg-blue-200" />
+                <Skeleton className="w-32 h-6 rounded bg-blue-200" />
+                <Skeleton className="w-64 h-6 rounded bg-blue-200" />
+                <Skeleton className="w-40 h-6 rounded bg-blue-200" />
+                <Skeleton className="w-8 h-6 rounded-full ml-auto bg-blue-200" />
               </div>
             ))}
           </div>
@@ -83,10 +83,10 @@ export default function ListTriggersLayout() {
             <Button
               variant="special"
               title="Add Trigger"
-              className="bg-pink-500 hover:bg-pink-600 text-white border-pink-500"
+              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
               onClick={(e) => e.stopPropagation()}
             >
-              <Icon name="add" className="text-pink-100" />
+              <Icon name="add" className="text-blue-100" />
               <span className="hidden md:inline">New Trigger</span>
             </Button>
           }
@@ -124,7 +124,7 @@ function ListTriggersSuspended() {
   }
 
   return (
-    <div className="p-4 flex flex-col gap-4 h-full bg-pink-50">
+    <div className="p-4 flex flex-col gap-4 h-full bg-blue-50">
       <ListPageHeader
         filter={{
           items: [],
@@ -134,16 +134,16 @@ function ListTriggersSuspended() {
           placeholder: "Search trigger",
           value: search,
           onChange: (e) => setSearch(e.target.value),
-          className: "bg-pink-100 border-pink-300 text-pink-700 placeholder-pink-400"
+          className: "bg-blue-100 border-blue-300 text-blue-700 placeholder-blue-400"
         }}
         view={{
           viewMode,
           onChange: setViewMode,
         }}
-        className="text-pink-700"
+        className="text-blue-700"
       />
 
-      <div className="flex-1 min-h-0 overflow-x-auto bg-pink-100 rounded-lg border border-pink-200">
+      <div className="flex-1 min-h-0 overflow-x-auto bg-blue-100 rounded-lg border border-blue-200">
         {viewMode === "table"
           ? <TableView triggers={filteredTriggers} />
           : <CardsView triggers={filteredTriggers} />}
@@ -205,36 +205,36 @@ function TableView(
   const columns: TableColumn<z.infer<typeof TriggerOutputSchema>>[] = [
     {
       id: "active",
-      header: <span className="text-pink-600">Active</span>,
+      header: <span className="text-blue-600">Active</span>,
       render: (t) => <TriggerToggle trigger={t} />,
     },
     {
       id: "title",
-      header: <span className="text-pink-600">Name</span>,
+      header: <span className="text-blue-600">Name</span>,
       accessor: (t) => t.data.title,
       sortable: true,
     },
     {
       id: "type",
-      header: <span className="text-pink-600">Trigger</span>,
+      header: <span className="text-blue-600">Trigger</span>,
       render: (t) => <TriggerType trigger={t} />,
       sortable: true,
     },
     {
       id: "agent",
-      header: <span className="text-pink-600">Agent</span>,
+      header: <span className="text-blue-600">Agent</span>,
       render: (t) => <AgentInfo agentId={t.agent?.id} />,
       sortable: true,
     },
     {
       id: "author",
-      header: <span className="text-pink-600">Created by</span>,
+      header: <span className="text-blue-600">Created by</span>,
       render: (t) => <UserInfo userId={t.user?.id} />,
       sortable: true,
     },
     {
       id: "createdAt",
-      header: <span className="text-pink-600">Created at</span>,
+      header: <span className="text-blue-600">Created at</span>,
       render: (t) => <DateTimeCell value={t.createdAt} />,
     },
     {
@@ -258,9 +258,9 @@ function TableView(
       sortDirection={sortDirection}
       onSort={handleSort}
       onRowClick={handleTriggerClick}
-      className="border-pink-200 text-pink-700"
-      headerClassName="bg-pink-200 text-pink-700"
-      rowClassName="hover:bg-pink-100"
+      className="border-blue-200 text-blue-700"
+      headerClassName="bg-blue-200 text-blue-700"
+      rowClassName="hover:bg-blue-100"
     />
   );
 }
@@ -281,7 +281,7 @@ function CardsView(
           key={`trigger-card-${trigger.id}-${index}`}
           trigger={trigger}
           onClick={handleTriggerClick}
-          className="bg-pink-100 border-pink-200 hover:bg-pink-200"
+          className="bg-blue-100 border-blue-200 hover:bg-blue-200"
         />
       ))}
     </div>

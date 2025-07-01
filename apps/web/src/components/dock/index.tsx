@@ -51,6 +51,17 @@ export const useDock = () => {
 const adapter =
   <T extends object>(Component: ComponentType<T>) =>
   (props: IDockviewPanelProps<T>) => {
+    const [isActive, setIsActive] = useState(props.api.isActive);
+
+    useEffect(() => {
+      const { dispose } = props.api.onDidActiveChange((e) => {
+        console.log(props.api.id);
+        setIsActive(e.isActive);
+      });
+
+      return dispose;
+    }, []);
+
     return (
       <Suspense
         fallback={
@@ -59,7 +70,7 @@ const adapter =
           </div>
         }
       >
-        <Component {...props.params} />
+        {isActive && <Component {...props.params} />}
       </Suspense>
     );
   };

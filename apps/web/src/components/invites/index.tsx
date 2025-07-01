@@ -199,7 +199,7 @@ function InvitesListContent() {
   const handleAccept = async (inviteId: string) => {
     setLoadingStates((prev) => ({ ...prev, [inviteId]: "accept" }));
     try {
-      const result = await acceptInviteMutation.mutateAsync({ id: inviteId });
+      const result = await acceptInviteMutation.mutateAsync(inviteId);
 
       if (!result.teamId) {
         toast.error("Failed to get team information");

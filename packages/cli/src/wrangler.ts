@@ -20,7 +20,7 @@ export async function getCurrentEnvVars(projectRoot: string) {
 
 export async function writeEnvVars(
   projectRoot: string,
-  envVars: Record<string, string>,
+  envVars: Record<string, string | undefined>,
 ) {
   await Deno.writeTextFile(
     join(projectRoot, envFile),
@@ -45,12 +45,20 @@ export async function getEnvVars(projectRoot?: string) {
   ]);
   const encodedBindings = btoa(JSON.stringify(config.bindings));
 
-  return {
+  const env: Record<string, string> = {
     ...currentEnvVars,
     DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
     DECO_CHAT_API_TOKEN: session?.access_token ?? "",
     DECO_CHAT_BINDINGS: encodedBindings,
-  };
+  }
+
+  if (config.local) {
+    env.DECO_CHAT_API_URL = "http://localhost:3001";
+  } else {
+    delete env.DECO_CHAT_API_URL;
+  }
+
+  return env;
 }
 
 async function ensureEnvVarsGitIgnore(

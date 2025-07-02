@@ -14,6 +14,7 @@ export {
 } from "./mcp.ts";
 
 export interface DefaultEnv {
+  DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_BINDINGS: string;
   DECO_CHAT_API_TOKEN?: string;
@@ -155,17 +156,14 @@ export const withRuntime = <TEnv>(
         },
       }
       : {},
-    ...userFns.fetch
-      ? {
-        fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
-          const url = new URL(req.url);
-          if (url.pathname === "/mcp") {
-            return server(req, env, ctx);
-          }
-          return userFns.fetch!(req, withBindings(env), ctx);
-        },
+    fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
+      const url = new URL(req.url);
+      if (url.pathname === "/mcp") {
+        return server(req, env, ctx);
       }
-      : {},
+      return userFns.fetch?.(req, withBindings(env), ctx) ||
+        new Response("Not found", { status: 404 });
+    },
     ...userFns.queue
       ? {
         queue: (batch: MessageBatch, env: TEnv, ctx: ExecutionContext) => {

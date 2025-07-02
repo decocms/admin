@@ -161,9 +161,10 @@ export function createStep<
     },
   });
 }
-export interface CreateMCPServerOptions {
-  tools?: ReturnType<typeof createTool>[];
-  workflows?: ReturnType<typeof createWorkflow>[];
+
+export interface CreateMCPServerOptions<Env = any> {
+  tools?: Array<(env: Env) => ReturnType<typeof createTool>>;
+  workflows?: Array<(env: Env) => ReturnType<typeof createWorkflow>>;
 }
 
 export type Fetch<TEnv = any> = (
@@ -198,80 +199,152 @@ const State = {
 };
 
 export const createMCPServer = <TEnv = any>(
-  options: CreateMCPServerOptions,
+  options: CreateMCPServerOptions<TEnv>,
 ): Fetch<TEnv> => {
-  const server = new McpServer(
-    { name: "@deco/mcp-api", version: "1.0.0" },
-    { capabilities: { tools: {} } },
-  );
+  let server: McpServer | null = null;
 
-  for (const tool of options.tools ?? []) {
-    server.registerTool(
-      tool.id,
-      {
-        description: tool.description,
-        inputSchema: tool.inputSchema && "shape" in tool.inputSchema
-          ? (tool.inputSchema.shape as z.ZodRawShape)
-          : z.object({}).shape,
-        outputSchema:
-          tool.outputSchema && typeof tool.outputSchema === "object" &&
-            "shape" in tool.outputSchema
-            ? (tool.outputSchema.shape as z.ZodRawShape)
+  const createServer = () => {
+    const server = new McpServer(
+      { name: "@deco/mcp-api", version: "1.0.0" },
+      { capabilities: { tools: {} } },
+    );
+
+    const bindings = withBindings<TEnv & DefaultEnv>(
+      env as unknown as TEnv & DefaultEnv,
+    );
+
+    const tools = options.tools?.map((tool) => tool(bindings));
+    const workflows = options.workflows?.map((workflow) => workflow(bindings));
+
+    for (const tool of tools ?? []) {
+      server.registerTool(
+        tool.id,
+        {
+          description: tool.description,
+          inputSchema: tool.inputSchema && "shape" in tool.inputSchema
+            ? (tool.inputSchema.shape as z.ZodRawShape)
             : z.object({}).shape,
-      },
-      async (args) => {
-        const result = await tool.execute!({
-          context: args,
-          runId: crypto.randomUUID(),
-          runtimeContext: createRuntimeContext(),
-        });
-        return {
-          structuredContent: result,
-        };
-      },
-    );
-  }
-  const bindings = withBindings<DefaultEnv>(env as DefaultEnv);
-
-  const mastra = new Mastra({
-    workflows: Object.fromEntries(
-      options.workflows?.map((workflow) => [workflow.id, workflow]) ?? [],
-    ),
-    storage: new D1Store({ client: bindings.DECO_CHAT_WORKSPACE_DB }),
-  });
-
-  for (const workflow of options.workflows ?? []) {
-    const wkflow = mastra.getWorkflow(workflow.id);
-    server.registerTool(
-      `DECO_CHAT_START_WORKFLOW_${workflow.id}`,
-      {
-        description: workflow.description,
-        inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
-          ? (workflow.inputSchema.shape as z.ZodRawShape)
-          : z.object({}).shape,
-        outputSchema: z.object({
-          id: z.string(),
-        }).shape,
-      },
-      async (args) => {
-        const { ctx, req } = State.getStore();
-        const run = await wkflow.createRunAsync({
-          runId: req.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID(),
-        });
-        ctx.waitUntil(
-          run.start({
-            inputData: args,
+          outputSchema:
+            tool.outputSchema && typeof tool.outputSchema === "object" &&
+              "shape" in tool.outputSchema
+              ? (tool.outputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
+        },
+        async (args) => {
+          const result = await tool.execute!({
+            context: args,
+            runId: crypto.randomUUID(),
             runtimeContext: createRuntimeContext(),
-          }),
-        );
+          });
+          return {
+            structuredContent: result,
+          };
+        },
+      );
+    }
 
-        return {
-          structuredContent: { id: run.runId },
-        };
-      },
-    );
-  }
+    const getMastraWorkflow = (
+      workflow: NonNullable<typeof workflows>[number],
+    ) => {
+      const id = workflow.id;
+      const mastra = new Mastra({
+        storage: new D1Store({ client: bindings.DECO_CHAT_WORKSPACE_DB }),
+        workflows: {
+          [id]: workflow,
+        },
+      });
+
+      return mastra.getWorkflow(id);
+    };
+
+    for (const workflow of workflows ?? []) {
+      server.registerTool(
+        `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
+        {
+          description: workflow.description,
+          inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
+            ? (workflow.inputSchema.shape as z.ZodRawShape)
+            : z.object({}).shape,
+          outputSchema: z.object({
+            id: z.string(),
+          }).shape,
+        },
+        async (args) => {
+          const { ctx, req } = State.getStore();
+          const wkflow = getMastraWorkflow(workflow);
+
+          const run = await wkflow.createRunAsync({
+            runId: req.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID(),
+          });
+
+          ctx.waitUntil(
+            run.start({
+              inputData: args,
+              runtimeContext: createRuntimeContext(),
+            }),
+          );
+
+          return {
+            structuredContent: { id: run.runId },
+          };
+        },
+      );
+
+      server.registerTool(
+        `DECO_CHAT_WORKFLOWS_CANCEL_${workflow.id}`,
+        {
+          description: workflow.description,
+          inputSchema: z.object({ runId: z.string() }).shape,
+          outputSchema: z.object({ cancelled: z.boolean() }).shape,
+        },
+        async (args) => {
+          const wkflow = getMastraWorkflow(workflow);
+
+          const run = await wkflow.createRunAsync({ runId: args.runId });
+
+          await run.cancel();
+
+          return {
+            structuredContent: { cancelled: true },
+          };
+        },
+      );
+
+      server.registerTool(
+        `DECO_CHAT_WORKFLOWS_RESUME_${workflow.id}`,
+        {
+          description: workflow.description,
+          inputSchema: z.object({
+            runId: z.string(),
+            stepId: z.string(),
+            resumeData: z.any(),
+          }).shape,
+          outputSchema: z.object({ resumed: z.boolean() }).shape,
+        },
+        async (args) => {
+          const { ctx } = State.getStore();
+          const wkflow = getMastraWorkflow(workflow);
+
+          const run = await wkflow.createRunAsync({ runId: args.runId });
+
+          ctx.waitUntil(run.resume({
+            resumeData: args.resumeData,
+            step: args.stepId,
+            runtimeContext: createRuntimeContext(),
+          }));
+
+          return {
+            structuredContent: { resumed: true },
+          };
+        },
+      );
+    }
+
+    return server;
+  };
+
   return async (req, env, ctx) => {
+    server ||= createServer();
     const transport = new HttpServerTransport();
 
     await server.connect(transport);

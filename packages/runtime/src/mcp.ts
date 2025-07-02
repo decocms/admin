@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
+import { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
-
+const { env } = await import("cloudflare:workers");
 export interface FetchOptions extends RequestInit {
   path?: string;
   segments?: string[];
@@ -71,12 +72,20 @@ export const MCPClient = new Proxy(
     get(_, name) {
       if (name === "forWorkspace") {
         return (workspace: string, token?: string) =>
-          createMCPFetchStub<[]>({ workspace, token });
+          createMCPFetchStub<[]>({
+            workspace,
+            token,
+            decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
+          });
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(
           connection: MCPConnectionProvider,
-        ) => createMCPFetchStub<TDefinition>({ connection });
+        ) =>
+          createMCPFetchStub<TDefinition>({
+            connection,
+            decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
+          });
       }
       return global[name as keyof typeof global];
     },

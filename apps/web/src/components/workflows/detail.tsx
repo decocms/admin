@@ -149,6 +149,26 @@ function DonutChart(
   );
 }
 
+/**
+ * Returns the status of a workflow step based on its data and the overall workflow status.
+ */
+function getStepStatus(stepData: any, workflowStatus: string): string {
+  if (!stepData) return "pending";
+  if (stepData.error) return "failed";
+  if (stepData.output && !stepData.error) return "completed";
+  if (stepData.startedAt && !stepData.endedAt) return "running";
+  if (!stepData.startedAt && !stepData.endedAt) return "pending";
+  if (stepData.endedAt && !stepData.output && !stepData.error) return "skipped";
+  // Fallback: if workflow is done but step has no data, mark as skipped
+  if (
+    (workflowStatus === "failed" || workflowStatus === "completed" ||
+      workflowStatus === "success") && !stepData.startedAt
+  ) {
+    return "skipped";
+  }
+  return "pending";
+}
+
 function StepCard(
   { step, workflowStatus }: { step: [string, any]; workflowStatus: string },
 ) {

@@ -4,8 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno serve -A --port 3001 --unstable-hmr --unstable-kv --env-file=../web/.env main.ts",
-    "dev:wrangler": "wrangler dev --port 3001",
+    "dev": "wrangler dev --port 3001",
     "stripe:test": "stripe fixtures testing/stripe/fixtures/workspace-wallet-deposit.json"
   },
   "dependencies": {

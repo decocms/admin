@@ -21,7 +21,7 @@ export function listWorkflows(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forWorkspace(workspace);
-  return client.HOSTING_APP_WORKFLOWS_LIST({ page, per_page }, { signal });
+  return client.HOSTING_APP_WORKFLOWS_LIST_RUNS({ page, per_page }, { signal });
 }
 
 export function getWorkflowStatus(

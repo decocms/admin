@@ -630,7 +630,7 @@ const getStore = async (c: WithTool<AppContext>) => {
 };
 
 export const listWorkflows = createTool({
-  name: "HOSTING_APP_WORKFLOWS_LIST",
+  name: "HOSTING_APP_WORKFLOWS_LIST_RUNS",
   description: "List all workflows on the workspace",
   inputSchema: InputPaginationListSchema.extend({
     workflowName: z.string().optional(),

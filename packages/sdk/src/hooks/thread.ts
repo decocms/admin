@@ -20,6 +20,7 @@ import {
 } from "../crud/thread.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
+import { MCPClient } from "../fetcher.ts";
 
 /** Hook for fetching thread details */
 export const useThread = (threadId: string) => {
@@ -67,16 +68,32 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   const updateThreadTitle = useUpdateThreadTitle();
 
   const generateThreadTitle = useCallback(
-    (
+    async (
       { firstMessage: _firstMessage, threadId }: {
         firstMessage: string;
         threadId: string;
       },
     ) => {
-      // call generate
-      setTimeout(() => {
-        updateThreadTitle.mutate({ threadId, title: "UHULLLLL", stream: true });
-      }, 3000);
+      const result = await MCPClient
+        .forWorkspace(workspace)
+        .GENERATE({
+          // This can break if the workspace disabled 4.1-nano.
+          // TODO: Implement something like a model price/quality/speed hinting system.
+          model: "openai:gpt-4.1-nano",
+          messages: [{
+            role: "user",
+            content:
+              `Generate a title for the thread that started with the following user message:
+          <Rule>Make it short and concise</Rule>
+          <Rule>Make it a single sentence</Rule>
+          <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
+
+          <UserMessage>
+            ${_firstMessage}
+          </UserMessage>`,
+          }],
+        });
+      updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
     },
     [updateThreadTitle],
   );

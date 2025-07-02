@@ -85,7 +85,7 @@ async function batchUpsertVectorContent(
     });
 
     // Upsert all vectors at once
-    await vector.upsert({
+    return await vector.upsert({
       indexName: c.name,
       vectors: embeddings,
       metadata: itemsWithIds.map((item) => ({
@@ -93,8 +93,6 @@ async function batchUpsertVectorContent(
         metadata: { ...item.metadata ?? {}, content: item.content },
       })),
     });
-
-    return itemsWithIds.map((item) => item.docId);
   } catch (e) {
     console.error("Error embedding content", e);
     throw e;

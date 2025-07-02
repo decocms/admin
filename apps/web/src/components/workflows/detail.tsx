@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -79,13 +80,16 @@ function getStatusBadgeVariant(
 
 function getStatusIcon(status: string) {
   if (status === "success" || status === "completed") {
+    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     return <Icon name="check_circle" className="text-green-500" size={20} />;
   }
   if (status === "failed" || status === "errored") {
+    // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
     return <Icon name="error" className="text-red-500" size={20} />;
   }
   if (status === "running" || status === "in_progress") {
     return (
+      // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
       <Icon name="autorenew" className="text-blue-500 animate-spin" size={20} />
     );
   }
@@ -395,7 +399,7 @@ const tabs: Record<string, Tab> = {
 };
 
 function WorkflowDetailPage() {
-  const { workflowName = "", instanceId = "" } = useParams();
+  const { workflowName = "" } = useParams();
   return (
     <PageLayout
       hideViewsButton

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
-import { DefaultEnv } from "./index.ts";
+import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
 const { env } = await import("cloudflare:workers");
 export interface FetchOptions extends RequestInit {

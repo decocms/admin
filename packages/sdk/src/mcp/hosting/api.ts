@@ -619,20 +619,6 @@ const OutputPaginationListSchema = z.object({
   per_page: z.number().optional(),
 });
 
-const getScriptsSetOnWorkspace = async (c: WithTool<AppContext>) => {
-  assertHasWorkspace(c);
-  const workspace = c.workspace.value;
-
-  const { data, error } = await c.db
-    .from(DECO_CHAT_HOSTING_APPS_TABLE)
-    .select("cloudflare_worker_id")
-    .eq("workspace", workspace);
-
-  if (error) throw error;
-
-  return new Set(data.map((d) => d.cloudflare_worker_id));
-};
-
 const getStore = async (c: WithTool<AppContext>) => {
   const dbId = await getWorkspaceD1Database(c);
 

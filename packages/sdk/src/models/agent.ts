@@ -17,7 +17,7 @@ const wellKnownModelIds = [
  * Schema for agent model validation
  * Accepts either well-known model IDs or UUIDs for BYOK models
  */
-const ModelSchema = z.union([
+export const ModelSchema = z.union([
   // Well-known model IDs
   z.enum(wellKnownModelIds as [string, ...string[]]),
   // UUID format for BYOK models

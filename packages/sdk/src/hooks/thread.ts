@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { useCallback, useEffect } from "react";
-import { WELL_KNOWN_AGENT_IDS } from "../constants.ts";
 import {
   getThread,
   getThreadMessages,
@@ -69,7 +68,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
 
   const generateThreadTitle = useCallback(
     (
-      { firstMessage, threadId }: { firstMessage: string; threadId: string },
+      { firstMessage: _firstMessage, threadId }: { firstMessage: string; threadId: string },
     ) => {
       // call generate
       setTimeout(() => {
@@ -209,7 +208,7 @@ export const useUpdateThreadTitle = () => {
       }
     },
     // deno-lint-ignore no-explicit-any
-    onError: (_: any, { threadId }: UpdateThreadTitleParams, context: any) => {
+    onError: (_: any, __: UpdateThreadTitleParams, context: any) => {
       // If the mutation fails, restore all previous queries data
       if (context?.previousQueriesData) {
         context.previousQueriesData.forEach(

@@ -1,7 +1,7 @@
 import { type Integration, listTools, useIntegrations } from "@deco/sdk";
 import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Form, FormItem } from "@deco/ui/components/form.tsx";
+import { Form, FormDescription, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
@@ -79,12 +79,12 @@ function Connections() {
   const showAddConnectionEmptyState = connections.length === 0 && !search;
   return (
     <div className="flex flex-col gap-2">
-      <h6 className="text-sm font-medium">Integrations</h6>
+      <FormLabel>Integrations</FormLabel>
       <div className="flex justify-between items-center">
-        <span className="block text-sm text-muted-foreground pb-2">
+        <FormDescription className="pb-2">
           Connect and configure integrations to extend your agent's capabilities
           with external services.
-        </span>
+        </FormDescription>
         {!showAddConnectionEmptyState && <AddConnectionButton />}
       </div>
       {showAddConnectionEmptyState
@@ -149,11 +149,11 @@ function Connections() {
 function KnowledgeHeading() {
   return (
     <>
-      <h6 className="text-sm font-medium">Knowledge</h6>
+      <FormLabel>Knowledge</FormLabel>
       <div className="flex justify-between items-center">
-        <span className="block text-sm text-muted-foreground pb-2">
+        <FormDescription className="pb-2">
           Directly attach files to the assistant knowledge base.
-        </span>
+        </FormDescription>
       </div>
     </>
   );
@@ -277,12 +277,12 @@ function MultiAgent() {
 
   return (
     <div className="flex flex-col gap-2">
-      <h6 className="text-sm font-medium">Multi-Agent</h6>
+      <FormLabel>Multi-Agent</FormLabel>
       <div className="flex justify-between items-center">
-        <span className="block text-sm text-muted-foreground pb-2">
+        <FormDescription className="pb-2">
           Enable your agent to communicate with other agents for collaborative
           workflows.
-        </span>
+        </FormDescription>
         {!showAddAgentEmptyState ? <AddAgentConnectionButton /> : null}
       </div>
       {showAddAgentEmptyState

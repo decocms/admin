@@ -32,13 +32,13 @@ function IntegrationListItemActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon">
-          <Icon name="more_horiz" size={16} />
+          <Icon name="more_horiz" className="text-foreground" size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onSelect={onConfigure}
-          className="text-primary focus:bg-primary/10"
+          className="text-foreground focus:bg-primary/10"
         >
           Configure
         </DropdownMenuItem>
@@ -133,7 +133,7 @@ export function IntegrationListItem({
             />
           </div>
           <div className="flex flex-col gap-1 w-full">
-            <span className="text-sm font-semibold text-left truncate">
+            <span className="text-sm text-foreground font-semibold text-left truncate">
               {integration.name}
             </span>
           </div>

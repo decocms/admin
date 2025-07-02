@@ -113,7 +113,7 @@ export function ViewsButton() {
   return createPrependPortal(
     <div
       key="views-button"
-      className="flex items-center justify-center w-9 h-8 pr-1"
+      className="flex items-center text-foreground justify-center w-9 h-8 pr-1"
     >
       <ViewsButtonInner tabs={tabs} />
     </div>,

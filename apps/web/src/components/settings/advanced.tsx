@@ -102,7 +102,7 @@ function AdvancedTab() {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-2">
                         <FormLabel>Visibility</FormLabel>
-                        <FormDescription className="text-xs text-muted-foreground">
+                        <FormDescription>
                           Control who can interact with this agent.
                         </FormDescription>
                       </div>
@@ -124,8 +124,8 @@ function AdvancedTab() {
                         <SelectContent>
                           <SelectItem value="WORKSPACE">
                             <div className="flex items-center gap-2">
-                              <Icon name="groups" />
-                              <span>Team</span>
+                              <Icon className="text-foreground" name="groups" />
+                              <span className="text-foreground">Team</span>
                               <span className="text-xs text-muted-foreground">
                                 Members of your team can access and edit the
                                 agent
@@ -134,8 +134,8 @@ function AdvancedTab() {
                           </SelectItem>
                           <SelectItem value="PUBLIC">
                             <div className="flex items-center gap-2">
-                              <Icon name="public" />
-                              <span>Public</span>
+                              <Icon className="text-foreground" name="public" />
+                              <span className="text-foreground">Public</span>
                               <span className="text-xs text-muted-foreground">
                                 Anyone with the link can view and use the agent.
                               </span>
@@ -168,7 +168,7 @@ function AdvancedTab() {
                         />
                       </a>
                     </FormLabel>
-                    <FormDescription className="text-xs text-muted-foreground">
+                    <FormDescription>
                       Maximum number of sequential LLM calls an agent can make.
                     </FormDescription>
                   </div>
@@ -193,7 +193,7 @@ function AdvancedTab() {
                 <FormItem>
                   <div className="flex flex-col gap-2">
                     <FormLabel>Max Tokens</FormLabel>
-                    <FormDescription className="text-xs text-muted-foreground">
+                    <FormDescription>
                       The maximum number of tokens the agent can generate.
                     </FormDescription>
                   </div>
@@ -231,7 +231,7 @@ function AdvancedTab() {
                         />
                       </a>
                     </FormLabel>
-                    <FormDescription className="text-xs text-muted-foreground">
+                    <FormDescription>
                       The number of recent messages to keep in memory context
                       window.
                     </FormDescription>
@@ -270,7 +270,7 @@ function AdvancedTab() {
                         />
                       </a>
                     </FormLabel>
-                    <FormDescription className="text-xs text-muted-foreground">
+                    <FormDescription>
                       Enable the agent to recall relevant information from past
                       conversations.
                     </FormDescription>
@@ -305,7 +305,7 @@ function AdvancedTab() {
                             />
                           </a>
                         </FormLabel>
-                        <FormDescription className="text-xs text-muted-foreground">
+                        <FormDescription>
                           Allow the agent to maintain a short-term memory for
                           ongoing tasks.
                         </FormDescription>
@@ -351,7 +351,7 @@ function AdvancedTab() {
                             value={field.value ?? ""}
                           />
                         </FormControl>
-                        <FormDescription className="text-xs text-muted-foreground">
+                        <FormDescription>
                           Use markdown for a text template, or paste a JSON
                           schema to structure the agent's working memory.
                         </FormDescription>
@@ -376,7 +376,7 @@ function AdvancedTab() {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-2">
                           <FormLabel>Access</FormLabel>
-                          <FormDescription className="text-xs text-muted-foreground">
+                          <FormDescription>
                             Control who can access with this agent by role.
                           </FormDescription>
                         </div>

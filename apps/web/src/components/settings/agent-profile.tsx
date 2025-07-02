@@ -145,7 +145,7 @@ function PromptTab() {
                           <Input
                             {...field}
                             placeholder="Untitled agent"
-                            className="border-none p-0 focus-visible:ring-0 font-medium rounded text-2xl md:text-2xl h-auto placeholder:text-muted-foreground placeholder:opacity-25 hover:bg-muted transition-colors"
+                            className="border-none p-0 focus-visible:ring-0 font-medium rounded text-2xl md:text-2xl h-auto placeholder:text-muted-foreground text-foreground placeholder:opacity-25 hover:bg-muted transition-colors"
                           />
                         </FormControl>
                       </FormItem>
@@ -159,7 +159,7 @@ function PromptTab() {
                           <Textarea
                             {...field}
                             placeholder="Describe what this agent does..."
-                            className="border-none resize-none min-h-auto p-0 shadow-none focus-visible:ring-0 text-sm rounded h-auto placeholder:text-muted-foreground hover:bg-muted transition-colors"
+                            className="border-none resize-none min-h-auto p-0 shadow-none focus-visible:ring-0 text-sm rounded h-auto text-foreground placeholder:text-muted-foreground hover:bg-muted transition-colors"
                           />
                         </FormControl>
                       </FormItem>
@@ -195,7 +195,7 @@ function PromptTab() {
                 <FormItem className="flex flex-col h-full w-full">
                   <FormControl className="h-full">
                     <PromptInput
-                      className="mt-2"
+                      className="mt-2 text-foreground placeholder:text-muted-foreground"
                       placeholder="Add context and behavior to shape responses, or '/' for tools and more..."
                       enableMentions
                       {...field}

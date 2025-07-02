@@ -48,14 +48,22 @@ export function AgentTriggers() {
   return (
     <div className="py-8 flex flex-col gap-4 h-full max-w-3xl mx-auto">
       <div className="flex items-center gap-4 px-2">
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full py-2 border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-          />
+        <div className="flex gap-2 flex-1">
+          <div className="border border-border rounded-lg flex-1">
+            <div className="flex items-center h-10 px-4 gap-2">
+              <Icon
+                name="search"
+                size={20}
+                className="text-muted-foreground"
+              />
+              <Input
+                placeholder="Search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
+              />
+            </div>
+          </div>
         </div>
         <TriggerModalButton
           agentId={agentId}
@@ -106,7 +114,7 @@ export function ListTriggersEmpty() {
           className="text-muted-foreground"
         />
       </div>
-      <h3 className="text-lg font-medium mb-2">No triggers configured</h3>
+      <h3 className="text-lg font-medium text-foreground mb-2">No triggers configured</h3>
       <p className="text-sm text-muted-foreground max-w-md mb-4">
         Triggers allow you to trigger your agent on a schedule or from external
         systems.

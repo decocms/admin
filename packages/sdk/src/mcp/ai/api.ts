@@ -15,8 +15,8 @@ import {
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
 import { convertToAIMessage } from "../../../../ai/src/agent/ai-message.ts";
 import { getPlan } from "../wallet/api.ts";
-import { Transaction } from "../wallet/client.ts";
-import { LanguageModelUsage } from "ai";
+import type { Transaction } from "../wallet/client.ts";
+import type { LanguageModelUsage } from "ai";
 
 const createLLMUsageTransaction = (opts: {
   usage: LanguageModelUsage;
@@ -26,14 +26,24 @@ const createLLMUsageTransaction = (opts: {
   userId: string;
   workspace: string;
 }): Transaction => {
-  return {
-    type: "LLMUsage" as const,
-    model: opts.model,
-    modelId: opts.modelId,
-    plan: opts.plan,
-    userId: opts.userId,
+  const usage = {
     workspace: opts.workspace,
+    model: opts.model,
     usage: opts.usage,
+  };
+  return {
+    type: "LLMGeneration" as const,
+    generatedBy: {
+      type: "user",
+      id: opts.userId,
+    },
+    vendor: {
+      type: "vendor",
+      id: opts.modelId,
+    },
+    usage,
+    metadata: opts,
+    timestamp: new Date(),
   };
 };
 
@@ -179,13 +189,12 @@ export const aiGenerate = createTool({
     });
 
     const plan = await getPlan(c);
-    // TODO: Create "LLM Usage" transaction
     const transaction = createLLMUsageTransaction({
       usage: result.usage,
       model: modelId,
       modelId,
       plan: plan.id,
-      userId: c.user.id,
+      userId: String(c.user.id) || `workspace::${c.workspace.value}`,
       workspace: c.workspace.value,
     });
 

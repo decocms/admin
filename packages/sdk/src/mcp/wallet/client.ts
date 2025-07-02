@@ -97,6 +97,12 @@ export interface AgentUsageEvent {
   workspace: string;
 }
 
+export interface LLMUsageEvent {
+  model: string;
+  usage: TextModelUsage;
+  workspace: string;
+}
+
 export interface Payer {
   type: "wallet";
   id: string;
@@ -132,6 +138,11 @@ export interface AgentGeneration extends BaseGeneration {
   usage: AgentUsageEvent;
 }
 
+export interface LLMGeneration extends BaseGeneration {
+  type: "LLMGeneration";
+  usage: LLMUsageEvent;
+}
+
 export interface PreAuthorization extends TransactionOperation {
   type: "PreAuthorization";
   amount: number | string;
@@ -154,6 +165,7 @@ export interface CommitPreAuthorized extends TransactionOperation {
 export type Transaction =
   | Generation
   | AgentGeneration
+  | LLMGeneration
   | CashIn
   | WorkspaceCashIn
   | CashOut

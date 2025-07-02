@@ -89,8 +89,11 @@ function getStatusIcon(status: string) {
   }
   if (status === "running" || status === "in_progress") {
     return (
-      // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
-      <Icon name="autorenew" className="text-blue-500 animate-spin" size={20} />
+      <Icon
+        name="autorenew"
+        className="text-purple-dark animate-spin"
+        size={20}
+      />
     );
   }
   return <Icon name="info" className="text-muted-foreground" size={20} />;
@@ -173,21 +176,97 @@ function getStepStatus(stepData: any, workflowStatus: string): string {
   return "pending";
 }
 
+// Utility to flatten the step graph and extract step IDs and metadata
+function flattenStepGraph(graph: any, parentKey = "", steps: any[] = []) {
+  if (!graph) return steps;
+  if (Array.isArray(graph)) {
+    graph.forEach((node) => flattenStepGraph(node, parentKey, steps));
+    return steps;
+  }
+  switch (graph.type) {
+    case "step":
+      steps.push({ id: graph.step.id, type: "step", node: graph });
+      break;
+    case "sleep":
+      steps.push({ id: graph.id, type: "sleep", node: graph });
+      break;
+    case "sleepUntil":
+      steps.push({ id: graph.id, type: "sleepUntil", node: graph });
+      break;
+    case "waitForEvent":
+      steps.push({ id: graph.step.id, type: "waitForEvent", node: graph });
+      break;
+    case "parallel":
+      graph.steps.forEach((n: any) => flattenStepGraph(n, parentKey, steps));
+      break;
+    case "conditional":
+      graph.steps.forEach((n: any) => flattenStepGraph(n, parentKey, steps));
+      break;
+    case "loop":
+      steps.push({ id: graph.step.id, type: "loop", node: graph });
+      break;
+    case "foreach":
+      steps.push({ id: graph.step.id, type: "foreach", node: graph });
+      break;
+    default:
+      break;
+  }
+  return steps;
+}
+
+// Enhanced StepCard to support preview and currently running/skipped states
 function StepCard(
-  { step, workflowStatus }: { step: [string, any]; workflowStatus: string },
+  { step, workflowStatus, isPreview, isCurrent, isSkipped }: {
+    step: { id: string; type: string; node: any; data?: any };
+    workflowStatus: string;
+    isPreview?: boolean;
+    isCurrent?: boolean;
+    isSkipped?: boolean;
+  },
 ) {
   const [open, setOpen] = useState(false);
-  const [stepName, stepData] = step;
-  const stepStatus = getStepStatus(stepData, workflowStatus);
+  const stepName = step.id.startsWith("mapping_") ? "mapping" : step.id;
+  const stepData = step.data;
+  const stepStatus = isSkipped
+    ? "skipped"
+    : isPreview
+    ? (isCurrent ? "running" : "pending")
+    : getStepStatus(stepData, workflowStatus);
   const stepBadgeVariant = getStatusBadgeVariant(stepStatus);
-  const stepStatusIcon = getStatusIcon(stepStatus);
-  const stepDuration = formatDuration(
-    stepData.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
-    stepData.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
-  );
+  const stepStatusIcon = isSkipped
+    ? <Icon name="block" className="text-muted-foreground" size={20} />
+    : isPreview
+    ? (isCurrent
+      ? (
+        <Icon
+          name="autorenew"
+          className="text-purple-dark animate-spin"
+          size={20}
+        />
+      )
+      : (
+        <Icon
+          name="hourglass_empty"
+          className="text-muted-foreground"
+          size={20}
+        />
+      ))
+    : getStatusIcon(stepStatus);
+  const stepDuration = stepData
+    ? formatDuration(
+      stepData.startedAt
+        ? new Date(stepData.startedAt).toISOString()
+        : undefined,
+      stepData.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+    )
+    : "-";
 
   return (
-    <Card className="p-0 shadow border border-muted">
+    <Card
+      className={`p-0 shadow border ${
+        isPreview || isSkipped ? "border-dashed opacity-60" : "border-muted"
+      } ${isCurrent ? "ring-2 ring-purple-dark" : ""}`}
+    >
       <div
         className="flex items-center justify-between cursor-pointer px-4 py-3 border-b"
         onClick={() => setOpen((v) => !v)}
@@ -203,6 +282,11 @@ function StepCard(
           >
             {stepStatus}
           </Badge>
+          {isCurrent && isPreview && (
+            <span className="ml-2 text-xs text-purple-dark font-semibold">
+              Currently Running
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Icon name="timer" size={14} className="text-muted-foreground" />
@@ -217,7 +301,7 @@ function StepCard(
           />
         </div>
       </div>
-      {open && (
+      {open && !isPreview && !isSkipped && stepData && (
         <CardContent className="p-4 flex flex-col gap-2">
           <div className="flex flex-row items-center gap-4 mb-2">
             <div className="flex flex-wrap gap-4 items-center flex-1">
@@ -249,6 +333,13 @@ function StepCard(
               </div>
             </div>
           </div>
+          {step.id.startsWith("mapping_") && step.node.step &&
+            step.node.step.mapConfig && (
+            <OutputField label="Function" value={step.node.step.mapConfig} />
+          )}
+          {stepData.payload && (
+            <OutputField label="Input" value={stepData.payload} />
+          )}
           {stepData.output && (
             <OutputField label="Output" value={stepData.output} />
           )}
@@ -272,15 +363,36 @@ function InstanceDetailTab() {
   const badgeVariant = getStatusBadgeVariant(status);
   const statusIcon = getStatusIcon(status);
   const context = typeof snapshot === "string" ? undefined : snapshot?.context;
-  const steps = context
-    ? Object.entries(context).filter(([name]) => name !== "input")
-    : [];
+  const stepGraph = typeof snapshot === "string"
+    ? []
+    : snapshot?.serializedStepGraph || [];
+  const allSteps = flattenStepGraph(stepGraph);
+
+  // Map step IDs to run data
+  const contextMap = context || {};
+  // Find the last completed or running step index
+  let lastRunIdx = -1;
+  for (let i = 0; i < allSteps.length; i++) {
+    const step = allSteps[i];
+    if (
+      contextMap[step.id] &&
+      (contextMap[step.id].output || contextMap[step.id].error ||
+        contextMap[step.id].startedAt)
+    ) {
+      lastRunIdx = i;
+    }
+  }
+  // The next step to run is lastRunIdx + 1
+
+  // Determine if workflow is done but there are steps left to run
+  const isWorkflowDone = status === "success" || status === "failed";
+
   // For duration, use the earliest startedAt and latest endedAt among steps
-  const startedAts = steps
-    .map(([, s]) => s.startedAt)
+  const startedAts = Object.values(contextMap)
+    .map((s: any) => s.startedAt)
     .filter((v): v is number => typeof v === "number");
-  const endedAts = steps
-    .map(([, s]) => s.endedAt)
+  const endedAts = Object.values(contextMap)
+    .map((s: any) => s.endedAt)
     .filter((v): v is number => typeof v === "number");
   const duration = formatDuration(
     startedAts.length
@@ -289,8 +401,11 @@ function InstanceDetailTab() {
     endedAts.length ? new Date(Math.max(...endedAts)).toISOString() : undefined,
   );
 
-  const errors = steps.filter(([, s]) => s.error).length;
-  const successes = steps.filter(([, s]) => s.output && !s.error).length;
+  const errors = allSteps.filter((step) => contextMap[step.id]?.error).length;
+  const successes =
+    allSteps.filter((step) =>
+      contextMap[step.id]?.output && !contextMap[step.id]?.error
+    ).length;
 
   return (
     <ScrollArea className="h-full">
@@ -321,7 +436,7 @@ function InstanceDetailTab() {
                 <DonutChart
                   success={successes}
                   errors={errors}
-                  total={steps.length}
+                  total={allSteps.length}
                 />
               </div>
             </div>
@@ -375,12 +490,23 @@ function InstanceDetailTab() {
         </Card>
         <h2 className="text-lg font-semibold mb-2">Steps</h2>
         <div className="space-y-4">
-          {steps.length > 0
+          {allSteps.length > 0
             ? (
-              steps
-                .map((step, i) => (
-                  <StepCard key={i} step={step} workflowStatus={status} />
-                ))
+              allSteps.map((step, i) => {
+                const hasRun = !!contextMap[step.id];
+                const isSkipped = isWorkflowDone && !hasRun;
+                return (
+                  <StepCard
+                    key={step.id}
+                    step={{ ...step, data: contextMap[step.id] }}
+                    workflowStatus={status}
+                    isPreview={!contextMap[step.id] && !isSkipped}
+                    isCurrent={i === lastRunIdx + 1 && !contextMap[step.id] &&
+                      !isSkipped}
+                    isSkipped={isSkipped}
+                  />
+                );
+              })
             )
             : <div className="text-muted-foreground">No steps found.</div>}
         </div>

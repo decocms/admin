@@ -715,10 +715,7 @@ export const getWorkflowStatus = createTool({
             output: z.any().optional(),
           }),
         ),
-        serializedStepGraph: z.array(z.object({
-          type: z.string(),
-          step: z.union([z.object({ id: z.string() }), z.any()]),
-        })),
+        serializedStepGraph: z.array(z.any()),
       }),
     ]),
   }),

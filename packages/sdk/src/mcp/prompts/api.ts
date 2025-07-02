@@ -45,6 +45,18 @@ export const createPrompt = createTool({
 
     if (error) throw error;
 
+    if (!data) throw new Error("Failed to create prompt");
+      await c
+      .db
+      .from("deco_chat_prompts_versions")
+      .insert({
+        prompt_id: data.id,
+        content,
+        created_by: `${c.user.id}`,
+      })
+      .select()
+      .single();
+
     return data;
   },
 });
@@ -59,6 +71,7 @@ export const updatePrompt = createTool({
       description: z.string().optional().nullable(),
       content: z.string().optional(),
     }),
+    versionName: z.string().optional(),
   }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
@@ -66,7 +79,7 @@ export const updatePrompt = createTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { id, data } = props;
+    const { id, data, versionName } = props;
 
     const { data: prompt, error } = await c.db
       .from("deco_chat_prompts")
@@ -77,6 +90,20 @@ export const updatePrompt = createTool({
       .single();
 
     if (error) throw error;
+
+    if(!prompt) throw new Error("Failed to update prompt");
+
+    await c
+      .db
+      .from("deco_chat_prompts_versions")
+      .insert({
+        prompt_id: id,
+        content: data.content,
+        created_by: `${c.user.id}`,
+        name: versionName,
+      })
+      .select()
+      .single();
 
     return prompt;
   },
@@ -266,6 +293,58 @@ export const searchPrompts = createTool({
       .eq("workspace", workspace)
       .textSearch("name", query)
       .range(offset * limit, (offset + 1) * limit);
+
+    if (error) throw error;
+
+    return data;
+  },
+});
+
+export const getPromptVersions = createTool({
+  name: "PROMPTS_GET_VERSIONS",
+  description: "Get the versions of a prompt",
+  inputSchema: z.object({
+    id: z.string(),
+    limit: z.number().optional(),
+    offset: z.number().optional(),
+  }),
+  handler: async (props, c) => {
+    assertHasWorkspace(c);
+    const { id, limit = 50, offset = 0 } = props;
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { data, error } = await c.db
+      .from("deco_chat_prompts_versions")
+      .select("*")
+      .eq("prompt_id", id)
+      .order("created_at", { ascending: false })
+      .range(offset * limit, (offset + 1) * limit);
+
+    if (error) throw error;
+
+    return data;
+  },
+});
+
+export const renamePromptVersion = createTool({
+  name: "PROMPTS_RENAME_VERSION",
+  description: "Rename a prompt version",
+  inputSchema: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  handler: async (props, c) => {
+    assertHasWorkspace(c);
+    const { id, name } = props;
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { data, error } = await c.db
+      .from("deco_chat_prompts_versions")
+      .update({ name })
+      .eq("id", id)
+      .single();
 
     if (error) throw error;
 

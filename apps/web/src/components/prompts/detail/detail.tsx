@@ -3,6 +3,7 @@ import {
   PromptValidationSchema,
   useAgent,
   usePrompt,
+  useSDK,
   useUpdateAgentCache,
   useUpdatePrompt,
   WELL_KNOWN_AGENT_IDS,
@@ -18,8 +19,14 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
@@ -30,9 +37,13 @@ import { ChatInput } from "../../chat/chat-input.tsx";
 import { ChatMessages } from "../../chat/chat-messages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
 import type { Tab } from "../../dock/index.tsx";
+import { togglePanel } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
+import HistoryTab from "./history.tsx";
+import { useQueryClient } from "@tanstack/react-query";
+import { KEYS } from "../../../../../../packages/sdk/src/hooks/api.ts";
 
 function MainChat() {
   return (
@@ -62,6 +73,11 @@ const TABS: Record<string, Tab> = {
     initialOpen: "left",
   },
   ...FORM_TAB,
+  history: {
+    Component: HistoryTab,
+    title: "History",
+    initialOpen: false,
+  },
 };
 
 export default function Page() {
@@ -70,6 +86,9 @@ export default function Page() {
   const { id } = useParams();
   const promptId = id!;
   const threadId = promptId;
+  
+  const client = useQueryClient();
+  const { workspace } = useSDK();
 
   const { data: _prompt } = usePrompt(promptId);
   const prompt = _prompt || {
@@ -122,6 +141,8 @@ export default function Page() {
       });
 
       form.reset(data);
+
+      client.refetchQueries({ queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id) });
     } catch (error) {
       console.error(
         `Error updating prompt:`,
@@ -185,43 +206,66 @@ export default function Page() {
             hideViewsButton
             tabs={prompt.readonly ? FORM_TAB : TABS}
             actionButtons={
-              <div
-                className={cn(
-                  "flex items-center gap-2",
-                  "transition-opacity",
-                  numberOfChanges > 0 ? "opacity-100" : "opacity-0",
-                )}
-              >
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="text-foreground"
-                  onClick={handleDiscard}
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        togglePanel({
+                          id: "history",
+                          component: "history",
+                          title: "History",
+                          position: { direction: "right" },
+                        });
+                      }}
+                    >
+                      <Icon name="history" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Version history
+                  </TooltipContent>
+                </Tooltip>
+                <div
+                  className={cn(
+                    "flex items-center gap-2",
+                    "transition-opacity",
+                    numberOfChanges > 0 ? "opacity-100" : "opacity-0 w-0",
+                  )}
                 >
-                  Discard
-                </Button>
-                <Button
-                  className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
-                  disabled={!numberOfChanges ||
-                    prompt.readonly}
-                  onClick={() => {
-                    onSubmit(form.getValues());
-                  }}
-                >
-                  {isMutating
-                    ? (
-                      <>
-                        <Spinner size="xs" />
-                        <span>Saving...</span>
-                      </>
-                    )
-                    : (
-                      <span>
-                        Save {numberOfChanges}{" "}
-                        change{numberOfChanges > 1 ? "s" : ""}
-                      </span>
-                    )}
-                </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-foreground"
+                    onClick={handleDiscard}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    className="bg-primary-light text-primary-dark hover:bg-primary-light/90 gap-2"
+                    disabled={!numberOfChanges ||
+                      prompt.readonly}
+                    onClick={() => {
+                      onSubmit(form.getValues());
+                    }}
+                  >
+                    {isMutating
+                      ? (
+                        <>
+                          <Spinner size="xs" />
+                          <span>Saving...</span>
+                        </>
+                      )
+                      : (
+                        <span>
+                          Save {numberOfChanges}{" "}
+                          change{numberOfChanges > 1 ? "s" : ""}
+                        </span>
+                      )}
+                  </Button>
+                </div>
               </div>
             }
             breadcrumb={

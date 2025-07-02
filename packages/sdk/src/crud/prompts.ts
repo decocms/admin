@@ -1,5 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
-import type { Prompt } from "../models/index.ts";
+import type { Prompt, PromptVersion } from "../models/index.ts";
 
 export const listPrompts = (
   workspace: string,
@@ -46,6 +46,7 @@ export interface UpdatePromptInput {
   data: Partial<
     Pick<Prompt, "name" | "description" | "content">
   >;
+  versionName?: string;
   [key: string]: unknown;
 }
 
@@ -80,4 +81,33 @@ export const searchPrompts = (
 ): Promise<Prompt[]> =>
   MCPClient.forWorkspace(workspace).PROMPTS_SEARCH(input, init) as Promise<
     Prompt[]
+  >;
+
+interface GetPromptVersionsInput {
+  id: string;
+  limit?: number;
+  offset?: number;
+}
+
+export const getPromptVersions = (
+  workspace: string,
+  input: GetPromptVersionsInput,
+  init?: RequestInit,
+): Promise<PromptVersion[]> =>
+  MCPClient.forWorkspace(workspace).PROMPTS_GET_VERSIONS(input, init) as Promise<
+    PromptVersion[]
+  >;
+
+interface RenamePromptVersionInput {
+  id: string;
+  name: string;
+}
+
+export const renamePromptVersion = (
+  workspace: string,
+  input: RenamePromptVersionInput,
+  init?: RequestInit,
+): Promise<PromptVersion> =>
+  MCPClient.forWorkspace(workspace).PROMPTS_RENAME_VERSION(input, init) as Promise<
+    PromptVersion
   >;

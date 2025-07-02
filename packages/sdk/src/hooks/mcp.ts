@@ -1,6 +1,7 @@
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import {
   useMutation,
+  UseMutationOptions,
   useQueries,
   useQuery,
   useQueryClient,
@@ -313,7 +314,7 @@ export const useDecoOAuthInstall = () => {
 
     const result = await MCPClient
       .forWorkspace(workspace)
-      .DECO_INTEGRATION_OAUTH_START({
+      .DECO_INTEGRATION_INSTALL({
         appName: appName,
         returnUrl,
         installId,
@@ -332,46 +333,50 @@ export const useDecoOAuthInstall = () => {
 
 export const useComposioOAuthInstall = () => {
   const { workspace } = useSDK();
+  const { mutateAsync: createMCP } = useInstallIntegration();
 
   const getAuthUrl = async ({ installId, url }: {
     installId: string;
     url: string;
   }) => {
-    // const result = await MCPClient
-    //   .forWorkspace(workspace)
-    //   .COMPOSIO_INTEGRATION_OAUTH_START({
-    //     url,
-    //     installId,
-    //   });
+    const result = await MCPClient
+      .forWorkspace(workspace)
+      .COMPOSIO_INTEGRATION_OAUTH_START({
+        url,
+        installId,
+      });
 
-    //   const redirectUrl = result?.redirectUrl;
+    const redirectUrl = result?.redirectUrl;
 
-    //   if (!redirectUrl) {
-    //     const errorInfo = {
-    //       appName,
-    //       returnUrl,
-    //       installId: integration.id.split(":").pop()!,
-    //       url: integration.connection.url,
-    //       result,
-    //     };
-    //     console.error("[Composio] No redirect URL found", errorInfo);
-    //   }
+    if (!redirectUrl) {
+      const errorInfo = {
+        appName,
+        returnUrl,
+        installId: integration.id.split(":").pop()!,
+        url: integration.connection.url,
+        result,
+      };
+      console.error("[Composio] No redirect URL found", errorInfo);
+    }
 
-    // return { redirectUrl };
+    return { redirectUrl };
   };
 
   return { getAuthUrl };
 };
 
-export const useInstallIntegration = () => {
+export const useInstallIntegration = (
+  props: Partial<UseMutationOptions<Integration, Error, string>> = {},
+) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
   const mutation = useMutation({
+    ...props,
     mutationFn: async (appName: string) => {
       const result: { installationId: string } = await MCPClient
         .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName });
+        .DECO_MCP_INSTALL({ id: appName });
 
       const integration = await loadIntegration(
         workspace,
@@ -380,7 +385,7 @@ export const useInstallIntegration = () => {
 
       return integration;
     },
-    onSuccess: (integration) => {
+    onSuccess: (integration, ...rest) => {
       if (!integration) {
         return;
       }
@@ -396,6 +401,8 @@ export const useInstallIntegration = () => {
         listKey,
         (old) => !old ? [integration] : [integration, ...old],
       );
+
+      props.onSuccess?.(integration, ...rest);
     },
   });
 
@@ -416,7 +423,7 @@ export const useInstallFromMarketplace = () => {
     ) => {
       const result: { installationId: string } = await MCPClient
         .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName });
+        .DECO_MCP_INSTALL({ id: appName });
 
       const integration = await loadIntegration(
         workspace,

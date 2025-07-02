@@ -595,9 +595,10 @@ It's always handy to search for installed integrations with no query, since all 
   },
 });
 
-export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
-  name: "DECO_INTEGRATION_OAUTH_START",
-  description: "Start the OAuth flow for an integration",
+export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
+  name: "DECO_INTEGRATION_INSTALL",
+  description:
+    "Start the OAuth flow for an integration. Needed for installing any marketplace integration.",
   inputSchema: z.object({
     appName: z.string().describe(
       "The id of the integration to start the OAuth flow for",
@@ -723,10 +724,11 @@ const CONFIGURE_INTEGRATION_OUTPUT_SCHEMA = z.object({
   installId: z.string().optional(),
 });
 
-export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
-  name: "DECO_INTEGRATION_INSTALL",
+export const DECO_MCP_INSTALL = createIntegrationManagementTool({
+  name: "DECO_MCP_INSTALL",
   description:
-    "Install an integration. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool. Also, after installing, enable the integration using the INTEGRATION_ENABLE tool.",
+    `Receives a MarketplaceIntegration id and provisions a new MCP instance for it.
+     Does not make any setup.`,
   inputSchema: z.object({
     id: z.string().describe(
       "The id of the integration to install. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool",
@@ -785,12 +787,15 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
         client.close();
       }
     }
-    const created = await createIntegration.handler(integration);
 
-    if (!created?.id) {
-      throw new Error("Failed to create integration");
+    if (args.createIntegration) {
+      const created = await createIntegration.handler(integration);
+
+      if (!created?.id) {
+        throw new Error("Failed to create integration");
+      }
     }
 
-    return { installationId: created.id };
+    return { installationId: integration.id };
   },
 });

@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@deco/ui/lib/utils.ts";
 
 const variants = cva(
-  "animate-spin",
+  "animate-spin animate-[spin_0.5s_linear_infinite]",
   {
     variants: {
       variant: {

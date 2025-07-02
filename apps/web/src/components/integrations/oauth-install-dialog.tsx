@@ -7,6 +7,7 @@ import {
   useComposioOAuthInstall,
   useCreateIntegration,
   useDecoOAuthInstall,
+  useInstallIntegration,
 } from "@deco/sdk";
 import { IntegrationIcon } from "./common.tsx";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +17,7 @@ import {
   subscribeToOAuthInstall,
 } from "../../lib/broadcast-channels.ts";
 import { toast } from "sonner";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 const DECO_CHAT_ICON =
   "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png";
@@ -101,9 +103,11 @@ function IconsState({
 function IdleConnect({
   integration,
   onStartOAuth,
+  isLoading,
 }: {
   integration: MarketplaceIntegration;
   onStartOAuth: () => void;
+  isLoading: boolean;
 }) {
   const title = getInstallTitle(integration);
   const belowButtonDescription = getBelowButtonDescription(
@@ -125,8 +129,9 @@ function IdleConnect({
         {integration.description}
       </p>
       <div className="w-full flex flex-col gap-2">
-        <Button onClick={onStartOAuth}>
+        <Button onClick={onStartOAuth} disabled={isLoading}>
           Connect
+          {isLoading && <Spinner size="sm" />}
         </Button>
         {belowButtonDescription}
       </div>
@@ -369,6 +374,15 @@ const useStubOAuthFlow = ({
   installingIntegration: MarketplaceIntegration | null;
 }) => {
   const { isDecoOAuthIntegration } = useDecoOAuthInstall();
+  const { mutateAsync: installIntegration } = useInstallIntegration({
+    onSuccess: () => setState("success"),
+    onError: (error) => {
+      console.error(error);
+      toast.error("Could not install integration, please try again later");
+      setState("error");
+    },
+  });
+
   const shouldUseStubOAuthFlow = (integration: MarketplaceIntegration) => {
     if (integration.provider === "deco") {
       return !isDecoOAuthIntegration(integration.id);
@@ -376,11 +390,8 @@ const useStubOAuthFlow = ({
     return integration.provider !== "composio";
   };
 
-  const handleStartOAuth = async () => {
-    if (!installingIntegration) {
-      toast.error("Error starting OAuth flow, no integration to install");
-      return;
-    }
+  const handleStartOAuth = async (integration: MarketplaceIntegration) => {
+    await installIntegration(integration.id);
   };
 
   return {
@@ -391,6 +402,7 @@ const useStubOAuthFlow = ({
 
 type OAuthDialogFlowState =
   | "idle"
+  | "installing"
   | "waiting-for-authorization"
   | "success"
   | "error";
@@ -426,8 +438,10 @@ export function OAuthInstallDialog({
   });
 
   const handleStartOAuth = () => {
+    setState("installing");
     if (!installingIntegration) {
       toast.error("Error starting OAuth flow, no integration to install");
+      setState("error");
       return;
     }
 
@@ -450,10 +464,11 @@ export function OAuthInstallDialog({
       {installingIntegration
         ? (
           <>
-            {state === "idle" && (
+            {(state === "idle" || state === "installing") && (
               <IdleConnect
                 integration={installingIntegration}
                 onStartOAuth={handleStartOAuth}
+                isLoading={state === "installing"}
               />
             )}
             {state === "waiting-for-authorization" && (

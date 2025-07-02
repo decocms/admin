@@ -23,9 +23,9 @@ const getWalletClient = (c: AppContext) => {
 };
 
 const createTool = createToolGroup("AI", {
-  name: "AI Generation",
-  description: "Direct AI model generation capabilities.",
-  icon: "https://assets.decocache.com/mcp/ai-generation.png",
+  name: "AI Gateway",
+  description: "Unified LLM API, keeping the centralized observability and billing.",
+  icon: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
 });
 
 // Input Schema (simplified for standalone usage)

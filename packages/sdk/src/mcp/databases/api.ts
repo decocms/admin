@@ -1,7 +1,7 @@
 import z from "zod";
 import { WebCache } from "../../cache/index.ts";
 import {
-  AppContext,
+  type AppContext,
   assertHasWorkspace,
   assertsNotNull,
   assertWorkspaceResourceAccess,
@@ -14,7 +14,9 @@ const cache = new WebCache<string>(
 );
 const inMemoryCache = new Map<string, string>();
 
-export const getWorkspaceD1Database = async (c: AppContext): Promise<string> => {
+export const getWorkspaceD1Database = async (
+  c: AppContext,
+): Promise<string> => {
   assertHasWorkspace(c);
   const cacheKey = `${c.workspace.value}-d1-database`;
   const inMemory = inMemoryCache.get(cacheKey);

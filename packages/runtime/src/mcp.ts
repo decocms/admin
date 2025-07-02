@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createMCPClientProxy } from "./proxy.ts";
 import type { MCPConnection } from "./connection.ts";
+import { createMCPClientProxy } from "./proxy.ts";
 
 export interface FetchOptions extends RequestInit {
   path?: string;
@@ -84,7 +84,6 @@ export const MCPClient = new Proxy(
 
 export interface ToolBinder<
   TName extends string = string,
-  // deno-lint-ignore no-explicit-any
   TInput = any,
   TReturn extends object | null | boolean = object,
 > {

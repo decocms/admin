@@ -101,9 +101,7 @@ function WorkflowsTableView(
     {
       id: "status",
       header: "Status",
-      render: (workflow) => (
-        <span className="text-xs">{workflow.status}</span>
-      ),
+      render: (workflow) => <span className="text-xs">{workflow.status}</span>,
       sortable: true,
     },
     {
@@ -172,7 +170,9 @@ function WorkflowsTab() {
 
   function handleWorkflowClick(workflow: Workflow) {
     navigateWorkspace(
-      `/workflows/${encodeURIComponent(workflow.workflowName)}/instances/${workflow.runId}`,
+      `/workflows/${
+        encodeURIComponent(workflow.workflowName)
+      }/instances/${workflow.runId}`,
     );
   }
 

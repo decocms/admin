@@ -5,7 +5,7 @@ import type {
   ScheduledController,
 } from "@cloudflare/workers-types";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
-import { MCPClient, QueryResult } from "./mcp.ts";
+import { MCPClient, type QueryResult } from "./mcp.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -153,13 +153,13 @@ export const withRuntime = <TEnv>(
         },
       }
       : {},
-    ...(userFns.fetch
+    ...userFns.fetch
       ? {
         fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
           return userFns.fetch!(req, withBindings(env), ctx);
         },
       }
-      : {}),
+      : {},
     ...userFns.queue
       ? {
         queue: (batch: MessageBatch, env: TEnv, ctx: ExecutionContext) => {

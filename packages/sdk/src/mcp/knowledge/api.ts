@@ -15,12 +15,18 @@ import {
   createToolGroup,
 } from "../context.ts";
 import { FileProcessor } from "../file-processor.ts";
+import {
+  EmbeddingModelV1,
+  EmbeddingModelV1Embedding,
+} from "npm:@ai-sdk/provider@^1.1.3";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
 }
 export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
 export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
+const MAX_EMBEDDINGS_PER_CALL = 10;
+
 const createKnowledgeBaseTool = createToolFactory<
   WithTool<KnowledgeBaseContext>
 >((c) =>
@@ -54,6 +60,50 @@ async function getVector(c: AppContext) {
   return vector;
 }
 
+/**
+ * Split items into batches based on maxEmbeddingsPerCall
+ * @param embedder
+ * @param values
+ * @returns EmbeddingModelV1Embedding
+ */
+async function embedBatchMany(
+  embedder: EmbeddingModelV1<string>,
+  values: string[],
+) {
+  const maxEmbeddingsPerCall = embedder.maxEmbeddingsPerCall ??
+    MAX_EMBEDDINGS_PER_CALL;
+  const supportsParallel = embedder.supportsParallelCalls;
+  const batches: string[][] = [];
+  for (let i = 0; i < values.length; i += maxEmbeddingsPerCall) {
+    batches.push(values.slice(i, i + maxEmbeddingsPerCall));
+  }
+
+  // Process batches either in parallel or sequentially
+  let allEmbeddings: EmbeddingModelV1Embedding[] = [];
+  if (supportsParallel && batches.length > 1) {
+    // Process batches in parallel
+    const batchPromises = batches.map((batch) =>
+      embedMany({
+        model: embedder,
+        values: batch,
+      })
+    );
+    const batchResults = await Promise.all(batchPromises);
+    allEmbeddings = batchResults.flatMap((result) => result.embeddings);
+  } else {
+    // Process batches sequentially
+    for (const batch of batches) {
+      const { embeddings } = await embedMany({
+        model: embedder,
+        values: batch,
+      });
+      allEmbeddings.push(...embeddings);
+    }
+  }
+
+  return allEmbeddings;
+}
+
 async function batchUpsertVectorContent(
   items: Array<{
     content: string;
@@ -78,11 +128,8 @@ async function batchUpsertVectorContent(
       docId: item.docId ?? crypto.randomUUID(),
     }));
 
-    // Create embeddings for all items
-    const { embeddings } = await embedMany({
-      model: embedder,
-      values: itemsWithIds.map((item) => item.content),
-    });
+    const contentValues = itemsWithIds.map((item) => item.content);
+    const embeddings = await embedBatchMany(embedder, contentValues);
 
     // Upsert all vectors at once
     return await vector.upsert({

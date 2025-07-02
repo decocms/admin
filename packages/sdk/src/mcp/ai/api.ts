@@ -4,7 +4,7 @@ import { z } from "zod";
 import { DEFAULT_MODEL } from "../../constants.ts";
 import {
   assertHasWorkspace,
-  // assertWorkspaceResourceAccess,
+  assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import {
@@ -71,9 +71,7 @@ const createTool = createToolGroup("AI", {
     "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
 });
 
-// Input Schema (simplified for standalone usage)
 const AIGenerateInputSchema = z.object({
-  // Core generation parameters
   messages: z.array(z.object({
     id: z.string().optional(),
     role: z.enum(["user", "assistant", "system"]),
@@ -94,24 +92,20 @@ const AIGenerateInputSchema = z.object({
     ),
   })).describe("Array of messages for the conversation"),
 
-  // Model and configuration
   model: z.string().optional().describe(
     "Model ID to use for generation (defaults to workspace default)",
   ),
   instructions: z.string().optional().describe("System instructions/prompt"),
 
-  // Generation limits
   maxTokens: z.number().default(8192).optional().describe(
     "Maximum number of tokens to generate",
   ),
 
-  // Tool integration (optional)
   tools: z.record(z.string(), z.array(z.string())).optional().describe(
     "Tools available for the generation",
   ),
 });
 
-// Output Schema (based on GenerateTextResult from @ai/sdk)
 const AIGenerateOutputSchema = z.object({
   text: z.string().describe("The generated text response"),
   usage: z.object({
@@ -120,8 +114,9 @@ const AIGenerateOutputSchema = z.object({
     totalTokens: z.number().describe("Total number of tokens used"),
     transactionId: z.string().describe("Transaction ID"),
   }).describe("Token usage information"),
-  finishReason: z.enum(["stop", "length", "content-filter", "tool-calls"])
-    .optional().describe("Reason why generation finished"),
+  finishReason: z.string().optional().describe(
+    "Reason why generation finished",
+  ),
 });
 
 export const aiGenerate = createTool({
@@ -132,8 +127,7 @@ export const aiGenerate = createTool({
   outputSchema: AIGenerateOutputSchema,
   handler: async (input, c) => {
     assertHasWorkspace(c);
-    // await assertWorkspaceResourceAccess(c.tool.name, c);
-    c.resourceAccess.grant();
+    await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const wallet = getWalletClient(c);
     const workspaceWalletId = WellKnownWallets.build(
@@ -232,25 +226,7 @@ export const aiGenerate = createTool({
         totalTokens: result.usage.totalTokens,
         transactionId,
       },
-      finishReason: mapFinishReason(result.finishReason),
+      finishReason: result.finishReason,
     };
   },
 });
-
-// Helper function to map finish reason to expected enum
-function mapFinishReason(
-  reason: string,
-): "stop" | "length" | "content-filter" | "tool-calls" | undefined {
-  switch (reason) {
-    case "stop":
-      return "stop";
-    case "length":
-      return "length";
-    case "content-filter":
-      return "content-filter";
-    case "tool-calls":
-      return "tool-calls";
-    default:
-      return undefined;
-  }
-}

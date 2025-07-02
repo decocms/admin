@@ -14,6 +14,28 @@ import {
 } from "../wallet/index.ts";
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
 import { convertToAIMessage } from "../../../../ai/src/agent/ai-message.ts";
+import { getPlan } from "../wallet/api.ts";
+import { Transaction } from "../wallet/client.ts";
+import { LanguageModelUsage } from "ai";
+
+const createLLMUsageTransaction = (opts: {
+  usage: LanguageModelUsage;
+  model: string;
+  modelId: string;
+  plan: string;
+  userId: string;
+  workspace: string;
+}): Transaction => {
+  return {
+    type: "LLMUsage" as const,
+    model: opts.model,
+    modelId: opts.modelId,
+    plan: opts.plan,
+    userId: opts.userId,
+    workspace: opts.workspace,
+    usage: opts.usage,
+  };
+};
 
 const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
@@ -154,7 +176,29 @@ export const aiGenerate = createTool({
       maxTokens: input.maxTokens,
     });
 
-    // TODO: Compute usage with wallet
+    const plan = await getPlan(c);
+    // TODO: Create "LLM Usage" transaction
+    const transaction = createLLMUsageTransaction({
+      usage: result.usage,
+      model: modelId,
+      modelId,
+      plan: plan.id,
+      userId: c.user.id,
+      workspace: c.workspace.value,
+    });
+
+    const response = await wallet["POST /transactions"]({},
+      {
+        body: transaction,
+      },
+    );
+
+    if (!response.ok) {
+      throw new InternalServerError("Failed to create transaction");
+    }
+
+    const transactionData = await response.json();
+    const transactionId = transactionData.id;
 
     return {
       text: result.text,
@@ -162,6 +206,7 @@ export const aiGenerate = createTool({
         promptTokens: result.usage.promptTokens,
         completionTokens: result.usage.completionTokens,
         totalTokens: result.usage.totalTokens,
+        transactionId,
       },
       finishReason: mapFinishReason(result.finishReason),
     };

@@ -144,7 +144,9 @@ export class MicroDollar {
   }
 
   public abs(): MicroDollar {
-    return new MicroDollar(BigInt(Math.abs(Number(this.microdollars))));
+    return new MicroDollar(
+      this.microdollars < 0n ? -this.microdollars : this.microdollars,
+    );
   }
 
   public isNegative(): boolean {

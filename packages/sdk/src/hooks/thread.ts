@@ -13,6 +13,7 @@ import {
   getThread,
   getThreadMessages,
   listThreads,
+  type Thread,
   type ThreadFilterOptions,
   type ThreadList,
   updateThreadMetadata,
@@ -21,6 +22,9 @@ import {
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 import { MCPClient } from "../fetcher.ts";
+
+// Minimum delay to prevent UI flickering during title generation
+const TITLE_GENERATION_MIN_DELAY_MS = 2000;
 
 /** Hook for fetching thread details */
 export const useThread = (threadId: string) => {
@@ -96,11 +100,13 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             }],
           }),
         // ensure at least 2 seconds delay to avoid UI flickering.
-        new Promise((resolve) => setTimeout(resolve, 2000)),
+        new Promise((resolve) =>
+          setTimeout(resolve, TITLE_GENERATION_MIN_DELAY_MS)
+        ),
       ]);
       updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
     },
-    [updateThreadTitle],
+    [updateThreadTitle, workspace],
   );
 
   const effect = useCallback(
@@ -113,7 +119,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
       client.setQueryData<Awaited<ReturnType<typeof listThreads>>>(
         key,
         (oldData) => {
-          const exists = oldData?.threads.find((thread) =>
+          const exists = oldData?.threads.find((thread: Thread) =>
             thread.id === threadId
           );
 
@@ -186,6 +192,8 @@ export const useUpdateThreadTitle = () => {
       if (stream) {
         // Animate title character by character
         let currentIndex = 0;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
         const animateTitle = () => {
           if (currentIndex <= title.length) {
             const partialTitle = title.slice(0, currentIndex);
@@ -208,13 +216,20 @@ export const useUpdateThreadTitle = () => {
 
             currentIndex++;
             if (currentIndex <= title.length) {
-              setTimeout(animateTitle, 20);
+              timeoutId = setTimeout(animateTitle, 20);
             }
           }
         };
 
         // Start animation
         animateTitle();
+
+        // Return cleanup function
+        return () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        };
       } else {
         // Optimistically update all threads queries that contain this thread
         client.setQueriesData(

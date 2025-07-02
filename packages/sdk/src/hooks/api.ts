@@ -49,7 +49,6 @@ export const KEYS = {
       options.orderBy,
       options.cursor,
       options.limit,
-      options.uniqueByAgentId,
     ];
   },
   TOOLS: (

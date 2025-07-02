@@ -11,7 +11,6 @@ export interface ThreadFilterOptions {
     | "updatedAt_asc";
   cursor?: string;
   limit?: number;
-  uniqueByAgentId?: boolean;
 }
 
 export interface ThreadList {

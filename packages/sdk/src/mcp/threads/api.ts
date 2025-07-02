@@ -97,7 +97,6 @@ export const listThreads = createTool({
     limit: z.number().min(1).max(20).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
-    uniqueByAgentId: z.boolean().default(false).optional(),
     orderBy: z.enum([
       "createdAt_desc",
       "createdAt_asc",
@@ -107,7 +106,7 @@ export const listThreads = createTool({
     cursor: z.string().optional(),
   }),
   handler: async (
-    { limit, agentId, orderBy, cursor, resourceId, uniqueByAgentId },
+    { limit, agentId, orderBy, cursor, resourceId },
     c,
   ) => {
     assertHasWorkspace(c);
@@ -174,14 +173,8 @@ export const listThreads = createTool({
 
     const generateQuery = ({ where }: { where: string }) =>
       safeExecute(client, {
-        sql: uniqueByAgentId
-          ? `WITH RankedThreads AS (
-            SELECT *,
-              ROW_NUMBER() OVER (PARTITION BY json_extract(metadata, '$.agentId') ORDER BY ${field} ${direction.toUpperCase()}) as rn
-            FROM mastra_threads ${where}
-          )
-          SELECT * FROM RankedThreads WHERE rn = 1 ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`
-          : `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+        sql:
+          `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
         args: [...args, limit + 1], // Fetch one extra to determine if there are more
       });
 

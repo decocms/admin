@@ -65,6 +65,19 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
     ...partialOptions,
   };
   const key = KEYS.THREADS(workspace, options);
+  const updateThreadTitle = useUpdateThreadTitle();
+
+  const generateThreadTitle = useCallback(
+    (
+      { firstMessage, threadId }: { firstMessage: string; threadId: string },
+    ) => {
+      // call generate
+      setTimeout(() => {
+        updateThreadTitle.mutate({ threadId, title: "UHULLLLL", stream: true });
+      }, 3000);
+    },
+    [updateThreadTitle],
+  );
 
   const effect = useCallback(
     ({ messages, threadId, agentId }: {
@@ -84,9 +97,11 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             return oldData;
           }
 
-          const newTitle = typeof messages[0]?.content === "string"
+          const temporaryTitle = typeof messages[0]?.content === "string"
             ? messages[0].content.slice(0, 20)
             : "New chat";
+
+          generateThreadTitle({ firstMessage: messages[0].content, threadId });
 
           const updated = {
             pagination: {
@@ -100,7 +115,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
               ...(oldData?.threads ?? []),
               {
                 id: threadId,
-                title: newTitle,
+                title: temporaryTitle,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 resourceId: agentId,
@@ -109,22 +124,11 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
             ],
           };
 
-          // When uniqueyById, we should remove the agentId from the thread metadata
-          if (
-            options.uniqueByAgentId && !(agentId in WELL_KNOWN_AGENT_IDS)
-          ) {
-            updated.threads = updated.threads.filter(
-              (thread, index) =>
-                thread.metadata?.agentId !== agentId ||
-                index === updated.threads.length - 1,
-            );
-          }
-
           return updated;
         },
       );
     },
-    [client, key, options.uniqueByAgentId],
+    [client, key],
   );
 
   useMessagesSentEffect(effect);
@@ -135,37 +139,77 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
   });
 };
 
-export const useUpdateThreadTitle = (threadId: string) => {
+export interface UpdateThreadTitleParams {
+  threadId: string;
+  title: string;
+  stream?: boolean;
+}
+
+export const useUpdateThreadTitle = () => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: async (newTitle: string) => {
-      return await updateThreadTitle(workspace, threadId, newTitle);
+    mutationFn: async ({ threadId, title }: UpdateThreadTitleParams) => {
+      return await updateThreadTitle(workspace, threadId, title);
     },
-    onMutate: async (newTitle: string) => {
+    onMutate: async ({ threadId, title, stream }: UpdateThreadTitleParams) => {
       // Cancel all threads queries to prevent race conditions
       await client.cancelQueries({
         queryKey: KEYS.THREADS(workspace),
       });
 
-      // Optimistically update all threads queries that contain this thread
-      client.setQueriesData(
-        { queryKey: KEYS.THREADS(workspace) },
-        (oldData: ThreadList | undefined) => {
-          if (!oldData?.threads) return oldData;
+      if (stream) {
+        // Animate title character by character
+        let currentIndex = 0;
+        const animateTitle = () => {
+          if (currentIndex <= title.length) {
+            const partialTitle = title.slice(0, currentIndex);
 
-          return {
-            ...oldData,
-            threads: oldData.threads.map((thread) =>
-              thread.id === threadId ? { ...thread, title: newTitle } : thread
-            ),
-          };
-        },
-      );
+            client.setQueriesData(
+              { queryKey: KEYS.THREADS(workspace) },
+              (oldData: ThreadList | undefined) => {
+                if (!oldData?.threads) return oldData;
+
+                return {
+                  ...oldData,
+                  threads: oldData.threads.map((thread) =>
+                    thread.id === threadId
+                      ? { ...thread, title: partialTitle }
+                      : thread
+                  ),
+                };
+              },
+            );
+
+            currentIndex++;
+            if (currentIndex <= title.length) {
+              setTimeout(animateTitle, 20);
+            }
+          }
+        };
+
+        // Start animation
+        animateTitle();
+      } else {
+        // Optimistically update all threads queries that contain this thread
+        client.setQueriesData(
+          { queryKey: KEYS.THREADS(workspace) },
+          (oldData: ThreadList | undefined) => {
+            if (!oldData?.threads) return oldData;
+
+            return {
+              ...oldData,
+              threads: oldData.threads.map((thread) =>
+                thread.id === threadId ? { ...thread, title } : thread
+              ),
+            };
+          },
+        );
+      }
     },
     // deno-lint-ignore no-explicit-any
-    onError: (_: any, __: any, context: any) => {
+    onError: (_: any, { threadId }: UpdateThreadTitleParams, context: any) => {
       // If the mutation fails, restore all previous queries data
       if (context?.previousQueriesData) {
         context.previousQueriesData.forEach(
@@ -175,7 +219,7 @@ export const useUpdateThreadTitle = (threadId: string) => {
         );
       }
     },
-    onSettled: () => {
+    onSettled: (_, __, { threadId }: UpdateThreadTitleParams) => {
       // Always refetch after error or success to ensure data is in sync
       client.invalidateQueries({ queryKey: KEYS.THREAD(workspace, threadId) });
       client.invalidateQueries({

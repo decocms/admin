@@ -242,8 +242,7 @@ function SidebarThreadItem(
 ) {
   const [isEditing, setIsEditing] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const updateTitle: ReturnType<typeof useUpdateThreadTitle> =
-    useUpdateThreadTitle(thread.id);
+  const updateTitle = useUpdateThreadTitle();
 
   const methods = useForm<EditTitleForm>({
     resolver: zodResolver(editTitleSchema),
@@ -251,8 +250,6 @@ function SidebarThreadItem(
       title: thread.title,
     },
   });
-
-  const threadWasUpdated = thread.updatedAt !== thread.createdAt;
 
   function focusInput() {
     const input = formRef.current?.querySelector("input");
@@ -273,7 +270,7 @@ function SidebarThreadItem(
     }
 
     try {
-      updateTitle.mutateAsync(data.title);
+      updateTitle.mutateAsync({ threadId: thread.id, title: data.title });
       setIsEditing(false);
     } catch (_) {
       methods.setValue("title", thread.title);
@@ -340,11 +337,7 @@ function SidebarThreadItem(
                         </div>
                       )}
                     <span className="truncate">
-                      {threadWasUpdated
-                        ? thread.title
-                        : agent
-                        ? agent.name
-                        : thread.title}
+                      {thread.title}
                     </span>
                   </Link>
                 )}
@@ -400,8 +393,8 @@ function SidebarThreads() {
   const { data: agents } = useAgents();
   const { data } = useThreads({
     resourceId: user?.id ?? "",
-    uniqueByAgentId: true,
   });
+
   const groupedThreads = groupThreadsByDate(data?.threads ?? []);
 
   return (

@@ -57,9 +57,11 @@ export const useWorkflowStatus = (
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
     refetchInterval: (query) => {
+      const snapshot = query.state.data?.snapshot;
+      const status = typeof snapshot === "string" ? snapshot : snapshot?.status;
       if (
-        query.state.data?.snapshot.status === "success" ||
-        query.state.data?.snapshot.status === "failed"
+        status === "success" ||
+        status === "failed"
       ) {
         return false;
       }

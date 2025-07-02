@@ -240,12 +240,16 @@ function StepCard(
 function InstanceDetailTab() {
   const { workflowName = "", instanceId = "" } = useParams();
   const { data } = useWorkflowStatus(workflowName, instanceId);
+  const snapshot = data?.snapshot;
+  const status = typeof snapshot === "string"
+    ? snapshot
+    : snapshot?.status || "unknown";
 
-  const status = data?.snapshot?.status || "unknown";
   const badgeVariant = getStatusBadgeVariant(status);
   const statusIcon = getStatusIcon(status);
-  const steps = data?.snapshot?.context
-    ? Object.entries(data.snapshot.context).filter(([name]) => name !== "input")
+  const context = typeof snapshot === "string" ? undefined : snapshot?.context;
+  const steps = context
+    ? Object.entries(context).filter(([name]) => name !== "input")
     : [];
   // For duration, use the earliest startedAt and latest endedAt among steps
   const startedAts = steps
@@ -338,9 +342,12 @@ function InstanceDetailTab() {
         <Card className="p-4 mb-4">
           <OutputField
             label="Input Params"
-            value={data?.snapshot?.context?.input}
+            value={context?.input}
           />
-          <OutputField label="Output" value={data?.snapshot?.result} />
+          <OutputField
+            label="Output"
+            value={typeof snapshot === "string" ? undefined : snapshot?.result}
+          />
         </Card>
         <h2 className="text-lg font-semibold mb-2">Steps</h2>
         <div className="space-y-4">

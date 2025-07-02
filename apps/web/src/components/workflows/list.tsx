@@ -22,8 +22,8 @@ import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 interface Workflow {
   workflowName: string;
   runId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number;
+  updatedAt: number;
   resourceId: string | null;
   status: string;
 }
@@ -75,8 +75,8 @@ function WorkflowsTableView(
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   function getSortValue(row: Workflow, key: string): string {
-    if (key === "createdAt") return row.createdAt || "";
-    if (key === "updatedAt") return row.updatedAt || "";
+    if (key === "createdAt") return row.createdAt.toString() || "";
+    if (key === "updatedAt") return row.updatedAt.toString() || "";
     if (key === "status") return row.status || "";
     return row.workflowName?.toLowerCase() || "";
   }

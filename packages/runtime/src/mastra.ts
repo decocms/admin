@@ -17,11 +17,13 @@ import {
   type Step as MastraStep,
 } from "@mastra/core/workflows";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { env } from "cloudflare:workers";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { type DefaultEnv, withBindings } from "./index.ts";
 export { createWorkflow };
+
+// this is dynamically imported to avoid deno check errors
+const { env } = await import("cloudflare:workers");
 
 const createRuntimeContext = () => {
   const runtimeContext = new RuntimeContext<AppContext>();

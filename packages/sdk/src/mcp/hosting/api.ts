@@ -786,6 +786,10 @@ export const getWorkflowStatus = createTool({
       workflowName,
     });
 
+    if (!workflow) {
+      throw new NotFoundError("Workflow not found");
+    }
+
     return workflow;
   },
 });

@@ -5,6 +5,7 @@ import type {
   ScheduledController,
 } from "@cloudflare/workers-types";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
+import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 export {
   createMCPFetchStub,
@@ -55,7 +56,7 @@ export const WorkersMCPBindings = {
 
 export interface UserDefaultExport<
   TUserEnv = Record<string, unknown>,
-> {
+> extends CreateMCPServerOptions {
   queue?: (
     batch: MessageBatch,
     env: TUserEnv,
@@ -129,6 +130,7 @@ export const withBindings = <TEnv>(_env: TEnv): TEnv => {
 export const withRuntime = <TEnv>(
   userFns: UserDefaultExport<TEnv>,
 ): UserDefaultExport<TEnv> => {
+  const server = createMCPServer(userFns);
   return {
     ...userFns,
     ...userFns.email
@@ -156,6 +158,10 @@ export const withRuntime = <TEnv>(
     ...userFns.fetch
       ? {
         fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
+          const url = new URL(req.url);
+          if (url.pathname === "/mcp") {
+            return server(req, env, ctx);
+          }
           return userFns.fetch!(req, withBindings(env), ctx);
         },
       }

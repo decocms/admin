@@ -86,6 +86,7 @@ export function BindingSelector({
 
   useEffect(() => {
     if (!open) return;
+    if (selectedIntegration) return;
     if (initialSelectedIntegration) {
       setSelectedIntegration(initialSelectedIntegration);
       setTimeout(() => {
@@ -152,7 +153,7 @@ export function BindingSelector({
                         {filtered?.map((integration) => (
                           <ErrorBoundary key={integration.id} fallback={null}>
                             <IntegrationListItem
-                              key={integration.id}
+                              key={`mobile-${integration.id}`}
                               integration={integration}
                               selectedIntegration={selectedIntegration}
                               onSelect={setSelectedIntegration}

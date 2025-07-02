@@ -86,7 +86,7 @@ export function BindingSelector({
 
   useEffect(() => {
     if (!open) return;
-    if(selectedIntegration) return;
+    if (selectedIntegration) return;
     if (initialSelectedIntegration) {
       setSelectedIntegration(initialSelectedIntegration);
       setTimeout(() => {

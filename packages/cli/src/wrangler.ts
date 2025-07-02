@@ -50,7 +50,7 @@ export async function getEnvVars(projectRoot?: string) {
     DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
     DECO_CHAT_API_TOKEN: session?.access_token ?? "",
     DECO_CHAT_BINDINGS: encodedBindings,
-  }
+  };
 
   if (config.local) {
     env.DECO_CHAT_API_URL = "http://localhost:3001";

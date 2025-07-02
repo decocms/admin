@@ -86,7 +86,7 @@ export default function Page() {
   const { id } = useParams();
   const promptId = id!;
   const threadId = promptId;
-  
+
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -142,7 +142,9 @@ export default function Page() {
 
       form.reset(data);
 
-      client.refetchQueries({ queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id) });
+      client.refetchQueries({
+        queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id),
+      });
     } catch (error) {
       console.error(
         `Error updating prompt:`,

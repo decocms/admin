@@ -46,7 +46,7 @@ export const createPrompt = createTool({
     if (error) throw error;
 
     if (!data) throw new Error("Failed to create prompt");
-      await c
+    await c
       .db
       .from("deco_chat_prompts_versions")
       .insert({
@@ -91,7 +91,7 @@ export const updatePrompt = createTool({
 
     if (error) throw error;
 
-    if(!prompt) throw new Error("Failed to update prompt");
+    if (!prompt) throw new Error("Failed to update prompt");
 
     await c
       .db

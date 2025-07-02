@@ -94,7 +94,10 @@ export const getPromptVersions = (
   input: GetPromptVersionsInput,
   init?: RequestInit,
 ): Promise<PromptVersion[]> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_GET_VERSIONS(input, init) as Promise<
+  MCPClient.forWorkspace(workspace).PROMPTS_GET_VERSIONS(
+    input,
+    init,
+  ) as Promise<
     PromptVersion[]
   >;
 
@@ -108,6 +111,9 @@ export const renamePromptVersion = (
   input: RenamePromptVersionInput,
   init?: RequestInit,
 ): Promise<PromptVersion> =>
-  MCPClient.forWorkspace(workspace).PROMPTS_RENAME_VERSION(input, init) as Promise<
+  MCPClient.forWorkspace(workspace).PROMPTS_RENAME_VERSION(
+    input,
+    init,
+  ) as Promise<
     PromptVersion
   >;

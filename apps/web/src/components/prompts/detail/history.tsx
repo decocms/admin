@@ -8,13 +8,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import {
-renamePromptVersion,
+  renamePromptVersion,
   usePromptVersions,
   useSDK,
   useTeamMembers,
@@ -59,7 +59,7 @@ export default function HistoryTab() {
   // Create a lookup map for team members to avoid calling useMemo inside map
   const teamMembersMap = useMemo(() => {
     if (!teamMembers.length) return new Map();
-    return new Map(teamMembers.map(member => [member.user_id, member]));
+    return new Map(teamMembers.map((member) => [member.user_id, member]));
   }, [teamMembers]);
 
   const handleRestoreVersion = async (versionId: string) => {
@@ -89,7 +89,7 @@ export default function HistoryTab() {
     });
     await refetch();
     // Example: await updateVersionLabel(versionId, editingLabel);
-    
+
     setEditingVersionId(null);
     setEditingLabel("");
   };
@@ -146,7 +146,9 @@ export default function HistoryTab() {
                 </span>
               </span>
             </div>
-            <span className="font-semibold text-sm">{versions[0]?.name ?? "Current Version"}</span>
+            <span className="font-semibold text-sm">
+              {versions[0]?.name ?? "Current Version"}
+            </span>
           </div>
           {filteredVersions.map((version, idx) => {
             const userId = version.created_by;
@@ -169,17 +171,23 @@ export default function HistoryTab() {
             return (
               <div
                 key={version.id}
-                className={cn("flex items-center h-[64px] group relative hover:bg-muted rounded-md px-6 cursor-pointer",
-                  selectedVersion === version.id ? "bg-muted" : "")}
+                className={cn(
+                  "flex items-center h-[64px] group relative hover:bg-muted rounded-md px-6 cursor-pointer",
+                  selectedVersion === version.id ? "bg-muted" : "",
+                )}
                 onClick={() => {
                   form.setValue("content", version.content);
-                  setSelectedVersion(version.id)
+                  setSelectedVersion(version.id);
                 }}
               >
                 <div className="flex flex-col justify-center items-center gap-2 h-full relative">
                   <div
-                    className={cn("w-[2px] bg-border b z-0 h-full",
-                      idx === filteredVersions.length - 1 ? "h-[36px] mt-[-28px]" : "")}
+                    className={cn(
+                      "w-[2px] bg-border b z-0 h-full",
+                      idx === filteredVersions.length - 1
+                        ? "h-[36px] mt-[-28px]"
+                        : "",
+                    )}
                     style={{ minHeight: 36, pointerEvents: "none" }}
                   />
                   <span className="w-2 h-2 bg-foreground rounded-full absolute mt-2 -translate-y-1/2">
@@ -188,37 +196,51 @@ export default function HistoryTab() {
                 {/* Conteúdo da versão */}
                 <div className="flex-1 flex items-center gap-2 pl-6 pr-2">
                   <div className="flex flex-col justify-start items-start gap-2">
-                    {editingVersionId === version.id ? (
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={editingLabel}
-                        onChange={(e) => setEditingLabel(e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, version.id)}
-                        onBlur={() => handleSaveLabel(version.id)}
-                        className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-white"
-                        placeholder="Enter version label..."
-                      />
-                    ) : (
-                      <span 
-                        className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
-                        onClick={() => handleStartEditing(version.id, version.name ?? new Date(version.created_at).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        }))}
-                      >
-                        {version.name ?? new Date(version.created_at).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                    )}
+                    {editingVersionId === version.id
+                      ? (
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={editingLabel}
+                          onChange={(e) => setEditingLabel(e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, version.id)}
+                          onBlur={() => handleSaveLabel(version.id)}
+                          className="text-sm font-semibold border-none outline-none focus:ring-0 p-0 px-1 bg-white"
+                          placeholder="Enter version label..."
+                        />
+                      )
+                      : (
+                        <span
+                          className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
+                          onClick={() =>
+                            handleStartEditing(
+                              version.id,
+                              version.name ??
+                                new Date(version.created_at).toLocaleString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  },
+                                ),
+                            )}
+                        >
+                          {version.name ??
+                            new Date(version.created_at).toLocaleString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                              },
+                            )}
+                        </span>
+                      )}
                     <div className="flex items-center gap-1">
                       <Avatar className="size-4">
                         {avatarUrl
@@ -230,7 +252,9 @@ export default function HistoryTab() {
                           )
                           : (
                             <AvatarFallback className="text-xs">
-                              {name?.split(" ").map((n: string) => n[0]).join("")}
+                              {name?.split(" ").map((n: string) => n[0]).join(
+                                "",
+                              )}
                             </AvatarFallback>
                           )}
                       </Avatar>

@@ -116,6 +116,7 @@ export function usePromptVersions(
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.PROMPT_VERSIONS(workspace, id),
-    queryFn: ({ signal }) => getPromptVersions(workspace, { id, limit, offset }, { signal }),
+    queryFn: ({ signal }) =>
+      getPromptVersions(workspace, { id, limit, offset }, { signal }),
   });
 }

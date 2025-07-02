@@ -7,6 +7,7 @@
     "@mastra/cloudflare-d1": "0.0.0-support-d1-client-20250701191943",
     "@mastra/rag": "0.0.0-support-d1-client-20250701191943",
     "@deco/workers-runtime": "^0.1.0",
+    "@deco/ai": "^1.0.0",
     "jose": "6.0.11",
     "@aws-sdk/s3-request-presigner": "^3.812.0",
     "@ai-sdk/openai": "1.3.22",

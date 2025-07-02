@@ -37,6 +37,9 @@ export default function Form<T extends FieldValues = Record<string, unknown>>(
     <form
       className="space-y-4"
       onSubmit={onSubmit}
+      onInvalid={() => {
+        console.log("invalid");
+      }}
     >
       {schema.type === "object" && schema.properties && (
         <ObjectProperties<T>

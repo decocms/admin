@@ -45,6 +45,7 @@
     "./mcp": "./src/mcp.ts",
     "./tools": "./src/tools.ts",
     "./agent": "./src/agent.ts",
+    "./agent/llm": "./src/agent/llm.ts",
     "./triggers": "./src/triggers/services.ts"
   },
   "lint": {

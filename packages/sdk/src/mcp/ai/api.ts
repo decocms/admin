@@ -204,7 +204,7 @@ export const aiGenerate = createTool({
       model: modelId,
       modelId,
       plan: plan.id,
-      userId: String(c.user.id) || `workspace::${c.workspace.value}`,
+      userId: "id" in c.user ? c.user.id : `apikey-${c.workspace.value}`,
       workspace: c.workspace.value,
     });
 

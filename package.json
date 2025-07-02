@@ -48,7 +48,8 @@
   },
   "exclude": [
     ".github/",
-    "**/.wrangler"
+    "**/.wrangler",
+    "apps/web/public/**"
   ],
   "unstable": [
     "kv"

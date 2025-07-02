@@ -1,4 +1,5 @@
 import { CHANNEL_BINDING_SCHEMA } from "./channels.ts";
+import { PROMPT_BINDING_SCHEMA } from "./prompts.ts";
 
 export { type Binder } from "./binder.ts";
 export * from "./channels.ts";
@@ -7,6 +8,7 @@ export * from "./utils.ts";
 
 export const WellKnownBindings = {
   Channel: CHANNEL_BINDING_SCHEMA,
+  Prompt: PROMPT_BINDING_SCHEMA,
 } as const;
 
 export type WellKnownBindingsName = keyof typeof WellKnownBindings;

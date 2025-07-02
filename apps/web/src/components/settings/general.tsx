@@ -41,6 +41,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { clearThemeCache } from "../theme.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { BindingSelector } from "../toolsets/binding-selector.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -50,6 +51,7 @@ interface GeneralSettingsFormValues {
   personalSystemPrompt: string;
   avatar: string;
   themeVariables: Record<string, string | undefined>;
+  promptStorageBindingId: string;
 }
 
 const generalSettingsSchema = z.object({
@@ -65,6 +67,7 @@ const generalSettingsSchema = z.object({
   personalSystemPrompt: z.string(),
   avatar: z.string(),
   themeVariables: z.record(z.string(), z.string().optional()),
+  promptStorageBindingId: z.string().optional(),
 });
 
 interface ThemeVariableState {
@@ -301,6 +304,7 @@ export function GeneralSettings() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -323,6 +327,7 @@ export function GeneralSettings() {
       personalSystemPrompt: "",
       avatar: currentTeamTheme?.picture || "",
       themeVariables: currentTeamTheme?.variables ?? {},
+      promptStorageBindingId: "",
     },
   });
 
@@ -490,6 +495,79 @@ export function GeneralSettings() {
                       )}
                     />
                   </div>
+                  <FormField
+                    control={form.control}
+                    name="promptStorageBindingId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex flex-col gap-1 px-1 justify-between">
+                          <FormLabel>Binding</FormLabel>
+                          <span className="text-xs text-muted-foreground">
+                            When selected, this webhook trigger will use the
+                            selected binding
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-2 justify-center w-min">
+                          <FormControl>
+                            <div>
+                              {open
+                                ? (
+                                  <BindingSelector
+                                    open={open}
+                                    onOpenChange={setOpen}
+                                    onIntegrationSelected={field.onChange}
+                                    initialSelectedIntegration={field.value ||
+                                      null}
+                                    binder="Prompt"
+                                  />
+                                )
+                                : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full justify-between truncate"
+                                    onClick={() => setOpen(true)}
+                                  >
+                                    <span className="text-muted-foreground">
+                                      Select a binding...
+                                    </span>
+                                    <Icon
+                                      name="expand_more"
+                                      size={18}
+                                      className="ml-2 text-muted-foreground"
+                                    />
+                                  </Button>
+                                )}
+                            </div>
+                          </FormControl>
+                          {field.value && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="flex items-center gap-2 px-2 py-1 h-auto"
+                              onClick={() => field.onChange("")}
+                            >
+                              <Icon
+                                name="close"
+                                size={12}
+                                className="text-muted-foreground"
+                              />
+                              <span className="flex items-center gap-2">
+                                <IntegrationIcon
+                                  icon={selected?.integration.icon}
+                                  className="h-8 w-8"
+                                />
+                                <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">
+                                  {selected?.integration.name}
+                                </span>
+                              </span>
+                            </Button>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="teamName"

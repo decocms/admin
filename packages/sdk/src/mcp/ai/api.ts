@@ -17,12 +17,13 @@ import { convertToAIMessage } from "../../../../ai/src/agent/ai-message.ts";
 import { getPlan } from "../wallet/api.ts";
 import type { Transaction } from "../wallet/client.ts";
 import type { LanguageModelUsage } from "ai";
+import type { Plan } from "../../plan.ts";
 
 const createLLMUsageTransaction = (opts: {
   usage: LanguageModelUsage;
   model: string;
   modelId: string;
-  plan: string;
+  plan: Plan;
   userId: string;
   workspace: string;
 }): Transaction => {
@@ -37,6 +38,12 @@ const createLLMUsageTransaction = (opts: {
       type: "user",
       id: opts.userId,
     },
+    payer: opts.plan === "trial" ? {
+      type: "wallet",
+      id: WellKnownWallets.build(
+        ...WellKnownWallets.workspace.trialCredits(opts.workspace),
+      ),
+    } : undefined,
     vendor: {
       type: "vendor",
       id: opts.modelId,
@@ -204,6 +211,11 @@ export const aiGenerate = createTool({
     });
 
     if (!response.ok) {
+      console.error(
+        "Failed to create transaction",
+        response,
+        await response.text(),
+      );
       throw new InternalServerError("Failed to create transaction");
     }
 

@@ -85,17 +85,18 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
               role: "user",
               content:
                 `Generate a title for the thread that started with the following user message:
-          <Rule>Make it short and concise</Rule>
-          <Rule>Make it a single sentence</Rule>
-          <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
+                <Rule>Make it short and concise</Rule>
+                <Rule>Make it a single sentence</Rule>
+                <Rule>Keep the same language as the user message</Rule>
+                <Rule>Return ONLY THE TITLE! NO OTHER TEXT!</Rule>
 
-          <UserMessage>
-            ${_firstMessage}
-          </UserMessage>`,
+                <UserMessage>
+                  ${_firstMessage}
+                </UserMessage>`,
             }],
           }),
-        // ensure at least 3 seconds delay to avoid UI flickering.
-        new Promise((resolve) => setTimeout(resolve, 3000)),
+        // ensure at least 2 seconds delay to avoid UI flickering.
+        new Promise((resolve) => setTimeout(resolve, 2000)),
       ]);
       updateThreadTitle.mutate({ threadId, title: result.text, stream: true });
     },

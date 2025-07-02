@@ -109,6 +109,7 @@ const AIGenerateOutputSchema = z.object({
     promptTokens: z.number().describe("Number of tokens in the prompt"),
     completionTokens: z.number().describe("Number of tokens in the completion"),
     totalTokens: z.number().describe("Total number of tokens used"),
+    transactionId: z.string().describe("Transaction ID"),
   }).describe("Token usage information"),
   finishReason: z.enum(["stop", "length", "content-filter", "tool-calls"])
     .optional().describe("Reason why generation finished"),

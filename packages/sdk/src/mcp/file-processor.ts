@@ -206,8 +206,48 @@ export class FileProcessor {
     const text = await file.text();
     const data = JSON.parse(text);
 
+    // Deep recursion to convert all string properties higher than this.config.chunkSize into array of strings
+    const processedData = await this.chunkLongStringsInObject(data);
+
     // Convert JSON to readable text format
-    return this.jsonToText(data);
+    return this.jsonToText(processedData);
+  }
+
+  /**
+   * Recursively process an object to chunk long string properties
+   */
+  // deno-lint-ignore no-explicit-any
+  private async chunkLongStringsInObject(obj: any): Promise<any> {
+    if (typeof obj === "string") {
+      // If it's a string longer than chunk size, chunk it
+      if (obj.length > this.config.chunkSize) {
+        const chunks = await MDocument.fromText(obj).chunk({
+          maxSize: this.config.chunkSize,
+        });
+        return chunks.map((chunk) => chunk.text);
+      }
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      // Process each item in the array
+      return await Promise.all(
+        obj.map((item) => this.chunkLongStringsInObject(item)),
+      );
+    }
+
+    if (obj && typeof obj === "object") {
+      // Process each property in the object
+      // deno-lint-ignore no-explicit-any
+      const result: Record<string, any> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = await this.chunkLongStringsInObject(value);
+      }
+      return result;
+    }
+
+    // For primitives (numbers, booleans, null), return as-is
+    return obj;
   }
 
   /**
@@ -231,6 +271,7 @@ export class FileProcessor {
       case ".json": {
         return MDocument.fromJSON(text).chunk({
           maxSize: this.config.chunkSize,
+          convertLists: true,
         });
       }
     }

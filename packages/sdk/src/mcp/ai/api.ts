@@ -38,12 +38,14 @@ const createLLMUsageTransaction = (opts: {
       type: "user",
       id: opts.userId,
     },
-    payer: opts.plan === "trial" ? {
-      type: "wallet",
-      id: WellKnownWallets.build(
-        ...WellKnownWallets.workspace.trialCredits(opts.workspace),
-      ),
-    } : undefined,
+    payer: opts.plan === "trial"
+      ? {
+        type: "wallet",
+        id: WellKnownWallets.build(
+          ...WellKnownWallets.workspace.trialCredits(opts.workspace),
+        ),
+      }
+      : undefined,
     vendor: {
       type: "vendor",
       id: opts.modelId,

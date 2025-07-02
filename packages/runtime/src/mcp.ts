@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { z } from "zod";
 import type { MCPConnection } from "./connection.ts";
 import { createMCPClientProxy } from "./proxy.ts";

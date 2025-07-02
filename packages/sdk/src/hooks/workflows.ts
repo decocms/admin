@@ -1,16 +1,5 @@
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from "@tanstack/react-query";
-import {
-  deleteWorkflow,
-  getWorkflowStatus,
-  listWorkflows,
-  startWorkflow,
-  type WorkflowDeleteParams,
-  type WorkflowStartParams,
-} from "../crud/workflows.ts";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { getWorkflowStatus, listWorkflows } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
 
@@ -37,14 +26,6 @@ export const useWorkflows = (page = 1, per_page = 10) => {
   return data;
 };
 
-export const useStartWorkflow = () => {
-  const { workspace } = useSDK();
-  return useMutation({
-    mutationFn: (params: WorkflowStartParams) =>
-      startWorkflow(workspace, params),
-  });
-};
-
 export const useWorkflowStatus = (
   workflowName: string,
   instanceId: string,
@@ -67,13 +48,5 @@ export const useWorkflowStatus = (
       }
       return 1000; // Poll every 1 second by default
     },
-  });
-};
-
-export const useDeleteWorkflow = () => {
-  const { workspace } = useSDK();
-  return useMutation({
-    mutationFn: (params: WorkflowDeleteParams) =>
-      deleteWorkflow(workspace, params),
   });
 };

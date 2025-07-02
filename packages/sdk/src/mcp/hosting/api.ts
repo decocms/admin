@@ -699,47 +699,6 @@ export const listWorkflows = createTool({
  *
  * If the user has the workflow id, it can see the workflow details
  */
-export const startWorkflow = createTool({
-  name: "HOSTING_APP_WORKFLOWS_START",
-  description: "Start a workflow and return the instance ID",
-  inputSchema: z.object({
-    workflowName: z.string(),
-    params: z.array(z.object({
-      name: z.string(),
-      value: z.string(),
-    })).optional(),
-  }),
-  outputSchema: z.object({
-    instanceId: z.string().describe("The instance ID of the workflow"),
-    workflowName: z.string().describe("The name of the workflow"),
-  }),
-  handler: async ({ workflowName, params }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
-
-    const env = getEnv(c);
-
-    const instance = await c.cf.workflows.instances.create(workflowName, {
-      account_id: env.CF_ACCOUNT_ID,
-      params: params?.reduce((acc, { name, value }) => {
-        acc[name] = value;
-        return acc;
-      }, {} as Record<string, string>),
-    });
-
-    return {
-      instanceId: instance.id,
-      workflowName,
-    };
-  },
-});
-
-/**
- * TODO: Currently there is no way to filter by script name,
- * this leads to a security issue where a user can see all instances of a workflow
- * on all workspaces.
- *
- * If the user has the workflow id, it can see the workflow details
- */
 export const getWorkflowStatus = createTool({
   name: "HOSTING_APP_WORKFLOWS_STATUS",
   description: "Get the status of a workflow instance",
@@ -791,30 +750,5 @@ export const getWorkflowStatus = createTool({
     }
 
     return workflow;
-  },
-});
-
-export const deleteWorkflow = createTool({
-  name: "HOSTING_APP_WORKFLOWS_DELETE",
-  description:
-    "Permanently delete a workflow from the workspace. DO NOT USE THIS TO STOP A WORKFLOW.",
-  inputSchema: z.object({
-    workflowName: z.string().describe("The name of the workflow"),
-  }),
-  outputSchema: z.object({
-    success: z.boolean().describe(
-      "Whether the workflow was deleted successfully",
-    ),
-  }),
-  handler: async ({ workflowName }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
-
-    const env = getEnv(c);
-
-    await c.cf.workflows.delete(workflowName, {
-      account_id: env.CF_ACCOUNT_ID,
-    });
-
-    return { success: true };
   },
 });

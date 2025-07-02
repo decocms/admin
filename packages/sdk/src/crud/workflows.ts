@@ -24,14 +24,6 @@ export function listWorkflows(
   return client.HOSTING_APP_WORKFLOWS_LIST({ page, per_page }, { signal });
 }
 
-export function startWorkflow(
-  workspace: string,
-  params: WorkflowStartParams,
-) {
-  const client = MCPClient.forWorkspace(workspace);
-  return client.HOSTING_APP_WORKFLOWS_START(params);
-}
-
 export function getWorkflowStatus(
   workspace: string,
   params: WorkflowStatusParams,
@@ -39,12 +31,4 @@ export function getWorkflowStatus(
 ) {
   const client = MCPClient.forWorkspace(workspace);
   return client.HOSTING_APP_WORKFLOWS_STATUS(params, { signal });
-}
-
-export function deleteWorkflow(
-  workspace: string,
-  params: WorkflowDeleteParams,
-) {
-  const client = MCPClient.forWorkspace(workspace);
-  return client.HOSTING_APP_WORKFLOWS_DELETE(params);
 }

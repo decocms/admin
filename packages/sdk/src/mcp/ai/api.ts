@@ -1,5 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
+import { convertToAIMessage } from "@deco/ai/agent/ai-message";
 import { z } from "zod";
 import { DEFAULT_MODEL } from "../../constants.ts";
 import {
@@ -13,7 +14,6 @@ import {
   WellKnownWallets,
 } from "../wallet/index.ts";
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
-import { convertToAIMessage } from "../../../../ai/src/agent/ai-message.ts";
 import { getPlan } from "../wallet/api.ts";
 import type { Transaction } from "../wallet/client.ts";
 import type { LanguageModelUsage } from "ai";

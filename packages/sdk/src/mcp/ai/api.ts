@@ -46,8 +46,10 @@ const getWalletClient = (c: AppContext) => {
 
 const createTool = createToolGroup("AI", {
   name: "AI Gateway",
-  description: "Unified LLM API, keeping the centralized observability and billing.",
-  icon: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  description:
+    "Unified LLM API, keeping the centralized observability and billing.",
+  icon:
+    "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
 });
 
 // Input Schema (simplified for standalone usage)
@@ -187,11 +189,9 @@ export const aiGenerate = createTool({
       workspace: c.workspace.value,
     });
 
-    const response = await wallet["POST /transactions"]({},
-      {
-        body: transaction,
-      },
-    );
+    const response = await wallet["POST /transactions"]({}, {
+      body: transaction,
+    });
 
     if (!response.ok) {
       throw new InternalServerError("Failed to create transaction");

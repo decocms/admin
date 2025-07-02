@@ -68,7 +68,10 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
 
   const generateThreadTitle = useCallback(
     (
-      { firstMessage: _firstMessage, threadId }: { firstMessage: string; threadId: string },
+      { firstMessage: _firstMessage, threadId }: {
+        firstMessage: string;
+        threadId: string;
+      },
     ) => {
       // call generate
       setTimeout(() => {

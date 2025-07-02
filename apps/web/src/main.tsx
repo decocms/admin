@@ -172,6 +172,24 @@ function ErrorFallback() {
     globalThis.location.href = `/login?next=${next}`;
   }, [isUnauthorized, pathname]);
 
+  useEffect(() => {
+    if (!error) return;
+    const wellKnownErrors = [
+      isUnauthorized,
+      error instanceof ForbiddenError,
+      error instanceof NotFoundError,
+    ]
+    if (wellKnownErrors.some(Boolean)) {
+      return;
+    }
+
+    const isDynamicImportError = typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message.includes('fetch dynamically imported module');
+    if (isDynamicImportError) {
+      globalThis.location.reload();
+      return;
+    }
+  }, [error]);
+
   if (isUnauthorized) {
     return (
       <div className="h-full w-full flex items-center justify-center">

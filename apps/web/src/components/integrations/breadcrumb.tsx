@@ -15,23 +15,21 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import type { ViewModeSwitcherProps } from "../common/view-mode-switcher.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 import {
-  SelectConnectionDialog,
+  OAuthInstallDialog,
   useOAuthInstall,
-} from "./select-connection-dialog.tsx";
-import { OAuthInstallDialog } from "./oauth-install-dialog.tsx";
+} from "./oauth-install-dialog.tsx";
 
 export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
   const [error, setError] = useState<string | null>(null);
-  const { installingIntegration, setInstallingIntegration } = useOAuthInstall();
+  const [installingIntegration, setInstallingIntegration] = useOAuthInstall();
 
   return (
     <>
       <OAuthInstallDialog
         installingIntegration={installingIntegration}
         onCancel={() => setInstallingIntegration(null)}
-        onOAuthSuccess={() => {}}
-        onOAuthError={() => {}}
       />
 
       <PageLayout

@@ -1,31 +1,28 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
+import { Dialog, DialogContent } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { MarketplaceIntegration } from "./marketplace.tsx";
-import { Integration, useDecoOAuthInstall } from "@deco/sdk";
+import {
+  Integration,
+  useComposioOAuthInstall,
+  useCreateIntegration,
+  useDecoOAuthInstall,
+} from "@deco/sdk";
 import { IntegrationIcon } from "./common.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { subscribeToOAuthInstall } from "../../lib/broadcast-channels.ts";
+import {
+  OAuthFinishedMessage,
+  subscribeToOAuthInstall,
+} from "../../lib/broadcast-channels.ts";
+import { toast } from "sonner";
 
 const DECO_CHAT_ICON =
   "https://assets.decocache.com/mcp/306fcf27-d5dd-4d8c-8ddd-567d763372ee/decochat.png";
 
-interface OAuthSuccessInstallProps {
-  mcpUrl: string;
-}
-
 interface OAuthInstallDialogProps {
   installingIntegration: MarketplaceIntegration | null;
   onCancel: () => void;
-  onOAuthSuccess: (props: OAuthSuccessInstallProps) => void;
-  onOAuthError: (error: Error) => void;
 }
 
 function getInstallTitle(integration: MarketplaceIntegration | null) {
@@ -49,7 +46,11 @@ function getBelowButtonDescription(integration: MarketplaceIntegration | null) {
     return (
       <span className="text-xs text-muted-foreground text-center">
         Third-party integration provided by{" "}
-        <a href="https://composio.dev" target="_blank" className="underline">
+        <a
+          href="https://mcp.composio.dev/"
+          target="_blank"
+          className="underline"
+        >
           Composio
         </a>.
       </span>
@@ -237,18 +238,26 @@ function OAuthErrorInstall({
   );
 }
 
-export function OAuthInstallDialog({
+const useDecoOAuthFlow = ({
+  setState,
   installingIntegration,
-  onCancel,
-  onOAuthSuccess,
-  onOAuthError,
-}: OAuthInstallDialogProps) {
-  const [state, setState] = useState<
-    "idle" | "waiting-for-authorization" | "success" | "error"
-  >("idle");
-  const open = !!installingIntegration;
-  const { getAuthUrl } = useDecoOAuthInstall();
+}: {
+  setState: (state: OAuthDialogFlowState) => void;
+  installingIntegration: MarketplaceIntegration | null;
+}) => {
+  const authWindowRef = useRef<Window | null>(null);
   const buildWorkspaceUrl = useWorkspaceLink();
+  const { getAuthUrl, isDecoOAuthIntegration } = useDecoOAuthInstall();
+  const { mutateAsync: createIntegration } = useCreateIntegration({
+    onSuccess: () => {
+      setState("success");
+      authWindowRef.current?.close();
+    },
+    onError: (error) => {
+      console.error(error);
+      setState("error");
+    },
+  });
   const [waitingForInstallId, setWaitingForInstallId] = useState<string | null>(
     null,
   );
@@ -262,15 +271,39 @@ export function OAuthInstallDialog({
       waitingForInstallId,
       (message) => {
         if (message.type === "OAUTH_FINISHED") {
-          setState("success");
+          handleDecoOAuthFinished(message);
         } else if (message.type === "OAUTH_ERROR") {
+          console.error(message);
           setState("error");
         }
       },
     );
-
     return () => unsubscribe();
   }, [waitingForInstallId]);
+
+  const handleDecoOAuthFinished = async (message: OAuthFinishedMessage) => {
+    const url =
+      `https://mcp.deco.site/apps/${installingIntegration?.name}/${waitingForInstallId}/mcp/messages`;
+    const name = message.name ||
+      (message.account
+        ? `${installingIntegration?.name} | ${message.account}`
+        : installingIntegration?.name) ||
+      "Unknown Integration";
+    const description = message.account || installingIntegration?.description ||
+      "";
+
+    const integration: Integration = {
+      id: crypto.randomUUID(),
+      name,
+      description,
+      icon: installingIntegration?.icon || "",
+      connection: {
+        type: "HTTP",
+        url,
+      },
+    };
+    await createIntegration(integration);
+  };
 
   const handleStartOAuth = async () => {
     if (!installingIntegration) {
@@ -287,8 +320,129 @@ export function OAuthInstallDialog({
       installId,
       returnUrl: returnUrl.href,
     });
-    globalThis.open(redirectUrl, "_blank");
+    authWindowRef.current = globalThis.open(redirectUrl, "_blank");
     setWaitingForInstallId(installId);
+  };
+
+  return {
+    handleStartOAuth,
+    isDecoOAuthIntegration,
+  };
+};
+
+const useComposioOAuthFlow = ({
+  setState,
+  installingIntegration,
+}: {
+  setState: (state: OAuthDialogFlowState) => void;
+  installingIntegration: MarketplaceIntegration | null;
+}) => {
+  const { getAuthUrl } = useComposioOAuthInstall();
+
+  const handleStartOAuth = async () => {
+    if (!installingIntegration) {
+      return;
+    }
+
+    const { redirectUrl } = await getAuthUrl({
+      installId: crypto.randomUUID(),
+      url: installingIntegration.url,
+    });
+
+    authWindowRef.current = globalThis.open(redirectUrl, "_blank");
+  };
+
+  return {
+    handleStartOAuth,
+  };
+};
+
+/**
+ * Just installs the integration, no OAuth flow
+ * is performed.
+ */
+const useStubOAuthFlow = ({
+  setState,
+  installingIntegration,
+}: {
+  setState: (state: OAuthDialogFlowState) => void;
+  installingIntegration: MarketplaceIntegration | null;
+}) => {
+  const { isDecoOAuthIntegration } = useDecoOAuthInstall();
+  const shouldUseStubOAuthFlow = (integration: MarketplaceIntegration) => {
+    if (integration.provider === "deco") {
+      return !isDecoOAuthIntegration(integration.id);
+    }
+    return integration.provider !== "composio";
+  };
+
+  const handleStartOAuth = async () => {
+    if (!installingIntegration) {
+      toast.error("Error starting OAuth flow, no integration to install");
+      return;
+    }
+  };
+
+  return {
+    handleStartOAuth,
+    shouldUseStubOAuthFlow,
+  };
+};
+
+type OAuthDialogFlowState =
+  | "idle"
+  | "waiting-for-authorization"
+  | "success"
+  | "error";
+
+/**
+ * This dialog is used to install an integration from the marketplace.
+ * It will open a new window to the OAuth provider, and then wait for the OAuth
+ * provider to redirect back to the workspace.
+ *
+ * When the OAuth provider redirects back, we will create a new integration
+ * with the information from the OAuth provider.
+ *
+ * If the OAuth provider returns an error, we will show an error message.
+ */
+export function OAuthInstallDialog({
+  installingIntegration,
+  onCancel,
+}: OAuthInstallDialogProps) {
+  const open = !!installingIntegration;
+  const [state, setState] = useState<OAuthDialogFlowState>("idle");
+  const { handleStartOAuth: handleDecoOAuthStart, isDecoOAuthIntegration } =
+    useDecoOAuthFlow({
+      setState,
+      installingIntegration,
+    });
+  const { handleStartOAuth: handleComposioOAuthStart } = useComposioOAuthFlow({
+    setState,
+    installingIntegration,
+  });
+  const { handleStartOAuth: handleStubOAuthStart } = useStubOAuthFlow({
+    setState,
+    installingIntegration,
+  });
+
+  const handleStartOAuth = () => {
+    if (!installingIntegration) {
+      toast.error("Error starting OAuth flow, no integration to install");
+      return;
+    }
+
+    if (
+      installingIntegration.provider === "deco" &&
+      isDecoOAuthIntegration(installingIntegration.id)
+    ) {
+      return handleDecoOAuthStart();
+    }
+
+    if (installingIntegration.provider === "composio") {
+      return handleComposioOAuthStart();
+    }
+
+    return handleStubOAuthStart();
   };
 
   return (
@@ -325,4 +479,8 @@ export function OAuthInstallDialog({
         : null}
     </Dialog>
   );
+}
+
+export function useOAuthInstall() {
+  return useState<MarketplaceIntegration | null>(null);
 }

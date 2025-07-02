@@ -776,19 +776,9 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
           result.structuredContent,
         );
 
-        const pattern = new URLPattern({
-          pathname: "/apps/:appName/:installId/mcp/messages",
-        });
-        const match = parsed.data && "url" in parsed.data.connection &&
-            typeof parsed.data.connection.url === "string"
-          ? pattern.exec(parsed.data.connection.url)
-          : null;
-        const id = parsed.installId ?? match?.pathname.groups.installId ??
-          crypto.randomUUID();
-
         client.close();
         integration = {
-          id,
+          id: crypto.randomUUID(),
           ...(parsed.data as Omit<Integration, "id">),
         };
       } finally {

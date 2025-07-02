@@ -5,6 +5,7 @@ import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { isWellKnownApp, useGroupedApp } from "./apps.ts";
 import { IntegrationIcon } from "./common.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -68,19 +69,20 @@ import { ToolCallResult } from "./tool-call-result.tsx";
 import type { MCPToolCallResult } from "./types.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import {
-  ConfirmMarketplaceInstallDialog,
-} from "./select-connection-dialog.tsx";
-import type { MarketplaceIntegration } from "./marketplace.tsx";
-import { OAuthInstallDialog } from "./oauth-install-dialog.tsx";
+  OAuthInstallDialog,
+  useOAuthInstall,
+} from "./oauth-install-dialog.tsx";
 
 function ConnectionInstanceActions({
   onConfigure,
   onDelete,
   onTestTools,
+  onCopyIntegrationId,
 }: {
   onConfigure: () => void;
   onTestTools: () => void;
   onDelete: () => void;
+  onCopyIntegrationId: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -92,6 +94,9 @@ function ConnectionInstanceActions({
       <DropdownMenuContent>
         <DropdownMenuItem onSelect={onConfigure}>Configure</DropdownMenuItem>
         <DropdownMenuItem onSelect={onTestTools}>Test tools</DropdownMenuItem>
+        <DropdownMenuItem onSelect={onCopyIntegrationId}>
+          Copy Integration ID
+        </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={onDelete}
           className="text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -565,6 +570,10 @@ function ConnectionInstanceItem(
         onConfigure={() => setIsConfiguring(true)}
         onTestTools={() => onTestTools(instance.id)}
         onDelete={() => setDeletingId(instance.id)}
+        onCopyIntegrationId={() => {
+          navigator.clipboard.writeText(instance.id);
+          toast.success("Integration ID copied to clipboard");
+        }}
       />
       {deletingId && (
         <RemoveConnectionAlert
@@ -602,15 +611,7 @@ function Overview({ data, appKey }: {
   data: ReturnType<typeof useGroupedApp>;
   appKey: string;
 }) {
-  const isWellKnown = isWellKnownApp(appKey);
-  const [installingIntegration, setInstallingIntegration] = useState<
-    MarketplaceIntegration | null
-  >(null);
-  const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
-    open: boolean;
-    url: string;
-    integrationName: string;
-  }>({ open: false, url: "", integrationName: "" });
+  const [installingIntegration, setInstallingIntegration] = useOAuthInstall();
 
   const handleAddConnection = () => {
     setInstallingIntegration({
@@ -622,7 +623,8 @@ function Overview({ data, appKey }: {
     });
   };
 
-  console.log(data.info?.icon);
+  const isWellKnown = isWellKnownApp(appKey);
+  const canAddConnection = !isWellKnown && data.info?.provider !== "custom";
 
   return (
     <div className="w-full p-4 flex items-center justify-between gap-2">
@@ -638,7 +640,7 @@ function Overview({ data, appKey }: {
           </p>
         </div>
       </div>
-      {(!isWellKnown && data.info?.provider !== "custom")
+      {canAddConnection
         ? (
           <Button variant="special" onClick={handleAddConnection}>
             <span className="hidden md:inline">Add connection</span>
@@ -646,34 +648,9 @@ function Overview({ data, appKey }: {
         )
         : null}
 
-      <ConfirmMarketplaceInstallDialog
-        integration={installingIntegration}
-        setIntegration={setInstallingIntegration}
-        onConfirm={({ authorizeOauthUrl }) => {
-          if (authorizeOauthUrl) {
-            const popup = globalThis.open(
-              authorizeOauthUrl,
-              "_blank",
-            );
-            if (
-              !popup || popup.closed || typeof popup.closed === "undefined"
-            ) {
-              setOauthCompletionDialog({
-                open: true,
-                url: authorizeOauthUrl,
-                integrationName: installingIntegration?.name || "the service",
-              });
-            }
-          }
-        }}
-      />
-
       <OAuthInstallDialog
-        open={oauthCompletionDialog.open}
-        onOpenChange={(open) =>
-          setOauthCompletionDialog((prev) => ({ ...prev, open }))}
-        authorizeOauthUrl={oauthCompletionDialog.url}
-        integrationName={oauthCompletionDialog.integrationName}
+        installingIntegration={installingIntegration}
+        onCancel={() => setInstallingIntegration(null)}
       />
     </div>
   );

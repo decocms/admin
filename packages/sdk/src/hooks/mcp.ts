@@ -21,7 +21,13 @@ import { KEYS } from "./api.ts";
 import { listTools, type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 
-export const useCreateIntegration = () => {
+export const useCreateIntegration = ({
+  onError,
+  onSuccess,
+}: {
+  onError?: (error: Error) => void;
+  onSuccess?: (result: Integration) => void;
+} = {}) => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
@@ -41,7 +47,10 @@ export const useCreateIntegration = () => {
         listKey,
         (old) => !old ? [result] : [result, ...old],
       );
+
+      onSuccess?.(result);
     },
+    onError,
   });
 
   return create;
@@ -286,6 +295,9 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
 export const useDecoOAuthInstall = () => {
   const { workspace } = useSDK();
 
+  const isDecoOAuthIntegration = (appName: string) =>
+    WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase());
+
   const getAuthUrl = async ({ installId, appName, returnUrl }: {
     installId: string;
     appName: string;
@@ -293,8 +305,10 @@ export const useDecoOAuthInstall = () => {
   }) => {
     let redirectUrl: string | null = null;
 
-    if (!WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase())) {
-      throw new Error("App name is not a well known deco oauth integration");
+    if (!isDecoOAuthIntegration(appName)) {
+      throw new Error(
+        `App name ${appName} is not a known deco oauth integration`,
+      );
     }
 
     const result = await MCPClient
@@ -313,7 +327,79 @@ export const useDecoOAuthInstall = () => {
     return { redirectUrl };
   };
 
+  return { getAuthUrl, isDecoOAuthIntegration };
+};
+
+export const useComposioOAuthInstall = () => {
+  const { workspace } = useSDK();
+
+  const getAuthUrl = async ({ installId, url }: {
+    installId: string;
+    url: string;
+  }) => {
+    // const result = await MCPClient
+    //   .forWorkspace(workspace)
+    //   .COMPOSIO_INTEGRATION_OAUTH_START({
+    //     url,
+    //     installId,
+    //   });
+
+    //   const redirectUrl = result?.redirectUrl;
+
+    //   if (!redirectUrl) {
+    //     const errorInfo = {
+    //       appName,
+    //       returnUrl,
+    //       installId: integration.id.split(":").pop()!,
+    //       url: integration.connection.url,
+    //       result,
+    //     };
+    //     console.error("[Composio] No redirect URL found", errorInfo);
+    //   }
+
+    // return { redirectUrl };
+  };
+
   return { getAuthUrl };
+};
+
+export const useInstallIntegration = () => {
+  const { workspace } = useSDK();
+  const client = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (appName: string) => {
+      const result: { installationId: string } = await MCPClient
+        .forWorkspace(workspace)
+        .DECO_INTEGRATION_INSTALL({ id: appName });
+
+      const integration = await loadIntegration(
+        workspace,
+        result.installationId,
+      );
+
+      return integration;
+    },
+    onSuccess: (integration) => {
+      if (!integration) {
+        return;
+      }
+
+      const itemKey = KEYS.INTEGRATION(workspace, integration.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Integration>(itemKey, integration);
+
+      // update list
+      const listKey = KEYS.INTEGRATION(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Integration[]>(
+        listKey,
+        (old) => !old ? [integration] : [integration, ...old],
+      );
+    },
+  });
+
+  return mutation;
 };
 
 export const useInstallFromMarketplace = () => {
@@ -338,24 +424,6 @@ export const useInstallFromMarketplace = () => {
       );
 
       let redirectUrl: string | null = null;
-
-      if (
-        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
-        provider === "deco"
-      ) {
-        const result = await MCPClient
-          .forWorkspace(workspace)
-          .DECO_INTEGRATION_OAUTH_START({
-            appName: appName,
-            returnUrl,
-            installId: integration.id.split(":").pop()!,
-          });
-
-        redirectUrl = result?.redirectUrl;
-        if (!redirectUrl) {
-          throw new Error("No redirect URL found");
-        }
-      }
 
       if (provider === "composio") {
         if (!("url" in integration.connection)) {

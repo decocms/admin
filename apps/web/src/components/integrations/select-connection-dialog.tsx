@@ -1,7 +1,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -9,19 +8,15 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo, useState } from "react";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import {
   Marketplace,
   type MarketplaceIntegration,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
-import { type Integration, useInstallFromMarketplace } from "@deco/sdk";
+import { type Integration } from "@deco/sdk";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { IntegrationIcon } from "./common.tsx";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Tabs, TabsList, TabsTrigger } from "@deco/ui/components/tabs.tsx";
 
 type ConnectionsDialogEvent = {
@@ -45,141 +40,6 @@ type AddConnectionDialogContentProps = {
 type SelectConnectionDialogProps = AddConnectionDialogContentProps & {
   trigger?: React.ReactNode;
 };
-
-export function useOAuthInstall() {
-  const [installingIntegration, setInstallingIntegration] = useState<
-    MarketplaceIntegration | null
-  >(null);
-
-  return {
-    installingIntegration,
-    setInstallingIntegration,
-  };
-}
-
-export function ConfirmMarketplaceInstallDialog({
-  integration,
-  setIntegration,
-  onConfirm,
-}: {
-  integration: MarketplaceIntegration | null;
-  setIntegration: (integration: MarketplaceIntegration | null) => void;
-  onConfirm: ({
-    connection,
-    authorizeOauthUrl,
-  }: {
-    connection: Integration;
-    authorizeOauthUrl: string | null;
-  }) => void;
-}) {
-  const open = !!integration;
-  const { mutate: installIntegration } = useInstallFromMarketplace();
-  const [isPending, setIsPending] = useState(false);
-  const buildWorkspaceUrl = useWorkspaceLink();
-
-  const handleConnect = () => {
-    if (!integration) return;
-    setIsPending(true);
-    const returnUrl = new URL(
-      buildWorkspaceUrl("/connections/success"),
-      globalThis.location.origin,
-    );
-
-    installIntegration({
-      appName: integration.id,
-      provider: integration.provider,
-      returnUrl: returnUrl.href,
-    }, {
-      onSuccess: ({ integration: installedIntegration, redirectUrl }) => {
-        if (typeof installedIntegration?.id !== "string") {
-          setIsPending(false);
-          console.error(
-            "Installed integration is not a string",
-            installedIntegration,
-          );
-          return;
-        }
-
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: true,
-          data: integration,
-        });
-        onConfirm({
-          connection: installedIntegration,
-          authorizeOauthUrl: redirectUrl ?? null,
-        });
-        setIntegration(null);
-      },
-      onError: (error) => {
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: false,
-          data: integration,
-          error,
-        });
-      },
-    });
-  };
-
-  if (!integration) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={() => setIntegration(null)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Connect to {integration.name}
-          </DialogTitle>
-          <DialogDescription>
-            <div className="mt-4">
-              <div className="grid grid-cols-[80px_1fr] items-start gap-4">
-                <IntegrationIcon
-                  icon={integration?.icon}
-                />
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    {integration?.description}
-                  </div>
-                </div>
-              </div>
-              {integration.provider !== "deco" && (
-                <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    <Icon name="info" size={16} />
-                    <span className="font-medium">
-                      Third-party integration
-                    </span>
-                  </div>
-                  <p className="mt-1">
-                    This integration is provided by a third party and is not
-                    maintained by deco.
-                    <br />
-                    Provider:{" "}
-                    <span className="font-medium">{integration.provider}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          {isPending
-            ? (
-              <Button disabled={isPending}>
-                Connecting...
-              </Button>
-            )
-            : (
-              <Button onClick={handleConnect}>
-                Connect
-              </Button>
-            )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function AddConnectionDialogContent({
   title = "Add integration",

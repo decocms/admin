@@ -4,75 +4,72 @@ import {
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useIntegrations, useUpdateIntegration } from "@deco/sdk";
 import { trackException } from "../../hooks/analytics.ts";
-import { notifyIntegrationUpdate } from "../../lib/broadcast-channels.ts";
+import { notifyOAuthMessage } from "../../lib/broadcast-channels.ts";
+import { useMutation } from "@tanstack/react-query";
 
-function ConnectionInstallSuccess() {
-  const { mutate: updateIntegration, isPending } = useUpdateIntegration({
-    onError: (error) => {
+function OAuthInstallSuccess() {
+  const [state, setState] = useState<"pending" | "success" | "error">(
+    "pending",
+  );
+  const { mutate: notifyCompletionDeduped } = useMutation({
+    mutationKey: ["oauth-install-success"],
+    mutationFn: () => {
       const searchParams = new URLSearchParams(globalThis.location.search);
-      trackException(error, {
-        properties: {
-          installId: searchParams.get("installId"),
-          appName: searchParams.get("appName"),
-          mcpUrl: searchParams.get("mcpUrl"),
-          name: searchParams.get("name"),
-          account: searchParams.get("account"),
-        },
+      const installId = searchParams.get("installId");
+      const name = searchParams.get("name");
+      const account = searchParams.get("account");
+
+      if (!installId) {
+        notifyOAuthMessage({
+          type: "OAUTH_ERROR",
+          error: "No installId found in query params",
+          installId: "",
+        });
+        throw new Error("No installId found in query params");
+      }
+
+      // make sure this only runs once per installId
+      if (
+        localStorage.getItem(`oauth-install-success-${installId}`) === "true"
+      ) {
+        return Promise.resolve();
+      }
+      notifyOAuthMessage({
+        type: "OAUTH_FINISHED",
+        installId,
+        name,
+        account,
       });
+      localStorage.setItem(`oauth-install-success-${installId}`, "true");
+      return Promise.resolve();
     },
     onSuccess: () => {
-      const searchParams = new URLSearchParams(globalThis.location.search);
-      searchParams.delete("installId");
-      const newUrl =
-        `${globalThis.location.pathname}?${searchParams.toString()}`;
-      globalThis.history.replaceState({}, "", newUrl);
-
-      // Notify other windows about the successful update
-      notifyIntegrationUpdate();
+      setState("success");
+    },
+    onError: (error) => {
+      trackException(error, {
+        properties: {
+          url: globalThis.location.href,
+        },
+      });
+      setState("error");
+      return;
     },
   });
-  const { data: allIntegrations } = useIntegrations();
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(globalThis.location.search);
-    const installId = searchParams.get("installId");
-    const name = searchParams.get("name");
-    const account = searchParams.get("account");
-
-    if (!installId || !allIntegrations) {
-      return;
-    }
-
-    const connectionId = `i:${installId}`;
-    const existingIntegration = allIntegrations.find(
-      (integration) => integration.id === connectionId,
-    );
-
-    if (!existingIntegration) {
-      return;
-    }
-
-    const newName = name || `${existingIntegration.name} | ${account}` ||
-      existingIntegration.name;
-    const newDescription = account || existingIntegration.description;
-
-    updateIntegration({
-      ...existingIntegration,
-      id: connectionId,
-      name: newName,
-      description: newDescription,
-    });
-  }, [updateIntegration, allIntegrations]);
+  // sad to do this, but it is the way i've found to do this on page load on an SPA.
+  // eventually we should make a redirect to our API instead of having a /connection/success
+  // route on the frontend.
+  useEffect(notifyCompletionDeduped, [notifyCompletionDeduped]);
 
   return (
     <div className="min-h-screen h-full flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-4 rounded-xl">
-        {isPending
+        {state === "pending"
           ? (
             <CardContent className="text-center space-y-4 py-8">
               <div className="flex justify-center w-full">
@@ -86,7 +83,8 @@ function ConnectionInstallSuccess() {
               </div>
             </CardContent>
           )
-          : (
+          : state === "success"
+          ? (
             <>
               <CardHeader className="text-center">
                 <Icon name="check_circle" size={36} className="text-special" />
@@ -103,10 +101,25 @@ function ConnectionInstallSuccess() {
                 </p>
               </CardContent>
             </>
+          )
+          : (
+            <>
+              <CardHeader className="text-center">
+                <Icon name="error" size={36} className="text-destructive" />
+                <CardTitle className="text-xl font-medium">
+                  Error Connecting Integration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  We were unable to connect your integration. Please try again.
+                </p>
+              </CardContent>
+            </>
           )}
       </Card>
     </div>
   );
 }
 
-export default ConnectionInstallSuccess;
+export default OAuthInstallSuccess;

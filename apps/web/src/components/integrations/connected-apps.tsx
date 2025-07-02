@@ -11,11 +11,11 @@ import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
 import { IntegrationIcon } from "./common.tsx";
+import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
 import {
-  SelectConnectionDialog,
+  OAuthInstallDialog,
   useOAuthInstall,
-} from "./select-connection-dialog.tsx";
-import { OAuthInstallDialog } from "./oauth-install-dialog.tsx";
+} from "./oauth-install-dialog.tsx";
 
 function AppCard({
   app,
@@ -164,7 +164,7 @@ export function ConnectedAppsList() {
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [filter, setFilter] = useState<string>("");
   const navigateWorkspace = useNavigateWorkspace();
-  const { installingIntegration, setInstallingIntegration } = useOAuthInstall();
+  const [installingIntegration, setInstallingIntegration] = useOAuthInstall();
   const apps = useGroupedApps({
     filter,
   });
@@ -229,8 +229,6 @@ export function ConnectedAppsList() {
       <OAuthInstallDialog
         installingIntegration={installingIntegration}
         onCancel={() => setInstallingIntegration(null)}
-        onOAuthSuccess={() => {}}
-        onOAuthError={() => {}}
       />
     </div>
   );

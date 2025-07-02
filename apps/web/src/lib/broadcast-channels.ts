@@ -3,16 +3,16 @@
  * Persisting tanstack query data to local storage was kinda buggy, while
  * this one is simple and worked well.
  */
-export const OAUTH_CHANNEL = new BroadcastChannel("oauth-updates");
+const OAUTH_CHANNEL = new BroadcastChannel("oauth-updates");
 
-type OAuthFinishedMessage = {
+export type OAuthFinishedMessage = {
   type: "OAUTH_FINISHED";
   installId: string;
-  name: string;
-  account: string;
+  name: string | null;
+  account: string | null;
 };
 
-type OAuthErrorMessage = {
+export type OAuthErrorMessage = {
   type: "OAUTH_ERROR";
   installId: string;
   error: string;
@@ -22,12 +22,8 @@ export type OAuthMessage =
   | OAuthFinishedMessage
   | OAuthErrorMessage;
 
-export const notifyOAuthFinished = (
-  props: Omit<OAuthFinishedMessage, "type">,
-) => {
-  OAUTH_CHANNEL.postMessage(
-    { type: "OAUTH_FINISHED" as const, ...props },
-  );
+export const notifyOAuthMessage = (message: OAuthMessage) => {
+  OAUTH_CHANNEL.postMessage(message);
 };
 
 export const subscribeToOAuth = (
@@ -41,7 +37,9 @@ export const subscribeToOAuth = (
 
 export const subscribeToOAuthInstall = (
   installId: string,
-  onMessage: (message: OAuthFinishedMessage | OAuthErrorMessage) => void,
+  onMessage: (
+    message: OAuthFinishedMessage | OAuthErrorMessage,
+  ) => void | Promise<void>,
 ) => {
   const TRACKED_MESSAGES = ["OAUTH_FINISHED", "OAUTH_ERROR"] as const;
   const unsubscribe = subscribeToOAuth((message) => {

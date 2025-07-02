@@ -1,5 +1,7 @@
 import { useWorkflows } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Pagination,
   PaginationContent,
@@ -8,6 +10,12 @@ import {
   PaginationPrevious,
 } from "@deco/ui/components/pagination.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
@@ -16,7 +24,6 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 // Instead, define the Workflow type here to match the API response
 interface Workflow {
@@ -153,7 +160,7 @@ function WorkflowsTab() {
   const [filter, setFilter] = useState("");
   const page = Number(searchParams.get("page") || 1);
   const per_page = Number(searchParams.get("per_page") || 10);
-  const { data } = useWorkflows(page, per_page);
+  const { data, refetch, isRefetching } = useWorkflows(page, per_page);
   const navigateWorkspace = useNavigateWorkspace();
 
   const workflows: Workflow[] = data.workflows as Workflow[];
@@ -180,14 +187,36 @@ function WorkflowsTab() {
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-4 h-full py-4">
         <div className="px-4 overflow-x-auto">
-          <ListPageHeader
-            input={{
-              placeholder: "Search workflow",
-              value: filter,
-              onChange: (e) => setFilter(e.target.value),
-            }}
-            view={{ viewMode, onChange: setViewMode }}
-          />
+          <div className="flex items-center gap-2 mb-4">
+            <ListPageHeader
+              input={{
+                placeholder: "Search workflow",
+                value: filter,
+                onChange: (e) => setFilter(e.target.value),
+              }}
+              view={{ viewMode, onChange: setViewMode }}
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => refetch()}
+                  disabled={isRefetching}
+                  className="h-10 w-10"
+                >
+                  <Icon
+                    name="refresh"
+                    size={16}
+                    className={isRefetching ? "animate-spin" : ""}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Refresh
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         <div className="flex-1 min-h-0 px-4 overflow-x-auto">
           {filteredWorkflows.length === 0

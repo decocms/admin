@@ -7,7 +7,7 @@ export const useWorkflows = (page = 1, per_page = 10) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
-  const data = useSuspenseQuery({
+  const { data, refetch, isRefetching } = useSuspenseQuery({
     queryKey: ["workflows", workspace, page, per_page],
     queryFn: async ({ signal }) => {
       const result = await listWorkflows(workspace, page, per_page, signal);
@@ -23,7 +23,11 @@ export const useWorkflows = (page = 1, per_page = 10) => {
       error instanceof InternalServerError && failureCount < 2,
   });
 
-  return data;
+  return {
+    data,
+    refetch,
+    isRefetching,
+  };
 };
 
 export const useWorkflowStatus = (

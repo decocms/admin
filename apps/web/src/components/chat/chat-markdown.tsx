@@ -171,7 +171,7 @@ const MemoizedMarkdownBlock = memo(
           code: (props) => (
             <code
               {...props}
-              className="px-1 py-0.5 bg-muted rounded text-sm font-mono"
+              className="px-1 py-0.5 bg-muted rounded text-sm font-mono break-all"
             />
           ),
           pre: (props) => (
@@ -232,7 +232,7 @@ function CodeBlock(
   };
 
   return (
-    <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border">
+    <div className="my-4 rounded-lg bg-muted overflow-hidden border border-border grid">
       <div className="flex items-center justify-between p-1 pl-4 bg-muted border-b border-border">
         <span className="text-xs font-mono uppercase text-muted-foreground tracking-widest select-none">
           {language ? language : "text"}

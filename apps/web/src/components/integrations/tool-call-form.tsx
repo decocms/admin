@@ -91,7 +91,6 @@ export function ToolCallForm(
 
   const handleFormSubmit = form.handleSubmit(async (data) => {
     try {
-      console.log("form submit", data);
       setError(null);
       await onSubmit(data);
     } catch (err) {
@@ -165,7 +164,6 @@ export function ToolCallForm(
                   type="submit"
                   className="flex-1 gap-2"
                   disabled={isLoading}
-                  onClick={handleFormSubmit}
                 >
                   {isLoading
                     ? (

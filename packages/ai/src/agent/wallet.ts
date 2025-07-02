@@ -219,7 +219,7 @@ export class AgentWallet {
             if (response.status === 409) {
               retries--;
               if (retries > 0) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 5000));
                 continue;
               }
             }

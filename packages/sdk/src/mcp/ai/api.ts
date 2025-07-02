@@ -120,7 +120,7 @@ const AIGenerateOutputSchema = z.object({
 });
 
 export const aiGenerate = createTool({
-  name: "GENERATE",
+  name: "AI_GENERATE",
   description:
     "Generate text using AI models directly without agent context (stateless)",
   inputSchema: AIGenerateInputSchema,
@@ -171,7 +171,7 @@ export const aiGenerate = createTool({
     });
 
     const tempAgent = new Agent({
-      name: "AI Direct Generator",
+      name: "AI Gateway",
       instructions: input.instructions || "You are a helpful AI assistant.",
       model: llm,
     });
@@ -198,7 +198,9 @@ export const aiGenerate = createTool({
       model: modelId,
       modelId,
       plan: plan.id,
-      userId: "id" in c.user ? c.user.id : `apikey-${c.workspace.value}`,
+      userId: typeof c.user.id === "string"
+        ? c.user.id
+        : `apikey-${c.workspace.value}`,
       workspace: c.workspace.value,
     });
 

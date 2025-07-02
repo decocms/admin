@@ -68,16 +68,23 @@ export class MicroDollar {
    * Returns the microdollars value as a string
    */
   public toMicrodollarString(): string {
-    const str = this.microdollars.toString();
+    const isNegative = this.microdollars < BigInt(0);
+    const absValue = isNegative ? -this.microdollars : this.microdollars;
+    const str = absValue.toString();
+
     // Pad with leading zeros if needed to ensure at least 6 digits
     const padded = str.padStart(6, "0");
+
     if (str.length <= 6) {
-      return padded;
+      return isNegative ? `-${padded}` : padded;
     }
+
     // Split into dollars and microdollars
     const dollars = str.slice(0, -6);
     const micros = str.slice(-6);
-    return `${dollars}_${micros}`;
+    const result = `${dollars}_${micros}`;
+
+    return isNegative ? `-${result}` : result;
   }
 
   /**

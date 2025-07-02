@@ -77,7 +77,7 @@ export const useThreads = (partialOptions: ThreadFilterOptions = {}) => {
       const [result] = await Promise.all([
         MCPClient
           .forWorkspace(workspace)
-          .GENERATE({
+          .AI_GENERATE({
             // This can break if the workspace disabled 4.1-nano.
             // TODO: Implement something like a model price/quality/speed hinting system.
             model: "openai:gpt-4.1-nano",

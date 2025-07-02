@@ -268,7 +268,7 @@ const FileSchema = z.object({
   content: z.string(),
 });
 
-const DECO_WORKER_RUNTIME_VERSION = "0.2.3";
+const DECO_WORKER_RUNTIME_VERSION = "0.2.4";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",

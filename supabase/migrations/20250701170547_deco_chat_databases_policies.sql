@@ -1,7 +1,7 @@
 -- Database policies for running SQL queries
 INSERT INTO "public"."policies" ("id", "created_at", "name", "statements", "description", "team_id") VALUES 
 ('54', '2025-07-01 17:05:47.000000+00', 'run_database_sql', ARRAY[
-    '{"effect":"allow","resource":"D1_RUN_SQL"}'::jsonb
+    '{"effect":"allow","resource":"DATABASES_RUN_SQL"}'::jsonb
 ], 'Allow users to run SQL queries against the workspace database', null)
 ON CONFLICT (id) DO NOTHING;
 

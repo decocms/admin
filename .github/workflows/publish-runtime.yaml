@@ -23,4 +23,4 @@ jobs:
           deno-version: v2.x
 
       - name: Publish package
-        run: cd ./packages/runtime && deno install && deno publish
+        run: cd ./packages/runtime && deno install && deno publish --allow-slow-types

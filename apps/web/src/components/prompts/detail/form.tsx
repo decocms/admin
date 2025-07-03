@@ -56,6 +56,7 @@ export function DetailForm() {
                     className="min-h-[49lvh]"
                     disabled={isReadonly}
                     enableMentions={false}
+                    hideMentionsLabel
                     excludeIds={[form.getValues("id")]}
                     {...field}
                   />

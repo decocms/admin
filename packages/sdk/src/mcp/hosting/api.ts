@@ -2,6 +2,7 @@ import { D1Store } from "@mastra/cloudflare-d1";
 import { parse as parseToml } from "smol-toml";
 import * as uuid from "uuid";
 import { z } from "zod";
+import { JwtIssuer } from "../../auth/jwt.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";
 import {
@@ -517,10 +518,16 @@ Important Notes:
         ]),
       );
     }
+    const issuer = JwtIssuer.forSecret(c.envVars.ISSUER_JWT_SECRET);
+    const token = await issuer.create({
+      sub: `app:${scriptSlug}`,
+      aud: workspace,
+    });
 
     const appEnvVars = {
       DECO_CHAT_WORKSPACE: workspace,
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
+      DECO_CHAT_API_TOKEN: token,
     };
 
     await Promise.all(

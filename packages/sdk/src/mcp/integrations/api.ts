@@ -368,6 +368,7 @@ export const getIntegration = createIntegrationManagementTool({
       .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
       .select("*")
       .eq("id", uuid)
+      .eq("workspace", c.workspace.value)
       .single().then((r) => r);
 
     const knowledgeBases = await listKnowledgeBases.handler({});
@@ -420,15 +421,23 @@ export const createIntegration = createIntegrationManagementTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { data, error } = await c.db
-      .from("deco_chat_integrations")
-      .insert({
-        ...NEW_INTEGRATION_TEMPLATE,
-        ...integration,
-        workspace: c.workspace.value,
-      })
-      .select()
-      .single();
+    const payload = {
+      ...NEW_INTEGRATION_TEMPLATE,
+      ...integration,
+      workspace: c.workspace.value,
+    };
+    const { data, error } = "id" in payload && payload.id
+      ? await c.db
+        .from("deco_chat_integrations")
+        .upsert(payload)
+        .eq("workspace", c.workspace.value)
+        .select()
+        .single()
+      : await c.db
+        .from("deco_chat_integrations")
+        .insert(payload)
+        .select()
+        .single();
 
     if (error) {
       throw new InternalServerError(error.message);
@@ -462,6 +471,7 @@ export const updateIntegration = createIntegrationManagementTool({
       .from("deco_chat_integrations")
       .update({ ...integration, id: uuid, workspace: c.workspace.value })
       .eq("id", uuid)
+      .eq("workspace", c.workspace.value)
       .select()
       .single();
 
@@ -499,7 +509,8 @@ export const deleteIntegration = createIntegrationManagementTool({
     const { error } = await c.db
       .from("deco_chat_integrations")
       .delete()
-      .eq("id", uuid);
+      .eq("id", uuid)
+      .eq("workspace", c.workspace.value);
 
     if (error) {
       throw new InternalServerError(error.message);

@@ -5,7 +5,7 @@ import {
   usePrompt,
   useUpdateAgentCache,
   useUpdatePrompt,
-  WELL_KNOWN_AGENT_IDS
+  WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import {
   AlertDialog,

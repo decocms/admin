@@ -98,7 +98,7 @@ export const addWorkflowDO = async () => {
   const workflowsBindings = {
     migrations: [
       ...(wranglerConfig.migrations ?? []).filter((m) =>
-        !m.new_classes.includes(DECO_CHAT_WORKFLOW_BINDING.class_name)
+        !m.new_classes?.includes(DECO_CHAT_WORKFLOW_BINDING.class_name)
       ),
       {
         tag: "v1",

@@ -114,9 +114,13 @@ export function ListTriggersEmpty() {
           className="text-muted-foreground"
         />
       </div>
+<<<<<<< HEAD
       <h3 className="text-lg font-medium text-foreground mb-2">
         No triggers configured
       </h3>
+=======
+      <h3 className="text-lg font-medium text-foreground mb-2">No triggers configured</h3>
+>>>>>>> 49550a527481c517718450538132edf8513343ab
       <p className="text-sm text-muted-foreground max-w-md mb-4">
         Triggers allow you to trigger your agent on a schedule or from external
         systems.

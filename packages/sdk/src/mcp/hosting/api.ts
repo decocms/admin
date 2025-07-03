@@ -268,7 +268,7 @@ const FileSchema = z.object({
   content: z.string(),
 });
 
-const DECO_WORKER_RUNTIME_VERSION = "0.2.4";
+const DECO_WORKER_RUNTIME_VERSION = "0.2.16";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
@@ -304,33 +304,36 @@ Common patterns:
    # Schedule cron triggers:
    crons = [ "*/3 * * * *", "0 15 1 * *", "59 23 LW * *" ]
 
+   # This is required when using the Workflow class
+  [[durable_objects.bindings]]
+  name = "DECO_CHAT_WORKFLOW_DO"
+  class_name = "Workflow"
+
   [[durable_objects.bindings]]
   name = "MY_DURABLE_OBJECT"
   class_name = "MyDurableObject"
 
-   [ai]
-   binding = "AI"
+  # This is required when using the Workflow class
+  [[migrations]]
+  tag = "v1"
+  new_classes = ["Workflow", "MyDurableObject"]
 
-   [[queues.consumers]]
-    queue = "queues-web-crawler"
-    max_batch_timeout = 60
+  [ai]
+  binding = "AI"
 
-    [[queues.producers]]
-    queue = "queues-web-crawler"
-    binding = "CRAWLER_QUEUE"
+  [[queues.consumers]]
+  queue = "queues-web-crawler"
+  max_batch_timeout = 60
 
-   [[deco.bindings]]
-   type = "MCP"
-   name = "MY_BINDING"
-   value = "INTEGRATION_ID"
+  [[queues.producers]]
+  queue = "queues-web-crawler"
+  binding = "CRAWLER_QUEUE"
 
-   [[workflows]]
-    # name of your workflow
-    name = "workflows-starter"
-    # binding name env.MY_WORKFLOW
-    binding = "MY_WORKFLOW"
-    # this is class that extends the Workflow class in src/index.ts
-    class_name = "MyWorkflow"
+  [[deco.bindings]]
+  type = "MCP"
+  name = "MY_BINDING"
+  value = "INTEGRATION_ID"
+
 
    # You can add any supported binding type as per Workers for Platforms documentation.
 4. You should always surround the user fetch with the withRuntime function.
@@ -338,12 +341,13 @@ Common patterns:
 
 import { withRuntime } from "jsr:@deco/workers-runtime@${DECO_WORKER_RUNTIME_VERSION}";
 import { DeleteModelInput } from '../models/api';
-
-export default withRuntime({
+const { Workflow, ...workerAPIs } = withRuntime({
   fetch: async (request: Request, env: any) => {
     return new Response("Hello from Deno on Cloudflare!");
   }
-});
+})
+export { Workflow };
+export default workerAPIs;
 
 You must use the Workers for Platforms TOML format for wrangler.toml. The bindings supports all standard binding types (ai, analytics_engine, assets, browser_rendering, d1, durable_object_namespace, hyperdrive, kv_namespace, mtls_certificate, plain_text, queue, r2_bucket, secret_text, service, tail_consumer, vectorize, version_metadata, etc). For Deco-specific bindings, use type = "MCP".
 For routes, only custom domains are supported. The user must point their DNS to the script endpoint. $SCRIPT.deco.page using DNS-Only. The user needs to wait for the DNS to propagate before the app will be available.
@@ -357,11 +361,13 @@ Example of files deployment:
       import { withRuntime } from "jsr:@deco/workers-runtime@${DECO_WORKER_RUNTIME_VERSION}";
 
 
-      export default withRuntime({
-        async fetch(request: Request, env: any): Promise<Response> {
+      const { Workflow, ...workerAPIs } = withRuntime({
+        fetch: async (request: Request, env: any) => {
           return new Response("Hello from Deno on Cloudflare!");
         }
       })
+      export { Workflow };
+      export default workerAPIs;
     \`
   },
   {
@@ -373,11 +379,14 @@ Example of files deployment:
   {
     "path": "wrangler.toml",
     "content": \`
-      name = "app-slug"
+name = "app-slug"
    compatibility_date = "2025-06-17"
    main_module = "main.ts"
    kv_namespaces = [
      { binding = "TODO", id = "06779da6940b431db6e566b4846d64db" }
+   ]
+   routes = [
+     { pattern = "my.example.com", custom_domain = true }
    ]
 
    browser = { binding = "MYBROWSER" }
@@ -386,35 +395,37 @@ Example of files deployment:
    # Schedule cron triggers:
    crons = [ "*/3 * * * *", "0 15 1 * *", "59 23 LW * *" ]
 
+   # This is required when using the Workflow class
+  [[durable_objects.bindings]]
+  name = "DECO_CHAT_WORKFLOW_DO"
+  class_name = "Workflow"
+
   [[durable_objects.bindings]]
   name = "MY_DURABLE_OBJECT"
   class_name = "MyDurableObject"
 
-   [ai]
-   binding = "AI"
+  # This is required when using the Workflow class
+  [[migrations]]
+  tag = "v1"
+  new_classes = ["Workflow", "MyDurableObject"]
 
-   [[queues.consumers]]
-    queue = "queues-web-crawler"
-    max_batch_timeout = 60
+  [ai]
+  binding = "AI"
 
-    [[queues.producers]]
-    queue = "queues-web-crawler"
-    binding = "CRAWLER_QUEUE"
+  [[queues.consumers]]
+  queue = "queues-web-crawler"
+  max_batch_timeout = 60
 
-   [[deco.bindings]]
-   type = "MCP"
-   name = "MY_BINDING"
-   value = "INTEGRATION_ID"
+  [[queues.producers]]
+  queue = "queues-web-crawler"
+  binding = "CRAWLER_QUEUE"
 
-   [[workflows]]
-    # name of your workflow
-    name = "workflows-starter"
-    # binding name env.MY_WORKFLOW
-    binding = "MY_WORKFLOW"
-    # this is class that extends the Workflow class in src/index.ts
-    class_name = "MyWorkflow"
-    \`
-  }
+  [[deco.bindings]]
+  type = "MCP"
+  name = "MY_BINDING"
+  value = "INTEGRATION_ID"
+
+  }\`
 ]
 
 Important Notes:

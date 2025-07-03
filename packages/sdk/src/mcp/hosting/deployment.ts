@@ -145,8 +145,6 @@ const addPolyfills = (
   }
 };
 
-const WORKFLOW_DO_BINDING_NAME = "DECO_CHAT_WORKFLOW_DO";
-
 export async function deployToCloudflare(
   c: AppContext,
   {
@@ -223,26 +221,12 @@ export async function deployToCloudflare(
     (bindings ?? []).filter(isDoBinding),
   );
 
-  const workflowDO = {
-    type: "durable_object_namespace" as const,
-    name: WORKFLOW_DO_BINDING_NAME,
-    class_name: "Workflow",
-  };
-  const wranglerDOs = durable_objects?.bindings?.map((binding) => ({
-    type: "durable_object_namespace" as const,
-    name: binding.name,
-    class_name: binding.class_name,
-  })) ?? [];
-
-  const durableObjects = [
-    workflowDO,
-    ...wranglerDOs.filter((durableObject) =>
-      durableObject.name !== WORKFLOW_DO_BINDING_NAME
-    ),
-  ];
-
   const wranglerBindings = [
-    ...durableObjects,
+    ...durable_objects?.bindings?.map((binding) => ({
+      type: "durable_object_namespace" as const,
+      name: binding.name,
+      class_name: binding.class_name,
+    })) ?? [],
     ...kv_namespaces?.map((kv) => ({
       type: "kv_namespace" as const,
       name: kv.binding,

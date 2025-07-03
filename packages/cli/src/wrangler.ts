@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { getConfig, getConfigFilePath } from "./config.ts";
+import { addWorkflowDO, getConfig, getConfigFilePath } from "./config.ts";
 import { readSession } from "./session.ts";
 
 const envFile = ".dev.vars";
@@ -92,4 +92,5 @@ export async function ensureDevEnvironment() {
   await ensureEnvVarsGitIgnore(projectRoot);
   const env = await getEnvVars(projectRoot);
   await writeEnvVars(projectRoot, env);
+  await addWorkflowDO();
 }

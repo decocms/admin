@@ -43,6 +43,16 @@ export type Config = z.infer<typeof decoConfigSchema>;
 
 export interface WranglerConfig {
   [key: string]: unknown;
+  migrations?: {
+    tag: string;
+    new_classes: string[];
+  }[];
+  durable_objects?: {
+    bindings?: {
+      name: string;
+      class_name: string;
+    }[];
+  };
   name?: string;
   deco?: Partial<Config>;
 }
@@ -73,6 +83,41 @@ const readConfigFile = async () => {
     ...decoConfig,
     app: decoConfig.app ?? wranglerConfig.name,
   };
+};
+
+const DECO_CHAT_WORKFLOW_BINDING = {
+  name: "DECO_CHAT_WORKFLOW_DO",
+  class_name: "Workflow",
+};
+export const addWorkflowDO = async () => {
+  const wranglerConfig = await readWranglerConfig();
+  const configPath = getConfigFilePath(Deno.cwd()) ??
+    `${Deno.cwd()}/${CONFIG_FILE}`;
+  const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
+
+  await Deno.writeTextFile(
+    configPath,
+    stringify({
+      ...wranglerConfig,
+      migrations: [
+        ...(wranglerConfig.migrations ?? []).filter((m) =>
+          m.new_classes.includes(DECO_CHAT_WORKFLOW_BINDING.class_name)
+        ),
+        {
+          tag: "v1",
+          new_classes: [DECO_CHAT_WORKFLOW_BINDING.class_name],
+        },
+      ],
+      durable_objects: {
+        bindings: [
+          ...currentDOs.filter((b) =>
+            b.name !== DECO_CHAT_WORKFLOW_BINDING.name
+          ),
+          DECO_CHAT_WORKFLOW_BINDING,
+        ],
+      },
+    }),
+  );
 };
 
 /**

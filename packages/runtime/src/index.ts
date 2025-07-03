@@ -8,6 +8,8 @@ import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
+import { Workflow } from "./workflow.ts";
+
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -132,9 +134,10 @@ export const withBindings = <TEnv>(_env: TEnv): TEnv => {
 
 export const withRuntime = <TEnv>(
   userFns: UserDefaultExport<TEnv>,
-): UserDefaultExport<TEnv> => {
+): UserDefaultExport<TEnv> & { Workflow: ReturnType<typeof Workflow> } => {
   const server = createMCPServer(userFns);
   return {
+    Workflow: Workflow(userFns.workflows),
     ...userFns,
     ...userFns.email
       ? {

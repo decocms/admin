@@ -23,7 +23,7 @@ export function ViewModeSwitcher({
           name="grid_view"
           size={16}
           className={viewMode === "cards"
-            ? "text-primary"
+            ? "text-foreground"
             : "text-muted-foreground"}
         />
       </Button>
@@ -38,7 +38,7 @@ export function ViewModeSwitcher({
           name="menu"
           size={16}
           className={viewMode === "table"
-            ? "text-primary"
+            ? "text-foreground"
             : "text-muted-foreground"}
         />
       </Button>

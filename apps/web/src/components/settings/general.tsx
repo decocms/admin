@@ -250,27 +250,25 @@ function DeleteTeamDialog({
           <AlertDialogCancel disabled={isPending}>
             Cancel
           </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isPending}
-              onClick={async (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                await onDelete();
-              }}
-            >
-              {isPending
-                ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="xs" /> Deleting...
-                  </span>
-                )
-                : (
-                  "Delete"
-                )}
-            </Button>
+          <AlertDialogAction
+            type="button"
+            disabled={isPending}
+            onClick={async (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              await onDelete();
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40"
+          >
+            {isPending
+              ? (
+                <span className="flex items-center gap-2">
+                  <Spinner size="xs" variant="destructive" /> Deleting...
+                </span>
+              )
+              : (
+                "Delete"
+              )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

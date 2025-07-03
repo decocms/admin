@@ -10,6 +10,17 @@ const getWorkspace = (workspace?: string) => {
   return workspace ?? "";
 };
 
+// deno-lint-ignore no-explicit-any
+const serializeData = (data: any) => {
+  if (data?.structuredContent) {
+    return JSON.stringify(data.structuredContent);
+  }
+  if (Array.isArray(data?.content)) {
+    return data.content[0]?.text;
+  }
+  return;
+};
+
 /**
  * The base fetcher used to fetch the MCP from API.
  */
@@ -75,8 +86,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             error: string | undefined;
           };
 
-          if (!response.ok) {
-            const message = error || "Internal Server Error";
+          if (!response.ok || error || data?.isError) {
+            const message = error || serializeData(data) ||
+              "Internal Server Error";
             const err = options?.getErrorByStatusCode?.(
               response.status,
               message,

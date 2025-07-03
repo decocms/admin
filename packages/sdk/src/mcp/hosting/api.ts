@@ -1,5 +1,6 @@
 import { D1Store } from "@mastra/cloudflare-d1";
 import { parse as parseToml } from "smol-toml";
+import * as uuid from "uuid";
 import { z } from "zod";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";
@@ -10,6 +11,7 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { getWorkspaceD1Database } from "../databases/api.ts";
+import { MCPClient } from "../index.ts";
 import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import {
@@ -17,8 +19,6 @@ import {
   deployToCloudflare,
   type WranglerConfig,
 } from "./deployment.ts";
-import { MCPClient } from "../index.ts";
-import * as uuid from "uuid";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
@@ -693,6 +693,9 @@ export const listWorkflows = createTool({
       limit: per_page,
       offset: (page - 1) * per_page,
       resourceId: undefined,
+    }).catch((err) => {
+      console.error(err);
+      return { runs: [] };
     });
 
     const transformed = runs.map(({ snapshot, ...run }) => ({

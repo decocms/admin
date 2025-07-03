@@ -182,6 +182,27 @@ export function WithWorkspaceTheme({
     ...theme?.variables,
   };
 
+  // Apply theme variables to document root so portal content can access them
+  useEffect(() => {
+    const root = document.documentElement;
+    if (variables) {
+      Object.entries(variables).forEach(([key, value]) => {
+        if (value) {
+          root.style.setProperty(key, value);
+        }
+      });
+    }
+
+    // Cleanup function to remove custom properties when component unmounts
+    return () => {
+      if (variables) {
+        Object.keys(variables).forEach((key) => {
+          root.style.removeProperty(key);
+        });
+      }
+    };
+  }, [variables]);
+
   return (
     <>
       {showSplash && (

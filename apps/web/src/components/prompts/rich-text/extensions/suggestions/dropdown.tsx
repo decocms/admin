@@ -39,7 +39,7 @@ function FormattingTooltip({
   return (
     <div className="flex flex-col gap-2 min-w-40">
       <p className="text-sm font-medium">{label}</p>
-      <div className="prose bg-white p-2 rounded-md text-foreground">
+      <div className="prose bg-popover p-2 rounded-md text-foreground">
         {children}
       </div>
     </div>
@@ -302,7 +302,7 @@ export default function MentionDropdown({
   };
 
   return (
-    <div className="rounded-xl flex flex-col gap-3 bg-white border text-sm w-50 p-1 shadow-xl">
+    <div className="rounded-xl flex flex-col gap-3 bg-popover border text-sm w-50 p-1 shadow-xl">
       {currentCategory.map((category) => (
         <div key={category.id} className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground font-medium px-2 py-1.5">

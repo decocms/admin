@@ -2,7 +2,6 @@
 
 import type * as React from "react";
 import { Command as CommandPrimitive } from "cmdk";
-import { SearchIcon } from "lucide-react";
 
 import { cn } from "@deco/ui/lib/utils.ts";
 import {
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 
 function Command({
   className,
@@ -62,7 +62,7 @@ function CommandInput({
       data-slot="command-input-wrapper"
       className="flex h-10 items-center gap-2 border-b px-3"
     >
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
+      <Icon name="search" className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(

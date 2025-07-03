@@ -61,7 +61,7 @@ function ViewsButtonInner(
           <ResponsiveDropdownItem
             key={id}
             className={cn(
-              "text-xs mb-1 rounded-lg hover:bg-muted",
+              "text-sm mb-1 rounded-lg hover:bg-muted",
             )}
             onClick={() => {
               openPanel({ id, component: id, title: tab.title });

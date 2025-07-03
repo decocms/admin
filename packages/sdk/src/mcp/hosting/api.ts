@@ -184,9 +184,9 @@ async function updateDatabase(
     mappedRoutes.map((
       r,
     ) => [
-      routeKey(r),
-      r,
-    ]),
+        routeKey(r),
+        r,
+      ]),
   );
 
   // 3. Find routes to delete (in current, not in new)
@@ -257,7 +257,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => {});
+  }).catch(() => { });
 };
 
 // main.ts or main.mjs or main.js or main.cjs
@@ -479,8 +479,7 @@ Important Notes:
     );
     if (!entrypoint) {
       throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${
-          [...new Set(entrypoints)].join(", ")
+        `Entrypoint not found in files. Entrypoint must be one of: ${[...new Set(entrypoints)].join(", ")
         }`,
       );
     }
@@ -553,7 +552,7 @@ Important Notes:
       description:
         `App ${scriptSlug} by deco workers for workspace ${workspace}`,
       icon:
-        "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
+        "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
       ...wranglerConfig.deco?.integration,
       id: uuid.v5(appUniqueInstallationId, uuid.v5.URL), // this ensures only one app will be installed per workspace
       connection: {

@@ -50,7 +50,7 @@ export function AgentCard(
             <Icon name="edit" />
           </Button>
         )}
-        <div className="w-32 h-32 rounded-full bg-white p-1 border">
+        <div className="w-32 h-32 rounded-full bg-foreground p-1 border">
           <Avatar className="w-full h-full">
             <AvatarImage src={avatar} alt={name} />
             <AvatarFallback>{initials}</AvatarFallback>

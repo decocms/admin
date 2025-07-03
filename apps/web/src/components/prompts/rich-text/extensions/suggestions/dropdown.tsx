@@ -39,7 +39,7 @@ function FormattingTooltip({
   return (
     <div className="flex flex-col gap-2 min-w-40">
       <p className="text-sm font-medium">{label}</p>
-      <div className="prose bg-white p-2 rounded-md text-black">
+      <div className="prose bg-white p-2 rounded-md text-foreground">
         {children}
       </div>
     </div>

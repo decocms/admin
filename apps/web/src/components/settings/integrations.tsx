@@ -1,7 +1,12 @@
 import { type Integration, listTools, useIntegrations } from "@deco/sdk";
 import { getKnowledgeBaseIntegrationId } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Form, FormDescription, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
+import {
+  Form,
+  FormDescription,
+  FormItem,
+  FormLabel,
+} from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";

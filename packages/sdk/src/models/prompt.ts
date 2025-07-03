@@ -24,7 +24,7 @@ export const PromptVersionValidationSchema = z.object({
     "The user ID who created the prompt version",
   ),
   name: z.string().nullable().describe("The prompt version name"),
-  label: z.string().nullable().describe("The prompt version label"),
+  version_name: z.string().nullable().describe("The prompt version name"),
 });
 
 export type PromptVersion = z.infer<typeof PromptVersionValidationSchema>;

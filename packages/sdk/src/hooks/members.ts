@@ -20,9 +20,18 @@ import {
 } from "../crud/members.ts";
 import { KEYS } from "./api.ts";
 import { useTeams } from "./teams.ts";
-import { useSDK } from "../index.ts";
+import { type User, useSDK } from "../index.ts";
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
+
+export interface TeamMember {
+  id: number;
+  user_id: string;
+  created_at: string;
+  profiles: User;
+  lastActivity?: string;
+  roles: { id: number; name: string }[];
+}
 
 /**
  * Hook to fetch team members

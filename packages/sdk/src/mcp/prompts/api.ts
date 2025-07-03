@@ -51,7 +51,8 @@ export const createPrompt = createTool({
       .from("deco_chat_prompts_versions")
       .insert({
         prompt_id: data.id,
-        content,
+        name: data.name,
+        content: data.content,
         created_by: `${c.user.id}`,
       })
       .select()
@@ -98,9 +99,10 @@ export const updatePrompt = createTool({
       .from("deco_chat_prompts_versions")
       .insert({
         prompt_id: id,
+        name: data.name,
         content: data.content,
         created_by: `${c.user.id}`,
-        name: versionName,
+        version_name: versionName,
       })
       .select()
       .single();
@@ -332,17 +334,17 @@ export const renamePromptVersion = createTool({
   description: "Rename a prompt version",
   inputSchema: z.object({
     id: z.string(),
-    name: z.string(),
+    versionName: z.string(),
   }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
-    const { id, name } = props;
+    const { id, versionName } = props;
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data, error } = await c.db
       .from("deco_chat_prompts_versions")
-      .update({ name })
+      .update({ version_name: versionName })
       .eq("id", id)
       .single();
 

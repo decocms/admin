@@ -717,7 +717,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
-          label: string | null;
+          version_name: string | null;
           name: string | null;
           prompt_id: string;
         };
@@ -726,7 +726,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
-          label?: string | null;
+          version_name?: string | null;
           name?: string | null;
           prompt_id: string;
         };
@@ -735,7 +735,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
-          label?: string | null;
+          version_name?: string | null;
           name?: string | null;
           prompt_id?: string;
         };

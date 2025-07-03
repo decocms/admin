@@ -92,7 +92,7 @@ function ListPromptsLayout() {
 
   const handleCreate = async () => {
     const result = await create.mutateAsync({
-      name: "New Prompt",
+      name: "",
       content: "",
     });
     navigateWorkspace(`/prompt/${result.id}`);
@@ -188,7 +188,7 @@ function PromptCard({
         <div className="grid grid-cols-[1fr_min-content] gap-4 items-start">
           <div className="flex flex-col gap-1 min-w-0">
             <div className="text-base font-semibold truncate">
-              {prompt.name}
+              {prompt.name || "Untitled prompt"}
             </div>
             <div className="text-sm text-muted-foreground line-clamp-3">
               {prompt.description || prompt.content}
@@ -251,7 +251,7 @@ function TableView(
     {
       id: "name",
       header: "Name",
-      render: (prompt) => prompt.name,
+      render: (prompt) => prompt.name || "Untitled prompt",
       sortable: true,
     },
     {
@@ -330,7 +330,7 @@ function ListPrompts() {
   };
   const handleCreate = async () => {
     const result = await create.mutateAsync({
-      name: "New Prompt",
+      name: "",
       content: "",
     });
     navigateWorkspace(`/prompt/${result.id}`);

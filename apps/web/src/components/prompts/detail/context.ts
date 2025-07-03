@@ -5,6 +5,9 @@ import type { UseFormReturn } from "react-hook-form";
 export interface IContext {
   form: UseFormReturn<Prompt>;
   prompt: Prompt;
+  setSelectedPrompt: (prompt: Prompt) => void;
+  promptVersion: string | null;
+  setPromptVersion: (version: string | null) => void;
   onSubmit: (data: Prompt) => void;
 }
 

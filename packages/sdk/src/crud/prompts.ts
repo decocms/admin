@@ -103,7 +103,7 @@ export const getPromptVersions = (
 
 interface RenamePromptVersionInput {
   id: string;
-  name: string;
+  versionName: string;
 }
 
 export const renamePromptVersion = (

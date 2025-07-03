@@ -20,7 +20,6 @@ import {
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Tooltip,
@@ -29,12 +28,12 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
+import { KEYS } from "../../../../../../packages/sdk/src/hooks/api.ts";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { ChatInput } from "../../chat/chat-input.tsx";
-import { ChatMessages } from "../../chat/chat-messages.tsx";
 import { ChatProvider } from "../../chat/context.tsx";
 import type { Tab } from "../../dock/index.tsx";
 import { togglePanel } from "../../dock/index.tsx";
@@ -42,21 +41,6 @@ import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
 import { Context } from "./context.ts";
 import { DetailForm } from "./form.tsx";
 import HistoryTab from "./history.tsx";
-import { useQueryClient } from "@tanstack/react-query";
-import { KEYS } from "../../../../../../packages/sdk/src/hooks/api.ts";
-
-function MainChat() {
-  return (
-    <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 min-h-0">
-        <ChatMessages />
-      </ScrollArea>
-      <div className="p-2">
-        <ChatInput />
-      </div>
-    </div>
-  );
-}
 
 const FORM_TAB: Record<string, Tab> = {
   form: {
@@ -67,11 +51,6 @@ const FORM_TAB: Record<string, Tab> = {
 };
 
 const TABS: Record<string, Tab> = {
-  main: {
-    Component: MainChat,
-    title: "Chat",
-    initialOpen: "left",
-  },
   ...FORM_TAB,
   history: {
     Component: HistoryTab,
@@ -102,15 +81,22 @@ export default function Page() {
   const { data: agent } = useAgent(agentId);
   const updateAgentCache = useUpdateAgentCache();
 
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt>(prompt);
+  const [promptVersion, setPromptVersion] = useState<string | null>(null);
+
   const form = useForm<Prompt>({
     resolver: zodResolver(PromptValidationSchema),
     defaultValues: {
-      id: prompt.id,
-      name: prompt.name,
-      description: prompt.description,
-      content: prompt.content,
+      id: selectedPrompt.id,
+      name: selectedPrompt.name,
+      description: selectedPrompt.description,
+      content: selectedPrompt.content,
     },
   });
+
+  useEffect(() => {
+    form.reset(selectedPrompt);
+  }, [selectedPrompt]);
 
   const updatePrompt = useUpdatePrompt();
   const isMutating = updatePrompt.isPending;
@@ -159,6 +145,20 @@ export default function Page() {
     }
   };
 
+  const handleRestoreVersion = async () => {
+    await updatePrompt.mutateAsync({
+      id: prompt.id,
+      data: {
+        name: selectedPrompt.name,
+        content: selectedPrompt.content,
+      },
+    });
+    await client.refetchQueries({
+      queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id),
+    });
+    setPromptVersion(null);
+  };
+
   useEffect(() => {
     if (!prompt) {
       return;
@@ -202,7 +202,14 @@ export default function Page() {
         uiOptions={{ showEditAgent: false }}
       >
         <Context.Provider
-          value={{ form, prompt, onSubmit }}
+          value={{
+            form,
+            prompt: selectedPrompt,
+            setSelectedPrompt,
+            onSubmit,
+            promptVersion,
+            setPromptVersion,
+          }}
         >
           <PageLayout
             hideViewsButton
@@ -230,6 +237,18 @@ export default function Page() {
                     Version history
                   </TooltipContent>
                 </Tooltip>
+                <div
+                  className={cn(
+                    promptVersion ? "opacity-100" : "opacity-0 w-0",
+                  )}
+                >
+                  <Button
+                    variant="default"
+                    onClick={handleRestoreVersion}
+                  >
+                    Restore version
+                  </Button>
+                </div>
                 <div
                   className={cn(
                     "flex items-center gap-2",

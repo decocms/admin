@@ -413,13 +413,9 @@ export function GeneralSettings() {
 
   return (
     <ScrollArea className="h-full text-foreground">
-      <div className="container h-full max-w-7xl text-foreground">
-        <div className="h-full overflow-auto py-20 md:px-[120px]">
-          <div className="flex flex-col gap-6 w-full">
-            <div className="w-full hidden md:block">
-              <h2 className="text-2xl">General</h2>
-            </div>
-            <div className="max-w-2xl mx-auto space-y-8">
+      <div className="h-full flex items-center justify-center">
+        <div className="w-full max-w-2xl mx-auto px-6 py-20">
+          <div className="space-y-8">
               <Form {...form}>
                 <form
                   className="space-y-8"
@@ -656,10 +652,8 @@ export function GeneralSettings() {
               </Form>
             </div>
           </div>
-        </div>
-      </div>
-    </ScrollArea>
-  );
-}
+      </ScrollArea>
+    );
+  }
 
 export default GeneralSettings;

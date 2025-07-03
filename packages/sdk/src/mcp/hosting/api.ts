@@ -184,9 +184,9 @@ async function updateDatabase(
     mappedRoutes.map((
       r,
     ) => [
-        routeKey(r),
-        r,
-      ]),
+      routeKey(r),
+      r,
+    ]),
   );
 
   // 3. Find routes to delete (in current, not in new)
@@ -257,7 +257,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => { });
+  }).catch(() => {});
 };
 
 // main.ts or main.mjs or main.js or main.cjs
@@ -479,7 +479,8 @@ Important Notes:
     );
     if (!entrypoint) {
       throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${[...new Set(entrypoints)].join(", ")
+        `Entrypoint not found in files. Entrypoint must be one of: ${
+          [...new Set(entrypoints)].join(", ")
         }`,
       );
     }

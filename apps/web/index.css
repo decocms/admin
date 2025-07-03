@@ -28,7 +28,7 @@
     --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
     --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
     --dv-tab-divider-color: transparent;
-    --dv-activegroup-visiblepanel-tab-color: var(--accent-foreground);
+    --dv-activegroup-visiblepanel-tab-color: var(--foreground);
     --dv-activegroup-hiddenpanel-tab-color: var(--muted-foreground);
     --dv-inactivegroup-visiblepanel-tab-color: var(--muted-foreground);
     --dv-inactivegroup-hiddenpanel-tab-color: var(--muted-foreground);

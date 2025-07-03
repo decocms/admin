@@ -828,7 +828,7 @@ function Tool({ tool, connection }: ToolProps) {
             </div>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="bg-secondary p-4">
+        <AccordionContent className="bg-secondary/50 p-4">
           <Tabs defaultValue="parameters" className="w-full">
             <TabsList>
               <TabsTrigger value="parameters" className="px-4">

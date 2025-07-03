@@ -114,7 +114,7 @@ export default function RichTextArea({
   return (
     <div className="h-full flex flex-col">
       {enableMentions && !hideMentionsLabel && (
-        <div className="rounded-full flex gap-1 bg-secondary text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
+        <div className="rounded-full flex gap-1 bg-muted text-muted-foreground w-fit items-center px-1.5 py-0.5 mb-2.5 select-none">
           <Icon name="info" size={10} />
           <p className="text-xs font-medium">
             Type / to add tools and more

@@ -191,4 +191,36 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom scrollbars for the whole product - only show on hover */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  *:hover {
+    scrollbar-color: var(--border) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+  }
+
+  *:hover::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }

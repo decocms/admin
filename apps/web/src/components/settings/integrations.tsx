@@ -25,7 +25,6 @@ import {
 import {
   type UploadFile,
   useAgentKnowledgeIntegration,
-  useAgentKnowledgeRootPath,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
 import {

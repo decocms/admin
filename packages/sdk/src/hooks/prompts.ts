@@ -75,6 +75,9 @@ export function useUpdatePrompt() {
       client.invalidateQueries({
         queryKey: KEYS.PROMPTS(workspace).slice(0, 2),
       });
+      client.invalidateQueries({
+        queryKey: KEYS.PROMPT_VERSIONS(workspace, result.id),
+      });
       client.setQueryData(["prompt", result.id], result);
     },
   });

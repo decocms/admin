@@ -26,6 +26,7 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { UseFormReturn } from "react-hook-form";
 import { useParams } from "react-router";
 import { useUser } from "../../../hooks/use-user.ts";
@@ -99,7 +100,7 @@ export default function HistoryTab() {
               </span>
             </div>
             <span className="font-semibold text-sm">
-              {versions[0]?.version_name ?? "Current Version"}
+              {versions[0]?.version_name || "Current Version"}
             </span>
           </div>
           {filteredVersions.map((version, idx) => {
@@ -159,11 +160,11 @@ export function HistoryCard(
   } = useFormContext();
 
   const handleStartEditing = () => {
-    setIsEditing(true);
+    flushSync(() => {
+      setIsEditing(true);
+    });
     inputRef.current?.focus();
-    setTimeout(() => {
-      inputRef.current?.select();
-    }, 0);
+    inputRef.current?.select();
   };
 
   const handleSaveLabel = async () => {
@@ -212,7 +213,6 @@ export function HistoryCard(
       },
       versionName: version?.version_name ?? "",
     });
-    refetch();
     setPromptVersion(null);
   };
 
@@ -264,7 +264,7 @@ export function HistoryCard(
                 className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
                 onClick={() => handleStartEditing()}
               >
-                {version.version_name ??
+                {version.version_name ||
                   new Date(version.created_at).toLocaleString(
                     "en-US",
                     {

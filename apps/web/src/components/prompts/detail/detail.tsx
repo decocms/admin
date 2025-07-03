@@ -3,10 +3,9 @@ import {
   PromptValidationSchema,
   useAgent,
   usePrompt,
-  useSDK,
   useUpdateAgentCache,
   useUpdatePrompt,
-  WELL_KNOWN_AGENT_IDS,
+  WELL_KNOWN_AGENT_IDS
 } from "@deco/sdk";
 import {
   AlertDialog,
@@ -28,11 +27,9 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
-import { KEYS } from "../../../../../../packages/sdk/src/hooks/api.ts";
 import { trackEvent } from "../../../hooks/analytics.ts";
 import { ChatProvider } from "../../chat/context.tsx";
 import type { Tab } from "../../dock/index.tsx";
@@ -65,9 +62,6 @@ export default function Page() {
   const { id } = useParams();
   const promptId = id!;
   const threadId = promptId;
-
-  const client = useQueryClient();
-  const { workspace } = useSDK();
 
   const { data: _prompt } = usePrompt(promptId);
   const prompt = _prompt || {
@@ -127,10 +121,6 @@ export default function Page() {
       });
 
       form.reset(data);
-
-      client.refetchQueries({
-        queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id),
-      });
     } catch (error) {
       console.error(
         `Error updating prompt:`,
@@ -152,9 +142,6 @@ export default function Page() {
         name: selectedPrompt.name,
         content: selectedPrompt.content,
       },
-    });
-    await client.refetchQueries({
-      queryKey: KEYS.PROMPT_VERSIONS(workspace, prompt.id),
     });
     setPromptVersion(null);
   };

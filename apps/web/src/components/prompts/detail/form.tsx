@@ -23,7 +23,7 @@ export function DetailForm() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6 px-1 mx-auto"
+          className="space-y-4 px-1 mx-auto"
         >
           <div className="flex items-center gap-6">
             <FormField
@@ -55,7 +55,8 @@ export function DetailForm() {
                     placeholder="Write instructions or '/’ for tools and more..."
                     className="min-h-[49lvh]"
                     disabled={isReadonly}
-                    enableMentions={false}
+                    enableMentions
+                    hideMentionsLabel
                     excludeIds={[form.getValues("id")]}
                     {...field}
                   />

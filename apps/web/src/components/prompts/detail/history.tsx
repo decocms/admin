@@ -84,10 +84,10 @@ export default function HistoryTab() {
             }}
           >
             <div className="flex flex-col justify-end items-center gap-2 h-[64px]">
-              <div
+              {versions.length > 1 && <div
                 className="w-[2px] bg-border b z-0 h-[36px] mt-1"
                 style={{ minHeight: 36, pointerEvents: "none" }}
-              />
+              />}
               <span className="w-6 h-6 bg-foreground rounded-full absolute top-1/2 -translate-y-1/2 flex items-center justify-center">
                 <span className="w-4 h-4 bg-background rounded-full flex items-center justify-center">
                   <span className="w-3 h-3 bg-foreground rounded-full flex items-center justify-center">

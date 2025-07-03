@@ -187,8 +187,6 @@ function Knowledge() {
     onAddFile: setUploadedFiles,
     setIntegrationTools,
   });
-  const prefix = useAgentKnowledgeRootPath(agent.id);
-  const prefixWithSlash = prefix + "/";
 
   const formatedFiles = useMemo<KnowledgeFile[]>(
     () =>
@@ -196,12 +194,10 @@ function Knowledge() {
         ? files.map((file) => ({
           fileUrl: file.fileUrl,
           ...file.metadata,
-          name: file.metadata.path?.replace(prefixWithSlash, "") ??
-            file.fileUrl.split(prefixWithSlash).at(-1) ??
-            file.fileUrl.split("/").at(-1) ?? file.fileUrl,
+          name: file.filename,
         }))
         : [],
-    [prefix, files],
+    [files],
   );
 
   // Combine uploaded files with uploading files (uploading files come after uploaded files)

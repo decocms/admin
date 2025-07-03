@@ -1,6 +1,6 @@
 {
   "name": "@deco/workers-runtime",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "exports": {
     ".": "./src/index.ts",
     "./mastra": "./src/mastra.ts"

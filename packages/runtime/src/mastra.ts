@@ -24,9 +24,16 @@ export { createWorkflow };
 // @ts-ignore: this is a valid import
 const { env } = await import("cloudflare:workers");
 
-const createRuntimeContext = () => {
+const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   const runtimeContext = new RuntimeContext<AppContext>();
-  const { env, ctx, req } = State.getStore();
+  const store = State.getStore();
+  if (!store) {
+    if (prev) {
+      return prev;
+    }
+    throw new Error("Missing context, did you forget to call State.bind?");
+  }
+  const { env, ctx, req } = store;
   runtimeContext.set("env", env);
   runtimeContext.set("ctx", ctx);
   runtimeContext.set("req", req);
@@ -58,7 +65,7 @@ export function createTool<
       ? ((input) => {
         return opts.execute!({
           ...input,
-          runtimeContext: createRuntimeContext(),
+          runtimeContext: createRuntimeContext(input.runtimeContext),
         });
       }) as TExecute
       : opts.execute,
@@ -156,7 +163,10 @@ export function createStep<
   return mastraCreateStep({
     ...opts,
     execute: (input) => {
-      return opts.execute({ ...input, runtimeContext: createRuntimeContext() });
+      return opts.execute({
+        ...input,
+        runtimeContext: createRuntimeContext(input.runtimeContext),
+      });
     },
   });
 }
@@ -178,17 +188,11 @@ export interface AppContext<TEnv = any> {
   req: Request;
 }
 
-const asyncLocalStorage = new AsyncLocalStorage<AppContext>();
+const asyncLocalStorage = new AsyncLocalStorage<AppContext | undefined>();
 
 const State = {
   getStore: () => {
-    const store = asyncLocalStorage.getStore();
-
-    if (!store) {
-      throw new Error("Missing context, did you forget to call State.bind?");
-    }
-
-    return store;
+    return asyncLocalStorage.getStore();
   },
   run: <TEnv, R, TArgs extends unknown[]>(
     ctx: AppContext<TEnv>,
@@ -255,8 +259,8 @@ export const createMCPServer = <TEnv = any>(
           }).shape,
         },
         async (args) => {
-          const { req } = State.getStore();
-          const runId = req.headers.get("x-deco-chat-run-id") ??
+          const store = State.getStore();
+          const runId = store?.req.headers.get("x-deco-chat-run-id") ??
             crypto.randomUUID();
           const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
             bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),

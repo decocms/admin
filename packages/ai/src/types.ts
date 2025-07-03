@@ -120,4 +120,11 @@ export interface AIAgent extends Actor {
    * @returns string containing the agent name
    */
   getAgentName(): string;
+
+  /**
+   * Transcribes audio to text
+   * @param audioBase64 - Base64 encoded audio data
+   * @returns Promise containing the transcription result
+   */
+  listen(buffer: Uint8Array): Promise<string | void | NodeJS.ReadableStream>;
 }

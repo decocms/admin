@@ -79,3 +79,138 @@ export const agentGenerateObject = createAgentTool(
     },
   },
 );
+
+const TranscribeAudioInputSchema = z.object({
+  audioUrl: z.string().describe(
+    "URL to the audio file to transcribe (supports mp3, wav, m4a, etc.)",
+  ),
+});
+
+const TranscribeAudioOutputSchema = z.object({
+  transcription: z.string().describe("The transcribed text from the audio"),
+  success: z.boolean().describe("Whether the transcription was successful"),
+  message: z.string().describe("Status message about the transcription"),
+});
+
+export const TRANSCRIBE_AUDIO = createAgentTool({
+  name: "TRANSCRIBE_AUDIO",
+  description:
+    "Transcribe audio content to text using OpenAI's Whisper model. " +
+    "This tool accepts a URL to an audio file and returns the transcribed text. " +
+    "Supports common audio formats like mp3, wav, m4a, and more. " +
+    "Perfect for converting voice messages, audio recordings, or any audio content into readable text. " +
+    "Maximum file size is 25MB. Use this when you need to process audio files, transcribe voice messages, " +
+    "or convert speech to text for further processing. This tool is only available if the agent has voice transcription capabilities.",
+  inputSchema: TranscribeAudioInputSchema,
+  outputSchema: TranscribeAudioOutputSchema,
+  handler: async ({ audioUrl }, c) => {
+    try {
+      assertHasWorkspace(c);
+      await assertWorkspaceResourceAccess(c.tool.name, c);
+
+      if (!audioUrl) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Invalid audio data: audioUrl must be a non-empty string",
+        };
+      }
+
+      const response = await fetch(audioUrl);
+
+      if (response.status === 403) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Forbidden: Access to the audio file is denied",
+        };
+      }
+
+      if (response.status === 404) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Not Found: Audio file not found",
+        };
+      }
+
+      if (response.status === 401) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Unauthorized: Access to the audio file is denied",
+        };
+      }
+
+      if (!response.ok) {
+        return {
+          transcription: "",
+          success: false,
+          message: `Failed to fetch audio file: ${response.statusText}`,
+        };
+      }
+
+      // Check content type to ensure it's not HTML or other non-audio content
+      const contentType = response.headers.get("content-type")?.toLowerCase() ||
+        "";
+      if (
+        contentType.includes("text/html") ||
+        contentType.includes("application/json") ||
+        contentType.includes("text/plain")
+      ) {
+        return {
+          transcription: "",
+          success: false,
+          message:
+            "Invalid content: The URL returned a web page instead of an audio file. The file may be private or require authentication.",
+        };
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      const audioBufferUint8Array = new Uint8Array(audioBuffer);
+
+      const agentStub = stub<AIAgent>("AIAgent")
+        .new(`${c.workspace.value}/Agents/${c.agent}`);
+
+      const transcription = await agentStub.listen(audioBufferUint8Array);
+
+      if (!transcription) {
+        return {
+          transcription: "",
+          success: false,
+          message: "Failed to transcribe audio",
+        };
+      }
+
+      return {
+        transcription,
+        success: true,
+        message: `Successfully transcribed audio (${
+          Math.round(audioBufferUint8Array.length * 0.75 / 1024)
+        }KB)`,
+      };
+    } catch (error) {
+      console.error("💥 Error in TRANSCRIBE_AUDIO tool:", error);
+
+      let errorMessage = "Failed to transcribe audio";
+      if (error instanceof Error) {
+        if (error.message.includes("exceeds the maximum")) {
+          errorMessage = "Audio file too large (maximum 25MB allowed)";
+        } else if (error.message.includes("Invalid audio")) {
+          errorMessage = "Invalid audio format or corrupted audio data";
+        } else if (error.message.includes("Invalid file format")) {
+          errorMessage =
+            "Invalid file format: The file may be corrupted, protected, or not a supported audio format";
+        } else {
+          errorMessage = `Transcription failed: ${error.message}`;
+        }
+      }
+
+      return {
+        transcription: "",
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+});

@@ -172,12 +172,11 @@ export function HistoryCard(
       return;
     }
 
-    // Here you can implement the function to save the label
     await renamePromptVersion(workspace, {
       id: version.id,
       versionName,
     });
-    await refetch();
+    refetch();
     setIsEditing(false);
   };
 
@@ -191,14 +190,12 @@ export function HistoryCard(
 
   const userId = version.created_by || "";
 
-  // If userId matches current user, use user data directly
   const isCurrentUser = userId && user && userId === user.id;
 
-  // Use the lookup map instead of useMemo inside the map
   const member = (!isCurrentUser && teamId !== null)
     ? teamMembersMap.get(userId)
     : undefined;
-  // Data source for avatar and name/email
+
   const avatarUrl = isCurrentUser
     ? user.metadata.avatar_url
     : member?.profiles?.metadata?.avatar_url;
@@ -215,7 +212,7 @@ export function HistoryCard(
       },
       versionName: version?.version_name ?? "",
     });
-    await refetch();
+    refetch();
     setPromptVersion(null);
   };
 
@@ -247,7 +244,6 @@ export function HistoryCard(
         <span className="w-2 h-2 bg-foreground rounded-full absolute mt-2 -translate-y-1/2">
         </span>
       </div>
-      {/* Conteúdo da versão */}
       <div className="flex-1 flex items-center gap-2 pl-6 pr-2">
         <div className="flex flex-col justify-start items-start gap-2">
           {isEditing

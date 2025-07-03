@@ -188,7 +188,7 @@ export function WithWorkspaceTheme({
     if (variables) {
       Object.entries(variables).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(key, value);
+          root.style.setProperty(key, value as string);
         }
       });
     }

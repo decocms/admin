@@ -297,6 +297,7 @@ const WELL_KNOWN_DECO_OAUTH_INTEGRATIONS = [
   "googledrive",
   "airtable",
   "slack",
+  "googlecalendar"
 ];
 
 export const useInstallFromMarketplace = () => {

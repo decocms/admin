@@ -116,6 +116,26 @@ export function Avatar({
     return "text-sm"; // default
   }, [className]);
 
+  // Determine border radius based on avatar className
+  const borderRadius = useMemo(() => {
+    if (!className) return "rounded-lg";
+    
+    if (className.includes("rounded-full")) {
+      return "rounded-full";
+    }
+    if (className.includes("rounded-xl")) {
+      return "rounded-xl";
+    }
+    if (className.includes("rounded-lg")) {
+      return "rounded-lg";
+    }
+    if (className.includes("rounded-md")) {
+      return "rounded-md";
+    }
+    
+    return "rounded-lg"; // default
+  }, [className]);
+
   return (
     <AvatarUI className={cn(className)} {...props}>
       <AvatarImage
@@ -126,7 +146,7 @@ export function Avatar({
         )}
       />
       <AvatarFallback
-        className={cn(fallbackColor, fontSize, "rounded-lg font-medium drop-shadow-sm", fallbackClassName)}
+        className={cn(fallbackColor, fontSize, borderRadius, "font-medium drop-shadow-lg", fallbackClassName)}
       >
         {fallbackContent}
       </AvatarFallback>
@@ -144,7 +164,7 @@ function FileAvatar(
       fallback={
         <Skeleton
           className={cn(
-            "w-full h-full rounded-lg",
+            "w-full h-full",
             className,
           )}
         />
@@ -154,7 +174,7 @@ function FileAvatar(
         url={typeof fileUrl === "string" ? fileUrl : undefined}
         fallback={name.substring(0, 1)}
         className={cn(
-          "w-full h-full rounded-lg",
+          "w-full h-full",
           className,
         )}
       />
@@ -200,7 +220,7 @@ function AgentAvatarContent(
       url={avatar}
       fallback={name.substring(0, 1)}
       className={cn(
-        "w-full h-full rounded-lg",
+        "w-full h-full",
         className,
       )}
     />
@@ -219,7 +239,7 @@ export const AgentAvatar = (
       fallback={
         <Skeleton
           className={cn(
-            "w-full h-full rounded-lg",
+            "w-full h-full",
             className,
           )}
         />

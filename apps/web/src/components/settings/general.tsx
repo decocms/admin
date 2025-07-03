@@ -41,6 +41,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { clearThemeCache } from "../theme.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
 interface GeneralSettingsFormValues {
   teamName: string;
@@ -301,6 +302,7 @@ export function GeneralSettings() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -327,85 +329,78 @@ export function GeneralSettings() {
   });
 
   async function onSubmit(data: GeneralSettingsFormValues) {
-    if (isPersonalTeam) return;
+    try {
+      form.clearErrors();
 
-    // fixes batch removal of variables
-    const currentVariables = currentTeamTheme?.variables ?? {};
-    const themeVariables = data.themeVariables;
-    Object.keys(currentVariables).forEach((key) => {
-      if (!themeVariables[key]) {
-        themeVariables[key] = "";
-      }
-    });
+      const updateRequest: Partial<Team> = {
+        label: data.teamName,
+        systemPrompt: data.teamSystemPrompt,
+      };
 
-    // Upload file if one was selected
-    let avatarUrl = data.avatar || "";
-    if (selectedFile) {
-      if (selectedFile.size > AVATAR_UPLOAD_SIZE_LIMIT) {
-        toast.error("File size exceeds the limit of 5MB");
+      // Handle avatar upload
+      if (selectedFile) {
+        setIsUploadingAvatar(true);
+        
+        if (selectedFile.size > AVATAR_UPLOAD_SIZE_LIMIT) {
+          toast.error("File size exceeds the limit of 5MB");
+          setSelectedFile(null);
+          return;
+        }
+
+        const allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+          "image/svg+xml",
+        ];
+
+        if (!allowedTypes.includes(selectedFile.type)) {
+          toast.error("Please upload a valid image file");
+          setSelectedFile(null);
+          return;
+        }
+
+        const extension = 
+          selectedFile.name.split(".").pop() || "png";
+        const fileName = 
+          `${currentTeamId}-${Date.now()}.${extension}`;
+
+        await writeFile.mutateAsync({
+          path: `${TEAM_AVATAR_PATH}/${fileName}`,
+          content: new Uint8Array(await selectedFile.arrayBuffer()),
+          contentType: selectedFile.type,
+        });
+
+        updateRequest.avatarUrl = fileName;
         setSelectedFile(null);
         setLocalAvatarUrl(null);
-        return;
       }
 
-      const allowedTypes = [
-        "image/png",
-        "image/jpeg",
-        "image/jpg",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error("Please upload a PNG, JPEG, JPG, or WebP image file");
-        setSelectedFile(null);
-        setLocalAvatarUrl(null);
-        return;
+      // Update team theme
+      if (data.themeVariables) {
+        const cleanedVariables = Object.fromEntries(
+          Object.entries(data.themeVariables).filter(([_, value]) =>
+            value && value.trim() !== ""
+          ),
+        );
+
+        const themeUpdate = {
+          ...currentTeamTheme,
+          variables: cleanedVariables,
+        };
+
+        updateRequest.theme = themeUpdate;
       }
 
-      const filename = `${currentTeamSlug}-${crypto.randomUUID()}.${
-        selectedFile.name.split(".").pop() || "png"
-      }`;
-      const path = `${TEAM_AVATAR_PATH}/${filename}`;
-      await writeFile.mutateAsync({
-        path,
-        content: new Uint8Array(await selectedFile.arrayBuffer()),
-        contentType: selectedFile.type,
-      });
-      avatarUrl = path;
-    }
+      await updateTeam.mutateAsync(updateRequest);
 
-    await updateTeam.mutateAsync({
-      id: typeof currentTeamId === "number"
-        ? currentTeamId
-        : Number(currentTeamId) || 0,
-      data: {
-        name: data.teamName,
-        slug: data.teamSlug,
-        theme: {
-          picture: avatarUrl,
-          variables: themeVariables,
-        },
-      },
-    });
-    clearThemeCache(workspace);
-    form.reset(data);
-
-    // Show toast with refresh button if theme variables were changed
-    if (Object.keys(data.themeVariables).length > 0) {
-      toast(
-        <div className="flex items-center gap-2">
-          <span>Refresh the page to see theme changes</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => globalThis.location.reload()}
-          >
-            Refresh
-          </Button>
-        </div>,
-        {
-          duration: 10000, // Show for 10 seconds
-        },
-      );
+      toast.success("Team settings updated successfully");
+    } catch (error) {
+      console.error("Failed to update team settings:", error);
+      toast.error("Failed to update team settings");
+    } finally {
+      setIsUploadingAvatar(false);
     }
   }
 
@@ -434,19 +429,26 @@ export function GeneralSettings() {
                               className="relative group cursor-pointer"
                               onClick={() => fileInputRef.current?.click()}
                             >
-                              <Avatar
-                                fallback={currentTeamName}
-                                url={localAvatarUrl || avatarUrl}
-                                objectFit="contain"
-                                className="size-24 border border-border group-hover:opacity-50 transition-opacity rounded-xl p-1"
-                              />
-                              <div className="absolute top-0 left-0 size-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Icon
-                                  name="upload"
-                                  size={32}
-                                  className="text-white"
-                                />
-                              </div>
+                              {isUploadingAvatar ? (
+                                <Skeleton className="size-24 rounded-full" />
+                              ) : (
+                                <>
+                                  <Avatar
+                                    fallback={currentTeamName}
+                                    url={localAvatarUrl || avatarUrl}
+                                    objectFit="contain"
+                                    className="size-24 border border-border group-hover:opacity-50 transition-opacity rounded-full"
+                                    fallbackClassName="!text-4xl"
+                                  />
+                                  <div className="absolute top-0 left-0 size-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Icon
+                                      name="upload"
+                                      size={32}
+                                      className="text-white"
+                                    />
+                                  </div>
+                                </>
+                              )}
                               <input
                                 ref={fileInputRef}
                                 type="file"
@@ -469,18 +471,21 @@ export function GeneralSettings() {
                                     onChange(objectUrl);
                                   }
                                 }}
-                                disabled={isReadOnly}
+                                disabled={isReadOnly || isUploadingAvatar}
                               />
                               <Input
                                 type="text"
                                 className="hidden"
                                 {...field}
-                                disabled={isReadOnly}
+                                disabled={isReadOnly || isUploadingAvatar}
                               />
                             </div>
                           </FormControl>
                           <FormDescription className="text-center">
-                            Click to upload a team avatar
+                            {isUploadingAvatar 
+                              ? "Uploading avatar..." 
+                              : "Click to upload a team avatar"
+                            }
                           </FormDescription>
                         </FormItem>
                       )}
@@ -643,9 +648,24 @@ export function GeneralSettings() {
                       type="submit"
                       variant="default"
                       disabled={isReadOnly || !form.formState.isDirty ||
-                        form.formState.isSubmitting || updateTeam.isPending}
+                        form.formState.isSubmitting || updateTeam.isPending || isUploadingAvatar}
                     >
-                      {updateTeam.isPending ? "Saving..." : "Save"}
+                      {isUploadingAvatar 
+                        ? (
+                          <span className="flex items-center gap-2">
+                            <Spinner size="xs" />
+                            Uploading...
+                          </span>
+                        )
+                        : updateTeam.isPending 
+                        ? (
+                          <span className="flex items-center gap-2">
+                            <Spinner size="xs" />
+                            Saving...
+                          </span>
+                        )
+                        : "Save"
+                      }
                     </Button>
                   </div>
                 </form>

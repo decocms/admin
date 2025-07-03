@@ -46,18 +46,27 @@ import { RolesDropdown } from "../common/roles-dropdown.tsx";
 
 
 function MemberTableHeader(
-  { onChange, disabled }: {
+  { onChange, disabled, teamId }: {
     disabled?: boolean;
     onChange: (value: string) => void;
+    teamId?: number;
   },
 ) {
   return (
-    <div className="">
+    <div className="flex items-center justify-between gap-4">
       <Input
         placeholder="Search"
         onChange={(e) => onChange(e.currentTarget.value)}
         className="w-80"
         disabled={disabled}
+      />
+      <InviteTeamMembersDialog
+        teamId={teamId}
+        trigger={
+          <Button variant="default">
+            Invite members
+          </Button>
+        }
       />
     </div>
   );
@@ -66,26 +75,12 @@ function MemberTableHeader(
 function MembersViewLoading() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <MemberTableHeader disabled onChange={() => {}} />
+      <MemberTableHeader disabled onChange={() => {}} teamId={undefined} />
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">Loading members...</span>
       </div>
     </div>
-  );
-}
-
-function AddTeamMemberButton({ teamId }: { teamId?: number }) {
-  return (
-    <InviteTeamMembersDialog
-      teamId={teamId}
-      trigger={
-        <Button variant="ghost" size="icon">
-          <span className="sr-only">Invite team members</span>
-          <Icon name="add" />
-        </Button>
-      }
-    />
   );
 }
 
@@ -283,7 +278,7 @@ function MembersViewContent() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <MemberTableHeader onChange={setQuery} />
+        <MemberTableHeader onChange={setQuery} teamId={teamId} />
         <Table>
           <TableHeader className="border-b border-border">
             <TableRow className="h-12 hover:bg-transparent">
@@ -317,7 +312,6 @@ function MembersViewContent() {
                   </TableHeadSort>
                 )}
               <TableHead className="px-4 text-left font-normal text-foreground text-sm h-12 w-12.5">
-                <AddTeamMemberButton teamId={teamId} />
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -326,7 +320,7 @@ function MembersViewContent() {
               ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={isMobile ? 3 : 4}
                     className="text-center py-8 text-muted-foreground "
                   >
                     No members found. Add team members to get started.
@@ -339,12 +333,12 @@ function MembersViewContent() {
                     if ('type' in item && item.type === 'invite') {
                       // Render invite row
                       return (
-                        <TableRow key={`invite-${item.id}`} className="px-4 py-1.5">
+                        <TableRow key={`invite-${item.id}`} className="px-4 py-1.5 hover:bg-transparent">
                           <TableCell>
                             <span className="flex gap-2 items-center w-43 md:w-56">
                               <span>
-                                <div className="size-10 bg-gradient-to-br from-gray-100 to-gray-200 border border-dashed border-gray-300 rounded-full flex items-center justify-center shadow-md shadow-gray-200/20 ring-1 ring-white/20">
-                                  <span className="text-base font-medium text-gray-700 drop-shadow-sm">
+                                <div className="size-10 bg-muted border border-dashed border-border rounded-full flex items-center justify-center">
+                                  <span className="text-base font-medium text-muted-foreground">
                                     {item.email.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
@@ -405,7 +399,7 @@ function MembersViewContent() {
                       // Render member row
                       const member = item as Member;
                       return (
-                        <TableRow key={`member-${member.id}`} className="px-4 py-1.5">
+                        <TableRow key={`member-${member.id}`} className="px-4 py-1.5 hover:bg-transparent">
                           <TableCell>
                             <span className="flex gap-2 items-center w-43 md:w-56">
                               <span>
@@ -471,7 +465,7 @@ function MembersViewContent() {
                                     handleRemoveMember(member.id)}
                                   disabled={removeMemberMutation.isPending}
                                 >
-                                  <Icon name="delete" />
+                                  <Icon name="waving_hand" />
                                   {removeMemberMutation.isPending &&
                                       removeMemberMutation.variables?.memberId ===
                                         member.id

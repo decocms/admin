@@ -96,24 +96,26 @@ function UserInfo({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+          className={`flex items-center gap-2 w-43 md:w-56 ${className ?? ""}`}
         >
           <Avatar
             url={avatarUrl}
             fallback={name ?? "Unknown"}
-            className="size-8"
+            className="size-10 border border-border"
           />
           <div
-            className={`flex-col items-start text-left leading-tight w-full ${
+            className={`flex-col items-start text-left leading-tight min-w-0 ${
               showDetails ? "hidden md:flex" : "flex"
             }`}
           >
-            <span className="truncate max-w-[120px] block text-xs font-medium text-foreground">
+            <span className="truncate text-sm font-medium text-foreground">
               {name || "Unknown"}
             </span>
-            <span className="truncate max-w-[120px] block text-xs font-normal text-muted-foreground">
-              {email || ""}
-            </span>
+            {(name && name !== "Unknown") && (
+              <span className="truncate text-sm font-normal text-muted-foreground">
+                {email || ""}
+              </span>
+            )}
           </div>
         </div>
       </TooltipTrigger>

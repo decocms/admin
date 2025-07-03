@@ -17,6 +17,7 @@ export interface TableColumn<T> {
   render?: (row: T) => ReactNode;
   sortable?: boolean;
   cellClassName?: string;
+  headerClassName?: string;
 }
 
 /**
@@ -158,7 +159,7 @@ export function Table<T>({
             {columns.map((col, idx) => (
               <TableHead
                 key={col.id}
-                className="sticky top-0 z-10 cursor-pointer group hover:bg-transparent"
+                className={`sticky top-0 z-10 cursor-pointer group hover:bg-transparent ${col.headerClassName || ''}`}
                 onClick={col.sortable && onSort
                   ? () => onSort(col.id)
                   : undefined}

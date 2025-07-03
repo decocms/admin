@@ -342,6 +342,13 @@ function MembersViewContent() {
                         <TableRow key={`invite-${item.id}`} className="px-4 py-1.5">
                           <TableCell>
                             <span className="flex gap-2 items-center w-43 md:w-56">
+                              <span>
+                                <div className="size-10 bg-gradient-to-br from-gray-100 to-gray-200 border border-dashed border-gray-300 rounded-full flex items-center justify-center shadow-md shadow-gray-200/20 ring-1 ring-white/20">
+                                  <span className="text-base font-medium text-gray-700 drop-shadow-sm">
+                                    {item.email.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              </span>
                               <span className="flex flex-col gap-0 min-w-0">
                                 <span className="text-sm font-medium text-foreground truncate">
                                   {item.email}
@@ -405,7 +412,7 @@ function MembersViewContent() {
                                 <Avatar
                                   url={member.profiles.metadata.avatar_url}
                                   fallback={member.profiles.metadata.full_name}
-                                  className="w-10 h-10"
+                                  className="size-10 border border-border"
                                 />
                               </span>
                               <span className="flex flex-col gap-0 min-w-0">

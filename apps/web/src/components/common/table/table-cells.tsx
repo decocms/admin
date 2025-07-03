@@ -1,6 +1,6 @@
 import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
 import {
-  Avatar,
+  Avatar as AvatarUI,
   AvatarFallback,
   AvatarImage,
 } from "@deco/ui/components/avatar.tsx";
@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { AgentAvatar } from "../avatar/index.tsx";
+import { AgentAvatar, Avatar } from "../avatar/index.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { format } from "date-fns";
@@ -34,7 +34,7 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <div className="w-8 h-8">
+          <div className="size-8">
             <AgentAvatar
               name={agent?.name ?? agentId ?? "Unknown"}
               avatar={agent?.avatar}
@@ -98,12 +98,11 @@ function UserInfo({
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <Avatar>
-            <AvatarImage src={avatarUrl} alt={name} />
-            <AvatarFallback>
-              {name?.[0] ?? "?"}
-            </AvatarFallback>
-          </Avatar>
+          <Avatar
+            url={avatarUrl}
+            fallback={name ?? "Unknown"}
+            className="size-8"
+          />
           <div
             className={`flex-col items-start text-left leading-tight w-full ${
               showDetails ? "hidden md:flex" : "flex"
@@ -179,7 +178,7 @@ function IntegrationInfo(
       >
         <IntegrationIcon
           icon={integration.icon}
-          className="h-10 w-10"
+          className="size-10"
         />
         <span className="truncate hidden md:inline">{integration.name}</span>
       </div>
@@ -188,8 +187,8 @@ function IntegrationInfo(
 
   return (
     <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
-      <div className="w-8 h-8">
-        <IntegrationIcon className="rounded-sm h-8 w-8" />
+      <div className="size-8">
+        <IntegrationIcon className="rounded-sm size-8" />
       </div>
       <span className="truncate hidden md:inline">
         {integrationId || "Unknown"}

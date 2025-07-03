@@ -438,9 +438,9 @@ export function GeneralSettings() {
                                 fallback={currentTeamName}
                                 url={localAvatarUrl || avatarUrl}
                                 objectFit="contain"
-                                className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity rounded-xl p-1"
+                                className="size-24 border border-border group-hover:opacity-50 transition-opacity rounded-xl p-1"
                               />
-                              <div className="absolute top-0 left-0 w-24 h-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="absolute top-0 left-0 size-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Icon
                                   name="upload"
                                   size={32}
@@ -652,8 +652,9 @@ export function GeneralSettings() {
               </Form>
             </div>
           </div>
+        </div>
       </ScrollArea>
     );
-  }
+}
 
 export default GeneralSettings;

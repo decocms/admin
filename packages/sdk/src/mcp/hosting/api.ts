@@ -549,12 +549,13 @@ Important Notes:
     const client = MCPClient.forContext(c);
     const appUniqueInstallationId = `${workspace}-${scriptSlug}`;
     await client.INTEGRATIONS_CREATE({
-      id: uuid.v5(appUniqueInstallationId), // this ensures only one app will be installed per workspace
       name: `App ${scriptSlug}`,
       description:
         `App ${scriptSlug} by deco workers for workspace ${workspace}`,
       icon:
         "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
+      ...wranglerConfig.deco?.integration,
+      id: uuid.v5(appUniqueInstallationId, uuid.v5.URL), // this ensures only one app will be installed per workspace
       connection: {
         type: "HTTP",
         url: `${data.entrypoint}/mcp`,

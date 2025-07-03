@@ -89,6 +89,10 @@ export interface WranglerConfig {
   migrations?: Migration[];
   //
   deco?: {
+    integration?: {
+      icon?: string;
+      description?: string;
+    };
     bindings?: Binding[];
   };
 }

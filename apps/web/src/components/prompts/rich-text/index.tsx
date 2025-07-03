@@ -27,6 +27,7 @@ interface Props {
   placeholder?: string;
   className?: string;
   enableMentions?: boolean;
+  hideMentionsLabel?: boolean;
   excludeIds?: string[];
 }
 

@@ -1,9 +1,7 @@
 // deno-lint-ignore-file no-explicit-any ban-types
 import { HttpServerTransport } from "@deco/mcp/http";
-import { D1Store } from "@mastra/cloudflare-d1";
 import {
   createTool as mastraCreateTool,
-  Mastra,
   type Tool,
   type ToolAction,
   type ToolExecutionContext,
@@ -23,6 +21,7 @@ import { type DefaultEnv, withBindings } from "./index.ts";
 export { createWorkflow };
 
 // this is dynamically imported to avoid deno check errors
+// @ts-ignore: this is a valid import
 const { env } = await import("cloudflare:workers");
 
 const createRuntimeContext = () => {
@@ -175,7 +174,7 @@ export type Fetch<TEnv = any> = (
 
 export interface AppContext<TEnv = any> {
   env: TEnv;
-  ctx: ExecutionContext;
+  ctx: { waitUntil: (promise: Promise<any>) => void };
   req: Request;
 }
 
@@ -243,20 +242,6 @@ export const createMCPServer = <TEnv = any>(
       );
     }
 
-    const getMastraWorkflow = (
-      workflow: NonNullable<typeof workflows>[number],
-    ) => {
-      const id = workflow.id;
-      const mastra = new Mastra({
-        storage: new D1Store({ client: bindings.DECO_CHAT_WORKSPACE_DB }),
-        workflows: {
-          [id]: workflow,
-        },
-      });
-
-      return mastra.getWorkflow(id);
-    };
-
     for (const workflow of workflows ?? []) {
       server.registerTool(
         `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
@@ -270,22 +255,20 @@ export const createMCPServer = <TEnv = any>(
           }).shape,
         },
         async (args) => {
-          const { ctx, req } = State.getStore();
-          const wkflow = getMastraWorkflow(workflow);
-
-          const run = await wkflow.createRunAsync({
-            runId: req.headers.get("x-deco-chat-run-id") ?? crypto.randomUUID(),
-          });
-
-          ctx.waitUntil(
-            run.start({
-              inputData: args,
-              runtimeContext: createRuntimeContext(),
-            }),
+          const { req } = State.getStore();
+          const runId = req.headers.get("x-deco-chat-run-id") ??
+            crypto.randomUUID();
+          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
           );
 
+          using result = await workflowDO.start({
+            workflowId: workflow.id,
+            args,
+            runId,
+          });
           return {
-            structuredContent: { id: run.runId },
+            structuredContent: { runId: result.runId },
           };
         },
       );
@@ -298,11 +281,15 @@ export const createMCPServer = <TEnv = any>(
           outputSchema: z.object({ cancelled: z.boolean() }).shape,
         },
         async (args) => {
-          const wkflow = getMastraWorkflow(workflow);
+          const runId = args.runId;
+          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+          );
 
-          const run = await wkflow.createRunAsync({ runId: args.runId });
-
-          await run.cancel();
+          using _ = await workflowDO.cancel({
+            workflowId: workflow.id,
+            runId,
+          });
 
           return {
             structuredContent: { cancelled: true },
@@ -322,16 +309,17 @@ export const createMCPServer = <TEnv = any>(
           outputSchema: z.object({ resumed: z.boolean() }).shape,
         },
         async (args) => {
-          const { ctx } = State.getStore();
-          const wkflow = getMastraWorkflow(workflow);
+          const runId = args.runId;
+          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+          );
 
-          const run = await wkflow.createRunAsync({ runId: args.runId });
-
-          ctx.waitUntil(run.resume({
+          using _ = await workflowDO.resume({
+            workflowId: workflow.id,
+            runId,
             resumeData: args.resumeData,
-            step: args.stepId,
-            runtimeContext: createRuntimeContext(),
-          }));
+            stepId: args.stepId,
+          });
 
           return {
             structuredContent: { resumed: true },

@@ -7,6 +7,7 @@ import type {
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
+import type { WorkflowDO } from "./workflow.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -18,6 +19,7 @@ export interface DefaultEnv {
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_BINDINGS: string;
   DECO_CHAT_API_TOKEN?: string;
+  DECO_CHAT_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;
   DECO_CHAT_WORKSPACE_DB: {
     query: (
       params: { sql: string; params: string[] },

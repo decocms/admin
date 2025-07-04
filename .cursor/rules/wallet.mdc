@@ -1,0 +1,467 @@
+---
+description: Wallet/Payments related
+globs: 
+alwaysApply: false
+---
+# Wallet System Architecture
+
+This document explains how the wallet system works in deco.chat, covering the currency system, transaction management, billing integration, and usage tracking.
+
+## Overview
+
+The wallet system manages **AI credits** for workspaces using a precise currency system called **MicroDollar** and a double-entry accounting system to track usage, payments, and balance transfers.
+
+### Key Components:
+- **MicroDollar**: Precise currency system (1 USD = 1,000,000 microdollars)  
+- **Wallet API**: RESTful service for account management and transactions
+- **Transaction System**: Double-entry accounting with typed transaction operations
+- **Billing Integration**: Stripe payments with currency conversion and webhooks
+- **Usage Tracking**: Real-time AI usage monitoring and charging
+
+## 1. MicroDollar Currency System
+
+### Purpose
+MicroDollar avoids floating-point precision issues by using integer arithmetic for monetary calculations.
+
+```typescript
+// packages/sdk/src/mcp/wallet/microdollar.ts
+export class MicroDollar {
+  private readonly microdollars: bigint;
+  private static readonly MICRO_MULTIPLIER = BigInt(1_000_000);
+  
+  // Create from different sources
+  public static fromDollars(dollars: number): MicroDollar
+  public static fromCents(cents: number): MicroDollar  
+  public static fromMicrodollarString(microdollars: string): MicroDollar
+  
+  // Convert to different formats
+  public toDollars(): number
+  public display(): string // e.g., "$1.50"
+  public toMicrodollarString(): string // e.g., "1_500000"
+  
+  // Arithmetic operations
+  public add(other: MicroDollar): MicroDollar
+  public subtract(other: MicroDollar): MicroDollar
+  public multiply(multiplier: number): MicroDollar
+  public divide(divisor: number): MicroDollar
+  public abs(): MicroDollar
+}
+```
+
+### String Format
+- **Small amounts**: `"500000"` (= $0.50)
+- **Large amounts**: `"1_500000"` (= $1.50)  
+- **Negative amounts**: `"-1_500000"` (= -$1.50)
+
+## 2. Wallet Structure
+
+### Well-Known Wallets
+Each workspace has specific wallet accounts for different purposes:
+
+```typescript
+// packages/sdk/src/mcp/wallet/well-known.ts
+export const WellKnownWallets = {
+  workspace: {
+    // Trial credits (free $2.00 for new workspaces)
+    trialCredits: (workspace: string) => [
+      "user",
+      `workspace-trial-credits-${workspace}`,
+      "expense"
+    ],
+    
+    // Generation credits (main AI usage wallet)
+    genCredits: (workspace: string) => [
+      "user", 
+      `workspace-gen-credits-${workspace}`,
+      "liability"
+    ],
+    
+    // Voucher system
+    voucher: (id: string, amount: string) => [
+      "user",
+      `deco-chat-voucher-${id}-${amount}`,
+      "liability"
+    ]
+  }
+}
+```
+
+### Account Types
+- **Trial Credits**: Free $2.00 for new workspaces (`expense` account)
+- **Generation Credits**: Main wallet for AI usage (`liability` account)  
+- **Vouchers**: Transferable credits between workspaces
+
+## 3. Transaction System
+
+### Transaction Types
+
+```typescript
+// packages/sdk/src/mcp/wallet/client.ts
+export type Transaction =
+  | AgentGeneration      // AI agent usage
+  | LLMGeneration        // Direct AI generation (stateless)
+  | WorkspaceCashIn      // Stripe payments
+  | WorkspaceGenCreditReward  // Free trial credits
+  | WorkspaceCreateVoucher    // Create transferable voucher
+  | WorkspaceRedeemVoucher    // Redeem voucher
+  | PreAuthorization     // Reserve funds for operations
+  | CommitPreAuthorized  // Commit reserved funds
+```
+
+### Usage Transactions
+
+#### Agent Generation
+Tracks AI usage through conversational agents:
+
+```typescript
+interface AgentGeneration {
+  type: "AgentGeneration";
+  usage: {
+    usage: LanguageModelUsage;  // Token counts
+    model: string;              // Model name
+    agentId: string;
+    threadId: string;
+    workspace: string;
+    agentPath: string;
+  };
+  generatedBy: { type: "user"; id: string };
+  vendor: { type: "vendor"; id: string };
+  payer?: { type: "wallet"; id: string };  // Trial credits wallet
+  timestamp: Date;
+}
+```
+
+#### LLM Generation  
+Tracks direct AI API usage (no agent context):
+
+```typescript
+interface LLMGeneration {
+  type: "LLMGeneration";
+  usage: {
+    workspace: string;
+    model: string;
+    usage: LanguageModelUsage;
+  };
+  // Same structure as AgentGeneration
+}
+```
+
+### Payment Transactions
+
+#### Workspace Cash In
+Records Stripe payments:
+
+```typescript
+interface WorkspaceCashIn {
+  type: "WorkspaceCashIn";
+  amount: string;  // MicroDollar string format
+  workspace: string;
+  timestamp: Date;
+}
+```
+
+## 4. Wallet API Client
+
+### Core Operations
+
+```typescript
+// packages/sdk/src/mcp/wallet/client.ts
+export interface WalletAPI {
+  // Account management
+  "GET /accounts/:id": {
+    response: {
+      balance: string;        // MicroDollar string
+      discriminator: string;
+      category: string;
+      type: string;
+    };
+  };
+  
+  // Transaction management
+  "POST /transactions": {
+    body: Omit<Transaction, "timestamp">;
+    response: { id: string };
+  };
+  
+  // Usage analytics
+  "GET /usage/agents": {
+    searchParams: {
+      workspace: string;
+      range: "day" | "week" | "month";
+    };
+    response: {
+      total: string;
+      items: { id: string; label: string; total: string; }[];
+    };
+  };
+  
+  "GET /usage/threads": {
+    searchParams: {
+      workspace: string; 
+      range: "day" | "week" | "month";
+    };
+    response: {
+      total: string;
+      items: {
+        id: string;
+        total: string;
+        agentId: string;
+        generatedBy: string;
+        tokens: LanguageModelUsage;
+      }[];
+    };
+  };
+}
+```
+
+### Client Creation
+
+```typescript
+// packages/sdk/src/mcp/wallet/index.ts
+import { createWalletClient } from "@deco/sdk/mcp/wallet";
+
+const wallet = createWalletClient(apiKey, fetcher);
+```
+
+## 5. Agent Wallet Integration
+
+### Agent Wallet Class
+Each AI agent has a wallet instance for usage tracking:
+
+```typescript
+// packages/ai/src/agent/wallet.ts
+export class AgentWallet {
+  private config: AgentWalletConfig;
+  private hasBalanceCache: WebCache<boolean>;
+  
+  // Check if workspace has sufficient funds
+  async canProceed(): Promise<boolean>
+  
+  // Check actual balance
+  async hasBalance(): Promise<boolean>
+  
+  // Record LLM usage and charge wallet
+  async computeLLMUsage(opts: ComputeAgentUsageOpts): Promise<void>
+  
+  // Ensure free trial credits are awarded
+  async rewardFreeCreditsIfNeeded(): Promise<void>
+}
+```
+
+### Usage Flow in Agents
+
+```typescript
+// In AI agent before generation
+const hasBalance = await this.wallet.canProceed();
+if (!hasBalance) {
+  throw new Error("Insufficient funds");
+}
+
+// After generation completes
+await this.wallet.computeLLMUsage({
+  userId,
+  usage,        // Token counts from AI response
+  threadId,
+  model,
+  modelId,
+  plan: plan.id
+});
+```
+
+### Trial Credits System
+New workspaces automatically receive $2.00 in trial credits:
+
+```typescript
+// Auto-reward for new workspaces
+const rewards = [{
+  type: "WorkspaceGenCreditReward",
+  amount: "2_000000",  // $2.00 in microdollars
+  workspace: this.config.workspace,
+  transactionId: WellKnownTransactions.freeTwoDollars(workspace)
+}];
+```
+
+## 6. Billing Integration (Stripe)
+
+### Payment Flow
+
+1. **Create Checkout Session**
+   ```typescript
+   // packages/sdk/src/mcp/wallet/api.ts
+   export const createCheckoutSession = createTool({
+     name: "CREATE_CHECKOUT_SESSION",
+     inputSchema: z.object({
+       amountUSDCents: z.number(),
+       successUrl: z.string(), 
+       cancelUrl: z.string(),
+     }),
+     handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
+       // Creates Stripe checkout session
+       // Converts USD to BRL for adaptive pricing
+       // Returns { url: string }
+     }
+   });
+   ```
+
+2. **Webhook Processing**
+   ```typescript
+   // apps/api/src/webhooks/stripe.ts
+   export const handleStripeWebhook = async (c: Context) => {
+     const event = await verifyAndParseStripeEvent(payload, signature, ctx);
+     const { transaction } = await createTransactionFromStripeEvent(ctx, event);
+     
+     // Creates WorkspaceCashIn transaction
+     await wallet["PUT /transactions/:id"]({ id: idempotentId }, { 
+       body: transaction 
+     });
+   }
+   ```
+
+### Currency Conversion
+- Stripe payments in BRL (Brazil-based account)
+- Adaptive pricing for international customers  
+- Webhook converts back to USD using currency API
+
+```typescript
+// packages/sdk/src/mcp/wallet/stripe/webhook.ts
+async function getAmountInDollars({
+  amountReceivedUSDCents,
+  currency,
+  context
+}) {
+  const conversionRate = currencies[currency.toUpperCase()].value;
+  const amount = amountReceivedUSDCents / 100;
+  const microDollarsString = String(
+    Math.round((amount / conversionRate) * 1_000_000)
+  );
+  return MicroDollar.fromMicrodollarString(microDollarsString);
+}
+```
+
+## 7. MCP Tools Integration
+
+### Wallet Tools Group
+
+```typescript
+// packages/sdk/src/mcp/wallet/api.ts
+const createTool = createToolGroup("Wallet", {
+  name: "Wallet & Billing",
+  description: "Handle payments and subscriptions.",
+  icon: "https://assets.decocache.com/mcp/.../Wallet--Billing.png"
+});
+
+// Available tools:
+// - GET_WALLET_ACCOUNT: Get balance for workspace
+// - GET_THREADS_USAGE: Usage analytics by thread  
+// - GET_AGENTS_USAGE: Usage analytics by agent
+// - CREATE_CHECKOUT_SESSION: Stripe payment flow
+// - CREATE_VOUCHER: Create transferable credits
+// - REDEEM_VOUCHER: Redeem voucher credits
+// - GET_WORKSPACE_PLAN: Get plan features
+```
+
+### Authorization & Access Control
+All wallet tools require workspace access:
+
+```typescript
+handler: async (input, c) => {
+  assertHasWorkspace(c);
+  await assertWorkspaceResourceAccess(c.tool.name, c);
+  
+  const wallet = getWalletClient(c);
+  // ... tool implementation
+}
+```
+
+## 8. Usage Analytics & Reporting
+
+### Data Structure
+Usage is tracked at multiple levels:
+
+- **Agent Level**: Total spend per agent across all threads
+- **Thread Level**: Detailed usage per conversation thread  
+- **Model Level**: Token usage and costs by AI model
+- **Time-based**: Daily, weekly, monthly aggregations
+
+### Display Formatting
+
+```typescript
+// Format usage for display
+const AgentsUsage = {
+  format: (usage) => ({
+    total: MicroDollar.fromMicrodollarString(usage.total).display(),
+    items: usage.items.map(item => ({
+      id: item.id,
+      label: item.label,
+      total: MicroDollar.fromMicrodollarString(item.total).toDollars()
+    }))
+  })
+};
+```
+
+## 9. Error Handling & Edge Cases
+
+### Insufficient Funds
+```typescript
+// Check before AI operations
+const hasBalance = await wallet.canProceed();
+if (!hasBalance) {
+  throw new Error("Insufficient funds");
+}
+```
+
+### Retry Logic
+Wallet operations include retry logic for conflicts:
+
+```typescript
+let retries = 3;
+while (retries > 0) {
+  const response = await wallet["PUT /transactions/:id"](params);
+  if (response.ok || response.status === 304) break;
+  
+  if (response.status === 409) {  // Conflict
+    retries--;
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    continue;
+  }
+  throw new Error("Transaction failed");
+}
+```
+
+## 10. Plan Features & Restrictions
+
+### Plan-based Features
+```typescript
+// packages/sdk/src/plan.ts
+export const FEATURES = [
+  "ai-wallet-deposit",  // Paid plans can deposit more money
+  "trial-usage",        // Trial workspaces get free credits
+] as const;
+
+// Usage in tools
+const plan = await getPlan(ctx);
+plan.assertHasFeature("ai-wallet-deposit");  // Throws if not available
+```
+
+### Trial vs Paid Plans
+- **Trial**: $2.00 free credits, no deposits allowed
+- **Paid**: Can deposit unlimited funds via Stripe
+
+## Implementation Notes
+
+### Performance Optimizations
+- **Balance Caching**: Wallet balance cached with TTL to reduce API calls
+- **Lazy Balance Checks**: Background cache updates to minimize blocking
+- **Batch Operations**: Group transaction processing where possible
+
+### Security Considerations  
+- **API Key Authentication**: All wallet API calls require valid API key
+- **Workspace Authorization**: Users can only access their workspace wallets
+- **Idempotent Operations**: Stripe webhooks use event IDs for idempotency
+- **Input Validation**: All monetary amounts validated before processing
+
+### Monitoring & Observability
+- Transaction failures logged for debugging
+- Usage patterns tracked for analytics
+- Balance alerts for low-credit workspaces
+- Performance metrics for wallet operations 

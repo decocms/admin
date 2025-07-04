@@ -1,7 +1,13 @@
-import { useListTriggers } from "@deco/sdk";
+import type { TriggerOutputSchema } from "@deco/sdk";
+import { useAgents, useListTriggers } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { Suspense, useState } from "react";
+import type { z } from "zod";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
@@ -10,17 +16,11 @@ import {
   UserInfo,
 } from "../common/table/table-cells.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerActions } from "./trigger-actions.tsx";
 import { TriggerCard } from "./trigger-card.tsx";
-import { TriggerType } from "./trigger-type.tsx";
-import type { TriggerOutputSchema } from "@deco/sdk";
-import type { z } from "zod";
+import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { useAgents } from "@deco/sdk";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { TriggerType } from "./trigger-type.tsx";
 
 const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
 
@@ -141,9 +141,29 @@ function ListTriggersSuspended() {
       />
 
       <div className="flex-1 min-h-0 overflow-x-auto">
-        {viewMode === "table"
-          ? <TableView triggers={filteredTriggers} />
-          : <CardsView triggers={filteredTriggers} />}
+        {filteredTriggers.length === 0 ? (
+          <EmptyState
+            icon="bolt"
+            title={search.trim().length > 0 ? "No triggers found" : "No triggers yet"}
+            description={
+              search.trim().length > 0
+                ? "Try adjusting your search terms to find what you're looking for."
+                : "Create your first trigger to automate your agent workflows and respond to events automatically."
+            }
+            buttonProps={{
+              children: "Create Trigger",
+              onClick: () => {
+                // This will trigger the modal to open
+                const createButton = document.querySelector('[title="Add Trigger"]') as HTMLButtonElement;
+                createButton?.click();
+              },
+            }}
+          />
+        ) : (
+          viewMode === "table"
+            ? <TableView triggers={filteredTriggers} />
+            : <CardsView triggers={filteredTriggers} />
+        )}
       </div>
     </div>
   );

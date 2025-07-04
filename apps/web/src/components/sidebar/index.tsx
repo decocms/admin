@@ -66,14 +66,14 @@ const STATIC_ITEMS = [
     icon: "linked_services",
   },
   {
-    url: "/triggers",
-    title: "Triggers",
-    icon: "conversion_path",
-  },
-  {
     url: "/workflows",
     title: "Workflows",
     icon: "conversion_path",
+  },
+  {
+    url: "/triggers",
+    title: "Triggers",
+    icon: "cable",
   },
   {
     url: "/prompts",

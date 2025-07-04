@@ -143,7 +143,7 @@ function ListTriggersSuspended() {
       <div className="flex-1 min-h-0 overflow-x-auto">
         {filteredTriggers.length === 0 ? (
           <EmptyState
-            icon="bolt"
+            icon="cable"
             title={search.trim().length > 0 ? "No triggers found" : "No triggers yet"}
             description={
               search.trim().length > 0

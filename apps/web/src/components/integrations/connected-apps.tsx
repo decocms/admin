@@ -193,7 +193,7 @@ export function ConnectedAppsList() {
           : apps.length === 0
           ? (
             <EmptyState
-              icon="conversion_path"
+              icon="linked_services"
               title="No connected integrations yet"
               description="Connect services to expand what your agents can do."
               buttonComponent={

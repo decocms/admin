@@ -68,7 +68,7 @@ const STATIC_ITEMS = [
   {
     url: "/workflows",
     title: "Workflows",
-    icon: "conversion_path",
+    icon: "flowchart",
   },
   {
     url: "/triggers",

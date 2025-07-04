@@ -223,7 +223,7 @@ function WorkflowsTab() {
             ? (
               <div className="flex flex-1 min-h-[700px] items-center justify-center">
                 <EmptyState
-                  icon="conversion_path"
+                  icon="flowchart"
                   title="No workflows yet"
                   description="Create and deploy a workflow to see it here."
                 />

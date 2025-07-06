@@ -1,7 +1,7 @@
 import { NotFoundError, useAgent } from "@deco/sdk";
 import { Suspense } from "react";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { AgentAvatar } from "../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 
 interface Props {
@@ -41,10 +41,11 @@ AgentBreadcrumbSegment.UI = (
   return (
     <div className="flex items-center gap-2">
       {variant !== "summary" && (
-        <AgentAvatar
-          name={agent.name}
-          avatar={agent.avatar}
-          className="w-6 h-6"
+        <Avatar
+          shape="square"
+          url={agent.avatar}
+          fallback={agent.name}
+          size="xs"
         />
       )}
       <h1 className="text-sm font-medium tracking-tight text-foreground text-nowrap">

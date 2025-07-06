@@ -59,7 +59,7 @@ function JsonSchemaInput({ value, onChange }: {
         className={error ? "border-destructive" : ""}
       />
       {error && <div className="text-xs text-destructive mt-1">{error}</div>}
-      <div className="bg-muted border border-border rounded p-3 text-xs text-foreground">
+      <div className="bg-muted border border-border p-3 text-xs text-foreground rounded-xl">
         <div className="font-semibold mb-1">How to fill the Output Schema:</div>
         <ul className="list-disc pl-4 mb-2">
           <li>
@@ -230,7 +230,6 @@ export function WebhookTriggerForm({
                 <Input
                   {...field}
                   placeholder="Send birthday message"
-                  className="rounded-md"
                   required
                 />
               </FormControl>
@@ -271,7 +270,6 @@ export function WebhookTriggerForm({
                 <Input
                   {...field}
                   placeholder="Passphrase"
-                  className="rounded-md"
                   type="text"
                 />
               </FormControl>

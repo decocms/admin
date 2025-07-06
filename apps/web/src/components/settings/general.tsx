@@ -437,12 +437,14 @@ export function GeneralSettings() {
                               onClick={() => fileInputRef.current?.click()}
                             >
                               <Avatar
+                                shape="square"
                                 fallback={currentTeamName}
                                 url={localAvatarUrl || avatarUrl}
                                 objectFit="contain"
-                                className="w-24 h-24 border border-border group-hover:opacity-50 transition-opacity rounded-xl p-1"
+                                size="2xl"
+                                className="border border-border group-hover:opacity-50 transition-opacity p-1"
                               />
-                              <div className="absolute top-0 left-0 w-24 h-24 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="absolute top-0 left-0 w-20 h-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Icon
                                   name="upload"
                                   size={32}

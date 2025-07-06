@@ -89,10 +89,11 @@ function CurrentTeamDropdownTrigger() {
     <ResponsiveDropdownTrigger asChild>
       <SidebarMenuButton className="p-1 group-data-[collapsible=icon]:p-1! gap-3 md:pl-2">
         <Avatar
+          shape="square"
           url={avatarUrl}
           fallback={label}
           objectFit="contain"
-          className="size-6"
+          size="xs"
         />
         <div className="flex items-center justify-start flex-1 min-w-0 gap-1">
           <span className="text-sm font-medium truncate min-w-0">
@@ -187,10 +188,11 @@ function TeamsToSwitch({ query }: { query: string }) {
               className="w-full flex items-center gap-2 cursor-pointer"
             >
               <Avatar
-                className="w-6 h-6"
+                shape="square"
                 url={team.avatarUrl}
                 fallback={team.label}
                 objectFit="contain"
+                size="xs"
               />
               <span className="md:text-sm">
                 {team.label}

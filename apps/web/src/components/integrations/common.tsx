@@ -37,7 +37,7 @@ export function IntegrationIcon({ icon, className }: IntegrationIconProps) {
         className={cn(
           rounded,
           size,
-          "relative flex items-center justify-center overflow-hidden border border-border",
+          "relative flex items-center justify-center",
           className,
         )}
       >
@@ -46,11 +46,10 @@ export function IntegrationIcon({ icon, className }: IntegrationIconProps) {
           : icon
           ? (
             <Avatar
+              shape="square"
               url={icon}
               fallback={fallback}
-              fallbackClassName="!bg-transparent"
-              className={cn("w-full h-full rounded-lg", className)}
-              objectFit="contain"
+              size="base"
             />
           )
           : fallback}
@@ -67,11 +66,10 @@ function FileAvatar({ path, fallback }: {
 
   return (
     <Avatar
+      shape="square"
       url={typeof fileUrl === "string" ? fileUrl : undefined}
       fallback={fallback}
-      fallbackClassName="!bg-transparent"
-      className={cn("w-full h-full", "rounded-lg")}
-      objectFit="contain"
+      size="base"
     />
   );
 }

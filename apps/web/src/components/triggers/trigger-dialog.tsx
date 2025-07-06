@@ -22,7 +22,7 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { useState } from "react";
-import { AgentAvatar } from "../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { CronTriggerForm } from "./cron-trigger-form.tsx";
 import { WebhookTriggerForm } from "./webhook-trigger-form.tsx";
@@ -48,17 +48,18 @@ function AgentSelect({
       onValueChange={onChange}
       disabled={disabled || agents.length === 0}
     >
-      <SelectTrigger className="w-full h-12 rounded-full border border-border bg-muted text-left px-4">
+      <SelectTrigger className="w-full h-12 border border-border text-left px-4">
         <SelectValue>
           {selectedAgent
             ? (
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6">
-                  <AgentAvatar
-                    name={selectedAgent.name}
-                    avatar={selectedAgent.avatar}
-                  />
-                </span>
+                <Avatar
+                  shape="square"
+                  url={selectedAgent.avatar}
+                  fallback={selectedAgent.name}
+                  size="xs"
+                />
+
                 <span className="truncate max-w-[120px] text-sm">
                   {selectedAgent.name}
                 </span>
@@ -74,9 +75,13 @@ function AgentSelect({
             value={agent.id}
             className="flex items-center gap-2 px-3 py-2"
           >
-            <span className="w-6 h-6">
-              <AgentAvatar name={agent.name} avatar={agent.avatar} />
-            </span>
+            <Avatar
+              shape="square"
+              url={agent.avatar}
+              fallback={agent.name}
+              size="xs"
+            />
+
             <span className="truncate max-w-[120px] text-sm">{agent.name}</span>
           </SelectItem>
         ))}
@@ -151,17 +156,17 @@ export function TriggerModal(
                 value={triggerType}
                 onValueChange={(v) => setTriggerType(v as "webhook" | "cron")}
               >
-                <TabsList className="mb-2 w-full bg-muted rounded-full">
+                <TabsList className="mb-2 w-full bg-muted">
                   <TabsTrigger
                     value="webhook"
-                    className="flex-1 cursor-pointer rounded-full"
+                    className="flex-1 cursor-pointer"
                     disabled={isEditing}
                   >
                     Webhook
                   </TabsTrigger>
                   <TabsTrigger
                     value="cron"
-                    className="flex-1 cursor-pointer rounded-full"
+                    className="flex-1 cursor-pointer"
                     disabled={isEditing}
                   >
                     Cron

@@ -2,6 +2,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
@@ -10,9 +11,7 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
 import { type GroupedApp, useGroupedApps } from "./apps.ts";
 import { Header } from "./breadcrumb.tsx";
-import { IntegrationIcon } from "./common.tsx";
 import { SelectConnectionDialog } from "./select-connection-dialog.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 function AppCard({
   app,
@@ -28,9 +27,12 @@ function AppCard({
     >
       <CardContent className="p-0">
         <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
-          <IntegrationIcon
-            icon={app.icon}
-            className="h-10 w-10"
+          <Avatar
+            shape="square"
+            url={app.icon}
+            fallback={app.name}
+            size="base"
+            className="flex-shrink-0"
           />
 
           <div className="flex flex-col gap-0 min-w-0">
@@ -116,9 +118,11 @@ function TableView(
         <div className="flex items-center gap-2">
           {app.usedBy.map((agent) => (
             <Avatar
+              shape="square"
               key={agent.avatarUrl}
               url={agent.avatarUrl}
               fallback={agent.avatarUrl}
+              size="sm"
             />
           ))}
         </div>

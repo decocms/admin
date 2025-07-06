@@ -3,12 +3,9 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@deco/ui/components/avatar.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import { type HTMLAttributes, type ReactNode, Suspense, useMemo } from "react";
-import { useFile } from "@deco/sdk";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { isFilePath } from "../../../utils/path.ts";
+import { cva, type VariantProps } from "class-variance-authority";
+import { type HTMLAttributes, type ReactNode, useMemo } from "react";
 
 // Predefined color palette for avatar backgrounds
 const AVATAR_COLORS = [
@@ -26,59 +23,127 @@ const AVATAR_COLORS = [
 
 /**
  * Generate a deterministic color from a string
- * @param input The input string to generate a color from
- * @returns A CSS class string for background and text color
  */
 function getColorFromString(input: string): string {
-  // Simple hash function
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     hash = input.charCodeAt(i) + ((hash << 5) - hash);
   }
-
-  // Get a positive index within the color array range
   const index = Math.abs(hash) % AVATAR_COLORS.length;
-
   return AVATAR_COLORS[index];
 }
 
-export interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
+// CircleAvatar variants - always rounded-full
+const circleAvatarVariants = cva("", {
+  variants: {
+    size: {
+      xs: "w-6 h-6",
+      sm: "w-8 h-8",
+      base: "w-10 h-10",
+      lg: "w-12 h-12",
+      xl: "w-16 h-16",
+      "2xl": "w-20 h-20",
+      "3xl": "w-32 h-32",
+    },
+  },
+  defaultVariants: {
+    size: "base",
+  },
+});
+
+// SquareAvatar variants - size-based roundedness
+const squareAvatarVariants = cva("", {
+  variants: {
+    size: {
+      xs: "w-6 h-6 rounded-sm",
+      sm: "w-8 h-8 rounded-md",
+      base: "w-10 h-10 rounded-lg",
+      lg: "w-12 h-12 rounded-xl",
+      xl: "w-16 h-16 rounded-2xl",
+      "2xl": "w-20 h-20 rounded-3xl",
+      "3xl": "w-32 h-32 rounded-3xl",
+    },
+  },
+  defaultVariants: {
+    size: "base",
+  },
+});
+
+// Image variants for object-fit
+const avatarImageVariants = cva("", {
+  variants: {
+    objectFit: {
+      contain: "object-contain",
+      cover: "object-cover",
+    },
+    roundness: {
+      full: "rounded-full",
+      sm: "rounded-sm",
+      md: "rounded-md",
+      lg: "rounded-lg",
+      xl: "rounded-xl",
+      "2xl": "rounded-2xl",
+      "3xl": "rounded-3xl",
+    },
+  },
+  defaultVariants: {
+    objectFit: "cover",
+    roundness: "lg",
+  },
+});
+
+// SquareAvatar roundness mapping based on size
+const squareAvatarRoundnessVariants = cva("", {
+  variants: {
+    size: {
+      xs: "rounded-sm",
+      sm: "rounded-md",
+      base: "rounded-lg",
+      lg: "rounded-xl",
+      xl: "rounded-2xl",
+      "2xl": "rounded-3xl",
+      "3xl": "rounded-3xl",
+    },
+  },
+  defaultVariants: {
+    size: "base",
+  },
+});
+
+interface BaseAvatarProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * The URL of the avatar image
    */
   url?: string;
-
   /**
    * Fallback text or element to display when the image is not available
    * If string is provided, it will use the first two characters (typically initials)
    */
   fallback: string | ReactNode;
-
-  /**
-   * Additional CSS classes to apply to the avatar
-   */
-  className?: string;
-
   /**
    * The object fit of the avatar image
    */
   objectFit?: "contain" | "cover";
-
   /**
-   * Additional CSS classes to apply to the avatar fallback
+   * Additional CSS classes to apply to the avatar
    */
-  fallbackClassName?: string;
+  className?: string;
 }
 
-export function Avatar({
+/**
+ * CircleAvatar - Always rounded-full, perfect for user profile pictures
+ * Internal component - use Avatar with shape="circle" instead
+ */
+function CircleAvatar({
   url,
   fallback,
-  className,
+  size = "base",
   objectFit = "cover",
-  fallbackClassName,
+  className,
   ...props
-}: AvatarProps) {
-  // Extract initials from string fallback (first two characters)
+}: BaseAvatarProps & {
+  size?: "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
+}) {
   const fallbackContent = useMemo(() => {
     if (typeof fallback === "string") {
       return fallback.substring(0, 2).toUpperCase();
@@ -86,26 +151,31 @@ export function Avatar({
     return fallback;
   }, [fallback]);
 
-  // Get a deterministic color for the fallback based on the content
   const fallbackColor = useMemo(() => {
     if (typeof fallback === "string") {
       return getColorFromString(fallback);
     }
-    // Default color if we can't determine a string value
     return AVATAR_COLORS[0];
   }, [fallback]);
 
   return (
-    <AvatarUI className={cn(className)} {...props}>
+    <AvatarUI
+      className={cn(
+        circleAvatarVariants({ size }),
+        "rounded-full",
+        className,
+      )}
+      {...props}
+    >
       <AvatarImage
         src={url}
         alt="Avatar"
         className={cn(
-          (objectFit === "contain" && url) ? "object-contain" : "object-cover",
+          avatarImageVariants({ objectFit, roundness: "full" }),
         )}
       />
       <AvatarFallback
-        className={cn(fallbackColor, "rounded-lg", fallbackClassName)}
+        className={cn(fallbackColor, "rounded-full")}
       >
         {fallbackContent}
       </AvatarFallback>
@@ -113,102 +183,127 @@ export function Avatar({
   );
 }
 
-function FileAvatar(
-  { path, name, className }: { path: string; name: string; className?: string },
-) {
-  const { data: fileUrl } = useFile(path);
+/**
+ * SquareAvatar - Size-based roundedness, perfect for brand logos and general avatars
+ * Internal component - use Avatar with shape="square" instead
+ */
+function SquareAvatar({
+  url,
+  fallback,
+  size = "base",
+  objectFit = "cover",
+  className,
+  ...props
+}: BaseAvatarProps & {
+  size?: "xs" | "sm" | "base" | "lg" | "xl" | "2xl" | "3xl";
+}) {
+  const fallbackContent = useMemo(() => {
+    if (typeof fallback === "string") {
+      return fallback.substring(0, 2).toUpperCase();
+    }
+    return fallback;
+  }, [fallback]);
+
+  const fallbackColor = useMemo(() => {
+    if (typeof fallback === "string") {
+      return getColorFromString(fallback);
+    }
+    return AVATAR_COLORS[0];
+  }, [fallback]);
 
   return (
-    <Suspense
-      fallback={
-        <Skeleton
-          className={cn(
-            "w-full h-full rounded-lg",
-            className,
-          )}
-        />
-      }
+    <AvatarUI
+      className={cn(
+        squareAvatarVariants({ size }),
+        className,
+      )}
+      {...props}
     >
-      <Avatar
-        url={typeof fileUrl === "string" ? fileUrl : undefined}
-        fallback={name.substring(0, 2)}
+      <AvatarImage
+        src={url}
+        alt="Avatar"
         className={cn(
-          "w-full h-full rounded-lg",
-          className,
+          avatarImageVariants({ objectFit }),
+          squareAvatarRoundnessVariants({ size }),
         )}
       />
-    </Suspense>
+      <AvatarFallback
+        className={cn(
+          fallbackColor,
+          squareAvatarRoundnessVariants({ size }),
+        )}
+      >
+        {fallbackContent}
+      </AvatarFallback>
+    </AvatarUI>
   );
 }
 
-function AgentAvatarContent(
-  { name, avatar, className }: {
-    name?: string;
-    avatar?: string;
-    className?: string;
+// Avatar variants with shape
+const avatarVariants = cva("", {
+  variants: {
+    shape: {
+      circle: "",
+      square: "",
+    },
+    size: {
+      xs: "",
+      sm: "",
+      base: "",
+      lg: "",
+      xl: "",
+      "2xl": "",
+      "3xl": "",
+    },
   },
-) {
-  if (avatar && isFilePath(avatar)) {
+  defaultVariants: {
+    shape: "square",
+    size: "base",
+  },
+});
+
+export type AvatarProps = VariantProps<typeof avatarVariants> & BaseAvatarProps;
+
+/**
+ * Avatar - Universal avatar component with shape variant
+ *
+ * @param shape - 'circle' for user profiles, 'square' for brands/agents (default: 'square')
+ * @param size - Size variant (default: 'base')
+ * @param url - Image URL
+ * @param fallback - Fallback text or element when image fails to load
+ * @param objectFit - How the image should fit within the container
+ * @param className - Additional CSS classes
+ */
+export function Avatar({
+  shape = "square",
+  size = "base",
+  url,
+  fallback,
+  objectFit = "cover",
+  className,
+  ...props
+}: AvatarProps) {
+  if (shape === "circle") {
     return (
-      <FileAvatar
-        path={avatar}
-        name={name ?? "Unknown"}
+      <CircleAvatar
+        url={url}
+        fallback={fallback}
+        size={size ?? "base"}
+        objectFit={objectFit}
         className={className}
+        {...props}
       />
     );
   }
 
-  if (!name || name === "Anonymous") {
-    return (
-      <div
-        className={cn(
-          "w-full h-full bg-gradient-to-b from-white to-muted flex items-center justify-center border border-border overflow-hidden",
-          className,
-        )}
-      >
-        <Icon
-          filled
-          name="robot_2"
-          className="text-muted-foreground"
-        />
-      </div>
-    );
-  }
   return (
-    <Avatar
-      url={avatar}
-      fallback={name.substring(0, 2)}
-      className={cn(
-        "w-full h-full rounded-lg",
-        className,
-      )}
+    <SquareAvatar
+      url={url}
+      fallback={fallback}
+      size={size ?? "base"}
+      objectFit={objectFit}
+      className={className}
+      {...props}
     />
   );
 }
-
-export const AgentAvatar = (
-  { name, avatar, className }: {
-    name?: string;
-    avatar?: string;
-    className?: string;
-  },
-) => {
-  return (
-    <Suspense
-      fallback={
-        <Skeleton
-          className={cn(
-            "w-full h-full rounded-lg",
-            className,
-          )}
-        />
-      }
-    >
-      <AgentAvatarContent
-        name={name}
-        avatar={avatar}
-        className={className}
-      />
-    </Suspense>
-  );
-};

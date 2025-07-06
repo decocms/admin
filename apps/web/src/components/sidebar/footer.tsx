@@ -292,9 +292,10 @@ function LoggedUser() {
       <ResponsiveDropdownTrigger asChild>
         <SidebarMenuButton className="cursor-pointer gap-2 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
           <Avatar
+            shape="circle"
             url={userAvatarURL}
             fallback={userName}
-            className="w-6 h-6"
+            size="xs"
           />
           <span className="text-xs grow">{user.metadata?.full_name}</span>
 

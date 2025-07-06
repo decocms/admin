@@ -1,17 +1,12 @@
 import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { AgentAvatar } from "../avatar/index.tsx";
+import { Avatar } from "../avatar/index.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { format } from "date-fns";
@@ -34,13 +29,12 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <div className="w-8 h-8">
-            <AgentAvatar
-              name={agent?.name ?? agentId ?? "Unknown"}
-              avatar={agent?.avatar}
-              className="rounded-lg"
-            />
-          </div>
+          <Avatar
+            shape="square"
+            url={agent?.avatar}
+            fallback={agent?.name ?? agentId ?? "Unknown"}
+            size="sm"
+          />
           <span className="truncate hidden md:inline">
             {agent ? agent.name : agentId || "Unknown"}
           </span>
@@ -98,12 +92,12 @@ function UserInfo({
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <Avatar>
-            <AvatarImage src={avatarUrl} alt={name} />
-            <AvatarFallback>
-              {name?.[0] ?? "?"}
-            </AvatarFallback>
-          </Avatar>
+          <Avatar
+            shape="circle"
+            url={avatarUrl}
+            fallback={name}
+            size="sm"
+          />
           <div
             className={`flex-col items-start text-left leading-tight w-full ${
               showDetails ? "hidden md:flex" : "flex"
@@ -188,9 +182,7 @@ function IntegrationInfo(
 
   return (
     <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
-      <div className="w-8 h-8">
-        <IntegrationIcon className="rounded-sm h-8 w-8" />
-      </div>
+      <IntegrationIcon className="rounded-sm h-8 w-8" />
       <span className="truncate hidden md:inline">
         {integrationId || "Unknown"}
       </span>

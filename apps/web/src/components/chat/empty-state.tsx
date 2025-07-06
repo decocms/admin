@@ -4,7 +4,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useFocusChat } from "../agents/hooks.ts";
-import { AgentAvatar } from "../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { useChatContext } from "./context.tsx";
 
 export function EmptyState() {
@@ -65,10 +65,11 @@ EmptyState.UI = () => {
       <div className="flex flex-col items-center justify-center max-w-2xl mx-auto p-4 duration-300 transition-all">
         <div className="flex flex-col items-center gap-4 mb-6">
           <div className="w-12 h-12 flex items-center justify-center ">
-            <AgentAvatar
-              name={agent?.name}
-              avatar={agent?.avatar}
-              className="rounded-xl"
+            <Avatar
+              shape="square"
+              url={agent?.avatar}
+              fallback={agent?.name}
+              size="lg"
             />
           </div>
           <div className="flex flex-col items-center gap-4">

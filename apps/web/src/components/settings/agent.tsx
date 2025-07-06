@@ -32,8 +32,9 @@ import { useRef, useState } from "react";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
-import { AgentAvatar } from "../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+
 // import { Channels } from "./channels.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
@@ -171,9 +172,11 @@ function SettingsTab() {
                                   )
                                   : (
                                     <>
-                                      <AgentAvatar
-                                        name={agent.name}
-                                        avatar={field.value || agent.avatar}
+                                      <Avatar
+                                        shape="square"
+                                        url={field.value || agent.avatar}
+                                        fallback={agent.name}
+                                        size="xl"
                                       />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                         <Icon

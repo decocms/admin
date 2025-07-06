@@ -1,8 +1,4 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
+import { Avatar } from "../../common/avatar/index.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
@@ -27,12 +23,6 @@ export function AgentCard(
 ) {
   const focusChat = useFocusChat();
 
-  const initials = name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-
   if (!avatar || !name || !description) {
     return null;
   }
@@ -50,12 +40,13 @@ export function AgentCard(
             <Icon name="edit" />
           </Button>
         )}
-        <div className="w-32 h-32 rounded-full bg-foreground p-1 border">
-          <Avatar className="w-full h-full">
-            <AvatarImage src={avatar} alt={name} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-        </div>
+        <Avatar
+          shape="square"
+          url={avatar}
+          fallback={name}
+          className="bg-foreground p-1 border"
+          size="3xl"
+        />
         <div className="flex flex-col items-center justify-center gap-1">
           <CardTitle className="text-xl font-medium leading-relaxed text-foreground text-center">
             {name}

@@ -66,11 +66,11 @@ export function ModelLogo({ logo, name }: ModelLogoProps) {
       )}
     >
       <Avatar
+        shape="square"
         url={logo}
         fallback={name}
-        fallbackClassName="!bg-transparent"
-        className="w-full h-full rounded-lg"
         objectFit="contain"
+        size="base"
       />
     </div>
   );
@@ -223,27 +223,17 @@ const ModelInfoCell = (
 ) => {
   return (
     <div className="flex items-center gap-2">
-      {model.logo && (
-        <div
-          className={cn(
-            "rounded-xl relative flex items-center justify-center p-2 h-10 w-10",
-            "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
-            "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
-          )}
-        >
-          {model.logo
-            ? (
-              <Avatar
-                url={model.logo}
-                fallback={model.name}
-                fallbackClassName="!bg-transparent"
-                className="w-full h-full rounded-lg"
-                objectFit="contain"
-              />
-            )
-            : <Icon name="conversion_path" className="text-muted-foreground" />}
-        </div>
-      )}
+      {model.logo
+        ? (
+          <Avatar
+            shape="square"
+            url={model.logo}
+            fallback={model.name}
+            objectFit="contain"
+            size="xs"
+          />
+        )
+        : <Icon name="conversion_path" className="text-muted-foreground" />}
       <div>
         <div className="flex items-center gap-2">
           <h3 className="font-medium line-clamp-1">{model.name}</h3>
@@ -268,7 +258,7 @@ function TableView(
 ) {
   const [sortKey, setSortKey] = useState<SortKey>("active");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const { isOpen: modalOpen, setIsOpen: setModalOpen } = useModal();
+  const { isOpen: modalOpen, setIsOpen } = useModal();
   const [logo, setLogo] = useState<string | undefined>(undefined);
   const modelRef = useRef<Model | undefined>(undefined);
 
@@ -390,14 +380,14 @@ function TableView(
 
   function handleModelOpenChange(open: boolean, model?: Model) {
     if (!open) {
-      setModalOpen(false);
+      setIsOpen(false);
       modalForm.reset();
       modelRef.current = undefined;
       setLogo(undefined);
       return;
     }
 
-    setModalOpen(true);
+    setIsOpen(true);
 
     const isCreatingNewModel = !model;
 
@@ -467,9 +457,11 @@ function TableView(
               className="space-y-6"
             >
               <div className="flex items-center gap-6">
-                <ModelLogo
-                  logo={logo || modelRef.current?.logo || ""}
-                  name={modalForm.getValues("name")}
+                <Avatar
+                  shape="square"
+                  url={logo || modelRef.current?.logo || ""}
+                  fallback={modalForm.getValues("name")}
+                  size="sm"
                 />
                 <FormField
                   control={modalForm.control}

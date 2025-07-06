@@ -165,9 +165,10 @@ export function ProfileSettings(
           : (
             <div className="flex flex-col items-center gap-4 py-4">
               <Avatar
+                shape="circle"
                 url={profile?.metadata?.avatar_url}
                 fallback={profile?.metadata?.full_name || profile?.email}
-                className="w-20 h-20"
+                size="2xl"
               />
               <div className="text-lg font-semibold">
                 {profile?.metadata?.full_name || profile?.email}

@@ -48,7 +48,7 @@ import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { AgentAvatar, Avatar } from "../common/avatar/index.tsx";
+import { Avatar } from "../common/avatar/index.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
@@ -275,13 +275,12 @@ function Card({ agent }: { agent: Agent }) {
       <CardContent className="gap-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-3 w-full">
           <div className="relative w-full">
-            <div className="h-12 w-12 flex justify-center overflow-hidden rounded-lg shadow-sm">
-              <AgentAvatar
-                name={agent.name}
-                avatar={agent.avatar}
-                className="h-full w-full rounded-lg"
-              />
-            </div>
+            <Avatar
+              shape="square"
+              url={agent.avatar}
+              fallback={agent.name}
+              size="lg"
+            />
             <div
               className="absolute top-0 right-0"
               onClick={(e) => e.stopPropagation()}
@@ -350,9 +349,10 @@ function TableView({ agents }: {
       render: (agent: Agent) => (
         <div className="flex items-center gap-2">
           <Avatar
+            shape="square"
             url={agent.avatar}
             fallback={agent.name.substring(0, 2)}
-            className="h-8 w-8 rounded-lg"
+            size="sm"
           />
           <span className="font-medium">{agent.name}</span>
         </div>

@@ -36,44 +36,7 @@ import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { AgentAvatar } from "../common/avatar/index.tsx";
-
-interface UserAvatarProps {
-  member?: Member;
-  size?: "sm" | "md" | "lg";
-}
-
-function UserAvatar({ member, size = "md" }: UserAvatarProps) {
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-8 h-8",
-    lg: "w-12 h-12",
-  };
-
-  if (member?.profiles?.metadata?.avatar_url) {
-    return (
-      <img
-        src={member.profiles.metadata.avatar_url}
-        alt={member.profiles.metadata?.full_name || "User"}
-        className={`${sizeClasses[size]} rounded-md object-cover`}
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`${
-        sizeClasses[size]
-      } rounded-md flex items-center justify-center bg-muted`}
-    >
-      <Icon
-        name="person"
-        size={size === "sm" ? 12 : size === "md" ? 16 : 24}
-        className="text-muted-foreground"
-      />
-    </div>
-  );
-}
+import { Avatar } from "../common/avatar/index.tsx";
 
 function color(id: string) {
   const colors = [
@@ -373,17 +336,24 @@ function CreditsUsedPerThread({
                 <DialogTrigger asChild>
                   <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">
-                      <AgentAvatar
-                        name={thread.agent?.name}
-                        avatar={thread.agent?.avatar}
-                        className="w-10 h-10 rounded-sm"
+                      <Avatar
+                        shape="square"
+                        url={thread.agent?.avatar}
+                        fallback={thread.agent?.name}
+                        size="base"
                       />
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium text-foreground">
                           {thread.agent?.name || "Unknown Agent"}
                         </span>
                         <div className="flex items-center gap-2">
-                          <UserAvatar member={thread.member} size="sm" />
+                          <Avatar
+                            shape="circle"
+                            url={thread.member?.profiles?.metadata?.avatar_url}
+                            fallback={thread.member?.profiles?.metadata
+                              ?.full_name || "User"}
+                            size="xs"
+                          />
                           <span className="text-xs text-muted-foreground">
                             {thread.member?.profiles?.metadata?.full_name ||
                               "Unknown User"}
@@ -446,10 +416,11 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
       </DialogHeader>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-          <AgentAvatar
-            name={thread.agent?.name}
-            avatar={thread.agent?.avatar}
-            className="w-12 h-12 rounded-sm"
+          <Avatar
+            shape="square"
+            url={thread.agent?.avatar}
+            fallback={thread.agent?.name}
+            size="lg"
           />
           <div className="flex flex-col justify-center">
             <span className="text-base font-semibold text-foreground">
@@ -468,7 +439,12 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
             User
           </span>
           <div className="flex items-center gap-3">
-            <UserAvatar member={thread.member} size="md" />
+            <Avatar
+              shape="circle"
+              url={thread.member?.profiles?.metadata?.avatar_url}
+              fallback={thread.member?.profiles?.metadata?.full_name || "User"}
+              size="sm"
+            />
             <span className="text-sm text-foreground">
               {thread.member?.profiles?.metadata?.full_name || "Unknown User"}
             </span>

@@ -388,13 +388,12 @@ function MembersViewContent() {
                       {/* Profile */}
                       <TableCell>
                         <span className="flex gap-2 items-center w-43 md:w-56">
-                          <span>
-                            <Avatar
-                              url={member.profiles.metadata.avatar_url}
-                              fallback={member.profiles.metadata.full_name}
-                              className="w-8 h-8"
-                            />
-                          </span>
+                          <Avatar
+                            shape="circle"
+                            url={member.profiles.metadata.avatar_url}
+                            fallback={member.profiles.metadata.full_name}
+                            size="sm"
+                          />
 
                           <span className="flex flex-col gap-1 min-w-0">
                             <span className="font-semibold text-xs truncate">

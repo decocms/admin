@@ -877,7 +877,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       name: ANONYMOUS_NAME,
       instructions: ANONYMOUS_INSTRUCTIONS,
       tools_set: {},
-      avatar: WELL_KNOWN_AGENTS.teamAgent.avatar,
+      avatar: pickCapybaraAvatar(),
       id: crypto.randomUUID(),
       model: DEFAULT_MODEL.id,
       views: [],

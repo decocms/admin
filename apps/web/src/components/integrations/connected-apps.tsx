@@ -6,6 +6,7 @@ import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
@@ -117,8 +118,7 @@ function TableView(
       render: (app) => (
         <div className="flex items-center gap-2">
           {app.usedBy.map((agent) => (
-            <Avatar
-              shape="square"
+            <AgentAvatar
               key={agent.avatarUrl}
               url={agent.avatarUrl}
               fallback={agent.avatarUrl}

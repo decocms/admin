@@ -1,4 +1,4 @@
-import { Avatar } from "../../common/avatar/index.tsx";
+import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
@@ -40,8 +40,7 @@ export function AgentCard(
             <Icon name="edit" />
           </Button>
         )}
-        <Avatar
-          shape="square"
+        <AgentAvatar
           url={avatar}
           fallback={name}
           className="bg-foreground p-1 border"

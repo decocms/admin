@@ -33,7 +33,7 @@ import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
 import { ChatProvider, useChatContext } from "../chat/context.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import AdvancedTab from "../settings/advanced.tsx";
@@ -67,8 +67,7 @@ const Chat = () => {
           {chat.messages.length > 0 && (
             <div className="flex justify-between items-center gap-2 w-full">
               <div className="flex items-center gap-2 w-full">
-                <Avatar
-                  shape="square"
+                <AgentAvatar
                   url={agent.avatar}
                   fallback={agent.name}
                   size="sm"

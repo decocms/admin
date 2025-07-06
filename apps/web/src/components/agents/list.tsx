@@ -48,7 +48,7 @@ import { useLocalStorage } from "../../hooks/use-local-storage.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { AgentVisibility } from "../common/agent-visibility.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
@@ -275,8 +275,7 @@ function Card({ agent }: { agent: Agent }) {
       <CardContent className="gap-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-3 w-full">
           <div className="relative w-full">
-            <Avatar
-              shape="square"
+            <AgentAvatar
               url={agent.avatar}
               fallback={agent.name}
               size="lg"
@@ -348,8 +347,7 @@ function TableView({ agents }: {
       header: "Name",
       render: (agent: Agent) => (
         <div className="flex items-center gap-2">
-          <Avatar
-            shape="square"
+          <AgentAvatar
             url={agent.avatar}
             fallback={agent.name.substring(0, 2)}
             size="sm"

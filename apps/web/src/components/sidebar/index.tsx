@@ -48,7 +48,7 @@ import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useFocusChat } from "../agents/hooks.ts";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
@@ -321,8 +321,7 @@ function SidebarThreadItem(
                   >
                     {agent
                       ? (
-                        <Avatar
-                          shape="square"
+                        <AgentAvatar
                           url={agent.avatar}
                           fallback={agent.name}
                           size="sm"

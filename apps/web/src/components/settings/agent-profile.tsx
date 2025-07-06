@@ -15,7 +15,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";
 
 const AVATAR_FILE_PATH = "assets/avatars";
@@ -116,8 +116,7 @@ function PromptTab() {
                               )
                               : (
                                 <>
-                                  <Avatar
-                                    shape="square"
+                                  <AgentAvatar
                                     url={field.value || agent.avatar}
                                     fallback={agent.name}
                                     size="xl"

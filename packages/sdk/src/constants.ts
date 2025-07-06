@@ -6,6 +6,7 @@
  * it will use the localhost version.
  */
 
+import { pickCapybaraAvatar } from "@deco/ai/capybaras";
 import type { Agent } from "./models/agent.ts";
 import type { Integration } from "./models/mcp.ts";
 
@@ -213,7 +214,7 @@ export const DEFAULT_MEMORY = {
 
 export const NEW_AGENT_TEMPLATE: Omit<Agent, "id"> = {
   name: "Untitled",
-  avatar: "https://assets.webdraw.app/uploads/capy-5.png",
+  avatar: pickCapybaraAvatar(12),
   description: "",
   model: DEFAULT_MODEL.id,
   visibility: "WORKSPACE",
@@ -235,7 +236,7 @@ export const WELL_KNOWN_AGENTS = {
   setupAgent: {
     id: "setupAgent",
     name: "Setup agent",
-    avatar: "https://assets.webdraw.app/uploads/capy-5.png",
+    avatar: pickCapybaraAvatar(12),
     description: "I can help you with this setup.",
     model: DEFAULT_MODEL.id,
     visibility: "PUBLIC",
@@ -257,7 +258,7 @@ check if the agent is active and configure the agent.
   promptAgent: {
     id: "promptAgent",
     name: "Prompt Agent",
-    avatar: "https://assets.webdraw.app/uploads/capy-5.png",
+    avatar: pickCapybaraAvatar(12),
     description: "I can help you with this prompt.",
     model: DEFAULT_MODEL.id,
     visibility: "PUBLIC",

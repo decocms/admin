@@ -32,7 +32,7 @@ import { useRef, useState } from "react";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 // import { Channels } from "./channels.tsx";
@@ -172,8 +172,7 @@ function SettingsTab() {
                                   )
                                   : (
                                     <>
-                                      <Avatar
-                                        shape="square"
+                                      <AgentAvatar
                                         url={field.value || agent.avatar}
                                         fallback={agent.name}
                                         size="xl"

@@ -7,6 +7,7 @@ import {
 import { useMemo } from "react";
 import { useParams } from "react-router";
 import { Avatar } from "../avatar/index.tsx";
+import { AgentAvatar } from "../avatar/agent.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
 import { format } from "date-fns";
@@ -29,8 +30,7 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <Avatar
-            shape="square"
+          <AgentAvatar
             url={agent?.avatar}
             fallback={agent?.name ?? agentId ?? "Unknown"}
             size="sm"

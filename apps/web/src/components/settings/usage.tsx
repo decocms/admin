@@ -37,6 +37,7 @@ import { Label, Pie, PieChart } from "recharts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 
 function color(id: string) {
   const colors = [
@@ -336,8 +337,7 @@ function CreditsUsedPerThread({
                 <DialogTrigger asChild>
                   <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">
-                      <Avatar
-                        shape="square"
+                      <AgentAvatar
                         url={thread.agent?.avatar}
                         fallback={thread.agent?.name}
                         size="base"
@@ -416,8 +416,7 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
       </DialogHeader>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-          <Avatar
-            shape="square"
+          <AgentAvatar
             url={thread.agent?.avatar}
             fallback={thread.agent?.name}
             size="lg"

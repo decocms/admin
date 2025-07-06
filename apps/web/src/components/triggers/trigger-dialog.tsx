@@ -22,7 +22,7 @@ import {
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
 import { useState } from "react";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { CronTriggerForm } from "./cron-trigger-form.tsx";
 import { WebhookTriggerForm } from "./webhook-trigger-form.tsx";
@@ -53,8 +53,7 @@ function AgentSelect({
           {selectedAgent
             ? (
               <div className="flex items-center gap-2">
-                <Avatar
-                  shape="square"
+                <AgentAvatar
                   url={selectedAgent.avatar}
                   fallback={selectedAgent.name}
                   size="xs"
@@ -75,8 +74,7 @@ function AgentSelect({
             value={agent.id}
             className="flex items-center gap-2 px-3 py-2"
           >
-            <Avatar
-              shape="square"
+            <AgentAvatar
               url={agent.avatar}
               fallback={agent.name}
               size="xs"

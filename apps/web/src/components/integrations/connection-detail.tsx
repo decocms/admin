@@ -12,11 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@deco/ui/components/avatar.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   DropdownMenu,
@@ -545,13 +541,13 @@ function ConnectionInstanceItem(
       </div>
       <div className="flex items-center gap-[-8px] ml-2">
         {agentsUsedBy.map((agent) => (
-          <Avatar
+          <AgentAvatar
             key={agent.id}
             className="border-2 border-background -ml-2 first:ml-0"
-          >
-            <AvatarImage src={agent.avatar} alt={agent.name} />
-            <AvatarFallback>{agent.name || "Unknown agent"}</AvatarFallback>
-          </Avatar>
+            url={agent.avatar}
+            fallback={agent.name || "Unknown agent"}
+            size="base"
+          />
         ))}
         {extraCount > 0 && (
           <span className="ml-2 text-xs font-medium bg-muted rounded-full px-2 py-0.5">

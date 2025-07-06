@@ -3,7 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Suspense } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useChatContext } from "../chat/context.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
 
 export function ChatHeader() {
   return (
@@ -43,8 +43,7 @@ ChatHeader.UI = () => {
 
   return (
     <div className="flex items-center gap-3 h-10">
-      <Avatar
-        shape="square"
+      <AgentAvatar
         url={agent.avatar}
         fallback={agent.name}
         size="xs"

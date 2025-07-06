@@ -173,6 +173,7 @@ function IntegrationInfo(
       >
         <IntegrationIcon
           icon={integration.icon}
+          name={integration.name}
           className="h-10 w-10"
         />
         <span className="truncate hidden md:inline">{integration.name}</span>
@@ -182,7 +183,7 @@ function IntegrationInfo(
 
   return (
     <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
-      <IntegrationIcon className="rounded-sm h-8 w-8" />
+      <IntegrationIcon name={integrationId || "Unknown"} className="rounded-sm h-8 w-8" />
       <span className="truncate hidden md:inline">
         {integrationId || "Unknown"}
       </span>

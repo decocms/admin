@@ -60,6 +60,7 @@ function IntegrationList(
         >
           <IntegrationIcon
             icon={integration.icon}
+            name={integration.name}
             className="h-8 w-8 shrink-0"
           />
           <div className="flex flex-col min-w-0">
@@ -119,6 +120,7 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
             >
               <IntegrationIcon
                 icon={integration.icon}
+                name={integration.name}
                 className="h-8 w-8 shrink-0"
               />
               <div className="flex flex-col min-w-0 flex-1">

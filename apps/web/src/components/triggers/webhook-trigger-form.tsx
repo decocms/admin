@@ -355,6 +355,7 @@ export function WebhookTriggerForm({
                     <span className="flex items-center gap-2">
                       <IntegrationIcon
                         icon={selected?.integration.icon}
+                        name={selected?.integration.name}
                         className="h-8 w-8"
                       />
                       <span className="truncate overflow-hidden whitespace-nowrap max-w-[350px]">

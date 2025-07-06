@@ -34,16 +34,16 @@ function getColorFromString(input: string): string {
 }
 
 // CircleAvatar variants - always rounded-full
-const circleAvatarVariants = cva("", {
+const circleAvatarVariants = cva("border border-border", {
   variants: {
     size: {
-      xs: "w-6 h-6",
-      sm: "w-8 h-8",
-      base: "w-10 h-10",
-      lg: "w-12 h-12",
-      xl: "w-16 h-16",
-      "2xl": "w-20 h-20",
-      "3xl": "w-32 h-32",
+      xs: "w-6 h-6 text-sm font-semibold",
+      sm: "w-8 h-8 text-lg font-semibold",
+      base: "w-10 h-10 text-2xl font-semibold",
+      lg: "w-12 h-12 text-3xl font-semibold",
+      xl: "w-16 h-16 text-4xl font-semibold",
+      "2xl": "w-20 h-20 text-5xl font-semibold",
+      "3xl": "w-32 h-32 text-7xl font-semibold",
     },
   },
   defaultVariants: {
@@ -52,16 +52,16 @@ const circleAvatarVariants = cva("", {
 });
 
 // SquareAvatar variants - size-based roundedness
-const squareAvatarVariants = cva("", {
+const squareAvatarVariants = cva("border border-border", {
   variants: {
     size: {
-      xs: "w-6 h-6 rounded-sm",
-      sm: "w-8 h-8 rounded-md",
-      base: "w-10 h-10 rounded-lg",
-      lg: "w-12 h-12 rounded-xl",
-      xl: "w-16 h-16 rounded-2xl",
-      "2xl": "w-20 h-20 rounded-3xl",
-      "3xl": "w-32 h-32 rounded-3xl",
+      xs: "w-6 h-6 rounded-lg text-sm font-semibold",
+      sm: "w-8 h-8 rounded-xl text-lg font-semibold",
+      base: "w-10 h-10 rounded-xl text-2xl font-semibold",
+      lg: "w-12 h-12 rounded-2xl text-3xl font-semibold",
+      xl: "w-16 h-16 rounded-2xl text-4xl font-semibold",
+      "2xl": "w-20 h-20 rounded-3xl text-5xl font-semibold",
+      "3xl": "w-32 h-32 rounded-[40px] text-7xl font-semibold",
     },
   },
   defaultVariants: {
@@ -76,19 +76,9 @@ const avatarImageVariants = cva("", {
       contain: "object-contain",
       cover: "object-cover",
     },
-    roundness: {
-      full: "rounded-full",
-      sm: "rounded-sm",
-      md: "rounded-md",
-      lg: "rounded-lg",
-      xl: "rounded-xl",
-      "2xl": "rounded-2xl",
-      "3xl": "rounded-3xl",
-    },
   },
   defaultVariants: {
     objectFit: "cover",
-    roundness: "lg",
   },
 });
 
@@ -96,13 +86,13 @@ const avatarImageVariants = cva("", {
 const squareAvatarRoundnessVariants = cva("", {
   variants: {
     size: {
-      xs: "rounded-sm",
-      sm: "rounded-md",
-      base: "rounded-lg",
-      lg: "rounded-xl",
-      xl: "rounded-2xl",
-      "2xl": "rounded-3xl",
-      "3xl": "rounded-3xl",
+      xs: "rounded-lg text-sm font-semibold",
+      sm: "rounded-xl text-lg font-semibold",
+      base: "rounded-xl text-2xl font-semibold",
+      lg: "rounded-2xl text-3xl font-semibold",
+      xl: "rounded-2xl text-4xl font-semibold",
+      "2xl": "rounded-3xl text-5xl font-semibold",
+      "3xl": "rounded-[40px] text-7xl font-semibold",
     },
   },
   defaultVariants: {
@@ -117,7 +107,7 @@ interface BaseAvatarProps extends HTMLAttributes<HTMLDivElement> {
   url?: string;
   /**
    * Fallback text or element to display when the image is not available
-   * If string is provided, it will use the first two characters (typically initials)
+   * If string is provided, it will use the first character (typically first initial)
    */
   fallback: string | ReactNode;
   /**
@@ -146,7 +136,7 @@ function CircleAvatar({
 }) {
   const fallbackContent = useMemo(() => {
     if (typeof fallback === "string") {
-      return fallback.substring(0, 2).toUpperCase();
+      return fallback.substring(0, 1).toUpperCase();
     }
     return fallback;
   }, [fallback]);
@@ -171,11 +161,11 @@ function CircleAvatar({
         src={url}
         alt="Avatar"
         className={cn(
-          avatarImageVariants({ objectFit, roundness: "full" }),
+          avatarImageVariants({ objectFit }),
         )}
       />
       <AvatarFallback
-        className={cn(fallbackColor, "rounded-full")}
+        className={cn(fallbackColor, "rounded-none")}
       >
         {fallbackContent}
       </AvatarFallback>
@@ -199,7 +189,7 @@ function SquareAvatar({
 }) {
   const fallbackContent = useMemo(() => {
     if (typeof fallback === "string") {
-      return fallback.substring(0, 2).toUpperCase();
+      return fallback.substring(0, 1).toUpperCase();
     }
     return fallback;
   }, [fallback]);
@@ -224,15 +214,9 @@ function SquareAvatar({
         alt="Avatar"
         className={cn(
           avatarImageVariants({ objectFit }),
-          squareAvatarRoundnessVariants({ size }),
         )}
       />
-      <AvatarFallback
-        className={cn(
-          fallbackColor,
-          squareAvatarRoundnessVariants({ size }),
-        )}
-      >
+      <AvatarFallback className={cn(fallbackColor, "rounded-none")}>
         {fallbackContent}
       </AvatarFallback>
     </AvatarUI>

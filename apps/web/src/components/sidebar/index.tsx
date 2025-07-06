@@ -290,7 +290,7 @@ function SidebarThreadItem(
               asChild
               isActive={isActive}
               tooltip={thread.title}
-              className="h-9 w-full pr-8"
+              className="h-9 w-full -ml-1 pr-8 gap-3"
             >
               {isEditing
                 ? (
@@ -324,11 +324,11 @@ function SidebarThreadItem(
                         <AgentAvatar
                           url={agent.avatar}
                           fallback={agent.name}
-                          size="sm"
+                          size="xs"
                         />
                       )
                       : (
-                        <div className="h-4 w-4 min-w-4 rounded-sm bg-[#2A9D90] flex items-center justify-center">
+                        <div className="h-6 w-6 min-w-6 rounded-lg bg-[#2A9D90] flex items-center justify-center">
                           <Icon
                             name="edit_square"
                             className="text-white"

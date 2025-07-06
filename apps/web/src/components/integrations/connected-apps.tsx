@@ -5,8 +5,8 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { Avatar } from "../common/avatar/index.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { IntegrationInfo } from "../common/table/table-cells.tsx";
@@ -28,8 +28,7 @@ function AppCard({
     >
       <CardContent className="p-0">
         <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
-          <Avatar
-            shape="square"
+          <IntegrationAvatar
             url={app.icon}
             fallback={app.name}
             size="base"

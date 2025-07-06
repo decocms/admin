@@ -18,9 +18,10 @@ export const useCreateCustomConnection = () => {
   return useCallback(async () => {
     try {
       const result = await create.mutateAsync({
-        name: "Custom connection",
-        description: "A custom connection to a MCP server",
-        icon: "https://deco.chat/img/logo.png",
+        name: "Custom integration",
+        description: "A custom integration to a MCP server",
+        icon:
+          "https://assets.decocache.com/mcp/c25c1ce1-1319-4355-83af-d66511a5d920/integrations-empty.png",
         connection: {
           type: "HTTP",
           url: "https://example.com/mcp",

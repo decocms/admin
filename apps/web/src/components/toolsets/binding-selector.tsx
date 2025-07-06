@@ -49,6 +49,7 @@ function IntegrationListItem({
       <div className="flex items-center gap-3">
         <IntegrationIcon
           icon={integration.icon}
+          name={integration.name}
           className="h-16 w-16"
         />
         <div className="flex flex-col items-start gap-1 min-w-0">

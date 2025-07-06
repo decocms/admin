@@ -54,6 +54,7 @@ export function SetupIntegrationModal({
               <div className="grid grid-cols-[80px_1fr] items-start gap-4">
                 <IntegrationIcon
                   icon={integration?.icon}
+                  name={integration?.name}
                 />
                 <div>
                   <div className="text-sm text-muted-foreground">
@@ -138,6 +139,7 @@ function CardsView(
               <div className="grid grid-cols-[min-content_1fr] gap-4">
                 <IntegrationIcon
                   icon={integration.icon}
+                  name={integration.name}
                   className="h-10 w-10"
                 />
                 <div className="grid grid-cols-1 gap-1">
@@ -162,8 +164,8 @@ function CardsView(
 
 export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   id: "NEW_CUSTOM_CONNECTION",
-  name: "Create custom connection",
-  description: "Create a new connection with any MCP server",
+  name: "Create custom integration",
+  description: "Create a new integration with any MCP server",
   icon: "",
   provider: "deco",
 };

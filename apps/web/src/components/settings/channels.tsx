@@ -69,6 +69,7 @@ function ChannelCard(
       <div className="flex items-center gap-2">
         <IntegrationIcon
           icon={integration?.icon ?? ""}
+          name={integration?.name}
           className="w-8 h-8"
         />
 

@@ -129,6 +129,7 @@ export function IntegrationListItem({
           <div>
             <IntegrationIcon
               icon={integration.icon}
+              name={integration.name}
               className="h-9 w-9"
             />
           </div>

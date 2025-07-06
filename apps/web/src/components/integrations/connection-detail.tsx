@@ -531,6 +531,7 @@ function ConnectionInstanceItem(
     >
       <IntegrationIcon
         icon={instance.icon}
+        name={instance.name}
         className="h-10 w-10"
       />
       <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
@@ -621,6 +622,7 @@ function Overview({ data, appKey }: {
       <div className="flex items-center gap-4 h-12">
         <IntegrationIcon
           icon={data.info?.icon}
+          name={data.info?.name}
           className="h-12 w-12"
         />
         <div className="h-12 flex flex-col gap-1">
@@ -893,6 +895,7 @@ function ToolsInspector({ data, selectedConnectionId }: {
       <SelectItem key={instance.id} value={instance.id}>
         <IntegrationIcon
           icon={instance.icon}
+          name={instance.name}
           className="w-8 h-8 flex-shrink-0"
         />
         {instance.name}
@@ -1060,7 +1063,8 @@ export default function Page() {
                   <div className="flex items-center gap-2">
                     <IntegrationIcon
                       icon={info.icon}
-                      className="h-7 w-7"
+                      name={info.name}
+                      size="xs"
                     />
                     <span>{info.name}</span>
                   </div>

@@ -102,7 +102,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
     return null;
   }
 
-  const icon = integration.icon || "icon://conversion_path";
+  const icon = integration.icon || "icon://linked_services";
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -115,11 +115,11 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           }}
           asChild
         >
-          <div className="w-8 h-8 flex items-center justify-center border border-input rounded-lg overflow-hidden">
+          <div className="w-8 h-8 flex items-center justify-center">
             <IntegrationIcon
               icon={icon}
+              size="xs"
               name={integration.name}
-              className="h-full w-full border-none rounded-none"
             />
           </div>
         </TooltipTrigger>
@@ -138,7 +138,7 @@ function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
     .slice(0, max ?? Infinity);
 
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex gap-0 flex-wrap">
       {integrations.map(([toolSetId]) => (
         <ErrorBoundary key={toolSetId} fallback={null}>
           <Suspense fallback={null}>

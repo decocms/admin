@@ -241,14 +241,6 @@ function ActivityStatusCell({
     return `${diffInYears} year${diffInYears === 1 ? "" : "s"} ago`;
   }
 
-  // Determine if user is currently active (within last 5 minutes)
-  function isUserActive(date: Date): boolean {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = diffInMs / (1000 * 60);
-    return diffInMinutes <= 5;
-  }
-
   if (!lastActivity) {
     return (
       <span className={`text-muted-foreground ${className}`}>
@@ -261,8 +253,8 @@ function ActivityStatusCell({
     ? new Date(lastActivity)
     : lastActivity;
 
-  const isActive = isUserActive(activityDate);
   const relativeTime = formatRelativeTime(activityDate);
+  const isActive = relativeTime === "Active";
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>

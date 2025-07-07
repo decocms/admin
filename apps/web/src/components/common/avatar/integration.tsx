@@ -1,8 +1,7 @@
 import { useFile } from "@deco/sdk";
 import { Avatar, type AvatarProps } from "./index.tsx";
 
-const DEFAULT_URL =
-  "https://assets.decocache.com/mcp/c25c1ce1-1319-4355-83af-d66511a5d920/integrations-empty.png";
+const DEFAULT_URL = "icon://linked_services";
 
 export interface IntegrationAvatarProps extends Omit<AvatarProps, "shape"> {
   /**
@@ -33,7 +32,8 @@ export function IntegrationAvatar({
   // Check if URL is already a valid HTTPS/HTTP URL or is the default
   const isValidUrl = actualUrl.startsWith("https://") ||
     actualUrl.startsWith("http://") ||
-    actualUrl.startsWith("/");
+    actualUrl.startsWith("/") ||
+    actualUrl.startsWith("icon://");
 
   // Use useFile hook only for non-URL paths (excluding the default URL)
   const { data: resolvedFileUrl } = useFile(
@@ -51,6 +51,7 @@ export function IntegrationAvatar({
       size={size}
       objectFit={objectFit}
       url={finalUrl}
+      muted={props.muted || finalUrl?.startsWith("icon://")}
       {...props}
     />
   );

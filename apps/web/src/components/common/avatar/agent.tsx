@@ -1,4 +1,4 @@
-import { useFile } from "@deco/sdk";
+import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Avatar, type AvatarProps } from "./index.tsx";
 
 export interface AgentAvatarProps extends Omit<AvatarProps, "shape"> {
@@ -22,17 +22,34 @@ export function AgentAvatar({
   url,
   size = "base",
   objectFit = "cover",
+  fallback,
   ...props
 }: AgentAvatarProps) {
+  const isDeleted = !fallback && !url;
+  const urlWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
+    ? "icon://edit_square"
+    : isDeleted
+    ? "icon://robot_2"
+    : url;
+  const fallbackWithDefaults = fallback === WELL_KNOWN_AGENT_IDS.teamAgent
+    ? "New chat"
+    : isDeleted
+    ? "Deleted agent"
+    : fallback;
+
   // Check if URL is already a valid HTTPS URL
-  const isValidUrl = url?.startsWith("https://") || url?.startsWith("http://");
+  const isValidUrl = urlWithDefaults?.startsWith("https://") ||
+    urlWithDefaults?.startsWith("http://") ||
+    urlWithDefaults?.startsWith("icon://");
 
   // Use useFile hook only for non-URL paths
-  const { data: resolvedFileUrl } = useFile(url && !isValidUrl ? url : "");
+  const { data: resolvedFileUrl } = useFile(
+    urlWithDefaults && !isValidUrl ? urlWithDefaults : "",
+  );
 
   // Determine the final URL to use
   const finalUrl = isValidUrl
-    ? url
+    ? urlWithDefaults
     : (typeof resolvedFileUrl === "string" ? resolvedFileUrl : undefined);
 
   return (
@@ -41,6 +58,8 @@ export function AgentAvatar({
       size={size}
       objectFit={objectFit}
       url={finalUrl}
+      fallback={fallbackWithDefaults}
+      muted={props.muted || isDeleted}
       {...props}
     />
   );

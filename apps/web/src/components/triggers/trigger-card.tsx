@@ -6,6 +6,7 @@ import { useState } from "react";
 import { TriggerActions } from "./trigger-actions.tsx";
 import { TriggerType } from "./trigger-type.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 
 export type Trigger = z.infer<typeof TriggerOutputSchema>;
 
@@ -36,14 +37,11 @@ export function TriggerCard({ trigger, onClick }: {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative w-6 h-6 rounded-full overflow-hidden bg-muted">
-            <img
-              src={trigger.user?.metadata?.avatar_url ||
-                "https://ui-avatars.com/api/?name=User"}
-              alt="User avatar"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <UserAvatar
+            url={trigger.user?.metadata?.avatar_url}
+            fallback={trigger.user?.metadata?.full_name || "User"}
+            size="xs"
+          />
           <span className="text-sm text-muted-foreground">
             {trigger.user?.metadata?.full_name || "Anonymous"}
           </span>

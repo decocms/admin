@@ -43,7 +43,7 @@ import { useGitHubStars } from "../../hooks/use-github-stars.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
 
 /** Wrapped component to be suspended */
@@ -290,14 +290,13 @@ function LoggedUser() {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
-        <SidebarMenuButton className="cursor-pointer gap-2 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
-          <Avatar
-            shape="circle"
+        <SidebarMenuButton className="ml-1 cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
+          <UserAvatar
             url={userAvatarURL}
             fallback={userName}
             size="xs"
           />
-          <span className="text-xs grow">{user.metadata?.full_name}</span>
+          <span className="text-sm grow">{user.metadata?.full_name}</span>
 
           <Suspense fallback={null}>
             <div className="size-3 flex items-center">

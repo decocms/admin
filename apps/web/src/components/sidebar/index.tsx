@@ -319,23 +319,12 @@ function SidebarThreadItem(
                     to={buildThreadUrl(thread)}
                     onClick={() => onThreadClick(thread)}
                   >
-                    {agent
-                      ? (
-                        <AgentAvatar
-                          url={agent.avatar}
-                          fallback={agent.name}
-                          size="xs"
-                        />
-                      )
-                      : (
-                        <div className="h-6 w-6 min-w-6 rounded-lg bg-[#2A9D90] flex items-center justify-center">
-                          <Icon
-                            name="edit_square"
-                            className="text-white"
-                            size={12}
-                          />
-                        </div>
-                      )}
+                    <AgentAvatar
+                      url={agent?.avatar}
+                      fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
+                      size="xs"
+                    />
+
                     <span className="truncate">
                       {thread.title}
                     </span>

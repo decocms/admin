@@ -1,16 +1,17 @@
 import { useAgents, useTeamMembers, useTeams } from "@deco/sdk";
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { format } from "date-fns";
 import { useMemo } from "react";
 import { useParams } from "react-router";
-import { Avatar } from "../avatar/index.tsx";
-import { AgentAvatar } from "../avatar/agent.tsx";
 import { useUser } from "../../../hooks/use-user.ts";
 import { IntegrationIcon } from "../../integrations/common.tsx";
-import { format } from "date-fns";
+import { AgentAvatar } from "../avatar/agent.tsx";
+import { UserAvatar } from "../avatar/user.tsx";
 
 interface AgentInfoProps {
   agentId?: string;
@@ -32,11 +33,17 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
         >
           <AgentAvatar
             url={agent?.avatar}
-            fallback={agent?.name ?? agentId ?? "Unknown"}
+            fallback={agentId === WELL_KNOWN_AGENT_IDS.teamAgent
+              ? agentId
+              : agent?.name}
             size="sm"
           />
           <span className="truncate hidden md:inline">
-            {agent ? agent.name : agentId || "Unknown"}
+            {agentId === WELL_KNOWN_AGENT_IDS.teamAgent
+              ? "New chat"
+              : agent
+              ? agent.name
+              : "Deleted agent"}
           </span>
         </div>
       </TooltipTrigger>
@@ -92,8 +99,7 @@ function UserInfo({
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <Avatar
-            shape="circle"
+          <UserAvatar
             url={avatarUrl}
             fallback={name}
             size="sm"
@@ -183,7 +189,10 @@ function IntegrationInfo(
 
   return (
     <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
-      <IntegrationIcon name={integrationId || "Unknown"} className="rounded-sm h-8 w-8" />
+      <IntegrationIcon
+        name={integrationId || "Unknown"}
+        className="rounded-sm h-8 w-8"
+      />
       <span className="truncate hidden md:inline">
         {integrationId || "Unknown"}
       </span>

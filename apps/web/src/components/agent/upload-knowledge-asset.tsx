@@ -79,14 +79,14 @@ export function KnowledgeBaseFileList(
   if (files.length === 0) return null;
 
   return (
-    <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+    <div className="max-h-40 overflow-y-auto border rounded-xl divide-y">
       {files.map((file) => (
         <div
           key={file.file_url ?? file.name}
           className="flex items-center gap-3 justify-between p-2 h-14"
         >
           {/* icon */}
-          <div className="w-10 h-10 p-2 rounded bg-primary/10 flex-shrink-0">
+          <div className="w-10 h-10 p-2 rounded-xl bg-primary/10 flex-shrink-0">
             <FileIcon filename={file.file_url ?? file.name} />
           </div>
 

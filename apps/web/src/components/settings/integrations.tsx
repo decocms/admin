@@ -111,7 +111,7 @@ function Connections() {
         : (
           <>
             <div className="flex gap-2 w-full">
-              <div className="border border-border rounded-lg w-full">
+              <div className="border border-border rounded-xl w-full">
                 <div className="flex items-center h-10 px-4 gap-2">
                   <Icon
                     name="search"

@@ -11,7 +11,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 import { countries } from "@deco/sdk/utils" with { type: "json" };
 import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
 import { useUser } from "../../hooks/use-user.ts";
@@ -164,8 +164,7 @@ export function ProfileSettings(
           )
           : (
             <div className="flex flex-col items-center gap-4 py-4">
-              <Avatar
-                shape="circle"
+              <UserAvatar
                 url={profile?.metadata?.avatar_url}
                 fallback={profile?.metadata?.full_name || profile?.email}
                 size="2xl"

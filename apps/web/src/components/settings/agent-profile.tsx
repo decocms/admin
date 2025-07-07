@@ -86,8 +86,8 @@ function PromptTab() {
             onSubmit={handleSubmit}
             className="flex flex-col gap-6 h-full"
           >
-            <div className="flex flex-col @[350px]:flex-row gap-3 w-full">
-              <div className="flex flex-col @[350px]:flex-row items-start @[350px]:items-center gap-6 flex-1">
+            <div className="flex flex-col @[640px]:flex-row gap-3 w-full">
+              <div className="flex flex-col @[640px]:flex-row items-start @[640px]:items-center gap-6 flex-1">
                 <FormField
                   control={form.control}
                   name="avatar"
@@ -103,7 +103,7 @@ function PromptTab() {
                         />
                         <FormControl>
                           <div
-                            className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
+                            className="w-16 h-16 group aspect-square flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
                             onClick={triggerFileInput}
                           >
                             {isUploading
@@ -168,7 +168,7 @@ function PromptTab() {
                   />
                 </div>
               </div>
-              <div className="shrink-0 w-full @[350px]:w-auto">
+              <div className="shrink-0 w-full @[640px]:w-auto">
                 <FormField
                   name="model"
                   render={({ field }) => {

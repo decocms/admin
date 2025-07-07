@@ -532,7 +532,6 @@ function ConnectionInstanceItem(
       <IntegrationIcon
         icon={instance.icon}
         name={instance.name}
-        className="h-10 w-10"
       />
       <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
         <h5 className="text-sm font-medium truncate">{instance.name}</h5>
@@ -623,7 +622,7 @@ function Overview({ data, appKey }: {
         <IntegrationIcon
           icon={data.info?.icon}
           name={data.info?.name}
-          className="h-12 w-12"
+          size="lg"
         />
         <div className="h-12 flex flex-col gap-1">
           <h5 className="text-xl font-medium">{data.info?.name}</h5>
@@ -896,7 +895,8 @@ function ToolsInspector({ data, selectedConnectionId }: {
         <IntegrationIcon
           icon={instance.icon}
           name={instance.name}
-          className="w-8 h-8 flex-shrink-0"
+          size="xs"
+          className="flex-shrink-0"
         />
         {instance.name}
       </SelectItem>

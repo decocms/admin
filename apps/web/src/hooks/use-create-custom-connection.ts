@@ -20,8 +20,7 @@ export const useCreateCustomConnection = () => {
       const result = await create.mutateAsync({
         name: "Custom integration",
         description: "A custom integration to a MCP server",
-        icon:
-          "https://assets.decocache.com/mcp/c25c1ce1-1319-4355-83af-d66511a5d920/integrations-empty.png",
+        icon: "icon://linked_services",
         connection: {
           type: "HTTP",
           url: "https://example.com/mcp",

@@ -37,19 +37,11 @@ import {
   useState,
 } from "react";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { Avatar } from "../common/avatar/index.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { RolesDropdown } from "../common/roles-dropdown.tsx";
-
-function MemberTitle() {
-  return (
-    <div className="items-center justify-between hidden md:flex">
-      <h2 className="text-2xl">Members</h2>
-    </div>
-  );
-}
 
 function MemberTableHeader(
   { onChange, disabled }: {
@@ -72,7 +64,6 @@ function MemberTableHeader(
 function MembersViewLoading() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <MemberTitle />
       <MemberTableHeader disabled onChange={() => {}} />
       <div className="flex justify-center p-8">
         <Spinner />
@@ -266,8 +257,6 @@ function MembersViewContent() {
 
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <MemberTitle />
-
       <div className="flex flex-col gap-4">
         <MemberTableHeader onChange={setQuery} />
         <Table>
@@ -324,16 +313,21 @@ function MembersViewContent() {
                     <TableRow key={invite.id} className="px-4 py-1.5">
                       {/* Profile */}
                       <TableCell>
-                        <span className="flex gap-2 items-center w-43 md:w-56">
-                          <span className="flex flex-col gap-1 min-w-0">
-                            <span className="font-semibold text-xs truncate">
+                        <div className="flex gap-2 items-center w-43 md:w-56">
+                          <UserAvatar
+                            muted
+                            fallback={invite.email}
+                            size="sm"
+                          />
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <div className="font-semibold text-xs truncate">
                               {invite.email}
-                            </span>
-                            <span className="text-[10px] leading-3.5 text-muted-foreground truncate">
+                            </div>
+                            <div className="text-[10px] leading-3.5 text-muted-foreground truncate">
                               Pending
-                            </span>
-                          </span>
-                        </span>
+                            </div>
+                          </div>
+                        </div>
                       </TableCell>
                       {/* Roles */}
                       <TableCell>
@@ -388,8 +382,7 @@ function MembersViewContent() {
                       {/* Profile */}
                       <TableCell>
                         <span className="flex gap-2 items-center w-43 md:w-56">
-                          <Avatar
-                            shape="circle"
+                          <UserAvatar
                             url={member.profiles.metadata.avatar_url}
                             fallback={member.profiles.metadata.full_name}
                             size="sm"

@@ -36,7 +36,7 @@ import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
 import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { Avatar } from "../common/avatar/index.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 
 function color(id: string) {
@@ -347,8 +347,7 @@ function CreditsUsedPerThread({
                           {thread.agent?.name || "Unknown Agent"}
                         </span>
                         <div className="flex items-center gap-2">
-                          <Avatar
-                            shape="circle"
+                          <UserAvatar
                             url={thread.member?.profiles?.metadata?.avatar_url}
                             fallback={thread.member?.profiles?.metadata
                               ?.full_name || "User"}
@@ -438,8 +437,7 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
             User
           </span>
           <div className="flex items-center gap-3">
-            <Avatar
-              shape="circle"
+            <UserAvatar
               url={thread.member?.profiles?.metadata?.avatar_url}
               fallback={thread.member?.profiles?.metadata?.full_name || "User"}
               size="sm"

@@ -1,5 +1,4 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { Suspense } from "react";
@@ -25,7 +24,7 @@ export function IntegrationIcon(
       <IntegrationAvatar
         url={icon}
         size={size}
-        fallback={name || "Integration"}
+        fallback={name}
         className={className}
       />
     </Suspense>

@@ -9,7 +9,7 @@ interface Options {
 }
 
 function slugify(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+  return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 }
 
 /**

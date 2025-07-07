@@ -1,7 +1,7 @@
 import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from "jose";
 export type { JWTPayload };
 
-const { env: _env } = await import("cloudflare:workers");
+const { env } = await import("cloudflare:workers");
 export const alg = "RSASSA-PKCS1-v1_5";
 export const hash = "SHA-256";
 
@@ -26,9 +26,9 @@ const generateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
   ]);
 };
 
-export const parseJWK = (jwk: string): JsonWebKey => JSON.parse(atob(jwk));
 export const stringifyJWK = (jwk: JsonWebKey): string =>
   btoa(JSON.stringify(jwk));
+export const parseJWK = (jwk: string): JsonWebKey => JSON.parse(atob(jwk));
 export const importJWK = (
   jwk: JsonWebKey,
   usages?: string[],
@@ -43,12 +43,12 @@ export const importJWK = (
   );
 
 const getOrGenerateKeyPair = async (): Promise<[JsonWebKey, JsonWebKey]> => {
-  const env = _env as {
+  const _env = env as {
     DECO_CHAT_API_JWT_PUBLIC_KEY?: string;
     DECO_CHAT_API_JWT_PRIVATE_KEY?: string;
   };
-  const publicKeyEnvValue = env[PUBLIC_KEY_ENV_VAR];
-  const privateKeyEnvValue = env[PRIVATE_KEY_ENV_VAR];
+  const publicKeyEnvValue = _env[PUBLIC_KEY_ENV_VAR];
+  const privateKeyEnvValue = _env[PRIVATE_KEY_ENV_VAR];
   if (!publicKeyEnvValue || !privateKeyEnvValue) {
     return await generateKeyPair();
   }
@@ -82,12 +82,15 @@ export async function createJWT<
   secret: string | CryptoKey,
   expiresIn?: number | string | Date,
 ): Promise<string> {
+  const [alg, signatureSecret] = typeof secret === "string"
+    ? ["RS256", new TextEncoder().encode(secret)]
+    : ["HS256", secret];
   const jwt = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setProtectedHeader({ alg, typ: "JWT" })
     .setIssuedAt()
     .setExpirationTime(expiresIn ?? "1h")
     .sign(
-      typeof secret === "string" ? new TextEncoder().encode(secret) : secret,
+      signatureSecret,
     );
 
   return jwt;
@@ -115,7 +118,7 @@ export type JwtPayloadWithClaims<
 export interface JwtVerifier {
   verify: <TClaims extends Record<string, unknown> = Record<string, unknown>>(
     jwt: string,
-  ) => Promise<JwtPayloadWithClaims<TClaims>>;
+  ) => Promise<JwtPayloadWithClaims<TClaims> | undefined>;
   decode: <TClaims extends Record<string, unknown> = Record<string, unknown>>(
     jwt: string,
   ) => JwtPayloadWithClaims<TClaims>;
@@ -137,8 +140,12 @@ const newJwtVerifier = (key: CryptoKey): JwtVerifier => {
     verify: async <
       TClaims extends Record<string, unknown> = Record<string, unknown>,
     >(str: string) => {
-      const result = await jwtVerify(str, key);
-      return result.payload as JwtPayloadWithClaims<TClaims>;
+      try {
+        const result = await jwtVerify(str, key);
+        return result.payload as JwtPayloadWithClaims<TClaims>;
+      } catch {
+        return undefined;
+      }
     },
     decode: <TClaims extends Record<string, unknown> = Record<string, unknown>>(
       str: string,
@@ -191,7 +198,7 @@ export const JwtIssuer = {
     return {
       ...verifier,
       issue: (payload) => {
-        return createJWT({ ...payload, issuer }, priv);
+        return createJWT({ ...payload, iss: issuer }, priv);
       },
     };
   },

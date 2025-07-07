@@ -82,12 +82,15 @@ export async function createJWT<
   secret: string | CryptoKey,
   expiresIn?: number | string | Date,
 ): Promise<string> {
+  const [alg, signatureSecret] = typeof secret === "string"
+    ? ["RS256", new TextEncoder().encode(secret)]
+    : ["HS256", secret];
   const jwt = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setProtectedHeader({ alg, typ: "JWT" })
     .setIssuedAt()
     .setExpirationTime(expiresIn ?? "1h")
     .sign(
-      typeof secret === "string" ? new TextEncoder().encode(secret) : secret,
+      signatureSecret,
     );
 
   return jwt;
@@ -195,7 +198,7 @@ export const JwtIssuer = {
     return {
       ...verifier,
       issue: (payload) => {
-        return createJWT({ ...payload, issuer }, priv);
+        return createJWT({ ...payload, iss: issuer }, priv);
       },
     };
   },

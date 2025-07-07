@@ -608,10 +608,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   _token() {
-    return JwtIssuer.forKeyPair({
-      public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
-      private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
-    }).then((issuer) =>
+    const keyPair = this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
+    return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
       issuer.issue({
         sub: `agent:${this.id}`,
         aud: this.workspace,

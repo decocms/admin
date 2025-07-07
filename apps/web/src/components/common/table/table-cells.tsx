@@ -258,7 +258,7 @@ function ActivityStatusCell({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {isActive && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+      {isActive && <div className="w-2 h-2 bg-success rounded-full"></div>}
       <span className={isActive ? "text-foreground" : "text-muted-foreground"}>
         {relativeTime}
       </span>

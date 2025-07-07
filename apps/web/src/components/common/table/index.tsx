@@ -35,7 +35,7 @@ export function Table<T>({
   onSort,
   onRowClick,
 }: TableProps<T>) {
-  function renderSortIcon(key: string, isActive: boolean) {
+  function renderSortIcon(_key: string, isActive: boolean) {
     // Only show icon if this column is actively sorted
     if (!isActive) {
       return null;
@@ -106,7 +106,7 @@ export function Table<T>({
                 ? () => onRowClick(row)
                 : undefined}
             >
-              {columns.map((col, idx) => (
+              {columns.map((col, _idx) => (
                 <TableCell
                   key={col.id}
                   className={"px-4 py-2 " +

@@ -86,7 +86,11 @@ type MemberTableRow = {
   isPending?: boolean;
   userId?: string; // For actual members, undefined for pending invites
   member?: Member;
-  invite?: any;
+  invite?: {
+    id: string | number;
+    email: string;
+    roles: Array<{ id: number; name: string }>;
+  };
 };
 
 function MembersViewContent() {
@@ -197,7 +201,7 @@ function MembersViewContent() {
             return (
               <UserInfo
                 userId={row.userId}
-                showDetails={true}
+                showDetails
                 maxWidth="250px"
               />
             );
@@ -209,7 +213,7 @@ function MembersViewContent() {
               <UserAvatar
                 fallback={row.email}
                 size="sm"
-                muted={true}
+                muted
               />
               <div className="flex flex-col items-start text-left leading-tight w-full">
                 <span

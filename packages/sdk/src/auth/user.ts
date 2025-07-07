@@ -18,6 +18,15 @@ const cache = new LRUCache<string, AuthUser>({
 
 const MILLISECONDS = 1e3;
 
+export const userFromJWT = async (
+  jwt: string,
+  keyPair?: JwtIssuerKeyPair,
+): Promise<Principal | undefined> => {
+  const jwtIssuer = await JwtIssuer.forKeyPair(keyPair);
+  const payload = await jwtIssuer.verify(jwt);
+  return payload;
+};
+
 export async function getUserBySupabaseCookie(
   request: Request,
   supabaseServerToken: string | SupabaseClient,

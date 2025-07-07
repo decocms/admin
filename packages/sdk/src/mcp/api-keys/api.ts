@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { JwtIssuer } from "../../auth/jwt.ts";
+import { userFromJWT } from "../../auth/user.ts";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
 import type { QueryResult } from "../../storage/index.ts";
 import {
@@ -6,7 +8,6 @@ import {
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
-import { JwtIssuer } from "../../auth/jwt.ts";
 
 const SELECT_API_KEY_QUERY = `
   id,
@@ -287,6 +288,50 @@ export const disableApiKey = createTool({
     }
 
     return mapApiKey(apiKey);
+  },
+});
+
+export const checkAccess = createTool({
+  name: "API_KEYS_CHECK_ACCESS",
+  description: "Check if an API key has access to a resource",
+  inputSchema: z.object({
+    key: z.string().optional().describe(
+      "The API key to check access for, if not provided, the current key from context will be used",
+    ),
+    tools: z.array(z.string()).describe("All tools that wants to check access"),
+  }),
+  outputSchema: z.object({
+    access: z.record(z.string(), z.boolean()),
+  }),
+  handler: async ({ key, tools }, c) => {
+    assertHasWorkspace(c);
+    c.resourceAccess.grant(); // this is public because it uses the current key from context
+
+    let user = c.user;
+    if (key) {
+      const fromJWT = await userFromJWT(
+        key,
+        c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+          c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+          ? {
+            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
+          : undefined,
+      );
+      user = fromJWT ?? user;
+    }
+    const hasAccess = await Promise.all(tools.map(async (tool) => {
+      return [
+        tool,
+        await assertWorkspaceResourceAccess(tool, c).then(() => true).catch(
+          () => false,
+        ),
+      ];
+    }));
+    return {
+      access: Object.fromEntries(hasAccess),
+    };
   },
 });
 

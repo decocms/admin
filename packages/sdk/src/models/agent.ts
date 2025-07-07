@@ -95,9 +95,9 @@ export const AgentSchema = z.object({
   access: z.string().optional().nullable().describe(
     "Access control by role",
   ),
-  temperature: z.number().optional().nullable().describe(
-    "Temperature of the LLM",
-  ),
+  temperature: z.number().min(0).max(1).optional().nullable().describe(
+    "Temperature of the LLM. Must be between 0 and 1.",
+  )
 });
 
 const MCPConnectionSchema = z.discriminatedUnion("type", [

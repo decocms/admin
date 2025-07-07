@@ -1,8 +1,9 @@
 import {
-  useBindings,
+  listTools,
   useChannels,
   useConnectionChannels,
   useCreateChannel,
+  useIntegrations,
   useJoinChannel,
   useLeaveChannel,
   useRemoveChannel,
@@ -18,8 +19,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -35,10 +34,14 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
+import { InstalledConnections } from "../integrations/installed-connections.tsx";
+import { Dialog } from "@deco/ui/components/dialog.tsx";
+import { DialogTrigger } from "@deco/ui/components/dialog.tsx";
+import { DialogContent } from "@deco/ui/components/dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 
 interface ChannelsProps {
   className?: string;
@@ -82,14 +85,6 @@ function ChannelCard(
 }
 
 export function Channels({ className }: ChannelsProps) {
-  const {
-    data: bindings,
-    isLoading: isLoadingBindings,
-    totalIntegrations,
-    processedIntegrations,
-  } = useBindings(
-    "Channel",
-  );
   const [discriminator, setDiscriminator] = useState("");
   const [name, setName] = useState<string | undefined>(undefined);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -105,11 +100,8 @@ export function Channels({ className }: ChannelsProps) {
   const leaveChannelMutation = useLeaveChannel();
   const removeChannelMutation = useRemoveChannel();
   const { data: channels, isLoading: isLoadingChannels } = useChannels();
-  const workspaceLink = useWorkspaceLink();
 
-  const [selectedBindingId, setSelectedBindingId] = useState<string | null>(
-    null,
-  );
+  const [integration, setIntegration] = useState<Integration | null>(null);
   const allChannels = channels?.channels || [];
   const agentChannels = useMemo(
     () => allChannels.filter((channel) => channel.agentIds.includes(agent.id)),
@@ -119,10 +111,7 @@ export function Channels({ className }: ChannelsProps) {
     () => allChannels.filter((channel) => !channel.agentIds.includes(agent.id)),
     [allChannels, agent.id],
   );
-  const selectedBinding = useMemo(
-    () => bindings?.find((b) => b.id === selectedBindingId),
-    [bindings, selectedBindingId],
-  );
+  const { data: integrations } = useIntegrations();
 
   // Helper functions to check if specific channel is being processed
   const isLeavingChannel = (channelId: string) => {
@@ -141,7 +130,7 @@ export function Channels({ className }: ChannelsProps) {
   };
 
   const handleJoinChannel = (channelId: string) => {
-    const channel = availableChannels.find((c) => c.id === channelId);
+    const channel = availableChannels.find((c: Channel) => c.id === channelId);
     if (!channel) return;
 
     const isUsedByOtherAgent = channel.agentIds.length > 0 &&
@@ -190,7 +179,7 @@ export function Channels({ className }: ChannelsProps) {
   };
 
   const handleLeaveChannel = (channelId: string) => {
-    const channel = agentChannels.find((c) => c.id === channelId);
+    const channel = agentChannels.find((c: Channel) => c.id === channelId);
     if (!channel) return;
 
     leaveChannelMutation.mutate({
@@ -209,7 +198,9 @@ export function Channels({ className }: ChannelsProps) {
   };
 
   const handleCreateChannel = (bindingId: string) => {
-    const selectedBinding = bindings?.find((b) => b.id === bindingId);
+    const selectedBinding = integrations?.find((b: Integration) =>
+      b.id === bindingId
+    );
     if (!selectedBinding) {
       toast.error("Please select a integration first");
       return;
@@ -279,7 +270,7 @@ export function Channels({ className }: ChannelsProps) {
         </div>
       </div>
 
-      {agentChannels.map((channel) => {
+      {agentChannels.map((channel: Channel) => {
         if (!channel) return null;
         return (
           <ChannelCard key={channel.id} channel={channel} variant="agent">
@@ -309,8 +300,8 @@ export function Channels({ className }: ChannelsProps) {
           <p className="text-sm font-medium text-foreground">
             Available Channels
           </p>
-          {availableChannels.map((channel) => {
-            const isInAgentChannels = agentChannels.some((c) =>
+          {availableChannels.map((channel: Channel) => {
+            const isInAgentChannels = agentChannels.some((c: Channel) =>
               c.id === channel.id
             );
             if (!channel) return null;
@@ -358,137 +349,68 @@ export function Channels({ className }: ChannelsProps) {
 
       {!showCreateForm ? null : (
         <>
-          {!isLoadingBindings && (!bindings || bindings.length === 0) && (
-            <Alert>
-              <AlertDescription>
-                No channel integrations available. You need to install
-                integrations first.
-                <Link
-                  to={workspaceLink("/connections")}
-                  className="ml-2 text-primary hover:underline"
-                >
-                  Go to Integrations →
-                </Link>
-              </AlertDescription>
-            </Alert>
-          )}
+          <FormItem>
+            <div className="flex items-center justify-between">
+              <FormLabel>Integration</FormLabel>
+            </div>
+            <FormControl>
+              <IntegrationSelect
+                integration={integration}
+                setIntegration={setIntegration}
+              />
+            </FormControl>
+          </FormItem>
 
-          {/* Show waiting message when loading but no integrations available yet */}
-          {isLoadingBindings && (!bindings || bindings.length === 0) &&
-            totalIntegrations > 0 && (
-            <Alert>
-              <AlertDescription>
-                Waiting for channel integrations to load...
-                ({processedIntegrations}/{totalIntegrations} processed)
-              </AlertDescription>
-            </Alert>
-          )}
+          <div className="space-y-2">
+            {integration &&
+              (
+                <ConnectionChannels
+                  key={integration.id}
+                  binding={integration}
+                  discriminator={discriminator}
+                  setDiscriminator={setDiscriminator}
+                  setName={setName}
+                />
+              )}
+          </div>
 
-          {/* Show form as soon as we have at least one integration available */}
-          {bindings && bindings.length > 0 && (
-            <>
-              <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel>Integration</FormLabel>
-                  {isLoadingBindings &&
-                    processedIntegrations < totalIntegrations && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Spinner size="xs" />
-                      Loading more...
-                    </span>
-                  )}
-                </div>
-                <FormControl>
-                  <Select
-                    value={selectedBindingId ?? ""}
-                    onValueChange={(bindingId) => {
-                      setSelectedBindingId(bindingId);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue
-                        placeholder={bindings.length === 0
-                          ? "No integrations available"
-                          : isLoadingBindings
-                          ? `Select an integration (${bindings.length} available, ${
-                            totalIntegrations - processedIntegrations
-                          } loading...)`
-                          : "Select an integration"}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bindings?.map((binding) => (
-                        <SelectItem key={binding.id} value={binding.id}>
-                          <div className="flex items-center gap-2">
-                            {binding.icon
-                              ? (
-                                <IntegrationIcon
-                                  className="w-8 h-8"
-                                  icon={binding.icon}
-                                />
-                              )
-                              : <Icon name="chat" size={16} />}
-                            <span>{binding.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-
-              <div className="space-y-2">
-                {selectedBinding &&
-                  (
-                    <ConnectionChannels
-                      key={selectedBindingId}
-                      binding={selectedBinding}
-                      discriminator={discriminator}
-                      setDiscriminator={setDiscriminator}
-                      setName={setName}
-                    />
-                  )}
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setDiscriminator("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="default"
-                  disabled={!discriminator.trim() || isCreating}
-                  onClick={() => {
-                    if (!selectedBindingId) {
-                      toast.error("Please select an integration first");
-                      return;
-                    }
-                    handleCreateChannel(selectedBindingId);
-                  }}
-                  className="gap-2"
-                >
-                  {isCreating
-                    ? (
-                      <>
-                        <Spinner size="sm" />
-                        Creating...
-                      </>
-                    )
-                    : (
-                      <>
-                        <Icon name="add" size={16} />
-                        Create Channel
-                      </>
-                    )}
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateForm(false);
+                setDiscriminator("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              disabled={!discriminator.trim() || isCreating}
+              onClick={() => {
+                if (!integration) {
+                  toast.error("Please select an integration first");
+                  return;
+                }
+                handleCreateChannel(integration.id);
+              }}
+              className="gap-2"
+            >
+              {isCreating
+                ? (
+                  <>
+                    <Spinner size="sm" />
+                    Creating...
+                  </>
+                )
+                : (
+                  <>
+                    <Icon name="add" size={16} />
+                    Create Channel
+                  </>
+                )}
+            </Button>
+          </div>
         </>
       )}
 
@@ -516,6 +438,98 @@ export function Channels({ className }: ChannelsProps) {
   );
 }
 
+function IntegrationSelect({
+  setIntegration,
+  integration,
+}: {
+  setIntegration: (integration: Integration | null) => void;
+  integration: Integration | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [isChannelsBinding, setIsChannelsBinding] = useState<boolean | null>(
+    null,
+  );
+
+  // Check if the selected integration is a Channels Binding
+  const checkChannelsBinding = async (integration: Integration) => {
+    try {
+      const toolsData = await listTools(integration.connection);
+      const isChannelBinding = Binding(WellKnownBindings.Channel)
+        .isImplementedBy(toolsData.tools);
+      setIsChannelsBinding(isChannelBinding);
+    } catch (error) {
+      console.error("Error checking channels binding:", error);
+      setIsChannelsBinding(false);
+    }
+  };
+
+  const handleIntegrationSelect = async (integration: Integration) => {
+    setIntegration(integration);
+    setOpen(false);
+    // Check channels binding immediately when integration is selected
+    await checkChannelsBinding(integration);
+    if (isChannelsBinding) {
+      setIntegration(integration);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger>
+          <Button>
+            <Icon name="add" size={16} />
+            Select integration
+          </Button>
+        </DialogTrigger>
+
+        <DialogContent className="p-0 min-w-[80vw] min-h-[80vh] gap-0">
+          <div className="flex h-[calc(100vh-10rem)]">
+            <div className="h-full overflow-y-hidden p-4 pb-20 w-full">
+              <Input
+                placeholder="Search for an integration"
+                value={query}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setQuery(e.target.value)}
+                className="mb-4"
+              />
+              <InstalledConnections
+                query={query}
+                emptyState={<div>No integrations found</div>}
+                onClick={handleIntegrationSelect}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {integration && (
+        <div className="mt-4 p-3 border rounded-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Selected Integration:</span>
+            <span className="text-sm">
+              {integration.name || integration.id}
+            </span>
+            {isChannelsBinding !== null && (
+              <span
+                className={`text-xs px-2 py-1 rounded ${
+                  isChannelsBinding
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {isChannelsBinding
+                  ? "Channels Binding ✓"
+                  : "Not Channels Binding ✗"}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ConnectionChannels(
   { binding, discriminator, setDiscriminator, setName }: {
     binding: Integration;
@@ -534,45 +548,49 @@ function ConnectionChannels(
       </div>
     );
   }
+
   return (
     <div className="w-full">
       <Label htmlFor="discriminator">
         Channel
       </Label>
       <div className="mt-2 w-full">
-        {availableChannels?.channels?.length && (
-          <Select
-            onValueChange={(value) => {
-              const nameForChannel = availableChannels?.channels?.find((
-                channel,
-              ) => channel.value === value)?.label;
-              setDiscriminator(value);
-              setName(nameForChannel);
-            }}
-            disabled={isLoadingAvailableChannels}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a channel" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              {availableChannels?.channels?.map((channel) => {
-                return (
-                  <SelectItem key={channel.value} value={channel.value}>
-                    {channel.label}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        )}
-        {(!availableChannels?.channels && !isLoadingAvailableChannels) && (
-          <Input
-            id="discriminator"
-            placeholder="Enter unique identifier (e.g., phone number for WhatsApp)"
-            value={discriminator}
-            onChange={(e) => setDiscriminator(e.target.value)}
-          />
-        )}
+        {availableChannels?.channels?.length &&
+            availableChannels?.channels?.length > 0
+          ? (
+            <Select
+              onValueChange={(value: string) => {
+                const nameForChannel = availableChannels?.channels?.find((
+                  channel,
+                ) => channel.value === value)?.label;
+                setDiscriminator(value);
+                setName(nameForChannel);
+              }}
+              disabled={isLoadingAvailableChannels}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a channel" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                {availableChannels?.channels?.map((channel) => {
+                  return (
+                    <SelectItem key={channel.value} value={channel.value}>
+                      {channel.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )
+          : (
+            <Input
+              id="discriminator"
+              placeholder="Enter unique identifier (e.g., phone number for WhatsApp)"
+              value={discriminator}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setDiscriminator(e.target.value)}
+            />
+          )}
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ import { useWatch } from "react-hook-form";
 import { getPublicChatLink } from "../agent/chats.tsx";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
-// import { Channels } from "./channels.tsx";
+import { Channels } from "./channels.tsx";
 
 export const useCurrentTeamRoles = () => {
   const { slug } = useCurrentTeam();
@@ -413,7 +413,7 @@ function AdvancedTab() {
             )}
 
             <div className="border-t pt-6">
-              {/* <Channels /> */}
+              <Channels />
             </div>
           </form>
         </div>

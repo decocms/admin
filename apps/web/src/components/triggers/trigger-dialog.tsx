@@ -115,7 +115,7 @@ export function TriggerModal(
       <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit trigger" : "New Trigger"}
+            {isEditing ? "Edit trigger" : "New trigger"}
           </DialogTitle>
         </DialogHeader>
         {!hasAgents

@@ -18,44 +18,41 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@deco/ui/components/table.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  type PropsWithChildren,
-  Suspense,
-  useDeferredValue,
-  useMemo,
-  useState,
-} from "react";
-import { timeAgo } from "../../utils/time-ago.ts";
+import { Suspense, useDeferredValue, useMemo, useState } from "react";
 import { UserAvatar } from "../common/avatar/user.tsx";
+import { useUser } from "../../hooks/use-user.ts";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { RolesDropdown } from "../common/roles-dropdown.tsx";
+import { Table, type TableColumn } from "../common/table/index.tsx";
+import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
 
 function MemberTableHeader(
-  { onChange, disabled }: {
+  { onChange, disabled, teamId }: {
     disabled?: boolean;
     onChange: (value: string) => void;
+    teamId?: number;
   },
 ) {
   return (
-    <div className="">
+    <div className="flex items-center justify-between">
       <Input
         placeholder="Search"
         onChange={(e) => onChange(e.currentTarget.value)}
         className="w-80"
         disabled={disabled}
+      />
+      <InviteTeamMembersDialog
+        teamId={teamId}
+        trigger={
+          <Button>
+            <Icon name="add" />
+            Invite Members
+          </Button>
+        }
       />
     </div>
   );
@@ -64,7 +61,7 @@ function MemberTableHeader(
 function MembersViewLoading() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <MemberTableHeader disabled onChange={() => {}} />
+      <MemberTableHeader disabled onChange={() => {}} teamId={undefined} />
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">Loading members...</span>
@@ -73,108 +70,24 @@ function MembersViewLoading() {
   );
 }
 
-function AddTeamMemberButton({ teamId }: { teamId?: number }) {
-  return (
-    <InviteTeamMembersDialog
-      teamId={teamId}
-      trigger={
-        <Button variant="ghost" size="icon">
-          <span className="sr-only">Invite team members</span>
-          <Icon name="add" />
-        </Button>
-      }
-    />
-  );
-}
-
-type Columns = "name" | "role" | "lastActivity";
-type SortDir = "asc" | "desc";
-type Sort = `${Columns}_${SortDir}`;
-
 const getMemberName = (member: Member) =>
   member.profiles.metadata.full_name ||
   member.profiles.email;
 
-const compareMemberActivity = (a: Member, b: Member) => {
-  const aD = a.lastActivity ? new Date(a.lastActivity).getTime() : Infinity;
-  const bD = b.lastActivity ? new Date(b.lastActivity).getTime() : Infinity;
-
-  return aD - bD;
+// Add type for combined member/invite data
+type MemberTableRow = {
+  type: "member" | "invite";
+  id: string | number;
+  name: string;
+  email: string;
+  roles: Array<{ id: number; name: string }>;
+  lastActivity?: string | null;
+  avatarUrl?: string;
+  isPending?: boolean;
+  userId?: string; // For actual members, undefined for pending invites
+  member?: Member;
+  invite?: any;
 };
-
-const getMemberRoleName = (a: Member) =>
-  a.roles.map((r) => r.name).sort().join(",");
-const compareMemberRole = (a: Member, b: Member) =>
-  getMemberRoleName(a).localeCompare(
-    getMemberRoleName(b),
-  );
-
-const sortFnS: Record<
-  Columns,
-  Partial<Record<SortDir, (a: Member, b: Member) => number>>
-> = {
-  name: {
-    asc: (a, b) => getMemberName(a).localeCompare(getMemberName(b)),
-    desc: (a, b) => -getMemberName(a).localeCompare(getMemberName(b)),
-  },
-  role: {
-    asc: (a, b) => compareMemberRole(a, b),
-    desc: (a, b) => -compareMemberRole(a, b),
-  },
-  lastActivity: {
-    asc: (a, b) => compareMemberActivity(a, b),
-    desc: (a, b) => -compareMemberActivity(a, b),
-  },
-} as const;
-
-function TableHeadSort(
-  { onClick, sort, children, mode }: PropsWithChildren<
-    { onClick: () => void; sort?: SortDir; mode?: SortDir }
-  >,
-) {
-  const hasBothArrows = mode === undefined;
-  const hasAsc = hasBothArrows || mode === "asc";
-  const hasDesc = hasBothArrows || mode === "desc";
-  return (
-    <TableHead className="px-2 text-left bg-muted font-semibold text-foreground text-sm h-10">
-      <button
-        type="button"
-        className="flex items-center gap-1 cursor-pointer select-none"
-        onClick={onClick}
-      >
-        {children}
-        <span
-          className={cn(
-            "inline-flex items-center transition-transform",
-          )}
-        >
-          {hasAsc && (
-            <Icon
-              key="desc"
-              name="arrow_upward"
-              size={16}
-              className={cn(
-                "transition-colors",
-                sort === "asc" ? "text-foreground" : "text-muted-foreground",
-              )}
-            />
-          )}
-          {hasDesc && (
-            <Icon
-              key="up"
-              name="arrow_upward"
-              size={16}
-              className={cn(
-                "transition-colors rotate-180 text-muted-foreground",
-                sort === "desc" ? "text-foreground" : "text-muted-foreground",
-              )}
-            />
-          )}
-        </span>
-      </button>
-    </TableHead>
-  );
-}
 
 function MembersViewContent() {
   const { slug } = useCurrentTeam();
@@ -188,29 +101,48 @@ function MembersViewContent() {
   const rejectInvite = useRejectInvite();
   const updateRoleMutation = useUpdateMemberRole();
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<Sort>("name_asc");
+  const [sortKey, setSortKey] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const deferredQuery = useDeferredValue(query);
-  const filteredMembers = useMemo(
-    () =>
-      deferredQuery
-        ? members.filter((member) =>
-          member.profiles.metadata.full_name?.toLowerCase().includes(
-            deferredQuery,
-          ) ||
-          member.profiles.email.toLowerCase().includes(deferredQuery)
-        )
-        : members,
-    [members, deferredQuery],
-  );
-  const sortInfo = useMemo(() => sort.split("_") as [Columns, SortDir], [sort]);
-  const sortMembers = useMemo(() => {
-    const [col, sortDir] = sortInfo;
-    const fn = sortFnS[col][sortDir] ?? sortFnS.name.asc;
-
-    return filteredMembers.sort(fn);
-  }, [sort, filteredMembers]);
-
   const isMobile = useIsMobile();
+  const user = useUser();
+
+  // Convert members and invites to unified data structure
+  const tableData: MemberTableRow[] = useMemo(() => {
+    const memberRows: MemberTableRow[] = members.map((member) => ({
+      type: "member" as const,
+      id: member.id,
+      name: getMemberName(member),
+      email: member.profiles.email,
+      roles: member.roles,
+      lastActivity: member.lastActivity,
+      avatarUrl: member.profiles.metadata.avatar_url,
+      userId: member.user_id, // Add userId for UserInfo component
+      member,
+    }));
+
+    const inviteRows: MemberTableRow[] = invites.map((invite) => ({
+      type: "invite" as const,
+      id: invite.id,
+      name: invite.email,
+      email: invite.email,
+      roles: invite.roles,
+      isPending: true,
+      // No userId for invites since they haven't accepted yet
+      invite,
+    }));
+
+    return [...inviteRows, ...memberRows];
+  }, [members, invites]);
+
+  // Filter data based on search query
+  const filteredData = useMemo(() => {
+    if (!deferredQuery) return tableData;
+    return tableData.filter((row) =>
+      row.name.toLowerCase().includes(deferredQuery.toLowerCase()) ||
+      row.email.toLowerCase().includes(deferredQuery.toLowerCase())
+    );
+  }, [tableData, deferredQuery]);
 
   // Remove member
   const handleRemoveMember = async (memberId: number) => {
@@ -253,218 +185,246 @@ function MembersViewContent() {
     }
   };
 
-  const [col, sortDir] = sortInfo;
+  // Define table columns
+  const columns: TableColumn<MemberTableRow>[] = useMemo(() => {
+    const baseColumns: TableColumn<MemberTableRow>[] = [
+      {
+        id: "name",
+        header: "Name",
+        render: (row) => {
+          // For actual members, use the standardized UserInfo component
+          if (row.type === "member" && row.userId) {
+            return (
+              <UserInfo
+                userId={row.userId}
+                showDetails={true}
+                maxWidth="250px"
+              />
+            );
+          }
+
+          // For pending invites, use custom implementation since they don't have userId yet
+          return (
+            <div className="flex gap-2 items-center min-w-[48px]">
+              <UserAvatar
+                fallback={row.email}
+                size="sm"
+                muted={true}
+              />
+              <div className="flex flex-col items-start text-left leading-tight w-full">
+                <span
+                  className="truncate block text-xs font-medium text-foreground"
+                  style={{ maxWidth: "250px" }}
+                >
+                  {row.email}
+                </span>
+                <span
+                  className="truncate block text-xs font-normal text-muted-foreground"
+                  style={{ maxWidth: "250px" }}
+                >
+                  Pending
+                </span>
+              </div>
+            </div>
+          );
+        },
+        sortable: true,
+      },
+      {
+        id: "roles",
+        header: "Role",
+        render: (row) => (
+          <span className="inline-flex gap-2">
+            {row.roles.slice(0, 3).map((role) => (
+              <Badge variant="outline" key={role.id}>
+                {role.name}
+              </Badge>
+            ))}
+            {row.type === "member" && row.member && (
+              <RolesDropdown
+                roles={roles}
+                selectedRoles={row.roles}
+                onRoleClick={(role, checked) => {
+                  handleUpdateMemberRole(
+                    row.member!.user_id,
+                    role,
+                    checked,
+                  );
+                }}
+                disabled={updateRoleMutation.isPending}
+              />
+            )}
+          </span>
+        ),
+        sortable: true,
+      },
+    ];
+
+    // Add Last Activity column if not mobile
+    if (!isMobile) {
+      baseColumns.push({
+        id: "lastActivity",
+        header: "Last active",
+        render: (row) => {
+          if (!row.lastActivity) {
+            return <span>N/A</span>;
+          }
+          return (
+            <DateTimeCell
+              value={row.lastActivity}
+              dateFormat="MMM dd, yyyy"
+              timeFormat="HH:mm"
+            />
+          );
+        },
+        sortable: true,
+      });
+    }
+
+    // Add actions column
+    baseColumns.push({
+      id: "actions",
+      header: "",
+      render: (row) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <span className="sr-only">Open menu</span>
+              <Icon name="more_horiz" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => {
+                if (row.type === "invite" && row.invite) {
+                  rejectInvite.mutateAsync({
+                    id: row.invite.id,
+                    teamId,
+                  });
+                } else if (row.type === "member" && row.member) {
+                  handleRemoveMember(row.member.id);
+                }
+              }}
+              disabled={removeMemberMutation.isPending ||
+                rejectInvite.isPending}
+            >
+              {(() => {
+                // Check if this is the current user
+                const isCurrentUser = row.type === "member" && row.userId &&
+                  user && row.userId === user.id;
+
+                if (row.type === "invite") {
+                  // For pending invitations
+                  return (
+                    <>
+                      <Icon name="delete" />
+                      {rejectInvite.isPending &&
+                          rejectInvite.variables?.id === row.id
+                        ? "Removing..."
+                        : "Delete invitation"}
+                    </>
+                  );
+                } else if (isCurrentUser) {
+                  // For current user
+                  return (
+                    <>
+                      <Icon name="waving_hand" />
+                      {removeMemberMutation.isPending &&
+                          removeMemberMutation.variables?.memberId === row.id
+                        ? "Leaving..."
+                        : "Leave team"}
+                    </>
+                  );
+                } else {
+                  // For other team members
+                  return (
+                    <>
+                      <Icon name="waving_hand" />
+                      {removeMemberMutation.isPending &&
+                          removeMemberMutation.variables?.memberId === row.id
+                        ? "Removing..."
+                        : "Remove Member"}
+                    </>
+                  );
+                }
+              })()}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    });
+
+    return baseColumns;
+  }, [
+    teamId,
+    roles,
+    isMobile,
+    user,
+    handleUpdateMemberRole,
+    updateRoleMutation.isPending,
+    removeMemberMutation.isPending,
+    rejectInvite.isPending,
+    removeMemberMutation.variables,
+    rejectInvite.variables,
+  ]);
+
+  // Sorting logic
+  function getSortValue(row: MemberTableRow, key: string): string {
+    switch (key) {
+      case "name":
+        return row.name.toLowerCase();
+      case "roles":
+        return row.roles.map((r) => r.name).sort().join(",").toLowerCase();
+      case "lastActivity":
+        return row.lastActivity
+          ? new Date(row.lastActivity).getTime().toString()
+          : "0";
+      default:
+        return "";
+    }
+  }
+
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDirection((prev) => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  }
+
+  // Sort the filtered data
+  const sortedData = useMemo(() => {
+    return [...filteredData].sort((a, b) => {
+      const aVal = getSortValue(a, sortKey);
+      const bVal = getSortValue(b, sortKey);
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortKey, sortDirection]);
 
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <MemberTableHeader onChange={setQuery} />
-        <Table>
-          <TableHeader>
-            <TableRow className="h-14">
-              <TableHeadSort
-                onClick={() => setSort("name_asc")}
-                sort={col === "name" ? sortDir : undefined}
-                mode="asc"
-              >
-                Name
-              </TableHeadSort>
-              <TableHeadSort
-                onClick={() =>
-                  setSort(sort === "role_asc" ? "role_desc" : "role_asc")}
-                sort={col === "role" ? sortDir : undefined}
-              >
-                Role
-              </TableHeadSort>
-              {!isMobile &&
-                (
-                  <TableHeadSort
-                    onClick={() =>
-                      setSort(
-                        sort === "lastActivity_asc"
-                          ? "lastActivity_desc"
-                          : "lastActivity_asc",
-                      )}
-                    sort={col === "lastActivity" ? sortDir : undefined}
-                  >
-                    Last active
-                  </TableHeadSort>
-                )}
-              <TableHead className="px-2 text-left bg-muted font-semibold text-foreground text-sm h-10 w-12.5">
-                <AddTeamMemberButton teamId={teamId} />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.length === 0
-              ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-8 text-muted-foreground "
-                  >
-                    No members found. Add team members to get started.
-                  </TableCell>
-                </TableRow>
-              )
-              : (
-                <>
-                  {invites.map((invite) => (
-                    <TableRow key={invite.id} className="px-4 py-1.5">
-                      {/* Profile */}
-                      <TableCell>
-                        <div className="flex gap-2 items-center w-43 md:w-56">
-                          <UserAvatar
-                            muted
-                            fallback={invite.email}
-                            size="sm"
-                          />
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <div className="font-semibold text-xs truncate">
-                              {invite.email}
-                            </div>
-                            <div className="text-[10px] leading-3.5 text-muted-foreground truncate">
-                              Pending
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      {/* Roles */}
-                      <TableCell>
-                        <span className="inline-flex gap-2">
-                          {invite.roles.map((role) => (
-                            <Badge variant="outline" key={role.id}>
-                              {role.name}
-                            </Badge>
-                          ))}
-                        </span>
-                      </TableCell>
-
-                      {!isMobile && <TableCell></TableCell>}
-
-                      {/* Menu */}
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <span className="sr-only">Open menu</span>
-                              <Icon name="more_horiz" />
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() =>
-                                rejectInvite.mutateAsync({
-                                  id: invite.id,
-                                  teamId,
-                                })}
-                              disabled={removeMemberMutation.isPending}
-                            >
-                              <Icon name="delete" />
-                              {rejectInvite.isPending &&
-                                  rejectInvite.variables.id ===
-                                    invite.id
-                                ? "Removing..."
-                                : "Remove invite"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {sortMembers.map((member) => (
-                    <TableRow key={member.id} className="px-4 py-1.5">
-                      {/* Profile */}
-                      <TableCell>
-                        <span className="flex gap-2 items-center w-43 md:w-56">
-                          <UserAvatar
-                            url={member.profiles.metadata.avatar_url}
-                            fallback={member.profiles.metadata.full_name}
-                            size="sm"
-                          />
-
-                          <span className="flex flex-col gap-1 min-w-0">
-                            <span className="font-semibold text-xs truncate">
-                              {getMemberName(member)}
-                            </span>
-                            <span className="text-[10px] leading-3.5 text-muted-foreground truncate">
-                              {member.profiles.email || "N/A"}
-                            </span>
-                          </span>
-                        </span>
-                      </TableCell>
-                      {/* Roles */}
-                      <TableCell>
-                        <span className="inline-flex gap-2">
-                          {member.roles.slice(0, 3).map((role) => (
-                            <Badge variant="outline" key={role.id}>
-                              {role.name}
-                            </Badge>
-                          ))}
-                          <RolesDropdown
-                            roles={roles}
-                            selectedRoles={member.roles}
-                            onRoleClick={(role, checked) => {
-                              handleUpdateMemberRole(
-                                member.user_id,
-                                role,
-                                checked,
-                              );
-                            }}
-                            disabled={updateRoleMutation.isPending}
-                          />
-                        </span>
-                      </TableCell>
-
-                      {/* Last Activity */}
-                      {!isMobile && (
-                        <TableCell>
-                          {member.lastActivity
-                            ? timeAgo(member.lastActivity)
-                            : "N/A"}
-                        </TableCell>
-                      )}
-
-                      {/* Menu */}
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <span className="sr-only">Open menu</span>
-                              <Icon name="more_horiz" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() =>
-                                handleRemoveMember(member.id)}
-                              disabled={removeMemberMutation.isPending}
-                            >
-                              <Icon name="delete" />
-                              {removeMemberMutation.isPending &&
-                                  removeMemberMutation.variables?.memberId ===
-                                    member.id
-                                ? "Removing..."
-                                : "Remove Member"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </>
-              )}
-          </TableBody>
-        </Table>
+        <MemberTableHeader onChange={setQuery} teamId={teamId} />
+        {members.length === 0
+          ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No members found. Add team members to get started.
+            </div>
+          )
+          : (
+            <Table
+              columns={columns}
+              data={sortedData}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+            />
+          )}
       </div>
     </div>
   );

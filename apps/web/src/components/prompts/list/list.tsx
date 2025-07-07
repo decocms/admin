@@ -132,7 +132,7 @@ function ListPromptsLayout() {
             : (
               <>
                 <Icon name="add" />
-                <span className="hidden md:inline">New Prompt</span>
+                <span className="hidden md:inline">New prompt</span>
               </>
             )}
         </Button>

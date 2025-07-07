@@ -520,7 +520,7 @@ function List() {
               ? "Agents shared with your team will show up here. Create one to start collaborating."
               : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."}
             buttonProps={{
-              children: "New Agent",
+              children: "New agent",
               onClick: handleCreate,
             }}
           />
@@ -565,7 +565,7 @@ export default function Page() {
             className="gap-2"
           >
             <Icon name="add" />
-            <span className="hidden md:inline">New Agent</span>
+            <span className="hidden md:inline">New agent</span>
           </Button>
         }
       />

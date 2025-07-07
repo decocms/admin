@@ -74,7 +74,7 @@ export function AgentTriggers() {
               onClick={(e) => e.stopPropagation()}
             >
               <Icon name="add" />
-              <span className="hidden md:inline">New Trigger</span>
+              <span className="hidden md:inline">New trigger</span>
             </Button>
           }
         />

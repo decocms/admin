@@ -56,12 +56,14 @@ interface UserInfoProps {
   userId?: string;
   className?: string;
   showDetails?: boolean; // If true, show name/email block (for detail view)
+  maxWidth?: string; // Custom max-width for name/email text
 }
 
 function UserInfo({
   userId,
   className,
   showDetails = false,
+  maxWidth = "200px", // Default to 200px, but allow customization
 }: UserInfoProps) {
   const user = useUser();
   const params = useParams();
@@ -109,10 +111,16 @@ function UserInfo({
               showDetails ? "hidden md:flex" : "flex"
             }`}
           >
-            <span className="truncate max-w-[120px] block text-xs font-medium text-foreground">
+            <span
+              className="truncate block text-xs font-medium text-foreground"
+              style={{ maxWidth }}
+            >
               {name || "Unknown"}
             </span>
-            <span className="truncate max-w-[120px] block text-xs font-normal text-muted-foreground">
+            <span
+              className="truncate block text-xs font-normal text-muted-foreground"
+              style={{ maxWidth }}
+            >
               {email || ""}
             </span>
           </div>

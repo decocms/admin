@@ -97,7 +97,7 @@ export const AgentSchema = z.object({
   ),
   temperature: z.number().min(0).max(1).optional().nullable().describe(
     "Temperature of the LLM. Must be between 0 and 1.",
-  )
+  ),
 });
 
 const MCPConnectionSchema = z.discriminatedUnion("type", [

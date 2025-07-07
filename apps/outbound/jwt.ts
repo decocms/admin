@@ -85,15 +85,14 @@ export async function createJWT<
   const [alg, signatureSecret] = typeof secret === "string"
     ? ["RS256", new TextEncoder().encode(secret)]
     : ["HS256", secret];
-  const jwt = await new SignJWT(payload)
+  let jwt = new SignJWT(payload)
     .setProtectedHeader({ alg, typ: "JWT" })
-    .setIssuedAt()
-    .setExpirationTime(expiresIn ?? "1h")
-    .sign(
-      signatureSecret,
-    );
+    .setIssuedAt();
+  if (expiresIn) {
+    jwt = jwt.setExpirationTime(expiresIn);
+  }
 
-  return jwt;
+  return await jwt.sign(signatureSecret);
 }
 
 export async function verifyJWT<

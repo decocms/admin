@@ -79,21 +79,17 @@ export async function createJWT<
   TClaims extends Record<string, unknown> = Record<string, unknown>,
 >(
   payload: JwtPayloadWithClaims<TClaims>,
-  secret: string | CryptoKey,
+  secret: CryptoKey,
   expiresIn?: number | string | Date,
 ): Promise<string> {
-  const [alg, signatureSecret] = typeof secret === "string"
-    ? ["RS256", new TextEncoder().encode(secret)]
-    : ["HS256", secret];
-  const jwt = await new SignJWT(payload)
-    .setProtectedHeader({ alg, typ: "JWT" })
-    .setIssuedAt()
-    .setExpirationTime(expiresIn ?? "1h")
-    .sign(
-      signatureSecret,
-    );
+  let jwt = new SignJWT(payload)
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuedAt();
+  if (expiresIn) {
+    jwt = jwt.setExpirationTime(expiresIn);
+  }
 
-  return jwt;
+  return await jwt.sign(secret);
 }
 
 export async function verifyJWT<

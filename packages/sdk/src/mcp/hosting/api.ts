@@ -558,6 +558,7 @@ Important Notes:
         private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
       }
       : undefined;
+
     const issuer = await JwtIssuer.forKeyPair(keyPair);
     const token = await issuer.issue({
       sub: `app:${scriptSlug}`,

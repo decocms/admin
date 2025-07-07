@@ -1134,6 +1134,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         instructions: processedInstructions,
         maxSteps: this._maxSteps(options?.maxSteps),
         maxTokens: this._maxTokens(),
+        temperature: this._configuration?.temperature ?? undefined,
         experimental_transform: experimentalTransform,
         providerOptions: budgetTokens > DEFAULT_MIN_THINKING_TOKENS
           ? {

@@ -211,6 +211,32 @@ function AdvancedTab() {
               )}
             />
 
+            <FormField
+              name="temperature"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex flex-col gap-2">
+                    <FormLabel>Temperature</FormLabel>
+                    <FormDescription>
+                      The temperature of the LLM.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      defaultValue={form.getValues("temperature") ?? undefined}
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* --- Memory Settings Section (migrated from memory.tsx) --- */}
             <FormField
               control={form.control}

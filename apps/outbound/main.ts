@@ -23,7 +23,8 @@ const getServerClient = (
 
 interface Env {
   DECO_CHAT_APP_ORIGIN: string;
-  ISSUER_JWT_SECRET: string;
+  DECO_CHAT_API_JWT_PUBLIC_KEY: string;
+  DECO_CHAT_API_JWT_PRIVATE_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVER_TOKEN: string;
   DECO_CHAT_API: Service;
@@ -52,13 +53,12 @@ export default {
       // otherwise, we need to authenticate the request
       const {
         DECO_CHAT_APP_ORIGIN,
-        ISSUER_JWT_SECRET,
         SUPABASE_URL,
         SUPABASE_SERVER_TOKEN,
       } = env;
 
       if (
-        !DECO_CHAT_APP_ORIGIN || !ISSUER_JWT_SECRET || !SUPABASE_URL ||
+        !DECO_CHAT_APP_ORIGIN || !SUPABASE_URL ||
         !SUPABASE_SERVER_TOKEN
       ) {
         return new Response("Missing environment variables", { status: 500 });
@@ -79,8 +79,11 @@ export default {
         return new Response("App not found", { status: 404 });
       }
 
-      const issuer = JwtIssuer.forSecret(ISSUER_JWT_SECRET);
-      const token = await issuer.create({
+      const issuer = await JwtIssuer.forKeyPair({
+        public: env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      });
+      const token = await issuer.issue({
         sub: `app:${DECO_CHAT_APP_ORIGIN}`,
         aud: data?.workspace,
       });

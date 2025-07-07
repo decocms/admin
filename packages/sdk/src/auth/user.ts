@@ -2,7 +2,7 @@ import type { AuthUser, SupabaseClient } from "@supabase/supabase-js";
 import { jwtDecode } from "jwt-decode";
 import { LRUCache } from "lru-cache";
 import type { Principal } from "../mcp/context.ts";
-import { JwtIssuer } from "./jwt.ts";
+import { JwtIssuer, type JwtIssuerKeyPair } from "./jwt.ts";
 import {
   createSupabaseSessionClient,
   getSessionToken,
@@ -21,9 +21,9 @@ const MILLISECONDS = 1e3;
 export async function getUserBySupabaseCookie(
   request: Request,
   supabaseServerToken: string | SupabaseClient,
-  supabaseJWTSecret: string,
+  keyPair?: JwtIssuerKeyPair,
 ): Promise<Principal | undefined> {
-  const jwtIssuer = JwtIssuer.forSecret(supabaseJWTSecret);
+  const jwtIssuer = await JwtIssuer.forKeyPair(keyPair);
   const accessToken = parseAuthorizationHeader(request);
   const sessionToken = getSessionToken(request);
 

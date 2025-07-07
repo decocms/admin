@@ -46,7 +46,12 @@ const createDbAndHeadersForRequest = (ctx: AppContext) => {
 export const getUser = async (
   ctx: AppContext,
 ): Promise<Principal | undefined> => {
-  const { SUPABASE_URL, SUPABASE_SERVER_TOKEN, ISSUER_JWT_SECRET } = getEnv(
+  const {
+    SUPABASE_URL,
+    SUPABASE_SERVER_TOKEN,
+    DECO_CHAT_API_JWT_PRIVATE_KEY,
+    DECO_CHAT_API_JWT_PUBLIC_KEY,
+  } = getEnv(
     honoCtxToAppCtx(ctx),
   );
 
@@ -66,7 +71,12 @@ export const getUser = async (
   const user = await getUserBySupabaseCookie(
     ctx.req.raw,
     supabase,
-    ISSUER_JWT_SECRET,
+    DECO_CHAT_API_JWT_PRIVATE_KEY && DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined,
   );
 
   if (!user) {

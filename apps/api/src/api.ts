@@ -1,4 +1,5 @@
 import { HttpServerTransport } from "@deco/mcp/http";
+import { getKeyPair } from "@deco/sdk/auth";
 import { WellKnownMcpGroups } from "@deco/sdk";
 import {
   AGENT_TOOLS,
@@ -299,6 +300,14 @@ app.get("/files/:root/:slug/:path{.+}", async (c) => {
   });
 });
 
+const getPublicKey = async (): Promise<JsonWebKey> => {
+  const [publicKey] = await getKeyPair();
+  return publicKey;
+};
+const keyId = "deco-chat-api-key";
+app.get("/.well-known/jwks.json", async () => {
+  return Response.json({ keys: [{ ...await getPublicKey(), kid: keyId }] });
+});
 // External webhooks
 app.post("/webhooks/stripe", handleStripeWebhook);
 

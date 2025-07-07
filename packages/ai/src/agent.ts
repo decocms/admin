@@ -64,6 +64,7 @@ import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
+import type { TextPart } from "ai";
 import {
   type GenerateObjectResult,
   type GenerateTextResult,
@@ -77,6 +78,7 @@ import jsonSchemaToZod from "json-schema-to-zod";
 import process from "node:process";
 import { Readable } from "node:stream";
 import { z } from "zod";
+import type { MCPConnection } from "../../sdk/src/index.ts";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
 import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
@@ -98,8 +100,6 @@ import type {
   ThreadQueryOptions,
   Toolset,
 } from "./types.ts";
-import type { TextPart } from "ai";
-import type { MCPConnection } from "../../sdk/src/index.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -608,10 +608,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
   }
 
   _token() {
-    return JwtIssuer.forSecret(this.env.ISSUER_JWT_SECRET).create({
-      sub: `agent:${this.id}`,
-      aud: this.workspace,
-    });
+    return JwtIssuer.forKeyPair({
+      public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+      private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+    }).then((issuer) =>
+      issuer.issue({
+        sub: `agent:${this.id}`,
+        aud: this.workspace,
+      })
+    );
   }
 
   async _handleGenerationFinish({

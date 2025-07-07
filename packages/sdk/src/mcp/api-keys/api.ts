@@ -109,9 +109,16 @@ export const createApiKey = createTool({
     if (error) {
       throw new InternalServerError(error.message);
     }
+    const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
 
-    const issuer = JwtIssuer.forSecret(c.envVars.ISSUER_JWT_SECRET);
-    const value = await issuer.create({
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
+    const value = await issuer.issue({
       sub: `api-key:${apiKey.id}`,
       aud: workspace,
       iat: new Date().getTime(),

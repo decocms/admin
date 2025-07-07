@@ -34,7 +34,15 @@ export abstract class BaseActor<
     const user = await getUserBySupabaseCookie(
       req,
       (this.env as Record<string, string>)?.SUPABASE_SERVER_TOKEN,
-      (this.env as Record<string, string>)?.ISSUER_JWT_SECRET,
+      (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        (this.env as Record<string, string>)?.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+          public: (this.env as Record<string, string>)
+            ?.DECO_CHAT_API_JWT_PUBLIC_KEY,
+          private: (this.env as Record<string, string>)
+            ?.DECO_CHAT_API_JWT_PRIVATE_KEY,
+        }
+        : undefined,
     );
     return user ?? null;
   }

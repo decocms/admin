@@ -28,7 +28,7 @@ import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.ts
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { RolesDropdown } from "../common/roles-dropdown.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import { DateTimeCell, UserInfo } from "../common/table/table-cells.tsx";
+import { ActivityStatusCell, UserInfo } from "../common/table/table-cells.tsx";
 
 function MemberTableHeader(
   { onChange, disabled, teamId }: {
@@ -265,18 +265,7 @@ function MembersViewContent() {
       baseColumns.push({
         id: "lastActivity",
         header: "Last active",
-        render: (row) => {
-          if (!row.lastActivity) {
-            return <span>N/A</span>;
-          }
-          return (
-            <DateTimeCell
-              value={row.lastActivity}
-              dateFormat="MMM dd, yyyy"
-              timeFormat="HH:mm"
-            />
-          );
-        },
+        render: (row) => <ActivityStatusCell lastActivity={row.lastActivity} />,
         sortable: true,
       });
     }

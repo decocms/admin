@@ -208,4 +208,70 @@ function IntegrationInfo(
   );
 }
 
-export { AgentInfo, IntegrationInfo, UserInfo };
+interface ActivityStatusCellProps {
+  lastActivity?: string | Date | null;
+  className?: string;
+}
+
+function ActivityStatusCell({
+  lastActivity,
+  className = "",
+}: ActivityStatusCellProps) {
+  // Helper function to format relative time
+  function formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 30));
+    const diffInYears = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 365));
+
+    if (diffInMinutes < 1) return "Active";
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours === 1 ? "" : "s"} ago`;
+    }
+    if (diffInDays < 30) {
+      return `${diffInDays} day${diffInDays === 1 ? "" : "s"} ago`;
+    }
+    if (diffInMonths < 12) {
+      return `${diffInMonths} month${diffInMonths === 1 ? "" : "s"} ago`;
+    }
+    return `${diffInYears} year${diffInYears === 1 ? "" : "s"} ago`;
+  }
+
+  // Determine if user is currently active (within last 5 minutes)
+  function isUserActive(date: Date): boolean {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = diffInMs / (1000 * 60);
+    return diffInMinutes <= 5;
+  }
+
+  if (!lastActivity) {
+    return (
+      <span className={`text-muted-foreground ${className}`}>
+        Never
+      </span>
+    );
+  }
+
+  const activityDate = typeof lastActivity === "string"
+    ? new Date(lastActivity)
+    : lastActivity;
+
+  const isActive = isUserActive(activityDate);
+  const relativeTime = formatRelativeTime(activityDate);
+
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      {isActive && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
+      <span className={isActive ? "text-foreground" : "text-muted-foreground"}>
+        {relativeTime}
+      </span>
+    </div>
+  );
+}
+
+export { ActivityStatusCell, AgentInfo, IntegrationInfo, UserInfo };

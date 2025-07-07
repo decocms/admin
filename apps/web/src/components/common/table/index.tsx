@@ -45,7 +45,7 @@ export function Table<T>({
       <Icon
         name={sortDirection === "asc" ? "arrow_downward" : "arrow_upward"}
         size={16}
-        className="text-foreground"
+        className="text-foreground group-hover:text-muted-foreground transition-colors"
       />
     );
   }

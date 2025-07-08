@@ -173,38 +173,44 @@ export function DateTimeCell({
 
 interface IntegrationInfoProps {
   integration?: { id?: string; icon?: string; name: string };
+  toolName?: string;
   integrationId?: string;
   className?: string;
 }
 
 function IntegrationInfo(
-  { integration, integrationId, className }: IntegrationInfoProps,
+  { integration, toolName, integrationId, className }: IntegrationInfoProps,
 ) {
-  if (integration) {
-    return (
-      <div
-        className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
-      >
-        <IntegrationIcon
-          icon={integration.icon}
-          name={integration.name}
-          className="h-10 w-10"
-        />
-        <span className="truncate hidden md:inline">{integration.name}</span>
-      </div>
-    );
-  }
-
   return (
-    <div className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
-      <IntegrationIcon
-        name={integrationId || "Unknown"}
-        className="rounded-sm h-8 w-8"
-      />
-      <span className="truncate hidden md:inline">
-        {integrationId || "Unknown"}
-      </span>
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
+          <IntegrationIcon
+            icon={integration?.icon}
+            name={integration?.name || integrationId || "Unknown"}
+            className="h-10 w-10"
+          />
+          <div className="flex flex-col">
+            <span className="truncate hidden md:inline text-sm font-medium">
+              {integration?.name || integrationId || "Unknown"}
+            </span>
+            {toolName && (
+              <span className="text-xs text-muted-foreground truncate hidden md:inline">
+                {toolName}
+              </span>
+            )}
+          </div>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex flex-col">
+          <span>{integration?.name || integrationId || "Unknown"}</span>
+          {toolName && <span>{toolName}</span>}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

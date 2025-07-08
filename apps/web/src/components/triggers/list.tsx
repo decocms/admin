@@ -6,13 +6,13 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { Suspense, useCallback, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
   AgentInfo,
   DateTimeCell,
+  IntegrationInfo,
   UserInfo,
 } from "../common/table/table-cells.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
@@ -201,25 +201,11 @@ function TableView(
       const toolName = data.callTool.toolName;
 
       return (
-        <div className="flex items-center gap-2">
-          {integration && (
-            <IntegrationAvatar
-              url={integration.icon}
-              fallback={integration.name}
-              size="sm"
-            />
-          )}
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">
-              {integration?.name || data.callTool.integrationId}
-            </span>
-            {toolName && (
-              <span className="text-xs text-muted-foreground">
-                {toolName}
-              </span>
-            )}
-          </div>
-        </div>
+        <IntegrationInfo
+          integration={integration}
+          integrationId={data.callTool.integrationId}
+          toolName={toolName}
+        />
       );
     }
 

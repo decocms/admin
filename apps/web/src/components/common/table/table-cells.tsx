@@ -191,7 +191,7 @@ function IntegrationInfo(
           <IntegrationIcon
             icon={integration?.icon}
             name={integration?.name || integrationId || "Unknown"}
-            className="h-10 w-10"
+            size="sm"
           />
           <div className="flex flex-col">
             <span className="truncate hidden md:inline text-sm font-medium">

@@ -240,7 +240,7 @@ export const WELL_KNOWN_AGENTS = {
     avatar: pickCapybaraAvatar(12),
     description: "I can help you with this setup.",
     model: DEFAULT_MODEL.id,
-    visibility: "PUBLIC",
+    visibility: "WORKSPACE",
     tools_set: {},
     views: [],
     memory: DEFAULT_MEMORY,
@@ -262,7 +262,7 @@ check if the agent is active and configure the agent.
     avatar: pickCapybaraAvatar(12),
     description: "I can help you with this prompt.",
     model: DEFAULT_MODEL.id,
-    visibility: "PUBLIC",
+    visibility: "WORKSPACE",
     tools_set: {
       "i:workspace-management": [
         "PROMPTS_GET",

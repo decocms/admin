@@ -141,7 +141,7 @@ function ToolStatus({
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <div className="font-medium truncate max-w-3xs md:max-w-full">
+              <div className="font-medium truncate max-w-[60vw] md:max-w-full">
                 {getToolName()}
               </div>
               <Icon

@@ -19,6 +19,7 @@ export {
 export interface DefaultEnv {
   DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
+  DECO_CHAT_API_JWT_PUBLIC_KEY: string;
   DECO_CHAT_BINDINGS: string;
   DECO_CHAT_API_TOKEN?: string;
   DECO_CHAT_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;

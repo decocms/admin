@@ -569,6 +569,7 @@ Important Notes:
       DECO_CHAT_WORKSPACE: workspace,
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
       DECO_CHAT_API_TOKEN: token,
+      DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
     };
 
     await Promise.all(

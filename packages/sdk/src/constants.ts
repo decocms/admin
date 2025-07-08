@@ -75,6 +75,10 @@ type Capability =
   | "file-upload"
   | "web-search";
 
+export const MODEL_MIGRATIONS = {
+  "google:gemini-2.5-pro-preview": "google:gemini-2.5-pro",
+} as const;
+
 // First one is the default model for agents, so choose wisely.
 export const WELL_KNOWN_MODELS: Model[] = [
   {
@@ -165,7 +169,7 @@ export const WELL_KNOWN_MODELS: Model[] = [
 export const DEFAULT_MODEL = WELL_KNOWN_MODELS[0];
 
 export function isWellKnownModel(modelId: string): boolean {
-  return WELL_KNOWN_MODELS.some((m) => m.id === modelId);
+  return WELL_KNOWN_MODELS.some((m) => m.id === modelId || MODEL_MIGRATIONS[m.id] === modelId);
 }
 
 /**

@@ -203,7 +203,6 @@ function TableView(
       return (
         <IntegrationInfo
           integration={integration}
-          integrationId={data.callTool.integrationId}
           toolName={toolName}
         />
       );

@@ -1,4 +1,8 @@
-import type { CronTriggerPromptAgent, TriggerOutput } from "@deco/sdk";
+import type {
+  CronTriggerCallTool,
+  CronTriggerPromptAgent,
+  TriggerOutput,
+} from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import cronstrue from "cronstrue";
 import { CodeBlock } from "./code-block.tsx";
@@ -6,7 +10,14 @@ import { CodeBlock } from "./code-block.tsx";
 export function CronDetails(
   { trigger }: { trigger: TriggerOutput },
 ) {
-  const triggerData = trigger.data as CronTriggerPromptAgent;
+  const triggerData = trigger.data as
+    | CronTriggerPromptAgent
+    | CronTriggerCallTool;
+
+  // Check if this is an agent trigger (has prompt) or tool trigger (has callTool)
+  const isAgentTrigger = "prompt" in triggerData;
+  const isToolTrigger = "callTool" in triggerData;
+
   return (
     <div className="space-y-4 border p-4 rounded-md bg-muted">
       <div className="flex items-center gap-2">
@@ -28,12 +39,23 @@ export function CronDetails(
         </div>
       </div>
 
-      <div>
-        <div className="text-sm font-medium mb-1">Prompt</div>
-        <CodeBlock>
-          {JSON.stringify(triggerData.prompt, null, 2)}
-        </CodeBlock>
-      </div>
+      {isAgentTrigger && (
+        <div>
+          <div className="text-sm font-medium mb-1">Prompt</div>
+          <CodeBlock>
+            {JSON.stringify(triggerData.prompt, null, 2)}
+          </CodeBlock>
+        </div>
+      )}
+
+      {isToolTrigger && (
+        <div>
+          <div className="text-sm font-medium mb-1">Arguments</div>
+          <CodeBlock>
+            {JSON.stringify(triggerData.callTool.arguments, null, 2)}
+          </CodeBlock>
+        </div>
+      )}
     </div>
   );
 }

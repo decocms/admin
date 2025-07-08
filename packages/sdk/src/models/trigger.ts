@@ -234,6 +234,13 @@ export type CronTriggerPromptAgent = z.infer<
 >;
 
 /**
+ * Type alias for cron trigger call tool schema - use this instead of z.infer<typeof CronTriggerCallToolSchema>
+ */
+export type CronTriggerCallTool = z.infer<
+  typeof CronTriggerCallToolSchema
+>;
+
+/**
  * Type alias for webhook trigger output tool schema - use this instead of z.infer<typeof WebhookTriggerOutputToolSchema>
  */
 export type WebhookTriggerOutputTool = z.infer<

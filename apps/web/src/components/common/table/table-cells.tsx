@@ -174,13 +174,14 @@ export function DateTimeCell({
 interface IntegrationInfoProps {
   integration?: { id?: string; icon?: string; name: string };
   toolName?: string;
-  integrationId?: string;
   className?: string;
 }
 
 function IntegrationInfo(
-  { integration, toolName, integrationId, className }: IntegrationInfoProps,
+  { integration, toolName, className }: IntegrationInfoProps,
 ) {
+  const integrationId = integration?.id;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>

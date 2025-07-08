@@ -32,6 +32,7 @@ import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
+import { handleTrigger } from "./webhooks/trigger.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -249,6 +250,8 @@ app.post(
   `/:root/:slug/${WellKnownMcpGroups.Email}/mcp`,
   createMCPHandlerFor(EMAIL_TOOLS),
 );
+
+app.post("/:root/:slug/triggers/:id", handleTrigger);
 
 // Login and auth routes
 Object.entries(loginRoutes).forEach(([route, honoApp]) => {

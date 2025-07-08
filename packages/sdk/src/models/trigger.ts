@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { AgentSchema } from "./agent.ts";
 
 /**
  * Schema for tool call validation
@@ -33,6 +32,7 @@ export const CronBaseTriggerSchema = z.object({
  * Schema for cron trigger validation
  */
 export const CronTriggerPromptAgentSchema = CronBaseTriggerSchema.extend({
+  agentId: z.string().describe("The agent ID to use for the trigger"),
   prompt: PromptSchema,
   url: z.string().describe("The URL of the webhook").optional(),
 });
@@ -61,6 +61,7 @@ export const WebhookBaseTriggerSchema = z.object({
     "The description of the trigger",
   ),
   type: z.literal("webhook"),
+  url: z.string().optional().describe("The URL of the webhook"),
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
   whatsappEnabled: z.boolean().optional().describe(
     "Whether the webhook is enabled for WhatsApp",
@@ -71,6 +72,7 @@ export const WebhookBaseTriggerSchema = z.object({
  * Schema for webhook trigger validation
  */
 export const WebhookTriggerOutputToolSchema = WebhookBaseTriggerSchema.extend({
+  agentId: z.string().describe("The agent ID to use for the trigger"),
   outputTool: z.string().optional(),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
@@ -133,8 +135,7 @@ export const DeleteTriggerInputSchema = z.object({
  * Output schema for trigger deletion results
  */
 export const DeleteTriggerOutputSchema = z.object({
-  triggerId: z.string().describe("The trigger ID"),
-  agentId: z.string().describe("The agent ID"),
+  id: z.string().describe("The trigger ID"),
 });
 
 export const TriggerSchema = z.union([
@@ -162,7 +163,7 @@ export const GetWebhookTriggerUrlOutputSchema = z.object({
 export const TriggerOutputSchema = z.object({
   id: z.string().describe("The trigger ID"),
   type: z.enum(["cron", "webhook"]),
-  agent: AgentSchema.pick({ id: true }),
+  data: TriggerSchema,
   createdAt: z.string().describe("The creation date"),
   updatedAt: z.string().describe("The update date"),
   user: z.object({
@@ -175,7 +176,6 @@ export const TriggerOutputSchema = z.object({
   }),
   active: z.boolean().optional().describe("The trigger status"),
   workspace: z.string().describe("The workspace ID"),
-  data: TriggerSchema,
 });
 
 export const CreateTriggerOutputSchema = TriggerOutputSchema.describe(
@@ -193,3 +193,49 @@ export const CreateWebhookTriggerOutputSchema = z.object({
   id: z.string(),
   url: z.string().optional().describe("The URL of the webhook"),
 });
+
+/**
+ * Type alias for trigger output - use this instead of z.infer<typeof TriggerOutputSchema>
+ */
+export type TriggerOutput = z.infer<typeof TriggerOutputSchema>;
+
+/**
+ * Type alias for list triggers output - use this instead of z.infer<typeof ListTriggersOutputSchema>
+ */
+export type ListTriggersOutput = z.infer<typeof ListTriggersOutputSchema>;
+
+/**
+ * Type alias for create trigger output - use this instead of z.infer<typeof CreateTriggerOutputSchema>
+ */
+export type CreateTriggerOutput = z.infer<typeof CreateTriggerOutputSchema>;
+
+/**
+ * Type alias for delete trigger output - use this instead of z.infer<typeof DeleteTriggerOutputSchema>
+ */
+export type DeleteTriggerOutput = z.infer<typeof DeleteTriggerOutputSchema>;
+
+/**
+ * Type alias for get webhook trigger URL output - use this instead of z.infer<typeof GetWebhookTriggerUrlOutputSchema>
+ */
+export type GetWebhookTriggerUrlOutput = z.infer<
+  typeof GetWebhookTriggerUrlOutputSchema
+>;
+
+/**
+ * Type alias for trigger schema - use this instead of z.infer<typeof TriggerSchema>
+ */
+export type Trigger = z.infer<typeof TriggerSchema>;
+
+/**
+ * Type alias for cron trigger prompt agent schema - use this instead of z.infer<typeof CronTriggerPromptAgentSchema>
+ */
+export type CronTriggerPromptAgent = z.infer<
+  typeof CronTriggerPromptAgentSchema
+>;
+
+/**
+ * Type alias for webhook trigger output tool schema - use this instead of z.infer<typeof WebhookTriggerOutputToolSchema>
+ */
+export type WebhookTriggerOutputTool = z.infer<
+  typeof WebhookTriggerOutputToolSchema
+>;

@@ -10,7 +10,7 @@
     "fmt": "deno fmt --config ./package.json .",
     "check": "deno check --allow-import --config ./package.json .",
     "ui": "npx shadcn@latest add -c ./packages/ui",
-    "clean": "rm -f deno.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules packages/*/*/node_modules && deno install",
+    "clean": "rm -f deno.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules && deno install",
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked",
     "db:migration:create": "supabase migration new",

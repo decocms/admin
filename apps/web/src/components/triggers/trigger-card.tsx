@@ -1,5 +1,4 @@
-import type { TriggerOutputSchema } from "@deco/sdk";
-import type { z } from "zod";
+import type { TriggerOutput } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { timeAgo } from "../../utils/time-ago.ts";
 import { useState } from "react";
@@ -8,7 +7,7 @@ import { TriggerType } from "./trigger-type.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
 
-export type Trigger = z.infer<typeof TriggerOutputSchema>;
+export type Trigger = TriggerOutput;
 
 export function TriggerCard({ trigger, onClick }: {
   trigger: Trigger;

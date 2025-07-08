@@ -45,11 +45,7 @@ export function useSendAgentWhatsAppInvite(agentId: string, triggerId: string) {
   });
 }
 
-export function useUpsertWhatsAppUser({
-  agentId,
-}: {
-  agentId: string;
-}) {
+export function useUpsertWhatsAppUser() {
   const { workspace } = useSDK();
   const queryClient = useQueryClient();
   const { data: profile } = useProfile();
@@ -78,7 +74,7 @@ export function useUpsertWhatsAppUser({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: KEYS.TRIGGERS(workspace, agentId),
+        queryKey: KEYS.TRIGGERS(workspace),
       });
       queryClient.invalidateQueries({
         queryKey: KEYS.WHATSAPP_USER(workspace, profile.phone as string),

@@ -259,7 +259,10 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     });
     this.state.blockConcurrencyWhile(async () => {
       await this._runWithContext(async () => {
-        await this._init();
+        await this._init().catch((error) => {
+          console.error("Error initializing agent", error);
+          throw error;
+        });
       });
     });
   }

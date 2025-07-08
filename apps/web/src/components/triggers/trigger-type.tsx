@@ -1,15 +1,14 @@
-import type { TriggerOutputSchema } from "@deco/sdk";
-import type { z } from "zod";
+import type { TriggerOutput } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import cronstrue from "cronstrue";
 
 export function TriggerType({ trigger }: {
-  trigger: z.infer<typeof TriggerOutputSchema>;
+  trigger: TriggerOutput;
 }) {
   if (trigger.data.type === "webhook") {
     return (
       <div className="flex items-center gap-1">
-        <Icon name="device_hub" size={18} />
+        <Icon name="webhook" size={18} />
         Webhook
       </div>
     );

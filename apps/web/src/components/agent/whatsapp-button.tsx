@@ -3,7 +3,7 @@ import {
   type Agent,
   useAgent,
   useCreateTrigger,
-  useListTriggersByAgentId,
+  useListTriggers,
   useSDK,
   useSendAgentWhatsAppInvite,
   useUpsertWhatsAppUser,
@@ -40,14 +40,18 @@ const getWhatsAppLink = (agent: Agent) => {
   return url.href;
 };
 
+const WHATSAPP_TRIGGER = {
+  title: "WhatsApp Integration",
+  description: "WhatsApp integration for this agent",
+  type: "webhook",
+} as const;
+
 export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { agentId } = useChatContext();
   const { data: agent } = useAgent(agentId);
-  const { data: triggers, refetch: refetchTriggers } = useListTriggersByAgentId(
-    agentId,
-  );
-  const { mutate: createTrigger } = useCreateTrigger(agentId);
+  const { data: triggers, refetch: refetchTriggers } = useListTriggers();
+  const { mutate: createTrigger } = useCreateTrigger();
   const { data: profile } = useProfile();
   const { data: whatsappUser } = useWhatsAppUser(profile?.phone ?? "");
   const focusChat = useFocusChat();
@@ -62,14 +66,17 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
   const isDecoTeam = workspace as string === "shared/deco.cx";
 
   const webhookTriggers =
-    triggers?.triggers?.filter((trigger) => trigger.type === "webhook") ?? [];
+    triggers?.triggers?.filter((trigger) =>
+      trigger.type === "webhook" &&
+      "agentId" in trigger.data &&
+      trigger.data.agentId === agentId &&
+      trigger.data.title === WHATSAPP_TRIGGER.title
+    ) ?? [];
   const currentWhatsAppRouterTrigger = webhookTriggers.find((trigger) =>
     whatsappUser?.trigger_id === trigger.id
   );
 
-  const { mutate: upsertWhatsAppUser } = useUpsertWhatsAppUser({
-    agentId: agentId,
-  });
+  const { mutate: upsertWhatsAppUser } = useUpsertWhatsAppUser();
 
   const anyTrigger = webhookTriggers[0];
   const anyTriggerId = anyTrigger?.id;
@@ -84,17 +91,19 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
     if (!anyTriggerId) {
       createTrigger(
         {
-          title: "WhatsApp Integration",
-          description: "WhatsApp integration for this agent",
-          type: "webhook",
+          ...WHATSAPP_TRIGGER,
           passphrase: crypto.randomUUID(),
+          agentId: agentId,
         },
         {
           onSuccess: async () => {
             // Refetch triggers to get the newly created trigger
             const { data: updatedTriggers } = await refetchTriggers();
             const updatedWebhookTriggers = updatedTriggers?.triggers?.filter(
-              (trigger) => trigger.type === "webhook",
+              (trigger) =>
+                trigger.type === "webhook" &&
+                "agentId" in trigger.data &&
+                trigger.data.agentId === agentId,
             ) ?? [];
             const newTrigger = updatedWebhookTriggers[0];
 
@@ -172,17 +181,19 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
     if (!anyTriggerId) {
       createTrigger(
         {
-          title: "WhatsApp Integration",
-          description: "WhatsApp integration for this agent",
-          type: "webhook",
+          ...WHATSAPP_TRIGGER,
           passphrase: crypto.randomUUID(),
+          agentId: agentId,
         },
         {
           onSuccess: async () => {
             // Refetch triggers to get the newly created trigger
             const { data: updatedTriggers } = await refetchTriggers();
             const updatedWebhookTriggers = updatedTriggers?.triggers?.filter(
-              (trigger) => trigger.type === "webhook",
+              (trigger) =>
+                trigger.type === "webhook" &&
+                "agentId" in trigger.data &&
+                trigger.data.agentId === agentId,
             ) ?? [];
             const newTrigger = updatedWebhookTriggers[0];
 

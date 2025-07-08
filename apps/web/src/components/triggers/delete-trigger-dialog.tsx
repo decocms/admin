@@ -1,3 +1,4 @@
+import type { ListTriggersOutput } from "@deco/sdk";
 import { useDeleteTrigger } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -7,18 +8,16 @@ import {
   DialogFooter,
   DialogHeader,
 } from "@deco/ui/components/dialog.tsx";
-import type { ListTriggersOutputSchema } from "@deco/sdk";
-import type { z } from "zod";
 
 export const DeleteTriggerModal = (
-  { trigger, agentId, open, onOpenChange }: {
-    trigger: z.infer<typeof ListTriggersOutputSchema>["triggers"][number];
-    agentId: string;
+  { trigger, open, onOpenChange }: {
+    trigger: ListTriggersOutput["triggers"][number];
+
     open: boolean;
     onOpenChange: (open: boolean) => void;
   },
 ) => {
-  const { mutate: deleteTrigger } = useDeleteTrigger(agentId);
+  const { mutate: deleteTrigger } = useDeleteTrigger();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>

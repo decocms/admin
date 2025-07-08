@@ -1,4 +1,4 @@
-import { type TriggerSchema, useListTriggersByAgentId } from "@deco/sdk";
+import { type Trigger, useTrigger } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -6,7 +6,6 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
-import type { z } from "zod";
 import { AuditListContent } from "../audit/list.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { CronDetails } from "./cron-details.tsx";
@@ -14,30 +13,22 @@ import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { WebhookDetails } from "./webhook-details.tsx";
 
-const useTrigger = (agentId: string, triggerId: string) => {
-  const { data, isLoading } = useListTriggersByAgentId(agentId);
-  const trigger = data?.triggers?.find((t) => t.id === triggerId);
+export interface Props {
+  id?: string;
+  onBack?: () => void;
+}
 
-  return { trigger, isLoading };
-};
-
-export function TriggerDetails(
-  { triggerId: _triggerId, onBack, agentId: _agentId }: {
-    triggerId?: string;
-    onBack?: () => void;
-    agentId?: string;
-  },
-) {
+export function TriggerDetails({ id: _triggerId, onBack }: Props) {
   const params = useParams();
-  const agentId = _agentId || params.agentId;
-  const triggerId = _triggerId || params.triggerId;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  if (!agentId || !triggerId) {
+  const triggerId = _triggerId || params.id;
+
+  if (!triggerId) {
     return <div>No agent or trigger ID</div>;
   }
 
-  const { trigger, isLoading } = useTrigger(agentId, triggerId);
+  const { data: trigger, isLoading } = useTrigger(triggerId);
 
   if (!trigger || isLoading) {
     return <TriggerDetailsSkeleton />;
@@ -98,7 +89,7 @@ export function TriggerDetails(
             <h3 className="text-lg font-semibold mb-2">Logs</h3>
             <AuditListContent
               showFilters={false}
-              filters={{ resourceId: trigger.id, agentId }}
+              filters={{ resourceId: trigger.id }}
             />
           </div>
         </div>
@@ -109,14 +100,13 @@ export function TriggerDetails(
 
 export default function Page() {
   const params = useParams();
-  const agentId = params.agentId;
-  const triggerId = params.triggerId;
+  const triggerId = params.id;
 
-  if (!agentId || !triggerId) {
+  if (!triggerId) {
     return null;
   }
 
-  const { trigger } = useTrigger(agentId, triggerId);
+  const { data: trigger } = useTrigger(triggerId);
 
   return (
     <PageLayout
@@ -141,7 +131,7 @@ export default function Page() {
 }
 
 function TriggerIcon(
-  { type }: { type: z.infer<typeof TriggerSchema>["type"] },
+  { type }: { type: Trigger["type"] },
 ) {
   return (
     <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md">

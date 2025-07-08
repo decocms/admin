@@ -1,10 +1,9 @@
-import type { TriggerData } from "@deco/ai";
 import { Trigger } from "@deco/ai/actors";
 import { Hosts } from "@deco/sdk/hosts";
-import { join } from "node:path/posix";
+
 import { z } from "zod";
 import { InternalServerError, NotFoundError } from "../../errors.ts";
-import { Path } from "../../path.ts";
+
 import type { QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
@@ -342,22 +341,19 @@ const createWebhookTrigger = async (
   c: AppContext,
 ) => {
   assertHasWorkspace(c);
-  const triggerPath = Path.resolveHome(
-    join(
-      Path.folders.Agent.root(agentId),
-      Path.folders.trigger(discriminator),
-    ),
-    c.workspace.value,
-  ).path;
+
   // Create new trigger
-  const trigger = await c.stub(Trigger).new(triggerPath).create(
-    {
+  const trigger = await c
+    .stub(Trigger)
+    .new(`${c.workspace.value}/triggers/${discriminator}`)
+    .create({
       id: discriminator,
       type: "webhook" as const,
       passphrase: crypto.randomUUID() as string,
       title: "Channel Webhook",
-    } satisfies TriggerData,
-  );
+      agentId,
+    });
+
   if (!trigger.ok) {
     throw new InternalServerError("Failed to create trigger");
   }

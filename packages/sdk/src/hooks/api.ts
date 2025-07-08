@@ -90,6 +90,11 @@ export const KEYS = {
     workspace,
     agentId,
   ],
+  TRIGGER: (workspace: Workspace, triggerId: string) => [
+    "trigger",
+    workspace,
+    triggerId,
+  ],
   THREAD: (
     workspace: Workspace,
     threadId: string,

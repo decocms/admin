@@ -293,7 +293,7 @@ const router = createBrowserRouter([
           { path: "connection/:appKey", Component: ConnectionDetail },
           { path: "connections/success", Component: ConnectionInstallSuccess },
           { path: "triggers", Component: TriggerList },
-          { path: "trigger/:agentId/:triggerId", Component: TriggerDetails },
+          { path: "trigger/:id", Component: TriggerDetails },
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },

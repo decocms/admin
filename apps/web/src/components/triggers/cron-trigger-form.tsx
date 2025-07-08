@@ -1,6 +1,7 @@
 import {
+  type CronTriggerPromptAgent,
   CronTriggerPromptAgentSchema,
-  type TriggerOutputSchema,
+  type TriggerOutput,
   useCreateTrigger,
   useUpdateTrigger,
 } from "@deco/sdk";
@@ -26,7 +27,6 @@ import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import type { z } from "zod";
 
 const cronPresets = [
   { label: "Every hour", value: "0 * * * *" },
@@ -154,21 +154,17 @@ function CronSelectInput({ value, onChange, required, error }: {
   );
 }
 
-type CronTriggerFormType = z.infer<typeof CronTriggerPromptAgentSchema>;
+type CronTriggerFormType = CronTriggerPromptAgent;
 
-type CronTriggerData = z.infer<typeof CronTriggerPromptAgentSchema>;
+type CronTriggerData = CronTriggerPromptAgent;
 
 export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
   agentId: string;
   onSuccess?: () => void;
-  initialValues?: z.infer<typeof TriggerOutputSchema>;
+  initialValues?: TriggerOutput;
 }) {
-  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
-    agentId,
-  );
-  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
-    agentId,
-  );
+  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger();
+  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger();
   const isEditing = !!initialValues;
   const isPending = isCreating || isUpdating;
 
@@ -202,6 +198,7 @@ export function CronTriggerForm({ agentId, onSuccess, initialValues }: {
       title: data.title,
       description: data.description || undefined,
       cronExp: data.cronExp,
+      agentId,
       prompt: {
         messages: [{
           role: "user" as const,

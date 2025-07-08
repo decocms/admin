@@ -1,12 +1,12 @@
-import type { TriggerOutputSchema } from "@deco/sdk";
-import { useAgents, useListTriggers } from "@deco/sdk";
+import type { TriggerOutput } from "@deco/sdk";
+import { useAgents, useIntegrations, useListTriggers } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { Suspense, useState } from "react";
-import type { z } from "zod";
+import { Suspense, useCallback, useState } from "react";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
+import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -22,7 +22,7 @@ import { TriggerModal } from "./trigger-dialog.tsx";
 import { TriggerToggle } from "./trigger-toggle.tsx";
 import { TriggerType } from "./trigger-type.tsx";
 
-const SORTABLE_KEYS = ["title", "type", "agent", "author"] as const;
+const SORTABLE_KEYS = ["title", "type", "target", "author"] as const;
 
 type SortKey = typeof SORTABLE_KEYS[number];
 type SortDirection = "asc" | "desc";
@@ -76,20 +76,22 @@ export default function ListTriggersLayout() {
         <DefaultBreadcrumb items={[{ label: "Triggers", link: "/triggers" }]} />
       }
       actionButtons={
-        <TriggerModal
-          isOpen={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-          triggerAction={
-            <Button
-              variant="special"
-              title="Add Trigger"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Icon name="add" />
-              <span className="hidden md:inline">New trigger</span>
-            </Button>
-          }
-        />
+        <>
+          <Button
+            variant="special"
+            title="Add Trigger"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Icon name="add" />
+            <span className="hidden md:inline">New Trigger</span>
+          </Button>
+          {isCreateModalOpen && (
+            <TriggerModal
+              isOpen={isCreateModalOpen}
+              onOpenChange={setIsCreateModalOpen}
+            />
+          )}
+        </>
       }
     />
   );
@@ -108,9 +110,7 @@ function ListTriggersSuspended() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useViewMode("triggers");
 
-  const triggers = (data?.triggers || []) as z.infer<
-    typeof TriggerOutputSchema
-  >[];
+  const triggers = (data?.triggers || []) as TriggerOutput[];
 
   const filteredTriggers = search.trim().length > 0
     ? triggers.filter((t) =>
@@ -141,42 +141,90 @@ function ListTriggersSuspended() {
       />
 
       <div className="flex-1 min-h-0 overflow-x-auto">
-        {filteredTriggers.length === 0 ? (
-          <EmptyState
-            icon="cable"
-            title={search.trim().length > 0 ? "No triggers found" : "No triggers yet"}
-            description={
-              search.trim().length > 0
+        {filteredTriggers.length === 0
+          ? (
+            <EmptyState
+              icon="cable"
+              title={search.trim().length > 0
+                ? "No triggers found"
+                : "No triggers yet"}
+              description={search.trim().length > 0
                 ? "Try adjusting your search terms to find what you're looking for."
-                : "Create your first trigger to automate your agent workflows and respond to events automatically."
-            }
-            buttonProps={{
-              children: "Create Trigger",
-              onClick: () => {
-                // This will trigger the modal to open
-                const createButton = document.querySelector('[title="Add Trigger"]') as HTMLButtonElement;
-                createButton?.click();
-              },
-            }}
-          />
-        ) : (
-          viewMode === "table"
-            ? <TableView triggers={filteredTriggers} />
-            : <CardsView triggers={filteredTriggers} />
-        )}
+                : "Create your first trigger to automate your agent workflows and respond to events automatically."}
+              buttonProps={{
+                children: "Create Trigger",
+                onClick: () => {
+                  // This will trigger the modal to open
+                  const createButton = document.querySelector(
+                    '[title="Add Trigger"]',
+                  ) as HTMLButtonElement;
+                  createButton?.click();
+                },
+              }}
+            />
+          )
+          : (
+            viewMode === "table"
+              ? <TableView triggers={filteredTriggers} />
+              : <CardsView triggers={filteredTriggers} />
+          )}
       </div>
     </div>
   );
 }
 
 function TableView(
-  { triggers }: { triggers: z.infer<typeof TriggerOutputSchema>[] },
+  { triggers }: { triggers: TriggerOutput[] },
 ) {
   const [sortKey, setSortKey] = useState<SortKey>("title");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [openModalId, setOpenModalId] = useState<string | null>(null);
   const navigate = useNavigateWorkspace();
   const { data: agents } = useAgents();
+  const { data: integrations = [] } = useIntegrations();
+
+  function TargetInfo(
+    { trigger }: { trigger: TriggerOutput },
+  ) {
+    const data = trigger.data;
+
+    // For agent triggers - use type assertion to handle the schema
+    if ("agentId" in data && data.agentId) {
+      return <AgentInfo agentId={data.agentId} />;
+    }
+
+    // For tool triggers - use type assertion to handle the complex union type
+    if ("callTool" in data && data.callTool) {
+      const integration = integrations.find((i) =>
+        i.id === data.callTool.integrationId
+      );
+      const toolName = data.callTool.toolName;
+
+      return (
+        <div className="flex items-center gap-2">
+          {integration && (
+            <IntegrationAvatar
+              url={integration.icon}
+              fallback={integration.name}
+              size="sm"
+            />
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              {integration?.name || data.callTool.integrationId}
+            </span>
+            {toolName && (
+              <span className="text-xs text-muted-foreground">
+                {toolName}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return <span className="text-muted-foreground">Unknown target</span>;
+  }
 
   function handleSort(key: string) {
     const k = key as SortKey;
@@ -189,12 +237,28 @@ function TableView(
   }
 
   function getSortValue(
-    trigger: z.infer<typeof TriggerOutputSchema>,
+    trigger: TriggerOutput,
     key: SortKey,
   ): string {
-    if (key === "agent") {
-      const agent = agents?.find((a) => a.id === trigger.agent?.id);
-      return agent?.name?.toLowerCase() || "";
+    if (key === "target") {
+      const data = trigger.data;
+
+      // For agent triggers - use type guard to handle the schema
+      if ("agentId" in data && data.agentId) {
+        const agent = agents?.find((a) => a.id === data.agentId);
+        return agent?.name?.toLowerCase() || "";
+      }
+
+      // For tool triggers - use type guard to handle the complex union type
+      if ("callTool" in data && data.callTool) {
+        const integration = integrations.find((i) =>
+          i.id === data.callTool.integrationId
+        );
+        return integration?.name?.toLowerCase() ||
+          data.callTool.integrationId.toLowerCase();
+      }
+
+      return "";
     }
     if (key === "author") {
       return trigger.user?.metadata?.full_name?.toLowerCase() || "";
@@ -213,13 +277,13 @@ function TableView(
     return 0;
   });
 
-  function handleTriggerClick(trigger: z.infer<typeof TriggerOutputSchema>) {
+  const handleTriggerClick = useCallback((trigger: TriggerOutput) => {
     if (!openModalId) {
-      navigate(`/trigger/${trigger.agent.id}/${trigger.id}`);
+      navigate(`/trigger/${trigger.id}`);
     }
-  }
+  }, [openModalId, navigate]);
 
-  const columns: TableColumn<z.infer<typeof TriggerOutputSchema>>[] = [
+  const columns: TableColumn<TriggerOutput>[] = [
     {
       id: "active",
       header: "Active",
@@ -238,9 +302,9 @@ function TableView(
       sortable: true,
     },
     {
-      id: "agent",
-      header: "Agent",
-      render: (t) => <AgentInfo agentId={t.agent?.id} />,
+      id: "target",
+      header: "Target",
+      render: (t) => <TargetInfo trigger={t} />,
       sortable: true,
     },
     {
@@ -280,14 +344,15 @@ function TableView(
 }
 
 function CardsView(
-  { triggers }: { triggers: z.infer<typeof TriggerOutputSchema>[] },
+  { triggers }: { triggers: TriggerOutput[] },
 ) {
   const navigate = useNavigateWorkspace();
-  function handleTriggerClick(trigger: z.infer<typeof TriggerOutputSchema>) {
-    if (trigger.agent?.id && trigger.id) {
-      navigate(`/trigger/${trigger.agent.id}/${trigger.id}`);
-    }
-  }
+  const handleTriggerClick = useCallback(
+    (trigger: TriggerOutput) => {
+      navigate(`/trigger/${trigger.id}`);
+    },
+    [navigate],
+  );
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {triggers.map((trigger, index) => (

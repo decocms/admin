@@ -1,45 +1,37 @@
 import { MCPClient } from "../fetcher.ts";
 import type { CreateTriggerInput } from "../models/trigger.ts";
 
-export const listTriggers = (workspace: string, agentId: string) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_LIST(
-    { agentId },
-  );
+export const getTrigger = (workspace: string, id: string) =>
+  MCPClient.forWorkspace(workspace).TRIGGERS_GET({ id });
 
-export const listAllTriggers = (workspace: string) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_LIST({});
+export const listAllTriggers = (workspace: string, agentId?: string) =>
+  MCPClient.forWorkspace(workspace).TRIGGERS_LIST({ agentId });
 
 export const createTrigger = (
   workspace: string,
-  agentId: string,
   trigger: CreateTriggerInput,
-) =>
-  MCPClient.forWorkspace(workspace).TRIGGERS_CREATE(
-    { agentId, data: trigger },
-  );
+) => MCPClient.forWorkspace(workspace).TRIGGERS_CREATE(trigger);
 
 export const deleteTrigger = (
   workspace: string,
-  agentId: string,
   triggerId: string,
-) => MCPClient.forWorkspace(workspace).TRIGGERS_DELETE({ agentId, triggerId });
+) => MCPClient.forWorkspace(workspace).TRIGGERS_DELETE({ id: triggerId });
 
 export const activateTrigger = (
   workspace: string,
   triggerId: string,
-) => MCPClient.forWorkspace(workspace).TRIGGERS_ACTIVATE({ triggerId });
+) => MCPClient.forWorkspace(workspace).TRIGGERS_ACTIVATE({ id: triggerId });
 
 export const deactivateTrigger = (
   workspace: string,
   triggerId: string,
-) => MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE({ triggerId });
+) => MCPClient.forWorkspace(workspace).TRIGGERS_DEACTIVATE({ id: triggerId });
 
 export const updateTrigger = (
   workspace: string,
-  agentId: string,
   triggerId: string,
   trigger: CreateTriggerInput,
 ) =>
   MCPClient.forWorkspace(workspace).TRIGGERS_UPDATE(
-    { agentId, triggerId, data: trigger },
+    { id: triggerId, data: trigger },
   );

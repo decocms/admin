@@ -1,7 +1,8 @@
 import {
-  type TriggerOutputSchema,
+  type TriggerOutput,
   useCreateTrigger,
   useUpdateTrigger,
+  type WebhookTriggerOutputTool,
   WebhookTriggerOutputToolSchema,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -96,7 +97,7 @@ const FormSchema = WebhookTriggerOutputToolSchema.extend({
 
 type WebhookTriggerFormType = z.infer<typeof FormSchema>;
 
-type WebhookTriggerData = z.infer<typeof WebhookTriggerOutputToolSchema>;
+type WebhookTriggerData = WebhookTriggerOutputTool;
 
 export function WebhookTriggerForm({
   agentId,
@@ -105,14 +106,10 @@ export function WebhookTriggerForm({
 }: {
   agentId: string;
   onSuccess?: () => void;
-  initialValues?: z.infer<typeof TriggerOutputSchema>;
+  initialValues?: TriggerOutput;
 }) {
-  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger(
-    agentId,
-  );
-  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger(
-    agentId,
-  );
+  const { mutate: createTrigger, isPending: isCreating } = useCreateTrigger();
+  const { mutate: updateTrigger, isPending: isUpdating } = useUpdateTrigger();
   const isEditing = !!initialValues;
   const isPending = isCreating || isUpdating;
 
@@ -158,6 +155,7 @@ export function WebhookTriggerForm({
             title: data.title,
             description: data.description || undefined,
             type: "webhook",
+            agentId,
             passphrase: data.passphrase || undefined,
             schema: schemaObj as Record<string, unknown> | undefined,
             outputTool: data.outputTool || undefined,
@@ -181,6 +179,7 @@ export function WebhookTriggerForm({
           title: data.title,
           description: data.description || undefined,
           type: "webhook",
+          agentId,
           passphrase: data.passphrase || undefined,
           schema: schemaObj as Record<string, unknown> | undefined,
           outputTool: data.outputTool || undefined,

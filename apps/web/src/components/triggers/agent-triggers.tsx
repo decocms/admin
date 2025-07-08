@@ -1,47 +1,48 @@
-import {
-  type ListTriggersOutputSchema,
-  useListTriggersByAgentId,
-} from "@deco/sdk";
+import { type ListTriggersOutput, useListTriggers } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { useState } from "react";
-import type { z } from "zod";
 import { useChatContext } from "../chat/context.tsx";
-import { TriggerModal as TriggerModalButton } from "./trigger-dialog.tsx";
 import { TriggerCard } from "./trigger-card.tsx";
 import { TriggerDetails } from "./trigger-details.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
+import { TriggerModal as TriggerModalButton } from "./trigger-dialog.tsx";
 
 export function AgentTriggers() {
   const { agentId } = useChatContext();
-  const { data, isLoading } = useListTriggersByAgentId(agentId, {
-    refetchOnMount: true,
-    staleTime: 0,
-  });
+  const { data, isLoading } = useListTriggers();
   const [selectedTrigger, setSelectedTrigger] = useState<
-    z.infer<typeof ListTriggersOutputSchema>["triggers"][number] | null
+    ListTriggersOutput["triggers"][number] | null
   >(null);
   const [search, setSearch] = useState("");
 
   if (isLoading) {
     return <ListTriggersLoading />;
   }
-  if (!data?.triggers?.length) {
+
+  // Filter triggers by agentId
+  const agentTriggers = data?.triggers?.filter((trigger) => {
+    if ("agentId" in trigger.data && trigger.data.agentId) {
+      return trigger.data.agentId === agentId;
+    }
+    return false;
+  }) || [];
+
+  if (!agentTriggers.length) {
     return <ListTriggersEmpty />;
   }
   if (selectedTrigger) {
     return (
       <TriggerDetails
-        triggerId={selectedTrigger.id}
-        agentId={agentId}
+        id={selectedTrigger.id}
         onBack={() => setSelectedTrigger(null)}
       />
     );
   }
 
-  const filteredTriggers = data.triggers.filter((trigger) =>
+  const filteredTriggers = agentTriggers.filter((trigger) =>
     trigger.data.title.toLowerCase().includes(search.toLowerCase())
   );
 

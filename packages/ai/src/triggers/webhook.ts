@@ -3,7 +3,7 @@ import type { Message, StreamOptions } from "../types.ts";
 import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
 import { handleOutputTool } from "./output-tool.ts";
 import type { TriggerData } from "./services.ts";
-import { threadOf } from "./tools.ts";
+
 import type { TriggerHooks } from "./trigger.ts";
 
 export interface WebhookArgs {
@@ -20,6 +20,15 @@ const isAIMessage = (m: unknown | Message): m is Message => {
 
 const isAIMessages = (m: unknown | Message[]): m is Message[] => {
   return Array.isArray(m) && m.every(isAIMessage);
+};
+
+const threadOf = (
+  data: TriggerData,
+  url?: URL,
+): { threadId: string | undefined; resourceId: string | undefined } => {
+  const resourceId = url?.searchParams.get("resourceId") ?? data.id;
+  const threadId = url?.searchParams.get("threadId") ?? crypto.randomUUID(); // generate a random threadId if resourceId exists.
+  return { threadId, resourceId };
 };
 
 const parseOptions: {
@@ -75,10 +84,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
     const agent = trigger.state
       .stub(AIAgent)
       .new(trigger.agentId)
-      .withMetadata({
-        threadId: threadId ?? undefined,
-        resourceId: resourceId ?? data.id ?? undefined,
-      });
+      .withMetadata({ threadId, resourceId });
 
     const messagesFromArgs = args && typeof args === "object" &&
         "messages" in args && isAIMessages(args.messages)

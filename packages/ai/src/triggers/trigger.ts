@@ -12,7 +12,9 @@
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { SUPABASE_URL } from "@deco/sdk/auth";
+import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
+import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
+import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import {
   type AppContext,
@@ -31,13 +33,14 @@ import type { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
-import { dirname } from "node:path/posix";
 import process from "node:process";
 import { AIAgent } from "../agent.ts";
+import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
 export type { TriggerData };
+
 export const threadOf = (
   data: TriggerData,
   url?: URL,
@@ -129,17 +132,16 @@ export class Trigger {
   public mcpClient: MCPClientStub<WorkspaceTools>;
 
   protected data: TriggerData | null = null;
-  public agentId: string;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
   private db: ReturnType<typeof createServerClient>;
   private env: any;
+
   constructor(public state: ActorState, protected actorEnv: any) {
     this.env = {
       ...process.env,
       ...actorEnv,
     };
-    this.agentId = dirname(dirname(this.state.id)); // strip /triggers/$triggerId
     this.workspace = getTwoFirstSegments(this.state.id);
     this.db = createServerClient(
       SUPABASE_URL,
@@ -161,35 +163,80 @@ export class Trigger {
     });
   }
 
+  public get agentId(): string {
+    // Only certain trigger types have agentId
+    if (this.data && "agentId" in this.data) {
+      return `${this.workspace}/Agents/${this.data.agentId}`;
+    }
+    return `${this.workspace}/Agents/${WELL_KNOWN_AGENT_IDS.teamAgent}`;
+  }
+
   private _createContext(): AppContext {
     const policyClient = PolicyClient.getInstance(this.db);
     const authorizationClient = new AuthorizationClient(policyClient);
     return {
-      // can be ignored for now.
-      user: null as unknown as AppContext["user"],
+      params: {},
       envVars: this.env,
       db: this.db,
+      // can be ignored for now.
+      user: null as unknown as AppContext["user"],
       isLocal: true,
       stub: this.state.stub as AppContext["stub"],
       workspace: fromWorkspaceString(this.workspace),
       resourceAccess: createResourceAccess(),
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
-      params: {},
       policy: policyClient,
       authorization: authorizationClient,
     };
   }
 
-  public async _callTool(tool: CallTool, args?: Record<string, unknown>) {
-    const integration = await this.mcpClient.INTEGRATIONS_GET({
-      id: tool.integrationId,
-    });
-    return this.mcpClient.INTEGRATIONS_CALL_TOOL({
-      connection: integration.connection,
-      params: {
-        name: tool.toolName,
-        arguments: tool.arguments ?? args,
+  _token() {
+    const keyPair = this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
+    return JwtIssuer.forKeyPair(keyPair).then((issuer) =>
+      issuer.issue({
+        sub: `trigger:${this._getTriggerId()}`,
+        aud: this.workspace,
+      })
+    );
+  }
+
+  private _runWithContext<T>(fn: () => Promise<T>) {
+    return contextStorage.run({
+      env: this.actorEnv,
+      ctx: {
+        passThroughOnException: () => {},
+        waitUntil: () => {},
+        props: {},
       },
+    }, fn);
+  }
+
+  public _callTool(tool: CallTool, args?: Record<string, unknown>) {
+    return this._runWithContext(async () => {
+      const integration = await this.mcpClient.INTEGRATIONS_GET({
+        id: tool.integrationId,
+      });
+
+      const patchedConnection =
+        isApiDecoChatMCPConnection(integration.connection)
+          ? { ...integration.connection, token: await this._token() }
+          : integration.connection;
+
+      const response = await this.mcpClient.INTEGRATIONS_CALL_TOOL({
+        connection: patchedConnection,
+        params: {
+          name: tool.toolName,
+          arguments: tool.arguments ?? args,
+        },
+      });
+
+      return response;
     });
   }
 
@@ -226,9 +273,10 @@ export class Trigger {
   private async _loadData(): Promise<TriggerData | null> {
     const loadFromDbPromise = this.mcpClient.TRIGGERS_GET({
       id: this._getTriggerId(),
-    }).then((v) => v === null ? null : mapTriggerToTriggerData(v)).catch(() =>
-      null
-    );
+    })
+      .then((v) => v === null ? null : mapTriggerToTriggerData(v))
+      .catch(() => null);
+
     const loadFromStatePromise = this._loadFromState().then((v) =>
       v === null ? loadFromDbPromise : v
     );
@@ -338,19 +386,19 @@ export class Trigger {
 
   generateObject(...args: Parameters<AIAgent["generateObject"]>) {
     this._assertsValidInvoke();
-    const stub = this.state.stub(AIAgent).new(this.agentId);
+    const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.generateObject(...args);
   }
 
   stream(...args: Parameters<AIAgent["stream"]>) {
     this._assertsValidInvoke();
-    const stub = this.state.stub(AIAgent).new(this.agentId);
+    const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.stream(...args);
   }
 
   generate(...args: Parameters<AIAgent["generate"]>) {
     this._assertsValidInvoke();
-    const stub = this.state.stub(AIAgent).new(this.agentId);
+    const stub = this.state.stub(AIAgent).new(`${this.agentId}`);
     return stub.generate(...args);
   }
 

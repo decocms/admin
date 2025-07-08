@@ -238,7 +238,7 @@ export const deleteAgent = createTool({
     const triggers = await listTriggers.handler({ agentId: id });
 
     for (const trigger of triggers.triggers) {
-      await deleteTrigger.handler({ agentId: id, triggerId: trigger.id });
+      await deleteTrigger.handler({ id: trigger.id });
     }
 
     // TODO: implement an way to remove knowledge base and it's files from asset and kb

@@ -1,4 +1,4 @@
-import type { TriggerOutputSchema } from "@deco/sdk";
+import type { TriggerOutput } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -8,12 +8,11 @@ import {
 } from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
-import type { z } from "zod";
 import { DeleteTriggerModal } from "./delete-trigger-dialog.tsx";
 import { TriggerModal } from "./trigger-dialog.tsx";
 
 interface TriggerActionsProps {
-  trigger: z.infer<typeof TriggerOutputSchema>;
+  trigger: TriggerOutput;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -59,15 +58,16 @@ export function TriggerActions(
       </DropdownMenu>
       <DeleteTriggerModal
         trigger={trigger}
-        agentId={trigger.agent?.id || ""}
         open={open}
         onOpenChange={onOpenChange}
       />
-      <TriggerModal
-        trigger={trigger}
-        isOpen={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-      />
+      {isEditModalOpen && (
+        <TriggerModal
+          trigger={trigger}
+          isOpen={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
+      )}
     </>
   );
 }

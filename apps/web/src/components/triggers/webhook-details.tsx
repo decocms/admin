@@ -1,17 +1,11 @@
-import type {
-  TriggerOutputSchema,
-  WebhookTriggerOutputSchema,
-} from "@deco/sdk";
+import type { TriggerOutput, WebhookTriggerOutputTool } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { CodeBlock } from "./code-block.tsx";
-import type { z } from "zod";
 
 export function WebhookDetails(
-  { trigger }: { trigger: z.infer<typeof TriggerOutputSchema> },
+  { trigger }: { trigger: TriggerOutput },
 ) {
-  const triggerData = trigger.data as z.infer<
-    typeof WebhookTriggerOutputSchema
-  >;
+  const triggerData = trigger.data as WebhookTriggerOutputTool;
   return (
     <div className="space-y-4 border p-4 rounded-md bg-muted">
       <div className="flex items-center gap-2">

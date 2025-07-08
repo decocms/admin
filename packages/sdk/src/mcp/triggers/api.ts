@@ -1,6 +1,7 @@
 import { Trigger } from "@deco/ai/actors";
-import { join } from "node:path";
+
 import { z } from "zod";
+import { WELL_KNOWN_AGENT_IDS } from "../../constants.ts";
 import {
   InternalServerError,
   NotFoundError,
@@ -10,20 +11,26 @@ import { Hosts } from "../../hosts.ts";
 import type { IntegrationSchema } from "../../models/mcp.ts";
 import {
   CreateCronTriggerInputSchema,
-  type CreateTriggerOutputSchema,
+  type CreateTriggerOutput,
+  CreateTriggerOutputSchema,
   CreateWebhookTriggerInputSchema,
-  type DeleteTriggerOutputSchema,
-  type GetWebhookTriggerUrlOutputSchema,
-  type ListTriggersOutputSchema,
+  type DeleteTriggerOutput,
+  DeleteTriggerOutputSchema,
+  type GetWebhookTriggerUrlOutput,
+  GetWebhookTriggerUrlOutputSchema,
+  type ListTriggersOutput,
+  ListTriggersOutputSchema,
+  type Trigger as TriggerType,
   TriggerSchema,
 } from "../../models/trigger.ts";
-import { Path } from "../../path.ts";
+
 import type { Json, QueryResult } from "../../storage/index.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
+  type WithTool,
 } from "../assertions.ts";
-import { createToolGroup } from "../context.ts";
+import { type AppContext, createToolGroup } from "../context.ts";
 import { convertFromDatabase } from "../integrations/api.ts";
 import { userFromDatabase } from "../user.ts";
 
@@ -42,11 +49,18 @@ const SELECT_TRIGGER_QUERY = `
 function mapTrigger(
   trigger: QueryResult<"deco_chat_triggers", typeof SELECT_TRIGGER_QUERY>,
 ) {
+  const metadata = trigger.metadata || {};
+  const triggerType = typeof metadata === "object" && "cronExp" in metadata
+    ? "cron" as const
+    : "webhook" as const;
+
+  if (trigger.agent_id !== WELL_KNOWN_AGENT_IDS.teamAgent) {
+    // @ts-expect-error - Compatibility with triggers created before toolCall support was added
+    metadata.agentId = trigger.agent_id;
+  }
+
   return {
-    type: trigger.metadata && typeof trigger.metadata === "object" &&
-        "cronExp" in trigger.metadata
-      ? "cron" as const
-      : "webhook" as const,
+    type: triggerType,
     id: trigger.id,
     createdAt: trigger.created_at,
     updatedAt: trigger.updated_at,
@@ -54,25 +68,43 @@ function mapTrigger(
       // @ts-expect-error - Supabase user metadata is not typed
       ...userFromDatabase(trigger.profile),
       id: trigger.user_id,
-      // @ts-expect-error - Supabase user metadata is not typed
-    } as z.infer<typeof ListTriggersOutputSchema["triggers"][number]["user"]>,
+    } as ListTriggersOutput["triggers"][number]["user"],
     workspace: trigger.workspace,
     active: trigger.active,
-    data: trigger.metadata as z.infer<typeof TriggerSchema>,
+    data: metadata as TriggerType,
     binding: trigger.binding ? convertFromDatabase(trigger.binding) : null,
-    agent: {
-      id: trigger.agent_id,
-    },
   };
 }
 
-export const buildWebhookUrl = (
-  triggerId: string,
-  passphrase?: string,
-  outputTool?: string,
+interface WebhookOptions {
+  id: string;
+  workspace: string;
+  passphrase?: string;
+  outputTool?: string;
+}
+
+const webhookURLFrom = (
+  { id, workspace, passphrase, outputTool }: WebhookOptions,
 ) => {
-  return `https://${Hosts.API}/actors/${Trigger.name}/invoke/run?passphrase=${passphrase}&deno_isolate_instance_id=${triggerId}&output_tool=${outputTool}`;
+  const url = new URL(`${workspace}/triggers/${id}`, `https://${Hosts.API}`);
+
+  if (passphrase) {
+    url.searchParams.set("passphrase", passphrase);
+  }
+  if (outputTool) {
+    url.searchParams.set("output_tool", outputTool);
+  }
+
+  return url.href;
 };
+
+const createTriggerStub = (
+  { id, workspace, stub }: {
+    id: string;
+    workspace: string;
+    stub: WithTool<AppContext>["stub"];
+  },
+) => stub(Trigger).new(`${workspace}/triggers/${id}`);
 
 const createTool = createToolGroup("Triggers", {
   name: "Triggers & Automation",
@@ -85,10 +117,11 @@ export const listTriggers = createTool({
   name: "TRIGGERS_LIST",
   description: "List all triggers",
   inputSchema: z.object({ agentId: z.string().optional() }),
+  outputSchema: ListTriggersOutputSchema,
   handler: async (
     { agentId },
     c,
-  ): Promise<z.infer<typeof ListTriggersOutputSchema>> => {
+  ): Promise<ListTriggersOutput> => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -121,13 +154,10 @@ export const upsertTrigger = createTool({
   name: "TRIGGERS_UPSERT",
   description: "Create or update a trigger",
   inputSchema: z.object({
-    agentId: z.string().describe(
-      "The ID of the agent to create the trigger for, use only UUIDs",
-    ),
-    triggerId: z.string().optional(),
+    id: z.string().optional(),
     data: TriggerSchema,
   }),
-  handler: async ({ agentId, triggerId, data }, c) => {
+  handler: async ({ id, data }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -137,48 +167,39 @@ export const upsertTrigger = createTool({
     const user = c.user;
     const stub = c.stub;
 
-    const id = triggerId || crypto.randomUUID();
-
-    const triggerPath = Path.resolveHome(
-      join(
-        Path.folders.Agent.root(agentId),
-        Path.folders.trigger(id),
-      ),
-      workspace,
-    ).path;
-
-    // Validate trigger data based on type
-    if (data.type === "cron") {
-      const parse = CreateCronTriggerInputSchema.safeParse(data);
-      if (!parse.success) {
-        throw new UserInputError("Invalid trigger");
-      }
-    }
+    const triggerId = id || crypto.randomUUID();
 
     if (data.type === "webhook") {
-      const parse = CreateWebhookTriggerInputSchema.safeParse(data);
-      if (!parse.success) {
-        throw new UserInputError("Invalid trigger");
-      }
-      (data as z.infer<typeof TriggerSchema> & { url: string }).url =
-        buildWebhookUrl(
-          triggerPath,
-          data.passphrase,
-          "outputTool" in data ? data.outputTool : undefined,
-        );
+      data.url = webhookURLFrom({
+        id: triggerId,
+        workspace,
+        passphrase: data.passphrase,
+        outputTool: "outputTool" in data ? data.outputTool : undefined,
+      });
     }
 
-    const userId = typeof user.id === "string" ? user.id : undefined;
+    // Validate trigger data based on type
+    const parse = TriggerSchema.safeParse(data);
+    if (!parse.success) {
+      throw new UserInputError(parse.error.message);
+    }
+
+    const triggerStub = createTriggerStub({ id: triggerId, workspace, stub });
 
     // Delete existing trigger if updating
-    if (triggerId) {
-      await stub(Trigger).new(triggerPath).delete();
+    if (id) {
+      await triggerStub.delete();
     }
+
+    const userId = typeof user?.id === "string" ? user.id : undefined;
+    const agentId = "agentId" in data && data.agentId
+      ? data.agentId
+      : WELL_KNOWN_AGENT_IDS.teamAgent;
 
     // Update database
     const { data: trigger, error } = await db.from("deco_chat_triggers")
       .upsert({
-        id,
+        id: triggerId,
         workspace,
         agent_id: agentId,
         user_id: userId,
@@ -192,13 +213,7 @@ export const upsertTrigger = createTool({
     }
 
     // Create new trigger
-    await stub(Trigger).new(triggerPath).create(
-      {
-        ...data,
-        id,
-        resourceId: userId,
-      },
-    );
+    await triggerStub.create({ ...data, id: triggerId, resourceId: userId });
 
     return mapTrigger(trigger);
   },
@@ -207,18 +222,13 @@ export const upsertTrigger = createTool({
 export const createTrigger = createTool({
   name: "TRIGGERS_CREATE",
   description: "Create a trigger",
-  inputSchema: z.object({
-    agentId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs",
-    ),
-    data: TriggerSchema,
-  }),
-  handler: async ({ agentId, data }, c) => {
+  inputSchema: TriggerSchema,
+  handler: async (trigger, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const result = await upsertTrigger.handler({ agentId, data });
+    const result = await upsertTrigger.handler({ data: trigger });
 
     return result;
   },
@@ -228,18 +238,15 @@ export const updateTrigger = createTool({
   name: "TRIGGERS_UPDATE",
   description: "Update a trigger",
   inputSchema: z.object({
-    agentId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
-    ),
-    triggerId: z.string(),
+    id: z.string(),
     data: TriggerSchema,
   }),
-  handler: async ({ agentId, triggerId, data }, c) => {
+  handler: async ({ id, data }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const result = await upsertTrigger.handler({ agentId, triggerId, data });
+    const result = await upsertTrigger.handler({ id, data });
 
     return result;
   },
@@ -248,22 +255,16 @@ export const updateTrigger = createTool({
 export const createCronTrigger = createTool({
   name: "TRIGGERS_CREATE_CRON",
   description: "Create a cron trigger",
-  inputSchema: z.object({
-    agentId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
-    ),
-    data: CreateCronTriggerInputSchema,
-  }),
+  inputSchema: CreateCronTriggerInputSchema,
   handler: async (
-    { agentId, data },
+    data,
     c,
-  ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+  ): Promise<CreateTriggerOutput> => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    agentId ??= crypto.randomUUID();
-    const result = await upsertTrigger.handler({ agentId, data });
+    const result = await upsertTrigger.handler({ data });
 
     return result;
   },
@@ -272,22 +273,17 @@ export const createCronTrigger = createTool({
 export const createWebhookTrigger = createTool({
   name: "TRIGGERS_CREATE_WEBHOOK",
   description: "Create a webhook trigger",
-  inputSchema: z.object({
-    agentId: z.string().describe(
-      "The ID of the agent(current) to create the trigger for, use only UUIDs.",
-    ),
-    data: CreateWebhookTriggerInputSchema,
-  }),
+  inputSchema: CreateWebhookTriggerInputSchema,
+  outputSchema: CreateTriggerOutputSchema,
   handler: async (
-    { agentId, data },
+    data,
     c,
-  ): Promise<z.infer<typeof CreateTriggerOutputSchema>> => {
+  ): Promise<CreateTriggerOutput> => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    agentId ??= crypto.randomUUID();
-    const result = await upsertTrigger.handler({ agentId, data });
+    const result = await upsertTrigger.handler({ data });
 
     return result;
   },
@@ -296,11 +292,12 @@ export const createWebhookTrigger = createTool({
 export const deleteTrigger = createTool({
   name: "TRIGGERS_DELETE",
   description: "Delete a trigger",
-  inputSchema: z.object({ triggerId: z.string(), agentId: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: DeleteTriggerOutputSchema,
   handler: async (
-    { triggerId, agentId },
+    { id },
     c,
-  ): Promise<z.infer<typeof DeleteTriggerOutputSchema>> => {
+  ): Promise<DeleteTriggerOutput> => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -309,36 +306,30 @@ export const deleteTrigger = createTool({
     const workspace = c.workspace.value;
     const stub = c.stub;
 
-    const workspaceTrigger = Path.resolveHome(
-      join(Path.folders.Agent.root(agentId), Path.folders.trigger(triggerId)),
-      workspace,
-    ).path;
-
-    await stub(Trigger).new(workspaceTrigger).delete();
+    const triggerStub = createTriggerStub({ id, workspace, stub });
+    await triggerStub.delete();
 
     const { error } = await db.from("deco_chat_triggers")
       .delete()
-      .eq("id", triggerId)
+      .eq("id", id)
       .eq("workspace", workspace);
 
     if (error) {
       throw new InternalServerError(error.message);
     }
-    return {
-      triggerId,
-      agentId,
-    };
+    return { id };
   },
 });
 
 export const getWebhookTriggerUrl = createTool({
   name: "TRIGGERS_GET_WEBHOOK_URL",
   description: "Get the webhook URL for a trigger",
-  inputSchema: z.object({ triggerId: z.string() }),
+  inputSchema: z.object({ id: z.string() }),
+  outputSchema: GetWebhookTriggerUrlOutputSchema,
   handler: async (
-    { triggerId },
+    { id },
     c,
-  ): Promise<z.infer<typeof GetWebhookTriggerUrlOutputSchema>> => {
+  ): Promise<GetWebhookTriggerUrlOutput> => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -348,7 +339,7 @@ export const getWebhookTriggerUrl = createTool({
 
     const { data, error } = await db.from("deco_chat_triggers")
       .select("metadata")
-      .eq("id", triggerId)
+      .eq("id", id)
       .eq("workspace", workspace)
       .single();
 
@@ -371,9 +362,7 @@ export const getTrigger = createTool({
   description: "Get a trigger by ID",
   inputSchema: z.object({ id: z.string() }),
   handler: async ({ id: triggerId }, c): Promise<
-    z.infer<
-      typeof CreateTriggerOutputSchema
-    > & {
+    CreateTriggerOutput & {
       binding: z.infer<typeof IntegrationSchema> | null;
     }
   > => {
@@ -405,8 +394,8 @@ export const getTrigger = createTool({
 export const activateTrigger = createTool({
   name: "TRIGGERS_ACTIVATE",
   description: "Activate a trigger",
-  inputSchema: z.object({ triggerId: z.string() }),
-  handler: async ({ triggerId }, c) => {
+  inputSchema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -419,7 +408,7 @@ export const activateTrigger = createTool({
     try {
       const { data, error: selectError } = await db.from("deco_chat_triggers")
         .select(SELECT_TRIGGER_QUERY)
-        .eq("id", triggerId)
+        .eq("id", id)
         .eq("workspace", workspace)
         .single();
 
@@ -437,17 +426,17 @@ export const activateTrigger = createTool({
         };
       }
 
-      await stub(Trigger).new(triggerId).create(
-        {
-          ...data.metadata as z.infer<typeof TriggerSchema>,
-          id: data.id,
-          resourceId: typeof user.id === "string" ? user.id : undefined,
-        },
-      );
+      const triggerStub = createTriggerStub({ id, workspace, stub });
+
+      await triggerStub.create({
+        ...data.metadata as TriggerType,
+        id: data.id,
+        resourceId: typeof user.id === "string" ? user.id : undefined,
+      });
 
       const { error } = await db.from("deco_chat_triggers")
         .update({ active: true })
-        .eq("id", triggerId)
+        .eq("id", id)
         .eq("workspace", workspace);
 
       if (error) {
@@ -473,8 +462,8 @@ export const activateTrigger = createTool({
 export const deactivateTrigger = createTool({
   name: "TRIGGERS_DEACTIVATE",
   description: "Deactivate a trigger",
-  inputSchema: z.object({ triggerId: z.string() }),
-  handler: async ({ triggerId }, c) => {
+  inputSchema: z.object({ id: z.string() }),
+  handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -486,7 +475,7 @@ export const deactivateTrigger = createTool({
     try {
       const { data, error: selectError } = await db.from("deco_chat_triggers")
         .select("*")
-        .eq("id", triggerId)
+        .eq("id", id)
         .eq("workspace", workspace)
         .single();
 
@@ -504,11 +493,12 @@ export const deactivateTrigger = createTool({
         };
       }
 
-      await stub(Trigger).new(triggerId).delete();
+      const triggerStub = createTriggerStub({ id, workspace, stub });
+      await triggerStub.delete();
 
       const { error } = await db.from("deco_chat_triggers")
         .update({ active: false })
-        .eq("id", triggerId)
+        .eq("id", id)
         .eq("workspace", workspace);
 
       if (error) {

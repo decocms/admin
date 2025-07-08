@@ -1,19 +1,14 @@
 import { useActivateTrigger, useDeactivateTrigger } from "@deco/sdk";
-import type { z } from "zod";
-import type { TriggerOutputSchema } from "@deco/sdk";
+import type { TriggerOutput } from "@deco/sdk";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { useState } from "react";
 
 export function TriggerToggle(
-  { trigger }: { trigger: z.infer<typeof TriggerOutputSchema> },
+  { trigger }: { trigger: TriggerOutput },
 ) {
-  if (!trigger.agent?.id) {
-    return null;
-  }
-
   const [isActive, setIsActive] = useState(trigger.active);
-  const { mutate: activateTrigger } = useActivateTrigger(trigger.agent.id);
-  const { mutate: deactivateTrigger } = useDeactivateTrigger(trigger.agent.id);
+  const { mutate: activateTrigger } = useActivateTrigger();
+  const { mutate: deactivateTrigger } = useDeactivateTrigger();
 
   const handleToggle = (checked: boolean) => {
     // Optimistically update UI

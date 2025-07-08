@@ -51,6 +51,7 @@
     "tiptap-markdown": "^0.8.10"
   },
   "devDependencies": {
+    "@react-scan/vite-plugin-react-scan": "^0.1.8",
     "@std/assert": "npm:@jsr/std__assert@1.0.13",
     "@tailwindcss/vite": "^4.1.1",
     "@types/json-schema": "^7.0.15",
@@ -59,6 +60,6 @@
     "@vitejs/plugin-react-swc": "^3.8.0",
     "tailwindcss": "^4.1.1",
     "vite": "^6.3.5",
-    "react-scan": "0.4.3"
+    "react-scan": "^0.4.3"
   }
 }

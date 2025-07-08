@@ -2,12 +2,14 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig, type PluginOption } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import reactScan from "@react-scan/vite-plugin-react-scan";
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react() as PluginOption[],
     tailwindcss() as PluginOption[],
+    reactScan(),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {

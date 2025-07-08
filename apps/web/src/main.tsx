@@ -23,8 +23,6 @@ import { useWorkspaceLink } from "./hooks/use-navigate-workspace.ts";
 const enableReactScan = (!import.meta.env.VITE_ENABLE_REACT_SCAN ||
   import.meta.env.VITE_ENABLE_REACT_SCAN === "true") &&
   import.meta.env.MODE === "development";
-
-console.log(import.meta.env);
 scan({
   enabled: enableReactScan,
 });

@@ -292,7 +292,7 @@ function MembersViewContent() {
               onClick={() => {
                 if (row.type === "invite" && row.invite) {
                   rejectInvite.mutateAsync({
-                    id: row.invite.id,
+                    id: String(row.invite.id),
                     teamId,
                   });
                 } else if (row.type === "member" && row.member) {

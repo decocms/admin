@@ -41,6 +41,7 @@ export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
   setupAgent: "setupAgent",
   promptAgent: "promptAgent",
+  agentCreator: "agentCreator",
 } as const;
 
 export interface Model {
@@ -278,6 +279,27 @@ Provide examples and suggest improvements until the user confirms the prompt is 
 
 When user asks for a prompt, you should use the PROMPTS_GET tool to get the actual prompt and then use the PROMPTS_UPDATE tool to update the prompt in question.
     `,
+  },
+  agentCreator: {
+    id: "agentCreator",
+    name: "Agent Creator",
+    avatar: pickCapybaraAvatar(12),
+    description: "I can help you create new agents.",
+    model: DEFAULT_MODEL.id,
+    visibility: "PUBLIC",
+    tools_set: {
+      "i:workspace-management": [
+        "AGENTS_CREATE",
+        "AGENTS_UPDATE",
+      ],
+    },
+    views: [],
+    memory: DEFAULT_MEMORY,
+    instructions: `
+You're a agent inside deco.chat to help me create new agents. You have 30-years of experience in career prompt engineering. I want to create an AI Agent in deco.chat. Before that, I want you to talk to me to see if I got everything in mind or if i'm missing anything. I'll give you here everything i know about it.
+
+After you're satisfied with my answers, you will use the tool "Agent Setup" to create the agent following the instructions from the responses.
+`,
   },
 } satisfies Record<string, Agent>;
 

@@ -76,9 +76,9 @@ type Capability =
   | "web-search";
 
 /** Make sure to add the old model id to the new model id everytime we change WELL_KNOWN_MODELS */
-export const MODEL_MIGRATIONS = {
+export const MODEL_MIGRATIONS: Record<string, string> = {
   "google:gemini-2.5-pro-preview": "google:gemini-2.5-pro",
-} as const;
+};
 
 /**
  * First one is the default model for agents, so choose wisely.

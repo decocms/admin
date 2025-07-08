@@ -455,9 +455,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const llmConfig = await getLLMConfig({
       modelId: config.model,
       llmVault: this.llmVault,
-    })
-      // This is a workaround to avoid the wild #<Object> error, not bricking the agent.
-      .catch(() => getLLMConfig({ modelId: WELL_KNOWN_MODELS[0].id }));
+    });
 
     const { llm, tokenLimit } = createLLMInstance({
       ...llmConfig,

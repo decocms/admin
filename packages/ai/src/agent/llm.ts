@@ -1,4 +1,4 @@
-import { isWellKnownModel } from "@deco/sdk";
+import { isWellKnownModel, WELL_KNOWN_MODELS } from "@deco/sdk";
 import type { LLMVault } from "@deco/sdk/mcp";
 import type { LanguageModelV1 } from "ai";
 import { createLLMProvider } from "./llm-provider.ts";
@@ -17,36 +17,39 @@ export interface LLMConfigWithModelId extends LLMConfig {
   modelId: string;
 }
 
+const isUUID = (modelId: string): boolean => {
+  return modelId.match(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+  ) !== null;
+};
+
 /**
  * Gets the LLM config for a given model id.
  * If not a managed model, will read the api key from the current workspace's llm vault.
  */
-export async function getLLMConfig({
-  modelId,
-  llmVault,
-}: {
+export async function getLLMConfig({ modelId, llmVault }: {
   modelId: string;
   llmVault?: LLMVault;
 }): Promise<LLMConfigWithModelId> {
-  if (isWellKnownModel(modelId)) {
+  if (isUUID(modelId)) {
+    if (!llmVault) {
+      throw new Error("LLM vault not found");
+    }
+
+    // TODO(@camudo): cache for custom models, so we don't read the api key every time.
+    const { model, apiKey } = await llmVault.readApiKey(modelId);
+
     return {
-      model: modelId,
-      modelId: modelId,
+      model,
+      apiKey: apiKey,
+      bypassOpenRouter: true,
+      modelId,
     };
   }
-  if (!llmVault) {
-    throw new Error("LLM vault not found");
-  }
 
-  // TODO(@camudo): cache for custom models, so we don't read the api key every time.
-  const { model, apiKey } = await llmVault.readApiKey(modelId);
+  const id = isWellKnownModel(modelId) ? modelId : WELL_KNOWN_MODELS[0].id;
 
-  return {
-    model,
-    apiKey: apiKey,
-    bypassOpenRouter: true,
-    modelId,
-  };
+  return { model: id, modelId: id };
 }
 
 export function createLLMInstance({

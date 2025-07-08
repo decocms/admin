@@ -62,7 +62,6 @@ const TriggerFormSchema = z.object({
   toolName: z.string().optional(),
   // Agent-specific fields
   outputSchema: z.string().optional(),
-  outputTool: z.string().optional(),
   prompt: z.string().optional(),
   // Tool-specific fields
   arguments: z.string().optional(),
@@ -421,10 +420,6 @@ export function TriggerModal({
       outputSchema: trigger?.data.type === "webhook" && "schema" in trigger.data
         ? JSON.stringify(trigger.data.schema, null, 2)
         : "",
-      outputTool:
-        trigger?.data.type === "webhook" && "outputTool" in trigger.data
-          ? trigger.data.outputTool || ""
-          : "",
       prompt: trigger?.data.type === "cron" && "prompt" in trigger.data
         ? trigger.data.prompt.messages[0]?.content || ""
         : "",
@@ -475,7 +470,6 @@ export function TriggerModal({
           passphrase: data.passphrase || undefined,
           agentId: currentAgentId,
           schema: schemaObj as Record<string, unknown> | undefined,
-          outputTool: data.outputTool || undefined,
         };
 
         if (isEditing && trigger) {
@@ -1190,23 +1184,6 @@ export function TriggerModal({
                               <JsonSchemaInput
                                 value={field.value}
                                 onChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="outputTool"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Output Tool</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter output tool name (optional)"
-                                {...field}
                               />
                             </FormControl>
                             <FormMessage />

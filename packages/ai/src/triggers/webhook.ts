@@ -1,7 +1,6 @@
 import { AIAgent } from "../agent.ts";
 import type { Message, StreamOptions } from "../types.ts";
-import { getWorkspaceFromAgentId } from "../utils/workspace.ts";
-import { handleOutputTool } from "./output-tool.ts";
+
 import type { TriggerData } from "./services.ts";
 
 import type { TriggerHooks } from "./trigger.ts";
@@ -107,18 +106,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         ]
         : []),
     ];
-
-    const outputTool = url?.searchParams.get("outputTool");
-    if (outputTool) {
-      const workspace = getWorkspaceFromAgentId(trigger.agentId);
-      return handleOutputTool({
-        outputTool,
-        agent,
-        messages,
-        trigger,
-        workspace,
-      });
-    }
 
     const schema = "schema" in data && data.schema
       ? data.schema

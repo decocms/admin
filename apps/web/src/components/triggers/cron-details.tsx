@@ -1,22 +1,14 @@
-import type {
-  CronTriggerCallTool,
-  CronTriggerPromptAgent,
-  TriggerOutput,
-} from "@deco/sdk";
+import type { CronTrigger } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import cronstrue from "cronstrue";
 import { CodeBlock } from "./code-block.tsx";
 
 export function CronDetails(
-  { trigger }: { trigger: TriggerOutput },
+  { trigger }: { trigger: CronTrigger },
 ) {
-  const triggerData = trigger.data as
-    | CronTriggerPromptAgent
-    | CronTriggerCallTool;
-
   // Check if this is an agent trigger (has prompt) or tool trigger (has callTool)
-  const isAgentTrigger = "prompt" in triggerData;
-  const isToolTrigger = "callTool" in triggerData;
+  const isAgentTrigger = "prompt" in trigger;
+  const isToolTrigger = "callTool" in trigger;
 
   return (
     <div className="space-y-4 border p-4 rounded-md bg-muted">
@@ -27,15 +19,15 @@ export function CronDetails(
 
       <div>
         <div className="text-sm font-medium mb-1">Cron Expression</div>
-        <CodeBlock>{triggerData.cronExp}</CodeBlock>
+        <CodeBlock>{trigger.cronExp}</CodeBlock>
       </div>
 
       <div>
         <div className="text-sm font-medium mb-1">Runs At</div>
         <div className="text-sm">
-          {triggerData.cronExp
-            ? cronstrue.toString(triggerData.cronExp)
-            : triggerData.cronExp}
+          {trigger.cronExp
+            ? cronstrue.toString(trigger.cronExp)
+            : trigger.cronExp}
         </div>
       </div>
 
@@ -43,7 +35,7 @@ export function CronDetails(
         <div>
           <div className="text-sm font-medium mb-1">Prompt</div>
           <CodeBlock>
-            {JSON.stringify(triggerData.prompt, null, 2)}
+            {JSON.stringify(trigger.prompt, null, 2)}
           </CodeBlock>
         </div>
       )}
@@ -52,7 +44,7 @@ export function CronDetails(
         <div>
           <div className="text-sm font-medium mb-1">Arguments</div>
           <CodeBlock>
-            {JSON.stringify(triggerData.callTool.arguments, null, 2)}
+            {JSON.stringify(trigger.callTool.arguments, null, 2)}
           </CodeBlock>
         </div>
       )}

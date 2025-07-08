@@ -71,9 +71,8 @@ export const WebhookBaseTriggerSchema = z.object({
 /**
  * Schema for webhook trigger validation
  */
-export const WebhookTriggerOutputToolSchema = WebhookBaseTriggerSchema.extend({
+export const WebhookTriggerAgentSchema = WebhookBaseTriggerSchema.extend({
   agentId: z.string().describe("The agent ID to use for the trigger"),
-  outputTool: z.string().optional(),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
       "By default this webhook returns the LLM generate text response.\n\n" +
@@ -86,7 +85,7 @@ export const WebhookTriggerCallToolSchema = WebhookBaseTriggerSchema.extend({
 });
 
 export const WebhookTriggerSchema = z.union([
-  WebhookTriggerOutputToolSchema,
+  WebhookTriggerAgentSchema,
   WebhookTriggerCallToolSchema,
 ]);
 
@@ -97,7 +96,6 @@ export const WebhookTriggerOutputSchema = z.object({
   ),
   type: z.literal("webhook"),
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
-  outputTool: z.string().optional(),
   schema: z.record(z.string(), z.unknown()).optional().describe(
     "The JSONSchema of the returning of the webhook.\n\n" +
       "By default this webhook returns the LLM generate text response.\n\n" +
@@ -241,8 +239,11 @@ export type CronTriggerCallTool = z.infer<
 >;
 
 /**
- * Type alias for webhook trigger output tool schema - use this instead of z.infer<typeof WebhookTriggerOutputToolSchema>
+ * Type alias for webhook trigger agent schema - use this instead of z.infer<typeof WebhookTriggerAgentSchema>
  */
-export type WebhookTriggerOutputTool = z.infer<
-  typeof WebhookTriggerOutputToolSchema
+export type WebhookTriggerAgent = z.infer<
+  typeof WebhookTriggerAgentSchema
 >;
+
+export type WebhookTrigger = z.infer<typeof WebhookTriggerSchema>;
+export type CronTrigger = z.infer<typeof CronTriggerSchema>;

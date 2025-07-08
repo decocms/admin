@@ -80,19 +80,15 @@ interface WebhookOptions {
   id: string;
   workspace: string;
   passphrase?: string;
-  outputTool?: string;
 }
 
 const webhookURLFrom = (
-  { id, workspace, passphrase, outputTool }: WebhookOptions,
+  { id, workspace, passphrase }: WebhookOptions,
 ) => {
   const url = new URL(`${workspace}/triggers/${id}`, `https://${Hosts.API}`);
 
   if (passphrase) {
     url.searchParams.set("passphrase", passphrase);
-  }
-  if (outputTool) {
-    url.searchParams.set("output_tool", outputTool);
   }
 
   return url.href;
@@ -174,7 +170,6 @@ export const upsertTrigger = createTool({
         id: triggerId,
         workspace,
         passphrase: data.passphrase,
-        outputTool: "outputTool" in data ? data.outputTool : undefined,
       });
     }
 

@@ -81,9 +81,11 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
           )}
 
           {trigger.data.type === "webhook" && (
-            <WebhookDetails trigger={trigger} />
+            <WebhookDetails trigger={trigger.data} />
           )}
-          {trigger.data.type === "cron" && <CronDetails trigger={trigger} />}
+          {trigger.data.type === "cron" && (
+            <CronDetails trigger={trigger.data} />
+          )}
 
           <div className="mt-10">
             <h3 className="text-lg font-semibold mb-2">Logs</h3>

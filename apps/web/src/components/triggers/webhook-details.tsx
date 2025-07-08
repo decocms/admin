@@ -1,11 +1,10 @@
-import type { TriggerOutput, WebhookTriggerOutputTool } from "@deco/sdk";
+import type { WebhookTrigger } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { CodeBlock } from "./code-block.tsx";
 
 export function WebhookDetails(
-  { trigger }: { trigger: TriggerOutput },
+  { trigger }: { trigger: WebhookTrigger },
 ) {
-  const triggerData = trigger.data as WebhookTriggerOutputTool;
   return (
     <div className="space-y-4 border p-4 rounded-md bg-muted">
       <div className="flex items-center gap-2">
@@ -16,30 +15,23 @@ export function WebhookDetails(
       <div>
         <div className="text-sm font-medium mb-1">Webhook URL</div>
         <CodeBlock className="break-all">
-          {triggerData.url}
+          {trigger.url}
         </CodeBlock>
       </div>
 
-      {triggerData.passphrase && (
+      {trigger.passphrase && (
         <div>
           <div className="text-sm font-medium mb-1">Passphrase</div>
-          <CodeBlock>{triggerData.passphrase}</CodeBlock>
+          <CodeBlock>{trigger.passphrase}</CodeBlock>
         </div>
       )}
 
-      {triggerData.schema && (
+      {"schema" in trigger && (
         <div>
           <div className="text-sm font-medium mb-1">Schema</div>
           <CodeBlock className="max-h-[200px] overflow-y-auto">
-            {JSON.stringify(triggerData.schema, null, 2)}
+            {JSON.stringify(trigger.schema, null, 2)}
           </CodeBlock>
-        </div>
-      )}
-
-      {triggerData.outputTool && (
-        <div>
-          <div className="text-sm font-medium mb-1">Output Tool</div>
-          <CodeBlock>{triggerData.outputTool}</CodeBlock>
         </div>
       )}
 

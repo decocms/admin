@@ -28,6 +28,7 @@ import {
   MAX_MAX_TOKENS,
   MIN_MAX_TOKENS,
   WELL_KNOWN_AGENTS,
+  WELL_KNOWN_MODELS,
 } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
@@ -92,9 +93,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
-  GenerateOptions,
   Message as AIMessage,
+  GenerateOptions,
+  AIAgent as IIAgent,
   StreamOptions,
   Thread,
   ThreadQueryOptions,
@@ -454,7 +455,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const llmConfig = await getLLMConfig({
       modelId: config.model,
       llmVault: this.llmVault,
-    });
+    })
+      // This is a workaround to avoid the wild #<Object> error, not bricking the agent.
+      .catch(() => getLLMConfig({ modelId: WELL_KNOWN_MODELS[0].id }));
 
     const { llm, tokenLimit } = createLLMInstance({
       ...llmConfig,

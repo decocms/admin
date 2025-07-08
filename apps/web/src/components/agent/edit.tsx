@@ -271,7 +271,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
     const timeout = setTimeout(() => updateAgentCache(values as Agent), 200);
 
     return () => clearTimeout(timeout);
-  }, [values, updateAgentCache]);
+  }, [values]); // Remove updateAgentCache from dependencies as it's stable
 
   const blocked = useBlocker(hasChanges && !isWellKnownAgent);
 

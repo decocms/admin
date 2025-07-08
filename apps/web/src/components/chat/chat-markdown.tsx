@@ -1,9 +1,8 @@
 import { marked } from "marked";
-import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import { memo, Suspense, useCallback, useMemo, useRef, useEffect, lazy, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { lazy, useState } from "react";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 
@@ -88,6 +87,15 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<number | null>(null);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const tableToCsv = useCallback((table: HTMLTableElement | null): string => {
     if (!table) return "";
@@ -222,6 +230,15 @@ function CodeBlock(
 ) {
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef<number | null>(null);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);

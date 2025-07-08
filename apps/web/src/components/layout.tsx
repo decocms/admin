@@ -219,9 +219,9 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
         <BreadcrumbList>
           {isMobile
             ? (
-              <BreadcrumbItem key={items.at(-1)?.link}>
+              <BreadcrumbItem key={items?.at(-1)?.link}>
                 <BreadcrumbPage className="inline-flex items-center gap-2">
-                  {items.at(-1)?.label}
+                  {items?.at(-1)?.label}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             )

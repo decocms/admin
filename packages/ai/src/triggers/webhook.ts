@@ -23,10 +23,10 @@ const isAIMessages = (m: unknown | Message[]): m is Message[] => {
 
 const threadOf = (
   data: TriggerData,
-  url?: URL,
+  params: Record<string, string>,
 ): { threadId: string | undefined; resourceId: string | undefined } => {
-  const resourceId = url?.searchParams.get("resourceId") ?? data.id;
-  const threadId = url?.searchParams.get("threadId") ?? crypto.randomUUID(); // generate a random threadId if resourceId exists.
+  const resourceId = params.resourceId ?? data.id;
+  const threadId = params.threadId ?? crypto.randomUUID(); // generate a random threadId if resourceId exists.
   return { threadId, resourceId };
 };
 
@@ -45,11 +45,17 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
   onCreated: (data, trigger) => {
     const metadata = trigger.metadata ?? {};
     trigger.metadata = metadata;
-    metadata.passphrase ??= data.passphrase;
+    metadata.params ??= {};
+    if (data.passphrase) {
+      metadata.params.passphrase = data.passphrase;
+    }
     return Promise.resolve();
   },
   run: async (data, trigger, args) => {
-    if (data.passphrase && data.passphrase !== trigger.metadata?.passphrase) {
+    if (
+      data.passphrase &&
+      data.passphrase !== trigger.metadata?.params?.passphrase
+    ) {
       return {
         error: "Invalid passphrase",
       };
@@ -61,16 +67,13 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         typeof args === "object" ? args as Record<string, unknown> ?? {} : {},
       );
     }
-    const url = trigger.metadata?.reqUrl
-      ? new URL(trigger.metadata.reqUrl)
-      : undefined;
 
-    const useStream = url?.searchParams.get("stream") === "true";
+    const useStream = trigger.metadata?.params?.stream === "true";
     const options: StreamOptions = {};
 
     for (const _key in parseOptions) {
       const key = _key as keyof typeof parseOptions;
-      const val = url?.searchParams.get(key);
+      const val = trigger.metadata?.params?.[key];
       const parser = parseOptions[key];
       if (val && key && parser) {
         // deno-lint-ignore no-explicit-any
@@ -78,7 +81,10 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       }
     }
 
-    const { threadId, resourceId } = threadOf(data, url);
+    const { threadId, resourceId } = threadOf(
+      data,
+      trigger.metadata?.params ?? {},
+    );
 
     const agent = trigger.state
       .stub(AIAgent)
@@ -122,7 +128,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
     }
 
     return useStream
-      ? await agent.stream(messages, options)
-      : await agent.generate(messages, options);
+      ? await agent.stream(messages, trigger.metadata?.params)
+      : await agent.generate(messages, trigger.metadata?.params);
   },
 };

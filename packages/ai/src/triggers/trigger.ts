@@ -60,7 +60,6 @@ export interface TriggerHooks<TData extends TriggerData = TriggerData> {
     data: TData,
     trigger: Trigger,
     args?: unknown,
-    method?: keyof Trigger | undefined,
   ): Promise<unknown>;
 }
 
@@ -70,8 +69,7 @@ const hooks: Record<TriggerData["type"], TriggerHooks<TriggerData>> = {
 };
 
 export interface TriggerMetadata {
-  passphrase?: string | null;
-  reqUrl?: string | null;
+  params?: Record<string, string>;
   reqHeaders?: Record<string, string>;
   internalCall?: boolean;
 }
@@ -251,7 +249,7 @@ export class Trigger {
       buildInvokeUrl(
         this.state.id,
         method,
-        this.metadata?.passphrase,
+        this.metadata?.params?.passphrase,
         payload,
       )
         .href;
@@ -326,7 +324,7 @@ export class Trigger {
     if (!("passphrase" in this.data)) {
       return;
     }
-    if (this.data.passphrase !== this.metadata?.passphrase) {
+    if (this.data.passphrase !== this.metadata?.params?.passphrase) {
       throw new Error("Invalid passphrase");
     }
   }
@@ -339,24 +337,29 @@ export class Trigger {
 
   enrichMetadata(metadata: TriggerMetadata, req: Request): TriggerMetadata {
     return {
-      passphrase: new URL(req.url).searchParams.get("passphrase"),
       internalCall: req.headers.get("host") === null ||
         getRuntimeKey() === "deno",
-      reqUrl: req.url,
+      params: Object.fromEntries(new URL(req.url).searchParams.entries()),
       reqHeaders: Object.fromEntries(req.headers.entries()),
       ...metadata,
     };
   }
 
-  async run(args?: unknown) {
+  async run(args?: unknown, options?: Record<string, string>) {
     const runData: Record<string, unknown> = {};
     try {
       const data = this.data;
       runData.data = data;
       runData.metadata = this.metadata;
+
+      if (this.metadata) {
+        this.metadata.params = options ?? this.metadata.params;
+      }
+
       if (!data) {
         return;
       }
+
       runData.result = await this.hooks?.run(
         data,
         this,

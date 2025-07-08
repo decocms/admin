@@ -16,11 +16,12 @@ export const handleTrigger = async (c: Context<AppEnv>) => {
     throw new HTTPException(400, { message: "Trigger ID is required" });
   }
 
+  const params = c.req.query();
   const body = await c.req.json();
 
   const result = await stub(Trigger)
     .new(`${appCtx.workspace.value}/triggers/${id}`)
-    .run(body);
+    .run(body, params);
 
   return c.json({ result });
 };

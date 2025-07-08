@@ -28,7 +28,6 @@ import {
   MAX_MAX_TOKENS,
   MIN_MAX_TOKENS,
   WELL_KNOWN_AGENTS,
-  WELL_KNOWN_MODELS,
 } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import {

@@ -93,9 +93,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  Message as AIMessage,
-  GenerateOptions,
   AIAgent as IIAgent,
+  GenerateOptions,
+  Message as AIMessage,
   StreamOptions,
   Thread,
   ThreadQueryOptions,

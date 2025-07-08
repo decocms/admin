@@ -52,6 +52,7 @@
     "apps/web/public/**",
     "packages/runtime/src/cf-imports.ts"
   ],
+  "lock": false,
   "unstable": [
     "kv"
   ],

@@ -104,9 +104,16 @@ export const listAgents = createTool({
       userRoles?.some((role) => IMPORTANT_ROLES.includes(role))
     );
 
-    return filteredAgents
+    const dbAgents = filteredAgents
       .map((item) => AgentSchema.safeParse(item)?.data)
       .filter((a) => !!a);
+
+    // Include WELL_KNOWN_AGENTS that have PUBLIC visibility
+    const publicWellKnownAgents = Object.values(WELL_KNOWN_AGENTS)
+      .filter((agent) => agent.visibility === "PUBLIC")
+      .map((agent) => AgentSchema.parse(agent));
+
+    return [...dbAgents, ...publicWellKnownAgents];
   },
 });
 

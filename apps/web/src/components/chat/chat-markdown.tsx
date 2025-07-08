@@ -158,7 +158,7 @@ const MemoizedMarkdownBlock = memo(
               {...props}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-primary hover:underline break-all"
+              className="text-primary hover:underline break-all"
             />
           ),
           ul: (props) => (

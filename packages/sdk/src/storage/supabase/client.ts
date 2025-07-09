@@ -18,7 +18,7 @@ export const createSupabaseClient = (
   supabaseUrl: Options[0],
   supabaseKey: Options[1],
   opts: Options[2],
-): Client => createServerClient(supabaseUrl, supabaseKey, opts);
+): Client => createServerClient<Database, "public">(supabaseUrl, supabaseKey, opts);
 
 /**
  * This client uses the server token to access the database,

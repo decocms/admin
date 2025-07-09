@@ -151,6 +151,7 @@ export const listTools = createIntegrationManagementTool({
 const virtualIntegrationsFor = (
   workspace: string,
   knowledgeBases: string[],
+  token?: string,
 ) => {
   // Create a virtual User Management integration
   const decoChatMcp = new URL("/mcp", DECO_CHAT_API);
@@ -161,6 +162,7 @@ const virtualIntegrationsFor = (
     connection: {
       type: "HTTP",
       url: decoChatMcp.href,
+      token,
     },
     icon: "https://i.imgur.com/GD4o7vx.png",
     workspace,
@@ -176,6 +178,7 @@ const virtualIntegrationsFor = (
     connection: {
       type: "HTTP",
       url: workspaceMcp.href,
+      token,
     },
     icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
     workspace,
@@ -196,6 +199,7 @@ const virtualIntegrationsFor = (
         connection: {
           type: "HTTP",
           url: url.href,
+          token,
         },
         workspace,
         created_at: new Date().toISOString(),
@@ -218,6 +222,7 @@ const virtualIntegrationsFor = (
         connection: {
           type: "HTTP",
           url: url.href,
+          token,
         },
         icon:
           "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
@@ -285,6 +290,7 @@ export const listIntegrations = createIntegrationManagementTool({
       ...virtualIntegrationsFor(
         workspace,
         knowledgeBases.names ?? [],
+        c.token,
       ),
       ...filteredIntegrations.map((item) => ({
         ...item,
@@ -376,6 +382,7 @@ export const getIntegration = createIntegrationManagementTool({
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
       knowledgeBases.names ?? [],
+      c.token,
     );
 
     if (virtualIntegrations.some((i) => i.id === id)) {

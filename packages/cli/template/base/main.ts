@@ -1,3 +1,4 @@
+// deno-lint-ignore-file require-await
 import { withRuntime } from "@deco/workers-runtime";
 import {
   createStepFromTool,
@@ -6,6 +7,7 @@ import {
 } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 
+// deno-lint-ignore ban-types
 type Bindings = {};
 
 const createMyTool = (_bindings: Bindings) =>

@@ -1,4 +1,4 @@
-# deco.chat
+# deco.chat q
 
 The code for <https://deco.chat>
 

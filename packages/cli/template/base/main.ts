@@ -7,7 +7,6 @@ import {
 } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
 
-
 // deno-lint-ignore ban-types
 type Bindings = {};
 

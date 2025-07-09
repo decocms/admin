@@ -59,7 +59,7 @@ function Page() {
   const { agentId, workspace, threadId, toolsets } = useMemo(() => {
     const workspace = params.get("workspace") as Workspace | null;
     const agentId = params.get("agentId");
-    const threadId = crypto.randomUUID();
+    const threadId = params.get("threadId") ?? crypto.randomUUID();
     const toolsets = params.getAll("toolsets").map((toolset) => {
       const [mcpUrl, connectionType = "HTTP"] = toolset.split(",");
 
@@ -115,7 +115,7 @@ function Page() {
             uiOptions={{
               showThreadTools: false,
               showModelSelector: false,
-              showThreadMessages: false,
+              showThreadMessages: true,
               showAgentVisibility: false,
               showEditAgent: false,
             }}

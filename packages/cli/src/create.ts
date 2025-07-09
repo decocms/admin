@@ -12,11 +12,12 @@ interface Template {
 
 const AVAILABLE_TEMPLATES: Template[] = [
   {
-    name: "hello-world",
-    description: "A simple Hello World template",
+    name: "base",
+    description:
+      "A simple template with minimal dependencies. Use this to build your own custom Tools and Workflows.",
     repo: "deco-cx/chat",
     branch: "main",
-    path: "packages/cli/template/hello-world",
+    path: "packages/cli/template/base",
   },
   // TODO: Add react-app template
   //   {

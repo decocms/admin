@@ -1,57 +1,57 @@
 # Deco.chat Architecture
 
-## Infrastructure Components
+## Application Components
 
 ```mermaid
 graph TB
-    subgraph "Cloudflare Edge"
-        CDN[CDN/Cache]
-        DNS[DNS Management]
-        SSL[SSL/TLS]
+    subgraph "Frontend Layer"
+        WebApp[Web Application<br/><small>Cloudflare Pages</small>]
+        CLI[CLI Tool<br/><small>Deno Runtime</small>]
+        CDN[Content Delivery<br/><small>Cloudflare CDN</small>]
     end
     
-    subgraph "Cloudflare Workers"
-        API[API Worker]
-        Pages[Pages Worker]
-        Outbound[Outbound Worker]
-        Apps[Hosted Apps]
+    subgraph "Backend Services"
+        API[API Server<br/><small>Cloudflare Workers</small>]
+        Outbound[Outbound Proxy<br/><small>Cloudflare Workers</small>]
+        Auth[Authentication<br/><small>Supabase Auth</small>]
     end
     
-    subgraph "Cloudflare Storage"
-        R2[R2 Object Storage]
-        D1[D1 Database]
-        KV[KV Store]
+    subgraph "AI & Processing"
+        Agents[AI Agents<br/><small>Durable Objects</small>]
+        Triggers[Event Triggers<br/><small>Durable Objects</small>]
+        Scheduler[Task Scheduler<br/><small>Cron Triggers</small>]
     end
     
-    subgraph "Cloudflare Compute"
-        DO[Durable Objects]
-        Queue[Queues]
-        Cron[Cron Triggers]
+    subgraph "Data & Storage"
+        Database[Primary Database<br/><small>Supabase PostgreSQL</small>]
+        FileStorage[File Storage<br/><small>Cloudflare R2</small>]
+        Cache[Cache Layer<br/><small>Cloudflare KV</small>]
+        Workflows[Workflow DB<br/><small>Cloudflare D1</small>]
     end
     
+    WebApp --> CDN
+    CLI --> API
     CDN --> API
-    CDN --> Pages
-    DNS --> CDN
-    SSL --> CDN
+    API --> Auth
+    API --> Agents
+    API --> Triggers
+    API --> Database
+    API --> FileStorage
+    API --> Cache
+    API --> Workflows
     
-    API --> R2
-    API --> D1
-    API --> KV
-    API --> DO
-    API --> Queue
+    Agents --> Database
+    Agents --> FileStorage
+    Triggers --> Database
+    Scheduler --> Triggers
+    Outbound --> API
     
-    Pages --> Apps
-    Outbound --> Apps
-    
-    DO --> Queue
-    Cron --> DO
-    
-    style CDN fill:#e3f2fd
+    style WebApp fill:#e3f2fd
     style API fill:#f1f8e9
-    style R2 fill:#fff8e1
-    style DO fill:#fce4ec
+    style Agents fill:#fce4ec
+    style Database fill:#fff8e1
 ```
 
-A arquitetura do deco.chat é construída inteiramente sobre a plataforma Cloudflare, aproveitando seus serviços de edge computing para criar uma solução escalável e distribuída globalmente. O sistema utiliza Cloudflare Workers para executar a lógica de backend, Cloudflare R2 para armazenamento de objetos, D1 para banco de dados SQL, e Durable Objects para manter estado dos agentes de IA. Esta arquitetura edge-first garante baixa latência e alta disponibilidade em qualquer região do mundo.
+A arquitetura do deco.chat é organizada em camadas funcionais que representam diferentes aspectos da aplicação. A camada de frontend inclui a aplicação web React hospedada via Cloudflare Pages e uma ferramenta CLI, ambas se comunicando através de uma CDN global. O backend é composto por serviços de API executados em Cloudflare Workers, que gerenciam autenticação via Supabase e processamento de requisições através de um proxy outbound para integrações externas.
 
-Os componentes principais incluem o API Worker que gerencia todas as operações de backend, o Pages Worker que roteia aplicações hospedadas dinamicamente, e o Outbound Worker que funciona como proxy para requisições externas. O armazenamento é distribuído entre R2 (arquivos e assets), D1 (workflows e métricas), e KV Store (cache e configurações), enquanto os Durable Objects mantêm o estado conversacional dos agentes de IA e processam triggers em tempo real. 
+A camada de processamento de IA utiliza Durable Objects para manter estado persistente dos agentes conversacionais e triggers de eventos, complementada por um sistema de agendamento via Cron Triggers. O armazenamento de dados é distribuído entre o banco principal PostgreSQL do Supabase para dados estruturados, Cloudflare R2 para arquivos e assets, Cloudflare KV para cache de alta performance, e Cloudflare D1 para dados de workflows e métricas operacionais. 

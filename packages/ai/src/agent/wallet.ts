@@ -9,7 +9,6 @@ import {
 } from "@deco/sdk/mcp/wallet";
 import type { LanguageModelUsage } from "ai";
 import { WebCache } from "@deco/sdk/cache";
-import type { PlanWithTeamMetadata } from "@deco/sdk";
 
 export interface AgentWalletConfig {
   wallet: ClientOf<WalletAPI>;
@@ -24,7 +23,6 @@ export interface ComputeAgentUsageOpts {
   threadId: string;
   model: string;
   modelId: string;
-  plan: PlanWithTeamMetadata;
 }
 
 interface CreateUsageTransactionOpts extends ComputeAgentUsageOpts {
@@ -42,7 +40,6 @@ function createAgentUsageTransaction({
   agentId,
   agentPath,
   workspace,
-  plan,
 }: CreateUsageTransactionOpts): Transaction {
   const usageData = {
     model,
@@ -147,7 +144,6 @@ export class AgentWallet {
     model,
     modelId,
     userId,
-    plan,
   }: ComputeAgentUsageOpts) {
     const agentId = this.config.agentId;
 
@@ -160,7 +156,6 @@ export class AgentWallet {
       agentId,
       agentPath: this.config.agentPath,
       workspace: this.config.workspace,
-      plan,
     });
 
     const response = await this.client["POST /transactions"]({}, {

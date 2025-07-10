@@ -114,9 +114,6 @@ async function customizeTemplate(
 
       // Write the new config file
       await writeConfigFile(newConfig, targetDir);
-      console.log(
-        `✅ Config file updated with project name '${projectName}' and workspace '${workspace}'`,
-      );
     } catch (error) {
       console.warn(
         "⚠️  Could not update config file:",
@@ -172,7 +169,7 @@ export async function createCommand(
     // Prompt user to select workspace
     let workspace: string | undefined = config?.workspace;
     try {
-      workspace = await promptWorkspace(config?.local);
+      workspace = await promptWorkspace(config?.local, workspace);
       console.log(`📁 Selected workspace: ${workspace}`);
     } catch {
       console.warn(

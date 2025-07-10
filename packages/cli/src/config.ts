@@ -6,6 +6,7 @@
 import { parse, stringify } from "smol-toml";
 import { z } from "zod";
 import { readSession } from "./session.ts";
+import type { MCPConfig } from "./utils/prompt-mcp-install.ts";
 
 // MD5 hash function
 async function md5Hash(input: string): Promise<string> {
@@ -154,6 +155,7 @@ export const writeConfigFile = async (
       deco: mergedConfig,
     }),
   );
+  console.log(`✅ Deco configuration written to: ${configPath}`);
 };
 
 /**
@@ -246,7 +248,10 @@ export const getAppDomain = async (
   return `localhost-${appUUID}.deco.host`;
 };
 
-export const getMCPConfig = async (workspace: string, app: string) => {
+export async function getMCPConfig(
+  workspace: string,
+  app: string,
+): Promise<MCPConfig> {
   const appDomain = await getAppDomain(workspace, app);
 
   return {
@@ -257,4 +262,6 @@ export const getMCPConfig = async (workspace: string, app: string) => {
       },
     },
   };
-};
+}
+
+export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());

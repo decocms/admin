@@ -123,7 +123,10 @@ export async function promptMCPInstall(
   }
 
   // Create the IDE-specific configuration
-  const { config, configPath } = await ideSupport.createConfig(mcpConfig, projectRoot);
+  const { config, configPath } = await ideSupport.createConfig(
+    mcpConfig,
+    projectRoot,
+  );
 
   console.log(
     `\n✨ Your ${ideSupport.name} will now be able to test this project!`,

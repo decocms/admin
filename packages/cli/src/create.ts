@@ -105,17 +105,19 @@ async function customizeTemplate(
     try {
       // Read current config from target directory
       const currentConfig = await getConfig({ cwd: targetDir });
-      
+
       // Merge with new project name and workspace
       const newConfig = {
         ...currentConfig,
         app: projectName,
         workspace: workspace,
       };
-      
+
       // Write the new config file
       await writeConfigFile(newConfig, targetDir);
-      console.log(`✅ Config file updated with project name '${projectName}' and workspace '${workspace}'`);
+      console.log(
+        `✅ Config file updated with project name '${projectName}' and workspace '${workspace}'`,
+      );
     } catch (error) {
       console.warn(
         "⚠️  Could not update config file:",

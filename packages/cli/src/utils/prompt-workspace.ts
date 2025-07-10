@@ -44,7 +44,8 @@ export async function promptWorkspace(local = false): Promise<string> {
     const response = await client.callTool({
       name: "TEAMS_LIST",
       arguments: {},
-    }, z.any() as any);
+      // @ts-expect-error We need to refactor TEAMS_LIST to stop returning array and use a proper object
+    }, z.any());
 
     if (response.isError) {
       throw new Error("Failed to fetch teams");

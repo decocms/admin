@@ -3,8 +3,6 @@ import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
-import { getPlan } from "../plans.ts";
-import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -56,14 +54,12 @@ async function getCurrencies(c: AppContext) {
 
 async function getAmountInDollars({
   context,
-  amountReceivedUSDCentsWithMarkup,
+  amountReceivedUSDCents,
   currency,
-  plan,
 }: {
   context: AppContext;
-  amountReceivedUSDCentsWithMarkup: number;
+  amountReceivedUSDCents: number;
   currency: string;
-  plan: PlanWithTeamMetadata;
 }) {
   const currencies = {
     ...(await getCurrencies(context)),
@@ -79,10 +75,6 @@ async function getAmountInDollars({
   const conversionRate =
     currencies[currency.toUpperCase() as keyof typeof currencies].value;
 
-  const amountReceivedUSDCents = Markup.remove({
-    usdCents: amountReceivedUSDCentsWithMarkup,
-    markupPercentage: plan.markup,
-  });
   const amount = amountReceivedUSDCents / 100;
   const microDollarsString = String(
     Math.round((amount / conversionRate) * 1_000_000),
@@ -123,37 +115,17 @@ const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =
       throw new Error("Customer ID not found or is not a string");
     }
 
-    const workspace = await getWorkspaceByCustomerId({
-      context,
-      customerId,
-    });
-
-    const workspacePattern = new URLPattern({ pathname: "/:root/:slug" });
-    const workspaceMatch = workspacePattern.exec({ pathname: workspace });
-
-    if (
-      !workspaceMatch || !workspaceMatch.pathname.groups.slug ||
-      !workspaceMatch.pathname.groups.root
-    ) {
-      throw new Error(`Invalid workspace format: ${workspace}`);
-    }
-
-    const contextWithWorkspace = {
-      ...context,
-      workspace: {
-        value: workspace,
-        slug: workspaceMatch.pathname.groups.slug,
-        root: workspaceMatch.pathname.groups.root,
-      },
-    };
-
-    const plan = await getPlan(contextWithWorkspace);
-    const amount = await getAmountInDollars({
-      context,
-      amountReceivedUSDCentsWithMarkup: event.data.object.amount_received,
-      currency: event.data.object.currency,
-      plan,
-    });
+    const [amount, workspace] = await Promise.all([
+      getAmountInDollars({
+        context,
+        amountReceivedUSDCents: event.data.object.amount_received,
+        currency: event.data.object.currency,
+      }),
+      getWorkspaceByCustomerId({
+        context,
+        customerId,
+      }),
+    ]);
 
     return {
       type: "WorkspaceCashIn",

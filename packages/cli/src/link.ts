@@ -1,6 +1,5 @@
 import { connect } from "@deco/warp";
 import * as colors from "@std/fmt/colors";
-import { getAppDomain, getConfig } from "./config.ts";
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -127,11 +126,14 @@ export const link = async (
 ) => {
   const port = p || 8000;
 
-  // Get config to extract workspace and app
-  const config = await getConfig({});
+  // Save the host information to localStorage
+  const key = `tunnel-${port}`;
+  const saved = localStorage.getItem(key);
+  const hostInfo = saved ? JSON.parse(saved) : {
+    domain: `localhost-${crypto.randomUUID().slice(0, 6)}.deco.host`,
+  };
 
-  // Generate app domain based on workspace and app name
-  const appDomain = await getAppDomain(config.workspace, config.app);
-
-  await register(port, appDomain, onBeforeRegister);
+  localStorage.setItem(key, JSON.stringify(hostInfo));
+  const domain = hostInfo.domain;
+  await register(port, domain, onBeforeRegister);
 };

@@ -1,4 +1,5 @@
 import { MCPClient } from "../fetcher.ts";
+import { type Feature, FeatureNotAvailableError } from "../index.ts";
 
 export const getWalletAccount = (workspace: string) =>
   MCPClient.forWorkspace(workspace)
@@ -67,6 +68,13 @@ export const createWalletVoucher = ({
 export const getWorkspacePlan = async (workspace: string) => {
   const plan = await MCPClient.forWorkspace(workspace)
     .GET_WORKSPACE_PLAN({});
+
+  // recreate the assertHasFeature method, that cannot be serialized
+  plan.assertHasFeature = (feature: Feature) => {
+    if (!plan.features.includes(feature)) {
+      throw new FeatureNotAvailableError();
+    }
+  };
 
   return plan;
 };

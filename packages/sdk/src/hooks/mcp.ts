@@ -315,7 +315,7 @@ export const useInstallFromMarketplace = () => {
     ) => {
       const result: { installationId: string } = await MCPClient
         .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName, provider });
+        .DECO_INTEGRATION_INSTALL({ id: appName });
 
       const integration = await loadIntegration(
         workspace,

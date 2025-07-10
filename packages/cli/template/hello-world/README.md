@@ -1,6 +1,7 @@
-# Deco Tools and Workflows
+# Deco worker app with Hono
 
-This is a simple template for creating Tools and Workflows on deco.chat
+This is a simple "Hello World" template for creating Deco worker apps using
+Hono.
 
 ## Getting Started
 
@@ -38,7 +39,8 @@ This is a simple template for creating Tools and Workflows on deco.chat
 
 ## Customization
 
-Edit `main.ts` to add your own Tools and Workflows.
+Edit `main.ts` to add your own routes and logic. The template includes a basic
+Hono app with a "Hello World" endpoint.
 
 ## Learn More
 

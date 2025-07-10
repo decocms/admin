@@ -11,10 +11,6 @@ import { loginCommand } from "./src/login.ts";
 import { deleteSession, readSession, setToken } from "./src/session.ts";
 import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
-import {
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./src/utils/prompt-mcp-install.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
@@ -80,21 +76,13 @@ const hostingDeploy = new Command()
   })
   .option("-a, --app <app:string>", "App name", { required: false })
   .option("-y, --yes", "Skip confirmation", { required: false })
-  .option("-p, --public", "Make the app public in the registry", {
-    required: false,
-  })
   .arguments("[cwd:string]")
   .action(async (args, folder) => {
     const cwd = folder ?? Deno.cwd();
     const config = await getConfig({
       inlineOptions: args,
     });
-    return deploy({
-      ...config,
-      skipConfirmation: args.yes,
-      cwd,
-      unlisted: !args.public,
-    });
+    return deploy({ ...config, skipConfirmation: args.yes, cwd });
   });
 
 const linkCmd = new Command()
@@ -138,16 +126,6 @@ const dev = new Command()
   .action(async () => {
     await ensureDevEnvironment();
 
-    const config = await getConfig().catch(() => ({
-      workspace: "default",
-      app: "my-app",
-    }));
-
-    const mcpConfig = await promptMCPInstall(config);
-    if (mcpConfig) {
-      await writeMCPConfig(mcpConfig.config, mcpConfig.configPath);
-    }
-
     const deno = new Deno.Command("deco", {
       args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],
       stdout: "inherit",
@@ -164,10 +142,7 @@ const create = new Command()
   })
   .arguments("[project-name]")
   .action(async (options, projectName?: string) => {
-    const config = await getConfig({
-      inlineOptions: { app: projectName ?? "my-new-app" },
-    }).catch(() => ({}));
-    await createCommand(projectName, options.template, config);
+    await createCommand(projectName, options.template);
   });
 
 const listTemplatesCommand = new Command()

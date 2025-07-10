@@ -15,14 +15,12 @@ interface Options {
   app: string;
   local: boolean;
   skipConfirmation?: boolean;
-  unlisted?: boolean;
 }
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
 
 export const deploy = async (
-  { cwd, workspace, app: appSlug, local, skipConfirmation, unlisted = true }:
-    Options,
+  { cwd, workspace, app: appSlug, local, skipConfirmation }: Options,
 ) => {
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
@@ -97,7 +95,7 @@ export const deploy = async (
   // 3. Load envVars from .dev.vars
   const envVars = await getCurrentEnvVars(cwd);
 
-  const manifest = { appSlug, files, envVars, bundle: hasTsFile, unlisted };
+  const manifest = { appSlug, files, envVars, bundle: hasTsFile };
 
   console.log("🚚 Deployment summary:");
   console.log(`  App: ${appSlug}`);

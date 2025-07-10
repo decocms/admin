@@ -1,6 +1,11 @@
 import type { ClientOf } from "@deco/sdk/http";
 import { z } from "zod";
-import { InternalServerError, UserInputError } from "../../errors.ts";
+import {
+  FeatureNotAvailableError,
+  InternalServerError,
+  UserInputError,
+} from "../../errors.ts";
+import { type Feature, type Plan, PLANS_FEATURES } from "../../plan.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -13,14 +18,36 @@ import {
   WellKnownWallets,
 } from "./index.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
-import { getPlan } from "./plans.ts";
-import { Markup } from "../../plan.ts";
 
-export const getWalletClient = (c: AppContext) => {
+const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
     throw new InternalServerError("WALLET_API_KEY is not set");
   }
   return createWalletClient(c.envVars.WALLET_API_KEY, c.walletBinding);
+};
+
+export const getPlan = async (c: AppContext) => {
+  assertHasWorkspace(c);
+  const slug = c.workspace.slug;
+  const { data: team } = await c.db.from("teams").select("plan").eq(
+    "slug",
+    slug,
+  ).maybeSingle();
+  const plan = team?.plan as Plan || "free";
+  const features = PLANS_FEATURES[plan];
+  // handle the typecast
+  if (!features) {
+    throw new InternalServerError("Unknown plan");
+  }
+  return {
+    id: plan,
+    features,
+    assertHasFeature: (feature: Feature) => {
+      if (!features.includes(feature)) {
+        throw new FeatureNotAvailableError();
+      }
+    },
+  };
 };
 
 const Account = {
@@ -203,18 +230,16 @@ export const createCheckoutSession = createTool({
     assertHasWorkspace(ctx);
 
     await assertWorkspaceResourceAccess(ctx.tool.name, ctx);
+
     const plan = await getPlan(ctx);
-    const amount = Markup.add({
-      usdCents: amountUSDCents,
-      markupPercentage: plan.markup,
-    });
+    plan.assertHasFeature("ai-wallet-deposit");
 
     const session = await createStripeCheckoutSession({
       successUrl,
       cancelUrl,
       product: {
         id: "WorkspaceWalletDeposit",
-        amountUSD: amount,
+        amountUSD: amountUSDCents,
       },
       ctx,
       metadata: {
@@ -328,8 +353,9 @@ export const getWorkspacePlan = createTool({
   inputSchema: z.object({}),
   handler: async (_, c) => {
     assertHasWorkspace(c);
+
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    return await getPlan(c);
+    return getPlan(c);
   },
 });

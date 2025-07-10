@@ -1,13 +1,6 @@
 import { Input, Select } from "@cliffy/prompt";
-import { copy, ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { type Config, getConfig, writeConfigFile } from "./config.ts";
-import {
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./utils/prompt-mcp-install.ts";
-import { promptWorkspace } from "./utils/prompt-workspace.ts";
-import { slugify } from "./utils/slugify.ts";
+import { copy, ensureDir } from "@std/fs";
 
 interface Template {
   name: string;
@@ -19,11 +12,11 @@ interface Template {
 
 const AVAILABLE_TEMPLATES: Template[] = [
   {
-    name: "base",
-    description: "Build custom Tools and Workflows.",
+    name: "hello-world",
+    description: "A simple Hello World template",
     repo: "deco-cx/chat",
     branch: "main",
-    path: "packages/cli/template/base",
+    path: "packages/cli/template/hello-world",
   },
   // TODO: Add react-app template
   //   {
@@ -78,7 +71,6 @@ async function downloadTemplate(
 async function customizeTemplate(
   targetDir: string,
   projectName: string,
-  workspace?: string,
 ): Promise<void> {
   const packageJsonPath = join(targetDir, "package.json");
 
@@ -98,32 +90,6 @@ async function customizeTemplate(
       error instanceof Error ? error.message : String(error),
     );
   }
-
-  // Write config file with project name and workspace
-  if (workspace) {
-    try {
-      // Read current config from target directory
-      const currentConfig = await getConfig({ cwd: targetDir });
-
-      // Merge with new project name and workspace
-      const newConfig = {
-        ...currentConfig,
-        app: projectName,
-        workspace: workspace,
-      };
-
-      // Write the new config file
-      await writeConfigFile(newConfig, targetDir);
-      console.log(
-        `✅ Config file updated with project name '${projectName}' and workspace '${workspace}'`,
-      );
-    } catch (error) {
-      console.warn(
-        "⚠️  Could not update config file:",
-        error instanceof Error ? error.message : String(error),
-      );
-    }
-  }
 }
 
 export function listTemplates(): void {
@@ -139,7 +105,6 @@ export function listTemplates(): void {
 export async function createCommand(
   projectName?: string,
   templateName?: string,
-  config: Partial<Config> = {},
 ): Promise<void> {
   try {
     if (templateName) {
@@ -154,32 +119,18 @@ export async function createCommand(
       }
     }
 
-    const finalProjectName = slugify(
-      projectName || await Input.prompt({
-        message: "Enter project name:",
-        validate: (value) => {
-          if (!value.trim()) {
-            return "Project name cannot be empty";
-          }
-          if (!/^[a-z0-9-]+$/.test(value)) {
-            return "Project name can only contain lowercase letters, numbers, and hyphens";
-          }
-          return true;
-        },
-      }),
-    );
-
-    // Prompt user to select workspace
-    let workspace: string | undefined = config?.workspace;
-    try {
-      workspace = await promptWorkspace(config?.local);
-      console.log(`📁 Selected workspace: ${workspace}`);
-    } catch {
-      console.warn(
-        "⚠️  Could not select workspace. Please run 'deco login' to authenticate for a better experience.",
-      );
-      // Continue without workspace
-    }
+    const finalProjectName = projectName || await Input.prompt({
+      message: "Enter project name:",
+      validate: (value) => {
+        if (!value.trim()) {
+          return "Project name cannot be empty";
+        }
+        if (!/^[a-z0-9-]+$/.test(value)) {
+          return "Project name can only contain lowercase letters, numbers, and hyphens";
+        }
+        return true;
+      },
+    });
 
     const targetDir = join(Deno.cwd(), finalProjectName);
     const dirExists = await Deno.stat(targetDir).catch(() => false);
@@ -213,22 +164,10 @@ export async function createCommand(
       throw new Error(`Template '${finalTemplateName}' not found`);
     }
 
-    // Prompt user to install MCP configuration for IDE
-    const mcpResult = workspace
-      ? await promptMCPInstall(
-        { workspace, app: finalProjectName },
-        targetDir,
-      )
-      : null;
-
     console.log(`📦 Downloading template '${selectedTemplate.name}'...`);
+
     await downloadTemplate(selectedTemplate, targetDir);
-
-    if (mcpResult) {
-      await writeMCPConfig(mcpResult.config, mcpResult.configPath);
-    }
-
-    await customizeTemplate(targetDir, finalProjectName, workspace);
+    await customizeTemplate(targetDir, finalProjectName);
 
     console.log(`\n🎉 Project '${finalProjectName}' created successfully!`);
     console.log(`\nNext steps:`);

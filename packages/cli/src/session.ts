@@ -1,9 +1,7 @@
 // Utility functions for saving and reading session data securely
-import { join } from "@std/path";
 import type { User } from "@supabase/supabase-js";
 import { decodeJwt } from "jose";
-import { homedir } from "node:os";
-import { z } from "zod";
+import z from "zod";
 import { createClient } from "./supabase.ts";
 
 const SessionSchema = z.object({
@@ -27,7 +25,8 @@ export type SessionData = z.infer<typeof SessionSchema>;
  * Path to the session file in the user's home directory.
  */
 function getSessionPath(): string {
-  return join(homedir(), ".deco_auth_session.json");
+  const homeDir = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
+  return `${homeDir}/.deco_auth_session.json`;
 }
 
 /**

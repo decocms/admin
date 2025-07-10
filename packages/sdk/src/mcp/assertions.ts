@@ -25,7 +25,7 @@ export function assertHasWorkspace<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "workspace"> | Pick<WithWorkspace<TContext>, "workspace">,
 ): asserts c is WithWorkspace<TContext> {
   if (!c.workspace) {
-    throw new NotFoundError("Workspace not found");
+    throw new NotFoundError();
   }
 }
 
@@ -33,7 +33,7 @@ export function assertPrincipalIsUser<TContext extends AppContext = AppContext>(
   c: Pick<TContext, "user"> | Pick<WithUser<TContext>, "user">,
 ): asserts c is WithUser<TContext> {
   if (!c.user || typeof c.user.id !== "string") {
-    throw new NotFoundError("User not found");
+    throw new NotFoundError();
   }
 }
 
@@ -69,7 +69,7 @@ export const assertWorkspaceResourceAccess = async (
   resource: string,
   c: AppContext,
 ): Promise<void> => {
-  if (c.isLocal || c.resourceAccess.granted()) {
+  if (c.isLocal) {
     return c.resourceAccess.grant();
   }
 

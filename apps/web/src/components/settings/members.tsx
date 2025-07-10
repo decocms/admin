@@ -259,7 +259,7 @@ function RoleDialogIntegrationListItem({
 
   return (
     <div className="w-full flex flex-col rounded-xl transition-colors border border-border relative">
-      <div className="flex gap-4 p-2 rounded-t-xl">
+      <div className="flex gap-4 p-3 rounded-t-xl">
         <div className="flex gap-4 items-center justify-between w-full">
           <div>
                          <IntegrationIcon

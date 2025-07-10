@@ -4,6 +4,7 @@ import type {
   MessageBatch,
   ScheduledController,
 } from "@cloudflare/workers-types";
+import { decodeJwt, type JWTPayload } from "jose";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
@@ -36,9 +37,19 @@ export interface BindingBase {
   name: string;
 }
 
-export interface MCPBinding extends BindingBase {
+export interface IntegrationIdMCPBinding extends BindingBase {
   type: "mcp";
   integration_id: string;
+}
+export interface IntegrationNameMCPBinding extends BindingBase {
+  type: "mcp";
+  integration_name: string;
+}
+export type MCPBinding = IntegrationIdMCPBinding | IntegrationNameMCPBinding;
+
+export interface SecretBinding extends BindingBase {
+  type: "secret";
+  description?: string;
 }
 
 export type Binding = MCPBinding;
@@ -89,6 +100,13 @@ export interface UserDefaultExport<
 // 1. Map binding type to its interface
 interface BindingTypeMap {
   mcp: MCPBinding;
+  secret: SecretBinding;
+}
+
+export interface RequestContext {
+  reqToken?: string;
+  state?: Record<string, unknown>;
+  workspace?: string;
 }
 
 // 2. Map binding type to its creator function
@@ -96,12 +114,19 @@ type CreatorByType = {
   [K in keyof BindingTypeMap]: (
     value: BindingTypeMap[K],
     env: DefaultEnv,
+    ctx?: RequestContext,
   ) => unknown;
 };
 
 // 3. Strongly type creatorByType
 const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
+  secret: (binding, _env, ctx) => {
+    if (!ctx?.state) {
+      return null;
+    }
+    return ctx.state[binding.name] as string;
+  },
 };
 
 const withDefaultBindings = (env: DefaultEnv) => {
@@ -118,14 +143,20 @@ const withDefaultBindings = (env: DefaultEnv) => {
   };
 };
 
-export const withBindings = <TEnv>(_env: TEnv): TEnv => {
+export const withBindings = <TEnv>(_env: TEnv, reqToken?: string): TEnv => {
   const env = _env as DefaultEnv;
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
+  const decoded = reqToken
+    ? decodeJwt<JWTPayload & { state: Record<string, unknown> }>(reqToken)
+    : null;
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](
       binding,
       env,
+      decoded
+        ? { reqToken, state: decoded?.state, workspace: decoded?.aud as string }
+        : undefined,
     );
   }
 
@@ -134,6 +165,13 @@ export const withBindings = <TEnv>(_env: TEnv): TEnv => {
   return env as TEnv;
 };
 
+const getReqToken = (req: Request) => {
+  const token = req.headers.get("Authorization");
+  if (!token) {
+    return undefined;
+  }
+  return token.split(" ")[1];
+};
 export const withRuntime = <TEnv>(
   userFns: UserDefaultExport<TEnv>,
 ): UserDefaultExport<TEnv> & { Workflow: ReturnType<typeof Workflow> } => {
@@ -168,7 +206,7 @@ export const withRuntime = <TEnv>(
       if (url.pathname === "/mcp") {
         return server(req, env, ctx);
       }
-      return userFns.fetch?.(req, withBindings(env), ctx) ||
+      return userFns.fetch?.(req, withBindings(env, getReqToken(req)), ctx) ||
         new Response("Not found", { status: 404 });
     },
     ...userFns.queue

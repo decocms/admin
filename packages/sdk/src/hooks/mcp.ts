@@ -325,8 +325,8 @@ export const useInstallFromMarketplace = () => {
       let redirectUrl: string | null = null;
 
       if (
-        WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
-        provider === "deco"
+        (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
+          provider === "deco") || provider === "marketplace"
       ) {
         const result = await MCPClient
           .forWorkspace(workspace)
@@ -334,6 +334,7 @@ export const useInstallFromMarketplace = () => {
             appName: appName,
             returnUrl,
             installId: integration.id.split(":").pop()!,
+            provider,
           });
 
         redirectUrl = result?.redirectUrl;

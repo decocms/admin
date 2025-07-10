@@ -9,7 +9,8 @@
     "@mastra/core": "0.0.0-support-d1-client-20250701191943",
     "@modelcontextprotocol/sdk": "1.11.4",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@mastra/cloudflare-d1": "0.0.0-support-d1-client-20250701191943"
+    "@mastra/cloudflare-d1": "0.0.0-support-d1-client-20250701191943",
+    "jose": "^6.0.11"
   },
   "exports": {
     ".": "./src/index.ts",

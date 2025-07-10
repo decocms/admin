@@ -89,6 +89,7 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.getAppInfo,
   hostingAPI.listWorkflows,
   hostingAPI.getWorkflowStatus,
+  registryAPI.getRegistryApp,
   registryAPI.listRegistryApps,
   registryAPI.listRegistryScopes,
   registryAPI.publishApp,

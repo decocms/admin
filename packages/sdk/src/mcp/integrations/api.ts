@@ -32,6 +32,7 @@ import { getGroups } from "../groups.ts";
 import {
   Binding,
   createToolGroup,
+  MCPClient,
   NotFoundError,
   WellKnownBindings,
 } from "../index.ts";
@@ -644,10 +645,29 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
     installId: z.string().describe(
       "The install id of the integration to start the OAuth flow for",
     ),
+    provider: z.string().optional().describe(
+      "The provider of the integration to start the OAuth flow for",
+    ),
   }),
-  handler: async ({ appName, returnUrl, installId }, c) => {
+  handler: async ({ appName, returnUrl, installId, provider }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
+    // make a call to oauth_start which will return scopes and JSON Schema + redirect
+    if (provider === "marketplace") {
+      const app = await getRegistryApp.handler({ id: appName });
+      const oauth = await MCPClient.INTEGRATIONS_CALL_TOOL({
+        connection: app.connection,
+        params: {
+          name: "DECO_CHAT_OAUTH_START",
+          arguments: {
+            installId,
+            returnUrl,
+          },
+        },
+      }) as { structuredContent: { redirectUrl: string } };
+
+      return { redirectUrl: oauth.structuredContent.redirectUrl };
+    }
 
     const url = new URL(`${DECO_REGISTRY_SERVER_URL}/oauth/start`);
     url.searchParams.set("installId", installId);

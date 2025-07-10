@@ -24,7 +24,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import { Suspense, useDeferredValue, useMemo, useState } from "react";
+import { Suspense, useDeferredValue, useMemo, useState, useEffect } from "react";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { useUser } from "../../hooks/use-user.ts";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
@@ -149,12 +149,14 @@ function AddRoleDialog({
   open, 
   onOpenChange,
   role = null,
-  teamId // Add teamId as prop
+  teamId, // Add teamId as prop
+  onSave, // Add onSave callback
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   role?: any;
   teamId?: number;
+  onSave: (roleData: RoleFormData, isEditing: boolean) => void;
 }) {
   const { data: { members } } = useTeamMembers(teamId ?? null);
   const [formData, setFormData] = useState<RoleFormData>({
@@ -167,10 +169,33 @@ function AddRoleDialog({
   const [selectedTab, setSelectedTab] = useState("general");
   const { data: integrations = [] } = useIntegrations();
   const { data: agents = [] } = useAgents();
+  
+  // Search states for each section
+  const [toolsSearch, setToolsSearch] = useState("");
+  const [agentsSearch, setAgentsSearch] = useState("");
+  const [membersSearch, setMembersSearch] = useState("");
 
   const availableIntegrations = integrations.filter(i => 
-    i.id.startsWith("i:") || ["DECO_INTEGRATIONS", "DECO_UTILS"].includes(i.id)
+    i.id.startsWith("i:") && 
+    !["i:user-management", "i:workspace-management"].includes(i.id)
   );
+  
+  // Filtered data based on search
+  const filteredIntegrations = availableIntegrations.filter(integration =>
+    integration.name.toLowerCase().includes(toolsSearch.toLowerCase())
+  );
+  
+  const filteredAgents = agents.filter(agent =>
+    agent.name.toLowerCase().includes(agentsSearch.toLowerCase()) ||
+    (agent.description || "").toLowerCase().includes(agentsSearch.toLowerCase())
+  );
+  
+  const filteredMembers = members.filter(member => {
+    const name = member.profiles.metadata.full_name || "";
+    const email = member.profiles.email || "";
+    const searchTerm = membersSearch.toLowerCase();
+    return name.toLowerCase().includes(searchTerm) || email.toLowerCase().includes(searchTerm);
+  });
 
   const setIntegrationTools = useCallback((integrationId: string, tools: string[]) => {
     setFormData(prev => ({
@@ -249,10 +274,31 @@ function AddRoleDialog({
     }));
   };
 
+  // Update formData when role prop changes
+  useEffect(() => {
+    if (role) {
+      setFormData({
+        name: role.name || "",
+        description: role.description || "",
+        tools: role.tools || {},
+        agents: role.agents || [],
+        members: role.members || [],
+      });
+    } else {
+      setFormData({
+        name: "",
+        description: "",
+        tools: {},
+        agents: [],
+        members: [],
+      });
+    }
+  }, [role]);
+
   const handleSave = () => {
-    // TODO: Implement role creation/update logic
-    console.log("Saving role:", formData);
+    onSave(formData, !!role);
     onOpenChange(false);
+    toast.success(role ? "Role updated successfully" : "Role created successfully");
   };
 
   // Calculate counts for display
@@ -265,14 +311,11 @@ function AddRoleDialog({
       <DialogContent className="w-fit min-w-[600px] max-w-[90vw] max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{role ? "Edit Role" : "Add New Role"}</DialogTitle>
-          <DialogDescription>
-            {role ? "Modify role permissions and assignments." : "Create a new role with specific permissions and assign members."}
-          </DialogDescription>
         </DialogHeader>
 
         <div className="flex h-[60vh]">
           {/* Left sidebar menu */}
-          <div className="w-48 border-r border-border pr-4 flex-shrink-0">
+          <div className="w-48 pr-4 flex-shrink-0">
             <SidebarMenu className="gap-0.5">
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -356,34 +399,42 @@ function AddRoleDialog({
 
             {selectedTab === "tools" && (
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">Select Tools</h3>
-                  <p className="text-xs text-muted-foreground">Choose integrations and their specific tools for this role.</p>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  {availableIntegrations.map(integration => (
+                <Input
+                  placeholder="Search integrations..."
+                  value={toolsSearch}
+                  onChange={(e) => setToolsSearch(e.target.value)}
+                  className="w-full"
+                />
+                <div className="space-y-2 grid grid-cols-1" style={{ maxWidth: 420 }}>
+                  {filteredIntegrations.map(integration => (
                     <IntegrationListItem
                       key={integration.id}
                       toolsSet={formData.tools}
                       setIntegrationTools={setIntegrationTools}
                       integration={integration}
-                      onConfigure={() => {}} // TODO: Add configure functionality
-                      onRemove={disableAllTools}
+                      onConfigure={() => {}} // Not used when hideActions is true
+                      onRemove={() => {}} // Not used when hideActions is true
+                      hideActions={true}
                       searchTerm=""
                     />
                   ))}
+                  {filteredIntegrations.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No integrations found.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {selectedTab === "agents" && (
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">Select Agents</h3>
-                  <p className="text-xs text-muted-foreground">Choose which agents this role can access.</p>
-                </div>
-                <Separator />
+                <Input
+                  placeholder="Search agents..."
+                  value={agentsSearch}
+                  onChange={(e) => setAgentsSearch(e.target.value)}
+                  className="w-full"
+                />
                 {formData.agents.some(agentId => {
                   const agent = agents.find(a => a.id === agentId);
                   const agentTools = agent?.tools_set || {};
@@ -398,16 +449,16 @@ function AddRoleDialog({
                     </AlertDescription>
                   </Alert>
                 )}
-                <div className="space-y-2">
-                  {agents.map(agent => (
-                    <Card key={agent.id}>
-                      <CardContent className="flex items-center space-x-3 p-3">
-                        <Checkbox
-                          checked={formData.agents.includes(agent.id)}
-                          onCheckedChange={(checked) => handleAgentToggle(agent.id, checked as boolean)}
-                        />
+                <div className="flex flex-col gap-2" style={{ maxWidth: 420 }}>
+                  {filteredAgents.map(agent => (
+                    <Card 
+                      key={agent.id} 
+                      className="w-full cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleAgentToggle(agent.id, !formData.agents.includes(agent.id))}
+                    >
+                      <CardContent className="flex items-start p-3 w-full">
                         <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
-                        <div className="flex flex-col items-start text-left leading-tight w-full">
+                        <div className="flex flex-col items-start text-left leading-tight w-full min-w-0 ml-3 pr-3">
                           <span
                             className="truncate block text-xs font-medium text-foreground"
                             style={{ maxWidth: "300px" }}
@@ -415,38 +466,61 @@ function AddRoleDialog({
                             {agent.name}
                           </span>
                           <span
-                            className="truncate block text-xs font-normal text-muted-foreground"
-                            style={{ maxWidth: "300px" }}
+                            className="block text-xs font-normal text-muted-foreground break-words whitespace-pre-line"
+                            style={{ maxWidth: "300px", wordBreak: "break-word" }}
                           >
                             {agent.description || "No description"}
                           </span>
                         </div>
+                        <div className="ml-auto flex items-start" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={formData.agents.includes(agent.id)}
+                            onCheckedChange={(checked) => handleAgentToggle(agent.id, checked as boolean)}
+                          />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
+                  {filteredAgents.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No agents found.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {selectedTab === "members" && (
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium">Assign Members</h3>
-                  <p className="text-xs text-muted-foreground">Select team members to assign to this role.</p>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  {members.map(member => (
-                    <Card key={member.id}>
-                      <CardContent className="flex items-center space-x-3 p-3">
-                        <Checkbox
-                          checked={formData.members.includes(member.user_id)}
-                          onCheckedChange={(checked) => handleMemberToggle(member.user_id, checked as boolean)}
-                        />
-                        <UserInfo userId={member.user_id} showDetails maxWidth="300px" />
+                <Input
+                  placeholder="Search members..."
+                  value={membersSearch}
+                  onChange={(e) => setMembersSearch(e.target.value)}
+                  className="w-full"
+                />
+                <div className="flex flex-col gap-2" style={{ maxWidth: 420 }}>
+                  {filteredMembers.map(member => (
+                    <Card 
+                      key={member.id} 
+                      className="w-full cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleMemberToggle(member.user_id, !formData.members.includes(member.user_id))}
+                    >
+                      <CardContent className="flex items-start p-3 w-full">
+                        <UserInfo userId={member.user_id} showDetails maxWidth="300px" className="pr-3" />
+                        <div className="ml-auto flex items-start" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={formData.members.includes(member.user_id)}
+                            onCheckedChange={(checked) => handleMemberToggle(member.user_id, checked as boolean)}
+                          />
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
+                  {filteredMembers.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No members found.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -515,6 +589,13 @@ function MembersViewContent() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
   const { data: integrations = [] } = useIntegrations();
+  
+  // Local state for roles management
+  const [customRoles, setCustomRoles] = useState<any[]>([]);
+  const [editedDefaultRoles, setEditedDefaultRoles] = useState<any[]>(DEFAULT_ROLES);
+  
+  // Combined roles (edited defaults + custom)
+  const allRoles = useMemo(() => [...editedDefaultRoles, ...customRoles], [editedDefaultRoles, customRoles]);
 
   // Convert members and invites to unified data structure
   const tableData: MemberTableRow[] = useMemo(() => {
@@ -648,7 +729,7 @@ function MembersViewContent() {
               <Select
                 value={row.roles[0]?.id?.toString() ?? ""}
                 onValueChange={async (roleId) => {
-                  const newRole = DEFAULT_ROLES.find((r) => r.id.toString() === roleId);
+                  const newRole = allRoles.find((r) => r.id.toString() === roleId);
                   const prevRole = row.roles[0];
                   if (newRole && prevRole && newRole.id !== prevRole.id) {
                     // Remove previous role
@@ -665,7 +746,7 @@ function MembersViewContent() {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEFAULT_ROLES.map((role) => (
+                  {allRoles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
                       {role.name}
                     </SelectItem>
@@ -683,7 +764,7 @@ function MembersViewContent() {
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEFAULT_ROLES.map((role) => (
+                  {allRoles.map((role) => (
                     <SelectItem key={role.id} value={role.id.toString()}>
                       {role.name}
                     </SelectItem>
@@ -857,10 +938,10 @@ function MembersViewContent() {
     });
   }, [filteredData, sortKey, sortDirection]);
 
-  // Toggle chiplets for ListPageHeader - use DEFAULT_ROLES instead of roles from API
+  // Toggle chiplets for ListPageHeader - use allRoles instead of DEFAULT_ROLES
   const toggleItems = [
     { id: 'members', label: 'Members', count: members.length + invites.length, active: tab === 'members' },
-    { id: 'roles', label: 'Roles', count: DEFAULT_ROLES.length, active: tab === 'roles' },
+    { id: 'roles', label: 'Roles', count: allRoles.length, active: tab === 'roles' },
   ];
 
   // Roles table columns - updated to use DEFAULT_ROLES
@@ -879,70 +960,105 @@ function MembersViewContent() {
     {
       id: "tools",
       header: "Tools", 
-      render: (role: any) => (
-        <div className="flex -space-x-1">
-          {integrations.slice(0, 3).map((integration, i) => (
-            <IntegrationAvatar
-              key={integration.id}
-              url={integration.icon}
-              fallback={integration.name}
-              size="sm"
-              className="border border-background"
-            />
-          ))}
-          {integrations.length > 3 && (
-            <div className="w-6 h-6 rounded-full bg-muted border border-background flex items-center justify-center text-xs">
-              +{integrations.length - 3}
+      render: (role: any) => {
+        const roleTools = role.tools || {};
+        const integrationsWithTools = integrations.filter(integration => 
+          roleTools[integration.id] && roleTools[integration.id].length > 0
+        );
+        
+        if (integrationsWithTools.length === 0) {
+          return <span className="text-muted-foreground text-sm">No tools</span>;
+        }
+        
+        return (
+          <div className="flex items-center">
+            <div className="flex -space-x-1">
+              {integrationsWithTools.slice(0, 3).map((integration) => (
+                <IntegrationAvatar
+                  key={integration.id}
+                  url={integration.icon}
+                  fallback={integration.name}
+                  size="sm"
+                  className="border border-background"
+                />
+              ))}
             </div>
-          )}
-        </div>
-      ),
+            {integrationsWithTools.length > 3 && (
+              <span className="ml-2 text-xs font-medium text-muted-foreground">
+                +{integrationsWithTools.length - 3}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "agents",
       header: "Agents",
-      render: (role: any) => (
-        <div className="flex -space-x-1">
-          {/* Exemplo real: mostrar até 3 agentes reais */}
-          {agents.slice(0, 3).map((agent, i) => (
-            <AgentAvatar
-              key={i}
-              url={agent.avatar}
-              fallback={agent.name}
-              size="sm"
-              className="border border-background"
-            />
-          ))}
-          {agents.length > 3 && (
-            <div className="w-6 h-6 rounded-full bg-muted border border-background flex items-center justify-center text-xs">
-              +{agents.length - 3}
+      render: (role: any) => {
+        const roleAgents = role.agents || [];
+        const roleAgentsList = agents.filter(agent => roleAgents.includes(agent.id));
+        
+        if (roleAgentsList.length === 0) {
+          return <span className="text-muted-foreground text-sm">No agents</span>;
+        }
+        
+        return (
+          <div className="flex items-center">
+            <div className="flex -space-x-1">
+              {roleAgentsList.slice(0, 3).map((agent) => (
+                <AgentAvatar
+                  key={agent.id}
+                  url={agent.avatar}
+                  fallback={agent.name}
+                  size="sm"
+                  className="border border-background"
+                />
+              ))}
             </div>
-          )}
-        </div>
-      ),
+            {roleAgentsList.length > 3 && (
+              <span className="ml-2 text-xs font-medium text-muted-foreground">
+                +{roleAgentsList.length - 3}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "members",
       header: "Members",
-      render: (role: any) => (
-        <div className="flex -space-x-1">
-          {/* Exemplo real: mostrar até 3 membros reais com avatar/nome */}
-          {members.filter(m => m.roles.some(r => r.id === role.id)).slice(0, 3).map((member, i) => (
-            <UserAvatar
-              key={i}
-              url={member.profiles.metadata.avatar_url}
-              fallback={member.profiles.metadata.full_name || member.profiles.email}
-              size="sm"
-              className="border border-background"
-            />
-          ))}
-          {members.filter(m => m.roles.some(r => r.id === role.id)).length > 3 && (
-            <div className="w-6 h-6 rounded-full bg-muted border border-background flex items-center justify-center text-xs">
-              +{members.filter(m => m.roles.some(r => r.id === role.id)).length - 3}
+      render: (role: any) => {
+        const roleMembers = role.members || [];
+        const roleMembersList = members.filter(member => 
+          roleMembers.includes(member.profiles.id)
+        );
+        
+        if (roleMembersList.length === 0) {
+          return <span className="text-muted-foreground text-sm">No members</span>;
+        }
+        
+        return (
+          <div className="flex items-center">
+            <div className="flex -space-x-1">
+              {roleMembersList.slice(0, 3).map((member) => (
+                <UserAvatar
+                  key={member.profiles.id}
+                  url={member.profiles.metadata.avatar_url}
+                  fallback={member.profiles.metadata.full_name || member.profiles.email}
+                  size="sm"
+                  className="border border-background"
+                />
+              ))}
             </div>
-          )}
-        </div>
-      ),
+            {roleMembersList.length > 3 && (
+              <span className="ml-2 text-xs font-medium text-muted-foreground">
+                +{roleMembersList.length - 3}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "actions",
@@ -964,7 +1080,16 @@ function MembersViewContent() {
               <Icon name="edit" />
               Edit role
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive">
+            <DropdownMenuItem 
+              variant="destructive"
+              disabled={DEFAULT_ROLES.some(r => r.id === role.id)}
+              onClick={() => {
+                if (!DEFAULT_ROLES.some(r => r.id === role.id)) {
+                  setCustomRoles(prev => prev.filter(r => r.id !== role.id));
+                  toast.success("Role deleted successfully");
+                }
+              }}
+            >
               <Icon name="delete" />
               Delete role
             </DropdownMenuItem>
@@ -974,8 +1099,8 @@ function MembersViewContent() {
     },
   ];
 
-  // Filter roles based on search - use DEFAULT_ROLES
-  const filteredRoles = DEFAULT_ROLES.filter(role => 
+  // Filter roles based on search - use allRoles
+  const filteredRoles = allRoles.filter(role => 
     role.name.toLowerCase().includes(rolesQuery.toLowerCase())
   );
 
@@ -1041,11 +1166,48 @@ function MembersViewContent() {
         )}
       </div>
       
-      <AddRoleDialog
-        open={roleDialogOpen}
-        onOpenChange={setRoleDialogOpen}
+      <AddRoleDialog 
+        open={roleDialogOpen} 
+        onOpenChange={(open) => {
+          setRoleDialogOpen(open);
+          if (!open) {
+            setEditingRole(null);
+          }
+        }}
         role={editingRole}
         teamId={teamId}
+        onSave={(roleData, isEditing) => {
+          if (isEditing && editingRole) {
+            // Editing existing role
+            if (DEFAULT_ROLES.some(r => r.id === editingRole.id)) {
+              // Editing default role
+              setEditedDefaultRoles(prev => 
+                prev.map(role => 
+                  role.id === editingRole.id 
+                    ? { ...role, ...roleData }
+                    : role
+                )
+              );
+            } else {
+              // Editing custom role
+              setCustomRoles(prev => 
+                prev.map(role => 
+                  role.id === editingRole.id 
+                    ? { ...role, ...roleData }
+                    : role
+                )
+              );
+            }
+          } else {
+            // Creating new role
+            const newRole = {
+              id: Date.now(), // Simple ID generation for demo
+              ...roleData,
+            };
+            setCustomRoles(prev => [...prev, newRole]);
+          }
+          setEditingRole(null);
+        }}
       />
     </div>
   );

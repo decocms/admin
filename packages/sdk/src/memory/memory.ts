@@ -76,6 +76,16 @@ export class WorkspaceMemory extends MastraMemory {
       ? openAIEmbedder(opts.openAPIKey)
       : undefined;
 
+    if (embedder === undefined) {
+      console.warn(
+        "No openAI API key provided, Memory semantic recall will be disabled",
+      );
+      opts.options = {
+        ...opts.options,
+        semanticRecall: false,
+      };
+    }
+
     return {
       libsqlClient,
       ...(await libsqlFactory.create({ memoryId })),

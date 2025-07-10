@@ -69,9 +69,14 @@ export const getWorkspacePlan = async (workspace: string) => {
   const plan = await MCPClient.forWorkspace(workspace)
     .GET_WORKSPACE_PLAN({});
 
+  // Ensure features array exists
+  if (!plan.features) {
+    plan.features = [];
+  }
+
   // recreate the assertHasFeature method, that cannot be serialized
   plan.assertHasFeature = (feature: Feature) => {
-    if (!plan.features.includes(feature)) {
+    if (!plan?.features?.includes(feature)) {
       throw new FeatureNotAvailableError();
     }
   };

@@ -71,5 +71,5 @@ export function usePlanHasFeature(feature: Feature) {
     queryFn: () => getWorkspacePlan(workspace),
   });
 
-  return plan.features.includes(feature);
+  return plan?.features?.includes(feature) ?? false;
 }

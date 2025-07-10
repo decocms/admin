@@ -131,7 +131,8 @@ const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =
     const workspacePattern = new URLPattern({ pathname: "/:root/:slug" });
     const workspaceMatch = workspacePattern.exec({ pathname: workspace });
 
-    if (!workspaceMatch || !workspaceMatch.pathname.groups.slug ||
+    if (
+      !workspaceMatch || !workspaceMatch.pathname.groups.slug ||
       !workspaceMatch.pathname.groups.root
     ) {
       throw new Error(`Invalid workspace format: ${workspace}`);

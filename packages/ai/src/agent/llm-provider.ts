@@ -122,6 +122,11 @@ const providers: Record<
   },
 } as const;
 
+const OPENROUTER_HEADERS = {
+  "HTTP-Referer": "https://deco.chat/about",
+  "X-Title": "Deco",
+};
+
 const modelLimit = (provider: Provider, model: string) =>
   provider.tokenLimit?.[model] ?? provider.tokenLimit?.default ?? 200_000;
 
@@ -158,6 +163,7 @@ export const createLLMProvider: ProviderFactory = (opts) => {
     apiKey: openRouterApiKey,
     headers: opts.metadata
       ? {
+        ...OPENROUTER_HEADERS,
         "cf-aig-metadata": JSON.stringify(opts.metadata),
       }
       : undefined,

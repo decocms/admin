@@ -271,3 +271,4 @@ export function createMCPToolsStub<TDefinition extends readonly ToolLike[]>(
 }
 
 export { AuthorizationClient, PolicyClient } from "../auth/policy.ts";
+export { FileProcessor } from "../mcp/file-processor.ts";

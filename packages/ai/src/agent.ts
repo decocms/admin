@@ -652,7 +652,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       threadId,
       model,
       modelId,
-      plan: plan.id,
     });
   }
 

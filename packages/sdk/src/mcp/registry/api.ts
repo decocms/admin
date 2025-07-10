@@ -171,6 +171,7 @@ export const listRegistryScopes = createTool({
   },
 });
 
+const MAX_SCOPES_PER_WORKSPACE = 5;
 async function ensureScope(
   scopeName: string,
   workspace: string,
@@ -193,6 +194,21 @@ async function ensureScope(
       );
     }
     return existingScope.id;
+  }
+
+  // Check scope limit before creating new scope
+  const { data: existingScopes, error: countError } = await db
+    .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
+    .select("id", { count: "exact" })
+    .eq("workspace", workspace);
+
+  if (countError) throw countError;
+
+  const scopeCount = existingScopes?.length ?? 0;
+  if (scopeCount >= MAX_SCOPES_PER_WORKSPACE) {
+    throw new UserInputError(
+      `Cannot claim more than ${MAX_SCOPES_PER_WORKSPACE} scopes per workspace. Current count: ${scopeCount}`,
+    );
   }
 
   // Create new scope (automatic claiming) if it doesn't exist

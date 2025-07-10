@@ -13,7 +13,8 @@ import {
   WellKnownWallets,
 } from "./index.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
-import { getPlan, Markup } from "./plans.ts";
+import { getPlan } from "./plans.ts";
+import { Markup } from "../../plan.ts";
 
 export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {

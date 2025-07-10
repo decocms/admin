@@ -3,7 +3,8 @@ import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
-import { getPlan, Markup } from "../plans.ts";
+import { getPlan } from "../plans.ts";
+import { Markup } from "../../../plan.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,

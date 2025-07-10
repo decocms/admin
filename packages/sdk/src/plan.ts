@@ -15,3 +15,30 @@ export const WELL_KNOWN_PLANS = {
 };
 
 export const WELL_KNOWN_PLAN_IDS = new Set(Object.values(WELL_KNOWN_PLANS));
+
+export const Markup = {
+  add: ({
+    usdCents,
+    markupPercentage,
+  }: {
+    usdCents: number;
+    markupPercentage: number;
+  }) => {
+    if (markupPercentage < 0) {
+      throw new Error("Markup percentage cannot be negative");
+    }
+    return Math.round(usdCents * (1 + markupPercentage / 100));
+  },
+  remove: ({
+    usdCents,
+    markupPercentage,
+  }: {
+    usdCents: number;
+    markupPercentage: number;
+  }) => {
+    if (markupPercentage < 0) {
+      throw new Error("Markup percentage cannot be negative");
+    }
+    return Math.round(usdCents / (1 + markupPercentage / 100));
+  },
+};

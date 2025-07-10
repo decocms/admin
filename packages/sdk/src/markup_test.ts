@@ -1,6 +1,6 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
-import { Markup } from "./plans.ts";
-import type { PlanWithTeamMetadata } from "../../plan.ts";
+import { Markup } from "./plan.ts";
+import type { PlanWithTeamMetadata } from "./plan.ts";
 
 const usd = (dollars: number) => dollars * 100;
 

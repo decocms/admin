@@ -48,30 +48,3 @@ export const getPlan = async (c: AppContext): Promise<PlanWithTeamMetadata> => {
     ? await getPersonalWorkspacePlan(c)
     : await getTeamPlan(c);
 };
-
-export const Markup = {
-  add: ({
-    usdCents,
-    markupPercentage,
-  }: {
-    usdCents: number;
-    markupPercentage: number;
-  }) => {
-    if (markupPercentage < 0) {
-      throw new InternalServerError("Markup percentage cannot be negative");
-    }
-    return Math.round(usdCents * (1 + markupPercentage / 100));
-  },
-  remove: ({
-    usdCents,
-    markupPercentage,
-  }: {
-    usdCents: number;
-    markupPercentage: number;
-  }) => {
-    if (markupPercentage < 0) {
-      throw new InternalServerError("Markup percentage cannot be negative");
-    }
-    return Math.round(usdCents / (1 + markupPercentage / 100));
-  },
-};

@@ -7,6 +7,15 @@ import { parse, stringify } from "smol-toml";
 import { z } from "zod";
 import { readSession } from "./session.ts";
 
+// MD5 hash function
+async function md5Hash(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("sha-1", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export const CONFIG_FILE = "wrangler.toml";
 
 const requiredErrorForProp = (prop: string) =>
@@ -58,8 +67,8 @@ export interface WranglerConfig {
   deco?: Partial<Config>;
 }
 
-const readWranglerConfig = async () => {
-  const configPath = getConfigFilePath(Deno.cwd());
+const readWranglerConfig = async (cwd?: string) => {
+  const configPath = getConfigFilePath(cwd || Deno.cwd());
   if (!configPath) {
     return {};
   }
@@ -75,10 +84,11 @@ const readWranglerConfig = async () => {
  * If no config file is found, returns an empty object, so we can still merge with inline options
  * and work without a config file.
  *
+ * @param cwd - The current working directory to read config from.
  * @returns The partial config.
  */
-const readConfigFile = async () => {
-  const wranglerConfig = await readWranglerConfig();
+const readConfigFile = async (cwd?: string) => {
+  const wranglerConfig = await readWranglerConfig(cwd);
   const decoConfig = wranglerConfig.deco ?? {} as Partial<Config>;
   return {
     ...decoConfig,
@@ -91,7 +101,7 @@ const DECO_CHAT_WORKFLOW_BINDING = {
   class_name: "Workflow",
 };
 export const addWorkflowDO = async () => {
-  const wranglerConfig = await readWranglerConfig();
+  const wranglerConfig = await readWranglerConfig(Deno.cwd());
   const configPath = getConfigFilePath(Deno.cwd()) ??
     `${Deno.cwd()}/${CONFIG_FILE}`;
   const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
@@ -125,15 +135,18 @@ export const addWorkflowDO = async () => {
 /**
  * Write the config to the current directory or any parent directory.
  * @param config - The config to write.
+ * @param cwd - The current working directory to write config to.
  */
 export const writeConfigFile = async (
   config: Partial<Config>,
+  cwd?: string,
 ) => {
-  const wranglerConfig = await readWranglerConfig();
+  const targetCwd = cwd || Deno.cwd();
+  const wranglerConfig = await readWranglerConfig(targetCwd);
   const current = wranglerConfig.deco ?? {} as Partial<Config>;
   const mergedConfig = { ...current, ...config };
-  const configPath = getConfigFilePath(Deno.cwd()) ??
-    `${Deno.cwd()}/${CONFIG_FILE}`;
+  const configPath = getConfigFilePath(targetCwd) ??
+    `${targetCwd}/${CONFIG_FILE}`;
   await Deno.writeTextFile(
     configPath,
     stringify({
@@ -147,14 +160,16 @@ export const writeConfigFile = async (
  * Get the config for the current project considering the passed root directory and inline options.
  * @param rootDir - The root directory to read the config from.
  * @param inlineOptions - The inline options to merge with the config.
+ * @param cwd - The current working directory to read config from.
  * @returns The config.
  */
 export const getConfig = async (
-  { inlineOptions = {} }: {
+  { inlineOptions = {}, cwd }: {
     inlineOptions?: Partial<Config>;
-  },
+    cwd?: string;
+  } = {},
 ) => {
-  const config = await readConfigFile();
+  const config = await readConfigFile(cwd);
   const merged = { ...config, ...inlineOptions };
   if (!merged.workspace) {
     const session = await readSession();
@@ -189,4 +204,44 @@ export const getConfigFilePath = (cwd: string) => {
   }
 
   return null;
+};
+
+/**
+ * Generate a unique app UUID based on workspace and app name.
+ * Uses MD5 hash of workspace+app to ensure consistent UUIDs for the same project.
+ * @param workspace - The workspace name
+ * @param app - The app name
+ * @returns A unique UUID string based on the workspace and app name.
+ */
+export const getAppUUID = async (
+  workspace: string = "default",
+  app: string = "my-app",
+): Promise<string> => {
+  try {
+    const combined = `${workspace}-${app}`;
+    const hash = await md5Hash(combined);
+    return hash.slice(0, 8); // Use first 8 characters for shorter, readable UUID
+  } catch (error) {
+    // Fallback to random UUID if hash generation fails
+    console.warn(
+      "Could not generate hash for UUID, using random fallback:",
+      error,
+    );
+    return crypto.randomUUID().slice(0, 8);
+  }
+};
+
+/**
+ * Generate a domain for the app based on workspace and app name.
+ * Uses the app UUID to create a consistent domain for the same project.
+ * @param workspace - The workspace name
+ * @param app - The app name
+ * @returns A domain string for the app.
+ */
+export const getAppDomain = async (
+  workspace: string,
+  app: string,
+): Promise<string> => {
+  const appUUID = await getAppUUID(workspace, app);
+  return `localhost-${appUUID}.deco.host`;
 };

@@ -142,7 +142,10 @@ const create = new Command()
   })
   .arguments("[project-name]")
   .action(async (options, projectName?: string) => {
-    await createCommand(projectName, options.template);
+    const config = await getConfig({
+      inlineOptions: { app: projectName ?? "my-new-app" },
+    }).catch(() => ({}));
+    await createCommand(projectName, options.template, config);
   });
 
 const listTemplatesCommand = new Command()

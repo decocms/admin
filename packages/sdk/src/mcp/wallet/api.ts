@@ -13,7 +13,7 @@ import {
   WellKnownWallets,
 } from "./index.ts";
 import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
-import { getPlan } from "./plans.ts";
+import { getPlan, Markup } from "./plans.ts";
 
 export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
@@ -202,13 +202,18 @@ export const createCheckoutSession = createTool({
     assertHasWorkspace(ctx);
 
     await assertWorkspaceResourceAccess(ctx.tool.name, ctx);
+    const plan = await getPlan(ctx);
+    const amount = Markup.add({
+      usdCents: amountUSDCents,
+      markupPercentage: plan.markup,
+    });
 
     const session = await createStripeCheckoutSession({
       successUrl,
       cancelUrl,
       product: {
         id: "WorkspaceWalletDeposit",
-        amountUSD: amountUSDCents,
+        amountUSD: amount,
       },
       ctx,
       metadata: {

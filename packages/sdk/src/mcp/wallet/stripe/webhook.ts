@@ -3,6 +3,7 @@ import { WebhookEventIgnoredError } from "../../../errors.ts";
 import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
+import { getPlan, Markup } from "../plans.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -54,13 +55,14 @@ async function getCurrencies(c: AppContext) {
 
 async function getAmountInDollars({
   context,
-  amountReceivedUSDCents,
+  amountReceivedUSDCentsWithMarkup,
   currency,
 }: {
   context: AppContext;
-  amountReceivedUSDCents: number;
+  amountReceivedUSDCentsWithMarkup: number;
   currency: string;
 }) {
+  const plan = await getPlan(context);
   const currencies = {
     ...(await getCurrencies(context)),
     USD: { value: 1 },
@@ -75,6 +77,10 @@ async function getAmountInDollars({
   const conversionRate =
     currencies[currency.toUpperCase() as keyof typeof currencies].value;
 
+  const amountReceivedUSDCents = Markup.remove({
+    usdCents: amountReceivedUSDCentsWithMarkup,
+    markupPercentage: plan.markup,
+  });
   const amount = amountReceivedUSDCents / 100;
   const microDollarsString = String(
     Math.round((amount / conversionRate) * 1_000_000),
@@ -118,7 +124,7 @@ const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =
     const [amount, workspace] = await Promise.all([
       getAmountInDollars({
         context,
-        amountReceivedUSDCents: event.data.object.amount_received,
+        amountReceivedUSDCentsWithMarkup: event.data.object.amount_received,
         currency: event.data.object.currency,
       }),
       getWorkspaceByCustomerId({

@@ -4,7 +4,7 @@ import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 import { getPlan } from "../plans.ts";
-import { Markup } from "../../../plan.ts";
+import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,
@@ -58,12 +58,13 @@ async function getAmountInDollars({
   context,
   amountReceivedUSDCentsWithMarkup,
   currency,
+  plan,
 }: {
   context: AppContext;
   amountReceivedUSDCentsWithMarkup: number;
   currency: string;
+  plan: PlanWithTeamMetadata;
 }) {
-  const plan = await getPlan(context);
   const currencies = {
     ...(await getCurrencies(context)),
     USD: { value: 1 },
@@ -122,17 +123,36 @@ const paymentIntentSucceeded: EventHandler<Stripe.PaymentIntentSucceededEvent> =
       throw new Error("Customer ID not found or is not a string");
     }
 
-    const [amount, workspace] = await Promise.all([
-      getAmountInDollars({
-        context,
-        amountReceivedUSDCentsWithMarkup: event.data.object.amount_received,
-        currency: event.data.object.currency,
-      }),
-      getWorkspaceByCustomerId({
-        context,
-        customerId,
-      }),
-    ]);
+    const workspace = await getWorkspaceByCustomerId({
+      context,
+      customerId,
+    });
+
+    const workspacePattern = new URLPattern({ pathname: "/:root/:slug" });
+    const workspaceMatch = workspacePattern.exec({ pathname: workspace });
+
+    if (!workspaceMatch || !workspaceMatch.pathname.groups.slug ||
+      !workspaceMatch.pathname.groups.root
+    ) {
+      throw new Error(`Invalid workspace format: ${workspace}`);
+    }
+
+    const contextWithWorkspace = {
+      ...context,
+      workspace: {
+        value: workspace,
+        slug: workspaceMatch.pathname.groups.slug,
+        root: workspaceMatch.pathname.groups.root,
+      },
+    };
+
+    const plan = await getPlan(contextWithWorkspace);
+    const amount = await getAmountInDollars({
+      context,
+      amountReceivedUSDCentsWithMarkup: event.data.object.amount_received,
+      currency: event.data.object.currency,
+      plan,
+    });
 
     return {
       type: "WorkspaceCashIn",

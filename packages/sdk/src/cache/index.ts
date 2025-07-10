@@ -47,7 +47,7 @@ export class WebCache<TCachedValue> {
         timestamp: number;
       };
       // Check if the cached item has expired
-      if (Date.now() - parsed.timestamp > this.ttl) {
+      if (Date.now() - parsed.timestamp > (this.ttl * 1000)) {
         // Delete expired item
         const cache = await this.cache;
         await cache.delete(cacheKey);

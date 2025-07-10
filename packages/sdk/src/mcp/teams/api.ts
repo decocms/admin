@@ -21,6 +21,7 @@ import {
   WellKnownTransactions,
 } from "../wallet/well-known.ts";
 import { MicroDollar, type Transaction } from "../wallet/index.ts";
+import { WebCache } from "../../cache/index.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -166,6 +167,9 @@ export const buildSignedUrlCreator = ({
   };
 };
 
+const cache = new WebCache<string>("monthly-plan-credits-reward");
+const TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60;
+
 const ensureMonthlyPlanCreditsReward = async ({
   slug,
   workspace,
@@ -175,19 +179,23 @@ const ensureMonthlyPlanCreditsReward = async ({
   workspace: string;
   context: AppContext;
 }) => {
-  // todo before pushing: Cache per workspace?
-
-  const wallet = getWalletClient(c);
-  const team = await getTeamBySlug(slug, c.db);
-  const monthlyReward = team.plan.monthly_credit_in_dollars;
-  const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
-
   const month = String(new Date().getMonth() + 1);
   const year = String(new Date().getFullYear());
 
   if (!isValidMonth(month) || !isValidYear(year)) {
     throw new Error("Invalid month or year");
   }
+
+  const cacheKey = `${slug}-${month}-${year}`;
+
+  if (await cache.has(cacheKey)) {
+    return;
+  }
+
+  const wallet = getWalletClient(c);
+  const team = await getTeamBySlug(slug, c.db);
+  const monthlyReward = team.plan.monthly_credit_in_dollars;
+  const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
 
   const transactionId = WellKnownTransactions.monthlyPlanCreditsReward(
     encodeURIComponent(workspace),
@@ -208,12 +216,15 @@ const ensureMonthlyPlanCreditsReward = async ({
     body: transaction,
   });
 
-  if (!response.ok) {
-    console.error(
+  if (response.status !== 200 && response.status !== 304) {
+    return console.error(
       `Failed to claim Team monthly plan credits reward for team ${workspace}`,
       response,
+      await response.text(),
     );
   }
+
+  await cache.set(cacheKey, transactionId, { ttl: TWELVE_HOURS_IN_SECONDS });
 };
 
 export const getTeam = createTool({

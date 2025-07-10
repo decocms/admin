@@ -175,10 +175,11 @@ const ensureMonthlyPlanCreditsReward = async (c: AppContext) => {
     return;
   }
   const workspace = c.workspace.value;
+  const slug = c.workspace.slug;
   // todo before pushing: Cache per workspace?
 
   const wallet = getWalletClient(c);
-  const team = await getTeamBySlug(workspace, c.db);
+  const team = await getTeamBySlug(slug, c.db);
   const monthlyReward = team.plan.monthly_credit_in_dollars;
   const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
 

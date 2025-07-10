@@ -21,7 +21,7 @@ import {
   isValidYear,
   WellKnownTransactions,
 } from "../wallet/well-known.ts";
-import { MicroDollar, Transaction } from "../wallet/index.ts";
+import { MicroDollar, type Transaction } from "../wallet/index.ts";
 
 const OWNER_ROLE_ID = 1;
 

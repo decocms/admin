@@ -58,7 +58,11 @@ export function createLLMInstance({
   bypassOpenRouter,
   apiKey,
   envs,
-}: LLMConfig & { envs: Record<string, string> }): {
+  metadata,
+}: LLMConfig & {
+  envs: Record<string, string>;
+  metadata?: Record<string, string>;
+}): {
   llm: LanguageModelV1;
   tokenLimit: number;
 } {
@@ -75,6 +79,7 @@ export function createLLMInstance({
     provider,
     bypassGateway,
     apiKey,
+    metadata,
   });
 
   return providerClient(providerModel);

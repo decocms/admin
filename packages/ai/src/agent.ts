@@ -640,7 +640,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       return;
     }
     const userId = this.metadata.user?.id;
-    const plan = await this.metadata.mcpClient.GET_WORKSPACE_PLAN({});
     const { model, modelId } = await getLLMConfig({
       modelId: usedModelId,
       llmVault: this.llmVault,

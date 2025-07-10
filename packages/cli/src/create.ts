@@ -4,8 +4,7 @@ import { join } from "@std/path";
 import {
   type Config,
   getConfig,
-  getMCPConfig,
-  writeConfigFile,
+  writeConfigFile
 } from "./config.ts";
 import {
   promptMCPInstall,
@@ -221,7 +220,7 @@ export async function createCommand(
     // Prompt user to install MCP configuration for IDE
     const mcpResult = workspace
       ? await promptMCPInstall(
-        await getMCPConfig(workspace, finalProjectName),
+        { workspace, app: finalProjectName },
         targetDir,
       )
       : null;

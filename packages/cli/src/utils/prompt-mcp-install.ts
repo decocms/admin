@@ -13,6 +13,7 @@
 import { Confirm, Select } from "@cliffy/prompt";
 import { ensureDir } from "@std/fs";
 import { dirname, join } from "@std/path";
+import { type Config, getAppUUID, getMCPConfig } from "../config.ts";
 
 type MCPServerConfig = {
   command: string;
@@ -128,10 +129,35 @@ export async function writeMCPConfig(
   console.log(`✅ Configuration written to: ${targetPath}`);
 }
 
+export const shouldSkipMCPInstall = async (workspace: string, app: string) => {
+  const appUUID = await getAppUUID(workspace, app);
+
+  const shouldSkip = localStorage.getItem(`mcp-install-skip-${appUUID}`);
+
+  return shouldSkip === "true" ? true : shouldSkip === "false" ? false : null;
+};
+
+export const saveMCPInstallSkip = async (
+  workspace: string,
+  app: string,
+  value: boolean,
+) => {
+  const appUUID = await getAppUUID(workspace, app);
+  localStorage.setItem(`mcp-install-skip-${appUUID}`, value ? "true" : "false");
+};
+
 export async function promptMCPInstall(
-  mcpConfig: MCPConfig,
-  projectRoot: string,
+  cfg: Pick<Config, "workspace" | "app">,
+  projectRoot: string = Deno.cwd(),
 ): Promise<{ config: MCPConfig; configPath: string } | null> {
+  const mcpConfig = await getMCPConfig(cfg.workspace, cfg.app);
+
+  const shouldSkip = await shouldSkipMCPInstall(cfg.workspace, cfg.app);
+
+  if (shouldSkip === true) {
+    return null;
+  }
+
   // First, try to detect which IDE config files exist to suggest the most likely one
   const existingConfigs = await Promise.all(
     Object.entries(IDE_SUPPORT).map(async ([ideKey, ideSupport]) => {
@@ -162,10 +188,12 @@ export async function promptMCPInstall(
     }
 
     // Config would be different, ask user if they want to update
-    const wantsUpdate = await Confirm.prompt({
+    const wantsUpdate = shouldSkip === false || await Confirm.prompt({
       message: `Would you like to update your ${support.name} configuration?`,
       default: true,
     });
+
+    await saveMCPInstallSkip(cfg.workspace, cfg.app, !wantsUpdate);
 
     if (!wantsUpdate) {
       return null;
@@ -179,6 +207,8 @@ export async function promptMCPInstall(
       message: "Would you like to configure your IDE to use this project?",
       default: true,
     });
+
+    await saveMCPInstallSkip(cfg.workspace, cfg.app, !wantsSentientIDE);
 
     if (!wantsSentientIDE) {
       return null;

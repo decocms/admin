@@ -1,28 +1,28 @@
-import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
 import { convertToAIMessage } from "@deco/ai/agent/ai-message";
+import { createLLMInstance, getLLMConfig } from "@deco/ai/agent/llm";
+import { generateText, type LanguageModelUsage } from "ai";
 import { z } from "zod";
 import { DEFAULT_MODEL } from "../../constants.ts";
+import type { PlanWithTeamMetadata } from "../../plan.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
+import { InternalServerError, SupabaseLLMVault } from "../index.ts";
+import type { Transaction } from "../wallet/client.ts";
 import {
   createWalletClient,
   MicroDollar,
   WellKnownWallets,
 } from "../wallet/index.ts";
-import { InternalServerError, SupabaseLLMVault } from "../index.ts";
-import { getPlan } from "../wallet/api.ts";
-import type { Transaction } from "../wallet/client.ts";
-import { generateText, type LanguageModelUsage } from "ai";
-import type { Plan } from "../../plan.ts";
+import { getPlan } from "../wallet/plans.ts";
 
 const createLLMUsageTransaction = (opts: {
   usage: LanguageModelUsage;
   model: string;
   modelId: string;
-  plan: Plan;
+  plan: PlanWithTeamMetadata;
   userId: string;
   workspace: string;
 }): Transaction => {
@@ -37,14 +37,6 @@ const createLLMUsageTransaction = (opts: {
       type: "user",
       id: opts.userId,
     },
-    payer: opts.plan === "trial"
-      ? {
-        type: "wallet",
-        id: WellKnownWallets.build(
-          ...WellKnownWallets.workspace.trialCredits(opts.workspace),
-        ),
-      }
-      : undefined,
     vendor: {
       type: "vendor",
       id: opts.modelId,
@@ -195,7 +187,7 @@ export const aiGenerate = createTool({
       usage: result.usage,
       model: modelId,
       modelId,
-      plan: plan.id,
+      plan,
       userId: typeof c.user.id === "string"
         ? c.user.id
         : `apikey-${c.workspace.value}`,

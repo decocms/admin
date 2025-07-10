@@ -282,7 +282,7 @@ export function ChatMessage(
                         <img
                           src={attachment.url}
                           alt={attachment.name ?? `attachment-${index}`}
-                          className="rounded-lg max-w-[300px] max-h-[300px] object-cover"
+                          className="rounded-lg max-h-[300px] object-cover"
                         />
                       </div>
                     )
@@ -352,7 +352,7 @@ function ImagePart({ image }: { image: string }) {
     <img
       src={fileUrl}
       alt={image}
-      className="rounded-lg max-w-[300px] max-h-[300px] object-cover"
+      className="rounded-lg max-h-[300px] object-cover"
     />
   );
 }

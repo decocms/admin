@@ -55,7 +55,7 @@ export function DetailForm() {
                     placeholder="Write instructions or '/’ for tools and more..."
                     className="min-h-[49lvh]"
                     disabled={isReadonly}
-                    enableMentions={false}
+                    enableMentions
                     hideMentionsLabel
                     excludeIds={[form.getValues("id")]}
                     {...field}

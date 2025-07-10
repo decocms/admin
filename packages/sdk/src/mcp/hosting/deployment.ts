@@ -47,6 +47,7 @@ export interface Route {
 export interface WranglerConfig {
   name: string;
   main?: string;
+  scope?: string;
   main_module?: string;
   routes?: Route[];
   compatibility_date?: string;

@@ -20,6 +20,8 @@ import { z } from "zod";
 import { type DefaultEnv, withBindings } from "./index.ts";
 export { createWorkflow };
 
+export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
+
 // this is dynamically imported to avoid deno check errors
 // @ts-ignore: this is a valid import
 const { env } = await import("cloudflare:workers");

@@ -1,9 +1,0 @@
-{
-  "name": "@deco/hello-world",
-  "version": "1.0.0",
-  "dependencies": {
-    "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.1.5",
-    "hono": "^4.8.2"
-  },
-  "description": "Hello World"
-}

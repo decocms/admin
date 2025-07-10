@@ -461,6 +461,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       envs: this.env,
       metadata: {
         workspace: this.workspace,
+        agentId: config.id,
+        threadId: this.metadata?.threadId || "",
+        resourceId: this.metadata?.resourceId || "",
       },
     });
 
@@ -508,6 +511,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         envs: this.env,
         metadata: {
           workspace: this.workspace,
+          agentId: "anonymous",
         },
       }).llm,
       mastra: {
@@ -588,6 +592,9 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         envs: this.env,
         metadata: {
           workspace: this.workspace,
+          agentId: this.agentId,
+          threadId: this._thread.threadId,
+          resourceId: this._thread.resourceId,
         },
       });
 

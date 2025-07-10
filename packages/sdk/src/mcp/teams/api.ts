@@ -16,6 +16,12 @@ import { createTool } from "../members/api.ts";
 import { mergeThemes } from "./merge-theme.ts";
 import { getWalletClient } from "../wallet/api.ts";
 import { getTeamBySlug } from "../members/invites-utils.ts";
+import {
+  isValidMonth,
+  isValidYear,
+  WellKnownTransactions,
+} from "../wallet/well-known.ts";
+import { MicroDollar, Transaction } from "../wallet/index.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -168,11 +174,46 @@ const ensureMonthlyPlanCreditsReward = async (c: AppContext) => {
     // skip personal workspaces
     return;
   }
-  const _wallet = getWalletClient(c);
-  const team = await getTeamBySlug(c.workspace.value, c.db);
-  const _monthlyReward = team.plan.monthly_credit_in_dollars;
-  // TODO: ensure a well known transaction with month is done for the team,
-  // using the monthly plan credits reward.
+  const workspace = c.workspace.value;
+  // todo before pushing: Cache per workspace?
+
+  const wallet = getWalletClient(c);
+  const team = await getTeamBySlug(workspace, c.db);
+  const monthlyReward = team.plan.monthly_credit_in_dollars;
+  const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
+
+  const month = String(new Date().getMonth() + 1);
+  const year = String(new Date().getFullYear());
+
+  if (!isValidMonth(month) || !isValidYear(year)) {
+    throw new Error("Invalid month or year");
+  }
+
+  const transactionId = WellKnownTransactions.monthlyPlanCreditsReward(
+    workspace,
+    month,
+    year,
+  );
+
+  const transaction: Transaction = {
+    type: "WorkspaceGenCreditReward",
+    amount: monthlyRewardMicroDollars.toMicrodollarString(),
+    workspace,
+    timestamp: new Date(),
+  };
+
+  const response = await wallet["PUT /transactions/:id"]({
+    id: transactionId,
+  }, {
+    body: transaction,
+  });
+
+  if (!response.ok) {
+    console.error(
+      `Failed to claim Team monthly plan credits reward for team ${workspace}`,
+      response,
+    );
+  }
 };
 
 export const getTeam = createTool({

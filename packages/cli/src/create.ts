@@ -1,11 +1,7 @@
 import { Input, Select } from "@cliffy/prompt";
 import { copy, ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import {
-  type Config,
-  getConfig,
-  writeConfigFile
-} from "./config.ts";
+import { type Config, getConfig, writeConfigFile } from "./config.ts";
 import {
   promptMCPInstall,
   writeMCPConfig,

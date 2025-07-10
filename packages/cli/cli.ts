@@ -1,11 +1,7 @@
 import { Command } from "@cliffy/command";
 import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
-import {
-  getConfig,
-  setLocal,
-  writeConfigFile
-} from "./src/config.ts";
+import { getConfig, setLocal, writeConfigFile } from "./src/config.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";
 import { deploy } from "./src/hosting/deploy.ts";
@@ -17,7 +13,7 @@ import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
 import {
   promptMCPInstall,
-  writeMCPConfig
+  writeMCPConfig,
 } from "./src/utils/prompt-mcp-install.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";

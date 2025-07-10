@@ -162,7 +162,12 @@ export const buildSignedUrlCreator = ({
 };
 
 const ensureMonthlyPlanCreditsReward = async (c: AppContext) => {
-  assertHasWorkspace(c);
+  try {
+    assertHasWorkspace(c);
+  } catch {
+    // skip personal workspaces
+    return;
+  }
   const _wallet = getWalletClient(c);
   const team = await getTeamBySlug(c.workspace.value, c.db);
   const _monthlyReward = team.plan.monthly_credit_in_dollars;

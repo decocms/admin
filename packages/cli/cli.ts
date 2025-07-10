@@ -1,7 +1,12 @@
 import { Command } from "@cliffy/command";
 import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
-import { getConfig, setLocal, writeConfigFile } from "./src/config.ts";
+import {
+  getConfig,
+  getMCPConfig,
+  setLocal,
+  writeConfigFile,
+} from "./src/config.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";
 import { deploy } from "./src/hosting/deploy.ts";
@@ -11,6 +16,10 @@ import { loginCommand } from "./src/login.ts";
 import { deleteSession, readSession, setToken } from "./src/session.ts";
 import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
+import {
+  promptMCPInstall,
+  writeMCPConfig,
+} from "./src/utils/prompt-mcp-install.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
@@ -133,6 +142,13 @@ const dev = new Command()
   .description("Start a development server.")
   .action(async () => {
     await ensureDevEnvironment();
+
+    const config = await getConfig({});
+    const mcp = await getMCPConfig(config.workspace, config.app);
+    const mcpConfig = await promptMCPInstall(mcp, Deno.cwd());
+    if (mcpConfig) {
+      await writeMCPConfig(mcpConfig.config, mcpConfig.configPath);
+    }
 
     const deno = new Deno.Command("deco", {
       args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],

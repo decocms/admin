@@ -245,3 +245,16 @@ export const getAppDomain = async (
   const appUUID = await getAppUUID(workspace, app);
   return `localhost-${appUUID}.deco.host`;
 };
+
+export const getMCPConfig = async (workspace: string, app: string) => {
+  const appDomain = await getAppDomain(workspace, app);
+
+  return {
+    mcpServers: {
+      [app]: {
+        type: "http" as const,
+        url: `https://${appDomain}/mcp`,
+      },
+    },
+  };
+};

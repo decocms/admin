@@ -29,6 +29,7 @@ interface MCPConfig {
 
 interface IDESupport {
   name: string;
+  getConfig: (projectRoot: string) => Promise<MCPConfig | null>;
   createConfig: (mcpConfig: MCPConfig, projectRoot: string) => Promise<{
     config: MCPConfig;
     configPath: string;
@@ -53,6 +54,11 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
         },
       };
     },
+    getConfig: async (projectRoot: string): Promise<MCPConfig> => {
+      const configPath = join(projectRoot, ".cursor", "mcp.json");
+      return await Deno.readTextFile(configPath)
+        .then(JSON.parse).catch(() => null);
+    },
   },
   vscode: {
     name: "VS Code",
@@ -71,6 +77,11 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
         },
       };
     },
+    getConfig: async (projectRoot: string): Promise<MCPConfig> => {
+      const configPath = join(projectRoot, ".vscode", "mcp.json");
+      return await Deno.readTextFile(configPath)
+        .then(JSON.parse).catch(() => null);
+    },
   },
 };
 
@@ -81,6 +92,29 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
  * @param config - The configuration object to write
  * @param targetPath - The path where to write the configuration
  */
+/**
+ * Compares two MCP configurations by converting them to sorted JSON strings.
+ * This ensures consistent comparison regardless of key ordering.
+ */
+function compareMCPConfigs(config1: MCPConfig, config2: MCPConfig): boolean {
+  const normalizeConfig = (config: MCPConfig) => {
+    // Create a normalized version with sorted keys
+    const normalized = {
+      mcpServers: {} as Record<string, MCPServerConfig>,
+    };
+
+    // Sort server keys for consistent comparison
+    const sortedKeys = Object.keys(config.mcpServers).sort();
+    for (const key of sortedKeys) {
+      normalized.mcpServers[key] = config.mcpServers[key];
+    }
+
+    return JSON.stringify(normalized, null, 2);
+  };
+
+  return normalizeConfig(config1) === normalizeConfig(config2);
+}
+
 export async function writeMCPConfig(
   config: MCPConfig,
   targetPath: string,
@@ -98,26 +132,70 @@ export async function promptMCPInstall(
   mcpConfig: MCPConfig,
   projectRoot: string,
 ): Promise<{ config: MCPConfig; configPath: string } | null> {
-  // Ask if user wants to make their IDE sentient
-  const wantsSentientIDE = await Confirm.prompt({
-    message: "Would you like to make your IDE sentient?",
-    default: true,
-  });
+  // First, try to detect which IDE config files exist to suggest the most likely one
+  const existingConfigs = await Promise.all(
+    Object.entries(IDE_SUPPORT).map(async ([ideKey, ideSupport]) => {
+      const currentConfig = await ideSupport.getConfig(projectRoot);
+      return { ideKey, ideSupport, currentConfig };
+    }),
+  );
 
-  if (!wantsSentientIDE) {
-    return null;
+  // Find IDEs that have existing configs
+  const idesWithConfigs = existingConfigs.find(({ currentConfig }) =>
+    currentConfig !== null
+  );
+
+  // If we have existing configs, check if any would be different with the new config
+  let selectedIDE: string | undefined;
+  let ideSupport: IDESupport | undefined;
+
+  if (idesWithConfigs) {
+    // Check if any existing config would be different
+    const { ideKey, ideSupport: support, currentConfig } = idesWithConfigs;
+    const { config: newConfig } = await support.createConfig(
+      mcpConfig,
+      projectRoot,
+    );
+
+    if (compareMCPConfigs(currentConfig!, newConfig)) {
+      return null;
+    }
+
+    // Config would be different, ask user if they want to update
+    const wantsUpdate = await Confirm.prompt({
+      message: `Would you like to update your ${support.name} configuration?`,
+      default: true,
+    });
+
+    if (!wantsUpdate) {
+      return null;
+    }
+
+    selectedIDE = ideKey;
+    ideSupport = support;
+  } else {
+    // No existing configs, ask if user wants to make IDE sentient
+    const wantsSentientIDE = await Confirm.prompt({
+      message: "Would you like to configure your IDE to use this project?",
+      default: true,
+    });
+
+    if (!wantsSentientIDE) {
+      return null;
+    }
+
+    // Prompt user to select their IDE
+    selectedIDE = await Select.prompt({
+      message: "Which IDE are you using?",
+      options: [
+        { name: "Cursor", value: "cursor" },
+        { name: "VS Code", value: "vscode" },
+      ],
+    });
+
+    ideSupport = IDE_SUPPORT[selectedIDE];
   }
 
-  // Prompt user to select their IDE
-  const selectedIDE = await Select.prompt({
-    message: "Which IDE are you using?",
-    options: [
-      { name: "Cursor", value: "cursor" },
-      { name: "VS Code", value: "vscode" },
-    ],
-  });
-
-  const ideSupport = IDE_SUPPORT[selectedIDE];
   if (!ideSupport) {
     throw new Error(`Unsupported IDE: ${selectedIDE}`);
   }
@@ -129,7 +207,7 @@ export async function promptMCPInstall(
   );
 
   console.log(
-    `\n✨ Your ${ideSupport.name} will now be able to test this project!`,
+    `\n✨ Your ${ideSupport.name} is now configured!`,
   );
 
   return { config, configPath };

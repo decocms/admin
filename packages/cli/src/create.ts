@@ -1,8 +1,12 @@
 import { Input, Select } from "@cliffy/prompt";
 import { copy, ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { type Config, getAppDomain } from "./config.ts";
-import { getConfig, writeConfigFile } from "./config.ts";
+import {
+  type Config,
+  getConfig,
+  getMCPConfig,
+  writeConfigFile,
+} from "./config.ts";
 import {
   promptMCPInstall,
   writeMCPConfig,
@@ -215,21 +219,11 @@ export async function createCommand(
     }
 
     // Prompt user to install MCP configuration for IDE
-    const appDomain = workspace && workspace.trim()
-      ? await getAppDomain(workspace, finalProjectName)
-      : null;
-    const mcpConfig = appDomain
-      ? {
-        mcpServers: {
-          [finalProjectName]: {
-            type: "http" as const,
-            url: `https://${appDomain}/mcp`,
-          },
-        },
-      }
-      : null;
-    const mcpResult = mcpConfig
-      ? await promptMCPInstall(mcpConfig, targetDir)
+    const mcpResult = workspace
+      ? await promptMCPInstall(
+        await getMCPConfig(workspace, finalProjectName),
+        targetDir,
+      )
       : null;
 
     console.log(`📦 Downloading template '${selectedTemplate.name}'...`);

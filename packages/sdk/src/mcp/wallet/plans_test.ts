@@ -207,7 +207,11 @@ Deno.test("Markup operations are inverses with various percentages", () => {
       usdCents: resultAdd,
       markupPercentage: markup,
     });
-    assertEquals(resultRemove, amount, `Failed for amount ${amount} with markup ${markup}%`);
+    assertEquals(
+      resultRemove,
+      amount,
+      `Failed for amount ${amount} with markup ${markup}%`,
+    );
   });
 });
 

@@ -74,4 +74,4 @@ export const Markup = {
     }
     return Math.round(usdCents / (1 + markupPercentage / 100));
   },
-}
+};

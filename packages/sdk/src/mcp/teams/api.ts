@@ -167,15 +167,15 @@ export const buildSignedUrlCreator = ({
   };
 };
 
-const ensureMonthlyPlanCreditsReward = async (c: AppContext) => {
-  try {
-    assertHasWorkspace(c);
-  } catch {
-    // skip personal workspaces
-    return;
-  }
-  const workspace = c.workspace.value;
-  const slug = c.workspace.slug;
+const ensureMonthlyPlanCreditsReward = async ({
+  slug,
+  workspace,
+  context: c,
+}: {
+  slug: string;
+  workspace: string;
+  context: AppContext;
+}) => {
   // todo before pushing: Cache per workspace?
 
   const wallet = getWalletClient(c);
@@ -191,7 +191,7 @@ const ensureMonthlyPlanCreditsReward = async (c: AppContext) => {
   }
 
   const transactionId = WellKnownTransactions.monthlyPlanCreditsReward(
-    workspace,
+    encodeURIComponent(workspace),
     month,
     year,
   );
@@ -240,7 +240,11 @@ export const getTeam = createTool({
       throw new NotFoundError("Team not found or user does not have access");
     }
 
-    await ensureMonthlyPlanCreditsReward(c);
+    await ensureMonthlyPlanCreditsReward({
+      slug,
+      workspace: `/shared/${slug}`,
+      context: c,
+    });
 
     try {
       const workspace = `/shared/${slug}`;

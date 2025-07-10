@@ -828,7 +828,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
           pathname: "/apps/:appName/:installId/mcp/messages",
         });
         const match = parsed.data && "url" in parsed.data.connection &&
-          typeof parsed.data.connection.url === "string"
+            typeof parsed.data.connection.url === "string"
           ? pattern.exec(parsed.data.connection.url)
           : null;
         const id = parsed.installId ?? match?.pathname.groups.installId ??

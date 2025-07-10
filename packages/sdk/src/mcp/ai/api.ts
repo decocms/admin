@@ -37,7 +37,6 @@ const createLLMUsageTransaction = (opts: {
       type: "user",
       id: opts.userId,
     },
-    // TODO: MARKUP!
     vendor: {
       type: "vendor",
       id: opts.modelId,

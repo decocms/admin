@@ -66,7 +66,6 @@ function createAgentUsageTransaction({
     },
     generatedBy,
     vendor,
-    // TODO: MARKUP!
     metadata: {
       ...usageData,
       ...usage,

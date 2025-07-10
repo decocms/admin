@@ -33,6 +33,7 @@ import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 import * as whatsappAPI from "./whatsapp/api.ts";
 import * as databasesAPI from "./databases/api.ts";
+import * as registryAPI from "./registry/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -88,6 +89,9 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.getAppInfo,
   hostingAPI.listWorkflows,
   hostingAPI.getWorkflowStatus,
+  registryAPI.listRegistryApps,
+  registryAPI.listRegistryScopes,
+  registryAPI.publishApp,
   triggersAPI.getTrigger,
   triggersAPI.listTriggers,
   triggersAPI.createTrigger,

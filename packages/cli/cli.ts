@@ -76,13 +76,21 @@ const hostingDeploy = new Command()
   })
   .option("-a, --app <app:string>", "App name", { required: false })
   .option("-y, --yes", "Skip confirmation", { required: false })
+  .option("-p, --public", "Make the app public in the registry", {
+    required: false,
+  })
   .arguments("[cwd:string]")
   .action(async (args, folder) => {
     const cwd = folder ?? Deno.cwd();
     const config = await getConfig({
       inlineOptions: args,
     });
-    return deploy({ ...config, skipConfirmation: args.yes, cwd });
+    return deploy({
+      ...config,
+      skipConfirmation: args.yes,
+      cwd,
+      unlisted: !args.public,
+    });
   });
 
 const linkCmd = new Command()

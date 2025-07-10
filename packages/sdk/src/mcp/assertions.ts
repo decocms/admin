@@ -69,7 +69,7 @@ export const assertWorkspaceResourceAccess = async (
   resource: string,
   c: AppContext,
 ): Promise<void> => {
-  if (c.isLocal) {
+  if (c.isLocal || c.resourceAccess.granted()) {
     return c.resourceAccess.grant();
   }
 

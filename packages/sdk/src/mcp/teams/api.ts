@@ -3,7 +3,6 @@ import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
 import {
-  assertHasWorkspace,
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";

@@ -115,7 +115,7 @@ function Page() {
             uiOptions={{
               showThreadTools: false,
               showModelSelector: false,
-              showThreadMessages: true,
+              showThreadMessages: false,
               showAgentVisibility: false,
               showEditAgent: false,
             }}

@@ -100,7 +100,7 @@ export async function promptMCPInstall(
 ): Promise<{ config: MCPConfig; configPath: string } | null> {
   // Ask if user wants to make their IDE sentient
   const wantsSentientIDE = await Confirm.prompt({
-    message: "Would you like to make your IDE sentient about this project?",
+    message: "Would you like to make your IDE sentient?",
     default: true,
   });
 
@@ -126,7 +126,7 @@ export async function promptMCPInstall(
   const { config, configPath } = await ideSupport.createConfig(mcpConfig, projectRoot);
 
   console.log(
-    `\n✨ Your ${ideSupport.name} will now be sentient about this project!`,
+    `\n✨ Your ${ideSupport.name} will now be able to test this project!`,
   );
 
   return { config, configPath };

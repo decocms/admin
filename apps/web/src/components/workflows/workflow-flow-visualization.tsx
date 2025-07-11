@@ -1,32 +1,37 @@
 // deno-lint-ignore-file no-explicit-any
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ReactFlow,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
   addEdge,
-  type Node,
-  type Edge,
+  Background,
   type Connection,
-  Panel,
+  Controls,
+  type Edge,
   Handle,
-  Position,
   MarkerType,
+  type Node,
+  Panel,
+  Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
 
 // Start Node Component
 function StartNode({ data }: { data: any }) {
   const showHandles = data?.showHandles !== false;
-  
+
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-success rounded-full border-2 border-success-foreground shadow-lg relative">
       <Icon name="play_arrow" size={24} />
@@ -35,13 +40,13 @@ function StartNode({ data }: { data: any }) {
         position={Position.Bottom}
         style={{
           bottom: -8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: showHandles ? '#22c55e' : 'transparent',
-          border: showHandles ? '2px solid #ffffff' : 'none',
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: showHandles ? "#22c55e" : "transparent",
+          border: showHandles ? "2px solid #ffffff" : "none",
           width: 16,
           height: 16,
-          borderRadius: '50%',
+          borderRadius: "50%",
           zIndex: 10,
           opacity: showHandles ? 1 : 0,
         }}
@@ -53,7 +58,7 @@ function StartNode({ data }: { data: any }) {
 // End Node Component
 function EndNode({ data }: { data: any }) {
   const showHandles = data?.showHandles !== false;
-  
+
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full border-2 border-muted-foreground shadow-lg relative">
       <Icon name="stop" size={24} />
@@ -62,13 +67,13 @@ function EndNode({ data }: { data: any }) {
         position={Position.Top}
         style={{
           top: -8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: showHandles ? '#6b7280' : 'transparent',
-          border: showHandles ? '2px solid #ffffff' : 'none',
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: showHandles ? "#6b7280" : "transparent",
+          border: showHandles ? "2px solid #ffffff" : "none",
           width: 16,
           height: 16,
-          borderRadius: '50%',
+          borderRadius: "50%",
           zIndex: 10,
           opacity: showHandles ? 1 : 0,
         }}
@@ -147,7 +152,10 @@ function StepDetailModal({
               <DialogTitle className="text-xl font-semibold">
                 {stepTitle}
               </DialogTitle>
-              <Badge variant={getStatusBadgeVariant(step?.data?.status || "")} className="text-sm">
+              <Badge
+                variant={getStatusBadgeVariant(step?.data?.status || "")}
+                className="text-sm"
+              >
                 {step?.data?.status}
               </Badge>
               {step?.data?.duration && (
@@ -211,8 +219,11 @@ function StepDetailModal({
 }
 
 // Custom Node Component for React Flow
-function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean }) {
-  let cardClasses = "relative transition-all duration-200 cursor-pointer hover:shadow-md";
+function WorkflowStepNode(
+  { data, selected }: { data: any; selected?: boolean },
+) {
+  let cardClasses =
+    "relative transition-all duration-200 cursor-pointer hover:shadow-md";
   let borderClasses = "";
   let bgClasses = "";
 
@@ -263,18 +274,18 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
         position={Position.Top}
         style={{
           top: -8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: showHandles ? '#3b82f6' : 'transparent',
-          border: showHandles ? '2px solid #ffffff' : 'none',
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: showHandles ? "#3b82f6" : "transparent",
+          border: showHandles ? "2px solid #ffffff" : "none",
           width: 16,
           height: 16,
-          borderRadius: '50%',
+          borderRadius: "50%",
           zIndex: 10,
           opacity: showHandles ? 1 : 0,
         }}
       />
-      
+
       <Card
         className={`${cardClasses} ${borderClasses} ${bgClasses} w-48 min-h-[80px]`}
         onClick={data.onClick}
@@ -289,8 +300,8 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
               <Icon name="open_in_new" size={14} />
             </div>
           </div>
-          
-                                {data.duration && (
+
+          {data.duration && (
             <div className="text-xs font-medium flex items-center gap-1 mt-1">
               <Icon name="timer" size={12} />
               {data.duration}
@@ -298,20 +309,20 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
           )}
         </CardContent>
       </Card>
-      
+
       {/* Output Handle - positioned absolutely to ensure visibility */}
       <Handle
         type="source"
         position={Position.Bottom}
         style={{
           bottom: -8,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: showHandles ? '#3b82f6' : 'transparent',
-          border: showHandles ? '2px solid #ffffff' : 'none',
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: showHandles ? "#3b82f6" : "transparent",
+          border: showHandles ? "2px solid #ffffff" : "none",
           width: 16,
           height: 16,
-          borderRadius: '50%',
+          borderRadius: "50%",
           zIndex: 10,
           opacity: showHandles ? 1 : 0,
         }}
@@ -337,7 +348,7 @@ function calculateLayout(
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  
+
   let yPosition = 100;
   const xCenterPosition = 400; // Increased center position for better spacing
   const verticalSpacing = 180;
@@ -349,13 +360,13 @@ function calculateLayout(
 
   // Add Start Node - properly centered and closer to first step
   nodes.push({
-    id: 'start-node',
-    type: 'startNode',
+    id: "start-node",
+    type: "startNode",
     position: {
       x: xCenterPosition - startEndNodeWidth / 2,
       y: yPosition - startEndGap,
     },
-    data: { label: 'Start', showHandles },
+    data: { label: "Start", showHandles },
     deletable: false,
     selectable: false,
   });
@@ -366,15 +377,20 @@ function calculateLayout(
     if (step.isParallel) {
       // Handle parallel steps with more spacing for better curved arrows
       const parallelSteps = step.steps;
-      const totalWidth = parallelSteps.length * nodeWidth + (parallelSteps.length - 1) * (horizontalSpacing - nodeWidth);
+      const totalWidth = parallelSteps.length * nodeWidth +
+        (parallelSteps.length - 1) * (horizontalSpacing - nodeWidth);
       const startX = xCenterPosition - totalWidth / 2;
 
       parallelSteps.forEach((parallelStep: any, parallelIndex: number) => {
         const stepData = contextMap[parallelStep.id];
         const status = getStepStatus(stepData, workflowStatus);
         const duration = formatDuration(
-          stepData?.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
-          stepData?.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+          stepData?.startedAt
+            ? new Date(stepData.startedAt).toISOString()
+            : undefined,
+          stepData?.endedAt
+            ? new Date(stepData.endedAt).toISOString()
+            : undefined,
         );
 
         const nodeData = {
@@ -384,7 +400,16 @@ function calculateLayout(
           duration,
           isParallel: true,
           showHandles,
-          onClick: () => onNodeClick({ id: parallelStep.id, data: { label: formatStepId(parallelStep.id), status, stepData, duration } }),
+          onClick: () =>
+            onNodeClick({
+              id: parallelStep.id,
+              data: {
+                label: formatStepId(parallelStep.id),
+                status,
+                stepData,
+                duration,
+              },
+            }),
         };
 
         // Calculate position with increased spacing for better curves
@@ -410,9 +435,9 @@ function calculateLayout(
                 id: `edge-${prevParallelStep.id}-${parallelStep.id}`,
                 source: prevParallelStep.id,
                 target: parallelStep.id,
-                type: 'smoothstep', // Use smoothstep for better curved appearance
+                type: "smoothstep", // Use smoothstep for better curved appearance
                 animated: status === "running",
-                style: { 
+                style: {
                   stroke: status === "running" ? "#3b82f6" : "#6b7280",
                   strokeWidth: 2,
                 },
@@ -427,9 +452,9 @@ function calculateLayout(
               id: `edge-${prevStep.id}-${parallelStep.id}`,
               source: prevStep.id,
               target: parallelStep.id,
-              type: 'smoothstep', // Use smoothstep for better curved appearance
+              type: "smoothstep", // Use smoothstep for better curved appearance
               animated: status === "running",
-              style: { 
+              style: {
                 stroke: status === "running" ? "#3b82f6" : "#6b7280",
                 strokeWidth: 2,
               },
@@ -446,8 +471,12 @@ function calculateLayout(
       const stepData = contextMap[step.id];
       const status = getStepStatus(stepData, workflowStatus);
       const duration = formatDuration(
-        stepData?.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
-        stepData?.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+        stepData?.startedAt
+          ? new Date(stepData.startedAt).toISOString()
+          : undefined,
+        stepData?.endedAt
+          ? new Date(stepData.endedAt).toISOString()
+          : undefined,
       );
 
       const nodeData = {
@@ -457,7 +486,11 @@ function calculateLayout(
         duration,
         isParallel: false,
         showHandles,
-        onClick: () => onNodeClick({ id: step.id, data: { label: formatStepId(step.id), status, stepData, duration } }),
+        onClick: () =>
+          onNodeClick({
+            id: step.id,
+            data: { label: formatStepId(step.id), status, stepData, duration },
+          }),
       };
 
       nodes.push({
@@ -480,9 +513,9 @@ function calculateLayout(
               id: `edge-${prevParallelStep.id}-${step.id}`,
               source: prevParallelStep.id,
               target: step.id,
-              type: 'smoothstep', // Use smoothstep for better curved appearance
+              type: "smoothstep", // Use smoothstep for better curved appearance
               animated: status === "running",
-              style: { 
+              style: {
                 stroke: status === "running" ? "#3b82f6" : "#6b7280",
                 strokeWidth: 2,
               },
@@ -497,9 +530,9 @@ function calculateLayout(
             id: `edge-${prevStep.id}-${step.id}`,
             source: prevStep.id,
             target: step.id,
-            type: 'default', // Keep default for sequential steps
+            type: "default", // Keep default for sequential steps
             animated: status === "running",
-            style: { 
+            style: {
               stroke: status === "running" ? "#3b82f6" : "#6b7280",
               strokeWidth: 2,
             },
@@ -517,13 +550,13 @@ function calculateLayout(
 
   // Add End Node - properly centered and closer to last step
   nodes.push({
-    id: 'end-node',
-    type: 'endNode',
+    id: "end-node",
+    type: "endNode",
     position: {
       x: xCenterPosition - startEndNodeWidth / 2,
       y: yPosition - endGap, // Move end node closer by subtracting instead of adding
     },
-    data: { label: 'End', showHandles },
+    data: { label: "End", showHandles },
     deletable: false,
     selectable: false,
   });
@@ -536,10 +569,10 @@ function calculateLayout(
       firstStep.steps.forEach((parallelStep: any) => {
         edges.push({
           id: `edge-start-node-${parallelStep.id}`,
-          source: 'start-node',
+          source: "start-node",
           target: parallelStep.id,
-          type: 'smoothstep', // Use smoothstep for better curved appearance
-          style: { 
+          type: "smoothstep", // Use smoothstep for better curved appearance
+          style: {
             stroke: "#6b7280",
             strokeWidth: 2,
           },
@@ -553,10 +586,10 @@ function calculateLayout(
       // Connect start to single first step
       edges.push({
         id: `edge-start-node-${firstStep.id}`,
-        source: 'start-node',
+        source: "start-node",
         target: firstStep.id,
-        type: 'default', // Keep straight line for single connection
-        style: { 
+        type: "default", // Keep straight line for single connection
+        style: {
           stroke: "#6b7280",
           strokeWidth: 2,
         },
@@ -577,9 +610,9 @@ function calculateLayout(
         edges.push({
           id: `edge-${parallelStep.id}-end-node`,
           source: parallelStep.id,
-          target: 'end-node',
-          type: 'smoothstep', // Use smoothstep for better curved appearance
-          style: { 
+          target: "end-node",
+          type: "smoothstep", // Use smoothstep for better curved appearance
+          style: {
             stroke: "#6b7280",
             strokeWidth: 2,
           },
@@ -594,9 +627,9 @@ function calculateLayout(
       edges.push({
         id: `edge-${lastStep.id}-end-node`,
         source: lastStep.id,
-        target: 'end-node',
-        type: 'default', // Keep straight line for single connection
-        style: { 
+        target: "end-node",
+        type: "default", // Keep straight line for single connection
+        style: {
           stroke: "#6b7280",
           strokeWidth: 2,
         },
@@ -632,9 +665,16 @@ export function WorkflowFlowVisualization({
   }, []);
 
   // Calculate layout
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => 
-    calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles),
-    [processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles]
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(
+    () =>
+      calculateLayout(
+        processedSteps,
+        contextMap,
+        workflowStatus,
+        handleNodeClick,
+        showHandles,
+      ),
+    [processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles],
   );
 
   // React Flow state
@@ -643,19 +683,39 @@ export function WorkflowFlowVisualization({
 
   // Update nodes when data changes
   useEffect(() => {
-    const { nodes: newNodes, edges: newEdges } = calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles);
+    const { nodes: newNodes, edges: newEdges } = calculateLayout(
+      processedSteps,
+      contextMap,
+      workflowStatus,
+      handleNodeClick,
+      showHandles,
+    );
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles, setNodes, setEdges]);
+  }, [
+    processedSteps,
+    contextMap,
+    workflowStatus,
+    handleNodeClick,
+    showHandles,
+    setNodes,
+    setEdges,
+  ]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds: Edge[]) => addEdge(params, eds)),
-    [setEdges]
+    [setEdges],
   );
 
   // Count step statuses for summary
   const statusCounts = useMemo(() => {
-    const counts = { completed: 0, failed: 0, running: 0, pending: 0, skipped: 0 };
+    const counts = {
+      completed: 0,
+      failed: 0,
+      running: 0,
+      pending: 0,
+      skipped: 0,
+    };
     nodes.forEach((node: Node) => {
       const status = node.data.status;
       if (status in counts) {
@@ -684,20 +744,20 @@ export function WorkflowFlowVisualization({
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <Background 
-          variant="dots" 
-          gap={20} 
-          size={1} 
+        <Background
+          variant="dots"
+          gap={20}
+          size={1}
           color="hsl(var(--muted-foreground))"
           style={{ opacity: 0.3 }}
         />
-        <Controls 
+        <Controls
           position="bottom-right"
           showZoom
           showFitView
           showInteractive={false}
         />
-        
+
         {/* Status Summary Panel */}
         <Panel position="top-left">
           <Card className="bg-card/90 backdrop-blur-sm border shadow-lg">
@@ -716,12 +776,16 @@ export function WorkflowFlowVisualization({
                   <span>{statusCounts.failed} failed</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse">
+                  </div>
                   <span>{statusCounts.running} running</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-                  <span>{statusCounts.pending + statusCounts.skipped} pending</span>
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full">
+                  </div>
+                  <span>
+                    {statusCounts.pending + statusCounts.skipped} pending
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -761,4 +825,4 @@ export function WorkflowFlowVisualization({
       )}
     </div>
   );
-} 
+}

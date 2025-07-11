@@ -5,15 +5,19 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import WorkflowOverviewPage from "./workflow-overview.tsx";
 
 function tryParseJson(str: unknown): unknown {
-  if (typeof str !== "string") return str;
+  if (typeof str !== "string") {
+    // If it's already an object, return it as-is
+    // Don't convert objects to "[object Object]" strings
+    return str;
+  }
   try {
     const parsed = JSON.parse(str);
     if (typeof parsed === "object" && parsed !== null) {
@@ -47,33 +51,273 @@ function CopyButton({ value }: { value: unknown }) {
   );
 }
 
-function JsonBlock({ value }: { value: unknown }) {
-  const parsed = tryParseJson(value);
+// JSON Tree Viewer Components
+function ExpandableString({ 
+  value, 
+  className, 
+  isQuoted = false 
+}: { 
+  value: string; 
+  className: string; 
+  isQuoted?: boolean; 
+}) {
+  const [showFull, setShowFull] = useState(false);
+  
+  // Ensure value is actually a string
+  const stringValue = typeof value === 'string' ? value : String(value);
+  const isTruncated = stringValue.length > 100;
+  
+  const content = showFull || !isTruncated ? stringValue : (
+    <span>
+      {stringValue.slice(0, 100)}
+      <button 
+        className="text-blue-500 hover:text-blue-700 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowFull(true);
+        }}
+        title="Click to show full content"
+      >
+        ... show {stringValue.length - 100} more chars
+      </button>
+    </span>
+  );
+  
   return (
-    <pre className="bg-muted rounded p-2 text-xs w-full max-w-full max-h-64 overflow-x-auto overflow-y-auto">
-      {typeof parsed === "string"
-        ? parsed
-        : JSON.stringify(parsed, null, 2)}
-    </pre>
+    <span className={className}>
+      {isQuoted && '"'}
+      {content}
+      {isQuoted && '"'}
+      {showFull && isTruncated && (
+        <button 
+          className="text-blue-500 hover:text-blue-700 underline ml-2 text-xs font-normal bg-transparent border-none cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowFull(false);
+          }}
+          title="Click to collapse"
+        >
+          collapse
+        </button>
+      )}
+    </span>
+  );
+}
+
+function JsonTreeNode({ 
+  data, 
+  keyName, 
+  level = 0, 
+  isLast = false 
+}: { 
+  data: unknown; 
+  keyName?: string; 
+  level?: number; 
+  isLast?: boolean; 
+}) {
+  const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expand first 2 levels
+  
+  const getDataType = (value: unknown): string => {
+    if (value === null) return "null";
+    if (value === undefined) return "undefined";
+    if (Array.isArray(value)) return "array";
+    if (typeof value === "object") return "object";
+    return typeof value;
+  };
+
+  const getValuePreview = (value: unknown): string => {
+    const type = getDataType(value);
+    switch (type) {
+      case "array":
+        const arr = value as unknown[];
+        return `[${arr.length} items]`;
+      case "object":
+        const obj = value as Record<string, unknown>;
+        const keys = Object.keys(obj);
+        return `{${keys.length} properties}`;
+      case "string":
+        const str = value as string;
+        return str.length > 50 ? `"${str.slice(0, 50)}..."` : `"${str}"`;
+      case "null":
+        return "null";
+      default:
+        return String(value);
+    }
+  };
+
+  const getTypeColor = (value: unknown): string => {
+    const type = getDataType(value);
+    switch (type) {
+      case "string": return "text-green-600 dark:text-green-400";
+      case "number": return "text-blue-600 dark:text-blue-400";
+      case "boolean": return "text-purple-600 dark:text-purple-400";
+      case "null": return "text-gray-500 dark:text-gray-400";
+      case "array": return "text-orange-600 dark:text-orange-400";
+      case "object": return "text-red-600 dark:text-red-400";
+      default: return "text-gray-700 dark:text-gray-300";
+    }
+  };
+
+  const isExpandable = (value: unknown): boolean => {
+    return Array.isArray(value) || (typeof value === "object" && value !== null);
+  };
+
+  const renderPrimitive = (value: unknown) => {
+    const type = getDataType(value);
+    const colorClass = getTypeColor(value);
+    
+    if (type === "string") {
+      // Ensure we're definitely passing a string
+      const stringValue = String(value);
+      return <ExpandableString value={stringValue} className={colorClass} isQuoted={true} />;
+    }
+    
+    return <span className={colorClass}>{getValuePreview(value)}</span>;
+  };
+
+  const renderKey = () => {
+    if (!keyName) return null;
+    return (
+      <span className="text-gray-700 dark:text-gray-300 font-medium">
+        "{keyName}": 
+      </span>
+    );
+  };
+
+  const indentLevel = level * 16;
+
+  if (!isExpandable(data)) {
+    return (
+      <div 
+        className="flex items-start gap-2 py-1 font-mono text-sm"
+        style={{ paddingLeft: `${indentLevel}px` }}
+      >
+        <span className="w-4"></span> {/* Space for expand icon */}
+        {renderKey()}
+        {renderPrimitive(data)}
+      </div>
+    );
+  }
+
+  const entries = Array.isArray(data) 
+    ? data.map((item, index) => [String(index), item] as const)
+    : Object.entries(data as Record<string, unknown>).map(([key, value]) => {
+        // Ensure we're not accidentally stringifying objects
+        return [key, value] as const;
+      });
+
+  return (
+    <div className="font-mono text-sm">
+      <div 
+        className="flex items-center gap-2 py-1 cursor-pointer hover:bg-muted/30 rounded"
+        style={{ paddingLeft: `${indentLevel}px` }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsExpanded(!isExpanded);
+        }}
+      >
+        <Icon 
+          name={isExpanded ? "expand_more" : "chevron_right"} 
+          size={16}
+          className="text-gray-500 flex-shrink-0"
+        />
+        {renderKey()}
+        <span className={getTypeColor(data)}>
+          {getValuePreview(data)}
+        </span>
+      </div>
+      
+      {isExpanded && (
+        <div className="border-l border-gray-200 dark:border-gray-700 ml-2">
+          {entries.map(([key, value], index) => (
+            <JsonTreeNode
+              key={key}
+              data={value}
+              keyName={key}
+              level={level + 1}
+              isLast={index === entries.length - 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JsonTreeViewer({ value, compact = false }: { value: unknown; compact?: boolean }) {
+  const parsed = tryParseJson(value);
+  
+  // Handle simple string values
+  if (typeof parsed === "string") {
+    return (
+      <div 
+        className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ExpandableString 
+          value={parsed} 
+          className="whitespace-pre-wrap break-words font-mono text-current"
+          isQuoted={true}
+        />
+      </div>
+    );
+  }
+
+  // Handle null, undefined, or other primitive values
+  if (parsed === null || parsed === undefined) {
+    return (
+      <div 
+        className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <pre className="whitespace-pre-wrap break-words font-mono text-current">
+          {parsed === null ? "null" : "undefined"}
+        </pre>
+      </div>
+    );
+  }
+
+  // Handle other primitive values (numbers, booleans)
+  if (typeof parsed !== "object") {
+    return (
+      <div 
+        className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <pre className="whitespace-pre-wrap break-words font-mono text-current">
+          {String(parsed)}
+        </pre>
+      </div>
+    );
+  }
+
+  // Handle objects and arrays
+  return (
+    <div 
+      className={compact ? "max-h-64 overflow-y-auto" : "bg-muted rounded p-3"}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <JsonTreeNode data={parsed} />
+    </div>
   );
 }
 
 function OutputField({ label, value }: { label: string; value: unknown }) {
   return (
-    <div className="mb-2">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="mb-4">
+      <div className="flex items-center gap-2 mb-2">
         <span className="font-semibold mr-0">{label}:</span>
         <CopyButton value={value} />
       </div>
-      {<JsonBlock value={value} />}
+      <JsonTreeViewer value={value} />
     </div>
   );
 }
 
 function getStatusBadgeVariant(
   status: string,
-): "default" | "destructive" | "secondary" | "outline" {
-  if (status === "success" || status === "completed") return "default";
+): "default" | "destructive" | "secondary" | "outline" | "success" {
+  if (status === "success" || status === "completed") return "success";
   if (status === "failed" || status === "errored") return "destructive";
   if (status === "running" || status === "in_progress") return "secondary";
   return "outline";
@@ -127,44 +371,35 @@ function formatDuration(start?: string, end?: string): string {
   return `${h}h ${m % 60}m ${s % 60}s`;
 }
 
-const DONUT_COLORS = ["#22c55e", "#ef4444", "#a3a3a3"];
-
-function DonutChart(
+function StatusSummary(
   { success, errors, total }: {
     success: number;
     errors: number;
     total: number;
   },
 ) {
-  const data = [
-    { name: "Success", value: success, color: "#22c55e" },
-    { name: "Errors", value: errors, color: "#ef4444" },
-    { name: "Pending", value: total - success - errors, color: "#94a3b8" },
-  ].filter((d) => d.value > 0);
+  const pending = total - success - errors;
+  const running = 0; // This would need to be calculated separately if needed
 
   if (total === 0) {
-    return <div className="text-xs text-muted-foreground">No data</div>;
+    return <div className="text-xs text-muted-foreground">No steps</div>;
   }
 
   return (
-    <ResponsiveContainer width={60} height={60}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx={30}
-          cy={30}
-          innerRadius={18}
-          outerRadius={28}
-          paddingAngle={2}
-          dataKey="value"
-          stroke="none"
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
-          ))}
-        </Pie>
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col gap-1 text-xs">
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+        <span>{success} completed</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+        <span>{errors} failed</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+        <span>{pending} pending</span>
+      </div>
+    </div>
   );
 }
 
@@ -194,6 +429,121 @@ function formatStepId(id: string): string {
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+// Step Detail Modal Component
+function StepDetailModal({
+  step,
+  isOpen,
+  onClose,
+}: {
+  step: any;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const stepTitle = formatStepId(step.id);
+  const hasError = step.data?.error;
+  const hasOutput = step.data?.output;
+  const hasInput = step.data?.input;
+  const duration = formatDuration(
+    step.data?.startedAt ? new Date(step.data.startedAt).toISOString() : undefined,
+    step.data?.endedAt ? new Date(step.data.endedAt).toISOString() : undefined,
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="!max-w-[85vw] !w-[85vw] max-h-[90vh] overflow-hidden flex flex-col sm:!max-w-[85vw]">
+        <DialogHeader className="flex-shrink-0">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-xl font-semibold">{stepTitle}</DialogTitle>
+              <Badge variant="secondary" className="text-sm">
+                {hasError ? "Failed" : hasOutput ? "Completed" : "Pending"}
+              </Badge>
+              {duration && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Icon name="timer" size={16} />
+                  <span>{duration}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Execution Timeline in Header */}
+            {step.data && (step.data.startedAt || step.data.endedAt) && (
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground mr-8">
+                {step.data.startedAt && (
+                  <div className="flex items-center gap-1">
+                    <Icon name="schedule" size={12} />
+                    <span>Started: {new Date(step.data.startedAt).toLocaleString()}</span>
+                  </div>
+                )}
+                {step.data.endedAt && (
+                  <div className="flex items-center gap-1">
+                    <Icon name="schedule" size={12} />
+                    <span>Ended: {new Date(step.data.endedAt).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogHeader>
+        
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="space-y-6 py-4">
+
+            {/* Error Section */}
+            {hasError && (
+              <div>
+                <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+                  <Icon name="error" size={20} />
+                  Error
+                </h3>
+                <Card className="border-red-200 dark:border-red-800">
+                  <CardContent className="p-4">
+                    <JsonTreeViewer value={step.data.error} />
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Output Section */}
+            {hasOutput && (
+              <div>
+                <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2">
+                  <Icon name="check_circle" size={20} />
+                  Output
+                </h3>
+                <Card className="border-green-200 dark:border-green-800">
+                  <CardContent className="p-4 min-h-[800px] max-h-[800px] overflow-hidden flex flex-col">
+                    <div className="flex-1 overflow-y-auto">
+                      <JsonTreeViewer value={step.data.output} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Input Section */}
+            {hasInput && (
+              <div>
+                <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
+                  <Icon name="input" size={20} />
+                  Input
+                </h3>
+                <Card className="border-blue-200 dark:border-blue-800">
+                  <CardContent className="p-4">
+                    <JsonTreeViewer value={step.data.input} />
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // New function to preserve parallel structure
@@ -309,7 +659,7 @@ function StepCard({
   isCurrent?: boolean;
   isSkipped?: boolean;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const stepTitle = formatStepId(step.id);
   const hasRun = !!step.data;
   const hasError = step.data?.error;
@@ -334,9 +684,6 @@ function StepCard({
   } else if (hasError) {
     borderClasses = "border-red-500";
     bgClasses = "bg-red-50 dark:bg-red-950/20";
-  } else if (hasRun && hasOutput) {
-    borderClasses = "border-green-500";
-    bgClasses = "bg-green-50 dark:bg-green-950/20";
   } else if (isRunning) {
     borderClasses = "border-blue-500";
     bgClasses = "bg-blue-50 dark:bg-blue-950/20";
@@ -345,152 +692,97 @@ function StepCard({
     bgClasses = "bg-orange-50 dark:bg-orange-950/20";
   } else {
     borderClasses = "border-muted";
-    bgClasses = "bg-muted/10";
+    bgClasses = "bg-card";
   }
 
   return (
-    <Card className={`${cardClasses} ${borderClasses} ${bgClasses} min-h-[120px]`} onClick={() => setIsExpanded(!isExpanded)}>
-      <CardContent className="p-4 flex flex-col">
-        {/* Header - always visible */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Status icon */}
-            <div className="flex-shrink-0">
-              {isSkipped ? (
-                <Icon name="remove_circle" size={16} style={{ color: "#9ca3af" }} />
-              ) : hasError ? (
-                <Icon name="error" size={16} style={{ color: "#ef4444" }} />
-              ) : hasRun && hasOutput ? (
-                <Icon name="check_circle" size={16} style={{ color: "#22c55e" }} />
-              ) : isRunning ? (
-                <Icon name="hourglass_empty" size={16} style={{ color: "#3b82f6" }} className="animate-spin" />
-              ) : isCurrent ? (
-                <Icon name="play_circle" size={16} style={{ color: "#f59e0b" }} />
-              ) : (
-                <Icon name="radio_button_unchecked" size={16} style={{ color: "#9ca3af" }} />
-              )}
-            </div>
-            
-            {/* Step title */}
-            <h3 className="font-semibold text-sm truncate flex-1">{stepTitle}</h3>
-            
-            {/* Expand/collapse icon */}
-            <Icon 
-              name={isExpanded ? "expand_less" : "expand_more"} 
-              size={16} 
-              style={{ color: "#6b7280" }}
-              className="flex-shrink-0"
-            />
+    <>
+      <Card className={`${cardClasses} ${borderClasses} ${bgClasses} w-full`} onClick={() => setIsModalOpen(true)}>
+        <CardContent className="p-3 sm:p-4 flex flex-col">
+          {/* Header - always visible */}
+          <div className="flex items-center gap-3">
+          {/* Status icon */}
+          <div className="flex-shrink-0 flex items-center justify-center">
+            {isSkipped ? (
+              <Icon name="remove_circle" size={16} className="text-gray-400" />
+            ) : hasError ? (
+              <Icon name="error" size={16} className="text-red-500" />
+            ) : hasRun && hasOutput ? (
+              <Icon name="check_circle" size={16} className="text-green-500" />
+            ) : isRunning ? (
+              <Icon name="hourglass_empty" size={16} className="text-blue-500 animate-spin" />
+            ) : isCurrent ? (
+              <Icon name="play_circle" size={16} className="text-orange-500" />
+            ) : (
+              <Icon name="radio_button_unchecked" size={16} className="text-gray-400" />
+            )}
           </div>
           
-          {/* Duration badge */}
-          {duration && (
-            <Badge variant="secondary" className="absolute top-2 right-2 text-xs">
-              {duration}
+          {/* Step title, status badge, and duration */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <h3 className="font-semibold text-sm truncate">{stepTitle}</h3>
+            <Badge 
+              variant={
+                isSkipped 
+                  ? "outline" 
+                  : hasError 
+                  ? "destructive" 
+                  : hasRun && hasOutput 
+                  ? "success" 
+                  : isRunning 
+                  ? "secondary" 
+                  : isCurrent
+                  ? "secondary"
+                  : "outline"
+              } 
+              className="text-xs flex-shrink-0"
+            >
+              {isSkipped
+                ? "Skipped"
+                : hasError
+                ? "Failed"
+                : hasRun && hasOutput
+                ? "Completed"
+                : isRunning
+                ? "Running"
+                : isCurrent
+                ? "Next"
+                : "Pending"}
             </Badge>
-          )}
-        </div>
-
-        {/* Status line - always visible */}
-        <div className="text-xs text-muted-foreground mb-2">
-          {isSkipped
-            ? "Skipped"
-            : hasError
-            ? "Failed"
-            : hasRun && hasOutput
-            ? "Completed"
-            : isRunning
-            ? "Running..."
-            : isCurrent
-            ? "Next to run"
-            : "Pending"}
-        </div>
-
-        {/* Expandable content */}
-        {isExpanded && (
-          <div className="space-y-3 flex-1">
-            {/* Output/Error content */}
-            {hasError && (
-              <div>
-                <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2">
-                  Error
-                </h4>
-                <div className="bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded p-2">
-                  <pre className="text-xs text-red-800 dark:text-red-200 whitespace-pre-wrap font-mono">
-                    {typeof step.data.error === "string"
-                      ? step.data.error
-                      : JSON.stringify(step.data.error, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {hasOutput && (
-              <div>
-                <h4 className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">
-                  Output
-                </h4>
-                <div className="bg-green-100 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded p-2">
-                  <pre className="text-xs text-green-800 dark:text-green-200 whitespace-pre-wrap font-mono">
-                    {typeof step.data.output === "string"
-                      ? step.data.output
-                      : JSON.stringify(step.data.output, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {/* Input if available */}
-            {step.data?.input && (
-              <div>
-                <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                  Input
-                </h4>
-                <div className="bg-blue-100 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded p-2">
-                  <pre className="text-xs text-blue-800 dark:text-blue-200 whitespace-pre-wrap font-mono">
-                    {typeof step.data.input === "string"
-                      ? step.data.input
-                      : JSON.stringify(step.data.input, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {/* Timestamps */}
-            {step.data && (step.data.startedAt || step.data.endedAt) && (
-              <div className="pt-2 border-t border-muted-foreground/20">
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  {step.data.startedAt && (
-                    <div>
-                      <span className="font-medium">Started:</span>
-                      <div className="font-mono">
-                        {new Date(step.data.startedAt).toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                  {step.data.endedAt && (
-                    <div>
-                      <span className="font-medium">Ended:</span>
-                      <div className="font-mono">
-                        {new Date(step.data.endedAt).toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {/* Duration with timer icon */}
+            {duration && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
+                <Icon name="timer" size={12} className="text-muted-foreground" />
+                {duration}
+              </span>
             )}
           </div>
-        )}
-
-        {/* Hint text when collapsed */}
-        {!isExpanded && (hasOutput || hasError || step.data?.input) && (
-          <div className="text-xs text-muted-foreground italic mt-auto">
-            Click to view details
+          
+          {/* View details icon */}
+          <div className="flex-shrink-0 flex items-center justify-center">
+            <Icon 
+              name="open_in_new" 
+              size={16} 
+              className="text-gray-500"
+            />
           </div>
-        )}
+        </div>
+
+        {/* Hint text */}
+        <div className="text-xs text-muted-foreground mt-2">
+          Click to view details
+        </div>
       </CardContent>
     </Card>
-  );
+    
+    {/* Step Detail Modal */}
+    <StepDetailModal
+      step={step}
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+    />
+  </>
+);
 }
 
 // New component to render parallel steps with much better UI
@@ -527,15 +819,15 @@ function ParallelStepsGroup({
       </div>
 
       {/* Simple grid layout with left border to show grouping */}
-      <div className="border-l-4 border-blue-300 pl-6 ml-4">
-        <div className={`grid gap-4 ${
+      <div className="border-l-4 border-blue-300 pl-4 sm:pl-6 ml-2 sm:ml-4">
+        <div className={`grid gap-3 sm:gap-4 ${
           steps.length === 1 ? 'grid-cols-1' :
-          steps.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
-          steps.length === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
-          steps.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
-          steps.length === 5 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' :
-          steps.length >= 6 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' :
-          'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+          steps.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+          steps.length === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
+          steps.length === 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' :
+          steps.length === 5 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' :
+          steps.length >= 6 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
+          'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
         }`}>
           {steps.map((step) => {
             const hasRun = !!contextMap[step.id];
@@ -558,9 +850,9 @@ function ParallelStepsGroup({
       </div>
 
       {/* Status summary */}
-      <div className="flex justify-center mt-6 mb-4">
-        <div className="bg-muted/50 rounded-lg px-4 py-2 border">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="flex justify-center mt-6 mb-4 px-2">
+        <div className="bg-muted/50 rounded-lg px-3 sm:px-4 py-2 border max-w-full">
+          <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap justify-center">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span>{steps.filter(s => contextMap[s.id]?.output && !contextMap[s.id]?.error).length} completed</span>
@@ -706,12 +998,12 @@ function InstanceDetailTab() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="w-full px-6 py-8">
-        <div className="max-w-5xl">
+      <div className="w-full px-4 sm:px-6 py-8">
+        <div className="max-w-8xl mx-auto">
           <Card className="p-0 mb-6 shadow-lg border-2 border-muted">
-            <CardContent className="p-6 flex flex-col gap-4">
-              <div className="flex flex-row items-center gap-4 mb-2">
-                <div className="flex items-center gap-3 flex-1">
+            <CardContent className="p-4 sm:p-6 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 flex-wrap">
                   {statusIcon}
                   <span className="text-xl font-bold">Status</span>
                   <Badge
@@ -730,16 +1022,9 @@ function InstanceDetailTab() {
                     {duration}
                   </span>
                 </div>
-                <div className="min-w-[60px] flex-shrink-0 flex items-center justify-center">
-                  <DonutChart
-                    success={successes}
-                    errors={errors}
-                    total={allSteps.length}
-                  />
-                </div>
               </div>
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Icon name="key" size={16} className="text-muted-foreground" />
                   <span className="font-semibold text-sm">Instance ID:</span>
                   <span className="text-xs font-mono bg-muted rounded px-2 py-1">
@@ -747,7 +1032,7 @@ function InstanceDetailTab() {
                   </span>
                   <CopyButton value={instanceId} />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Icon
                     name="calendar_today"
                     size={16}
@@ -760,7 +1045,7 @@ function InstanceDetailTab() {
                       : "-"}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Icon
                     name="calendar_today"
                     size={16}
@@ -776,7 +1061,7 @@ function InstanceDetailTab() {
               </div>
             </CardContent>
           </Card>
-          <Card className="p-4 mb-4">
+          <Card className="p-3 sm:p-4 mb-4">
             <OutputField
               label="Input Params"
               value={context?.input}

@@ -3,9 +3,9 @@
  * Config for Deco workers is stored in the wrangler.toml file, so
  * we're a superset of the wrangler config.
  */
-import { join } from "@std/path";
 import { parse, stringify } from "smol-toml";
 import { z } from "zod";
+import { getMDC } from "./rules/deco-chat.mdc.ts";
 import { readSession } from "./session.ts";
 import type { MCPConfig } from "./utils/prompt-ide-setup.ts";
 
@@ -268,9 +268,9 @@ export async function getMCPConfig(
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
 export const getRulesConfig = async () => {
-  const decoChat = await Deno.readTextFile(
-    join(new URL(import.meta.url).pathname, "../rules/deco-chat.mdc"),
-  );
+  const content = await getMDC();
 
-  return { "deco-chat.mdc": decoChat };
+  return {
+    "deco-chat.mdc": content,
+  };
 };

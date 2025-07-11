@@ -1,9 +1,15 @@
+// Deno does not allow files to be published to JSR. Then, I tried using import with { type: "text" } but it is still not very well supported.
+// The workaround is to stringify the file content in a comment and parse it back in the getMDC function.
+
+const HEADER = `
 ---
 description: Comprehensive guide for developing applications on the deco.chat platform, covering tools, workflows, and best practices
 globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
 ---
+`;
 
+/**
 # deco.chat Platform Development Rules
 
 ## 🎯 Overview
@@ -105,7 +111,7 @@ const createMyTool = (env: Env) =>
       const response = await env.INTEGRATION.TOOL({
         // parameters
       });
-      
+
       return { result: response.data };
     },
   });
@@ -334,7 +340,7 @@ execute: async ({ context }) => {
 // DON'T DO THIS
 execute: async ({ context }) => {
   const data = await env.API.TOOL({...});
-  
+
   // Complex processing logic here
   const processed = data.map(item => ({
     ...item,
@@ -342,7 +348,7 @@ execute: async ({ context }) => {
     formatted: item.name.toUpperCase(),
     validated: item.id > 0
   })).filter(item => item.validated);
-  
+
   return { result: processed };
 }
 ```
@@ -384,17 +390,17 @@ const createBadUserProcessor = (env: Env) =>
         sql: "SELECT * FROM users WHERE id = ?",
         params: [context.userId]
       });
-      
+
       const aiAnalysis = await env.GIMENES.AGENT_GENERATE_TEXT({
         message: `Analyze user data: ${JSON.stringify(userData)}`
       });
-      
+
       const savedResult = await env.DECO_CHAT_WORKSPACE_API.FS_WRITE({
         path: `/users/${context.userId}/analysis.json`,
         content: aiAnalysis.text,
         contentType: "application/json"
       });
-      
+
       return { result: "processed" };
     },
   });
@@ -442,9 +448,9 @@ const createUserDataWorkflow = (env: Env) => {
     createTool({
       id: "SAVE_ANALYSIS",
       description: "Save analysis to file system",
-      inputSchema: z.object({ 
+      inputSchema: z.object({
         userId: z.string(),
-        analysis: z.string() 
+        analysis: z.string()
       }),
       outputSchema: z.object({ saved: z.boolean() }),
       execute: async ({ context }) => {
@@ -461,7 +467,7 @@ const createUserDataWorkflow = (env: Env) => {
   return createWorkflow({
     id: "USER_DATA_WORKFLOW",
     inputSchema: z.object({ userId: z.string() }),
-    outputSchema: z.object({ 
+    outputSchema: z.object({
       success: z.boolean(),
       analysis: z.string(),
       saved: z.boolean()
@@ -538,11 +544,11 @@ const createMultiServiceWorkflow = (env: Env) => {
 
   return createWorkflow({
     id: "MULTI_SERVICE_WORKFLOW",
-    inputSchema: z.object({ 
+    inputSchema: z.object({
       query: z.string(),
       userId: z.string()
     }),
-    outputSchema: z.object({ 
+    outputSchema: z.object({
       success: z.boolean(),
       processedData: z.string()
     }),
@@ -613,7 +619,7 @@ const createParallelProcessingWorkflow = (env: Env) => {
   return createWorkflow({
     id: "PARALLEL_PROCESSING_WORKFLOW",
     inputSchema: z.object({ userId: z.string() }),
-    outputSchema: z.object({ 
+    outputSchema: z.object({
       success: z.boolean(),
       dataSummary: z.any()
     }),
@@ -711,4 +717,13 @@ Remember the core principle: **Each workflow step should invoke only ONE tool, a
 - **Performance**: Optimal execution patterns
 
 Start simple, build incrementally, and leverage the power of deco.chat's integration ecosystem to create powerful automation workflows!
+ */
 
+export const getMDC = async () => {
+  const file = await Deno.readTextFile(new URL(import.meta.url).pathname);
+
+  // get the comment block
+  const commentBlock = file.match(/(\/\*\*[\s\S]*?\*\/)/)[0];
+
+  return `${HEADER}\n\n${commentBlock.trim()}`;
+};

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
@@ -16,7 +17,6 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
@@ -658,7 +658,7 @@ export function WorkflowFlowVisualization({
     const counts = { completed: 0, failed: 0, running: 0, pending: 0, skipped: 0 };
     nodes.forEach((node: Node) => {
       const status = node.data.status;
-      if (counts.hasOwnProperty(status)) {
+      if (status in counts) {
         counts[status as keyof typeof counts]++;
       }
     });

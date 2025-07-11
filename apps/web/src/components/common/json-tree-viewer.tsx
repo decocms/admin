@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { useState } from "react";
 

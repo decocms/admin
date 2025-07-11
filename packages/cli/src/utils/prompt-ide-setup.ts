@@ -71,7 +71,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
         path: join(outDir, "mcp.json"),
       });
 
-      const rules = Object.entries(getRulesConfig());
+      const rules = Object.entries(await getRulesConfig());
 
       for (const [path, content] of rules) {
         configs.push({ content, path: join(outDir, "rules", path) });
@@ -103,7 +103,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
         path: join(outDir, "mcp.json"),
       });
 
-      const rules = Object.entries(getRulesConfig());
+      const rules = Object.entries(await getRulesConfig());
 
       for (const [path, content] of rules) {
         configs.push({ content, path: join(outDir, "rules", path) });

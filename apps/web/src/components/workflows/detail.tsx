@@ -890,7 +890,7 @@ function StepCard({
 }
 
 // New component to render parallel steps with much better UI
-function ParallelStepsGroup({
+function _ParallelStepsGroup({
   steps,
   contextMap,
   workflowStatus,
@@ -1011,8 +1011,7 @@ function ParallelStepsGroup({
   );
 }
 
-// Component for individual steps with flow connection
-function StepWithFlow({
+function _StepWithFlow({
   step,
   contextMap,
   workflowStatus,
@@ -1086,12 +1085,12 @@ function InstanceDetailTab() {
   const processedSteps = processStepGraph(stepGraph);
   // Keep backwards compatibility for calculations
   const allSteps = flattenStepGraph(stepGraph);
-  const allStepIds = getAllStepIds(processedSteps);
+  const _allStepIds = getAllStepIds(processedSteps);
 
   // Map step IDs to run data
   const contextMap = context || {};
   // Find the last completed or running step index
-  let lastRunIdx = -1;
+  let _lastRunIdx = -1;
   for (let i = 0; i < allSteps.length; i++) {
     const step = allSteps[i];
     if (
@@ -1099,13 +1098,13 @@ function InstanceDetailTab() {
       (contextMap[step.id].output || contextMap[step.id].error ||
         contextMap[step.id].startedAt)
     ) {
-      lastRunIdx = i;
+      _lastRunIdx = i;
     }
   }
   // The next step to run is lastRunIdx + 1
 
   // Determine if workflow is done but there are steps left to run
-  const isWorkflowDone = status === "success" || status === "failed";
+  const _isWorkflowDone = status === "success" || status === "failed";
 
   // For duration, use the earliest startedAt and latest endedAt among steps
   const startedAts = Object.values(contextMap)

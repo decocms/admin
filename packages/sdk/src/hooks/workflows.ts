@@ -111,7 +111,7 @@ export const useAllUniqueWorkflows = () => {
     queryKey: ["all-unique-workflows", workspace],
     queryFn: async ({ signal }) => {
       // Fetch only the first page with 50 records to avoid infinite loop
-      const per_page = 50;
+      const per_page = 20;
       const result = await listWorkflows(workspace, 1, per_page, signal);
 
       return {

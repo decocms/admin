@@ -291,11 +291,11 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
             </div>
           </div>
           
-          {data.duration && (
-            <Badge variant="secondary" className="text-xs w-fit">
-              <Icon name="timer" size={12} className="mr-1" />
+                                {data.duration && (
+            <div className="text-xs font-medium flex items-center gap-1 mt-1">
+              <Icon name="timer" size={12} />
               {data.duration}
-            </Badge>
+            </div>
           )}
         </CardContent>
       </Card>

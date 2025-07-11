@@ -52,18 +52,10 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
     return Promise.resolve();
   },
   run: async (data, trigger, args) => {
-    // TEMP LOG: Incoming webhook data
-    console.log("🪝 [TEMP] Webhook received:", {
-      timestamp: new Date().toISOString(),
-      triggerId: trigger.state.id,
-      hasArgs: !!args,
-      argsType: typeof args,
-      args: args,
-      passphrase: data.passphrase,
-      metadata: trigger.metadata
-    });
-
-    if (data.passphrase && data.passphrase !== trigger.metadata?.passphrase) {
+    if (
+      data.passphrase &&
+      data.passphrase !== trigger.metadata?.params?.passphrase
+    ) {
       return {
         error: "Invalid passphrase",
       };
@@ -103,14 +95,6 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
         "messages" in args && isAIMessages(args.messages)
       ? args.messages
       : undefined;
-
-    // TEMP LOG: Messages processing
-    console.log("🪝 [TEMP] Processing messages:", {
-      hasMessagesFromArgs: !!messagesFromArgs,
-      messagesCount: messagesFromArgs?.length || 0,
-      messagesFromArgs: messagesFromArgs,
-      isAIMessagesResult: args && typeof args === "object" && "messages" in args ? isAIMessages(args.messages) : "no-messages-in-args"
-    });
 
     const messages = messagesFromArgs ?? [
       {

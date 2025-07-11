@@ -185,6 +185,7 @@ function StepDetailContentFlow({
       {hasError && (
         <div>
           <button
+            type="button"
             onClick={() => toggleSection("error")}
             className="w-full flex items-center justify-between p-4 bg-destructive/5 hover:bg-destructive/10 rounded-lg border border-destructive/20 transition-colors"
           >
@@ -215,6 +216,7 @@ function StepDetailContentFlow({
       {hasInput && (
         <div>
           <button
+            type="button"
             onClick={() => toggleSection("input")}
             className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-lg border border-primary/20 transition-colors"
           >
@@ -245,6 +247,7 @@ function StepDetailContentFlow({
       {hasOutput && (
         <div>
           <button
+            type="button"
             onClick={() => toggleSection("output")}
             className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 rounded-lg border border-success/20 transition-colors"
           >

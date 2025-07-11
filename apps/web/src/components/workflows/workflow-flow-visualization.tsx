@@ -25,7 +25,9 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
 
 // Start Node Component
-function StartNode() {
+function StartNode({ data }: { data: any }) {
+  const showHandles = data?.showHandles !== false;
+  
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-success rounded-full border-2 border-success-foreground shadow-lg relative">
       <Icon name="play_arrow" size={24} />
@@ -36,12 +38,13 @@ function StartNode() {
           bottom: -8,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#22c55e',
-          border: '2px solid #ffffff',
+          background: showHandles ? '#22c55e' : 'transparent',
+          border: showHandles ? '2px solid #ffffff' : 'none',
           width: 16,
           height: 16,
           borderRadius: '50%',
           zIndex: 10,
+          opacity: showHandles ? 1 : 0,
         }}
       />
     </div>
@@ -49,7 +52,9 @@ function StartNode() {
 }
 
 // End Node Component
-function EndNode() {
+function EndNode({ data }: { data: any }) {
+  const showHandles = data?.showHandles !== false;
+  
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full border-2 border-muted-foreground shadow-lg relative">
       <Icon name="stop" size={24} />
@@ -60,12 +65,13 @@ function EndNode() {
           top: -8,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#6b7280',
-          border: '2px solid #ffffff',
+          background: showHandles ? '#6b7280' : 'transparent',
+          border: showHandles ? '2px solid #ffffff' : 'none',
           width: 16,
           height: 16,
           borderRadius: '50%',
           zIndex: 10,
+          opacity: showHandles ? 1 : 0,
         }}
       />
     </div>
@@ -164,7 +170,7 @@ function StepDetailModal({
                   Error
                 </h3>
                 <Card className="border-destructive/30">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 max-h-[400px] overflow-y-auto">
                     <JsonTreeViewer value={step.data.stepData.error} />
                   </CardContent>
                 </Card>
@@ -178,7 +184,7 @@ function StepDetailModal({
                   Output
                 </h3>
                 <Card className="border-success/30">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 max-h-[500px] overflow-y-auto">
                     <JsonTreeViewer value={step.data.stepData.output} />
                   </CardContent>
                 </Card>
@@ -192,7 +198,7 @@ function StepDetailModal({
                   Input
                 </h3>
                 <Card className="border-primary/30">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 max-h-[400px] overflow-y-auto">
                     <JsonTreeViewer value={step.data.stepData.input} />
                   </CardContent>
                 </Card>
@@ -248,6 +254,8 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
     }
   };
 
+  const showHandles = data?.showHandles !== false;
+
   return (
     <div className="relative">
       {/* Input Handle - positioned absolutely to ensure visibility */}
@@ -258,12 +266,13 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
           top: -8,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#3b82f6',
-          border: '2px solid #ffffff',
+          background: showHandles ? '#3b82f6' : 'transparent',
+          border: showHandles ? '2px solid #ffffff' : 'none',
           width: 16,
           height: 16,
           borderRadius: '50%',
           zIndex: 10,
+          opacity: showHandles ? 1 : 0,
         }}
       />
       
@@ -272,29 +281,22 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
         onClick={data.onClick}
       >
         <CardContent className="p-3 flex flex-col">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex-shrink-0">{statusIcon()}</div>
-            <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex-shrink-0">{statusIcon()}</div>
               <h3 className="font-semibold text-sm truncate">{data.label}</h3>
-              <Badge
-                variant={getStatusBadgeVariant(data.status)}
-                className="text-xs mt-1"
-              >
-                {data.status}
-              </Badge>
+            </div>
+            <div className="text-muted-foreground flex-shrink-0">
+              <Icon name="open_in_new" size={14} />
             </div>
           </div>
           
           {data.duration && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Icon name="timer" size={12} />
+            <Badge variant="secondary" className="text-xs w-fit">
+              <Icon name="timer" size={12} className="mr-1" />
               {data.duration}
-            </div>
+            </Badge>
           )}
-          
-          <div className="text-xs text-muted-foreground mt-1">
-            Click to view details
-          </div>
         </CardContent>
       </Card>
       
@@ -306,12 +308,13 @@ function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean })
           bottom: -8,
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#3b82f6',
-          border: '2px solid #ffffff',
+          background: showHandles ? '#3b82f6' : 'transparent',
+          border: showHandles ? '2px solid #ffffff' : 'none',
           width: 16,
           height: 16,
           borderRadius: '50%',
           zIndex: 10,
+          opacity: showHandles ? 1 : 0,
         }}
       />
     </div>
@@ -331,6 +334,7 @@ function calculateLayout(
   contextMap: any,
   workflowStatus: string,
   onNodeClick: (node: any) => void,
+  showHandles: boolean,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -352,7 +356,7 @@ function calculateLayout(
       x: xCenterPosition - startEndNodeWidth / 2,
       y: yPosition - startEndGap,
     },
-    data: { label: 'Start' },
+    data: { label: 'Start', showHandles },
     deletable: false,
     selectable: false,
   });
@@ -380,6 +384,7 @@ function calculateLayout(
           stepData,
           duration,
           isParallel: true,
+          showHandles,
           onClick: () => onNodeClick({ id: parallelStep.id, data: { label: formatStepId(parallelStep.id), status, stepData, duration } }),
         };
 
@@ -452,6 +457,7 @@ function calculateLayout(
         stepData,
         duration,
         isParallel: false,
+        showHandles,
         onClick: () => onNodeClick({ id: step.id, data: { label: formatStepId(step.id), status, stepData, duration } }),
       };
 
@@ -518,7 +524,7 @@ function calculateLayout(
       x: xCenterPosition - startEndNodeWidth / 2,
       y: yPosition - endGap, // Move end node closer by subtracting instead of adding
     },
-    data: { label: 'End' },
+    data: { label: 'End', showHandles },
     deletable: false,
     selectable: false,
   });
@@ -619,6 +625,7 @@ export function WorkflowFlowVisualization({
   workflowStatus,
 }: WorkflowFlowVisualizationProps) {
   const [selectedStep, setSelectedStep] = useState<any>(null);
+  const showHandles = false; // Toggle this to show/hide the blue handle dots (keeps connections working)
 
   // Handle node click
   const handleNodeClick = useCallback((node: any) => {
@@ -627,8 +634,8 @@ export function WorkflowFlowVisualization({
 
   // Calculate layout
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => 
-    calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick),
-    [processedSteps, contextMap, workflowStatus, handleNodeClick]
+    calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles),
+    [processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles]
   );
 
   // React Flow state
@@ -637,10 +644,10 @@ export function WorkflowFlowVisualization({
 
   // Update nodes when data changes
   useEffect(() => {
-    const { nodes: newNodes, edges: newEdges } = calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick);
+    const { nodes: newNodes, edges: newEdges } = calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles);
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [processedSteps, contextMap, workflowStatus, handleNodeClick, setNodes, setEdges]);
+  }, [processedSteps, contextMap, workflowStatus, handleNodeClick, showHandles, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds: Edge[]) => addEdge(params, eds)),

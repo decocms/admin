@@ -267,11 +267,8 @@ export async function getMCPConfig(
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
 export const getRulesConfig = async () => {
-  const content = await fetch(
-    // "https://raw.githubusercontent.com/deco-cx/chat/refs/heads/main/packages/cli/src/rules/deco-chat.mdc",
-    // uncomment to use the local rules
-    import.meta.resolve("./rules/deco-chat.mdc"),
-  ).then((res) => res.text());
+  const content = await fetch(import.meta.resolve("./rules/deco-chat.mdc"))
+    .then((res) => res.text());
 
   return {
     "deco-chat.mdc": content,

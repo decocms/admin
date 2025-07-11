@@ -259,7 +259,7 @@ function JsonTreeNode({
               data={value}
               keyName={key}
               level={level + 1}
-              isLast={index === entries.length - 1}
+              _isLast={index === entries.length - 1}
             />
           ))}
         </div>
@@ -926,7 +926,7 @@ function ParallelStepsGroup({
       </div>
 
       {/* Simple grid layout with left border to show grouping */}
-      <div className="border-l-4 border-blue-300 pl-4 sm:pl-6 ml-2 sm:ml-4">
+      <div className="border-l-4 border-primary/50 pl-4 sm:pl-6 ml-2 sm:ml-4">
         <div
           className={`grid gap-3 sm:gap-4 ${
             steps.length === 1
@@ -970,7 +970,7 @@ function ParallelStepsGroup({
         <div className="bg-muted/50 rounded-lg px-3 sm:px-4 py-2 border max-w-full">
           <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap justify-center">
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-success rounded-full"></div>
               <span>
                 {steps.filter((s) =>
                   contextMap[s.id]?.output && !contextMap[s.id]?.error
@@ -978,13 +978,13 @@ function ParallelStepsGroup({
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-destructive rounded-full"></div>
               <span>
                 {steps.filter((s) => contextMap[s.id]?.error).length} failed
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse">
+              <div className="w-2 h-2 bg-primary rounded-full animate-pulse">
               </div>
               <span>
                 {steps.filter((s) =>
@@ -993,7 +993,7 @@ function ParallelStepsGroup({
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
               <span>
                 {steps.filter((s) => !contextMap[s.id]).length} pending
               </span>
@@ -1004,7 +1004,7 @@ function ParallelStepsGroup({
 
       {/* Flow connection to next step */}
       <div className="flex justify-center">
-        <div className="w-0.5 h-8 bg-gray-300"></div>
+        <div className="w-0.5 h-8 bg-border"></div>
       </div>
     </div>
   );
@@ -1036,7 +1036,7 @@ function StepWithFlow({
     <div className="relative">
       {/* Flow connection from previous step */}
       <div className="flex justify-center mb-4">
-        <div className="w-0.5 h-8 bg-gray-300"></div>
+        <div className="w-0.5 h-8 bg-border"></div>
       </div>
 
       {/* Step card */}
@@ -1052,9 +1052,9 @@ function StepWithFlow({
       </div>
 
       {/* Flow connection to next step (unless it's the last step) */}
-      {!isLast && (
+      {!_isLast && (
         <div className="flex justify-center mt-4">
-          <div className="w-0.5 h-8 bg-gray-300"></div>
+          <div className="w-0.5 h-8 bg-border"></div>
         </div>
       )}
     </div>
@@ -1213,7 +1213,7 @@ function InstanceDetailTab() {
           <div className="relative">
             {/* Start indicator */}
             <div className="flex justify-center mb-4">
-              <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-lg">
+              <div className="w-3 h-3 bg-success rounded-full border-2 border-white shadow-lg">
               </div>
             </div>
 
@@ -1246,7 +1246,7 @@ function InstanceDetailTab() {
                         allStepIds={allStepIds}
                         lastRunIdx={lastRunIdx}
                         isWorkflowDone={isWorkflowDone}
-                        isLast={isLast}
+                        _isLast={isLast}
                       />
                     );
                   }
@@ -1261,7 +1261,7 @@ function InstanceDetailTab() {
             {/* End indicator */}
             {processedSteps.length > 0 && (
               <div className="flex justify-center mt-4">
-                <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white shadow-lg">
+                <div className="w-3 h-3 bg-muted-foreground rounded-full border-2 border-white shadow-lg">
                 </div>
               </div>
             )}

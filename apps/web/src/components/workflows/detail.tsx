@@ -115,12 +115,12 @@ function JsonTreeNode({
   data,
   keyName,
   level = 0,
-  isLast = false,
+  _isLast = false,
 }: {
   data: unknown;
   keyName?: string;
   level?: number;
-  isLast?: boolean;
+  _isLast?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expand first 2 levels
 
@@ -202,7 +202,7 @@ function JsonTreeNode({
   const renderKey = () => {
     if (!keyName) return null;
     return (
-      <span className="text-gray-700 dark:text-gray-300 font-medium">
+      <span className="text-foreground font-medium">
         "{keyName}":
       </span>
     );
@@ -243,7 +243,7 @@ function JsonTreeNode({
         <Icon
           name={isExpanded ? "expand_more" : "chevron_right"}
           size={16}
-          className="text-gray-500 flex-shrink-0"
+          className="text-muted-foreground flex-shrink-0"
         />
         {renderKey()}
         <span className={getTypeColor(data)}>
@@ -252,7 +252,7 @@ function JsonTreeNode({
       </div>
 
       {isExpanded && (
-        <div className="border-l border-gray-200 dark:border-gray-700 ml-2">
+        <div className="border-l border-border ml-2">
           {entries.map(([key, value], index) => (
             <JsonTreeNode
               key={key}
@@ -355,23 +355,23 @@ function getStatusIcon(status: string) {
       <Icon
         name="check_circle"
         size={18}
-        className="text-green-500"
+        className="text-success"
       />
     );
   } else if (status === "failed" || status === "error") {
-    return (
-      <Icon
-        name="error"
-        size={18}
-        className="text-red-500"
-      />
-    );
+          return (
+        <Icon
+          name="error"
+          size={18}
+          className="text-destructive"
+        />
+      );
   } else if (status === "running") {
     return (
       <Icon
         name="sync"
         size={18}
-        className="text-blue-500"
+        className="text-primary"
       />
     );
   } else {
@@ -397,7 +397,7 @@ function formatDuration(start?: string, end?: string): string {
   return `${h}h ${m % 60}m ${s % 60}s`;
 }
 
-function StatusSummary(
+function _StatusSummary(
   { success, errors, total }: {
     success: number;
     errors: number;
@@ -405,7 +405,7 @@ function StatusSummary(
   },
 ) {
   const pending = total - success - errors;
-  const running = 0; // This would need to be calculated separately if needed
+  const _running = 0; // This would need to be calculated separately if needed
 
   if (total === 0) {
     return <div className="text-xs text-muted-foreground">No steps</div>;
@@ -414,15 +414,15 @@ function StatusSummary(
   return (
     <div className="flex flex-col gap-1 text-xs">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+        <div className="w-2 h-2 bg-success rounded-full"></div>
         <span>{success} completed</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+        <div className="w-2 h-2 bg-destructive rounded-full"></div>
         <span>{errors} failed</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+        <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
         <span>{pending} pending</span>
       </div>
     </div>
@@ -432,7 +432,7 @@ function StatusSummary(
 /**
  * Returns the status of a workflow step based on its data and the overall workflow status.
  */
-function getStepStatus(stepData: any, workflowStatus: string): string {
+function _getStepStatus(stepData: any, workflowStatus: string): string {
   if (!stepData) return "pending";
   if (stepData.error) return "failed";
   if (stepData.output && !stepData.error) return "completed";
@@ -527,11 +527,11 @@ function StepDetailModal({
             {/* Error Section */}
             {hasError && (
               <div>
-                <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-destructive mb-3 flex items-center gap-2">
                   <Icon name="error" size={20} />
                   Error
                 </h3>
-                <Card className="border-red-200 dark:border-red-800">
+                <Card className="border-destructive/30">
                   <CardContent className="p-4">
                     <JsonTreeViewer value={step.data.error} />
                   </CardContent>
@@ -542,11 +542,11 @@ function StepDetailModal({
             {/* Output Section */}
             {hasOutput && (
               <div>
-                <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-success mb-3 flex items-center gap-2">
                   <Icon name="check_circle" size={20} />
                   Output
                 </h3>
-                <Card className="border-green-200 dark:border-green-800">
+                <Card className="border-success/30">
                   <CardContent className="p-4 min-h-[800px] max-h-[800px] overflow-hidden flex flex-col">
                     <div className="flex-1 overflow-y-auto">
                       <JsonTreeViewer value={step.data.output} />
@@ -559,11 +559,11 @@ function StepDetailModal({
             {/* Input Section */}
             {hasInput && (
               <div>
-                <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
                   <Icon name="input" size={20} />
                   Input
                 </h3>
-                <Card className="border-blue-200 dark:border-blue-800">
+                <Card className="border-primary/30">
                   <CardContent className="p-4">
                     <JsonTreeViewer value={step.data.input} />
                   </CardContent>
@@ -615,7 +615,7 @@ function processStepGraph(graph: any): any[] {
         isParallel: true,
         steps: graph.steps.map((step: any) => processStepGraph(step)).flat(),
       }];
-    case "if":
+    case "if": {
       const result = [{
         id: graph.id,
         type: "if",
@@ -625,7 +625,8 @@ function processStepGraph(graph: any): any[] {
       if (graph.if) result.push(...processStepGraph(graph.if));
       if (graph.else) result.push(...processStepGraph(graph.else));
       return result;
-    case "try":
+    }
+    case "try": {
       const tryResult = [{
         id: graph.id,
         type: "try",
@@ -635,6 +636,7 @@ function processStepGraph(graph: any): any[] {
       if (graph.try) tryResult.push(...processStepGraph(graph.try));
       if (graph.catch) tryResult.push(...processStepGraph(graph.catch));
       return tryResult;
+    }
     default:
       if (graph.id) {
         return [{
@@ -713,14 +715,14 @@ function flattenStepGraph(graph: any, parentKey = "", steps: any[] = []) {
 
 function StepCard({
   step,
-  workflowStatus,
-  isPreview = false,
+  _workflowStatus,
+  _isPreview = false,
   isCurrent = false,
   isSkipped = false,
 }: {
   step: any;
-  workflowStatus: string;
-  isPreview?: boolean;
+  _workflowStatus: string;
+  _isPreview?: boolean;
   isCurrent?: boolean;
   isSkipped?: boolean;
 }) {
@@ -779,17 +781,17 @@ function StepCard({
                   <Icon
                     name="remove_circle"
                     size={16}
-                    className="text-gray-400"
+                    className="text-muted-foreground"
                   />
                 )
                 : hasError
-                ? <Icon name="error" size={16} className="text-red-500" />
+                ? <Icon name="error" size={16} className="text-destructive" />
                 : hasRun && hasOutput
                 ? (
                   <Icon
                     name="check_circle"
                     size={16}
-                    className="text-green-500"
+                    className="text-success"
                   />
                 )
                 : isRunning
@@ -797,7 +799,7 @@ function StepCard({
                   <Icon
                     name="hourglass_empty"
                     size={16}
-                    className="text-blue-500 animate-spin"
+                    className="text-primary animate-spin"
                   />
                 )
                 : isCurrent
@@ -805,14 +807,14 @@ function StepCard({
                   <Icon
                     name="play_circle"
                     size={16}
-                    className="text-orange-500"
+                    className="text-warning"
                   />
                 )
                 : (
                   <Icon
                     name="radio_button_unchecked"
                     size={16}
-                    className="text-gray-400"
+                    className="text-muted-foreground"
                   />
                 )}
             </div>
@@ -864,7 +866,7 @@ function StepCard({
               <Icon
                 name="open_in_new"
                 size={16}
-                className="text-gray-500"
+                className="text-muted-foreground"
               />
             </div>
           </div>
@@ -906,18 +908,18 @@ function ParallelStepsGroup({
     <div className="w-full relative">
       {/* Flow connection from previous step */}
       <div className="flex justify-center mb-4">
-        <div className="w-0.5 h-8 bg-gray-300"></div>
+        <div className="w-0.5 h-8 bg-border"></div>
       </div>
 
       {/* Clean header */}
       <div className="flex items-center justify-center mb-6">
-        <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="flex items-center gap-3 bg-primary/10 px-4 py-2 rounded-lg border border-primary/30">
           <Icon
             name="call_split"
             size={16}
-            className="text-blue-600 dark:text-blue-400"
+            className="text-primary"
           />
-          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+          <span className="text-sm font-medium text-primary">
             Parallel Execution ({steps.length} steps)
           </span>
         </div>
@@ -1016,7 +1018,7 @@ function StepWithFlow({
   allStepIds,
   lastRunIdx,
   isWorkflowDone,
-  isLast = false,
+  _isLast = false,
 }: {
   step: any;
   contextMap: any;
@@ -1024,7 +1026,7 @@ function StepWithFlow({
   allStepIds: string[];
   lastRunIdx: number;
   isWorkflowDone: boolean;
-  isLast?: boolean;
+  _isLast?: boolean;
 }) {
   const hasRun = !!contextMap[step.id];
   const isSkipped = isWorkflowDone && !hasRun;
@@ -1118,8 +1120,8 @@ function InstanceDetailTab() {
     endedAts.length ? new Date(Math.max(...endedAts)).toISOString() : undefined,
   );
 
-  const errors = allSteps.filter((step) => contextMap[step.id]?.error).length;
-  const successes =
+  const _errors = allSteps.filter((step) => contextMap[step.id]?.error).length;
+  const _successes =
     allSteps.filter((step) =>
       contextMap[step.id]?.output && !contextMap[step.id]?.error
     ).length;

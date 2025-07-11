@@ -194,7 +194,7 @@ const gen = new Command()
   });
 
 // Main CLI
-//await checkForUpdates();
+await checkForUpdates();
 await new Command()
   .name(denoJson.name)
   .version(denoJson.version)

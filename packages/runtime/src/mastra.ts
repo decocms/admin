@@ -21,6 +21,7 @@ import { type DefaultEnv, withBindings } from "./index.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 // this is dynamically imported to avoid deno check errors
 // @ts-ignore: this is a valid import
@@ -48,7 +49,7 @@ export function createTool<
     TSchemaIn
   >,
   TExecute extends ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"] =
-  ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+    ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
 >(
   opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
@@ -173,10 +174,17 @@ export function createStep<
   });
 }
 
-export interface CreateMCPServerOptions<Env = any, TSchema extends z.ZodTypeAny = never> {
+export interface CreateMCPServerOptions<
+  Env = any,
+  TSchema extends z.ZodTypeAny = never,
+> {
   oauth?: { state?: TSchema };
-  tools?: Array<(env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createTool>>;
-  workflows?: Array<(env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createWorkflow>>;
+  tools?: Array<
+    (env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createTool>
+  >;
+  workflows?: Array<
+    (env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createWorkflow>
+  >;
 }
 
 export type Fetch<TEnv = any> = (
@@ -204,22 +212,34 @@ const State = {
   ): R => asyncLocalStorage.run(ctx, f, ...args),
 };
 
-const decoChatOAuthToolFor = (schema: z.ZodTypeAny) => {
+const decoChatOAuthToolFor = (env: DefaultEnv<any>, schema?: z.ZodTypeAny) => {
+  const jsonSchema = schema
+    ? zodToJsonSchema(schema)
+    : { type: "object", properties: {} };
   return createTool({
-    name: "DECO_CHAT_OAUTH_START",
+    id: "DECO_CHAT_OAUTH_START",
     description: "OAuth for Deco Chat",
-    inputSchema: schema,
+    inputSchema: z.object({
+      returnUrl: z.string(),
+    }),
     outputSchema: z.object({
       redirectUrl: z.string(),
     }),
-    handler: async (args, c) => {
-      const { redirectUrl } = await c.tool.execute(args);
-      return { redirectUrl };
+    execute: (args) => {
+      return Promise.resolve({
+        redirectUrl:
+          `/oauth/${env.DECO_CHAT_APP_NAME}?returnUrl=${args.context.returnUrl}&schema=${
+            encodeURIComponent(JSON.stringify(jsonSchema))
+          }`,
+      });
     },
   });
-}
+};
 
-export const createMCPServer = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
+export const createMCPServer = <
+  TEnv = any,
+  TSchema extends z.ZodTypeAny = never,
+>(
   options: CreateMCPServerOptions<TEnv, TSchema>,
 ): Fetch<TEnv & DefaultEnv<TSchema>> => {
   let server: McpServer | null = null;
@@ -234,10 +254,13 @@ export const createMCPServer = <TEnv = any, TSchema extends z.ZodTypeAny = never
       env as unknown as TEnv & DefaultEnv<TSchema>,
     );
 
-    const tools = options.tools?.map((tool) => tool(bindings));
+    const tools = options.tools?.map((tool) => tool(bindings)) ?? [];
     const workflows = options.workflows?.map((workflow) => workflow(bindings));
+    const oauthStateSchema = options.oauth?.state;
 
-    for (const tool of tools ?? []) {
+    tools.push(decoChatOAuthToolFor(bindings, oauthStateSchema));
+
+    for (const tool of tools) {
       server.registerTool(
         tool.id,
         {

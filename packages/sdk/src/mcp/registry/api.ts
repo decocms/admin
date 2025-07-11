@@ -238,10 +238,12 @@ export const getRegistryApp = createTool({
   handler: async (ctx, c) => {
     console.log({ ctx });
     c.resourceAccess.grant(); // this method is public
-    let data: QueryResult<
-      typeof DECO_CHAT_APPS_REGISTRY_TABLE,
-      typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
-    > | null = null;
+    let data:
+      | QueryResult<
+        typeof DECO_CHAT_APPS_REGISTRY_TABLE,
+        typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
+      >
+      | null = null;
 
     if ("id" in ctx && ctx.id) {
       const result = await c.db
@@ -252,7 +254,6 @@ export const getRegistryApp = createTool({
 
       if (result.error) throw result.error;
       data = result.data;
-
     } else if ("name" in ctx && ctx.name) {
       const [scopeName, appName] = ctx.name.slice(1).split("/");
       const result = await c.db

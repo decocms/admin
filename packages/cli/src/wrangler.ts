@@ -87,10 +87,32 @@ async function ensureEnvVarsGitIgnore(
   }
 }
 
+async function addZodDependency(projectRoot: string) {
+  const packageJsonPath = join(projectRoot, "package.json");
+
+  const packageJsonContent = await Deno.readTextFile(packageJsonPath);
+  const packageJson = JSON.parse(packageJsonContent);
+
+  // Ensure dependencies object exists
+  if (!packageJson.dependencies) {
+    packageJson.dependencies = {};
+  }
+
+  // Add or update zod dependency
+  packageJson.dependencies.zod = "^3.24.3";
+
+  // Write back to file with proper formatting
+  await Deno.writeTextFile(
+    packageJsonPath,
+    JSON.stringify(packageJson, null, 2) + "\n",
+  );
+}
+
 export async function ensureDevEnvironment() {
   const projectRoot = getProjectRoot();
   await ensureEnvVarsGitIgnore(projectRoot);
   const env = await getEnvVars(projectRoot);
   await writeEnvVars(projectRoot, env);
   await addWorkflowDO();
+  await addZodDependency(projectRoot);
 }

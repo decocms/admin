@@ -565,8 +565,12 @@ Important Notes:
       : undefined;
 
     const issuer = await JwtIssuer.forKeyPair(keyPair);
+    const appName = `@${
+      wranglerConfig?.scope ?? c.workspace.slug
+    }/${scriptSlug}`;
+
     const token = await issuer.issue({
-      sub: `app:${scriptSlug}`,
+      sub: `app:${appName}`,
       aud: workspace,
     });
 
@@ -575,6 +579,7 @@ Important Notes:
       DECO_CHAT_SCRIPT_SLUG: scriptSlug,
       DECO_CHAT_API_TOKEN: token,
       DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
+      DECO_CHAT_APP_NAME: appName,
     };
 
     await Promise.all(

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { compile } from "json-schema-to-typescript";
-import { generateName } from "json-schema-to-typescript/dist/src/utils.js"
+import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import type { DecoBinding } from "./config.ts";
 import { createWorkspaceClient } from "./mcp.ts";
 interface Options {
@@ -130,6 +130,7 @@ function isValidJavaScriptPropertyName(name: string): boolean {
   return !RESERVED_KEYWORDS.includes(name);
 }
 
+type KeyInfo = { type: string; key: string };
 const DEFAULT_BINDINGS: DecoBinding[] = [{
   name: "DECO_CHAT_WORKSPACE_API",
   integration_id: "i:workspace-management",
@@ -148,9 +149,8 @@ export const genEnv = async ({ workspace, local, bindings }: Options) => {
   const props = await Promise.all(
     [...bindings, ...DEFAULT_BINDINGS].map(async (binding) => {
       let connection: unknown;
-      let isInstance = false;
+      let stateKey: KeyInfo | undefined;
       if ("integration_id" in binding) {
-        isInstance = true;
         const integration = await client.callTool({
           name: "INTEGRATIONS_GET",
           arguments: {
@@ -159,11 +159,12 @@ export const genEnv = async ({ workspace, local, bindings }: Options) => {
         }) as { structuredContent: { connection: unknown } };
         connection = integration.structuredContent.connection;
       } else {
+        stateKey = { type: binding.integration_name, key: binding.name };
         const app = await client.callTool({
           name: "REGISTRY_GET_APP",
           arguments: {
             name: binding.integration_name,
-          }
+          },
         }) as { structuredContent: { connection: unknown } };
         connection = app.structuredContent.connection;
       }
@@ -239,29 +240,58 @@ export const genEnv = async ({ workspace, local, bindings }: Options) => {
       return [
         binding.name,
         compiledTools,
-        isInstance
+        stateKey,
         // propName, toolName, inputType, outputType
-      ] as [string, [string, string, string | undefined][], boolean];
+      ] as [
+        string,
+        [string, string, string | undefined][],
+        KeyInfo | undefined,
+      ];
     }),
   );
 
   return await format(`
     // deno-lint-ignore-file no-empty-interface
 ${tsTypes}
+   // this should be added to your package.json
+  import { z } from "zod";
+
+  export const StateSchema = z.object({
+    ${
+    props.filter((p) => p !== null && p[2] !== undefined).map((prop) => {
+      const [_, __, stateKey] = prop as [
+        string,
+        [string, string, string | undefined][],
+        KeyInfo | undefined,
+      ];
+      return `${stateKey!.key}: z.object({
+        value: z.string(),
+        __type: z.literal("${stateKey!.type}"),
+      })`;
+    }).join(",\n")
+  }
+  })
+
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
-    ${props.filter((p) => p !== null).map(([propName, tools, isInstance]) => {
-    return `${propName}: ${!isInstance ? "(integrationId:string, args?: { DECO_CHAT_WORKSPACE: string, DECO_CHAT_API_TOKEN: string }) => " : ""} {
-        ${tools.map(([toolName, inputName, outputName]) => {
-      return `
-          ${isValidJavaScriptPropertyName(toolName) ? toolName : [`"${toolName}"`]}: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
+    ${
+    props.filter((p) => p !== null).map(([propName, tools]) => {
+      return `${propName}: {
+        ${
+        tools.map(([toolName, inputName, outputName]) => {
+          return `
+          ${
+            isValidJavaScriptPropertyName(toolName)
+              ? toolName
+              : [`"${toolName}"`]
+          }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
           `;
-    }).join("")
+        }).join("")
       }
       };`;
-  }).join("")
-    }
+    }).join("")
+  }
   }
   `);
 };

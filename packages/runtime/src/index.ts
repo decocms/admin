@@ -1,8 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import type {
-  ExecutionContext
-} from "@cloudflare/workers-types";
-import { z } from "zod";
+import type { ExecutionContext } from "@cloudflare/workers-types";
+import type { z } from "zod";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
@@ -11,11 +9,13 @@ import { Workflow } from "./workflow.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
-  type ToolBinder
+  type ToolBinder,
 } from "./mcp.ts";
+import { decodeJwt } from "jose";
 
-export interface DefaultEnv<TSchema extends z.ZodTypeAny = never> {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_CHAT_STATE: TSchema extends never ? undefined : z.infer<TSchema>;
+  DECO_CHAT_APP_NAME: string;
   DECO_CHAT_SCRIPT_SLUG: string;
   DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
@@ -66,7 +66,7 @@ export const WorkersMCPBindings = {
 export interface UserDefaultExport<
   TUserEnv = Record<string, unknown>,
   TSchema extends z.ZodTypeAny = never,
-  TEnv = TUserEnv & { STATE: TSchema extends never ? undefined : z.infer<TSchema> }
+  TEnv = TUserEnv & DefaultEnv<TSchema>,
 > extends CreateMCPServerOptions<TEnv, TSchema> {
   fetch?: (
     req: Request,
@@ -80,12 +80,18 @@ interface BindingTypeMap {
   mcp: MCPBinding;
 }
 
+export interface RequestContext {
+  state?: Record<string, unknown>;
+  token?: string;
+  workspace?: string;
+}
 
 // 2. Map binding type to its creator function
 type CreatorByType = {
   [K in keyof BindingTypeMap]: (
     value: BindingTypeMap[K],
-    env: DefaultEnv,
+    env: DefaultEnv<any>,
+    ctx?: RequestContext,
   ) => unknown;
 };
 
@@ -94,7 +100,7 @@ const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
 };
 
-const withDefaultBindings = (env: DefaultEnv) => {
+const withDefaultBindings = (env: DefaultEnv<any>) => {
   const client = workspaceClient(env);
   env["DECO_CHAT_API"] = MCPClient;
   env["DECO_CHAT_WORKSPACE_API"] = client;
@@ -108,14 +114,25 @@ const withDefaultBindings = (env: DefaultEnv) => {
   };
 };
 
-export const withBindings = <TEnv>(_env: TEnv): TEnv => {
-  const env = _env as DefaultEnv;
+export const withBindings = <TEnv>(_env: TEnv, token?: string): TEnv => {
+  const env = _env as DefaultEnv<any>;
+  const decoded = token ? decodeJwt(token) : undefined;
+  const ctx = decoded
+    ? {
+      state: decoded.state as Record<string, unknown>,
+      token,
+      workspace: decoded.aud as string,
+    }
+    : undefined;
+
+  env.DECO_CHAT_STATE = ctx?.state ?? {};
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](
       binding as any,
       env,
+      ctx,
     );
   }
 
@@ -134,19 +151,27 @@ const getReqToken = (req: Request) => {
 
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
-): UserDefaultExport<TEnv, TSchema> & { Workflow: ReturnType<typeof Workflow> } => {
-  const server = createMCPServer<TEnv>(userFns);
+): UserDefaultExport<TEnv, TSchema> & {
+  Workflow: ReturnType<typeof Workflow>;
+} => {
+  const server = createMCPServer<TEnv, TSchema>(userFns);
   return {
     Workflow: Workflow(userFns.workflows),
-    fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
+    fetch: (
+      req: Request,
+      env: TEnv & DefaultEnv<TSchema>,
+      ctx: ExecutionContext,
+    ) => {
       const url = new URL(req.url);
       if (url.pathname === "/mcp") {
         return server(req, env, ctx);
       }
-      return userFns.fetch?.(req, withBindings(env) as any, ctx) ||
+      return userFns.fetch?.(
+        req,
+        withBindings(env, getReqToken(req)) as any,
+        ctx,
+      ) ||
         new Response("Not found", { status: 404 });
     },
   };
 };
-
-

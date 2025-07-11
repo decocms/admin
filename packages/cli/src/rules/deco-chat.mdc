@@ -1,15 +1,9 @@
-// Deno does not allow files to be published to JSR. Then, I tried using import with { type: "text" } but it is still not very well supported.
-// The workaround is to stringify the file content in a comment and parse it back in the getMDC function.
-
-const HEADER = `
 ---
 description: Comprehensive guide for developing applications on the deco.chat platform, covering tools, workflows, and best practices
 globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
 ---
-`;
 
-/**
 # deco.chat Platform Development Rules
 
 ## 🎯 Overview
@@ -717,13 +711,3 @@ Remember the core principle: **Each workflow step should invoke only ONE tool, a
 - **Performance**: Optimal execution patterns
 
 Start simple, build incrementally, and leverage the power of deco.chat's integration ecosystem to create powerful automation workflows!
- */
-
-export const getMDC = async () => {
-  const file = await Deno.readTextFile(new URL(import.meta.url).pathname);
-
-  // get the comment block
-  const commentBlock = file.match(/(\/\*\*[\s\S]*?\*\/)/)?.[0] ?? "";
-
-  return `${HEADER}\n\n${commentBlock.trim()}`;
-};

@@ -5,7 +5,6 @@
  */
 import { parse, stringify } from "smol-toml";
 import { z } from "zod";
-import { getMDC } from "./rules/deco-chat.mdc.ts";
 import { readSession } from "./session.ts";
 import type { MCPConfig } from "./utils/prompt-ide-setup.ts";
 
@@ -268,7 +267,11 @@ export async function getMCPConfig(
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
 export const getRulesConfig = async () => {
-  const content = await getMDC();
+  const content = await fetch(
+    // "https://raw.githubusercontent.com/deco-cx/chat/refs/heads/main/packages/cli/src/rules/deco-chat.mdc",
+    // uncomment to use the local rules
+    import.meta.resolve("./rules/deco-chat.mdc"),
+  ).then((res) => res.text());
 
   return {
     "deco-chat.mdc": content,

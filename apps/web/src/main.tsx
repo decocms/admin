@@ -300,6 +300,7 @@ const router = createBrowserRouter([
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },
+          { path: "workflows/:workflowName", Component: WorkflowDetailPage },
           {
             path: "workflows/:workflowName/instances/:instanceId",
             Component: WorkflowDetailPage,

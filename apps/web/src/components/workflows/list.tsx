@@ -1,20 +1,10 @@
-import { useWorkflows } from "@deco/sdk";
+import { useAllUniqueWorkflows } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@deco/ui/components/pagination.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -24,45 +14,61 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-
-// Instead, define the Workflow type here to match the API response
-interface Workflow {
-  workflowName: string;
-  runId: string;
-  createdAt: number;
-  updatedAt: number;
-  resourceId: string | null;
-  status: string;
-}
+import type { UniqueWorkflow, WorkflowRun } from "./types.ts";
+import { 
+  transformToUniqueWorkflows, 
+  sortUniqueWorkflows, 
+  formatStatus, 
+  getStatusBadgeVariant 
+} from "./utils.ts";
 
 function WorkflowsCardView(
   { workflows, onClick }: {
-    workflows: Workflow[];
-    onClick: (workflow: Workflow) => void;
+    workflows: UniqueWorkflow[];
+    onClick: (workflow: UniqueWorkflow) => void;
   },
 ) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
       {workflows.map((workflow) => (
         <Card
-          key={workflow.runId}
+          key={workflow.name}
           className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
           onClick={() => onClick(workflow)}
         >
           <CardContent className="p-0">
             <div className="grid grid-cols-[1fr_min-content] gap-4 items-start p-4">
-              <div className="flex flex-col gap-0 min-w-0">
+              <div className="flex flex-col gap-2 min-w-0">
                 <div className="text-sm font-semibold truncate">
-                  {workflow.workflowName}
+                  {workflow.name}
                 </div>
-                <div className="text-sm text-muted-foreground line-clamp-1">
-                  Created: {new Date(workflow.createdAt).toLocaleString()}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Icon name="play_circle" size={12} />
+                  <span>{workflow.totalRuns} runs</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={getStatusBadgeVariant(workflow.lastRun.status)} className="text-xs">
+                    {formatStatus(workflow.lastRun.status)}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    Last run
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Icon name="check_circle" size={12} className="text-green-500" />
+                  <span>{workflow.successCount}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Icon name="error" size={12} className="text-red-500" />
+                  <span>{workflow.errorCount}</span>
                 </div>
               </div>
             </div>
             <div className="px-4 py-3 border-t border-border">
               <span className="text-xs text-muted-foreground">
-                Modified: {new Date(workflow.updatedAt).toLocaleString()}
+                Last run: {new Date(workflow.lastRun.date).toLocaleString()}
               </span>
             </div>
           </CardContent>
@@ -74,59 +80,75 @@ function WorkflowsCardView(
 
 function WorkflowsTableView(
   { workflows, onClick }: {
-    workflows: Workflow[];
-    onClick: (workflow: Workflow) => void;
+    workflows: UniqueWorkflow[];
+    onClick: (workflow: UniqueWorkflow) => void;
   },
 ) {
-  const [sortKey, setSortKey] = useState<string>("workflowName");
+  const [sortKey, setSortKey] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  function getSortValue(row: Workflow, key: string): string {
-    if (key === "createdAt") return row.createdAt.toString() || "";
-    if (key === "updatedAt") return row.updatedAt.toString() || "";
-    if (key === "status") return row.status || "";
-    return row.workflowName?.toLowerCase() || "";
-  }
+  const sortedWorkflows = useMemo(() => {
+    return sortUniqueWorkflows(workflows, sortKey, sortDirection);
+  }, [workflows, sortKey, sortDirection]);
 
-  const sortedWorkflows = [...workflows].sort((a, b) => {
-    const aVal = getSortValue(a, sortKey);
-    const bVal = getSortValue(b, sortKey);
-    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
-
-  const columns: TableColumn<Workflow>[] = [
+  const columns: TableColumn<UniqueWorkflow>[] = [
     {
-      id: "workflowName",
-      header: "Name",
+      id: "name",
+      header: "Workflow Name",
       render: (workflow) => (
-        <span className="font-semibold">{workflow.workflowName}</span>
+        <span className="font-semibold">{workflow.name}</span>
       ),
       sortable: true,
     },
     {
-      id: "status",
-      header: "Status",
-      render: (workflow) => <span className="text-xs">{workflow.status}</span>,
-      sortable: true,
-    },
-    {
-      id: "createdAt",
-      header: "Created",
+      id: "totalRuns",
+      header: "Total Runs",
       render: (workflow) => (
-        <span className="text-xs">
-          {new Date(workflow.createdAt).toLocaleString()}
-        </span>
+        <div className="flex items-center gap-2">
+          <Icon name="play_circle" size={14} className="text-muted-foreground" />
+          <span className="text-sm">{workflow.totalRuns}</span>
+        </div>
       ),
       sortable: true,
     },
     {
-      id: "updatedAt",
-      header: "Modified",
+      id: "lastStatus",
+      header: "Last Status",
+      render: (workflow) => (
+        <Badge variant={getStatusBadgeVariant(workflow.lastRun.status)}>
+          {formatStatus(workflow.lastRun.status)}
+        </Badge>
+      ),
+      sortable: true,
+    },
+    {
+      id: "successRate",
+      header: "Success Rate",
+      render: (workflow) => {
+        const rate = workflow.totalRuns > 0 ? (workflow.successCount / workflow.totalRuns) * 100 : 0;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-sm">{rate.toFixed(1)}%</span>
+            <div className="flex gap-1">
+              <span className="text-xs text-green-600">
+                {workflow.successCount}
+              </span>
+              <span className="text-xs text-muted-foreground">/</span>
+              <span className="text-xs text-red-600">
+                {workflow.errorCount}
+              </span>
+            </div>
+          </div>
+        );
+      },
+      sortable: true,
+    },
+    {
+      id: "lastRun",
+      header: "Last Run",
       render: (workflow) => (
         <span className="text-xs">
-          {new Date(workflow.updatedAt).toLocaleString()}
+          {new Date(workflow.lastRun.date).toLocaleString()}
         </span>
       ),
       sortable: true,
@@ -158,29 +180,28 @@ function WorkflowsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
-  const page = Number(searchParams.get("page") || 1);
-  const per_page = Number(searchParams.get("per_page") || 10);
-  const { data, refetch, isRefetching } = useWorkflows(page, per_page);
+  const { data, refetch, isRefetching } = useAllUniqueWorkflows();
   const navigateWorkspace = useNavigateWorkspace();
 
-  const workflows: Workflow[] = data.workflows as Workflow[];
+  const workflowRuns: WorkflowRun[] = data.workflows as WorkflowRun[];
+  
+  // Transform runs into unique workflows
+  const uniqueWorkflows = useMemo(() => {
+    return transformToUniqueWorkflows(workflowRuns);
+  }, [workflowRuns]);
+  
+  // Filter workflows by name
   const filteredWorkflows = useMemo(() => {
-    if (!filter) return workflows;
-    return workflows.filter((w) =>
-      w.workflowName.toLowerCase().includes(filter.toLowerCase())
+    if (!filter) return uniqueWorkflows;
+    return uniqueWorkflows.filter((w) =>
+      w.name.toLowerCase().includes(filter.toLowerCase())
     );
-  }, [workflows, filter]);
+  }, [uniqueWorkflows, filter]);
 
-  function handlePageChange(newPage: number) {
-    setSearchParams({ page: String(newPage), per_page: String(per_page) });
-  }
 
-  function handleWorkflowClick(workflow: Workflow) {
-    navigateWorkspace(
-      `/workflows/${
-        encodeURIComponent(workflow.workflowName)
-      }/instances/${workflow.runId}`,
-    );
+
+  function handleWorkflowClick(workflow: UniqueWorkflow) {
+    navigateWorkspace(`/workflows/${encodeURIComponent(workflow.name)}`);
   }
 
   return (
@@ -190,7 +211,7 @@ function WorkflowsTab() {
           <div className="flex items-center gap-2 mb-4">
             <ListPageHeader
               input={{
-                placeholder: "Search workflow",
+                placeholder: "Search workflows",
                 value: filter,
                 onChange: (e) => setFilter(e.target.value),
               }}
@@ -223,69 +244,32 @@ function WorkflowsTab() {
             ? (
               <div className="flex flex-1 min-h-[700px] items-center justify-center">
                 <EmptyState
-                  icon="flowchart"
-                  title="No workflows yet"
-                  description="Create and deploy a workflow to see it here."
+                  icon="work"
+                  title="No workflows found"
+                  description={
+                    filter
+                      ? "No workflows match your search criteria."
+                      : "No workflows have been created yet."
+                  }
                 />
               </div>
             )
-            : viewMode === "cards"
-            ? (
-              <WorkflowsCardView
-                workflows={filteredWorkflows}
-                onClick={handleWorkflowClick}
-              />
-            )
             : (
-              <WorkflowsTableView
-                workflows={filteredWorkflows}
-                onClick={handleWorkflowClick}
-              />
+              viewMode === "cards"
+                  ? (
+                    <WorkflowsCardView
+                      workflows={filteredWorkflows}
+                      onClick={handleWorkflowClick}
+                    />
+                  )
+                  : (
+                    <WorkflowsTableView
+                      workflows={filteredWorkflows}
+                      onClick={handleWorkflowClick}
+                    />
+                  )
             )}
         </div>
-        {filteredWorkflows.length > 0 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (page > 1) handlePageChange(page - 1);
-                    }}
-                    aria-disabled={page <= 1}
-                    tabIndex={page <= 1 ? -1 : 0}
-                    className={page <= 1
-                      ? "opacity-50 pointer-events-none"
-                      : ""}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <span className="px-2 text-sm">Page {page}</span>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (filteredWorkflows.length >= per_page) {
-                        handlePageChange(
-                          page + 1,
-                        );
-                      }
-                    }}
-                    aria-disabled={filteredWorkflows.length < per_page}
-                    tabIndex={filteredWorkflows.length < per_page ? -1 : 0}
-                    className={filteredWorkflows.length < per_page
-                      ? "opacity-50 pointer-events-none"
-                      : ""}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
       </div>
     </ScrollArea>
   );
@@ -305,13 +289,7 @@ function WorkflowListPage() {
     <PageLayout
       hideViewsButton
       tabs={tabs}
-      breadcrumb={
-        <DefaultBreadcrumb
-          items={[
-            { label: "Workflows", link: "/workflows" },
-          ]}
-        />
-      }
+      breadcrumb={<DefaultBreadcrumb items={[{ label: "Workflows" }]} />}
     />
   );
 }

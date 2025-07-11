@@ -219,7 +219,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
         <BreadcrumbList>
           {isMobile
             ? (
-              <BreadcrumbItem key={items.at(-1)?.link}>
+              <BreadcrumbItem key={`mobile-${items.at(-1)?.link || 'last'}`}>
                 <BreadcrumbPage className="inline-flex items-center gap-2">
                   {items.at(-1)?.label}
                 </BreadcrumbPage>
@@ -231,7 +231,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
 
               if (isLast) {
                 return (
-                  <BreadcrumbItem key={item.link}>
+                  <BreadcrumbItem key={`last-${item.link || index}`}>
                     <BreadcrumbPage className="inline-flex items-center gap-2">
                       {item.label}
                     </BreadcrumbPage>
@@ -240,7 +240,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
               }
 
               return (
-                <Fragment key={item.link}>
+                <Fragment key={`${item.link}-${index}`}>
                   <BreadcrumbItem>
                     <BreadcrumbLink
                       asChild

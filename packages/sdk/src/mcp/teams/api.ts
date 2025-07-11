@@ -81,6 +81,18 @@ const themeVariablesSchema = z.object({
   "--destructive-foreground": z.string().optional().describe(
     "Text color on destructive elements (OKLCH/hex format)",
   ),
+  "--success": z.string().optional().describe(
+    "Color for success states and positive actions (OKLCH/hex format)",
+  ),
+  "--success-foreground": z.string().optional().describe(
+    "Text color on success elements (OKLCH/hex format)",
+  ),
+  "--warning": z.string().optional().describe(
+    "Color for warning states and caution indicators (OKLCH/hex format)",
+  ),
+  "--warning-foreground": z.string().optional().describe(
+    "Text color on warning elements (OKLCH/hex format)",
+  ),
   "--border": z.string().optional().describe(
     "Border color for elements (OKLCH/hex format)",
   ),

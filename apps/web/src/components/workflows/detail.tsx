@@ -16,6 +16,7 @@ import { useParams } from "react-router";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import WorkflowOverviewPage from "./workflow-overview.tsx";
+import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 
 function tryParseJson(str: unknown): unknown {
   if (typeof str !== "string") {
@@ -1209,63 +1210,12 @@ function InstanceDetailTab() {
           </Card>
           <h2 className="text-lg font-semibold mb-4">Steps</h2>
 
-          {/* Workflow flow visualization */}
-          <div className="relative">
-            {/* Start indicator */}
-            <div className="flex justify-center mb-4">
-              <div className="w-3 h-3 bg-success rounded-full border-2 border-white shadow-lg">
-              </div>
-            </div>
-
-            {processedSteps.length > 0
-              ? (
-                processedSteps.map((step, i) => {
-                  const isLast = i === processedSteps.length - 1;
-
-                  if (step.isParallel) {
-                    // Render parallel steps group with flow connections
-                    return (
-                      <ParallelStepsGroup
-                        key={`parallel-${i}`}
-                        steps={step.steps}
-                        contextMap={contextMap}
-                        workflowStatus={status}
-                        allStepIds={allStepIds}
-                        lastRunIdx={lastRunIdx}
-                        isWorkflowDone={isWorkflowDone}
-                      />
-                    );
-                  } else {
-                    // Render single step with flow connections
-                    return (
-                      <StepWithFlow
-                        key={step.id}
-                        step={step}
-                        contextMap={contextMap}
-                        workflowStatus={status}
-                        allStepIds={allStepIds}
-                        lastRunIdx={lastRunIdx}
-                        isWorkflowDone={isWorkflowDone}
-                        _isLast={isLast}
-                      />
-                    );
-                  }
-                })
-              )
-              : (
-                <div className="text-muted-foreground text-center py-8">
-                  No steps found.
-                </div>
-              )}
-
-            {/* End indicator */}
-            {processedSteps.length > 0 && (
-              <div className="flex justify-center mt-4">
-                <div className="w-3 h-3 bg-muted-foreground rounded-full border-2 border-white shadow-lg">
-                </div>
-              </div>
-            )}
-          </div>
+          {/* NEW: React Flow-based workflow visualization */}
+          <WorkflowFlowVisualization
+            processedSteps={processedSteps}
+            contextMap={contextMap}
+            workflowStatus={status}
+          />
         </div>
       </div>
     </ScrollArea>

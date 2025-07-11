@@ -102,7 +102,7 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
             </div>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-warning-foreground dark:bg-warning/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-warning/10 dark:bg-warning/20">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-warning"></div>
                 <span className="text-sm font-medium">Running</span>

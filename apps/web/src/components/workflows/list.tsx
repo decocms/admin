@@ -98,8 +98,8 @@ function WorkflowsTableView(
     onClick: (workflow: UniqueWorkflow) => void;
   },
 ) {
-  const [sortKey, setSortKey] = useState<string>("name");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<string>("lastRun");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const sortedWorkflows = useMemo(() => {
     return sortUniqueWorkflows(workflows, sortKey, sortDirection);
@@ -220,6 +220,11 @@ function WorkflowsTab() {
     );
   }, [uniqueWorkflows, filter]);
 
+  // Sort workflows by default (Last Run, newest first) for card view consistency
+  const sortedAndFilteredWorkflows = useMemo(() => {
+    return sortUniqueWorkflows(filteredWorkflows, "lastRun", "desc");
+  }, [filteredWorkflows]);
+
   function handleWorkflowClick(workflow: UniqueWorkflow) {
     navigateWorkspace(`/workflows/${encodeURIComponent(workflow.name)}`);
   }
@@ -261,7 +266,7 @@ function WorkflowsTab() {
           </div>
         </div>
         <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {filteredWorkflows.length === 0
+          {sortedAndFilteredWorkflows.length === 0
             ? (
               <div className="flex flex-1 min-h-[700px] items-center justify-center">
                 <EmptyState
@@ -277,13 +282,13 @@ function WorkflowsTab() {
               viewMode === "cards"
                 ? (
                   <WorkflowsCardView
-                    workflows={filteredWorkflows}
+                    workflows={sortedAndFilteredWorkflows}
                     onClick={handleWorkflowClick}
                   />
                 )
                 : (
                   <WorkflowsTableView
-                    workflows={filteredWorkflows}
+                    workflows={sortedAndFilteredWorkflows}
                     onClick={handleWorkflowClick}
                   />
                 )

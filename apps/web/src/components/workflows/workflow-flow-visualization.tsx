@@ -1,0 +1,781 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  type Node,
+  type Edge,
+  type Connection,
+  MiniMap,
+  Panel,
+  Handle,
+  Position,
+  MarkerType,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+
+// Start Node Component
+function StartNode() {
+  return (
+    <div className="flex items-center justify-center w-16 h-16 bg-success rounded-full border-2 border-success-foreground shadow-lg relative">
+      <Icon name="play_arrow" size={24} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          bottom: -8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#22c55e',
+          border: '2px solid #ffffff',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          zIndex: 10,
+        }}
+      />
+    </div>
+  );
+}
+
+// End Node Component
+function EndNode() {
+  return (
+    <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full border-2 border-muted-foreground shadow-lg relative">
+      <Icon name="stop" size={24} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          top: -8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#6b7280',
+          border: '2px solid #ffffff',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          zIndex: 10,
+        }}
+      />
+    </div>
+  );
+}
+
+// Utility functions
+function formatStepId(id: string): string {
+  return id
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function formatDuration(start?: string, end?: string): string {
+  if (!start || !end) return "-";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 0) return "-";
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m ${s % 60}s`;
+}
+
+function getStepStatus(stepData: any, workflowStatus: string): string {
+  if (!stepData) return "pending";
+  if (stepData.error) return "failed";
+  if (stepData.output && !stepData.error) return "completed";
+  if (stepData.startedAt && !stepData.endedAt) return "running";
+  if (!stepData.startedAt && !stepData.endedAt) return "pending";
+  if (stepData.endedAt && !stepData.output && !stepData.error) return "skipped";
+  // Fallback: if workflow is done but step has no data, mark as skipped
+  if (
+    (workflowStatus === "failed" || workflowStatus === "completed" ||
+      workflowStatus === "success") && !stepData.startedAt
+  ) {
+    return "skipped";
+  }
+  return "pending";
+}
+
+function getStatusBadgeVariant(
+  status: string,
+): "default" | "destructive" | "secondary" | "outline" | "success" {
+  if (status === "success" || status === "completed") return "success";
+  if (status === "failed" || status === "errored") return "destructive";
+  if (status === "running" || status === "in_progress") return "secondary";
+  return "outline";
+}
+
+// Step Detail Modal Component
+function StepDetailModal({
+  step,
+  isOpen,
+  onClose,
+}: {
+  step: any;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const stepTitle = formatStepId(step?.data?.label || "");
+  const hasError = step?.data?.stepData?.error;
+  const hasOutput = step?.data?.stepData?.output;
+  const hasInput = step?.data?.stepData?.input;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="!max-w-[85vw] !w-[85vw] max-h-[90vh] overflow-hidden flex flex-col sm:!max-w-[85vw]">
+        <DialogHeader className="flex-shrink-0">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-xl font-semibold">
+                {stepTitle}
+              </DialogTitle>
+              <Badge variant={getStatusBadgeVariant(step?.data?.status || "")} className="text-sm">
+                {step?.data?.status}
+              </Badge>
+              {step?.data?.duration && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Icon name="timer" size={16} />
+                  <span>{step.data.duration}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="space-y-6 py-4">
+            {hasError && (
+              <div>
+                <h3 className="text-lg font-semibold text-destructive mb-3 flex items-center gap-2">
+                  <Icon name="error" size={20} />
+                  Error
+                </h3>
+                <Card className="border-destructive/30">
+                  <CardContent className="p-4">
+                    <pre className="whitespace-pre-wrap break-words text-sm">
+                      {JSON.stringify(step.data.stepData.error, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {hasOutput && (
+              <div>
+                <h3 className="text-lg font-semibold text-success mb-3 flex items-center gap-2">
+                  <Icon name="check_circle" size={20} />
+                  Output
+                </h3>
+                <Card className="border-success/30">
+                  <CardContent className="p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
+                    <pre className="whitespace-pre-wrap break-words text-sm">
+                      {JSON.stringify(step.data.stepData.output, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {hasInput && (
+              <div>
+                <h3 className="text-lg font-semibold text-primary mb-3 flex items-center gap-2">
+                  <Icon name="input" size={20} />
+                  Input
+                </h3>
+                <Card className="border-primary/30">
+                  <CardContent className="p-4">
+                    <pre className="whitespace-pre-wrap break-words text-sm">
+                      {JSON.stringify(step.data.stepData.input, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Custom Node Component for React Flow
+function WorkflowStepNode({ data, selected }: { data: any; selected?: boolean }) {
+  let cardClasses = "relative transition-all duration-200 cursor-pointer hover:shadow-md";
+  let borderClasses = "";
+  let bgClasses = "";
+
+  if (data.status === "skipped") {
+    cardClasses += " opacity-60";
+    borderClasses = "border-muted";
+    bgClasses = "bg-muted/30";
+  } else if (data.status === "failed") {
+    borderClasses = "border-destructive";
+    bgClasses = "bg-destructive/10";
+  } else if (data.status === "running") {
+    borderClasses = "border-primary";
+    bgClasses = "bg-primary/10";
+  } else if (data.status === "completed") {
+    borderClasses = "border-success";
+    bgClasses = "bg-success/10";
+  } else {
+    borderClasses = "border-muted";
+    bgClasses = "bg-card";
+  }
+
+  if (selected) {
+    borderClasses = "border-primary border-2";
+  }
+
+  const statusIcon = () => {
+    switch (data.status) {
+      case "completed":
+        return <Icon name="check_circle" size={16} />;
+      case "failed":
+        return <Icon name="error" size={16} />;
+      case "running":
+        return <Icon name="hourglass_empty" size={16} />;
+      case "skipped":
+        return <Icon name="remove_circle" size={16} />;
+      default:
+        return <Icon name="radio_button_unchecked" size={16} />;
+    }
+  };
+
+  return (
+    <div className="relative">
+      {/* Input Handle - positioned absolutely to ensure visibility */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          top: -8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#3b82f6',
+          border: '2px solid #ffffff',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          zIndex: 10,
+        }}
+      />
+      
+      <Card
+        className={`${cardClasses} ${borderClasses} ${bgClasses} w-48 min-h-[80px]`}
+        onClick={data.onClick}
+      >
+        <CardContent className="p-3 flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex-shrink-0">{statusIcon()}</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm truncate">{data.label}</h3>
+              <Badge
+                variant={getStatusBadgeVariant(data.status)}
+                className="text-xs mt-1"
+              >
+                {data.status}
+              </Badge>
+            </div>
+          </div>
+          
+          {data.duration && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <Icon name="timer" size={12} />
+              {data.duration}
+            </div>
+          )}
+          
+          <div className="text-xs text-muted-foreground mt-1">
+            Click to view details
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Output Handle - positioned absolutely to ensure visibility */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          bottom: -8,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#3b82f6',
+          border: '2px solid #ffffff',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          zIndex: 10,
+        }}
+      />
+    </div>
+  );
+}
+
+// Custom Node Types
+const nodeTypes = {
+  workflowStep: WorkflowStepNode,
+  startNode: StartNode,
+  endNode: EndNode,
+};
+
+// Layout algorithm with improved parallel step alignment
+function calculateLayout(
+  steps: any[],
+  contextMap: any,
+  workflowStatus: string,
+  onNodeClick: (node: any) => void,
+): { nodes: Node[]; edges: Edge[] } {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  
+  let yPosition = 100;
+  const xCenterPosition = 400; // Increased center position for better spacing
+  const verticalSpacing = 180;
+  const horizontalSpacing = 280;
+  const nodeWidth = 192; // 48 * 4 = 192px (w-48)
+  const startEndNodeWidth = 64; // 16 * 4 = 64px (w-16)
+
+  // Add Start Node - properly centered
+  nodes.push({
+    id: 'start-node',
+    type: 'startNode',
+    position: {
+      x: xCenterPosition - startEndNodeWidth / 2,
+      y: yPosition - 80,
+    },
+    data: { label: 'Start' },
+    deletable: false,
+    selectable: false,
+  });
+
+  yPosition += 50; // Add some space after start node
+
+  steps.forEach((step, index) => {
+    if (step.isParallel) {
+      // Handle parallel steps with proper flexbox-like alignment
+      const parallelSteps = step.steps;
+      const totalWidth = parallelSteps.length * nodeWidth + (parallelSteps.length - 1) * (horizontalSpacing - nodeWidth);
+      const startX = xCenterPosition - totalWidth / 2;
+
+      parallelSteps.forEach((parallelStep: any, parallelIndex: number) => {
+        const stepData = contextMap[parallelStep.id];
+        const status = getStepStatus(stepData, workflowStatus);
+        const duration = formatDuration(
+          stepData?.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
+          stepData?.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+        );
+
+        const nodeData = {
+          label: formatStepId(parallelStep.id),
+          status: status,
+          stepData,
+          duration,
+          isParallel: true,
+          onClick: () => onNodeClick({ id: parallelStep.id, data: { label: formatStepId(parallelStep.id), status, stepData, duration } }),
+        };
+
+        // Calculate position with proper spacing
+        const nodeX = startX + parallelIndex * horizontalSpacing;
+
+        nodes.push({
+          id: parallelStep.id,
+          type: "workflowStep",
+          position: {
+            x: nodeX,
+            y: yPosition,
+          },
+          data: nodeData,
+        });
+
+        // Connect to previous step if exists
+        if (index > 0) {
+          const prevStep = steps[index - 1];
+          if (prevStep.isParallel) {
+            // Connect from all previous parallel steps to this step
+            prevStep.steps.forEach((prevParallelStep: any) => {
+              edges.push({
+                id: `edge-${prevParallelStep.id}-${parallelStep.id}`,
+                source: prevParallelStep.id,
+                target: parallelStep.id,
+                type: 'default',
+                animated: status === "running",
+                style: { 
+                  stroke: status === "running" ? "#3b82f6" : "#6b7280",
+                  strokeWidth: 2,
+                },
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  color: status === "running" ? "#3b82f6" : "#6b7280",
+                },
+              });
+            });
+          } else {
+            edges.push({
+              id: `edge-${prevStep.id}-${parallelStep.id}`,
+              source: prevStep.id,
+              target: parallelStep.id,
+              type: 'default',
+              animated: status === "running",
+              style: { 
+                stroke: status === "running" ? "#3b82f6" : "#6b7280",
+                strokeWidth: 2,
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: status === "running" ? "#3b82f6" : "#6b7280",
+              },
+            });
+          }
+        }
+      });
+    } else {
+      // Handle single steps - properly centered
+      const stepData = contextMap[step.id];
+      const status = getStepStatus(stepData, workflowStatus);
+      const duration = formatDuration(
+        stepData?.startedAt ? new Date(stepData.startedAt).toISOString() : undefined,
+        stepData?.endedAt ? new Date(stepData.endedAt).toISOString() : undefined,
+      );
+
+      const nodeData = {
+        label: formatStepId(step.id),
+        status: status,
+        stepData,
+        duration,
+        isParallel: false,
+        onClick: () => onNodeClick({ id: step.id, data: { label: formatStepId(step.id), status, stepData, duration } }),
+      };
+
+      nodes.push({
+        id: step.id,
+        type: "workflowStep",
+        position: {
+          x: xCenterPosition - nodeWidth / 2, // Properly center the node
+          y: yPosition,
+        },
+        data: nodeData,
+      });
+
+      // Connect to previous step if exists
+      if (index > 0) {
+        const prevStep = steps[index - 1];
+        if (prevStep.isParallel) {
+          // Connect from all previous parallel steps to this step
+          prevStep.steps.forEach((prevParallelStep: any) => {
+            edges.push({
+              id: `edge-${prevParallelStep.id}-${step.id}`,
+              source: prevParallelStep.id,
+              target: step.id,
+              type: 'default',
+              animated: status === "running",
+              style: { 
+                stroke: status === "running" ? "#3b82f6" : "#6b7280",
+                strokeWidth: 2,
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: status === "running" ? "#3b82f6" : "#6b7280",
+              },
+            });
+          });
+        } else {
+          edges.push({
+            id: `edge-${prevStep.id}-${step.id}`,
+            source: prevStep.id,
+            target: step.id,
+            type: 'default',
+            animated: status === "running",
+            style: { 
+              stroke: status === "running" ? "#3b82f6" : "#6b7280",
+              strokeWidth: 2,
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: status === "running" ? "#3b82f6" : "#6b7280",
+            },
+          });
+        }
+      }
+    }
+
+    yPosition += verticalSpacing;
+  });
+
+  // Add End Node - properly centered
+  nodes.push({
+    id: 'end-node',
+    type: 'endNode',
+    position: {
+      x: xCenterPosition - startEndNodeWidth / 2,
+      y: yPosition + 50,
+    },
+    data: { label: 'End' },
+    deletable: false,
+    selectable: false,
+  });
+
+  // Connect Start node to first step(s)
+  if (steps.length > 0) {
+    const firstStep = steps[0];
+    if (firstStep.isParallel) {
+      // Connect start to all parallel steps
+      firstStep.steps.forEach((parallelStep: any) => {
+        edges.push({
+          id: `edge-start-node-${parallelStep.id}`,
+          source: 'start-node',
+          target: parallelStep.id,
+          type: 'default',
+          style: { 
+            stroke: "#6b7280",
+            strokeWidth: 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "#6b7280",
+          },
+        });
+      });
+    } else {
+      // Connect start to single first step
+      edges.push({
+        id: `edge-start-node-${firstStep.id}`,
+        source: 'start-node',
+        target: firstStep.id,
+        type: 'default',
+        style: { 
+          stroke: "#6b7280",
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "#6b7280",
+        },
+      });
+    }
+  }
+
+  // Connect last step(s) to End node
+  if (steps.length > 0) {
+    const lastStep = steps[steps.length - 1];
+    if (lastStep.isParallel) {
+      // Connect all last parallel steps to end
+      lastStep.steps.forEach((parallelStep: any) => {
+        edges.push({
+          id: `edge-${parallelStep.id}-end-node`,
+          source: parallelStep.id,
+          target: 'end-node',
+          type: 'default',
+          style: { 
+            stroke: "#6b7280",
+            strokeWidth: 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: "#6b7280",
+          },
+        });
+      });
+    } else {
+      // Connect last single step to end
+      edges.push({
+        id: `edge-${lastStep.id}-end-node`,
+        source: lastStep.id,
+        target: 'end-node',
+        type: 'default',
+        style: { 
+          stroke: "#6b7280",
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "#6b7280",
+        },
+      });
+    }
+  }
+
+  return { nodes, edges };
+}
+
+// Main Workflow Visualization Component
+interface WorkflowFlowVisualizationProps {
+  processedSteps: any[];
+  contextMap: any;
+  workflowStatus: string;
+}
+
+export function WorkflowFlowVisualization({
+  processedSteps,
+  contextMap,
+  workflowStatus,
+}: WorkflowFlowVisualizationProps) {
+  const [selectedStep, setSelectedStep] = useState<any>(null);
+
+  // Handle node click
+  const handleNodeClick = useCallback((node: any) => {
+    setSelectedStep(node);
+  }, []);
+
+  // Calculate layout
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => 
+    calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick),
+    [processedSteps, contextMap, workflowStatus, handleNodeClick]
+  );
+
+  // React Flow state
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // Update nodes when data changes
+  useEffect(() => {
+    const { nodes: newNodes, edges: newEdges } = calculateLayout(processedSteps, contextMap, workflowStatus, handleNodeClick);
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [processedSteps, contextMap, workflowStatus, handleNodeClick, setNodes, setEdges]);
+
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds: Edge[]) => addEdge(params, eds)),
+    [setEdges]
+  );
+
+  // Count step statuses for summary
+  const statusCounts = useMemo(() => {
+    const counts = { completed: 0, failed: 0, running: 0, pending: 0, skipped: 0 };
+    nodes.forEach((node: Node) => {
+      const status = node.data.status;
+      if (counts.hasOwnProperty(status)) {
+        counts[status as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [nodes]);
+
+  return (
+    <div className="w-full h-[700px] relative bg-card rounded-lg border">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={{
+          padding: 0.1,
+          includeHiddenNodes: false,
+        }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        minZoom={0.3}
+        maxZoom={2}
+        attributionPosition="bottom-left"
+      >
+        <Background 
+          variant="dots" 
+          gap={20} 
+          size={1} 
+          color="hsl(var(--muted-foreground))"
+          style={{ opacity: 0.3 }}
+        />
+        <Controls 
+          position="bottom-right"
+          showZoom
+          showFitView
+          showInteractive={false}
+        />
+                 <MiniMap 
+          position="bottom-left"
+          nodeColor={(node: Node) => {
+            if (node.type === 'startNode') return "hsl(var(--success))";
+            if (node.type === 'endNode') return "hsl(var(--muted))";
+            
+            switch (node.data.status) {
+              case "completed": return "hsl(var(--success))";
+              case "failed": return "hsl(var(--destructive))";
+              case "running": return "hsl(var(--primary))";
+              case "skipped": return "hsl(var(--muted))";
+              default: return "hsl(var(--muted-foreground))";
+            }
+          }}
+          maskColor="hsl(var(--background))"
+          style={{
+            backgroundColor: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        />
+        
+        {/* Status Summary Panel */}
+        <Panel position="top-left">
+          <Card className="bg-card/90 backdrop-blur-sm border shadow-lg">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Icon name="analytics" size={16} />
+                Workflow Status
+              </h3>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-success rounded-full"></div>
+                  <span>{statusCounts.completed} completed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                  <span>{statusCounts.failed} failed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  <span>{statusCounts.running} running</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
+                  <span>{statusCounts.pending + statusCounts.skipped} pending</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Panel>
+
+        {/* Instructions Panel */}
+        <Panel position="top-right">
+          <Card className="bg-card/90 backdrop-blur-sm border shadow-lg max-w-xs">
+            <CardContent className="p-3">
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div className="flex items-center gap-2">
+                  <Icon name="mouse" size={12} />
+                  <span>Click nodes for details</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="zoom_in" size={12} />
+                  <span>Scroll to zoom</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="pan_tool" size={12} />
+                  <span>Drag to pan</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Panel>
+      </ReactFlow>
+
+      {/* Step Detail Modal */}
+      {selectedStep && (
+        <StepDetailModal
+          step={selectedStep}
+          isOpen={!!selectedStep}
+          onClose={() => setSelectedStep(null)}
+        />
+      )}
+    </div>
+  );
+} 

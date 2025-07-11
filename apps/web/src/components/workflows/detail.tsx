@@ -561,7 +561,9 @@ function StepDetailContent({
             <div className="flex items-center gap-2">
               <CopyButton value={stepData.output} />
               <Icon
-                name={activeSection === "output" ? "expand_less" : "expand_more"}
+                name={activeSection === "output"
+                  ? "expand_less"
+                  : "expand_more"}
                 size={20}
                 className="text-success"
               />

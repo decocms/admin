@@ -953,8 +953,8 @@ function ParallelStepsGroup({
               <div key={step.id}>
                 <StepCard
                   step={{ ...step, data: contextMap[step.id] }}
-                  workflowStatus={workflowStatus}
-                  isPreview={!contextMap[step.id] && !isSkipped}
+                  _workflowStatus={workflowStatus}
+                  _isPreview={!contextMap[step.id] && !isSkipped}
                   isCurrent={stepIndex === lastRunIdx + 1 &&
                     !contextMap[step.id] && !isSkipped}
                   isSkipped={isSkipped}
@@ -1043,8 +1043,8 @@ function StepWithFlow({
       <div>
         <StepCard
           step={{ ...step, data: contextMap[step.id] }}
-          workflowStatus={workflowStatus}
-          isPreview={!contextMap[step.id] && !isSkipped}
+          _workflowStatus={workflowStatus}
+          _isPreview={!contextMap[step.id] && !isSkipped}
           isCurrent={stepIndex === lastRunIdx + 1 && !contextMap[step.id] &&
             !isSkipped}
           isSkipped={isSkipped}

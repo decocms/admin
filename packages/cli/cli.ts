@@ -1,7 +1,7 @@
 import { Command } from "@cliffy/command";
-import { Input } from "@cliffy/prompt";
 import denoJson from "./deno.json" with { type: "json" };
-import { getConfig, setLocal, writeConfigFile } from "./src/config.ts";
+import { getConfig, getLocal, setLocal } from "./src/config.ts";
+import { configureCommand } from "./src/configure.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";
 import { deploy } from "./src/hosting/deploy.ts";
@@ -12,9 +12,10 @@ import { deleteSession, readSession, setToken } from "./src/session.ts";
 import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
 import {
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./src/utils/prompt-mcp-install.ts";
+  hasMCPPreferences,
+  promptIDESetup,
+  writeIDEConfig,
+} from "./src/utils/prompt-ide-setup.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
@@ -45,18 +46,11 @@ const whoami = new Command()
   .action(whoamiCommand);
 
 const configure = new Command()
+  .alias("config")
   .description("Save configuration options for the current directory.")
   .action(async () => {
-    const workspace = await Input.prompt({
-      message: "Enter workspace name:",
-    });
-
-    const app = await Input.prompt({
-      message: "Enter app name:",
-    });
-
-    await writeConfigFile({ workspace, app });
-    console.log("✅ Configuration saved successfully!");
+    const local = getLocal();
+    await configureCommand(local);
   });
 
 // Placeholder for hosting list command implementation
@@ -143,9 +137,14 @@ const dev = new Command()
       app: "my-app",
     }));
 
-    const mcpConfig = await promptMCPInstall(config);
-    if (mcpConfig) {
-      await writeMCPConfig(mcpConfig.config, mcpConfig.configPath);
+    const latest = await hasMCPPreferences(config.workspace, config.app);
+
+    if (!latest) {
+      const mcpConfig = await promptIDESetup(config);
+
+      if (mcpConfig) {
+        await writeIDEConfig(mcpConfig);
+      }
     }
 
     const deno = new Deno.Command("deco", {

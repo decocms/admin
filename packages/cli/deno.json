@@ -1,6 +1,6 @@
 {
   "name": "@deco/cli",
-  "version": "0.6.3",
+  "version": "0.7.1",
   "description": "A CLI for interacting with deco.chat.",
   "license": "MIT",
   "exports": "./cli.ts",
@@ -20,5 +20,8 @@
     "json-schema-to-typescript": "npm:json-schema-to-typescript@^15.0.4",
     "@std/semver": "jsr:@std/semver@^1.0.5",
     "jose": "npm:jose@^6.0.11"
-  }
+  },
+  "unstable": [
+    "raw-imports"
+  ]
 }

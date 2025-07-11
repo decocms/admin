@@ -23,6 +23,7 @@ interface AIGatewayOptions {
   bypassOpenRouter?: boolean;
   bypassGateway?: boolean;
   apiKey?: string;
+  metadata?: Record<string, string>;
 }
 
 const aiGatewayForProvider = (
@@ -34,7 +35,13 @@ type ProviderFactory = (
   opts: AIGatewayOptions,
 ) => (model: string) => { llm: LanguageModelV1; tokenLimit: number };
 
-type NativeLLMCreator = <TOpts extends { baseURL?: string; apiKey: string }>(
+type NativeLLMCreator = <
+  TOpts extends {
+    baseURL?: string;
+    apiKey: string;
+    headers?: Record<string, string>;
+  },
+>(
   opts: TOpts,
 ) => (model: string) => LanguageModelV1;
 
@@ -115,6 +122,11 @@ const providers: Record<
   },
 } as const;
 
+const OPENROUTER_HEADERS = {
+  "HTTP-Referer": "https://deco.chat/about",
+  "X-Title": "Deco",
+};
+
 const modelLimit = (provider: Provider, model: string) =>
   provider.tokenLimit?.[model] ?? provider.tokenLimit?.default ?? 200_000;
 
@@ -133,6 +145,11 @@ export const createLLMProvider: ProviderFactory = (opts) => {
     const creator = provider.creator({
       apiKey: opts.apiKey ?? opts.envs[provider.envVarName],
       baseURL: opts.bypassGateway ? undefined : aiGatewayForProvider(opts),
+      headers: opts.metadata
+        ? {
+          "cf-aig-metadata": JSON.stringify(opts.metadata),
+        }
+        : undefined,
     });
     return (model: string) => {
       model = opts.bypassOpenRouter
@@ -144,6 +161,12 @@ export const createLLMProvider: ProviderFactory = (opts) => {
 
   const openRouterProvider = openrouter({
     apiKey: openRouterApiKey,
+    headers: opts.metadata
+      ? {
+        ...OPENROUTER_HEADERS,
+        "cf-aig-metadata": JSON.stringify(opts.metadata),
+      }
+      : undefined,
     baseURL: opts.bypassGateway
       ? undefined
       : aiGatewayForProvider({ ...opts, provider: "openrouter" }),

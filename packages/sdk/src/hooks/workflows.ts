@@ -101,8 +101,8 @@ export const useAllWorkflowRuns = (workflowName: string) => {
 };
 
 /**
- * Hook to get all unique workflow names by fetching all workflow runs
- * This addresses the issue of missing workflows when only fetching recent runs
+ * Hook to get unique workflow names by fetching the first page of workflow runs
+ * Simplified to avoid infinite loop issues - fetches only the first 100 records
  */
 export const useAllUniqueWorkflows = () => {
   const { workspace } = useSDK();
@@ -110,40 +110,13 @@ export const useAllUniqueWorkflows = () => {
   const { data, refetch, isRefetching } = useSuspenseQuery({
     queryKey: ["all-unique-workflows", workspace],
     queryFn: async ({ signal }) => {
-      const allRuns: Array<
-        {
-          workflowName: string;
-          runId: string;
-          createdAt: number;
-          updatedAt: number;
-          resourceId?: string | null;
-          status: string;
-        }
-      > = [];
-      let page = 1;
-      const per_page = 100;
-
-      // Keep fetching until we get all workflows
-      while (true) {
-        const result = await listWorkflows(workspace, page, per_page, signal);
-
-        if (result.workflows.length === 0) {
-          break; // No more data
-        }
-
-        allRuns.push(...result.workflows);
-
-        // If we got less than per_page, we've reached the end
-        if (result.workflows.length < per_page) {
-          break;
-        }
-
-        page++;
-      }
+      // Fetch only the first page with 50 records to avoid infinite loop
+      const per_page = 50;
+      const result = await listWorkflows(workspace, 1, per_page, signal);
 
       return {
-        workflows: allRuns,
-        pagination: { page: 1, per_page: allRuns.length },
+        workflows: result.workflows,
+        pagination: { page: 1, per_page: result.workflows.length },
       };
     },
     retry: (failureCount, error) =>

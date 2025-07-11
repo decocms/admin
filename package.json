@@ -54,7 +54,8 @@
   ],
   "lock": false,
   "unstable": [
-    "kv"
+    "kv",
+    "raw-imports"
   ],
   "devDependencies": {
     "supabase": "^2.22.12"

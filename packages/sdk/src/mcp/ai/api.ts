@@ -162,6 +162,9 @@ export const aiGenerate = createTool({
     const { llm } = createLLMInstance({
       ...llmConfig,
       envs: c.envVars as Record<string, string>,
+      metadata: {
+        workspace: c.workspace.value,
+      },
     });
 
     const aiMessages = await Promise.all(

@@ -459,6 +459,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const { llm, tokenLimit } = createLLMInstance({
       ...llmConfig,
       envs: this.env,
+      metadata: {
+        workspace: this.workspace,
+        agentId: config.id,
+        threadId: this.metadata?.threadId || "",
+        resourceId: this.metadata?.resourceId || "",
+      },
     });
 
     await this._initMemory(config, tokenLimit);
@@ -500,7 +506,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       memory: this._memory as unknown as MastraMemory,
       name: ANONYMOUS_NAME,
       instructions: ANONYMOUS_INSTRUCTIONS,
-      model: createLLMInstance({ model: DEFAULT_MODEL.id, envs: this.env }).llm,
+      model: createLLMInstance({
+        model: DEFAULT_MODEL.id,
+        envs: this.env,
+        metadata: {
+          workspace: this.workspace,
+          agentId: "anonymous",
+        },
+      }).llm,
       mastra: {
         // @ts-ignore: Mastra requires a logger, but we don't use it
         getLogger: () => undefined,
@@ -577,6 +590,12 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         ...llmConfig,
         bypassOpenRouter: options.bypassOpenRouter,
         envs: this.env,
+        metadata: {
+          workspace: this.workspace,
+          agentId: this.agentId,
+          threadId: this._thread.threadId,
+          resourceId: this._thread.resourceId,
+        },
       });
 
       // TODO(@mcandeia) for now, token limiter is not being used because we are avoiding instantiating a new memory.

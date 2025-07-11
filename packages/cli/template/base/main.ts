@@ -6,11 +6,9 @@ import {
   createWorkflow,
 } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
+import type { Env } from "./deco.gen.ts";
 
-// deno-lint-ignore ban-types
-type Bindings = {};
-
-const createMyTool = (_bindings: Bindings) =>
+const createMyTool = (_env: Env) =>
   createTool({
     id: "MY_TOOL",
     description: "Say hello",
@@ -21,8 +19,8 @@ const createMyTool = (_bindings: Bindings) =>
     }),
   });
 
-const createMyWorkflow = (bindings: Bindings) => {
-  const step = createStepFromTool(createMyTool(bindings));
+const createMyWorkflow = (env: Env) => {
+  const step = createStepFromTool(createMyTool(env));
 
   return createWorkflow({
     id: "MY_WORKFLOW",
@@ -33,7 +31,7 @@ const createMyWorkflow = (bindings: Bindings) => {
     .commit();
 };
 
-const { Workflow, ...runtime } = withRuntime<Bindings>({
+const { Workflow, ...runtime } = withRuntime<Env>({
   workflows: [createMyWorkflow],
   tools: [createMyTool],
 });

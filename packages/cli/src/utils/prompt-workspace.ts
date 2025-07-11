@@ -29,7 +29,10 @@ interface Team {
   avatar_url: string;
 }
 
-export async function promptWorkspace(local = false): Promise<string> {
+export async function promptWorkspace(
+  local = false,
+  current = "",
+): Promise<string> {
   // Check if user has a session
   const session = await readSession();
   if (!session) {
@@ -67,6 +70,7 @@ export async function promptWorkspace(local = false): Promise<string> {
     const selectedSlug = await Select.prompt({
       message: "Select a workspace:",
       options,
+      default: current,
       search: true, // Enable searching since there can be many teams
     });
 

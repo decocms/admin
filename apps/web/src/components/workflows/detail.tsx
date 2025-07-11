@@ -5,7 +5,12 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@deco/ui/components/dialog.tsx";
 import { useState } from "react";
 import { useParams } from "react-router";
 import type { Tab } from "../dock/index.tsx";
@@ -52,25 +57,25 @@ function CopyButton({ value }: { value: unknown }) {
 }
 
 // JSON Tree Viewer Components
-function ExpandableString({ 
-  value, 
-  className, 
-  isQuoted = false 
-}: { 
-  value: string; 
-  className: string; 
-  isQuoted?: boolean; 
+function ExpandableString({
+  value,
+  className,
+  isQuoted = false,
+}: {
+  value: string;
+  className: string;
+  isQuoted?: boolean;
 }) {
   const [showFull, setShowFull] = useState(false);
-  
+
   // Ensure value is actually a string
-  const stringValue = typeof value === 'string' ? value : String(value);
+  const stringValue = typeof value === "string" ? value : String(value);
   const isTruncated = stringValue.length > 100;
-  
+
   const content = showFull || !isTruncated ? stringValue : (
     <span>
       {stringValue.slice(0, 100)}
-      <button 
+      <button
         className="text-blue-500 hover:text-blue-700 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
@@ -82,14 +87,14 @@ function ExpandableString({
       </button>
     </span>
   );
-  
+
   return (
     <span className={className}>
       {isQuoted && '"'}
       {content}
       {isQuoted && '"'}
       {showFull && isTruncated && (
-        <button 
+        <button
           className="text-blue-500 hover:text-blue-700 underline ml-2 text-xs font-normal bg-transparent border-none cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
@@ -104,19 +109,19 @@ function ExpandableString({
   );
 }
 
-function JsonTreeNode({ 
-  data, 
-  keyName, 
-  level = 0, 
-  isLast = false 
-}: { 
-  data: unknown; 
-  keyName?: string; 
-  level?: number; 
-  isLast?: boolean; 
+function JsonTreeNode({
+  data,
+  keyName,
+  level = 0,
+  isLast = false,
+}: {
+  data: unknown;
+  keyName?: string;
+  level?: number;
+  isLast?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expand first 2 levels
-  
+
   const getDataType = (value: unknown): string => {
     if (value === null) return "null";
     if (value === undefined) return "undefined";
@@ -148,30 +153,44 @@ function JsonTreeNode({
   const getTypeColor = (value: unknown): string => {
     const type = getDataType(value);
     switch (type) {
-      case "string": return "text-green-600 dark:text-green-400";
-      case "number": return "text-blue-600 dark:text-blue-400";
-      case "boolean": return "text-purple-600 dark:text-purple-400";
-      case "null": return "text-gray-500 dark:text-gray-400";
-      case "array": return "text-orange-600 dark:text-orange-400";
-      case "object": return "text-red-600 dark:text-red-400";
-      default: return "text-gray-700 dark:text-gray-300";
+      case "string":
+        return "text-green-600 dark:text-green-400";
+      case "number":
+        return "text-blue-600 dark:text-blue-400";
+      case "boolean":
+        return "text-purple-600 dark:text-purple-400";
+      case "null":
+        return "text-gray-500 dark:text-gray-400";
+      case "array":
+        return "text-orange-600 dark:text-orange-400";
+      case "object":
+        return "text-red-600 dark:text-red-400";
+      default:
+        return "text-gray-700 dark:text-gray-300";
     }
   };
 
   const isExpandable = (value: unknown): boolean => {
-    return Array.isArray(value) || (typeof value === "object" && value !== null);
+    return Array.isArray(value) ||
+      (typeof value === "object" && value !== null);
   };
 
   const renderPrimitive = (value: unknown) => {
     const type = getDataType(value);
     const colorClass = getTypeColor(value);
-    
+
     if (type === "string") {
       // Ensure we're definitely passing a string
       const stringValue = String(value);
-      return <ExpandableString value={stringValue} className={colorClass} isQuoted={true} />;
+      return (
+        <ExpandableString
+          value={stringValue}
+          className={colorClass}
+          isQuoted={true}
+        />
+      );
     }
-    
+
     return <span className={colorClass}>{getValuePreview(value)}</span>;
   };
 
@@ -179,7 +198,7 @@ function JsonTreeNode({
     if (!keyName) return null;
     return (
       <span className="text-gray-700 dark:text-gray-300 font-medium">
-        "{keyName}": 
+        "{keyName}":
       </span>
     );
   };
@@ -188,7 +207,7 @@ function JsonTreeNode({
 
   if (!isExpandable(data)) {
     return (
-      <div 
+      <div
         className="flex items-start gap-2 py-1 font-mono text-sm"
         style={{ paddingLeft: `${indentLevel}px` }}
       >
@@ -199,16 +218,16 @@ function JsonTreeNode({
     );
   }
 
-  const entries = Array.isArray(data) 
+  const entries = Array.isArray(data)
     ? data.map((item, index) => [String(index), item] as const)
     : Object.entries(data as Record<string, unknown>).map(([key, value]) => {
-        // Ensure we're not accidentally stringifying objects
-        return [key, value] as const;
-      });
+      // Ensure we're not accidentally stringifying objects
+      return [key, value] as const;
+    });
 
   return (
     <div className="font-mono text-sm">
-      <div 
+      <div
         className="flex items-center gap-2 py-1 cursor-pointer hover:bg-muted/30 rounded"
         style={{ paddingLeft: `${indentLevel}px` }}
         onClick={(e) => {
@@ -216,8 +235,8 @@ function JsonTreeNode({
           setIsExpanded(!isExpanded);
         }}
       >
-        <Icon 
-          name={isExpanded ? "expand_more" : "chevron_right"} 
+        <Icon
+          name={isExpanded ? "expand_more" : "chevron_right"}
           size={16}
           className="text-gray-500 flex-shrink-0"
         />
@@ -226,7 +245,7 @@ function JsonTreeNode({
           {getValuePreview(data)}
         </span>
       </div>
-      
+
       {isExpanded && (
         <div className="border-l border-gray-200 dark:border-gray-700 ml-2">
           {entries.map(([key, value], index) => (
@@ -244,18 +263,20 @@ function JsonTreeNode({
   );
 }
 
-function JsonTreeViewer({ value, compact = false }: { value: unknown; compact?: boolean }) {
+function JsonTreeViewer(
+  { value, compact = false }: { value: unknown; compact?: boolean },
+) {
   const parsed = tryParseJson(value);
-  
+
   // Handle simple string values
   if (typeof parsed === "string") {
     return (
-      <div 
+      <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
         onClick={(e) => e.stopPropagation()}
       >
-        <ExpandableString 
-          value={parsed} 
+        <ExpandableString
+          value={parsed}
           className="whitespace-pre-wrap break-words font-mono text-current"
           isQuoted={true}
         />
@@ -266,7 +287,7 @@ function JsonTreeViewer({ value, compact = false }: { value: unknown; compact?: 
   // Handle null, undefined, or other primitive values
   if (parsed === null || parsed === undefined) {
     return (
-      <div 
+      <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
         onClick={(e) => e.stopPropagation()}
       >
@@ -280,7 +301,7 @@ function JsonTreeViewer({ value, compact = false }: { value: unknown; compact?: 
   // Handle other primitive values (numbers, booleans)
   if (typeof parsed !== "object") {
     return (
-      <div 
+      <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
         onClick={(e) => e.stopPropagation()}
       >
@@ -293,7 +314,7 @@ function JsonTreeViewer({ value, compact = false }: { value: unknown; compact?: 
 
   // Handle objects and arrays
   return (
-    <div 
+    <div
       className={compact ? "max-h-64 overflow-y-auto" : "bg-muted rounded p-3"}
       onClick={(e) => e.stopPropagation()}
     >
@@ -426,9 +447,9 @@ function getStepStatus(stepData: any, workflowStatus: string): string {
 // Helper function to format step ID for display (remove hyphens, capitalize)
 function formatStepId(id: string): string {
   return id
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 // Step Detail Modal Component
@@ -446,7 +467,9 @@ function StepDetailModal({
   const hasOutput = step.data?.output;
   const hasInput = step.data?.input;
   const duration = formatDuration(
-    step.data?.startedAt ? new Date(step.data.startedAt).toISOString() : undefined,
+    step.data?.startedAt
+      ? new Date(step.data.startedAt).toISOString()
+      : undefined,
     step.data?.endedAt ? new Date(step.data.endedAt).toISOString() : undefined,
   );
 
@@ -456,7 +479,9 @@ function StepDetailModal({
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl font-semibold">{stepTitle}</DialogTitle>
+              <DialogTitle className="text-xl font-semibold">
+                {stepTitle}
+              </DialogTitle>
               <Badge variant="secondary" className="text-sm">
                 {hasError ? "Failed" : hasOutput ? "Completed" : "Pending"}
               </Badge>
@@ -467,30 +492,33 @@ function StepDetailModal({
                 </div>
               )}
             </div>
-            
+
             {/* Execution Timeline in Header */}
             {step.data && (step.data.startedAt || step.data.endedAt) && (
               <div className="flex flex-col gap-1 text-xs text-muted-foreground mr-8">
                 {step.data.startedAt && (
                   <div className="flex items-center gap-1">
                     <Icon name="schedule" size={12} />
-                    <span>Started: {new Date(step.data.startedAt).toLocaleString()}</span>
+                    <span>
+                      Started: {new Date(step.data.startedAt).toLocaleString()}
+                    </span>
                   </div>
                 )}
                 {step.data.endedAt && (
                   <div className="flex items-center gap-1">
                     <Icon name="schedule" size={12} />
-                    <span>Ended: {new Date(step.data.endedAt).toLocaleString()}</span>
+                    <span>
+                      Ended: {new Date(step.data.endedAt).toLocaleString()}
+                    </span>
                   </div>
                 )}
               </div>
             )}
           </div>
         </DialogHeader>
-        
+
         <ScrollArea className="flex-1 -mx-6 px-6">
           <div className="space-y-6 py-4">
-
             {/* Error Section */}
             {hasError && (
               <div>
@@ -537,8 +565,6 @@ function StepDetailModal({
                 </Card>
               </div>
             )}
-
-
           </div>
         </ScrollArea>
       </DialogContent>
@@ -550,38 +576,68 @@ function StepDetailModal({
 function processStepGraph(graph: any): any[] {
   if (!graph) return [];
   if (Array.isArray(graph)) {
-    return graph.map(node => processStepGraph(node)).flat();
+    return graph.map((node) => processStepGraph(node)).flat();
   }
-  
+
   switch (graph.type) {
     case "step":
-      return [{ id: graph.step.id, type: "step", node: graph, isParallel: false }];
+      return [{
+        id: graph.step.id,
+        type: "step",
+        node: graph,
+        isParallel: false,
+      }];
     case "sleep":
       return [{ id: graph.id, type: "sleep", node: graph, isParallel: false }];
     case "sleepUntil":
-      return [{ id: graph.id, type: "sleepUntil", node: graph, isParallel: false }];
+      return [{
+        id: graph.id,
+        type: "sleepUntil",
+        node: graph,
+        isParallel: false,
+      }];
     case "waitForEvent":
-      return [{ id: graph.step.id, type: "waitForEvent", node: graph, isParallel: false }];
+      return [{
+        id: graph.step.id,
+        type: "waitForEvent",
+        node: graph,
+        isParallel: false,
+      }];
     case "parallel":
       // Return as a single parallel group
       return [{
-        type: "parallel", 
+        type: "parallel",
         isParallel: true,
-        steps: graph.steps.map((step: any) => processStepGraph(step)).flat()
+        steps: graph.steps.map((step: any) => processStepGraph(step)).flat(),
       }];
     case "if":
-      const result = [{ id: graph.id, type: "if", node: graph, isParallel: false }];
+      const result = [{
+        id: graph.id,
+        type: "if",
+        node: graph,
+        isParallel: false,
+      }];
       if (graph.if) result.push(...processStepGraph(graph.if));
       if (graph.else) result.push(...processStepGraph(graph.else));
       return result;
     case "try":
-      const tryResult = [{ id: graph.id, type: "try", node: graph, isParallel: false }];
+      const tryResult = [{
+        id: graph.id,
+        type: "try",
+        node: graph,
+        isParallel: false,
+      }];
       if (graph.try) tryResult.push(...processStepGraph(graph.try));
       if (graph.catch) tryResult.push(...processStepGraph(graph.catch));
       return tryResult;
     default:
       if (graph.id) {
-        return [{ id: graph.id, type: graph.type || "unknown", node: graph, isParallel: false }];
+        return [{
+          id: graph.id,
+          type: graph.type || "unknown",
+          node: graph,
+          isParallel: false,
+        }];
       }
       return [];
   }
@@ -590,7 +646,7 @@ function processStepGraph(graph: any): any[] {
 // Helper to get all step IDs from processed structure (for backwards compatibility)
 function getAllStepIds(processedSteps: any[]): string[] {
   const ids: string[] = [];
-  
+
   function extractIds(steps: any[]) {
     for (const step of steps) {
       if (step.isParallel) {
@@ -600,7 +656,7 @@ function getAllStepIds(processedSteps: any[]): string[] {
       }
     }
   }
-  
+
   extractIds(processedSteps);
   return ids;
 }
@@ -639,7 +695,11 @@ function flattenStepGraph(graph: any, parentKey = "", steps: any[] = []) {
       break;
     default:
       if (graph.id) {
-        steps.push({ id: graph.id, type: graph.type || "unknown", node: graph });
+        steps.push({
+          id: graph.id,
+          type: graph.type || "unknown",
+          node: graph,
+        });
       }
       break;
   }
@@ -668,12 +728,15 @@ function StepCard({
 
   // Calculate duration if available
   const duration = formatDuration(
-    step.data?.startedAt ? new Date(step.data.startedAt).toISOString() : undefined,
+    step.data?.startedAt
+      ? new Date(step.data.startedAt).toISOString()
+      : undefined,
     step.data?.endedAt ? new Date(step.data.endedAt).toISOString() : undefined,
   );
 
   // Determine card styling based on state
-  let cardClasses = "relative transition-all duration-200 cursor-pointer hover:shadow-md";
+  let cardClasses =
+    "relative transition-all duration-200 cursor-pointer hover:shadow-md";
   let borderClasses = "";
   let bgClasses = "";
 
@@ -697,102 +760,135 @@ function StepCard({
 
   return (
     <>
-      <Card className={`${cardClasses} ${borderClasses} ${bgClasses} w-full`} onClick={() => setIsModalOpen(true)}>
+      <Card
+        className={`${cardClasses} ${borderClasses} ${bgClasses} w-full`}
+        onClick={() => setIsModalOpen(true)}
+      >
         <CardContent className="p-3 sm:p-4 flex flex-col">
           {/* Header - always visible */}
           <div className="flex items-center gap-3">
-          {/* Status icon */}
-          <div className="flex-shrink-0 flex items-center justify-center">
-            {isSkipped ? (
-              <Icon name="remove_circle" size={16} className="text-gray-400" />
-            ) : hasError ? (
-              <Icon name="error" size={16} className="text-red-500" />
-            ) : hasRun && hasOutput ? (
-              <Icon name="check_circle" size={16} className="text-green-500" />
-            ) : isRunning ? (
-              <Icon name="hourglass_empty" size={16} className="text-blue-500 animate-spin" />
-            ) : isCurrent ? (
-              <Icon name="play_circle" size={16} className="text-orange-500" />
-            ) : (
-              <Icon name="radio_button_unchecked" size={16} className="text-gray-400" />
-            )}
-          </div>
-          
-          {/* Step title, status badge, and duration */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h3 className="font-semibold text-sm truncate">{stepTitle}</h3>
-            <Badge 
-              variant={
-                isSkipped 
-                  ? "outline" 
-                  : hasError 
-                  ? "destructive" 
-                  : hasRun && hasOutput 
-                  ? "success" 
-                  : isRunning 
-                  ? "secondary" 
+            {/* Status icon */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              {isSkipped
+                ? (
+                  <Icon
+                    name="remove_circle"
+                    size={16}
+                    className="text-gray-400"
+                  />
+                )
+                : hasError
+                ? <Icon name="error" size={16} className="text-red-500" />
+                : hasRun && hasOutput
+                ? (
+                  <Icon
+                    name="check_circle"
+                    size={16}
+                    className="text-green-500"
+                  />
+                )
+                : isRunning
+                ? (
+                  <Icon
+                    name="hourglass_empty"
+                    size={16}
+                    className="text-blue-500 animate-spin"
+                  />
+                )
+                : isCurrent
+                ? (
+                  <Icon
+                    name="play_circle"
+                    size={16}
+                    className="text-orange-500"
+                  />
+                )
+                : (
+                  <Icon
+                    name="radio_button_unchecked"
+                    size={16}
+                    className="text-gray-400"
+                  />
+                )}
+            </div>
+
+            {/* Step title, status badge, and duration */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <h3 className="font-semibold text-sm truncate">{stepTitle}</h3>
+              <Badge
+                variant={isSkipped
+                  ? "outline"
+                  : hasError
+                  ? "destructive"
+                  : hasRun && hasOutput
+                  ? "success"
+                  : isRunning
+                  ? "secondary"
                   : isCurrent
                   ? "secondary"
-                  : "outline"
-              } 
-              className="text-xs flex-shrink-0"
-            >
-              {isSkipped
-                ? "Skipped"
-                : hasError
-                ? "Failed"
-                : hasRun && hasOutput
-                ? "Completed"
-                : isRunning
-                ? "Running"
-                : isCurrent
-                ? "Next"
-                : "Pending"}
-            </Badge>
-            {/* Duration with timer icon */}
-            {duration && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
-                <Icon name="timer" size={12} className="text-muted-foreground" />
-                {duration}
-              </span>
-            )}
-          </div>
-          
-          {/* View details icon */}
-          <div className="flex-shrink-0 flex items-center justify-center">
-            <Icon 
-              name="open_in_new" 
-              size={16} 
-              className="text-gray-500"
-            />
-          </div>
-        </div>
+                  : "outline"}
+                className="text-xs flex-shrink-0"
+              >
+                {isSkipped
+                  ? "Skipped"
+                  : hasError
+                  ? "Failed"
+                  : hasRun && hasOutput
+                  ? "Completed"
+                  : isRunning
+                  ? "Running"
+                  : isCurrent
+                  ? "Next"
+                  : "Pending"}
+              </Badge>
+              {/* Duration with timer icon */}
+              {duration && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
+                  <Icon
+                    name="timer"
+                    size={12}
+                    className="text-muted-foreground"
+                  />
+                  {duration}
+                </span>
+              )}
+            </div>
 
-        {/* Hint text */}
-        <div className="text-xs text-muted-foreground mt-2">
-          Click to view details
-        </div>
-      </CardContent>
-    </Card>
-    
-    {/* Step Detail Modal */}
-    <StepDetailModal
-      step={step}
-      isOpen={isModalOpen}
-      onClose={() => setIsModalOpen(false)}
-    />
-  </>
-);
+            {/* View details icon */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <Icon
+                name="open_in_new"
+                size={16}
+                className="text-gray-500"
+              />
+            </div>
+          </div>
+
+          {/* Hint text */}
+          <div className="text-xs text-muted-foreground mt-2">
+            Click to view details
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Step Detail Modal */}
+      <StepDetailModal
+        step={step}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
+  );
 }
 
 // New component to render parallel steps with much better UI
-function ParallelStepsGroup({ 
-  steps, 
-  contextMap, 
-  workflowStatus, 
-  allStepIds, 
-  lastRunIdx, 
-  isWorkflowDone 
+function ParallelStepsGroup({
+  steps,
+  contextMap,
+  workflowStatus,
+  allStepIds,
+  lastRunIdx,
+  isWorkflowDone,
 }: {
   steps: any[];
   contextMap: any;
@@ -811,7 +907,11 @@ function ParallelStepsGroup({
       {/* Clean header */}
       <div className="flex items-center justify-center mb-6">
         <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-950/30 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
-          <Icon name="call_split" size={16} className="text-blue-600 dark:text-blue-400" />
+          <Icon
+            name="call_split"
+            size={16}
+            className="text-blue-600 dark:text-blue-400"
+          />
           <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
             Parallel Execution ({steps.length} steps)
           </span>
@@ -820,27 +920,36 @@ function ParallelStepsGroup({
 
       {/* Simple grid layout with left border to show grouping */}
       <div className="border-l-4 border-blue-300 pl-4 sm:pl-6 ml-2 sm:ml-4">
-        <div className={`grid gap-3 sm:gap-4 ${
-          steps.length === 1 ? 'grid-cols-1' :
-          steps.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
-          steps.length === 3 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' :
-          steps.length === 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' :
-          steps.length === 5 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5' :
-          steps.length >= 6 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' :
-          'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-        }`}>
+        <div
+          className={`grid gap-3 sm:gap-4 ${
+            steps.length === 1
+              ? "grid-cols-1"
+              : steps.length === 2
+              ? "grid-cols-1 sm:grid-cols-2"
+              : steps.length === 3
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              : steps.length === 4
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+              : steps.length === 5
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+              : steps.length >= 6
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          }`}
+        >
           {steps.map((step) => {
             const hasRun = !!contextMap[step.id];
             const isSkipped = isWorkflowDone && !hasRun;
             const stepIndex = allStepIds.indexOf(step.id);
-            
+
             return (
               <div key={step.id}>
                 <StepCard
                   step={{ ...step, data: contextMap[step.id] }}
                   workflowStatus={workflowStatus}
                   isPreview={!contextMap[step.id] && !isSkipped}
-                  isCurrent={stepIndex === lastRunIdx + 1 && !contextMap[step.id] && !isSkipped}
+                  isCurrent={stepIndex === lastRunIdx + 1 &&
+                    !contextMap[step.id] && !isSkipped}
                   isSkipped={isSkipped}
                 />
               </div>
@@ -855,19 +964,32 @@ function ParallelStepsGroup({
           <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground flex-wrap justify-center">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>{steps.filter(s => contextMap[s.id]?.output && !contextMap[s.id]?.error).length} completed</span>
+              <span>
+                {steps.filter((s) =>
+                  contextMap[s.id]?.output && !contextMap[s.id]?.error
+                ).length} completed
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span>{steps.filter(s => contextMap[s.id]?.error).length} failed</span>
+              <span>
+                {steps.filter((s) => contextMap[s.id]?.error).length} failed
+              </span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <span>{steps.filter(s => contextMap[s.id]?.startedAt && !contextMap[s.id]?.endedAt).length} running</span>
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse">
+              </div>
+              <span>
+                {steps.filter((s) =>
+                  contextMap[s.id]?.startedAt && !contextMap[s.id]?.endedAt
+                ).length} running
+              </span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-              <span>{steps.filter(s => !contextMap[s.id]).length} pending</span>
+              <span>
+                {steps.filter((s) => !contextMap[s.id]).length} pending
+              </span>
             </div>
           </div>
         </div>
@@ -882,14 +1004,14 @@ function ParallelStepsGroup({
 }
 
 // Component for individual steps with flow connection
-function StepWithFlow({ 
-  step, 
-  contextMap, 
-  workflowStatus, 
-  allStepIds, 
-  lastRunIdx, 
+function StepWithFlow({
+  step,
+  contextMap,
+  workflowStatus,
+  allStepIds,
+  lastRunIdx,
   isWorkflowDone,
-  isLast = false
+  isLast = false,
 }: {
   step: any;
   contextMap: any;
@@ -916,7 +1038,8 @@ function StepWithFlow({
           step={{ ...step, data: contextMap[step.id] }}
           workflowStatus={workflowStatus}
           isPreview={!contextMap[step.id] && !isSkipped}
-          isCurrent={stepIndex === lastRunIdx + 1 && !contextMap[step.id] && !isSkipped}
+          isCurrent={stepIndex === lastRunIdx + 1 && !contextMap[step.id] &&
+            !isSkipped}
           isSkipped={isSkipped}
         />
       </div>
@@ -934,11 +1057,11 @@ function StepWithFlow({
 function InstanceDetailTab() {
   const { workflowName = "", instanceId = "" } = useParams();
   const { data } = useWorkflowStatus(workflowName, instanceId);
-  
+
   // 🔍 DEBUG: API Response Structure
   console.log("🚀 WORKFLOW API DATA:", data);
   console.log("📋 WORKFLOW API RAW (copy me):", JSON.stringify(data, null, 2));
-  
+
   const snapshot = data?.snapshot;
   const status = typeof snapshot === "string"
     ? snapshot
@@ -950,7 +1073,7 @@ function InstanceDetailTab() {
   const stepGraph = typeof snapshot === "string"
     ? []
     : snapshot?.serializedStepGraph || [];
-  
+
   // Use new processStepGraph to preserve parallel structure
   const processedSteps = processStepGraph(stepGraph);
   // Keep backwards compatibility for calculations
@@ -1025,7 +1148,11 @@ function InstanceDetailTab() {
               </div>
               <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Icon name="key" size={16} className="text-muted-foreground" />
+                  <Icon
+                    name="key"
+                    size={16}
+                    className="text-muted-foreground"
+                  />
                   <span className="font-semibold text-sm">Instance ID:</span>
                   <span className="text-xs font-mono bg-muted rounded px-2 py-1">
                     {instanceId}
@@ -1068,23 +1195,26 @@ function InstanceDetailTab() {
             />
             <OutputField
               label="Output"
-              value={typeof snapshot === "string" ? undefined : snapshot?.result}
+              value={typeof snapshot === "string"
+                ? undefined
+                : snapshot?.result}
             />
           </Card>
           <h2 className="text-lg font-semibold mb-4">Steps</h2>
-          
+
           {/* Workflow flow visualization */}
           <div className="relative">
             {/* Start indicator */}
             <div className="flex justify-center mb-4">
-              <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-lg"></div>
+              <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-lg">
+              </div>
             </div>
 
             {processedSteps.length > 0
               ? (
                 processedSteps.map((step, i) => {
                   const isLast = i === processedSteps.length - 1;
-                  
+
                   if (step.isParallel) {
                     // Render parallel steps group with flow connections
                     return (
@@ -1115,12 +1245,17 @@ function InstanceDetailTab() {
                   }
                 })
               )
-              : <div className="text-muted-foreground text-center py-8">No steps found.</div>}
+              : (
+                <div className="text-muted-foreground text-center py-8">
+                  No steps found.
+                </div>
+              )}
 
             {/* End indicator */}
             {processedSteps.length > 0 && (
               <div className="flex justify-center mt-4">
-                <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white shadow-lg"></div>
+                <div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white shadow-lg">
+                </div>
               </div>
             )}
           </div>
@@ -1141,7 +1276,7 @@ const tabs: Record<string, Tab> = {
 
 function WorkflowDetailPage() {
   const { workflowName = "", instanceId } = useParams();
-  
+
   // If there's no instanceId, show the workflow overview
   if (!instanceId) {
     return <WorkflowOverviewPage />;
@@ -1156,9 +1291,9 @@ function WorkflowDetailPage() {
         <DefaultBreadcrumb
           items={[
             { label: "Workflows", link: "/workflows" },
-            { 
+            {
               label: String(workflowName ?? ""),
-              link: `/workflows/${encodeURIComponent(workflowName)}`
+              link: `/workflows/${encodeURIComponent(workflowName)}`,
             },
             {
               label: `Instance ${instanceId?.slice(0, 8)}...`,

@@ -4,7 +4,11 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -15,11 +19,11 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import type { UniqueWorkflow, WorkflowRun } from "./types.ts";
-import { 
-  transformToUniqueWorkflows, 
-  sortUniqueWorkflows, 
-  formatStatus, 
-  getStatusBadgeVariant 
+import {
+  formatStatus,
+  getStatusBadgeVariant,
+  sortUniqueWorkflows,
+  transformToUniqueWorkflows,
 } from "./utils.ts";
 
 function WorkflowsCardView(
@@ -47,7 +51,10 @@ function WorkflowsCardView(
                   <span>{workflow.totalRuns} runs</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={getStatusBadgeVariant(workflow.lastRun.status)} className="text-xs">
+                  <Badge
+                    variant={getStatusBadgeVariant(workflow.lastRun.status)}
+                    className="text-xs"
+                  >
                     {formatStatus(workflow.lastRun.status)}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -57,7 +64,11 @@ function WorkflowsCardView(
               </div>
               <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Icon name="check_circle" size={12} className="text-green-500" />
+                  <Icon
+                    name="check_circle"
+                    size={12}
+                    className="text-green-500"
+                  />
                   <span>{workflow.successCount}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -105,7 +116,11 @@ function WorkflowsTableView(
       header: "Total Runs",
       render: (workflow) => (
         <div className="flex items-center gap-2">
-          <Icon name="play_circle" size={14} className="text-muted-foreground" />
+          <Icon
+            name="play_circle"
+            size={14}
+            className="text-muted-foreground"
+          />
           <span className="text-sm">{workflow.totalRuns}</span>
         </div>
       ),
@@ -125,7 +140,9 @@ function WorkflowsTableView(
       id: "successRate",
       header: "Success Rate",
       render: (workflow) => {
-        const rate = workflow.totalRuns > 0 ? (workflow.successCount / workflow.totalRuns) * 100 : 0;
+        const rate = workflow.totalRuns > 0
+          ? (workflow.successCount / workflow.totalRuns) * 100
+          : 0;
         return (
           <div className="flex items-center gap-2">
             <span className="text-sm">{rate.toFixed(1)}%</span>
@@ -184,12 +201,12 @@ function WorkflowsTab() {
   const navigateWorkspace = useNavigateWorkspace();
 
   const workflowRuns: WorkflowRun[] = data.workflows as WorkflowRun[];
-  
+
   // Transform runs into unique workflows
   const uniqueWorkflows = useMemo(() => {
     return transformToUniqueWorkflows(workflowRuns);
   }, [workflowRuns]);
-  
+
   // Filter workflows by name
   const filteredWorkflows = useMemo(() => {
     if (!filter) return uniqueWorkflows;
@@ -197,8 +214,6 @@ function WorkflowsTab() {
       w.name.toLowerCase().includes(filter.toLowerCase())
     );
   }, [uniqueWorkflows, filter]);
-
-
 
   function handleWorkflowClick(workflow: UniqueWorkflow) {
     navigateWorkspace(`/workflows/${encodeURIComponent(workflow.name)}`);
@@ -246,28 +261,26 @@ function WorkflowsTab() {
                 <EmptyState
                   icon="work"
                   title="No workflows found"
-                  description={
-                    filter
-                      ? "No workflows match your search criteria."
-                      : "No workflows have been created yet."
-                  }
+                  description={filter
+                    ? "No workflows match your search criteria."
+                    : "No workflows have been created yet."}
                 />
               </div>
             )
             : (
               viewMode === "cards"
-                  ? (
-                    <WorkflowsCardView
-                      workflows={filteredWorkflows}
-                      onClick={handleWorkflowClick}
-                    />
-                  )
-                  : (
-                    <WorkflowsTableView
-                      workflows={filteredWorkflows}
-                      onClick={handleWorkflowClick}
-                    />
-                  )
+                ? (
+                  <WorkflowsCardView
+                    workflows={filteredWorkflows}
+                    onClick={handleWorkflowClick}
+                  />
+                )
+                : (
+                  <WorkflowsTableView
+                    workflows={filteredWorkflows}
+                    onClick={handleWorkflowClick}
+                  />
+                )
             )}
         </div>
       </div>

@@ -1,11 +1,20 @@
-import type { WorkflowRun, UniqueWorkflow, WorkflowStats, WorkflowStatus } from "./types.ts";
+import type {
+  UniqueWorkflow,
+  WorkflowRun,
+  WorkflowStats,
+  WorkflowStatus,
+} from "./types.ts";
 
 /**
  * Determines if a status is considered successful
  */
 function isSuccessStatus(status: string): boolean {
   const successStatuses = [
-    "success", "succeeded", "completed", "complete", "finished"
+    "success",
+    "succeeded",
+    "completed",
+    "complete",
+    "finished",
   ];
   return successStatuses.includes(status.toLowerCase());
 }
@@ -15,7 +24,13 @@ function isSuccessStatus(status: string): boolean {
  */
 function isErrorStatus(status: string): boolean {
   const errorStatuses = [
-    "failed", "error", "errored", "failure", "cancelled", "canceled", "timeout"
+    "failed",
+    "error",
+    "errored",
+    "failure",
+    "cancelled",
+    "canceled",
+    "timeout",
   ];
   return errorStatuses.includes(status.toLowerCase());
 }
@@ -25,7 +40,10 @@ function isErrorStatus(status: string): boolean {
  */
 function isPendingStatus(status: string): boolean {
   const pendingStatuses = [
-    "pending", "queued", "waiting", "scheduled"
+    "pending",
+    "queued",
+    "waiting",
+    "scheduled",
   ];
   return pendingStatuses.includes(status.toLowerCase());
 }
@@ -35,7 +53,11 @@ function isPendingStatus(status: string): boolean {
  */
 function isRunningStatus(status: string): boolean {
   const runningStatuses = [
-    "running", "in_progress", "executing", "active", "processing"
+    "running",
+    "in_progress",
+    "executing",
+    "active",
+    "processing",
   ];
   return runningStatuses.includes(status.toLowerCase());
 }
@@ -43,7 +65,9 @@ function isRunningStatus(status: string): boolean {
 /**
  * Transform array of workflow runs into unique workflows with aggregated stats
  */
-export function transformToUniqueWorkflows(runs: WorkflowRun[]): UniqueWorkflow[] {
+export function transformToUniqueWorkflows(
+  runs: WorkflowRun[],
+): UniqueWorkflow[] {
   if (!runs || !Array.isArray(runs)) {
     console.warn("⚠️ Invalid runs input:", runs);
     return [];
@@ -56,63 +80,70 @@ export function transformToUniqueWorkflows(runs: WorkflowRun[]): UniqueWorkflow[
   const workflowMap = new Map<string, WorkflowRun[]>();
 
   // Group runs by workflow name
-  runs.forEach(run => {
-    if (!run || typeof run.workflowName !== 'string') {
+  runs.forEach((run) => {
+    if (!run || typeof run.workflowName !== "string") {
       console.warn("⚠️ Invalid run object:", run);
       return;
     }
-    
+
     const existing = workflowMap.get(run.workflowName) || [];
     existing.push(run);
     workflowMap.set(run.workflowName, existing);
   });
 
   // Transform each group into a unique workflow
-  const result = Array.from(workflowMap.entries()).map(([workflowName, workflowRuns]) => {
-    
-    // Sort runs by updatedAt (most recent first)
-    const sortedRuns = workflowRuns.sort((a, b) => b.updatedAt - a.updatedAt);
-    const lastRun = sortedRuns[0];
-    
-    // Calculate statistics - debug the status counting
-    const successCount = workflowRuns.filter(run => isSuccessStatus(run.status)).length;
-    const errorCount = workflowRuns.filter(run => isErrorStatus(run.status)).length;
-    const runningCount = workflowRuns.filter(run => isRunningStatus(run.status)).length;
-    const pendingCount = workflowRuns.filter(run => isPendingStatus(run.status)).length;
-    
-    // Debug status breakdown - remove this after testing
-    console.log(`🔢 Status breakdown for ${workflowName}:`, {
-      total: workflowRuns.length,
-      success: successCount,
-      error: errorCount,
-      running: runningCount,
-      pending: pendingCount,
-      statusCounts: workflowRuns.reduce((acc, run) => {
-        acc[run.status] = (acc[run.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
-    });
-    
-    // Find first and last dates
-    const firstCreated = Math.min(...workflowRuns.map(run => run.createdAt));
-    const lastUpdated = Math.max(...workflowRuns.map(run => run.updatedAt));
+  const result = Array.from(workflowMap.entries()).map(
+    ([workflowName, workflowRuns]) => {
+      // Sort runs by updatedAt (most recent first)
+      const sortedRuns = workflowRuns.sort((a, b) => b.updatedAt - a.updatedAt);
+      const lastRun = sortedRuns[0];
 
-    const uniqueWorkflow = {
-      name: workflowName,
-      totalRuns: workflowRuns.length,
-      lastRun: {
-        date: lastRun.updatedAt,
-        status: lastRun.status,
-        runId: lastRun.runId,
-      },
-      successCount,
-      errorCount,
-      firstCreated,
-      lastUpdated,
-    };
+      // Calculate statistics - debug the status counting
+      const successCount =
+        workflowRuns.filter((run) => isSuccessStatus(run.status)).length;
+      const errorCount =
+        workflowRuns.filter((run) => isErrorStatus(run.status)).length;
+      const runningCount =
+        workflowRuns.filter((run) => isRunningStatus(run.status)).length;
+      const pendingCount =
+        workflowRuns.filter((run) => isPendingStatus(run.status)).length;
 
-    return uniqueWorkflow;
-  });
+      // Debug status breakdown - remove this after testing
+      console.log(`🔢 Status breakdown for ${workflowName}:`, {
+        total: workflowRuns.length,
+        success: successCount,
+        error: errorCount,
+        running: runningCount,
+        pending: pendingCount,
+        statusCounts: workflowRuns.reduce((acc, run) => {
+          acc[run.status] = (acc[run.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+      });
+
+      // Find first and last dates
+      const firstCreated = Math.min(
+        ...workflowRuns.map((run) => run.createdAt),
+      );
+      const lastUpdated = Math.max(...workflowRuns.map((run) => run.updatedAt));
+
+      const uniqueWorkflow = {
+        name: workflowName,
+        totalRuns: workflowRuns.length,
+        lastRun: {
+          date: lastRun.updatedAt,
+          status: lastRun.status,
+          runId: lastRun.runId,
+        },
+        successCount,
+        errorCount,
+        firstCreated,
+        lastUpdated,
+      };
+
+      return uniqueWorkflow;
+    },
+  );
 
   return result;
 }
@@ -132,11 +163,11 @@ export function calculateWorkflowStats(runs: WorkflowRun[]): WorkflowStats {
     };
   }
 
-  const successCount = runs.filter(run => isSuccessStatus(run.status)).length;
-  const errorCount = runs.filter(run => isErrorStatus(run.status)).length;
-  const pendingCount = runs.filter(run => isPendingStatus(run.status)).length;
-  const runningCount = runs.filter(run => isRunningStatus(run.status)).length;
-  
+  const successCount = runs.filter((run) => isSuccessStatus(run.status)).length;
+  const errorCount = runs.filter((run) => isErrorStatus(run.status)).length;
+  const pendingCount = runs.filter((run) => isPendingStatus(run.status)).length;
+  const runningCount = runs.filter((run) => isRunningStatus(run.status)).length;
+
   const successRate = runs.length > 0 ? (successCount / runs.length) * 100 : 0;
 
   // Sort runs by updatedAt (most recent first)
@@ -154,22 +185,28 @@ export function calculateWorkflowStats(runs: WorkflowRun[]): WorkflowStats {
     pendingCount,
     runningCount,
     successRate: Math.round(successRate * 100) / 100, // Round to 2 decimal places
-    lastRun: lastRun ? {
-      date: lastRun.updatedAt,
-      status: lastRun.status,
-      runId: lastRun.runId,
-    } : undefined,
-    firstRun: firstRun ? {
-      date: firstRun.createdAt,
-      runId: firstRun.runId,
-    } : undefined,
+    lastRun: lastRun
+      ? {
+        date: lastRun.updatedAt,
+        status: lastRun.status,
+        runId: lastRun.runId,
+      }
+      : undefined,
+    firstRun: firstRun
+      ? {
+        date: firstRun.createdAt,
+        runId: firstRun.runId,
+      }
+      : undefined,
   };
 }
 
 /**
  * Get status badge variant for consistent styling
  */
-export function getStatusBadgeVariant(status: string): "default" | "destructive" | "secondary" | "outline" | "success" {
+export function getStatusBadgeVariant(
+  status: string,
+): "default" | "destructive" | "secondary" | "outline" | "success" {
   if (isSuccessStatus(status)) return "success";
   if (isErrorStatus(status)) return "destructive";
   if (isRunningStatus(status)) return "secondary";
@@ -196,7 +233,7 @@ export function formatStatus(status: string): string {
 export function sortUniqueWorkflows(
   workflows: UniqueWorkflow[],
   sortKey: string,
-  direction: "asc" | "desc"
+  direction: "asc" | "desc",
 ): UniqueWorkflow[] {
   return [...workflows].sort((a, b) => {
     let aVal: string | number;
@@ -229,13 +266,13 @@ export function sortUniqueWorkflows(
     }
 
     if (typeof aVal === "string" && typeof bVal === "string") {
-      return direction === "asc" 
+      return direction === "asc"
         ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal);
     }
-    
+
     if (aVal < bVal) return direction === "asc" ? -1 : 1;
     if (aVal > bVal) return direction === "asc" ? 1 : -1;
     return 0;
   });
-} 
+}

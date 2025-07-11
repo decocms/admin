@@ -45,11 +45,11 @@ export interface WorkflowStats {
 }
 
 // Status types for better type safety
-export type WorkflowStatus = 
-  | "success" 
-  | "failed" 
-  | "running" 
-  | "pending" 
+export type WorkflowStatus =
+  | "success"
+  | "failed"
+  | "running"
+  | "pending"
   | "cancelled"
   | "completed"
   | "errored"
@@ -62,4 +62,4 @@ export interface WorkflowsListResponse {
     page?: number;
     per_page?: number;
   };
-} 
+}

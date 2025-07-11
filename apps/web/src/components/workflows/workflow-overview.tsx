@@ -4,7 +4,11 @@ import { Button } from "@deco/ui/components/button.tsx";
 
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
@@ -13,10 +17,10 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import type { WorkflowRun, WorkflowStats } from "./types.ts";
-import { 
-  calculateWorkflowStats, 
-  formatStatus, 
-  getStatusBadgeVariant 
+import {
+  calculateWorkflowStats,
+  formatStatus,
+  getStatusBadgeVariant,
 } from "./utils.ts";
 
 const DONUT_COLORS = ["#22c55e", "#ef4444", "#fbbf24", "#a3a3a3"];
@@ -27,7 +31,7 @@ function WorkflowStatsChart({ stats }: { stats: WorkflowStats }) {
     { name: "Error", value: stats.errorCount },
     { name: "Running", value: stats.runningCount },
     { name: "Other", value: stats.pendingCount },
-  ].filter(item => item.value > 0);
+  ].filter((item) => item.value > 0);
 
   return (
     <div className="relative w-[120px] h-[120px]">
@@ -67,14 +71,14 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
         <Icon name="analytics" size={20} />
         Workflow Statistics
       </div>
-      
+
       {/* Main stats layout with chart and counters */}
       <div className="flex items-center gap-12">
         {/* Chart on the left with padding */}
         <div className="flex-shrink-0 pl-4">
           <WorkflowStatsChart stats={stats} />
         </div>
-        
+
         {/* Stats grid on the right with padding */}
         <div className="flex-1 grid grid-cols-2 gap-6 pr-4">
           <div className="space-y-4">
@@ -83,14 +87,18 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
                 <span className="text-sm font-medium">Success</span>
               </div>
-              <span className="text-xl font-bold text-green-600">{stats.successCount}</span>
+              <span className="text-xl font-bold text-green-600">
+                {stats.successCount}
+              </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <span className="text-sm font-medium">Error</span>
               </div>
-              <span className="text-xl font-bold text-red-600">{stats.errorCount}</span>
+              <span className="text-xl font-bold text-red-600">
+                {stats.errorCount}
+              </span>
             </div>
           </div>
           <div className="space-y-4">
@@ -99,19 +107,23 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <span className="text-sm font-medium">Running</span>
               </div>
-              <span className="text-xl font-bold text-yellow-600">{stats.runningCount}</span>
+              <span className="text-xl font-bold text-yellow-600">
+                {stats.runningCount}
+              </span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-gray-400"></div>
                 <span className="text-sm font-medium">Pending</span>
               </div>
-              <span className="text-xl font-bold text-gray-600">{stats.pendingCount}</span>
+              <span className="text-xl font-bold text-gray-600">
+                {stats.pendingCount}
+              </span>
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* Bottom summary stats */}
       <div className="pt-6 border-t border-border">
         <div className="grid grid-cols-3 gap-8">
@@ -123,13 +135,17 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
           </div>
           <div className="text-center space-y-2">
             <div className="text-lg font-semibold">
-              {stats.lastRun ? new Date(stats.lastRun.date).toLocaleDateString() : 'Never'}
+              {stats.lastRun
+                ? new Date(stats.lastRun.date).toLocaleDateString()
+                : "Never"}
             </div>
             <div className="text-sm text-muted-foreground">Last Run</div>
           </div>
           <div className="text-center space-y-2">
             <div className="text-lg font-semibold">
-              {stats.firstRun ? new Date(stats.firstRun.date).toLocaleDateString() : 'Never'}
+              {stats.firstRun
+                ? new Date(stats.firstRun.date).toLocaleDateString()
+                : "Never"}
             </div>
             <div className="text-sm text-muted-foreground">First Run</div>
           </div>
@@ -139,9 +155,9 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
   );
 }
 
-function WorkflowRunsTable({ runs, onRunClick }: { 
-  runs: WorkflowRun[]; 
-  onRunClick: (run: WorkflowRun) => void; 
+function WorkflowRunsTable({ runs, onRunClick }: {
+  runs: WorkflowRun[];
+  onRunClick: (run: WorkflowRun) => void;
 }) {
   const [sortKey, setSortKey] = useState<string>("updatedAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -174,11 +190,11 @@ function WorkflowRunsTable({ runs, onRunClick }: {
       }
 
       if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortDirection === "asc" 
+        return sortDirection === "asc"
           ? aVal.localeCompare(bVal)
           : bVal.localeCompare(aVal);
       }
-      
+
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -254,19 +270,29 @@ function WorkflowOverviewTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get("page") || 1);
   const per_page = Number(searchParams.get("per_page") || 10);
-  
-  const { data: allRunsData, refetch: refetchAllRuns, isRefetching: isRefetchingAllRuns } = useAllWorkflowRuns(workflowName);
-  const { data: instancesData, refetch: refetchInstances, isRefetching: isRefetchingInstances } = useWorkflowInstances(workflowName, page, per_page);
-  
+
+  const {
+    data: allRunsData,
+    refetch: refetchAllRuns,
+    isRefetching: isRefetchingAllRuns,
+  } = useAllWorkflowRuns(workflowName);
+  const {
+    data: instancesData,
+    refetch: refetchInstances,
+    isRefetching: isRefetchingInstances,
+  } = useWorkflowInstances(workflowName, page, per_page);
+
   const navigateWorkspace = useNavigateWorkspace();
 
   const allRuns = allRunsData.workflows as WorkflowRun[];
   const paginatedRuns = instancesData.workflows as WorkflowRun[];
-  
+
   const stats = useMemo(() => calculateWorkflowStats(allRuns), [allRuns]);
 
   function handleRunClick(run: WorkflowRun) {
-    navigateWorkspace(`/workflows/${encodeURIComponent(workflowName)}/instances/${run.runId}`);
+    navigateWorkspace(
+      `/workflows/${encodeURIComponent(workflowName)}/instances/${run.runId}`,
+    );
   }
 
   function handlePageChange(newPage: number) {
@@ -296,7 +322,9 @@ function WorkflowOverviewTab() {
                 <Icon
                   name="refresh"
                   size={16}
-                  className={(isRefetchingAllRuns || isRefetchingInstances) ? "animate-spin" : ""}
+                  className={(isRefetchingAllRuns || isRefetchingInstances)
+                    ? "animate-spin"
+                    : ""}
                 />
               </Button>
             </TooltipTrigger>
@@ -318,24 +346,35 @@ function WorkflowOverviewTab() {
             <Icon name="history" size={20} />
             Recent Runs
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            {paginatedRuns.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-                <div className="space-y-4">
-                  <Icon name="work" size={48} className="mx-auto opacity-50" />
-                  <div className="space-y-2">
-                    <p className="text-lg font-medium">No runs found</p>
-                    <p className="text-sm">This workflow hasn't been executed yet.</p>
+            {paginatedRuns.length === 0
+              ? (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <div className="space-y-4">
+                    <Icon
+                      name="work"
+                      size={48}
+                      className="mx-auto opacity-50"
+                    />
+                    <div className="space-y-2">
+                      <p className="text-lg font-medium">No runs found</p>
+                      <p className="text-sm">
+                        This workflow hasn't been executed yet.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-full overflow-auto">
-                <WorkflowRunsTable runs={paginatedRuns} onRunClick={handleRunClick} />
-              </div>
-            )}
+              )
+              : (
+                <div className="h-full overflow-auto">
+                  <WorkflowRunsTable
+                    runs={paginatedRuns}
+                    onRunClick={handleRunClick}
+                  />
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -354,7 +393,7 @@ const tabs: Record<string, Tab> = {
 
 function WorkflowOverviewPage() {
   const { workflowName = "" } = useParams();
-  
+
   return (
     <PageLayout
       hideViewsButton
@@ -373,4 +412,4 @@ function WorkflowOverviewPage() {
   );
 }
 
-export default WorkflowOverviewPage; 
+export default WorkflowOverviewPage;

@@ -219,7 +219,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
         <BreadcrumbList>
           {isMobile
             ? (
-              <BreadcrumbItem key={`mobile-${items.at(-1)?.link || 'last'}`}>
+              <BreadcrumbItem key={`mobile-${items.at(-1)?.link || "last"}`}>
                 <BreadcrumbPage className="inline-flex items-center gap-2">
                   {items.at(-1)?.label}
                 </BreadcrumbPage>

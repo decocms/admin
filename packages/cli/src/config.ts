@@ -6,7 +6,8 @@
 import { parse, stringify } from "smol-toml";
 import { z } from "zod";
 import { readSession } from "./session.ts";
-import type { MCPConfig } from "./utils/prompt-mcp-install.ts";
+import type { MCPConfig } from "./utils/prompt-ide-setup.ts";
+import rules from "./rules/deco-chat.mdc" with { type: "text" };
 
 // MD5 hash function
 async function md5Hash(input: string): Promise<string> {
@@ -265,3 +266,5 @@ export async function getMCPConfig(
 }
 
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
+
+export const getRulesConfig = () => ({ "deco-chat.mdc": rules });

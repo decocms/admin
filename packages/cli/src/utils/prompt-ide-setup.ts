@@ -18,6 +18,7 @@ import {
   getAppUUID,
   getMCPConfig,
   getMCPConfigVersion,
+  getRulesConfig,
 } from "../config.ts";
 
 type MCPServerConfig = {
@@ -33,75 +34,98 @@ export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>;
 }
 
+interface IDEConfig {
+  content: string;
+  path: string;
+}
+
 interface IDESupport {
   name: string;
-  getConfig: (projectRoot: string) => Promise<MCPConfig | null>;
-  createConfig: (mcpConfig: MCPConfig, projectRoot: string) => Promise<{
-    config: MCPConfig;
-    configPath: string;
-  }>;
+  createConfig: (
+    mcpConfig: MCPConfig,
+    projectRoot: string,
+  ) => Promise<IDEConfig[]>;
 }
 
 const IDE_SUPPORT: Record<string, IDESupport> = {
   cursor: {
     name: "Cursor",
     createConfig: async (mcpConfig: MCPConfig, projectRoot: string) => {
-      const configPath = join(projectRoot, ".cursor", "mcp.json");
+      const outDir = join(projectRoot, ".cursor");
+
+      const configs = [];
+
+      const configPath = join(outDir, "mcp.json");
       const existingConfig: MCPConfig = await Deno.readTextFile(configPath)
         .then(JSON.parse).catch(() => ({ mcpServers: {} }));
 
-      return {
-        configPath,
-        config: {
-          mcpServers: {
-            ...(existingConfig.mcpServers || {}),
-            ...mcpConfig.mcpServers,
-          },
+      const config = {
+        mcpServers: {
+          ...(existingConfig.mcpServers || {}),
+          ...mcpConfig.mcpServers,
         },
       };
-    },
-    getConfig: async (projectRoot: string): Promise<MCPConfig> => {
-      const configPath = join(projectRoot, ".cursor", "mcp.json");
-      return await Deno.readTextFile(configPath)
-        .then(JSON.parse).catch(() => null);
+
+      configs.push({
+        content: JSON.stringify(config, null, 2),
+        path: join(outDir, "mcp.json"),
+      });
+
+      const rules = Object.entries(getRulesConfig());
+
+      for (const [path, content] of rules) {
+        configs.push({ content, path: join(outDir, "rules", path) });
+      }
+
+      return configs;
     },
   },
   vscode: {
     name: "VS Code",
     createConfig: async (mcpConfig: MCPConfig, projectRoot: string) => {
-      const configPath = join(projectRoot, ".vscode", "mcp.json");
+      const outDir = join(projectRoot, ".vscode");
+
+      const configs = [];
+
+      const configPath = join(outDir, "mcp.json");
       const existingConfig: MCPConfig = await Deno.readTextFile(configPath)
         .then(JSON.parse).catch(() => ({ mcpServers: {} }));
 
-      return {
-        configPath,
-        config: {
-          mcpServers: {
-            ...(existingConfig.mcpServers || {}),
-            ...mcpConfig.mcpServers,
-          },
+      const config = {
+        mcpServers: {
+          ...(existingConfig.mcpServers || {}),
+          ...mcpConfig.mcpServers,
         },
       };
-    },
-    getConfig: async (projectRoot: string): Promise<MCPConfig> => {
-      const configPath = join(projectRoot, ".vscode", "mcp.json");
-      return await Deno.readTextFile(configPath)
-        .then(JSON.parse).catch(() => null);
+
+      configs.push({
+        content: JSON.stringify(config, null, 2),
+        path: join(outDir, "mcp.json"),
+      });
+
+      const rules = Object.entries(getRulesConfig());
+
+      for (const [path, content] of rules) {
+        configs.push({ content, path: join(outDir, "rules", path) });
+      }
+
+      return configs;
     },
   },
 };
 
-export async function writeMCPConfig(
-  config: MCPConfig,
-  targetPath: string,
-): Promise<void> {
-  // Ensure the directory exists
-  await ensureDir(dirname(targetPath));
+export async function writeIDEConfig(configs: IDEConfig[]): Promise<void> {
+  const targetDir = dirname(configs[0]?.path ?? "");
 
-  // Write the configuration file
-  await Deno.writeTextFile(targetPath, JSON.stringify(config, null, 2));
+  // Write all configuration files in parallel
+  await Promise.all(
+    configs.map(async ({ content, path }) => {
+      await ensureDir(dirname(path));
+      await Deno.writeTextFile(path, content);
+    }),
+  );
 
-  console.log(`✅ MCPs configuration written to: ${targetPath}`);
+  console.log(`✅ IDE configuration written to: ${targetDir}`);
 }
 
 export const hasMCPPreferences = async (
@@ -130,30 +154,13 @@ export const setMCPPreferences = async (workspace: string, app: string) => {
   );
 };
 
-export async function promptMCPInstall(
+export async function promptIDESetup(
   cfg: Pick<Config, "workspace" | "app">,
   projectRoot: string = Deno.cwd(),
-): Promise<{ config: MCPConfig; configPath: string } | null> {
+): Promise<Array<{ content: string; path: string }> | null> {
   await setMCPPreferences(cfg.workspace, cfg.app);
 
   const mcpConfig = await getMCPConfig(cfg.workspace, cfg.app);
-
-  // First, try to detect which IDE config files exist to suggest the most likely one
-  const existingConfigs = await Promise.all(
-    Object.entries(IDE_SUPPORT).map(async ([ideKey, ideSupport]) => {
-      const currentConfig = await ideSupport.getConfig(projectRoot);
-      return { ideKey, ideSupport, currentConfig };
-    }),
-  );
-
-  // Find IDEs that have existing configs
-  const targetIDE = existingConfigs.find(({ currentConfig }) =>
-    currentConfig !== null
-  );
-
-  // If we have existing configs, check if any would be different with the new config
-  let selectedIDE = targetIDE?.ideKey;
-  let ideSupport = targetIDE?.ideSupport;
 
   // No existing configs, ask if user wants to make IDE sentient
   const wantsSentientIDE = await Confirm.prompt({
@@ -166,9 +173,8 @@ export async function promptMCPInstall(
   }
 
   // Prompt user to select their IDE
-  selectedIDE = await Select.prompt({
+  const selectedIDE = await Select.prompt({
     message: "Select your preferred IDE",
-    default: selectedIDE,
     options: [
       { name: "Cursor", value: "cursor" },
       { name: "VS Code", value: "vscode" },
@@ -176,17 +182,17 @@ export async function promptMCPInstall(
     ],
   });
 
-  ideSupport = IDE_SUPPORT[selectedIDE];
+  const ideSupport = IDE_SUPPORT[selectedIDE];
 
   if (selectedIDE === "none") {
     return null;
   }
 
   // Create the IDE-specific configuration
-  const { config, configPath } = await ideSupport.createConfig(
+  const configs = await ideSupport.createConfig(
     mcpConfig,
     projectRoot,
   );
 
-  return { config, configPath };
+  return configs;
 }

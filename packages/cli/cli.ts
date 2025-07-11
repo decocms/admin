@@ -13,9 +13,9 @@ import { genEnv } from "./src/typings.ts";
 import { checkForUpdates, upgrade } from "./src/upgrade.ts";
 import {
   hasMCPPreferences,
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./src/utils/prompt-mcp-install.ts";
+  promptIDESetup,
+  writeIDEConfig,
+} from "./src/utils/prompt-ide-setup.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
@@ -140,10 +140,10 @@ const dev = new Command()
     const latest = await hasMCPPreferences(config.workspace, config.app);
 
     if (!latest) {
-      const mcpConfig = await promptMCPInstall(config);
+      const mcpConfig = await promptIDESetup(config);
 
       if (mcpConfig) {
-        await writeMCPConfig(mcpConfig.config, mcpConfig.configPath);
+        await writeIDEConfig(mcpConfig);
       }
     }
 

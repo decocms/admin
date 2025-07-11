@@ -1,12 +1,10 @@
 import { Input } from "@cliffy/prompt";
+import { join } from "@std/path";
 import { type Config, getConfig, writeConfigFile } from "./config.ts";
+import { genEnv } from "./typings.ts";
+import { promptIDESetup, writeIDEConfig } from "./utils/prompt-ide-setup.ts";
 import { promptIntegrations } from "./utils/prompt-integrations.ts";
-import {
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./utils/prompt-mcp-install.ts";
 import { promptWorkspace } from "./utils/prompt-workspace.ts";
-import { sanitizeConstantName } from "./utils/slugify.ts";
 
 export async function configureCommand(local?: boolean) {
   const currentConfig = await getConfig({ inlineOptions: { local } })
@@ -21,20 +19,19 @@ export async function configureCommand(local?: boolean) {
 
   // Prompt for MCP installation
   const config = { workspace, app };
-  const mcpConfig = await promptMCPInstall(config);
+  const mcpConfig = await promptIDESetup(config);
 
-  const integrations = await promptIntegrations(local, workspace);
+  const bindings = await promptIntegrations(local, workspace);
+
+  // Generate environment variables file
+  const envContent = await genEnv({ workspace, local, bindings });
 
   if (mcpConfig) {
-    await writeMCPConfig(mcpConfig.config, mcpConfig.configPath);
+    await writeIDEConfig(mcpConfig);
   }
-  await writeConfigFile({
-    workspace,
-    app,
-    bindings: integrations.map(({ name, id }) => ({
-      name: sanitizeConstantName(name),
-      type: "mcp",
-      integration_id: id,
-    })),
-  });
+  await writeConfigFile({ workspace, app, bindings });
+
+  const outputPath = join(Deno.cwd(), "deco.gen.ts");
+  await Deno.writeTextFile(outputPath, envContent);
+  console.log(`✅ Environment types written to: ${outputPath}`);
 }

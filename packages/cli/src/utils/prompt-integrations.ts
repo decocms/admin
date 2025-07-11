@@ -6,11 +6,11 @@
  * 2. Creates a workspace client to access global tools
  * 3. Uses the INTEGRATIONS_LIST tool to fetch available integrations
  * 4. Presents a multiple select prompt to the user with search functionality
- * 5. Returns the selected integration objects as an array
+ * 5. Returns the selected integration bindings as an array
  *
  * @param local - Whether to use local deco.chat instance
  * @param workspace - The workspace to fetch integrations from
- * @returns Promise<Integration[]> - The selected integration objects
+ * @returns Promise<DecoBinding[]> - The selected integration bindings
  * @throws Error if no session is found or no integrations are available
  *
  * @example
@@ -18,26 +18,27 @@
  * import { promptIntegrations } from "./utils/prompt-integrations.ts";
  *
  * // Select integrations for the current workspace
- * const selectedIntegrations = await promptIntegrations();
- * console.log("Selected integrations:", selectedIntegrations);
+ * const selectedBindings = await promptIntegrations();
+ * console.log("Selected bindings:", selectedBindings);
  *
  * // Select integrations for a specific workspace
- * const selectedIntegrations = await promptIntegrations(false, "my-workspace");
- * console.log("Selected integrations:", selectedIntegrations);
+ * const selectedBindings = await promptIntegrations(false, "my-workspace");
+ * console.log("Selected bindings:", selectedBindings);
  *
  * // Select integrations for local development
- * const selectedIntegrations = await promptIntegrations(true);
- * console.log("Selected integrations:", selectedIntegrations);
+ * const selectedBindings = await promptIntegrations(true);
+ * console.log("Selected bindings:", selectedBindings);
  *
- * // Access integration properties
- * selectedIntegrations.forEach(integration => {
- *   console.log(`ID: ${integration.id}, Name: ${integration.name}, Description: ${integration.description}`);
+ * // Access binding properties
+ * selectedBindings.forEach(binding => {
+ *   console.log(`Name: ${binding.name}, Type: ${binding.type}, Integration ID: ${binding.integration_id}`);
  * });
  * ```
  */
 import { Select } from "@cliffy/prompt";
 import { createWorkspaceClient } from "../mcp.ts";
 import { readSession } from "../session.ts";
+import { sanitizeConstantName } from "./slugify.ts";
 import { z } from "zod";
 
 interface Integration {
@@ -51,10 +52,16 @@ interface Integration {
   };
 }
 
+interface DecoBinding {
+  name: string;
+  type: string;
+  integration_id: string;
+}
+
 export async function promptIntegrations(
   local = false,
   workspace = "",
-): Promise<Integration[]> {
+): Promise<DecoBinding[]> {
   // Check if user has a session
   const session = await readSession();
   if (!session) {
@@ -167,8 +174,12 @@ export async function promptIntegrations(
       }
     }
 
-    // Return the selected integration objects
-    return selectedIntegrations;
+    // Return the selected integration bindings
+    return selectedIntegrations.map(({ name, id }) => ({
+      name: sanitizeConstantName(name),
+      type: "mcp",
+      integration_id: id,
+    }));
   } finally {
     // Clean up the client connection
     await client.close();

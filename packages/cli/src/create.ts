@@ -2,12 +2,11 @@ import { Input, Select } from "@cliffy/prompt";
 import { copy, ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { type Config, getConfig, writeConfigFile } from "./config.ts";
-import {
-  promptMCPInstall,
-  writeMCPConfig,
-} from "./utils/prompt-mcp-install.ts";
+import { genEnv } from "./typings.ts";
+import { promptIDESetup, writeIDEConfig } from "./utils/prompt-ide-setup.ts";
 import { promptWorkspace } from "./utils/prompt-workspace.ts";
 import { slugify } from "./utils/slugify.ts";
+import { promptIntegrations } from "./utils/prompt-integrations.ts";
 
 interface Template {
   name: string;
@@ -104,16 +103,29 @@ async function customizeTemplate(
     try {
       // Read current config from target directory
       const currentConfig = await getConfig({ cwd: targetDir });
+      const bindings = await promptIntegrations(false, workspace);
 
       // Merge with new project name and workspace
       const newConfig = {
         ...currentConfig,
         app: projectName,
         workspace: workspace,
+        bindings,
       };
 
       // Write the new config file
       await writeConfigFile(newConfig, targetDir);
+
+      // Generate environment variables file
+      const envContent = await genEnv({
+        workspace: workspace,
+        local: false,
+        bindings: newConfig.bindings || [],
+      });
+
+      const outputPath = join(targetDir, "deco.gen.ts");
+      await Deno.writeTextFile(outputPath, envContent);
+      console.log(`✅ Environment types written to: ${outputPath}`);
     } catch (error) {
       console.warn(
         "⚠️  Could not update config file:",
@@ -212,7 +224,7 @@ export async function createCommand(
 
     // Prompt user to install MCP configuration for IDE
     const mcpResult = workspace
-      ? await promptMCPInstall(
+      ? await promptIDESetup(
         { workspace, app: finalProjectName },
         targetDir,
       )
@@ -222,7 +234,7 @@ export async function createCommand(
     await downloadTemplate(selectedTemplate, targetDir);
 
     if (mcpResult) {
-      await writeMCPConfig(mcpResult.config, mcpResult.configPath);
+      await writeIDEConfig(mcpResult);
     }
 
     await customizeTemplate(targetDir, finalProjectName, workspace);

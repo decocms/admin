@@ -470,15 +470,17 @@ function StepDetailContent({
   hasOutput: boolean;
   stepData: any;
 }) {
-  const [activeSection, setActiveSection] = useState<'input' | 'output' | 'error' | null>(() => {
+  const [activeSection, setActiveSection] = useState<
+    "input" | "output" | "error" | null
+  >(() => {
     // Auto-open the first available section
-    if (hasError) return 'error';
-    if (hasInput) return 'input';
-    if (hasOutput) return 'output';
+    if (hasError) return "error";
+    if (hasInput) return "input";
+    if (hasOutput) return "output";
     return null;
   });
 
-  const toggleSection = (section: 'input' | 'output' | 'error') => {
+  const toggleSection = (section: "input" | "output" | "error") => {
     setActiveSection(activeSection === section ? null : section);
   };
 
@@ -488,20 +490,20 @@ function StepDetailContent({
       {hasError && (
         <div>
           <button
-            onClick={() => toggleSection('error')}
+            onClick={() => toggleSection("error")}
             className="w-full flex items-center justify-between p-4 bg-destructive/5 hover:bg-destructive/10 rounded-lg border border-destructive/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
               <Icon name="error" size={20} />
               Error
             </h3>
-            <Icon 
-              name={activeSection === 'error' ? "expand_less" : "expand_more"} 
-              size={20} 
-              className="text-destructive" 
+            <Icon
+              name={activeSection === "error" ? "expand_less" : "expand_more"}
+              size={20}
+              className="text-destructive"
             />
           </button>
-          {activeSection === 'error' && (
+          {activeSection === "error" && (
             <Card className="border-destructive/30 mt-2">
               <CardContent className="p-4 max-h-[600px] overflow-y-auto">
                 <JsonTreeViewer value={stepData.error} />
@@ -515,20 +517,20 @@ function StepDetailContent({
       {hasInput && (
         <div>
           <button
-            onClick={() => toggleSection('input')}
+            onClick={() => toggleSection("input")}
             className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-lg border border-primary/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
               <Icon name="input" size={20} />
               Input
             </h3>
-            <Icon 
-              name={activeSection === 'input' ? "expand_less" : "expand_more"} 
-              size={20} 
-              className="text-primary" 
+            <Icon
+              name={activeSection === "input" ? "expand_less" : "expand_more"}
+              size={20}
+              className="text-primary"
             />
           </button>
-          {activeSection === 'input' && (
+          {activeSection === "input" && (
             <Card className="border-primary/30 mt-2">
               <CardContent className="p-4 max-h-[600px] overflow-y-auto">
                 <JsonTreeViewer value={stepData.payload} />
@@ -542,20 +544,20 @@ function StepDetailContent({
       {hasOutput && (
         <div>
           <button
-            onClick={() => toggleSection('output')}
+            onClick={() => toggleSection("output")}
             className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 rounded-lg border border-success/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-success flex items-center gap-2">
               <Icon name="check_circle" size={20} />
               Output
             </h3>
-            <Icon 
-              name={activeSection === 'output' ? "expand_less" : "expand_more"} 
-              size={20} 
-              className="text-success" 
+            <Icon
+              name={activeSection === "output" ? "expand_less" : "expand_more"}
+              size={20}
+              className="text-success"
             />
           </button>
-          {activeSection === 'output' && (
+          {activeSection === "output" && (
             <Card className="border-success/30 mt-2">
               <CardContent className="p-4 max-h-[600px] overflow-y-auto">
                 <JsonTreeViewer value={stepData.output} />
@@ -634,7 +636,7 @@ function StepDetailModal({
         </DialogHeader>
 
         <ScrollArea className="flex-1 -mx-6 px-6">
-          <StepDetailContent 
+          <StepDetailContent
             hasError={hasError}
             hasInput={hasInput}
             hasOutput={hasOutput}

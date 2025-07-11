@@ -718,7 +718,7 @@ export function WorkflowFlowVisualization({
     };
     nodes.forEach((node: Node) => {
       const status = node.data?.status as string;
-      if (status && typeof status === 'string' && status in counts) {
+      if (status && typeof status === "string" && status in counts) {
         counts[status as keyof typeof counts]++;
       }
     });

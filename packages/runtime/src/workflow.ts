@@ -5,7 +5,6 @@ import { D1Store } from "@mastra/cloudflare-d1";
 import { Mastra } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import { DurableObject } from "./cf-imports.ts";
-import { OTLPStorageExporter } from "@mastra/core";
 
 const createRuntimeContext = (env: DefaultEnv, ctx: DurableObjectState) => {
   const runtimeContext = new RuntimeContext<AppContext>();
@@ -67,33 +66,6 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
         telemetry: {
           enabled: true,
           serviceName: `app-${this.env.DECO_CHAT_SCRIPT_SLUG}`,
-          export: {
-            exporter: new OTLPStorageExporter({
-              storage: d1Storage,
-              logger: {
-                ...console,
-                trackException: () => {},
-                getTransports: () => new Map(),
-                getLogs: () =>
-                  Promise.resolve({
-                    logs: [],
-                    total: 0,
-                    page: 0,
-                    perPage: 0,
-                    hasMore: false,
-                  }),
-                getLogsByRunId: () =>
-                  Promise.resolve({
-                    logs: [],
-                    total: 0,
-                    page: 0,
-                    perPage: 0,
-                    hasMore: false,
-                  }),
-              },
-            }),
-            type: "custom",
-          },
         },
       });
 

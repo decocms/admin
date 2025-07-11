@@ -301,7 +301,7 @@ export const getThread = createTool({
     });
 
     if (!result?.rows.length || error) {
-      throw new NotFoundError();
+      throw new NotFoundError("Thread not found");
     }
 
     const thread = ThreadSchema.parse(result.rows[0]);
@@ -355,7 +355,7 @@ export const updateThreadTitle = createTool({
 
     const currentThread = await memory.getThreadById({ threadId });
     if (!currentThread) {
-      throw new NotFoundError();
+      throw new NotFoundError("Thread for title update not found");
     }
 
     const result = await memory.updateThread({
@@ -395,7 +395,7 @@ export const updateThreadMetadata = createTool({
 
     const currentThread = await memory.getThreadById({ threadId });
     if (!currentThread) {
-      throw new NotFoundError();
+      throw new NotFoundError("Thread for update not found");
     }
 
     const result = await memory.updateThread({

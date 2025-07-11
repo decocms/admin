@@ -1,11 +1,11 @@
 ---
 description: Wallet/Payments related
-globs: 
+globs:
 alwaysApply: false
 ---
 # Wallet System Architecture
 
-This document explains how the wallet system works in deco.chat, covering the currency system, transaction management, billing integration, and usage tracking.
+This document explains how the wallet system works in deco.chat, covering the currency system, transaction management, billing integration, usage tracking, and the new plan-based pricing system.
 
 ## Overview
 
@@ -15,8 +15,9 @@ The wallet system manages **AI credits** for workspaces using a precise currency
 - **MicroDollar**: Precise currency system (1 USD = 1,000,000 microdollars)  
 - **Wallet API**: RESTful service for account management and transactions
 - **Transaction System**: Double-entry accounting with typed transaction operations
-- **Billing Integration**: Stripe payments with currency conversion and webhooks
+- **Billing Integration**: Stripe payments with plan-based markup pricing and webhooks
 - **Usage Tracking**: Real-time AI usage monitoring and charging
+- **Plan System**: Database-driven pricing plans with seat limits and monthly credits
 
 ## 1. MicroDollar Currency System
 
@@ -53,7 +54,56 @@ export class MicroDollar {
 - **Large amounts**: `"1_500000"` (= $1.50)  
 - **Negative amounts**: `"-1_500000"` (= -$1.50)
 
-## 2. Wallet Structure
+## 2. Plan System
+
+### Plan Database Structure
+Plans are now stored in the database with rich metadata:
+
+```typescript
+// packages/sdk/src/plan.ts
+export interface PlanWithTeamMetadata extends Plan {
+  id: string;                    // UUID
+  title: string;                 // "Free", "Starter", "Growth", "Scale"
+  markup: number;                // Markup percentage (0-100)
+  user_seats: number;            // Maximum team seats
+  monthly_credit_in_dollars: number;  // Monthly credit reward
+  isAtSeatLimit: boolean;        // Computed: team at seat limit
+  remainingSeats: number;        // Computed: seats available
+}
+```
+
+### Well-Known Plans
+```typescript
+export const WELL_KNOWN_PLANS = {
+  FREE: "00000000-0000-0000-0000-000000000001",
+  STARTER: "00000000-0000-0000-0000-000000000002", 
+  GROWTH: "00000000-0000-0000-0000-000000000003",
+  SCALE: "00000000-0000-0000-0000-000000000004",
+};
+```
+
+### Plan Pricing Structure
+- **Free**: 20% markup, 1 seat, $0 monthly credits
+- **Starter**: 15% markup, 10 seats, $500 monthly credits  
+- **Growth**: 10% markup, 50 seats, $2500 monthly credits
+- **Scale**: 5% markup, 100 seats, $5000 monthly credits
+
+### Markup System
+Plans include markup percentages that affect payment amounts:
+
+```typescript
+// packages/sdk/src/plan.ts
+export const Markup = {
+  add: ({ usdCents, markupPercentage }) => {
+    return Math.round(usdCents * (1 + markupPercentage / 100));
+  },
+  remove: ({ usdCents, markupPercentage }) => {
+    return Math.round(usdCents / (1 + markupPercentage / 100));
+  },
+};
+```
+
+## 3. Wallet Structure
 
 ### Well-Known Wallets
 Each workspace has specific wallet accounts for different purposes:
@@ -62,13 +112,6 @@ Each workspace has specific wallet accounts for different purposes:
 // packages/sdk/src/mcp/wallet/well-known.ts
 export const WellKnownWallets = {
   workspace: {
-    // Trial credits (free $2.00 for new workspaces)
-    trialCredits: (workspace: string) => [
-      "user",
-      `workspace-trial-credits-${workspace}`,
-      "expense"
-    ],
-    
     // Generation credits (main AI usage wallet)
     genCredits: (workspace: string) => [
       "user", 
@@ -87,11 +130,12 @@ export const WellKnownWallets = {
 ```
 
 ### Account Types
-- **Trial Credits**: Free $2.00 for new workspaces (`expense` account)
 - **Generation Credits**: Main wallet for AI usage (`liability` account)  
 - **Vouchers**: Transferable credits between workspaces
 
-## 3. Transaction System
+**Note**: Trial credits have been removed from the system.
+
+## 4. Transaction System
 
 ### Transaction Types
 
@@ -101,7 +145,7 @@ export type Transaction =
   | AgentGeneration      // AI agent usage
   | LLMGeneration        // Direct AI generation (stateless)
   | WorkspaceCashIn      // Stripe payments
-  | WorkspaceGenCreditReward  // Free trial credits
+  | WorkspaceGenCreditReward  // Monthly plan credits
   | WorkspaceCreateVoucher    // Create transferable voucher
   | WorkspaceRedeemVoucher    // Redeem voucher
   | PreAuthorization     // Reserve funds for operations
@@ -126,7 +170,7 @@ interface AgentGeneration {
   };
   generatedBy: { type: "user"; id: string };
   vendor: { type: "vendor"; id: string };
-  payer?: { type: "wallet"; id: string };  // Trial credits wallet
+  // payer field removed - no longer using trial credits
   timestamp: Date;
 }
 ```
@@ -149,18 +193,30 @@ interface LLMGeneration {
 ### Payment Transactions
 
 #### Workspace Cash In
-Records Stripe payments:
+Records Stripe payments with markup applied:
 
 ```typescript
 interface WorkspaceCashIn {
   type: "WorkspaceCashIn";
+  amount: string;  // MicroDollar string format (after markup removal)
+  workspace: string;
+  timestamp: Date;
+}
+```
+
+#### Monthly Plan Credits
+Automatic monthly credit rewards based on plan:
+
+```typescript
+interface WorkspaceGenCreditReward {
+  type: "WorkspaceGenCreditReward";
   amount: string;  // MicroDollar string format
   workspace: string;
   timestamp: Date;
 }
 ```
 
-## 4. Wallet API Client
+## 5. Wallet API Client
 
 ### Core Operations
 
@@ -223,7 +279,7 @@ import { createWalletClient } from "@deco/sdk/mcp/wallet";
 const wallet = createWalletClient(apiKey, fetcher);
 ```
 
-## 5. Agent Wallet Integration
+## 6. Agent Wallet Integration
 
 ### Agent Wallet Class
 Each AI agent has a wallet instance for usage tracking:
@@ -242,9 +298,6 @@ export class AgentWallet {
   
   // Record LLM usage and charge wallet
   async computeLLMUsage(opts: ComputeAgentUsageOpts): Promise<void>
-  
-  // Ensure free trial credits are awarded
-  async rewardFreeCreditsIfNeeded(): Promise<void>
 }
 ```
 
@@ -264,26 +317,13 @@ await this.wallet.computeLLMUsage({
   threadId,
   model,
   modelId,
-  plan: plan.id
+  // plan parameter removed
 });
 ```
 
-### Trial Credits System
-New workspaces automatically receive $2.00 in trial credits:
+## 7. Billing Integration (Stripe)
 
-```typescript
-// Auto-reward for new workspaces
-const rewards = [{
-  type: "WorkspaceGenCreditReward",
-  amount: "2_000000",  // $2.00 in microdollars
-  workspace: this.config.workspace,
-  transactionId: WellKnownTransactions.freeTwoDollars(workspace)
-}];
-```
-
-## 6. Billing Integration (Stripe)
-
-### Payment Flow
+### Payment Flow with Markup
 
 1. **Create Checkout Session**
    ```typescript
@@ -296,8 +336,12 @@ const rewards = [{
        cancelUrl: z.string(),
      }),
      handler: async ({ amountUSDCents, successUrl, cancelUrl }, ctx) => {
-       // Creates Stripe checkout session
-       // Converts USD to BRL for adaptive pricing
+       const plan = await getPlan(ctx);
+       const amount = Markup.add({
+         usdCents: amountUSDCents,
+         markupPercentage: plan.markup,
+       });
+       // Creates Stripe checkout session with markup applied
        // Returns { url: string }
      }
    });
@@ -305,10 +349,18 @@ const rewards = [{
 
 2. **Webhook Processing**
    ```typescript
-   // apps/api/src/webhooks/stripe.ts
+   // packages/sdk/src/mcp/wallet/stripe/webhook.ts
    export const handleStripeWebhook = async (c: Context) => {
      const event = await verifyAndParseStripeEvent(payload, signature, ctx);
-     const { transaction } = await createTransactionFromStripeEvent(ctx, event);
+     
+     // Remove markup from received amount
+     const plan = await getPlan(contextWithWorkspace);
+     const amount = await getAmountInDollars({
+       context,
+       amountReceivedUSDCentsWithMarkup: event.data.object.amount_received,
+       currency: event.data.object.currency,
+       plan,
+     });
      
      // Creates WorkspaceCashIn transaction
      await wallet["PUT /transactions/:id"]({ id: idempotentId }, { 
@@ -317,19 +369,27 @@ const rewards = [{
    }
    ```
 
-### Currency Conversion
+### Currency Conversion with Markup
 - Stripe payments in BRL (Brazil-based account)
-- Adaptive pricing for international customers  
-- Webhook converts back to USD using currency API
+- Plan markup applied to checkout amounts
+- Webhook removes markup before crediting wallet
 
 ```typescript
 // packages/sdk/src/mcp/wallet/stripe/webhook.ts
 async function getAmountInDollars({
-  amountReceivedUSDCents,
+  context,
+  amountReceivedUSDCentsWithMarkup,
   currency,
-  context
+  plan,
 }) {
   const conversionRate = currencies[currency.toUpperCase()].value;
+  
+  // Remove markup from received amount
+  const amountReceivedUSDCents = Markup.remove({
+    usdCents: amountReceivedUSDCentsWithMarkup,
+    markupPercentage: plan.markup,
+  });
+  
   const amount = amountReceivedUSDCents / 100;
   const microDollarsString = String(
     Math.round((amount / conversionRate) * 1_000_000)
@@ -338,7 +398,57 @@ async function getAmountInDollars({
 }
 ```
 
-## 7. MCP Tools Integration
+## 8. Monthly Credits System
+
+### Automatic Monthly Rewards
+Teams receive monthly credits based on their plan:
+
+```typescript
+// packages/sdk/src/mcp/teams/api.ts
+const ensureMonthlyPlanCreditsReward = async ({
+  slug,
+  workspace,
+  context: c,
+}) => {
+  const team = await getTeamBySlug(slug, c.db);
+  const monthlyReward = team.plan.monthly_credit_in_dollars;
+  const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
+
+  const month = String(new Date().getMonth() + 1);
+  const year = String(new Date().getFullYear());
+
+  const transactionId = WellKnownTransactions.monthlyPlanCreditsReward(
+    encodeURIComponent(workspace),
+    month,
+    year,
+  );
+
+  const transaction: Transaction = {
+    type: "WorkspaceGenCreditReward",
+    amount: monthlyRewardMicroDollars.toMicrodollarString(),
+    workspace,
+    timestamp: new Date(),
+  };
+
+  await wallet["PUT /transactions/:id"]({ id: transactionId }, {
+    body: transaction,
+  });
+};
+```
+
+### Well-Known Transactions
+```typescript
+// packages/sdk/src/mcp/wallet/well-known.ts
+export const WellKnownTransactions = {
+  monthlyPlanCreditsReward: (
+    workspaceId: string,
+    month: ValidMonth,
+    year: ValidYear,
+  ) => `monthly-plan-credits-reward-${workspaceId}-${month}-${year}`,
+} as const;
+```
+
+## 9. MCP Tools Integration
 
 ### Wallet Tools Group
 
@@ -354,10 +464,10 @@ const createTool = createToolGroup("Wallet", {
 // - GET_WALLET_ACCOUNT: Get balance for workspace
 // - GET_THREADS_USAGE: Usage analytics by thread  
 // - GET_AGENTS_USAGE: Usage analytics by agent
-// - CREATE_CHECKOUT_SESSION: Stripe payment flow
+// - CREATE_CHECKOUT_SESSION: Stripe payment flow with markup
 // - CREATE_VOUCHER: Create transferable credits
 // - REDEEM_VOUCHER: Redeem voucher credits
-// - GET_WORKSPACE_PLAN: Get plan features
+// - GET_WORKSPACE_PLAN: Get plan details and metadata
 ```
 
 ### Authorization & Access Control
@@ -373,7 +483,114 @@ handler: async (input, c) => {
 }
 ```
 
-## 8. Usage Analytics & Reporting
+## 10. Team Management & Seat Limits
+
+### Seat Tracking
+Plans track team membership and enforce seat limits:
+
+```typescript
+// packages/sdk/src/mcp/members/invites-utils.ts
+export function enrichPlanWithTeamMetadata({ team, plan }) {
+  const members = team.members
+    .map(extractOptionalProfile)
+    .filter(filterExistingEmail)
+    .filter(excludeDevEmails);  // deco.cx emails don't count
+
+  const remainingSeats = Math.max(plan.user_seats - members.length, 0);
+
+  return {
+    ...plan,
+    remainingSeats,
+    isAtSeatLimit: remainingSeats === 0,
+  };
+}
+```
+
+### Invitation Controls
+Team invitations now check seat limits instead of features:
+
+```typescript
+// packages/sdk/src/mcp/members/api.ts
+export const inviteTeamMembers = createTool({
+  // ... other config
+  handler: async ({ invitees, teamId }, c) => {
+    const team = await getTeamById(teamId, c.db);
+    const plan = enrichPlanWithTeamMetadata({ team, plan: team.plan });
+
+    if (inviteesToInvite.length > plan.remainingSeats) {
+      throw new UserInputError(
+        `You don't have enough remaining seats to invite ${inviteesToInvite.length} users`,
+      );
+    }
+    
+    // ... rest of invitation logic
+  }
+});
+```
+
+## 11. UI Components & Plan Display
+
+### Plan Protection Component
+The `Protect` component now uses plan-based checks:
+
+```typescript
+// apps/web/src/components/wallet/plan.tsx
+export function Protect({ check, fallback, children }) {
+  const plan = usePlan();
+  const canShow = check(plan);
+
+  if (!canShow) {
+    return fallback;
+  }
+
+  return children;
+}
+
+// Usage example:
+<Protect
+  check={(plan) => !plan.isAtSeatLimit}
+  fallback={<InviteTeamMembersDialogFeatureWall />}
+>
+  <InviteDialog />
+</Protect>
+```
+
+### Deposit Dialog with Markup Display
+The deposit dialog now shows markup calculations:
+
+```typescript
+// apps/web/src/components/wallet/deposit-dialog.tsx
+export function DepositDialog() {
+  const plan = usePlan();
+  
+  return (
+    <div className="rounded-xl border border-border bg-muted/30 p-3">
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-muted-foreground">Credit amount:</span>
+        <span>{formatCurrency(creditAmount)}</span>
+      </div>
+      {plan.markup > 0 && (
+        <>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">
+              Your Plan Markup ({plan.markup}%):
+            </span>
+            <span>
+              {formatCurrency(markupAmount)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-medium pt-2 border-t border-border mt-2">
+            <span>Total charge:</span>
+            <span>{formatCurrency(totalAmount)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+## 12. Usage Analytics & Reporting
 
 ### Data Structure
 Usage is tracked at multiple levels:
@@ -399,7 +616,7 @@ const AgentsUsage = {
 };
 ```
 
-## 9. Error Handling & Edge Cases
+## 13. Error Handling & Edge Cases
 
 ### Insufficient Funds
 ```typescript
@@ -407,6 +624,16 @@ const AgentsUsage = {
 const hasBalance = await wallet.canProceed();
 if (!hasBalance) {
   throw new Error("Insufficient funds");
+}
+```
+
+### Seat Limit Errors
+```typescript
+// Check before team invitations
+if (inviteesToInvite.length > plan.remainingSeats) {
+  throw new UserInputError(
+    `You don't have enough remaining seats to invite ${inviteesToInvite.length} users`,
+  );
 }
 ```
 
@@ -428,24 +655,35 @@ while (retries > 0) {
 }
 ```
 
-## 10. Plan Features & Restrictions
+## 14. Plan Management & Database
 
-### Plan-based Features
-```typescript
-// packages/sdk/src/plan.ts
-export const FEATURES = [
-  "ai-wallet-deposit",  // Paid plans can deposit more money
-  "trial-usage",        // Trial workspaces get free credits
-] as const;
+### Plan Database Schema
+```sql
+CREATE TABLE deco_chat_plans (
+    id UUID PRIMARY KEY,
+    title TEXT NOT NULL,
+    markup INTEGER NOT NULL,
+    user_seats INTEGER NOT NULL,
+    monthly_credit_in_dollars INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-// Usage in tools
-const plan = await getPlan(ctx);
-plan.assertHasFeature("ai-wallet-deposit");  // Throws if not available
+ALTER TABLE teams ADD COLUMN plan_id UUID NOT NULL 
+    REFERENCES deco_chat_plans(id) 
+    DEFAULT '00000000-0000-0000-0000-000000000001';  -- Free plan
 ```
 
-### Trial vs Paid Plans
-- **Trial**: $2.00 free credits, no deposits allowed
-- **Paid**: Can deposit unlimited funds via Stripe
+### Plan Retrieval
+```typescript
+// packages/sdk/src/mcp/wallet/plans.ts
+export const getPlan = async (c: AppContext): Promise<PlanWithTeamMetadata> => {
+  assertHasWorkspace(c);
+  return c.workspace.root === "users"
+    ? await getPersonalWorkspacePlan(c)  // Always free plan
+    : await getTeamPlan(c);             // Team-based plan
+};
+```
 
 ## Implementation Notes
 
@@ -453,15 +691,25 @@ plan.assertHasFeature("ai-wallet-deposit");  // Throws if not available
 - **Balance Caching**: Wallet balance cached with TTL to reduce API calls
 - **Lazy Balance Checks**: Background cache updates to minimize blocking
 - **Batch Operations**: Group transaction processing where possible
+- **Plan Caching**: Plan metadata cached to reduce database lookups
 
 ### Security Considerations  
 - **API Key Authentication**: All wallet API calls require valid API key
 - **Workspace Authorization**: Users can only access their workspace wallets
 - **Idempotent Operations**: Stripe webhooks use event IDs for idempotency
 - **Input Validation**: All monetary amounts validated before processing
+- **Seat Limit Enforcement**: Team invitations blocked when at capacity
 
 ### Monitoring & Observability
 - Transaction failures logged for debugging
 - Usage patterns tracked for analytics
 - Balance alerts for low-credit workspaces
-- Performance metrics for wallet operations 
+- Performance metrics for wallet operations
+- Plan upgrade/downgrade tracking
+- Monthly credit distribution monitoring
+
+### Migration Notes
+- **Removed Features**: Old feature-based system (`invite-to-workspace`, `ai-wallet-deposit`, `trial-usage`) replaced with plan-based checks
+- **Trial Credits**: No longer automatically awarded or tracked separately
+- **Payer System**: Removed from transaction records
+- **Error Messages**: Updated to reflect plan-based restrictions instead of feature restrictions 

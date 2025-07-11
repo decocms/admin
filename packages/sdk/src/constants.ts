@@ -101,6 +101,16 @@ export const WELL_KNOWN_MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
+    id: "google:gemini-2.5-flash-lite-preview-06-17",
+    model: "google:gemini-2.5-flash-lite-preview-06-17",
+    name: "Google: Gemini 2.5 Flash Lite",
+    logo: LOGOS.gemini,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
+  {
     id: "anthropic:claude-sonnet-4",
     model: "anthropic:claude-sonnet-4",
     name: "Claude Sonnet 4",

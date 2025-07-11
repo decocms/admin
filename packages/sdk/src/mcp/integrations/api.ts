@@ -36,6 +36,7 @@ import {
   WellKnownBindings,
 } from "../index.ts";
 import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
+import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
 
 // Tool factories for each group
@@ -151,6 +152,7 @@ export const listTools = createIntegrationManagementTool({
 const virtualIntegrationsFor = (
   workspace: string,
   knowledgeBases: string[],
+  token?: string,
 ) => {
   // Create a virtual User Management integration
   const decoChatMcp = new URL("/mcp", DECO_CHAT_API);
@@ -161,6 +163,7 @@ const virtualIntegrationsFor = (
     connection: {
       type: "HTTP",
       url: decoChatMcp.href,
+      token,
     },
     icon: "https://i.imgur.com/GD4o7vx.png",
     workspace,
@@ -176,6 +179,7 @@ const virtualIntegrationsFor = (
     connection: {
       type: "HTTP",
       url: workspaceMcp.href,
+      token,
     },
     icon: "https://assets.webdraw.app/uploads/deco-avocado-light.png",
     workspace,
@@ -196,6 +200,7 @@ const virtualIntegrationsFor = (
         connection: {
           type: "HTTP",
           url: url.href,
+          token,
         },
         workspace,
         created_at: new Date().toISOString(),
@@ -218,6 +223,7 @@ const virtualIntegrationsFor = (
         connection: {
           type: "HTTP",
           url: url.href,
+          token,
         },
         icon:
           "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
@@ -285,6 +291,7 @@ export const listIntegrations = createIntegrationManagementTool({
       ...virtualIntegrationsFor(
         workspace,
         knowledgeBases.names ?? [],
+        c.token,
       ),
       ...filteredIntegrations.map((item) => ({
         ...item,
@@ -376,6 +383,7 @@ export const getIntegration = createIntegrationManagementTool({
     const virtualIntegrations = virtualIntegrationsFor(
       c.workspace.value,
       knowledgeBases.names ?? [],
+      c.token,
     );
 
     if (virtualIntegrations.some((i) => i.id === id)) {
@@ -549,6 +557,7 @@ const searchMarketplaceIntegations = async (
   }
 };
 
+const DECO_PROVIDER = "deco";
 const virtualInstallableIntegrations = () => {
   return [{
     id: "AGENTS_EMAIL",
@@ -557,9 +566,11 @@ const virtualInstallableIntegrations = () => {
     description: "Manage your agents email",
     icon:
       "https://assets.decocache.com/mcp/65334e3f-17b4-470f-b644-5d226c565db9/email-integration.png",
-    provider: "deco",
+    provider: DECO_PROVIDER,
   }];
 };
+
+const MARKETPLACE_PROVIDER = "marketplace";
 
 export const DECO_INTEGRATIONS_SEARCH = createIntegrationManagementTool({
   name: "DECO_INTEGRATIONS_SEARCH",
@@ -582,7 +593,20 @@ It's always handy to search for installed integrations with no query, since all 
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const marketplace = await searchMarketplaceIntegations(query);
+    const [marketplace, registry] = await Promise.all([
+      searchMarketplaceIntegations(query),
+      listRegistryApps.handler({
+        search: query,
+      }),
+    ]);
+
+    const registryList = registry.apps.map((app) => ({
+      id: app.id,
+      name: `@${app.scopeName}/${app.name}`,
+      description: app.description,
+      icon: app.icon,
+      provider: MARKETPLACE_PROVIDER,
+    }));
 
     const list = marketplace.map((
       { id, name, description, icon, provider },
@@ -600,6 +624,7 @@ It's always handy to search for installed integrations with no query, since all 
         ...virtualIntegrations.filter((integration) =>
           !query || integration.name.includes(query)
         ),
+        ...registryList,
         ...list,
       ],
     };
@@ -742,6 +767,9 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     id: z.string().describe(
       "The id of the integration to install. To know the available ids, use the DECO_INTEGRATIONS_SEARCH tool",
     ),
+    provider: z.string().optional().describe(
+      "The provider of the integration to install. To know the available providers, use the DECO_INTEGRATIONS_SEARCH tool",
+    ),
   }),
   outputSchema: z.object({
     installationId: z.string().describe(
@@ -772,6 +800,15 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
           type: "HTTP",
           url: workspaceMcp.href,
         },
+      };
+    } else if (args.provider === MARKETPLACE_PROVIDER) {
+      const app = await getRegistryApp.handler({ id: args.id });
+      integration = {
+        id: crypto.randomUUID(),
+        name: `@${app.scopeName}/${app.name}`,
+        description: app.description,
+        icon: app.icon,
+        connection: app.connection,
       };
     } else {
       const client = await getDecoRegistryServerClient();

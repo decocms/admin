@@ -13,6 +13,15 @@ import {
 } from "../fs/api.ts";
 import { createTool } from "../members/api.ts";
 import { mergeThemes } from "./merge-theme.ts";
+import { getWalletClient } from "../wallet/api.ts";
+import { getTeamBySlug } from "../members/invites-utils.ts";
+import {
+  isValidMonth,
+  isValidYear,
+  WellKnownTransactions,
+} from "../wallet/well-known.ts";
+import { MicroDollar, type Transaction } from "../wallet/index.ts";
+import { WebCache } from "../../cache/index.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -158,6 +167,66 @@ export const buildSignedUrlCreator = ({
   };
 };
 
+const cache = new WebCache<string>("monthly-plan-credits-reward");
+const TWELVE_HOURS_IN_SECONDS = 12 * 60 * 60;
+
+const ensureMonthlyPlanCreditsReward = async ({
+  slug,
+  workspace,
+  context: c,
+}: {
+  slug: string;
+  workspace: string;
+  context: AppContext;
+}) => {
+  const month = String(new Date().getMonth() + 1);
+  const year = String(new Date().getFullYear());
+
+  if (!isValidMonth(month) || !isValidYear(year)) {
+    throw new Error("Invalid month or year");
+  }
+
+  const cacheKey = `${slug}-${month}-${year}`;
+
+  if (await cache.has(cacheKey)) {
+    return;
+  }
+
+  const wallet = getWalletClient(c);
+  const team = await getTeamBySlug(slug, c.db);
+  const monthlyReward = team.plan.monthly_credit_in_dollars;
+  const monthlyRewardMicroDollars = MicroDollar.fromDollars(monthlyReward);
+
+  const transactionId = WellKnownTransactions.monthlyPlanCreditsReward(
+    encodeURIComponent(workspace),
+    month,
+    year,
+  );
+
+  const transaction: Transaction = {
+    type: "WorkspaceGenCreditReward",
+    amount: monthlyRewardMicroDollars.toMicrodollarString(),
+    workspace,
+    timestamp: new Date(),
+  };
+
+  const response = await wallet["PUT /transactions/:id"]({
+    id: transactionId,
+  }, {
+    body: transaction,
+  });
+
+  if (response.status !== 200 && response.status !== 304) {
+    return console.error(
+      `Failed to claim Team monthly plan credits reward for team ${workspace}`,
+      response,
+      await response.text(),
+    );
+  }
+
+  await cache.set(cacheKey, transactionId, { ttl: TWELVE_HOURS_IN_SECONDS });
+};
+
 export const getTeam = createTool({
   name: "TEAMS_GET",
   description: "Get a team by slug",
@@ -180,6 +249,12 @@ export const getTeam = createTool({
     if (!teamData) {
       throw new NotFoundError("Team not found or user does not have access");
     }
+
+    await ensureMonthlyPlanCreditsReward({
+      slug,
+      workspace: `/shared/${slug}`,
+      context: c,
+    });
 
     try {
       const workspace = `/shared/${slug}`;

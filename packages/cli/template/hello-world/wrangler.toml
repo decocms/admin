@@ -1,9 +1,0 @@
-#:schema node_modules/wrangler/config-schema.json
-name = "hello_world"
-compatibility_date = "2025-06-17"
-main = "main.ts"
-
-[deco]
-workspace = ""
-app = ""
-bindings = []

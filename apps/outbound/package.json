@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "jose": "^6.0.11",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.50.0"
+    "@supabase/ssr": "0.6.1",
+    "@supabase/supabase-js": "2.49.4"
   },
   "devDependencies": {
     "wrangler": "^4.13.2"

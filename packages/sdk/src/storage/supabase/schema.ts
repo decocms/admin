@@ -450,6 +450,53 @@ export type Database = {
         };
         Relationships: [];
       };
+      deco_chat_apps_registry: {
+        Row: {
+          connection: Json;
+          created_at: string;
+          description: string | null;
+          icon: string | null;
+          id: string;
+          name: string;
+          scope_id: string;
+          unlisted: boolean;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          connection: Json;
+          created_at?: string;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          name: string;
+          scope_id: string;
+          unlisted?: boolean;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          connection?: Json;
+          created_at?: string;
+          description?: string | null;
+          icon?: string | null;
+          id?: string;
+          name?: string;
+          scope_id?: string;
+          unlisted?: boolean;
+          updated_at?: string;
+          workspace?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_apps_registry_scope_id_fkey";
+            columns: ["scope_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_registry_scopes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       deco_chat_assets: {
         Row: {
           created_at: string;
@@ -783,6 +830,30 @@ export type Database = {
           name?: string | null;
           prompt_id?: string;
           version_name?: string | null;
+        };
+        Relationships: [];
+      };
+      deco_chat_registry_scopes: {
+        Row: {
+          created_at: string;
+          id: string;
+          scope_name: string;
+          updated_at: string;
+          workspace: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          scope_name: string;
+          updated_at?: string;
+          workspace: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          scope_name?: string;
+          updated_at?: string;
+          workspace?: string;
         };
         Relationships: [];
       };
@@ -2980,6 +3051,21 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      waitlist_deco_3: {
+        Row: {
+          created_at: string;
+          email: string;
+        };
+        Insert: {
+          created_at?: string;
+          email: string;
+        };
+        Update: {
+          created_at?: string;
+          email?: string;
+        };
+        Relationships: [];
       };
       wd_credits: {
         Row: {

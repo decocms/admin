@@ -1,6 +1,5 @@
 import { D1Store } from "@mastra/cloudflare-d1";
 import { parse as parseToml } from "smol-toml";
-import * as uuid from "uuid";
 import { z } from "zod";
 import { JwtIssuer } from "../../auth/jwt.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
@@ -487,8 +486,14 @@ Important Notes:
     bundle: z.boolean().optional().default(true).describe(
       "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
     ),
+    unlisted: z.boolean().optional().default(true).describe(
+      "Whether the app should be unlisted in the registry. Default: true (unlisted)",
+    ),
   }),
-  handler: async ({ appSlug: _appSlug, files, envVars, bundle = true }, c) => {
+  handler: async (
+    { appSlug: _appSlug, files, envVars, bundle = true, unlisted = true },
+    c,
+  ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     // Convert array to record for bundler or direct upload
@@ -596,15 +601,15 @@ Important Notes:
     );
 
     const client = MCPClient.forContext(c);
-    const appUniqueInstallationId = `${workspace}-${scriptSlug}`;
-    await client.INTEGRATIONS_CREATE({
-      name: `App ${scriptSlug}`,
+    await client.REGISTRY_PUBLISH_APP({
+      name: scriptSlug,
+      scopeName: wranglerConfig?.scope ?? c.workspace.slug,
       description:
         `App ${scriptSlug} by deco workers for workspace ${workspace}`,
       icon:
         "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
       ...wranglerConfig.deco?.integration,
-      id: uuid.v5(appUniqueInstallationId, uuid.v5.URL), // this ensures only one app will be installed per workspace
+      unlisted: unlisted ?? true,
       connection: {
         type: "HTTP",
         url: `${data.entrypoint}/mcp`,

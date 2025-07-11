@@ -1,6 +1,7 @@
 export const WellKnownMcpGroups = {
   FS: "file-system",
   Hosting: "hosting",
+  Registry: "registry-management",
   Wallet: "wallet-management",
   Team: "team-management",
   Model: "model-management",

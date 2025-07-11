@@ -9,7 +9,6 @@ import {
   type Node,
   type Edge,
   type Connection,
-  MiniMap,
   Panel,
   Handle,
   Position,
@@ -683,7 +682,7 @@ export function WorkflowFlowVisualization({
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         minZoom={0.3}
         maxZoom={2}
-        attributionPosition="bottom-left"
+        proOptions={{ hideAttribution: true }}
       >
         <Background 
           variant="dots" 
@@ -697,26 +696,6 @@ export function WorkflowFlowVisualization({
           showZoom
           showFitView
           showInteractive={false}
-        />
-                 <MiniMap 
-          position="bottom-left"
-          nodeColor={(node: Node) => {
-            if (node.type === 'startNode') return "hsl(var(--success))";
-            if (node.type === 'endNode') return "hsl(var(--muted))";
-            
-            switch (node.data.status) {
-              case "completed": return "hsl(var(--success))";
-              case "failed": return "hsl(var(--destructive))";
-              case "running": return "hsl(var(--primary))";
-              case "skipped": return "hsl(var(--muted))";
-              default: return "hsl(var(--muted-foreground))";
-            }
-          }}
-          maskColor="hsl(var(--background))"
-          style={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-          }}
         />
         
         {/* Status Summary Panel */}

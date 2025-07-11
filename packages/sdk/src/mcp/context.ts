@@ -50,8 +50,8 @@ export interface Vars {
   immutableRes?: boolean;
   stub: <
     Constructor extends
-      | ActorConstructor<Trigger>
-      | ActorConstructor<AIAgent>,
+    | ActorConstructor<Trigger>
+    | ActorConstructor<AIAgent>,
   >(
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>>;
@@ -187,21 +187,21 @@ export const withMCPErrorHandling = <
   TInput = any,
   TReturn extends object | null | boolean = object,
 >(f: (props: TInput) => Promise<TReturn>) =>
-async (props: TInput) => {
-  try {
-    const result = await f(props);
+  async (props: TInput) => {
+    try {
+      const result = await f(props);
 
-    return {
-      isError: false,
-      structuredContent: result,
-    };
-  } catch (error) {
-    return {
-      isError: true,
-      content: [{ type: "text", text: serializeError(error) }],
-    };
-  }
-};
+      return {
+        isError: false,
+        structuredContent: result,
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: serializeError(error) }],
+      };
+    }
+  };
 
 export const createToolFactory = <
   TAppContext extends AppContext = AppContext,
@@ -210,36 +210,36 @@ export const createToolFactory = <
   group?: string,
   integration?: GroupIntegration,
 ) =>
-<
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
->(
-  def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
-): Tool<TName, TInput, TReturn> => {
-  group && integration && addGroup(group, integration);
-  return {
-    group,
-    ...def,
-    handler: async (props: TInput): Promise<TReturn> => {
-      const context = contextFactory(State.getStore());
-      context.tool = { name: def.name };
+  <
+    TName extends string = string,
+    TInput = any,
+    TReturn extends object | null | boolean = object,
+  >(
+    def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
+  ): Tool<TName, TInput, TReturn> => {
+    group && integration && addGroup(group, integration);
+    return {
+      group,
+      ...def,
+      handler: async (props: TInput): Promise<TReturn> => {
+        const context = contextFactory(State.getStore());
+        context.tool = { name: def.name };
 
-      const result = await def.handler(props, context);
+        const result = await def.handler(props, context);
 
-      if (!context.resourceAccess.granted()) {
-        console.warn(
-          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-        );
-        throw new ForbiddenError(
-          `User cannot access this tool ${def.name}.`,
-        );
-      }
+        if (!context.resourceAccess.granted()) {
+          console.warn(
+            `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+          );
+          throw new ForbiddenError(
+            `User cannot access this tool ${def.name}.`,
+          );
+        }
 
-      return result;
-    },
+        return result;
+      },
+    };
   };
-};
 
 export const createTool = createToolFactory<WithTool<AppContext>>(
   (c) => c as unknown as WithTool<AppContext>,

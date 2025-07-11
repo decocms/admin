@@ -295,7 +295,7 @@ Common patterns:
        "@cloudflare/workers-types": "^4.20250617.0",
        "@deco/mcp": "npm:@jsr/deco__mcp@^0.5.6",
        "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^${DECO_WORKER_RUNTIME_VERSION}",
-       "@mastra/core": "0.0.0-support-d1-client-20250701191943",
+       "@mastra/core": "^0.10.12",
        "zod": "^3.25.67"
      },
      "devDependencies": {
@@ -386,7 +386,7 @@ Example of files deployment:
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.2.18",
-    "@mastra/core": "0.0.0-support-d1-client-20250701191943",
+    "@mastra/core": "^0.10.12",
     "zod": "^3.25.67"
   },
   "devDependencies": {

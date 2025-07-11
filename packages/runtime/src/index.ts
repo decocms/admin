@@ -1,23 +1,21 @@
+// deno-lint-ignore-file no-explicit-any
 import type {
-  ExecutionContext,
-  ForwardableEmailMessage,
-  MessageBatch,
-  ScheduledController,
+  ExecutionContext
 } from "@cloudflare/workers-types";
-import { decodeJwt, type JWTPayload } from "jose";
+import { z } from "zod";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
-
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
-  type ToolBinder,
+  type ToolBinder
 } from "./mcp.ts";
 
-export interface DefaultEnv {
+export interface DefaultEnv<TSchema extends z.ZodTypeAny = never> {
+  DECO_CHAT_STATE: TSchema extends never ? undefined : z.infer<TSchema>;
   DECO_CHAT_SCRIPT_SLUG: string;
   DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
@@ -37,19 +35,12 @@ export interface BindingBase {
   name: string;
 }
 
-export interface IntegrationIdMCPBinding extends BindingBase {
+export interface MCPBinding extends BindingBase {
   type: "mcp";
-  integration_id: string;
-}
-export interface IntegrationNameMCPBinding extends BindingBase {
-  type: "mcp";
-  integration_name: string;
-}
-export type MCPBinding = IntegrationIdMCPBinding | IntegrationNameMCPBinding;
-
-export interface SecretBinding extends BindingBase {
-  type: "secret";
-  description?: string;
+  /**
+   * If not provided, will return a function that takes the integration id and return the binding implementation..
+   */
+  integration_id?: string;
 }
 
 export type Binding = MCPBinding;
@@ -74,59 +65,33 @@ export const WorkersMCPBindings = {
 
 export interface UserDefaultExport<
   TUserEnv = Record<string, unknown>,
-> extends CreateMCPServerOptions {
-  queue?: (
-    batch: MessageBatch,
-    env: TUserEnv,
-    ctx: ExecutionContext,
-  ) => Promise<void> | void;
+  TSchema extends z.ZodTypeAny = never,
+  TEnv = TUserEnv & { STATE: TSchema extends never ? undefined : z.infer<TSchema> }
+> extends CreateMCPServerOptions<TEnv, TSchema> {
   fetch?: (
     req: Request,
-    env: TUserEnv,
+    env: TEnv,
     ctx: ExecutionContext,
   ) => Promise<Response> | Response;
-  scheduled?: (
-    controller: ScheduledController,
-    env: TUserEnv,
-    ctx: ExecutionContext,
-  ) => Promise<void> | void;
-  email?: (
-    message: ForwardableEmailMessage,
-    env: TUserEnv,
-    ctx: ExecutionContext,
-  ) => Promise<void> | void;
 }
 
 // 1. Map binding type to its interface
 interface BindingTypeMap {
   mcp: MCPBinding;
-  secret: SecretBinding;
 }
 
-export interface RequestContext {
-  reqToken?: string;
-  state?: Record<string, unknown>;
-  workspace?: string;
-}
 
 // 2. Map binding type to its creator function
 type CreatorByType = {
   [K in keyof BindingTypeMap]: (
     value: BindingTypeMap[K],
     env: DefaultEnv,
-    ctx?: RequestContext,
   ) => unknown;
 };
 
 // 3. Strongly type creatorByType
 const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
-  secret: (binding, _env, ctx) => {
-    if (!ctx?.state) {
-      return null;
-    }
-    return ctx.state[binding.name] as string;
-  },
 };
 
 const withDefaultBindings = (env: DefaultEnv) => {
@@ -143,20 +108,14 @@ const withDefaultBindings = (env: DefaultEnv) => {
   };
 };
 
-export const withBindings = <TEnv>(_env: TEnv, reqToken?: string): TEnv => {
+export const withBindings = <TEnv>(_env: TEnv): TEnv => {
   const env = _env as DefaultEnv;
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
-  const decoded = reqToken
-    ? decodeJwt<JWTPayload & { state: Record<string, unknown> }>(reqToken)
-    : null;
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](
-      binding,
+      binding as any,
       env,
-      decoded
-        ? { reqToken, state: decoded?.state, workspace: decoded?.aud as string }
-        : undefined,
     );
   }
 
@@ -172,49 +131,22 @@ const getReqToken = (req: Request) => {
   }
   return token.split(" ")[1];
 };
-export const withRuntime = <TEnv>(
-  userFns: UserDefaultExport<TEnv>,
-): UserDefaultExport<TEnv> & { Workflow: ReturnType<typeof Workflow> } => {
-  const server = createMCPServer(userFns);
+
+export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
+  userFns: UserDefaultExport<TEnv, TSchema>,
+): UserDefaultExport<TEnv, TSchema> & { Workflow: ReturnType<typeof Workflow> } => {
+  const server = createMCPServer<TEnv>(userFns);
   return {
     Workflow: Workflow(userFns.workflows),
-    ...userFns,
-    ...userFns.email
-      ? {
-        email: (
-          message: ForwardableEmailMessage,
-          env: TEnv,
-          ctx: ExecutionContext,
-        ) => {
-          return userFns.email!(message, withBindings(env), ctx);
-        },
-      }
-      : {},
-    ...userFns.scheduled
-      ? {
-        scheduled: (
-          controller: ScheduledController,
-          env: TEnv,
-          ctx: ExecutionContext,
-        ) => {
-          return userFns.scheduled!(controller, withBindings(env), ctx);
-        },
-      }
-      : {},
     fetch: (req: Request, env: TEnv, ctx: ExecutionContext) => {
       const url = new URL(req.url);
       if (url.pathname === "/mcp") {
         return server(req, env, ctx);
       }
-      return userFns.fetch?.(req, withBindings(env, getReqToken(req)), ctx) ||
+      return userFns.fetch?.(req, withBindings(env) as any, ctx) ||
         new Response("Not found", { status: 404 });
     },
-    ...userFns.queue
-      ? {
-        queue: (batch: MessageBatch, env: TEnv, ctx: ExecutionContext) => {
-          return userFns.queue!(batch, withBindings(env), ctx);
-        },
-      }
-      : {},
   };
 };
+
+

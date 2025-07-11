@@ -231,21 +231,44 @@ export const getRegistryApp = createTool({
   name: "REGISTRY_GET_APP",
   description: "Get an app from the registry",
   inputSchema: z.object({
-    id: z.string().describe("The id of the app to get"),
+    name: z.string().describe("The name of the app to get").optional(),
+    id: z.string().describe("The id of the app to get").optional(),
   }),
   outputSchema: RegistryAppSchema,
-  handler: async ({ id }, c) => {
+  handler: async (ctx, c) => {
+    console.log({ ctx });
     c.resourceAccess.grant(); // this method is public
+    let data: QueryResult<
+      typeof DECO_CHAT_APPS_REGISTRY_TABLE,
+      typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
+    > | null = null;
 
-    const { data, error } = await c.db
-      .from(DECO_CHAT_APPS_REGISTRY_TABLE)
-      .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
-      .eq("id", id)
-      .single();
+    if ("id" in ctx && ctx.id) {
+      const result = await c.db
+        .from(DECO_CHAT_APPS_REGISTRY_TABLE)
+        .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
+        .eq("id", ctx.id)
+        .single();
 
-    if (error) throw error;
+      if (result.error) throw result.error;
+      data = result.data;
 
-    return Mappers.toRegistryApp(data);
+    } else if ("name" in ctx && ctx.name) {
+      const [scopeName, appName] = ctx.name.slice(1).split("/");
+      const result = await c.db
+        .from(DECO_CHAT_APPS_REGISTRY_TABLE)
+        .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
+        .eq(`${DECO_CHAT_REGISTRY_SCOPES_TABLE}.scope_name`, scopeName)
+        .eq("name", appName)
+        .single();
+
+      if (result.error) throw result.error;
+      data = result.data;
+    }
+    if (!data) {
+      throw new UserInputError("App not found");
+    }
+    return Mappers.toRegistryApp(data!);
   },
 });
 export const listRegistryApps = createTool({

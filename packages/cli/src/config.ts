@@ -22,11 +22,18 @@ export const CONFIG_FILE = "wrangler.toml";
 const requiredErrorForProp = (prop: string) =>
   `Property ${prop} is required. Please provide an inline value using --${prop} or configure it using 'deco configure'.`;
 
-const DecoBindingSchema = z.object({
-  name: z.string().min(1),
-  type: z.string().min(1),
-  integration_id: z.string().min(1),
-});
+const DecoBindingSchema = z.union([
+  z.object({
+    name: z.string().min(1),
+    type: z.string().min(1),
+    integration_id: z.string().min(1),
+  }),
+  z.object({
+    name: z.string().min(1),
+    type: z.string().min(1),
+    integration_name: z.string().min(1),
+  }),
+]);
 
 export type DecoBinding = z.infer<typeof DecoBindingSchema>;
 

@@ -48,7 +48,7 @@ export function createTool<
     TSchemaIn
   >,
   TExecute extends ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"] =
-    ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
 >(
   opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
@@ -173,9 +173,10 @@ export function createStep<
   });
 }
 
-export interface CreateMCPServerOptions<Env = any> {
-  tools?: Array<(env: Env) => ReturnType<typeof createTool>>;
-  workflows?: Array<(env: Env) => ReturnType<typeof createWorkflow>>;
+export interface CreateMCPServerOptions<Env = any, TSchema extends z.ZodTypeAny = never> {
+  oauth?: { state?: TSchema };
+  tools?: Array<(env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createTool>>;
+  workflows?: Array<(env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createWorkflow>>;
 }
 
 export type Fetch<TEnv = any> = (
@@ -203,9 +204,24 @@ const State = {
   ): R => asyncLocalStorage.run(ctx, f, ...args),
 };
 
-export const createMCPServer = <TEnv = any>(
-  options: CreateMCPServerOptions<TEnv>,
-): Fetch<TEnv> => {
+const decoChatOAuthToolFor = (schema: z.ZodTypeAny) => {
+  return createTool({
+    name: "DECO_CHAT_OAUTH_START",
+    description: "OAuth for Deco Chat",
+    inputSchema: schema,
+    outputSchema: z.object({
+      redirectUrl: z.string(),
+    }),
+    handler: async (args, c) => {
+      const { redirectUrl } = await c.tool.execute(args);
+      return { redirectUrl };
+    },
+  });
+}
+
+export const createMCPServer = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
+  options: CreateMCPServerOptions<TEnv, TSchema>,
+): Fetch<TEnv & DefaultEnv<TSchema>> => {
   let server: McpServer | null = null;
 
   const createServer = () => {
@@ -214,8 +230,8 @@ export const createMCPServer = <TEnv = any>(
       { capabilities: { tools: {} } },
     );
 
-    const bindings = withBindings<TEnv & DefaultEnv>(
-      env as unknown as TEnv & DefaultEnv,
+    const bindings = withBindings<TEnv & DefaultEnv<TSchema>>(
+      env as unknown as TEnv & DefaultEnv<TSchema>,
     );
 
     const tools = options.tools?.map((tool) => tool(bindings));
@@ -261,6 +277,7 @@ export const createMCPServer = <TEnv = any>(
           }).shape,
         },
         async (args) => {
+          // TODO (@mcandeia) how to ensure RUN_SQL is not available for all apps that wants to use workflows? is there any physical separation?
           const store = State.getStore();
           const runId = store?.req.headers.get("x-deco-chat-run-id") ??
             crypto.randomUUID();

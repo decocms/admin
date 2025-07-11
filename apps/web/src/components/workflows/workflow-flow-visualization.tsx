@@ -717,8 +717,8 @@ export function WorkflowFlowVisualization({
       skipped: 0,
     };
     nodes.forEach((node: Node) => {
-      const status = node.data.status;
-      if (status in counts) {
+      const status = node.data?.status as string;
+      if (status && typeof status === 'string' && status in counts) {
         counts[status as keyof typeof counts]++;
       }
     });
@@ -745,7 +745,6 @@ export function WorkflowFlowVisualization({
         proOptions={{ hideAttribution: true }}
       >
         <Background
-          variant="dots"
           gap={20}
           size={1}
           color="hsl(var(--muted-foreground))"

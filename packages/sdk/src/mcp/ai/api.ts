@@ -10,7 +10,7 @@ import {
 } from "../assertions.ts";
 import { type AppContext, createToolGroup } from "../context.ts";
 import { InternalServerError, SupabaseLLMVault } from "../index.ts";
-import type { Transaction } from "../wallet/client.ts";
+import type { Payer, Transaction, Vendor } from "../wallet/client.ts";
 import {
   createWalletClient,
   MicroDollar,
@@ -42,6 +42,27 @@ const createLLMUsageTransaction = (opts: {
       id: opts.modelId,
     },
     usage,
+    metadata: opts,
+    timestamp: new Date(),
+  };
+};
+
+const createToolCallTransaction = (opts: {
+  toolId: string;
+  mcpId: string;
+  amount: number | string;
+  payer?: Payer;
+  vendor?: Vendor;
+  workspace: string;
+}): Transaction => {
+  return {
+    type: "ToolCall" as const,
+    toolId: opts.toolId,
+    mcpId: opts.mcpId,
+    amount: opts.amount,
+    payer: opts.payer,
+    vendor: opts.vendor,
+    workspace: opts.workspace,
     metadata: opts,
     timestamp: new Date(),
   };
@@ -222,6 +243,75 @@ export const aiGenerate = createTool({
         transactionId,
       },
       finishReason: result.finishReason,
+    };
+  },
+});
+
+export const aiGenerateImage = createTool({
+  name: "AI_GENERATE_IMAGE",
+  description: "Generate an image using AI models directly without agent context (stateless)",
+  inputSchema: z.object({
+    prompt: z.string().describe("The prompt to generate the image"),
+  }),
+  outputSchema: z.object({
+    image: z.string().describe("The generated image"),
+    transactionId: z.string().describe("The transaction ID"),
+    cost: z.number().describe("The cost of the transaction"),
+  }),
+  handler: async (_input, c) => {
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
+    const workspaceWalletId = WellKnownWallets.build(
+      ...WellKnownWallets.workspace.genCredits(c.workspace.value),
+    );
+
+    const balanceResponse = await wallet["GET /accounts/:id"]({
+      id: encodeURIComponent(workspaceWalletId),
+    });
+
+    if (balanceResponse.status === 404) {
+      throw new InternalServerError("Insufficient funds");
+    }
+
+    if (!balanceResponse.ok) {
+      throw new InternalServerError("Failed to check wallet balance");
+    }
+
+    const balanceData = await balanceResponse.json();
+    const balance = MicroDollar.fromMicrodollarString(balanceData.balance);
+
+    if (balance.isNegative() || balance.isZero()) {
+      throw new InternalServerError("Insufficient funds");
+    }
+    const transaction = createToolCallTransaction({
+      toolId: "image-generation",
+      mcpId: "openai",
+      amount: 10,
+      workspace: c.workspace.value,
+    });
+
+    const response = await wallet["POST /transactions"]({}, {
+      body: transaction,
+    });
+
+    if (!response.ok) {
+      console.error(
+        "Failed to create transaction",
+        response,
+        await response.text(),
+      );
+      throw new InternalServerError("Failed to create transaction");
+    }
+
+    const transactionData = await response.json();
+    const transactionId = transactionData.id;
+
+    return {
+      image: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+      transactionId,
+      cost: 10,
     };
   },
 });

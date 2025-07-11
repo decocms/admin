@@ -77,7 +77,7 @@ export const useAllWorkflowRuns = (workflowName: string) => {
     queryFn: async ({ signal }) => {
       // Fetch a large number to get all runs for this workflow
       // In the future, we might want to implement a "get all" API endpoint
-      const result = await listWorkflows(workspace, 1, 1000, signal);
+      const result = await listWorkflows(workspace, 1, 20, signal);
 
       // Filter to only include runs for this specific workflow
       const filteredWorkflows = result.workflows.filter(

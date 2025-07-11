@@ -22,6 +22,7 @@ import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@deco/ui/components/dialog.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
 
 // Start Node Component
 function StartNode() {
@@ -164,9 +165,7 @@ function StepDetailModal({
                 </h3>
                 <Card className="border-destructive/30">
                   <CardContent className="p-4">
-                    <pre className="whitespace-pre-wrap break-words text-sm">
-                      {JSON.stringify(step.data.stepData.error, null, 2)}
-                    </pre>
+                    <JsonTreeViewer value={step.data.stepData.error} />
                   </CardContent>
                 </Card>
               </div>
@@ -179,10 +178,8 @@ function StepDetailModal({
                   Output
                 </h3>
                 <Card className="border-success/30">
-                  <CardContent className="p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
-                    <pre className="whitespace-pre-wrap break-words text-sm">
-                      {JSON.stringify(step.data.stepData.output, null, 2)}
-                    </pre>
+                  <CardContent className="p-4">
+                    <JsonTreeViewer value={step.data.stepData.output} />
                   </CardContent>
                 </Card>
               </div>
@@ -196,9 +193,7 @@ function StepDetailModal({
                 </h3>
                 <Card className="border-primary/30">
                   <CardContent className="p-4">
-                    <pre className="whitespace-pre-wrap break-words text-sm">
-                      {JSON.stringify(step.data.stepData.input, null, 2)}
-                    </pre>
+                    <JsonTreeViewer value={step.data.stepData.input} />
                   </CardContent>
                 </Card>
               </div>
@@ -343,28 +338,30 @@ function calculateLayout(
   let yPosition = 100;
   const xCenterPosition = 400; // Increased center position for better spacing
   const verticalSpacing = 180;
-  const horizontalSpacing = 280;
+  const horizontalSpacing = 240; // Reduced spacing for parallel steps to bring them closer
   const nodeWidth = 192; // 48 * 4 = 192px (w-48)
   const startEndNodeWidth = 64; // 16 * 4 = 64px (w-16)
+  const startEndGap = 70; // Reduced gap between start/end nodes and workflow steps
+  const endGap = 30; // Reduced gap between last step and end node
 
-  // Add Start Node - properly centered
+  // Add Start Node - properly centered and closer to first step
   nodes.push({
     id: 'start-node',
     type: 'startNode',
     position: {
       x: xCenterPosition - startEndNodeWidth / 2,
-      y: yPosition - 80,
+      y: yPosition - startEndGap,
     },
     data: { label: 'Start' },
     deletable: false,
     selectable: false,
   });
 
-  yPosition += 50; // Add some space after start node
+  yPosition += 20; // Reduced space after start node
 
   steps.forEach((step, index) => {
     if (step.isParallel) {
-      // Handle parallel steps with proper flexbox-like alignment
+      // Handle parallel steps with more spacing for better curved arrows
       const parallelSteps = step.steps;
       const totalWidth = parallelSteps.length * nodeWidth + (parallelSteps.length - 1) * (horizontalSpacing - nodeWidth);
       const startX = xCenterPosition - totalWidth / 2;
@@ -386,7 +383,7 @@ function calculateLayout(
           onClick: () => onNodeClick({ id: parallelStep.id, data: { label: formatStepId(parallelStep.id), status, stepData, duration } }),
         };
 
-        // Calculate position with proper spacing
+        // Calculate position with increased spacing for better curves
         const nodeX = startX + parallelIndex * horizontalSpacing;
 
         nodes.push({
@@ -409,7 +406,7 @@ function calculateLayout(
                 id: `edge-${prevParallelStep.id}-${parallelStep.id}`,
                 source: prevParallelStep.id,
                 target: parallelStep.id,
-                type: 'default',
+                type: 'smoothstep', // Use smoothstep for better curved appearance
                 animated: status === "running",
                 style: { 
                   stroke: status === "running" ? "#3b82f6" : "#6b7280",
@@ -426,7 +423,7 @@ function calculateLayout(
               id: `edge-${prevStep.id}-${parallelStep.id}`,
               source: prevStep.id,
               target: parallelStep.id,
-              type: 'default',
+              type: 'smoothstep', // Use smoothstep for better curved appearance
               animated: status === "running",
               style: { 
                 stroke: status === "running" ? "#3b82f6" : "#6b7280",
@@ -478,7 +475,7 @@ function calculateLayout(
               id: `edge-${prevParallelStep.id}-${step.id}`,
               source: prevParallelStep.id,
               target: step.id,
-              type: 'default',
+              type: 'smoothstep', // Use smoothstep for better curved appearance
               animated: status === "running",
               style: { 
                 stroke: status === "running" ? "#3b82f6" : "#6b7280",
@@ -495,7 +492,7 @@ function calculateLayout(
             id: `edge-${prevStep.id}-${step.id}`,
             source: prevStep.id,
             target: step.id,
-            type: 'default',
+            type: 'default', // Keep default for sequential steps
             animated: status === "running",
             style: { 
               stroke: status === "running" ? "#3b82f6" : "#6b7280",
@@ -513,13 +510,13 @@ function calculateLayout(
     yPosition += verticalSpacing;
   });
 
-  // Add End Node - properly centered
+  // Add End Node - properly centered and closer to last step
   nodes.push({
     id: 'end-node',
     type: 'endNode',
     position: {
       x: xCenterPosition - startEndNodeWidth / 2,
-      y: yPosition + 50,
+      y: yPosition - endGap, // Move end node closer by subtracting instead of adding
     },
     data: { label: 'End' },
     deletable: false,
@@ -530,13 +527,13 @@ function calculateLayout(
   if (steps.length > 0) {
     const firstStep = steps[0];
     if (firstStep.isParallel) {
-      // Connect start to all parallel steps
+      // Connect start to all parallel steps with smooth curves
       firstStep.steps.forEach((parallelStep: any) => {
         edges.push({
           id: `edge-start-node-${parallelStep.id}`,
           source: 'start-node',
           target: parallelStep.id,
-          type: 'default',
+          type: 'smoothstep', // Use smoothstep for better curved appearance
           style: { 
             stroke: "#6b7280",
             strokeWidth: 2,
@@ -553,7 +550,7 @@ function calculateLayout(
         id: `edge-start-node-${firstStep.id}`,
         source: 'start-node',
         target: firstStep.id,
-        type: 'default',
+        type: 'default', // Keep straight line for single connection
         style: { 
           stroke: "#6b7280",
           strokeWidth: 2,
@@ -570,13 +567,13 @@ function calculateLayout(
   if (steps.length > 0) {
     const lastStep = steps[steps.length - 1];
     if (lastStep.isParallel) {
-      // Connect all last parallel steps to end
+      // Connect all last parallel steps to end with smooth curves
       lastStep.steps.forEach((parallelStep: any) => {
         edges.push({
           id: `edge-${parallelStep.id}-end-node`,
           source: parallelStep.id,
           target: 'end-node',
-          type: 'default',
+          type: 'smoothstep', // Use smoothstep for better curved appearance
           style: { 
             stroke: "#6b7280",
             strokeWidth: 2,
@@ -593,7 +590,7 @@ function calculateLayout(
         id: `edge-${lastStep.id}-end-node`,
         source: lastStep.id,
         target: 'end-node',
-        type: 'default',
+        type: 'default', // Keep straight line for single connection
         style: { 
           stroke: "#6b7280",
           strokeWidth: 2,

@@ -36,7 +36,7 @@ export const useWorkflows = (page = 1, per_page = 10) => {
 export const useWorkflowInstances = (
   workflowName: string,
   page = 1,
-  per_page = 10
+  per_page = 10,
 ) => {
   const { workspace } = useSDK();
 
@@ -46,9 +46,9 @@ export const useWorkflowInstances = (
       const result = await listWorkflows(workspace, page, per_page, signal);
       // Filter to only include runs for this specific workflow
       const filteredWorkflows = result.workflows.filter(
-        (workflow) => workflow.workflowName === workflowName
+        (workflow) => workflow.workflowName === workflowName,
       );
-      
+
       return {
         ...result,
         workflows: filteredWorkflows,
@@ -78,12 +78,12 @@ export const useAllWorkflowRuns = (workflowName: string) => {
       // Fetch a large number to get all runs for this workflow
       // In the future, we might want to implement a "get all" API endpoint
       const result = await listWorkflows(workspace, 1, 1000, signal);
-      
+
       // Filter to only include runs for this specific workflow
       const filteredWorkflows = result.workflows.filter(
-        (workflow) => workflow.workflowName === workflowName
+        (workflow) => workflow.workflowName === workflowName,
       );
-      
+
       return {
         ...result,
         workflows: filteredWorkflows,
@@ -110,28 +110,37 @@ export const useAllUniqueWorkflows = () => {
   const { data, refetch, isRefetching } = useSuspenseQuery({
     queryKey: ["all-unique-workflows", workspace],
     queryFn: async ({ signal }) => {
-      const allRuns: Array<{ workflowName: string; runId: string; createdAt: number; updatedAt: number; resourceId?: string | null; status: string }> = [];
+      const allRuns: Array<
+        {
+          workflowName: string;
+          runId: string;
+          createdAt: number;
+          updatedAt: number;
+          resourceId?: string | null;
+          status: string;
+        }
+      > = [];
       let page = 1;
       const per_page = 100;
-      
+
       // Keep fetching until we get all workflows
       while (true) {
         const result = await listWorkflows(workspace, page, per_page, signal);
-        
+
         if (result.workflows.length === 0) {
           break; // No more data
         }
-        
+
         allRuns.push(...result.workflows);
-        
+
         // If we got less than per_page, we've reached the end
         if (result.workflows.length < per_page) {
           break;
         }
-        
+
         page++;
       }
-      
+
       return {
         workflows: allRuns,
         pagination: { page: 1, per_page: allRuns.length },

@@ -1,8 +1,4 @@
-import type {
-  UniqueWorkflow,
-  WorkflowRun,
-  WorkflowStats,
-} from "./types.ts";
+import type { UniqueWorkflow, WorkflowRun, WorkflowStats } from "./types.ts";
 
 /**
  * Determines if a status is considered successful

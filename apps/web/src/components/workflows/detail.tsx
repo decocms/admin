@@ -359,13 +359,13 @@ function getStatusIcon(status: string) {
       />
     );
   } else if (status === "failed" || status === "error") {
-          return (
-        <Icon
-          name="error"
-          size={18}
-          className="text-destructive"
-        />
-      );
+    return (
+      <Icon
+        name="error"
+        size={18}
+        className="text-destructive"
+      />
+    );
   } else if (status === "running") {
     return (
       <Icon

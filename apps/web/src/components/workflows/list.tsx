@@ -177,7 +177,9 @@ function WorkflowsTableView(
 
   function handleSort(key: string) {
     if (sortKey === key) {
-      setSortDirection((prev: "asc" | "desc") => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((
+        prev: "asc" | "desc",
+      ) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDirection("asc");
@@ -231,7 +233,8 @@ function WorkflowsTab() {
               input={{
                 placeholder: "Search workflows",
                 value: filter,
-                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFilter(e.target.value),
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFilter(e.target.value),
               }}
               view={{ viewMode, onChange: setViewMode }}
             />

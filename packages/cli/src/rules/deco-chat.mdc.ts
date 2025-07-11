@@ -723,7 +723,7 @@ export const getMDC = async () => {
   const file = await Deno.readTextFile(new URL(import.meta.url).pathname);
 
   // get the comment block
-  const commentBlock = file.match(/(\/\*\*[\s\S]*?\*\/)/)[0];
+  const commentBlock = file.match(/(\/\*\*[\s\S]*?\*\/)/)?.[0] ?? "";
 
   return `${HEADER}\n\n${commentBlock.trim()}`;
 };

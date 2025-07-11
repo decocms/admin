@@ -39,7 +39,6 @@ export const useWorkflowInstances = (
   per_page = 10
 ) => {
   const { workspace } = useSDK();
-  const client = useQueryClient();
 
   const { data, refetch, isRefetching } = useSuspenseQuery({
     queryKey: ["workflow-instances", workspace, workflowName, page, per_page],
@@ -111,7 +110,7 @@ export const useAllUniqueWorkflows = () => {
   const { data, refetch, isRefetching } = useSuspenseQuery({
     queryKey: ["all-unique-workflows", workspace],
     queryFn: async ({ signal }) => {
-      const allRuns: any[] = [];
+      const allRuns: Array<{ workflowName: string; runId: string; createdAt: number; updatedAt: number; resourceId?: string | null; status: string }> = [];
       let page = 1;
       const per_page = 100;
       

@@ -82,41 +82,41 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
         {/* Stats grid on the right with padding */}
         <div className="flex-1 grid grid-cols-2 gap-6 pr-4">
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-success-foreground dark:bg-success/20">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <div className="w-3 h-3 rounded-full bg-success"></div>
                 <span className="text-sm font-medium">Success</span>
               </div>
-              <span className="text-xl font-bold text-green-600">
+              <span className="text-xl font-bold text-success">
                 {stats.successCount}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-destructive-foreground dark:bg-destructive/20">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className="w-3 h-3 rounded-full bg-destructive"></div>
                 <span className="text-sm font-medium">Error</span>
               </div>
-              <span className="text-xl font-bold text-red-600">
+              <span className="text-xl font-bold text-destructive">
                 {stats.errorCount}
               </span>
             </div>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-warning-foreground dark:bg-warning/20">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div className="w-3 h-3 rounded-full bg-warning"></div>
                 <span className="text-sm font-medium">Running</span>
               </div>
-              <span className="text-xl font-bold text-yellow-600">
+              <span className="text-xl font-bold text-warning">
                 {stats.runningCount}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted dark:bg-muted/50">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
                 <span className="text-sm font-medium">Pending</span>
               </div>
-              <span className="text-xl font-bold text-gray-600">
+              <span className="text-xl font-bold text-muted-foreground">
                 {stats.pendingCount}
               </span>
             </div>
@@ -128,7 +128,7 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
       <div className="pt-6 border-t border-border">
         <div className="grid grid-cols-3 gap-8">
           <div className="text-center space-y-2">
-            <div className="text-3xl font-bold text-green-600">
+            <div className="text-3xl font-bold text-success">
               {stats.successRate.toFixed(1)}%
             </div>
             <div className="text-sm text-muted-foreground">Success Rate</div>
@@ -295,7 +295,7 @@ function WorkflowOverviewTab() {
     );
   }
 
-  function handlePageChange(newPage: number) {
+  function _handlePageChange(newPage: number) {
     setSearchParams({ page: String(newPage), per_page: String(per_page) });
   }
 

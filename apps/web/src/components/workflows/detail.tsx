@@ -76,7 +76,8 @@ function ExpandableString({
     <span>
       {stringValue.slice(0, 100)}
       <button
-        className="text-blue-500 hover:text-blue-700 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
+        type="button"
+        className="text-primary hover:text-primary/80 underline ml-1 text-xs font-normal bg-transparent border-none cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           setShowFull(true);
@@ -95,7 +96,8 @@ function ExpandableString({
       {isQuoted && '"'}
       {showFull && isTruncated && (
         <button
-          className="text-blue-500 hover:text-blue-700 underline ml-2 text-xs font-normal bg-transparent border-none cursor-pointer"
+          type="button"
+          className="text-primary hover:text-primary/80 underline ml-2 text-xs font-normal bg-transparent border-none cursor-pointer"
           onClick={(e) => {
             e.stopPropagation();
             setShowFull(false);
@@ -133,16 +135,19 @@ function JsonTreeNode({
   const getValuePreview = (value: unknown): string => {
     const type = getDataType(value);
     switch (type) {
-      case "array":
+      case "array": {
         const arr = value as unknown[];
         return `[${arr.length} items]`;
-      case "object":
+      }
+      case "object": {
         const obj = value as Record<string, unknown>;
         const keys = Object.keys(obj);
         return `{${keys.length} properties}`;
-      case "string":
+      }
+      case "string": {
         const str = value as string;
         return str.length > 50 ? `"${str.slice(0, 50)}..."` : `"${str}"`;
+      }
       case "null":
         return "null";
       default:
@@ -186,7 +191,7 @@ function JsonTreeNode({
         <ExpandableString
           value={stringValue}
           className={colorClass}
-          isQuoted={true}
+          isQuoted
         />
       );
     }
@@ -278,7 +283,7 @@ function JsonTreeViewer(
         <ExpandableString
           value={parsed}
           className="whitespace-pre-wrap break-words font-mono text-current"
-          isQuoted={true}
+          isQuoted
         />
       </div>
     );

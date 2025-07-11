@@ -64,15 +64,18 @@ function WorkflowsCardView(
               </div>
               <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Icon
-                    name="check_circle"
-                    size={12}
-                    className="text-green-500"
-                  />
+                  <div className="text-success">
+                    <Icon
+                      name="check_circle"
+                      size={12}
+                    />
+                  </div>
                   <span>{workflow.successCount}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Icon name="error" size={12} className="text-red-500" />
+                  <div className="text-destructive">
+                    <Icon name="error" size={12} />
+                  </div>
                   <span>{workflow.errorCount}</span>
                 </div>
               </div>
@@ -147,11 +150,11 @@ function WorkflowsTableView(
           <div className="flex items-center gap-2">
             <span className="text-sm">{rate.toFixed(1)}%</span>
             <div className="flex gap-1">
-              <span className="text-xs text-green-600">
+              <span className="text-xs text-success">
                 {workflow.successCount}
               </span>
               <span className="text-xs text-muted-foreground">/</span>
-              <span className="text-xs text-red-600">
+              <span className="text-xs text-destructive">
                 {workflow.errorCount}
               </span>
             </div>
@@ -174,7 +177,7 @@ function WorkflowsTableView(
 
   function handleSort(key: string) {
     if (sortKey === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev: "asc" | "desc") => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDirection("asc");
@@ -194,7 +197,7 @@ function WorkflowsTableView(
 }
 
 function WorkflowsTab() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [_searchParams, _setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
   const { data, refetch, isRefetching } = useAllUniqueWorkflows();
@@ -210,7 +213,7 @@ function WorkflowsTab() {
   // Filter workflows by name
   const filteredWorkflows = useMemo(() => {
     if (!filter) return uniqueWorkflows;
-    return uniqueWorkflows.filter((w) =>
+    return uniqueWorkflows.filter((w: UniqueWorkflow) =>
       w.name.toLowerCase().includes(filter.toLowerCase())
     );
   }, [uniqueWorkflows, filter]);
@@ -228,7 +231,7 @@ function WorkflowsTab() {
               input={{
                 placeholder: "Search workflows",
                 value: filter,
-                onChange: (e) => setFilter(e.target.value),
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFilter(e.target.value),
               }}
               view={{ viewMode, onChange: setViewMode }}
             />

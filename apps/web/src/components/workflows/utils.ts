@@ -2,7 +2,6 @@ import type {
   UniqueWorkflow,
   WorkflowRun,
   WorkflowStats,
-  WorkflowStatus,
 } from "./types.ts";
 
 /**

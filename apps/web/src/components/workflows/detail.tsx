@@ -37,7 +37,8 @@ function tryParseJson(str: unknown): unknown {
 
 function CopyButton({ value }: { value: unknown }) {
   const [copied, setCopied] = useState(false);
-  function handleCopy() {
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
     navigator.clipboard.writeText(
       typeof value === "string" ? value : JSON.stringify(value, null, 2),
     );
@@ -497,11 +498,14 @@ function StepDetailContent({
               <Icon name="error" size={20} />
               Error
             </h3>
-            <Icon
-              name={activeSection === "error" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-destructive"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.error} />
+              <Icon
+                name={activeSection === "error" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-destructive"
+              />
+            </div>
           </button>
           {activeSection === "error" && (
             <Card className="border-destructive/30 mt-2">
@@ -524,11 +528,14 @@ function StepDetailContent({
               <Icon name="input" size={20} />
               Input
             </h3>
-            <Icon
-              name={activeSection === "input" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-primary"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.payload} />
+              <Icon
+                name={activeSection === "input" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-primary"
+              />
+            </div>
           </button>
           {activeSection === "input" && (
             <Card className="border-primary/30 mt-2">
@@ -551,11 +558,14 @@ function StepDetailContent({
               <Icon name="check_circle" size={20} />
               Output
             </h3>
-            <Icon
-              name={activeSection === "output" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-success"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.output} />
+              <Icon
+                name={activeSection === "output" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-success"
+              />
+            </div>
           </button>
           {activeSection === "output" && (
             <Card className="border-success/30 mt-2">

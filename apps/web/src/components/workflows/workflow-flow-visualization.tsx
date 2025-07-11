@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
@@ -79,6 +80,30 @@ function EndNode({ data }: { data: any }) {
         }}
       />
     </div>
+  );
+}
+
+// Copy Button Component (matches the one in detail.tsx)
+function CopyButton({ value }: { value: unknown }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    navigator.clipboard.writeText(
+      typeof value === "string" ? value : JSON.stringify(value, null, 2),
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="ml-2"
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy to clipboard"}
+    >
+      <Icon name={copied ? "check" : "content_copy"} size={16} />
+    </Button>
   );
 }
 
@@ -167,11 +192,14 @@ function StepDetailContentFlow({
               <Icon name="error" size={20} />
               Error
             </h3>
-            <Icon
-              name={activeSection === "error" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-destructive"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.error} />
+              <Icon
+                name={activeSection === "error" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-destructive"
+              />
+            </div>
           </button>
           {activeSection === "error" && (
             <Card className="border-destructive/30 mt-2">
@@ -194,11 +222,14 @@ function StepDetailContentFlow({
               <Icon name="input" size={20} />
               Input
             </h3>
-            <Icon
-              name={activeSection === "input" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-primary"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.payload} />
+              <Icon
+                name={activeSection === "input" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-primary"
+              />
+            </div>
           </button>
           {activeSection === "input" && (
             <Card className="border-primary/30 mt-2">
@@ -221,11 +252,14 @@ function StepDetailContentFlow({
               <Icon name="check_circle" size={20} />
               Output
             </h3>
-            <Icon
-              name={activeSection === "output" ? "expand_less" : "expand_more"}
-              size={20}
-              className="text-success"
-            />
+            <div className="flex items-center gap-2">
+              <CopyButton value={stepData.output} />
+              <Icon
+                name={activeSection === "output" ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-success"
+              />
+            </div>
           </button>
           {activeSection === "output" && (
             <Card className="border-success/30 mt-2">

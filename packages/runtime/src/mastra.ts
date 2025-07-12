@@ -18,14 +18,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { type DefaultEnv, withBindings } from "./index.ts";
+import type { DefaultEnv } from "./index.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
-
-// this is dynamically imported to avoid deno check errors
-// @ts-ignore: this is a valid import
-const { env } = await import("cloudflare:workers");
 
 const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   const runtimeContext = new RuntimeContext<AppContext>();
@@ -239,16 +235,10 @@ export const createMCPServer = <
 >(
   options: CreateMCPServerOptions<TEnv, TSchema>,
 ): Fetch<TEnv & DefaultEnv<TSchema>> => {
-  let server: McpServer | null = null;
-
-  const createServer = () => {
+  const createServer = (bindings: TEnv & DefaultEnv<TSchema>) => {
     const server = new McpServer(
       { name: "@deco/mcp-api", version: "1.0.0" },
       { capabilities: { tools: {} } },
-    );
-
-    const bindings = withBindings<TEnv & DefaultEnv<TSchema>>(
-      env as unknown as TEnv & DefaultEnv<TSchema>,
     );
 
     const tools = options.tools?.map((tool) => tool(bindings)) ?? [];
@@ -377,7 +367,7 @@ export const createMCPServer = <
   };
 
   return async (req, env, ctx) => {
-    server ||= createServer();
+    const server = createServer(env);
     const transport = new HttpServerTransport();
 
     await server.connect(transport);

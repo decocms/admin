@@ -186,7 +186,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     ) => {
       const url = new URL(req.url);
       if (url.pathname === "/mcp") {
-        return server(req, env, ctx);
+        return server(req, withBindings(env, getReqToken(req)), ctx);
       }
       return userFns.fetch?.(
         req,

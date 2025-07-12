@@ -422,7 +422,7 @@ export async function deployToCloudflare({
     })) ?? [],
   ];
 
-  let assetsMetadata: Partial<WranglerConfig> = {
+  let assetsMetadata: Pick<WranglerConfig, "assets" | "keep_assets"> = {
     assets: wranglerAssetsConfig,
   };
 

@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { ExecutionContext } from "@cloudflare/workers-types";
+import { decodeJwt } from "jose";
 import type { z } from "zod";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
@@ -11,22 +12,25 @@ export {
   type CreateStubAPIOptions,
   type ToolBinder,
 } from "./mcp.ts";
-import { decodeJwt } from "jose";
+
+export interface WorkspaceDB {
+  query: (
+    params: { sql: string; params: string[] },
+  ) => Promise<{ result: QueryResult[] }>;
+}
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
-  DECO_CHAT_STATE: TSchema extends never ? undefined : z.infer<TSchema>;
+  DECO_CHAT_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_CHAT_APP_NAME: string;
   DECO_CHAT_SCRIPT_SLUG: string;
   DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
   DECO_CHAT_BINDINGS: string;
-  DECO_CHAT_API_TOKEN?: string;
+  DECO_CHAT_API_TOKEN: string;
   DECO_CHAT_WORKFLOW_DO: DurableObjectNamespace<WorkflowDO>;
-  DECO_CHAT_WORKSPACE_DB: {
-    query: (
-      params: { sql: string; params: string[] },
-    ) => Promise<{ result: QueryResult[] }>;
+  DECO_CHAT_WORKSPACE_DB: WorkspaceDB & {
+    forContext: (ctx: RequestContext) => WorkspaceDB;
   };
   [key: string]: unknown;
 }
@@ -80,18 +84,17 @@ interface BindingTypeMap {
   mcp: MCPBinding;
 }
 
-export interface RequestContext {
-  state?: Record<string, unknown>;
-  token?: string;
-  workspace?: string;
+export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
+  state: z.infer<TSchema>;
+  token: string;
+  workspace: string;
 }
 
 // 2. Map binding type to its creator function
 type CreatorByType = {
   [K in keyof BindingTypeMap]: (
     value: BindingTypeMap[K],
-    env: DefaultEnv<any>,
-    ctx?: RequestContext,
+    env: DefaultEnv,
   ) => unknown;
 };
 
@@ -100,43 +103,62 @@ const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
 };
 
-const withDefaultBindings = (env: DefaultEnv<any>) => {
-  const client = workspaceClient(env);
+const withDefaultBindings = (env: DefaultEnv, ctx: RequestContext) => {
+  const client = workspaceClient(ctx);
+  const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
+    const client = workspaceClient(ctx);
+    return {
+      query: ({ sql, params }) => {
+        return client.DATABASES_RUN_SQL({
+          sql,
+          params,
+        });
+      },
+    };
+  };
   env["DECO_CHAT_API"] = MCPClient;
   env["DECO_CHAT_WORKSPACE_API"] = client;
   env["DECO_CHAT_WORKSPACE_DB"] = {
-    query: ({ sql, params }) => {
-      return client.DATABASES_RUN_SQL({
-        sql,
-        params,
-      });
-    },
+    ...createWorkspaceDB(ctx),
+    forContext: createWorkspaceDB,
   };
 };
 
-export const withBindings = <TEnv>(_env: TEnv, token?: string): TEnv => {
+export const withBindings = <TEnv>(
+  _env: TEnv,
+  tokenOrContext?: string | RequestContext,
+): TEnv => {
   const env = _env as DefaultEnv<any>;
-  const decoded = token ? decodeJwt(token) : undefined;
-  const ctx = decoded
-    ? {
-      state: decoded.state as Record<string, unknown>,
-      token,
-      workspace: decoded.aud as string,
-    }
-    : undefined;
 
-  env.DECO_CHAT_STATE = ctx?.state ?? {};
+  let context;
+  if (typeof tokenOrContext === "string") {
+    const decoded = decodeJwt(tokenOrContext);
+    context = {
+      state: decoded.state as Record<string, unknown>,
+      token: tokenOrContext,
+      workspace: decoded.aud as string,
+    } as RequestContext<any>;
+  } else if (typeof tokenOrContext === "object") {
+    context = tokenOrContext;
+  } else {
+    context = {
+      state: undefined,
+      token: env.DECO_CHAT_API_TOKEN,
+      workspace: env.DECO_CHAT_WORKSPACE,
+    };
+  }
+
+  env.DECO_CHAT_REQUEST_CONTEXT = context;
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
     env[binding.name] = creatorByType[binding.type](
       binding as any,
       env,
-      ctx,
     );
   }
 
-  withDefaultBindings(env);
+  withDefaultBindings(env, env.DECO_CHAT_REQUEST_CONTEXT);
 
   return env as TEnv;
 };

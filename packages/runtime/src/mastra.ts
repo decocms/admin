@@ -17,11 +17,11 @@ import {
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { type DefaultEnv, withBindings } from "./index.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 // this is dynamically imported to avoid deno check errors
 // @ts-ignore: this is a valid import
@@ -212,7 +212,7 @@ const State = {
   ): R => asyncLocalStorage.run(ctx, f, ...args),
 };
 
-const decoChatOAuthToolFor = (env: DefaultEnv<any>, schema?: z.ZodTypeAny) => {
+const decoChatOAuthToolFor = (schema?: z.ZodTypeAny) => {
   const jsonSchema = schema
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
@@ -223,14 +223,11 @@ const decoChatOAuthToolFor = (env: DefaultEnv<any>, schema?: z.ZodTypeAny) => {
       returnUrl: z.string(),
     }),
     outputSchema: z.object({
-      redirectUrl: z.string(),
+      stateSchema: z.any(),
     }),
-    execute: (args) => {
+    execute: () => {
       return Promise.resolve({
-        redirectUrl:
-          `/oauth/${env.DECO_CHAT_APP_NAME}?returnUrl=${args.context.returnUrl}&schema=${
-            encodeURIComponent(JSON.stringify(jsonSchema))
-          }`,
+        stateSchema: jsonSchema,
       });
     },
   });
@@ -258,7 +255,7 @@ export const createMCPServer = <
     const workflows = options.workflows?.map((workflow) => workflow(bindings));
     const oauthStateSchema = options.oauth?.state;
 
-    tools.push(decoChatOAuthToolFor(bindings, oauthStateSchema));
+    tools.push(decoChatOAuthToolFor(oauthStateSchema));
 
     for (const tool of tools) {
       server.registerTool(
@@ -300,7 +297,6 @@ export const createMCPServer = <
           }).shape,
         },
         async (args) => {
-          // TODO (@mcandeia) how to ensure RUN_SQL is not available for all apps that wants to use workflows? is there any physical separation?
           const store = State.getStore();
           const runId = store?.req.headers.get("x-deco-chat-run-id") ??
             crypto.randomUUID();
@@ -312,6 +308,7 @@ export const createMCPServer = <
             workflowId: workflow.id,
             args,
             runId,
+            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
           });
           return {
             structuredContent: { runId: result.runId },
@@ -335,6 +332,7 @@ export const createMCPServer = <
           using _ = await workflowDO.cancel({
             workflowId: workflow.id,
             runId,
+            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
           });
 
           return {
@@ -365,6 +363,7 @@ export const createMCPServer = <
             runId,
             resumeData: args.resumeData,
             stepId: args.stepId,
+            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
           });
 
           return {

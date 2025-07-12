@@ -19,6 +19,22 @@ import {
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
 
+// Add this helper function after the imports
+function getCurrentCommand(): [string, string[]] {
+  const execPath = Deno.execPath();
+
+  // Check if we're running via deno (not a compiled binary)
+  if (execPath.endsWith("deno") || execPath.includes("deno")) {
+    // We were invoked via deno run
+    // Use import.meta.url to get the current script path
+    const scriptPath = new URL(import.meta.url).pathname;
+    return ["deno", ["run", "-A", scriptPath]];
+  } else {
+    // We were invoked as a compiled binary (like 'deco')
+    return [execPath, []];
+  }
+}
+
 // Placeholder for login command implementation
 const login = new Command()
   .description("Log in to deco.chat and retrieve tokens for CLI usage.")
@@ -147,8 +163,9 @@ const dev = new Command()
       }
     }
 
-    const deno = new Deno.Command("deco", {
-      args: ["link", "-p", "8787", "--", "npx", "wrangler", "dev"],
+    const [cmd, baseArgs] = getCurrentCommand();
+    const deno = new Deno.Command(cmd, {
+      args: [...baseArgs, "link", "-p", "8787", "--", "npx", "wrangler", "dev"],
       stdout: "inherit",
       stderr: "inherit",
     }).spawn();

@@ -88,8 +88,9 @@ export const createApiKey = createTool({
   inputSchema: z.object({
     name: z.string().describe("The name of the API key"),
     policies: policiesSchema,
+    claims: z.any().optional().describe("Claims to be added to the API key"),
   }),
-  handler: async ({ name, policies }, c) => {
+  handler: async ({ name, policies, claims }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
     const workspace = c.workspace.value;
@@ -120,6 +121,7 @@ export const createApiKey = createTool({
 
     const issuer = await JwtIssuer.forKeyPair(keyPair);
     const value = await issuer.issue({
+      ...claims,
       sub: `api-key:${apiKey.id}`,
       aud: workspace,
       iat: new Date().getTime(),

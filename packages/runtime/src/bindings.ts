@@ -2,25 +2,20 @@ import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv, MCPBinding, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
 
-export type WorkspaceClientOptions = Pick<
-  DefaultEnv,
-  "DECO_CHAT_WORKSPACE" | "DECO_CHAT_API_TOKEN"
->;
-
 export const workspaceClient = (
-  env: WorkspaceClientOptions,
+  ctx: RequestContext,
 ): ReturnType<typeof MCPClient["forWorkspace"]> => {
   return MCPClient.forWorkspace(
-    env.DECO_CHAT_WORKSPACE,
-    env.DECO_CHAT_API_TOKEN,
+    ctx.workspace,
+    ctx.token,
   );
 };
 
 const mcpClientForIntegrationId = (
   integrationId: string,
-  env: WorkspaceClientOptions,
+  ctx: RequestContext,
 ) => {
-  const client = workspaceClient(env);
+  const client = workspaceClient(ctx);
   let integration: Promise<{ connection: MCPConnection }> | null = null;
   return MCPClient.forConnection(async () => {
     integration ??= client.INTEGRATIONS_GET({
@@ -33,10 +28,10 @@ const mcpClientForIntegrationId = (
 export const createIntegrationBinding = (
   binding: MCPBinding,
   env: DefaultEnv,
-  ctx?: RequestContext,
 ) => {
   const integrationId = binding.integration_id;
   if (!integrationId) {
+    const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
     const bindingFromState = ctx?.state?.[binding.name];
     const integrationId =
       bindingFromState && typeof bindingFromState === "object" &&
@@ -44,15 +39,14 @@ export const createIntegrationBinding = (
         ? bindingFromState.value
         : undefined;
     if (typeof integrationId !== "string") {
-      throw new Error(`No integration id found on ${ctx}`);
+      return null;
     }
-    const reqEnv = ctx?.workspace && ctx?.token
-      ? {
-        DECO_CHAT_WORKSPACE: ctx.workspace,
-        DECO_CHAT_API_TOKEN: ctx.token,
-      }
-      : env;
-    return mcpClientForIntegrationId(integrationId, reqEnv);
+    return mcpClientForIntegrationId(integrationId, ctx);
   }
-  return mcpClientForIntegrationId(integrationId, env);
+  // bindings pointed to an specific integration id are binded using the app deployment workspace
+  return mcpClientForIntegrationId(integrationId, {
+    workspace: env.DECO_CHAT_WORKSPACE,
+    token: env.DECO_CHAT_API_TOKEN,
+    state: {},
+  });
 };

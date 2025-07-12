@@ -74,6 +74,32 @@ export const deleteIntegration = (workspace: string, mcpId: string) =>
   });
 
 /**
+ * Create an API key
+ * @param workspace - The workspace
+ * @param params - API key parameters
+ * @returns The created API key
+ */
+export const createAPIKey = (
+  workspace: string,
+  params: {
+    claims?: Record<string, unknown>;
+    name: string;
+    policies: Array<{ effect: "allow" | "deny"; resource: string }>;
+  },
+) => MCPClient.forWorkspace(workspace).API_KEYS_CREATE(params);
+
+/**
+ * Get a registry app
+ * @param workspace - The workspace
+ * @param params - Registry app parameters
+ * @returns The registry app
+ */
+export const getRegistryApp = (
+  workspace: string,
+  params: { name: string },
+) => MCPClient.forWorkspace(workspace).REGISTRY_GET_APP(params);
+
+/**
  * Validate an MCP against the Zod schema
  *
  * @param mcp - The MCP to validate

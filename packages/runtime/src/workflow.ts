@@ -1,4 +1,4 @@
-import { type DefaultEnv, withBindings } from "./index.ts";
+import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
 import type { AppContext, CreateMCPServerOptions } from "./mastra.ts";
 
 import { D1Store } from "@mastra/cloudflare-d1";
@@ -16,11 +16,13 @@ export interface StartWorkflowArgs {
   workflowId: string;
   args: unknown;
   runId?: string;
+  ctx: RequestContext;
 }
 
 export interface CancelWorkflowArgs {
   workflowId: string;
   runId?: string;
+  ctx: RequestContext;
 }
 
 export interface ResumeWorkflowArgs {
@@ -28,6 +30,7 @@ export interface ResumeWorkflowArgs {
   runId?: string;
   resumeData: unknown;
   stepId: string;
+  ctx: RequestContext;
 }
 export interface WorkflowDO extends Rpc.DurableObjectBranded {
   start: (args: StartWorkflowArgs) => Promise<{ runId: string }>;
@@ -38,30 +41,29 @@ export interface WorkflowDO extends Rpc.DurableObjectBranded {
 export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
   return class Workflow extends DurableObject<DefaultEnv>
     implements WorkflowDO {
-    protected bindings: DefaultEnv;
-    protected workflows: Record<
-      string,
-      ReturnType<NonNullable<CreateMCPServerOptions["workflows"]>[number]>
-    >;
     constructor(state: DurableObjectState, env: DefaultEnv) {
       super(state, env);
-      this.bindings = withBindings<DefaultEnv>(
-        env,
-      );
-      const bindedWorkflows = workflows?.map((w) => w(this.bindings)) || [];
-      this.workflows = Object.fromEntries(
-        bindedWorkflows.map((w) => [w.id, w]),
+    }
+
+    bindings(ctx: RequestContext) {
+      return withBindings<DefaultEnv>(
+        this.env,
+        ctx,
       );
     }
 
-    workflow(workflowId: string) {
+    workflow(workflowId: string, bindings: DefaultEnv) {
+      const bindedWorkflows = workflows?.map((w) => w(bindings)) || [];
+      const workflowsMap = Object.fromEntries(
+        bindedWorkflows.map((w) => [w.id, w]),
+      );
       const d1Storage = new D1Store({
-        client: this.bindings.DECO_CHAT_WORKSPACE_DB,
+        client: bindings.DECO_CHAT_WORKSPACE_DB,
       });
       const mastra = new Mastra({
         storage: d1Storage,
         workflows: {
-          [workflowId]: this.workflows[workflowId],
+          [workflowId]: workflowsMap[workflowId],
         },
         telemetry: {
           enabled: true,
@@ -72,8 +74,9 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       return mastra.getWorkflow(workflowId);
     }
 
-    async start({ workflowId, runId, args }: StartWorkflowArgs) {
-      const workflow = this.workflow(workflowId);
+    async start({ workflowId, runId, args, ctx }: StartWorkflowArgs) {
+      const bindings = this.bindings(ctx);
+      const workflow = this.workflow(workflowId, bindings);
 
       const run = await workflow.createRunAsync({
         runId: this.ctx.id.name ?? runId,
@@ -82,7 +85,7 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       this.ctx.waitUntil(
         run.start({
           inputData: args,
-          runtimeContext: createRuntimeContext(this.bindings, this.ctx),
+          runtimeContext: createRuntimeContext(bindings, this.ctx),
         }),
       );
       return {
@@ -90,10 +93,11 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       };
     }
 
-    async cancel({ workflowId, runId }: CancelWorkflowArgs) {
-      const run = await this.workflow(workflowId).createRunAsync({
-        runId: this.ctx.id.name ?? runId,
-      });
+    async cancel({ workflowId, runId, ctx }: CancelWorkflowArgs) {
+      const run = await this.workflow(workflowId, this.bindings(ctx))
+        .createRunAsync({
+          runId: this.ctx.id.name ?? runId,
+        });
 
       this.ctx.waitUntil(run.cancel());
 
@@ -106,8 +110,10 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       runId,
       resumeData,
       stepId,
+      ctx,
     }: ResumeWorkflowArgs) {
-      const run = await this.workflow(workflowId).createRunAsync({
+      const bindings = this.bindings(ctx);
+      const run = await this.workflow(workflowId, bindings).createRunAsync({
         runId: this.ctx.id.name ?? runId,
       });
 
@@ -115,7 +121,7 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
         run.resume({
           resumeData,
           step: stepId,
-          runtimeContext: createRuntimeContext(this.bindings, this.ctx),
+          runtimeContext: createRuntimeContext(bindings, this.ctx),
         }),
       );
 

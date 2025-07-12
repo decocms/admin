@@ -16,7 +16,7 @@ import {
   type MarketplaceIntegration,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
-import { type Integration, useInstallFromMarketplace } from "@deco/sdk";
+import type { Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
@@ -27,6 +27,8 @@ import {
   useWorkspaceLink,
 } from "../../hooks/use-navigate-workspace.ts";
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
+import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -44,53 +46,68 @@ export function ConfirmMarketplaceInstallDialog({
   }) => void;
 }) {
   const open = !!integration;
-  const { mutate: installIntegration } = useInstallFromMarketplace();
-  const [isPending, setIsPending] = useState(false);
+  const { install, modalState, isLoading } = useIntegrationInstallWithModal();
   const buildWorkspaceUrl = useWorkspaceLink();
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!integration) return;
-    setIsPending(true);
+
     const returnUrl = new URL(
       buildWorkspaceUrl("/connections/success"),
       globalThis.location.origin,
     );
 
-    installIntegration({
-      appName: integration.id,
-      provider: integration.provider,
-      returnUrl: returnUrl.href,
-    }, {
-      onSuccess: ({ integration: installedIntegration, redirectUrl }) => {
-        if (typeof installedIntegration?.id !== "string") {
-          setIsPending(false);
-          console.error(
-            "Installed integration is not a string",
-            installedIntegration,
-          );
-          return;
-        }
+    try {
+      const result = await install({
+        appId: integration.id,
+        appName: integration.name,
+        provider: integration.provider,
+        returnUrl: returnUrl.href,
+      });
 
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: true,
-          data: integration,
-        });
+      if (typeof result.integration?.id !== "string") {
+        console.error(
+          "Installed integration is not a string",
+          result.integration,
+        );
+        return;
+      }
+
+      trackEvent("integration_install", {
+        success: true,
+        data: integration,
+      });
+
+      // Only call onConfirm if we have a redirect URL (traditional OAuth flow)
+      // For stateSchema, the modal will handle the completion
+      if (result.redirectUrl) {
         onConfirm({
-          connection: installedIntegration,
-          authorizeOauthUrl: redirectUrl ?? null,
+          connection: result.integration,
+          authorizeOauthUrl: result.redirectUrl,
         });
         setIntegration(null);
-      },
-      onError: (error) => {
-        setIsPending(false);
-        trackEvent("integration_install", {
-          success: false,
-          data: integration,
-          error,
-        });
-      },
-    });
+      }
+    } catch (error) {
+      trackEvent("integration_install", {
+        success: false,
+        data: integration,
+        error,
+      });
+    }
+  };
+
+  const handleModalComplete = async (formData: Record<string, unknown>) => {
+    // Handle the form submission from the modal
+    await modalState.onSubmit(formData);
+
+    // After successful form submission, call onConfirm with the integration
+    if (modalState.integration) {
+      onConfirm({
+        connection: modalState.integration,
+        authorizeOauthUrl: null,
+      });
+      setIntegration(null);
+    }
   };
 
   if (!integration) return null;
@@ -136,9 +153,9 @@ export function ConfirmMarketplaceInstallDialog({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          {isPending
+          {isLoading
             ? (
-              <Button disabled={isPending}>
+              <Button disabled={isLoading}>
                 Connecting...
               </Button>
             )
@@ -149,6 +166,19 @@ export function ConfirmMarketplaceInstallDialog({
             )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Modal for JSON Schema form */}
+      {modalState.schema && (
+        <IntegrationOAuthModal
+          isOpen={modalState.isOpen}
+          onClose={modalState.onClose}
+          schema={modalState.schema}
+          integrationName={modalState.integrationName || integration?.name ||
+            "Integration"}
+          onSubmit={handleModalComplete}
+          isLoading={modalState.isLoading}
+        />
+      )}
     </Dialog>
   );
 }

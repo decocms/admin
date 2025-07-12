@@ -8,8 +8,10 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
+  createAPIKey,
   createIntegration,
   deleteIntegration,
+  getRegistryApp,
   listIntegrations,
   loadIntegration,
   saveIntegration,
@@ -21,6 +23,12 @@ import { applyDisplayNameToIntegration } from "../utils/integration-display-name
 import { KEYS } from "./api.ts";
 import { listTools, type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
+
+interface IntegrationToolsResult {
+  integration: Integration;
+  tools: MCPTool[];
+  success: boolean;
+}
 
 export const useCreateIntegration = () => {
   const client = useQueryClient();
@@ -208,11 +216,11 @@ export const useBindings = (binder: Binder) => {
 
     return integrationQueries
       .filter((query) => query.isSuccess && query.data)
-      .map((query) => query.data!)
-      .filter(({ tools }) =>
-        Binding(WellKnownBindings[binder]).isImplementedBy(tools)
+      .map((query) => query.data as IntegrationToolsResult)
+      .filter((result) =>
+        Binding(WellKnownBindings[binder]).isImplementedBy(result.tools)
       )
-      .map(({ integration }) => integration);
+      .map((result) => result.integration);
   }, [
     integrationQueries.length,
     integrationQueries.map((q) => q.isSuccess),
@@ -305,7 +313,15 @@ export const useInstallFromMarketplace = () => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
-  const mutation = useMutation({
+  const mutation = useMutation<
+    {
+      integration: Integration;
+      redirectUrl?: string | null;
+      stateSchema?: unknown;
+    },
+    Error,
+    { appName: string; returnUrl: string; provider: string }
+  >({
     mutationFn: async (
       { appName, provider, returnUrl }: {
         appName: string;
@@ -337,9 +353,17 @@ export const useInstallFromMarketplace = () => {
             provider,
           });
 
-        redirectUrl = result?.redirectUrl;
-        if (!redirectUrl) {
-          throw new Error("No redirect URL found");
+        // Handle both return types: { redirectUrl } or { stateSchema }
+        if (result && "redirectUrl" in result) {
+          redirectUrl = result.redirectUrl;
+          if (!redirectUrl) {
+            throw new Error("No redirect URL found");
+          }
+        } else if (result && "stateSchema" in result) {
+          // Return integration with stateSchema for modal handling
+          return { integration, stateSchema: result.stateSchema };
+        } else {
+          throw new Error("Invalid OAuth response format");
         }
       }
 
@@ -396,4 +420,24 @@ export const useInstallFromMarketplace = () => {
   });
 
   return mutation;
+};
+
+export const useCreateAPIKey = () => {
+  const { workspace } = useSDK();
+
+  return useMutation({
+    mutationFn: (params: {
+      claims?: Record<string, unknown>;
+      name: string;
+      policies: Array<{ effect: "allow" | "deny"; resource: string }>;
+    }) => createAPIKey(workspace, params),
+  });
+};
+
+export const useGetRegistryApp = () => {
+  const { workspace } = useSDK();
+
+  return useMutation({
+    mutationFn: (params: { name: string }) => getRegistryApp(workspace, params),
+  });
 };

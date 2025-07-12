@@ -130,7 +130,7 @@ function Field<T extends FieldValues = Record<string, unknown>>({
 
   // Handle regular field types (not anyOf)
   const type = Array.isArray(schema.type)
-    ? schema.type.find((prop) => prop !== "null") ?? "null"
+    ? schema.type.find((prop: string) => prop !== "null") ?? "null"
     : schema.type;
   const description = schema.description as string | undefined;
   // Extract just the property name from the full path for cleaner titles

@@ -266,7 +266,7 @@ ${tsTypes}
       ];
       return `${stateKey!.key}: z.object({
         value: z.string(),
-        __type: z.literal("${stateKey!.type}"),
+        __type: z.literal("${stateKey!.type}").default("${stateKey!.type}"),
       })`;
     }).join(",\n")
   }

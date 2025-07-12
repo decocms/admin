@@ -213,14 +213,11 @@ const handleAssetUpload = async ({
 
   let finalJwt: string | null = null;
   for (const bucket of fileHashes) {
-    console.log("bucket", bucket);
     bucket.forEach((fileHash) => {
       const fullPath = findMatch(fileHash, manifest);
       const base64Data = files[fullPath];
 
       const mimeType = getMimeType(fullPath);
-
-      console.log(fullPath, mimeType);
 
       form.append(
         fileHash,
@@ -280,7 +277,6 @@ const uploadWranglerAssets = async ({
     );
 
   if (!assetUploadSession.buckets || assetUploadSession.buckets.length === 0) {
-    console.log("No assets changed");
     return;
   }
 

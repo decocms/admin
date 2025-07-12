@@ -321,7 +321,7 @@ const splitFiles = (
   };
 };
 
-const DECO_WORKER_RUNTIME_VERSION = "0.2.18";
+const DECO_WORKER_RUNTIME_VERSION = "0.4.0";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",

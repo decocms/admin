@@ -300,7 +300,9 @@ const ensureLeadingSlash = (path: string) => {
   return path.startsWith("/") ? path : `/${path}`;
 };
 
-const splitFiles = (files: Record<string, { content: string; asset: boolean }>) => {
+const splitFiles = (
+  files: Record<string, { content: string; asset: boolean }>,
+) => {
   const code: Record<string, string> = {};
   const assets: Record<string, string> = {};
 

@@ -15,7 +15,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./proxy": "./src/proxy.ts"
+    "./proxy": "./src/proxy.ts",
+    "./client": "./src/client.ts"
   },
   "devDependencies": {
     "wrangler": "^4.13.2"

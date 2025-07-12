@@ -196,7 +196,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         }
         const toolCallInput = await req.json();
         const result = await server.callTool({
-          env: withBindings(env, getReqToken(req)) as TEnv & DefaultEnv<TSchema>,
+          env: withBindings(env, getReqToken(req)) as
+            & TEnv
+            & DefaultEnv<TSchema>,
           ctx,
           req,
           toolCallId,

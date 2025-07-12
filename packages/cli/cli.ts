@@ -1,6 +1,11 @@
 import { Command } from "@cliffy/command";
 import denoJson from "./deno.json" with { type: "json" };
-import { getConfig, getLocal, readWranglerConfig, setLocal } from "./src/config.ts";
+import {
+  getConfig,
+  getLocal,
+  readWranglerConfig,
+  setLocal,
+} from "./src/config.ts";
 import { configureCommand } from "./src/configure.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";

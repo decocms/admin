@@ -172,7 +172,9 @@ function calculateFileHash(base64Content: string): FileMetadata {
   return { hash: fileHash, size: fileSize };
 }
 
-function createAssetsManifest(assets: Record<string, string>): Record<string, FileMetadata> {
+function createAssetsManifest(
+  assets: Record<string, string>,
+): Record<string, FileMetadata> {
   return Object.fromEntries(
     Object.entries(assets).map(([path, content]) => [
       path,
@@ -223,7 +225,9 @@ const handleAssetUpload = async ({
       form.append(
         fileHash,
         new File([base64Data], fileHash, {
-          type: mimeType === "application/javascript+module" ? "application/javascript" : mimeType,
+          type: mimeType === "application/javascript+module"
+            ? "application/javascript"
+            : mimeType,
         }),
         fileHash,
       );
@@ -263,9 +267,10 @@ const uploadWranglerAssets = async ({
   assets: Record<string, string>;
   scriptSlug: string;
 }) => {
-    const assetsManifest = createAssetsManifest(assets);
+  const assetsManifest = createAssetsManifest(assets);
 
-    const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces.scripts.assetUpload.create(
+  const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces
+    .scripts.assetUpload.create(
       c.envVars.CF_DISPATCH_NAMESPACE,
       scriptSlug,
       {
@@ -274,24 +279,24 @@ const uploadWranglerAssets = async ({
       },
     );
 
-    if (!assetUploadSession.buckets || assetUploadSession.buckets.length === 0) {
-      console.log("No assets changed");
-      return;
-    }
+  if (!assetUploadSession.buckets || assetUploadSession.buckets.length === 0) {
+    console.log("No assets changed");
+    return;
+  }
 
-    if (!assetUploadSession.jwt) {
-      throw new Error("No buckets found in asset upload session");
-    }
+  if (!assetUploadSession.jwt) {
+    throw new Error("No buckets found in asset upload session");
+  }
 
-    const jwt = await handleAssetUpload({
-      c,
-      jwt: assetUploadSession.jwt,
-      fileHashes: assetUploadSession.buckets,
-      manifest: assetsManifest,
-      files: assets,
-    });
+  const jwt = await handleAssetUpload({
+    c,
+    jwt: assetUploadSession.jwt,
+    fileHashes: assetUploadSession.buckets,
+    manifest: assetsManifest,
+    files: assets,
+  });
 
-    return jwt;
+  return jwt;
 };
 
 export async function deployToCloudflare({
@@ -320,14 +325,13 @@ export async function deployToCloudflare({
     assets: wranglerAssetsConfig,
   },
 }: {
-  c: AppContext,
-  wranglerConfig: WranglerConfig,
-  mainModule: string,
-  bundledCode: Record<string, File>,
-  assets: Record<string, string>,
-  _envVars?: Record<string, string>,
-}
-): Promise<DeployResult> {
+  c: AppContext;
+  wranglerConfig: WranglerConfig;
+  mainModule: string;
+  bundledCode: Record<string, File>;
+  assets: Record<string, string>;
+  _envVars?: Record<string, string>;
+}): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
   const envVars = {
@@ -442,7 +446,6 @@ export async function deployToCloudflare({
         },
       };
     }
-
   }
 
   const metadata = {

@@ -14,3 +14,5 @@ export * from "./wallet.ts";
 export * from "./channels.ts";
 export * from "./prompts.ts";
 export * from "./knowledge.ts";
+export * from "./keys.ts";
+export * from "./registry.ts";

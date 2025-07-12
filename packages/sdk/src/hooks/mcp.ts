@@ -8,10 +8,8 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-  createAPIKey,
   createIntegration,
   deleteIntegration,
-  getRegistryApp,
   listIntegrations,
   loadIntegration,
   saveIntegration,
@@ -420,24 +418,4 @@ export const useInstallFromMarketplace = () => {
   });
 
   return mutation;
-};
-
-export const useCreateAPIKey = () => {
-  const { workspace } = useSDK();
-
-  return useMutation({
-    mutationFn: (params: {
-      claims?: Record<string, unknown>;
-      name: string;
-      policies: Array<{ effect: "allow" | "deny"; resource: string }>;
-    }) => createAPIKey(workspace, params),
-  });
-};
-
-export const useGetRegistryApp = () => {
-  const { workspace } = useSDK();
-
-  return useMutation({
-    mutationFn: (params: { name: string }) => getRegistryApp(workspace, params),
-  });
 };

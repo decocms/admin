@@ -3,10 +3,12 @@ import { walk } from "@std/fs";
 import { createWorkspaceClient } from "../mcp.ts";
 import { getCurrentEnvVars } from "../wrangler.ts";
 import { relative } from "@std/path/relative";
+import { Buffer } from "node:buffer";
 
 export type FileLike = {
   path: string;
   content: string;
+  asset?: boolean;
 };
 
 interface Options {
@@ -16,12 +18,13 @@ interface Options {
   local: boolean;
   skipConfirmation?: boolean;
   unlisted?: boolean;
+  assetsDirectory?: string;
 }
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
 
 export const deploy = async (
-  { cwd, workspace, app: appSlug, local, skipConfirmation, unlisted = true }:
+  { cwd, workspace, app: appSlug, local, assetsDirectory, skipConfirmation, unlisted = true }:
     Options,
 ) => {
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
@@ -43,7 +46,7 @@ export const deploy = async (
   for await (
     const entry of walk(cwd, {
       includeDirs: false,
-      skip: [/node_modules/, /\.git/, /\.DS_Store/],
+      skip: [/node_modules/, /\.git/, /\.DS_Store/, /\.env/, /\.env.local/, /\.dev.vars/],
       exts: [
         ".ts",
         ".mjs",
@@ -67,6 +70,18 @@ export const deploy = async (
     if (WRANGLER_CONFIG_FILES.some((name) => realPath.includes(name))) {
       foundWranglerConfigInWalk = true;
       foundWranglerConfigName = realPath;
+    }
+  }
+
+  if (assetsDirectory) {
+    for await (const entry of walk(assetsDirectory, {
+      includeDirs: false,
+      skip: [/node_modules/, /\.git/, /\.DS_Store/, /\.env/, /\.env.local/, /\.dev.vars/],
+    })) {
+      const realPath = relative(assetsDirectory, entry.path);
+      const content = await Deno.readFile(entry.path);
+      const base64Content = Buffer.from(content).toString("base64");
+      files.push({ path: realPath, content: base64Content, asset: true });
     }
   }
 

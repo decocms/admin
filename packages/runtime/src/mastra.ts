@@ -229,12 +229,107 @@ const decoChatOAuthToolFor = (schema?: z.ZodTypeAny) => {
   });
 };
 
+const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
+  workflow: ReturnType<typeof createWorkflow>,
+  bindings: TEnv & DefaultEnv<TSchema>,
+) => {
+  const startTool = createTool({
+    id: `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
+    description: workflow.description ?? `Start workflow ${workflow.id}`,
+    inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
+      ? workflow.inputSchema
+      : z.object({}),
+    outputSchema: z.object({
+      id: z.string(),
+    }),
+    execute: async (args) => {
+      const store = State.getStore();
+      const runId = store?.req.headers.get("x-deco-chat-run-id") ??
+        crypto.randomUUID();
+      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      );
+
+      using result = await workflowDO.start({
+        workflowId: workflow.id,
+        args: args.context,
+        runId,
+        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+      });
+      return { id: result.runId };
+    },
+  });
+
+  const cancelTool = createTool({
+    id: `DECO_CHAT_WORKFLOWS_CANCEL_${workflow.id}`,
+    description: `Cancel ${workflow.description ?? `workflow ${workflow.id}`}`,
+    inputSchema: z.object({ runId: z.string() }),
+    outputSchema: z.object({ cancelled: z.boolean() }),
+    execute: async (args) => {
+      const runId = args.context.runId;
+      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      );
+
+      using _ = await workflowDO.cancel({
+        workflowId: workflow.id,
+        runId,
+        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+      });
+
+      return { cancelled: true };
+    },
+  });
+
+  const resumeTool = createTool({
+    id: `DECO_CHAT_WORKFLOWS_RESUME_${workflow.id}`,
+    description: `Resume ${workflow.description ?? `workflow ${workflow.id}`}`,
+    inputSchema: z.object({
+      runId: z.string(),
+      stepId: z.string(),
+      resumeData: z.any(),
+    }),
+    outputSchema: z.object({ resumed: z.boolean() }),
+    execute: async (args) => {
+      const runId = args.context.runId;
+      const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
+        bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
+      );
+
+      using _ = await workflowDO.resume({
+        workflowId: workflow.id,
+        runId,
+        resumeData: args.context.resumeData,
+        stepId: args.context.stepId,
+        ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
+      });
+
+      return { resumed: true };
+    },
+  });
+
+  return [startTool, cancelTool, resumeTool];
+};
+
+type CallTool<TEnv = any, TSchema extends z.ZodTypeAny = never> = (opts: {
+  env: TEnv & DefaultEnv<TSchema>;
+  ctx: ExecutionContext;
+  req: Request;
+  toolCallId: string;
+  toolCallInput: any;
+}) => Promise<any>;
+
+type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
+  fetch: Fetch<TEnv & DefaultEnv<TSchema>>;
+  callTool: CallTool<TEnv, TSchema>;
+};
+
 export const createMCPServer = <
   TEnv = any,
   TSchema extends z.ZodTypeAny = never,
 >(
   options: CreateMCPServerOptions<TEnv, TSchema>,
-): Fetch<TEnv & DefaultEnv<TSchema>> => {
+): MCPServer<TEnv, TSchema> => {
   const createServer = (bindings: TEnv & DefaultEnv<TSchema>) => {
     const server = new McpServer(
       { name: "@deco/mcp-api", version: "1.0.0" },
@@ -242,7 +337,13 @@ export const createMCPServer = <
     );
 
     const tools = options.tools?.map((tool) => tool(bindings)) ?? [];
+
     const workflows = options.workflows?.map((workflow) => workflow(bindings));
+    const workflowTools =
+      workflows?.map((workflow) => createWorkflowTools(workflow, bindings))
+        .flat() ?? [];
+
+    tools.push(...workflowTools);
     const oauthStateSchema = options.oauth?.state;
 
     tools.push(decoChatOAuthToolFor(oauthStateSchema));
@@ -274,100 +375,15 @@ export const createMCPServer = <
       );
     }
 
-    for (const workflow of workflows ?? []) {
-      server.registerTool(
-        `DECO_CHAT_WORKFLOWS_START_${workflow.id}`,
-        {
-          description: workflow.description,
-          inputSchema: workflow.inputSchema && "shape" in workflow.inputSchema
-            ? (workflow.inputSchema.shape as z.ZodRawShape)
-            : z.object({}).shape,
-          outputSchema: z.object({
-            id: z.string(),
-          }).shape,
-        },
-        async (args) => {
-          const store = State.getStore();
-          const runId = store?.req.headers.get("x-deco-chat-run-id") ??
-            crypto.randomUUID();
-          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
-          );
-
-          using result = await workflowDO.start({
-            workflowId: workflow.id,
-            args,
-            runId,
-            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
-          });
-          return {
-            structuredContent: { runId: result.runId },
-          };
-        },
-      );
-
-      server.registerTool(
-        `DECO_CHAT_WORKFLOWS_CANCEL_${workflow.id}`,
-        {
-          description: workflow.description,
-          inputSchema: z.object({ runId: z.string() }).shape,
-          outputSchema: z.object({ cancelled: z.boolean() }).shape,
-        },
-        async (args) => {
-          const runId = args.runId;
-          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
-          );
-
-          using _ = await workflowDO.cancel({
-            workflowId: workflow.id,
-            runId,
-            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
-          });
-
-          return {
-            structuredContent: { cancelled: true },
-          };
-        },
-      );
-
-      server.registerTool(
-        `DECO_CHAT_WORKFLOWS_RESUME_${workflow.id}`,
-        {
-          description: workflow.description,
-          inputSchema: z.object({
-            runId: z.string(),
-            stepId: z.string(),
-            resumeData: z.any(),
-          }).shape,
-          outputSchema: z.object({ resumed: z.boolean() }).shape,
-        },
-        async (args) => {
-          const runId = args.runId;
-          const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
-            bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),
-          );
-
-          using _ = await workflowDO.resume({
-            workflowId: workflow.id,
-            runId,
-            resumeData: args.resumeData,
-            stepId: args.stepId,
-            ctx: bindings.DECO_CHAT_REQUEST_CONTEXT,
-          });
-
-          return {
-            structuredContent: { resumed: true },
-          };
-        },
-      );
-    }
-
-    return server;
+    return { server, tools };
   };
 
-  return async (req, env, ctx) => {
-    const server = createServer(env);
+  const fetch = async (
+    req: Request,
+    env: TEnv & DefaultEnv<TSchema>,
+    ctx: ExecutionContext,
+  ) => {
+    const { server } = createServer(env);
     const transport = new HttpServerTransport();
 
     await server.connect(transport);
@@ -379,5 +395,37 @@ export const createMCPServer = <
     );
 
     return res;
+  };
+
+  const callTool: CallTool<TEnv, TSchema> = ({
+    env,
+    ctx,
+    req,
+    toolCallId,
+    toolCallInput,
+  }) => {
+    const { tools } = createServer(env);
+    const tool = tools.find((t) => t.id === toolCallId);
+    const execute = tool?.execute;
+    if (!execute) {
+      throw new Error(
+        `Tool ${toolCallId} not found or does not have an execute function`,
+      );
+    }
+
+    return State.run(
+      { env, ctx, req },
+      () =>
+        execute({
+          context: toolCallInput,
+          runId: crypto.randomUUID(),
+          runtimeContext: createRuntimeContext(),
+        }),
+    );
+  };
+
+  return {
+    fetch,
+    callTool,
   };
 };

@@ -1,6 +1,6 @@
 import { Command } from "@cliffy/command";
 import denoJson from "./deno.json" with { type: "json" };
-import { getConfig, getLocal, setLocal } from "./src/config.ts";
+import { getConfig, getLocal, readWranglerConfig, setLocal } from "./src/config.ts";
 import { configureCommand } from "./src/configure.ts";
 import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";
@@ -83,11 +83,14 @@ const hostingDeploy = new Command()
     const config = await getConfig({
       inlineOptions: args,
     });
+    const wranglerConfig = await readWranglerConfig();
+    const assetsDirectory = wranglerConfig.assets?.directory;
     return deploy({
       ...config,
       skipConfirmation: args.yes,
       cwd,
       unlisted: !args.public,
+      assetsDirectory,
     });
   });
 

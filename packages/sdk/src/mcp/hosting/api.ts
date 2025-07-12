@@ -241,9 +241,34 @@ const MIME_TYPES: Record<string, string> = {
   "html": "text/html",
   "txt": "text/plain",
   "toml": "text/plain",
+  "svg": "image/svg+xml",
+  "png": "image/png",
+  "jpg": "image/jpeg",
+  "jpeg": "image/jpeg",
+  "gif": "image/gif",
+  "ico": "image/x-icon",
+  "webp": "image/webp",
+  "avif": "image/avif",
+  "heic": "image/heic",
+  "heif": "image/heif",
+  "heif-sequence": "image/heif-sequence",
+  "heic-sequence": "image/heic-sequence",
+  "avif-sequence": "image/avif-sequence",
+  "mp4": "video/mp4",
+  "webm": "video/webm",
+  "ogg": "video/ogg",
+  "mp3": "audio/mpeg",
+  "wav": "audio/wav",
+  "woff": "font/woff",
+  "woff2": "font/woff2",
+  "ttf": "font/ttf",
+  "eot": "font/eot",
+  "otf": "font/otf",
+  "woff-sequence": "font/woff-sequence",
+  "woff2-sequence": "font/woff2-sequence",
 };
 
-const getMimeType = (path: string): string => {
+export const getMimeType = (path: string): string => {
   const ext = path.split(".").pop()?.toLowerCase() ?? "txt";
   return MIME_TYPES[ext] ?? "text/plain";
 };
@@ -268,7 +293,31 @@ const CONFIGS = ["wrangler.toml"];
 const FileSchema = z.object({
   path: z.string(),
   content: z.string(),
+  asset: z.boolean().optional(),
 });
+
+const ensureLeadingSlash = (path: string) => {
+  return path.startsWith("/") ? path : `/${path}`;
+};
+
+const splitFiles = (files: Record<string, { content: string; asset: boolean }>) => {
+  const code: Record<string, string> = {};
+  const assets: Record<string, string> = {};
+
+  for (const [path, { content, asset }] of Object.entries(files)) {
+    if (asset) {
+      const assetPath = ensureLeadingSlash(path);
+      assets[assetPath] = content;
+    } else {
+      code[path] = content;
+    }
+  }
+
+  return {
+    code,
+    assets,
+  };
+};
 
 const DECO_WORKER_RUNTIME_VERSION = "0.2.18";
 // Update the schema in deployFiles
@@ -498,14 +547,14 @@ Important Notes:
 
     // Convert array to record for bundler or direct upload
     const filesRecord = files.reduce((acc, file) => {
-      acc[file.path] = file.content;
+      acc[file.path] = { content: file.content, asset: file.asset ?? false };
       return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<string, { content: string; asset: boolean }>);
 
     const wranglerFile = CONFIGS.find((file) => file in filesRecord);
     const wranglerConfig: WranglerConfig = wranglerFile
       // deno-lint-ignore no-explicit-any
-      ? parseToml(filesRecord[wranglerFile]) as any as WranglerConfig
+      ? parseToml(filesRecord[wranglerFile]?.content) as any as WranglerConfig
       : { name: _appSlug } as WranglerConfig;
 
     // check if the entrypoint is in the files
@@ -537,11 +586,16 @@ Important Notes:
     const workspace = c.workspace.value;
     const scriptSlug = appSlug;
 
-    let fileObjects: Record<string, File>;
+    const { code: codeFiles, assets: assetFiles } = splitFiles(filesRecord);
+    let bundledCode: Record<string, File>;
+
     if (bundle) {
       // Bundle the files
-      const bundledScript = await bundler(filesRecord, entrypoint);
-      fileObjects = {
+      const bundledScript = await bundler(
+        codeFiles,
+        entrypoint,
+      );
+      bundledCode = {
         [SCRIPT_FILE_NAME]: new File(
           [bundledScript],
           SCRIPT_FILE_NAME,
@@ -549,13 +603,14 @@ Important Notes:
         ),
       };
     } else {
-      fileObjects = Object.fromEntries(
-        Object.entries(filesRecord).map(([path, content]) => [
+      bundledCode = Object.fromEntries(
+        Object.entries(codeFiles).map(([path, content]) => [
           path,
           new File([content], path, { type: getMimeType(path) }),
         ]),
       );
     }
+
     const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
         c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
@@ -589,20 +644,21 @@ Important Notes:
       ),
     );
 
-    const result = await deployToCloudflare(
+    const result = await deployToCloudflare({
       c,
       wranglerConfig,
-      bundle ? SCRIPT_FILE_NAME : entrypoint,
-      fileObjects,
-      { ...envVars, ...appEnvVars },
-    );
+      mainModule: bundle ? SCRIPT_FILE_NAME : entrypoint,
+      bundledCode,
+      assets: assetFiles,
+      _envVars: { ...envVars, ...appEnvVars },
+    });
     const data = await updateDatabase(
       c,
       workspace,
       scriptSlug,
       result,
       wranglerConfig,
-      filesRecord,
+      codeFiles,
     );
 
     const client = MCPClient.forContext(c);

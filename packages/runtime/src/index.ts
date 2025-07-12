@@ -179,14 +179,35 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   const server = createMCPServer<TEnv, TSchema>(userFns);
   return {
     Workflow: Workflow(userFns.workflows),
-    fetch: (
+    fetch: async (
       req: Request,
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
       const url = new URL(req.url);
       if (url.pathname === "/mcp") {
-        return server(req, withBindings(env, getReqToken(req)), ctx);
+        return server.fetch(req, withBindings(env, getReqToken(req)), ctx);
+      }
+
+      if (url.pathname.startsWith("/mcp/call-tool")) {
+        const toolCallId = url.pathname.split("/").pop();
+        if (!toolCallId) {
+          return new Response("Not found", { status: 404 });
+        }
+        const toolCallInput = await req.json();
+        const result = await server.callTool({
+          env: withBindings(env, getReqToken(req)) as TEnv & DefaultEnv<TSchema>,
+          ctx,
+          req,
+          toolCallId,
+          toolCallInput,
+        });
+
+        return new Response(JSON.stringify(result), {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
       }
       return userFns.fetch?.(
         req,

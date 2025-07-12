@@ -4,6 +4,8 @@ import { type AppContext, getEnv } from "../context.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
+import crypto from "node:crypto";
+import { getMimeType } from "./api.ts";
 
 const METADATA_FILE_NAME = "metadata.json";
 export interface MigrationBase {
@@ -88,6 +90,12 @@ export interface WranglerConfig {
     script_name?: string;
   }[];
   migrations?: Migration[];
+  assets?: {
+    directory?: string;
+    binding?: string;
+    jwt?: string;
+  };
+  keep_assets?: boolean;
   //
   deco?: {
     integration?: {
@@ -150,9 +158,149 @@ const addPolyfills = (
   }
 };
 
-export async function deployToCloudflare(
-  c: AppContext,
-  {
+interface FileMetadata {
+  hash: string;
+  size: number;
+}
+
+function calculateFileHash(base64Content: string): FileMetadata {
+  const fileBuffer = new TextEncoder().encode(base64Content);
+  const hash = crypto.createHash("sha256");
+  hash.update(fileBuffer);
+  const fileHash = hash.digest("hex").slice(0, 32); // Grab the first 32 characters
+  const fileSize = fileBuffer.length;
+  return { hash: fileHash, size: fileSize };
+}
+
+function createAssetsManifest(assets: Record<string, string>): Record<string, FileMetadata> {
+  return Object.fromEntries(
+    Object.entries(assets).map(([path, content]) => [
+      path,
+      calculateFileHash(content),
+    ]),
+  );
+}
+
+function findMatch(
+  fileHash: string,
+  fileMetadata: Record<string, FileMetadata>,
+): string {
+  for (const prop in fileMetadata) {
+    const file = fileMetadata[prop] as FileMetadata;
+    if (file.hash === fileHash) {
+      return prop;
+    }
+  }
+  throw new Error("unknown fileHash");
+}
+
+const handleAssetUpload = async ({
+  c,
+  jwt,
+  fileHashes,
+  manifest,
+  files,
+}: {
+  c: AppContext;
+  jwt: string;
+  fileHashes: string[][];
+  manifest: Record<string, FileMetadata>;
+  files: Record<string, string>;
+}): Promise<string | null> => {
+  const form = new FormData();
+
+  let finalJwt: string | null = null;
+  for (const bucket of fileHashes) {
+    console.log("bucket", bucket);
+    bucket.forEach((fileHash) => {
+      const fullPath = findMatch(fileHash, manifest);
+      const base64Data = files[fullPath];
+
+      const mimeType = getMimeType(fullPath);
+
+      console.log(fullPath, mimeType);
+
+      form.append(
+        fileHash,
+        new File([base64Data], fileHash, {
+          type: mimeType === "application/javascript+module" ? "application/javascript" : mimeType,
+        }),
+        fileHash,
+      );
+    });
+
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${c.envVars.CF_ACCOUNT_ID}/workers/assets/upload?base64=true`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: form,
+      },
+    );
+
+    const data = (await response.json()) as {
+      result: {
+        jwt: string;
+      };
+    };
+
+    if (data.result.jwt) {
+      finalJwt = data.result.jwt;
+    }
+  }
+
+  return finalJwt;
+};
+
+const uploadWranglerAssets = async ({
+  c,
+  assets,
+  scriptSlug,
+}: {
+  c: AppContext;
+  assets: Record<string, string>;
+  scriptSlug: string;
+}) => {
+    const assetsManifest = createAssetsManifest(assets);
+
+    const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces.scripts.assetUpload.create(
+      c.envVars.CF_DISPATCH_NAMESPACE,
+      scriptSlug,
+      {
+        account_id: c.envVars.CF_ACCOUNT_ID,
+        manifest: assetsManifest,
+      },
+    );
+
+    if (!assetUploadSession.buckets || assetUploadSession.buckets.length === 0) {
+      console.log("No assets changed");
+      return;
+    }
+
+    if (!assetUploadSession.jwt) {
+      throw new Error("No buckets found in asset upload session");
+    }
+
+    const jwt = await handleAssetUpload({
+      c,
+      jwt: assetUploadSession.jwt,
+      fileHashes: assetUploadSession.buckets,
+      manifest: assetsManifest,
+      files: assets,
+    });
+
+    return jwt;
+};
+
+export async function deployToCloudflare({
+  c,
+  mainModule,
+  bundledCode,
+  assets,
+  _envVars,
+  wranglerConfig: {
     name: scriptSlug,
     compatibility_flags,
     compatibility_date,
@@ -169,10 +317,16 @@ export async function deployToCloudflare(
     triggers,
     d1_databases,
     migrations,
-  }: WranglerConfig,
+    assets: wranglerAssetsConfig,
+  },
+}: {
+  c: AppContext,
+  wranglerConfig: WranglerConfig,
   mainModule: string,
-  files: Record<string, File>,
+  bundledCode: Record<string, File>,
+  assets: Record<string, string>,
   _envVars?: Record<string, string>,
+}
 ): Promise<DeployResult> {
   assertHasWorkspace(c);
   const env = getEnv(c);
@@ -264,6 +418,33 @@ export async function deployToCloudflare(
     })) ?? [],
   ];
 
+  let assetsMetadata: Partial<WranglerConfig> = {
+    assets: wranglerAssetsConfig,
+  };
+
+  if (Object.keys(assets).length > 0) {
+    const jwt = await uploadWranglerAssets({
+      c,
+      assets,
+      scriptSlug,
+    });
+
+    if (!jwt) {
+      assetsMetadata = {
+        assets: wranglerAssetsConfig,
+        keep_assets: true,
+      };
+    } else {
+      assetsMetadata = {
+        assets: {
+          ...wranglerAssetsConfig,
+          jwt,
+        },
+      };
+    }
+
+  }
+
   const metadata = {
     main_module: mainModule,
     compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
@@ -275,15 +456,16 @@ export async function deployToCloudflare(
       enabled: true,
     },
     migrations: doMigrations,
+    ...assetsMetadata,
   };
 
-  addPolyfills(files, metadata, [polyfill]);
+  addPolyfills(bundledCode, metadata, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
       type: "application/json",
     }),
-    ...files,
+    ...bundledCode,
   };
 
   const result = await c.cf.workersForPlatforms.dispatch.namespaces

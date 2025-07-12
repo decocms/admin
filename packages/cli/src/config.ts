@@ -73,9 +73,12 @@ export interface WranglerConfig {
   };
   name?: string;
   deco?: Partial<Config>;
+  assets?: {
+    directory?: string;
+  };
 }
 
-const readWranglerConfig = async (cwd?: string) => {
+export const readWranglerConfig = async (cwd?: string) => {
   const configPath = getConfigFilePath(cwd || Deno.cwd());
   if (!configPath) {
     return {};

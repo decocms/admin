@@ -17,12 +17,12 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { useMemo } from "react";
 import { IntegrationIcon } from "./common.tsx";
-import { isDecoIntegration } from "./select-connection-dialog.tsx";
 
 export interface MarketplaceIntegration
   extends Omit<Integration, "connection"> {
   provider: string;
   friendlyName?: string;
+  verified?: boolean;
 }
 
 interface ConnectIntegrationModalProps {
@@ -130,7 +130,7 @@ function CardsView(
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
       {integrations.map((integration) => {
         const showVerifiedBadge = integration.id !== NEW_CUSTOM_CONNECTION.id &&
-          isDecoIntegration(integration);
+          integration.verified;
         return (
           <Card
             key={integration.id}

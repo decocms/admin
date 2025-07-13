@@ -612,6 +612,7 @@ It's always handy to search for installed integrations with no query, since all 
       description: app.description,
       icon: app.icon,
       provider: MARKETPLACE_PROVIDER,
+      verified: app.verified,
     }));
 
     const list = marketplace.map((
@@ -622,6 +623,7 @@ It's always handy to search for installed integrations with no query, since all 
       description,
       icon,
       provider,
+      verified: provider === DECO_PROVIDER,
     }));
 
     const virtualIntegrations = virtualInstallableIntegrations();

@@ -467,6 +467,7 @@ export type Database = {
           scope_id: string;
           unlisted: boolean;
           updated_at: string;
+          verified: boolean | null;
           workspace: string;
         };
         Insert: {
@@ -480,6 +481,7 @@ export type Database = {
           scope_id: string;
           unlisted?: boolean;
           updated_at?: string;
+          verified?: boolean | null;
           workspace: string;
         };
         Update: {
@@ -493,6 +495,7 @@ export type Database = {
           scope_id?: string;
           unlisted?: boolean;
           updated_at?: string;
+          verified?: boolean | null;
           workspace?: string;
         };
         Relationships: [

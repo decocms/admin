@@ -37,7 +37,8 @@ const SELECT_REGISTRY_APP_QUERY = `
   created_at,
   updated_at,
   unlisted,
-  friendly_name
+  friendly_name,
+  verified
 ` as const;
 
 const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
@@ -76,6 +77,7 @@ const RegistryAppSchema = z.object({
   updatedAt: z.string(),
   unlisted: z.boolean(),
   friendlyName: z.string().optional(),
+  verified: z.boolean().optional(),
 });
 
 export type RegistryScope = {
@@ -86,20 +88,7 @@ export type RegistryScope = {
   updatedAt: string;
 };
 
-export type RegistryApp = {
-  id: string;
-  workspace: string;
-  scopeId: string;
-  scopeName: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  connection: MCPConnection;
-  createdAt: string;
-  updatedAt: string;
-  unlisted: boolean;
-  friendlyName?: string;
-};
+export type RegistryApp = z.infer<typeof RegistryAppSchema>;
 
 const Mappers = {
   toRegistryScope: (
@@ -135,6 +124,7 @@ const Mappers = {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       unlisted: data.unlisted,
+      verified: data.verified ?? false,
     };
   },
 };

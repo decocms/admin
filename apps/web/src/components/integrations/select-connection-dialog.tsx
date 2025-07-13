@@ -30,11 +30,6 @@ import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
 import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
 
-export const isDecoIntegration = (integration: MarketplaceIntegration) =>
-  integration.provider === "deco" ||
-  (integration.provider === "marketplace" &&
-    integration.name.startsWith("@deco/"));
-
 export function ConfirmMarketplaceInstallDialog({
   integration,
   setIntegration,
@@ -137,7 +132,7 @@ export function ConfirmMarketplaceInstallDialog({
                   </div>
                 </div>
               </div>
-              {!isDecoIntegration(integration) && (
+              {!integration.verified && (
                 <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
                   <div className="flex items-center gap-2">
                     <Icon name="info" size={16} />

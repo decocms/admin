@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "description": "Deco MCP server with a React + Tailwind view, tools and workflows",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "deco dev",
+    "deploy": "wrangler build && deco deploy ./dist",
+    "gen": "deco gen > deco.gen.ts",
+    "gen:self": "deco gen --self=$DECO_SELF_URL > deco.gen.ts",
+    "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts"
+  },
+  "dependencies": {
+    "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.4.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@deco/cli": "npm:@jsr/deco__cli@^0.7.5",
+    "wrangler": "^4.24.3"
+  }
+}

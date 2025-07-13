@@ -1,0 +1,24 @@
+# Local storage directory for development
+storage/
+
+
+# Environment files
+.env
+.dev.vars
+
+# Build files
+view-build/
+
+# Node modules
+node_modules
+
+node_modules/
+
+.DS_Store
+dist
+dist-ssr
+*.local
+count.txt
+.env
+.nitro
+.tanstack

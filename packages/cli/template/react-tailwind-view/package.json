@@ -1,0 +1,24 @@
+{
+  "name": "react-tailwind-view",
+  "version": "1.0.0",
+  "description": "Deco MCP server with a React + Tailwind view, tools and workflows",
+  "private": true,
+  "workspaces": [
+    "server",
+    "view"
+  ],
+  "scripts": {
+    "dev": "cd view && npm run build:watch & cd server && npm run dev",
+    "configure": "cd server && deco configure",
+    "gen": "cd server && deco gen > deco.gen.ts",
+    "gen:self": "cd server && deco gen --self=$DECO_SELF_URL > deco.gen.ts",
+    "deploy": "cd view && npm run build && cd ../server && npm run deploy"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

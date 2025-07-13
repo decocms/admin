@@ -1,0 +1,250 @@
+---
+alwaysApply: true
+---
+
+# React-Tailwind-View MCP Template Development Guide
+
+## Project Overview
+
+This is a **Deco MCP (Model Context Protocol) server** template with a **React + Tailwind CSS frontend**. It provides a full-stack development environment where:
+- The `/server` folder contains the MCP server (Cloudflare Workers + Deco runtime)
+- The `/view` folder contains the React frontend (Vite + Tailwind CSS)
+- The server serves both MCP endpoints AND the built frontend assets
+
+## Project Structure
+
+```
+react-tailwind-view/
+├── package.json          # Root workspace with dev/gen/deploy scripts
+├── server/               # MCP Server (Cloudflare Workers + Deco)
+│   ├── main.ts          # Main server entry point
+│   ├── deco.gen.ts      # Generated types for integrations
+│   ├── wrangler.toml    # Cloudflare Workers config
+│   └── package.json     # Server dependencies
+└── view/                # React Frontend (Vite + Tailwind)
+    ├── src/
+    │   ├── main.tsx     # React app entry point
+    │   ├── lib/rpc.ts   # RPC client for server communication
+    │   ├── routes/      # React Router routes
+    │   └── components/  # UI components
+    ├── package.json     # Frontend dependencies
+    └── vite.config.ts   # Vite configuration
+```
+
+## Development Workflow
+
+### Root Commands (npm workspace)
+- `npm run dev` - **Primary development command**
+  - Starts frontend build in watch mode
+  - Starts MCP server on port 8787
+  - Server serves both API endpoints + frontend assets
+  - Hot reload for both frontend and backend
+  
+- `npm run gen` - **Type generation**
+  - Generates TypeScript types for deco integrations
+  - Creates `server/deco.gen.ts` with typed RPC interfaces
+  - Run this after adding new integrations in deco.chat
+
+- `npm run gen:self` - **Self-type generation for your own tools**
+  - Generates TypeScript types for your own server's tools and workflows
+  - Requires the server to be running (`npm run dev`)
+  - Copy the development URL from server logs (e.g., "https://localhost-48d64e92.deco.host")
+  - Add /mcp to the path. So, for the URL https://localhost-48d64e92.deco.host you should set DECO_SELF_URL as https://localhost-48d64e92.deco.host/mcp.
+  - Run: `DECO_SELF_URL=<your-dev-url> npm run gen:self`
+  - Creates typed RPC interfaces for your own tools/workflows
+  - Run this after adding new tools or workflows to your server
+
+- `npm run deploy` - **Production deployment**
+  - Builds frontend for production
+  - Deploys to Cloudflare Workers
+  - Makes app available at public URL
+
+### Server Architecture (`/server`)
+
+**Key Files:**
+- `main.ts` - Main server with tools, workflows, and asset serving
+- `deco.gen.ts` - Generated types for integrations (auto-generated)
+- `wrangler.toml` - Cloudflare Workers config with asset binding
+
+**Server Pattern:**
+```typescript
+// server/main.ts structure
+import { withRuntime } from "@deco/workers-runtime";
+
+// 1. Define tools (functions the MCP can call)
+const createMyTool = (env: Env) => createTool({
+  id: "MY_TOOL",
+  description: "Tool description",
+  inputSchema: z.object({ /* input schema */ }),
+  outputSchema: z.object({ /* output schema */ }),
+  execute: async ({ context }) => {
+    // Tool logic here
+    return { /* result */ };
+  },
+});
+
+// 2. Define workflows (multi-step processes)
+const createMyWorkflow = (env: Env) => {
+  const step = createStepFromTool(createMyTool(env));
+  return createWorkflow({
+    id: "MY_WORKFLOW",
+    inputSchema: z.object({ /* input */ }),
+    outputSchema: z.object({ /* output */ }),
+  }).then(step).commit();
+};
+
+// 3. Setup runtime with fallback to serve frontend
+const { Workflow, ...runtime } = withRuntime<Env>({
+  workflows: [createMyWorkflow],
+  tools: [createMyTool],
+  fetch: fallbackToView("/"), // Serves frontend assets
+});
+
+export { Workflow };
+export default runtime;
+```
+
+### Frontend Architecture (`/view`)
+
+**Key Files:**
+- `src/main.tsx` - React app entry with TanStack Router setup
+- `src/lib/rpc.ts` - RPC client for server communication
+- `src/routes/` - TanStack Router routes
+- `src/components/` - UI components with Tailwind CSS
+
+**Frontend-to-Server Communication:**
+```typescript
+// view/src/lib/rpc.ts
+import { createClient } from "@deco/workers-runtime/client";
+import type { Env } from "../../../server/deco.gen.ts";
+
+type SelfMCP = Env["SELF"];
+export const client = createClient<SelfMCP>();
+
+// Usage in components:
+const result = await client.tools.MY_TOOL({ name: "example" });
+const workflowResult = await client.workflows.MY_WORKFLOW({ name: "example" });
+```
+
+**TanStack Router Pattern:**
+```typescript
+// view/src/routes/my-route.tsx
+import { createRoute, type RootRoute } from "@tanstack/react-router";
+
+function MyRouteComponent() {
+  return (
+    <div>
+      <h1>My Route</h1>
+      {/* Component content */}
+    </div>
+  );
+}
+
+// Export function that creates the route
+export default (parentRoute: RootRoute) =>
+  createRoute({
+    path: "/my-route",
+    component: MyRouteComponent,
+    getParentRoute: () => parentRoute,
+  });
+
+// Add to main.tsx router tree:
+import MyRoute from "./routes/my-route.tsx";
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  MyRoute(rootRoute),
+  // ... other routes
+]);
+```
+
+## Development Best Practices
+
+### When Adding New Tools:
+1. Add tool definition in `server/main.ts`
+2. Include in `withRuntime` tools array
+3. Run `npm run gen` to update external integration types
+4. Start server with `npm run dev` and copy the development URL from logs
+5. Run `DECO_SELF_URL=<your-dev-url> npm run gen:self` to generate self-types
+6. Use typed RPC calls in frontend: `client.tools.YOUR_TOOL()`
+
+### When Adding New Workflows:
+1. Create workflow in `server/main.ts`
+2. Include in `withRuntime` workflows array
+3. Run `npm run gen` to update external integration types
+4. Start server with `npm run dev` and copy the development URL from logs
+5. Run `DECO_SELF_URL=<your-dev-url> npm run gen:self` to generate self-types
+6. Use typed RPC calls in frontend: `client.workflows.YOUR_WORKFLOW()`
+
+### When Adding New Routes:
+1. Create route component in `view/src/routes/`
+2. Export a function that takes a parent route and returns `createRoute()`
+3. Add route to router tree in `view/src/main.tsx`
+4. Use TanStack Router's typesafe `createRoute` pattern
+
+### When Adding UI Components:
+1. Use shadcn CLI to add new components: `cd view && npx shadcn@latest add <component-name>`
+2. Use Tailwind CSS classes for styling
+3. Leverage shadcn/ui components in `view/src/components/ui/`
+4. Use `clsx` and `tailwind-merge` for conditional classes
+5. Use lucide-react icons for consistent iconography (already installed)
+
+## Environment Setup
+
+### Prerequisites:
+- Node.js >=18.0.0
+- npm >=8.0.0
+- Deno >=2.0.0
+- Deco CLI installed: `deno install -Ar -g -n deco jsr:@deco/cli`
+
+### Initial Setup:
+1. `deco login` - Authenticate with deco.chat
+2. `npm install` - Install all dependencies
+3. `npm run configure` - Configure the app with the desired name and select its workspace
+4. `npm run dev` - Start development
+
+## Integration with Deco Platform
+
+### Adding External Integrations:
+1. Go to deco.chat dashboard
+2. Add integrations (APIs, databases, etc.)
+3. Run `npm run gen` to get typed interfaces
+4. Use typed clients in your tools/workflows
+
+### Deployment:
+- `npm run deploy` deploys to Cloudflare Workers
+- App becomes available at public URL
+- Can be used as MCP server by AI agents
+
+## Common Patterns
+
+### Error Handling:
+```typescript
+// In tools
+execute: async ({ context }) => {
+  const result = await someAsyncOperation(context);
+  if (!result.ok) {
+    throw new Error("...")
+  }
+  return result;
+}
+```
+
+### Frontend State Management:
+- Use `@tanstack/react-query` for server state
+- Always call your own server tools via the typed rpc client, then wrap the call either on a useMutation of on a useQuery.
+- Use TanStack Router for typesafe navigation and routing state
+- Use React hooks for component state
+
+### Styling:
+- Tailwind CSS for utility-first styling
+- shadcn/ui components for consistent design
+- Use `cn()` utility for conditional classes
+
+## Debugging Tips
+
+- Server logs appear in terminal during `npm run dev`
+- Frontend assets have hot refreshing builds but needs refreshing the browser to see changes
+- Use browser dev tools for frontend debugging
+
+This template provides a complete full-stack development environment for building MCP servers with modern React frontends. Focus on adding your business logic in tools and workflows while leveraging the typed RPC communication between frontend and backend.

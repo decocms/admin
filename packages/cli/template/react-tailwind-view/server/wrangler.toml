@@ -1,0 +1,24 @@
+name = "react-tailwind-view"
+main = "main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+
+[assets]
+directory = "./view-build"
+binding = "ASSETS"
+
+[deco]
+app = ""
+workspace = ""
+bindings = []
+enable_workflows = true
+local = false
+
+[[migrations]]
+tag = "v1"
+new_classes = [ "Workflow" ]
+
+[durable_objects]
+[[durable_objects.bindings]]
+name = "DECO_CHAT_WORKFLOW_DO"
+class_name = "Workflow"

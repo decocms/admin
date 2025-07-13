@@ -25,11 +25,11 @@ const AVAILABLE_TEMPLATES: Template[] = [
     path: "packages/cli/template/base",
   },
   {
-    name: "react-tailwind-view",
-    description: "MCP Server with React + Tailwind views, Tools and Workflows.",
-    repo: "deco-cx/chat",
+    name: "react-tailwind-views",
+    description:
+      "MCP Server with Tools, Workflows and React + Tailwind for Views.",
+    repo: "deco-cx/react-tailwind-views",
     branch: "main",
-    path: "packages/cli/template/react-tailwind-view",
   },
 ];
 

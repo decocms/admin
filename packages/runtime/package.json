@@ -16,6 +16,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
+    "./mastra": "./src/mastra.ts",
     "./client": "./src/client.ts"
   },
   "devDependencies": {

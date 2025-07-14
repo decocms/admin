@@ -63,10 +63,20 @@ export function useTabsForAgent(
 
   // Combine static tabs with dynamic view tabs, placing views after chat
   const allTabs = useMemo(() => {
-    const tabs = { ...baseTabs };
+    const hasViews = Object.keys(dynamicViewTabs).length > 0;
+
+    // If we have views, close all base tabs so only the first view is open
+    const tabs = hasViews
+      ? Object.fromEntries(
+        Object.entries(baseTabs).map(([key, tab]) => [
+          key,
+          { ...tab, initialOpen: false },
+        ]),
+      )
+      : { ...baseTabs };
 
     // Insert view tabs after chat tab
-    if (Object.keys(dynamicViewTabs).length > 0) {
+    if (hasViews) {
       const tabEntries = Object.entries(tabs);
       const chatIndex = tabEntries.findIndex(([key]) => key === "chat");
 

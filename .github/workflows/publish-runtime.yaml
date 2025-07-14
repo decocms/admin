@@ -29,4 +29,4 @@ jobs:
         run: cd ./packages/runtime && deno run -A scripts/generate-json-schema.ts
 
       - name: Publish package
-        run: cd ./packages/runtime && deno publish --allow-slow-types
+        run: cd ./packages/runtime && deno publish --allow-slow-types --allow-dirty

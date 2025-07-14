@@ -111,10 +111,35 @@ const DECO_CHAT_WORKFLOW_BINDING = {
   name: "DECO_CHAT_WORKFLOW_DO",
   class_name: "Workflow",
 };
+
+const addSchemaNotation = (stringified: string) => {
+  return `#:schema node_modules/@deco/workers-runtime/config-schema.json\n${stringified}`;
+};
+
+/**
+ * Write the entire wrangler config to the config file.
+ * @param config - The wrangler config to write.
+ * @param cwd - The current working directory to write config to.
+ * @param merge - Whether to merge with existing config or replace it.
+ */
+const writeWranglerConfig = async (
+  config: Partial<WranglerConfig>,
+  cwd?: string,
+) => {
+  const targetCwd = cwd || Deno.cwd();
+  const currentConfig = await readWranglerConfig(targetCwd);
+  const mergedConfig = { ...currentConfig, ...config };
+  const configPath = getConfigFilePath(targetCwd) ??
+    `${targetCwd}/${CONFIG_FILE}`;
+  await Deno.writeTextFile(
+    configPath,
+    addSchemaNotation(stringify(mergedConfig)),
+  );
+  console.log(`✅ Wrangler configuration written to: ${configPath}`);
+};
+
 export const addWorkflowDO = async () => {
   const wranglerConfig = await readWranglerConfig(Deno.cwd());
-  const configPath = getConfigFilePath(Deno.cwd()) ??
-    `${Deno.cwd()}/${CONFIG_FILE}`;
   const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
   const workflowsBindings = {
     migrations: [
@@ -134,12 +159,8 @@ export const addWorkflowDO = async () => {
     },
   };
 
-  await Deno.writeTextFile(
-    configPath,
-    stringify({
-      ...wranglerConfig,
-      ...(wranglerConfig.deco?.enable_workflows ? workflowsBindings : {}),
-    }),
+  await writeWranglerConfig(
+    wranglerConfig.deco?.enable_workflows ? workflowsBindings : {},
   );
 };
 
@@ -151,11 +172,12 @@ export const addWorkflowDO = async () => {
 export const writeConfigFile = async (
   config: Partial<Config>,
   cwd?: string,
+  merge = true,
 ) => {
   const targetCwd = cwd || Deno.cwd();
   const wranglerConfig = await readWranglerConfig(targetCwd);
   const current = wranglerConfig.deco ?? {} as Partial<Config>;
-  const mergedConfig = { ...current, ...config };
+  const mergedConfig = merge ? { ...current, ...config } : config;
   const configPath = getConfigFilePath(targetCwd) ??
     `${targetCwd}/${CONFIG_FILE}`;
   await Deno.writeTextFile(

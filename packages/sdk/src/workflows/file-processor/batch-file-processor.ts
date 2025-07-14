@@ -8,8 +8,9 @@ import { WorkspaceMemory } from "../../memory/memory.ts";
 import { InternalServerError } from "../../errors.ts";
 import type { AppContext } from "../../mcp/context.ts";
 import { getServerClient } from "../../storage/supabase/client.ts";
+import { MastraVector } from "@mastra/core";
 
-// Queue message schema for knowledge base file processing
+// Workflow message schema for knowledge base file processing
 export const KbFileProcessorMessageSchema = z.object({
     fileUrl: z.string().url("Invalid file URL"),
     path: z.string().describe(
@@ -44,13 +45,13 @@ export const ProcessingResultSchema = z.object({
 
 export type ProcessingResult = z.infer<typeof ProcessingResultSchema>;
 
-// Queue binding interface
-export interface KbFileProcessorQueue {
-    send: (message: KbFileProcessorMessage) => Promise<void>;
+// Workflow binding interface
+export interface KbFileProcessorWorkflow {
+  create: (options: { params: KbFileProcessorMessage }) => Promise<{ id: string }>;
 }
 
-// Environment variables schema for queue processing
-export const QueueEnvSchema = z.object({
+// Environment variables schema for Workflow processing
+export const WorkflowEnvSchema = z.object({
     OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
     SUPABASE_URL: z.string().url("Invalid Supabase URL"),
     SUPABASE_SERVER_TOKEN: z.string().min(1, "Supabase server token is required"),
@@ -80,10 +81,10 @@ export function getBatchSize(envVars: Record<string, unknown>): number {
  * Get vector client for the workspace
  */
 async function getVectorClient(envVars: Record<string, unknown>, workspace: string) {
-    const env = QueueEnvSchema.parse(envVars);
+    const env = WorkflowEnvSchema.parse(envVars);
 
     const mem = await WorkspaceMemory.create({
-        workspace: workspace as any, // Cast to avoid type issues in queue context
+        workspace: workspace as any, // Cast to avoid type issues in workflow context
         tursoAdminToken: env.TURSO_ADMIN_TOKEN,
         tursoOrganization: env.TURSO_ORGANIZATION,
         tokenStorage: env.TURSO_GROUP_DATABASE_TOKEN,
@@ -103,7 +104,7 @@ async function getVectorClient(envVars: Record<string, unknown>, workspace: stri
  * Create Supabase client for knowledge base operations
  */
 function createKnowledgeBaseSupabaseClient(envVars: Record<string, unknown>) {
-    const env = QueueEnvSchema.parse(envVars);
+    const env = WorkflowEnvSchema.parse(envVars);
     return getServerClient(env.SUPABASE_URL, env.SUPABASE_SERVER_TOKEN);
 }
 
@@ -184,9 +185,10 @@ async function generateEmbeddings(
  * Store vectors in the vector database
  */
 async function storeVectorsInDatabase(
-    vector: any,
+    vector: MastraVector,
     knowledgeBaseName: string,
     embeddings: number[][],
+    // deno-lint-ignore no-explicit-any
     chunks: Array<{ text: string; metadata: Record<string, any> }>
 ): Promise<string[]> {
     // Store vectors in database
@@ -248,7 +250,7 @@ async function updateAssetRecord(
             doc_ids: allStoredIds,
             filename: finalFilename,
             metadata: fileMetadata,
-            ...(finished ? { status: "success" } : {}),
+            ...(finished ? { status: "completed" } : {}),
         })
         .eq("workspace", workspace)
         .eq("file_url", fileUrl);
@@ -268,7 +270,7 @@ export async function processBatch(
     envVars: Record<string, unknown>
 ): Promise<ProcessingResult> {
     const validatedMessage = KbFileProcessorMessageSchema.parse(message);
-    const env = QueueEnvSchema.parse(envVars);
+    const env = WorkflowEnvSchema.parse(envVars);
     const { fileUrl, path, filename, metadata, workspace, knowledgeBaseName, batchPage = 0, totalPages } = validatedMessage;
     const batchSize = getBatchSize(envVars);
 
@@ -346,19 +348,19 @@ export async function processBatch(
 }
 
 /**
- * Send a message to the kb-file-processor queue
+ * Send a message to the kb-file-processor workflow
  */
-export async function sendToKbFileProcessorQueue(
-    queue: KbFileProcessorQueue,
-    message: KbFileProcessorMessage
+export async function sendToKbFileProcessorWorkflow(
+  workflow: KbFileProcessorWorkflow,
+  message: KbFileProcessorMessage
 ): Promise<void> {
-    const validatedMessage = KbFileProcessorMessageSchema.parse(message);
+  const validatedMessage = KbFileProcessorMessageSchema.parse(message);
 
-    await queue.send(validatedMessage);
-    console.log("Message sent to kb-file-processor queue:", {
-        fileUrl: validatedMessage.fileUrl,
-        batchPage: validatedMessage.batchPage
-    });
+  await workflow.create({ params: validatedMessage });
+  console.log("Message sent to kb-file-processor workflow:", {
+    fileUrl: validatedMessage.fileUrl,
+    batchPage: validatedMessage.batchPage
+  });
 }
 
 /**
@@ -398,13 +400,13 @@ export async function updateAssetStatusToFailed(
 /**
  * Send message using AppContext (for use in MCP tools)
  */
-export async function sendKbFileProcessorMessage(
-    context: AppContext,
-    message: KbFileProcessorMessage
+export async function startKbFileProcessorWorkflow(
+  context: AppContext,
+  message: KbFileProcessorMessage
 ): Promise<void> {
-    if (!context.kbFileProcessor) {
-        throw new InternalServerError("KB file processor queue is not available");
-    }
+  if (!context.kbFileProcessor) {
+    throw new InternalServerError("KB file processor workflow is not available");
+  }
 
-    await sendToKbFileProcessorQueue(context.kbFileProcessor, message);
+  await sendToKbFileProcessorWorkflow(context.kbFileProcessor, message);
 } 

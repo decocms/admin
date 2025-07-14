@@ -9,4 +9,4 @@ CHECK ("status" IN ('processing', 'completed', 'failed'));
 
 -- Add comment to the column for documentation
 COMMENT ON COLUMN "public"."deco_chat_assets"."status" IS 
-'Asset processing status: processing (job executing/queued), completed (successful), failed (error occurred)';
+'Asset processing status: processing (job executing/started), completed (successful), failed (error occurred)';

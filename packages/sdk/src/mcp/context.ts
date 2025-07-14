@@ -47,7 +47,7 @@ export interface Vars {
   cf: Cloudflare;
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
-  kbFileProcessor?: import("../queues/file-processor/batch-file-processor.ts").KbFileProcessorQueue;
+  kbFileProcessor?: Workflow;
   stub: <
     Constructor extends
       | ActorConstructor<Trigger>

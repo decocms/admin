@@ -6,10 +6,7 @@ import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
 import { default as app } from "./src/app.ts";
 import { email } from "./src/email.ts";
-import {
-  type KbFileProcessorMessage,
-  queueHandler as kbFileProcessorQueueHandler,
-} from "./src/queues/kb-file-processor-handler.ts";
+import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
 
 const { env } = await import("cloudflare:workers");
 
@@ -87,16 +84,8 @@ export default {
       );
     });
   },
-  queue: (batch: MessageBatch, env: any, ctx: ExecutionContext) => {
-    switch (batch.queue) {
-      case "kb-file-processor":
-        return kbFileProcessorQueueHandler(
-          batch as MessageBatch<KbFileProcessorMessage>,
-          env,
-          ctx,
-        );
-      default:
-        throw new Error(`Unknown queue: ${batch.queue}`);
-    }
-  },
+
 };
+
+// Export the workflow
+export { KbFileProcessorWorkflow };

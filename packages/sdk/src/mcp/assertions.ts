@@ -18,7 +18,7 @@ type WithWorkspace<TAppContext extends AppContext = AppContext> =
 type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
   & Omit<TAppContext, "kbFileProcessor">
   & {
-    kbFileProcessor: import("../queues/file-processor/batch-file-processor.ts").KbFileProcessorQueue;
+    kbFileProcessor: Workflow;
   };
 
 export type WithTool<TAppContext extends AppContext = AppContext> =

@@ -22,7 +22,7 @@ import {
 } from "../context.ts";
 import { FileMetadataSchema } from "../file-processor.ts";
 import type { Json } from "../../storage/index.ts";
-import { sendKbFileProcessorMessage } from "../../queues/file-processor/batch-file-processor.ts";
+import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -339,7 +339,7 @@ export const addFile = createKnowledgeBaseTool({
       throw new InternalServerError("Failed to update file metadata");
     }
 
-    await sendKbFileProcessorMessage(c, {
+    await startKbFileProcessorWorkflow(c, {
       fileUrl,
       metadata: _metadata,
       path,

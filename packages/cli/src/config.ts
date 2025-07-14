@@ -61,6 +61,9 @@ export type Config = z.infer<typeof decoConfigSchema>;
 
 export interface WranglerConfig {
   [key: string]: unknown;
+  assets?: {
+    directory?: string;
+  };
   migrations?: {
     tag: string;
     new_classes: string[];
@@ -73,9 +76,6 @@ export interface WranglerConfig {
   };
   name?: string;
   deco?: Partial<Config>;
-  assets?: {
-    directory?: string;
-  };
 }
 
 export const readWranglerConfig = async (cwd?: string) => {

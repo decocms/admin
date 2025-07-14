@@ -23,6 +23,7 @@ import {
 } from "./src/utils/prompt-ide-setup.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
+import { addCommand } from "./src/add.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -183,6 +184,19 @@ const listTemplatesCommand = new Command()
     listTemplates();
   });
 
+const add = new Command()
+  .description("Add integrations to the current project.")
+  .option("-w, --workspace <workspace:string>", "Workspace name", {
+    required: false,
+  })
+  .action(async (args) => {
+    const local = getLocal();
+    await addCommand({
+      workspace: args.workspace,
+      local,
+    });
+  });
+
 // Hosting parent command
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
@@ -242,6 +256,7 @@ await new Command()
   .command("deploy", hostingDeploy)
   .command("dev", dev)
   .command("configure", configure)
+  .command("add", add)
   .command("update", update)
   .command("link", linkCmd)
   .command("gen", gen)

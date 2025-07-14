@@ -316,6 +316,7 @@ export const useInstallFromMarketplace = () => {
       integration: Integration;
       redirectUrl?: string | null;
       stateSchema?: unknown;
+      scopes?: string[];
     },
     Error,
     { appName: string; returnUrl: string; provider: string }

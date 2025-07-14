@@ -174,7 +174,7 @@ export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
 > {
-  oauth?: { state?: TSchema };
+  oauth?: { state?: TSchema; scopes?: string[] };
   tools?: Array<
     (env: Env & DefaultEnv<TSchema>) => ReturnType<typeof createTool>
   >;
@@ -208,7 +208,9 @@ const State = {
   ): R => asyncLocalStorage.run(ctx, f, ...args),
 };
 
-const decoChatOAuthToolFor = (schema?: z.ZodTypeAny) => {
+const decoChatOAuthToolFor = <TSchema extends z.ZodTypeAny = never>(
+  { state: schema, scopes }: CreateMCPServerOptions<any, TSchema>["oauth"] = {},
+) => {
   const jsonSchema = schema
     ? zodToJsonSchema(schema)
     : { type: "object", properties: {} };
@@ -220,10 +222,12 @@ const decoChatOAuthToolFor = (schema?: z.ZodTypeAny) => {
     }),
     outputSchema: z.object({
       stateSchema: z.any(),
+      scopes: z.array(z.string()).optional(),
     }),
     execute: () => {
       return Promise.resolve({
         stateSchema: jsonSchema,
+        scopes,
       });
     },
   });
@@ -344,9 +348,8 @@ export const createMCPServer = <
         .flat() ?? [];
 
     tools.push(...workflowTools);
-    const oauthStateSchema = options.oauth?.state;
 
-    tools.push(decoChatOAuthToolFor(oauthStateSchema));
+    tools.push(decoChatOAuthToolFor<TSchema>(options.oauth));
 
     for (const tool of tools) {
       server.registerTool(

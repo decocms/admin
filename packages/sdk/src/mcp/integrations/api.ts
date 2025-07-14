@@ -662,6 +662,7 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
     }),
     z.object({
       stateSchema: z.unknown(),
+      scopes: z.array(z.string()).optional(),
     }),
   ]),
   handler: async ({ appName, returnUrl, installId, provider }, c) => {
@@ -689,7 +690,10 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
         },
       },
     }) as {
-      structuredContent: { redirectUrl: string } | { stateSchema: unknown };
+      structuredContent: { redirectUrl: string } | {
+        stateSchema: unknown;
+        scopes?: string[];
+      };
     };
 
     return oauth.structuredContent;

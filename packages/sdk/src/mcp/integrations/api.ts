@@ -851,7 +851,6 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
         const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
           result.structuredContent,
         );
-        console.log({ result });
 
         const id = parsed.installId ??
           (parsed.data?.connection as { token?: string }).token ??

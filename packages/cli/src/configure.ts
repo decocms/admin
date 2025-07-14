@@ -43,7 +43,7 @@ export async function configureCommand(local?: boolean) {
   // Write both app name (top-level) and deco config in one go
   await writeWranglerConfig({
     name: app,
-    deco: { ...wranglerConfig.deco, workspace, bindings, },
+    deco: { ...wranglerConfig.deco, workspace, bindings },
   });
 
   const outputPath = join(Deno.cwd(), "deco.gen.ts");

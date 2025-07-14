@@ -1,6 +1,11 @@
 import { connect } from "@deco/warp";
 import * as colors from "@std/fmt/colors";
-import { getAppDomain, getConfig } from "./config.ts";
+import { getAppDomain, getConfig, readWranglerConfig } from "./config.ts";
+
+interface LinkOptions {
+  port?: number;
+  onBeforeRegister?: () => void | Deno.ChildProcess;
+}
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -119,19 +124,19 @@ async function register(
   }
 }
 
-export const link = async (
-  { port: p, onBeforeRegister }: {
-    port?: number;
-    onBeforeRegister?: () => void;
-  },
-) => {
-  const port = p || 8000;
-
+export const link = async ({
+  port = 8787,
+  onBeforeRegister,
+}: LinkOptions = {}) => {
   // Get config to extract workspace and app
   const config = await getConfig({});
+  const wranglerConfig = await readWranglerConfig();
+  const app = typeof wranglerConfig.name === "string"
+    ? wranglerConfig.name
+    : "my-app";
 
   // Generate app domain based on workspace and app name
-  const appDomain = await getAppDomain(config.workspace, config.app);
+  const appDomain = await getAppDomain(config.workspace, app);
 
   await register(port, appDomain, onBeforeRegister);
 };

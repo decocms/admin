@@ -114,7 +114,6 @@ export interface WranglerConfig {
   deco?: {
     enable_workflows?: boolean;
     workspace?: string;
-    app?: string;
     local?: boolean;
     integration?: {
       friendlyName?: string;

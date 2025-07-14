@@ -91,8 +91,13 @@ const hostingDeploy = new Command()
     });
     const wranglerConfig = await readWranglerConfig();
     const assetsDirectory = wranglerConfig.assets?.directory;
+    const app = args.app ??
+      (typeof wranglerConfig.name === "string"
+        ? wranglerConfig.name
+        : "my-app");
     return deploy({
       ...config,
+      app,
       skipConfirmation: args.yes,
       cwd,
       unlisted: !args.public,
@@ -143,13 +148,23 @@ const dev = new Command()
 
     const config = await getConfig().catch(() => ({
       workspace: "default",
-      app: "my-app",
+      bindings: [],
+      local: false,
+      enable_workflows: true,
     }));
 
-    const latest = await hasMCPPreferences(config.workspace, config.app);
+    const wranglerConfig = await readWranglerConfig();
+    const app = typeof wranglerConfig.name === "string"
+      ? wranglerConfig.name
+      : "my-app";
+
+    const latest = await hasMCPPreferences(config.workspace, app);
 
     if (!latest) {
-      const mcpConfig = await promptIDESetup(config);
+      const mcpConfig = await promptIDESetup({
+        workspace: config.workspace,
+        app,
+      });
 
       if (mcpConfig) {
         await writeIDEConfig(mcpConfig);
@@ -172,9 +187,7 @@ const create = new Command()
   })
   .arguments("[project-name]")
   .action(async (options, projectName?: string) => {
-    const config = await getConfig({
-      inlineOptions: { app: projectName ?? "my-new-app" },
-    }).catch(() => ({}));
+    const config = await getConfig().catch(() => ({}));
     await createCommand(projectName, options.template, config);
   });
 

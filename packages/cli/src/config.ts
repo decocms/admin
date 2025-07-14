@@ -41,9 +41,6 @@ const decoConfigSchema = z.object({
   workspace: z.string({
     required_error: requiredErrorForProp("workspace"),
   }),
-  app: z.string({
-    required_error: requiredErrorForProp("app"),
-  }),
   bindings: z.array(DecoBindingSchema).optional().default([]),
   local: z.boolean().optional().default(false),
   enable_workflows: z.boolean().optional().default(true),
@@ -74,7 +71,6 @@ export interface WranglerConfig {
       class_name: string;
     }[];
   };
-  name?: string;
   deco?: Partial<Config>;
 }
 
@@ -101,10 +97,7 @@ export const readWranglerConfig = async (cwd?: string) => {
 const readConfigFile = async (cwd?: string) => {
   const wranglerConfig = await readWranglerConfig(cwd);
   const decoConfig = wranglerConfig.deco ?? {} as Partial<Config>;
-  return {
-    ...decoConfig,
-    app: decoConfig.app ?? wranglerConfig.name,
-  };
+  return decoConfig;
 };
 
 const DECO_CHAT_WORKFLOW_BINDING = {
@@ -122,7 +115,7 @@ const addSchemaNotation = (stringified: string) => {
  * @param cwd - The current working directory to write config to.
  * @param merge - Whether to merge with existing config or replace it.
  */
-const writeWranglerConfig = async (
+export const writeWranglerConfig = async (
   config: Partial<WranglerConfig>,
   cwd?: string,
 ) => {
@@ -178,14 +171,15 @@ export const writeConfigFile = async (
   const wranglerConfig = await readWranglerConfig(targetCwd);
   const current = wranglerConfig.deco ?? {} as Partial<Config>;
   const mergedConfig = merge ? { ...current, ...config } : config;
+
   const configPath = getConfigFilePath(targetCwd) ??
     `${targetCwd}/${CONFIG_FILE}`;
   await Deno.writeTextFile(
     configPath,
-    stringify({
+    addSchemaNotation(stringify({
       ...wranglerConfig,
       deco: mergedConfig,
-    }),
+    })),
   );
   console.log(`✅ Deco configuration written to: ${configPath}`);
 };

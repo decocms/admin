@@ -851,15 +851,10 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
         const parsed = CONFIGURE_INTEGRATION_OUTPUT_SCHEMA.parse(
           result.structuredContent,
         );
+        console.log({ result });
 
-        const pattern = new URLPattern({
-          pathname: "/apps/:appName/:installId/mcp/messages",
-        });
-        const match = parsed.data && "url" in parsed.data.connection &&
-            typeof parsed.data.connection.url === "string"
-          ? pattern.exec(parsed.data.connection.url)
-          : null;
-        const id = parsed.installId ?? match?.pathname.groups.installId ??
+        const id = parsed.installId ??
+          (parsed.data?.connection as { token?: string }).token ??
           crypto.randomUUID();
 
         client.close();

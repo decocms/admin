@@ -14,7 +14,6 @@ import { Confirm, Select } from "@cliffy/prompt";
 import { ensureDir } from "@std/fs";
 import { dirname, join } from "@std/path";
 import {
-  type Config,
   getAppUUID,
   getMCPConfig,
   getMCPConfigVersion,
@@ -155,7 +154,7 @@ export const setMCPPreferences = async (workspace: string, app: string) => {
 };
 
 export async function promptIDESetup(
-  cfg: Pick<Config, "workspace" | "app">,
+  cfg: { workspace: string; app: string },
   projectRoot: string = Deno.cwd(),
 ): Promise<Array<{ content: string; path: string }> | null> {
   await setMCPPreferences(cfg.workspace, cfg.app);

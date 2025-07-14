@@ -538,7 +538,7 @@ function AddRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-fit min-w-[600px] max-w-[90vw] max-h-[80vh] overflow-hidden">
+      <DialogContent className="w-fit min-w-[900px] max-w-[95vw] max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{role ? "Edit Role" : "Add New Role"}</DialogTitle>
         </DialogHeader>
@@ -688,7 +688,7 @@ function AddRoleDialog({
                   </Button>
                 </div>
 
-                <div className="space-y-2 grid grid-cols-1" style={{ maxWidth: 420 }}>
+                <div className="space-y-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredIntegrations.map(integration => (
                     <RoleDialogIntegrationListItem
                       key={integration.id}
@@ -753,7 +753,7 @@ function AddRoleDialog({
                     </AlertDescription>
                   </Alert>
                 )}
-                <div className="flex flex-col gap-2" style={{ maxWidth: 420 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredAgents.map(agent => (
                     <Card 
                       key={agent.id} 
@@ -826,7 +826,7 @@ function AddRoleDialog({
                   </Button>
                 </div>
 
-                <div className="flex flex-col gap-2" style={{ maxWidth: 420 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredMembers.map(member => {
                     const memberCurrentRoles = member.roles || [];
                     
@@ -841,12 +841,9 @@ function AddRoleDialog({
                             <RoleDialogUserInfo userId={member.user_id} />
                             {memberCurrentRoles.length > 0 && (
                               <div className="mt-2">
-                                <span className="text-xs text-muted-foreground">
-                                  Current roles: 
-                                </span>
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1">
                                   {memberCurrentRoles.map((role) => (
-                                    <Badge key={role.id} variant="outline" className="text-xs">
+                                    <Badge key={role.id} variant="secondary" className="text-xs">
                                       {role.name}
                                     </Badge>
                                   ))}

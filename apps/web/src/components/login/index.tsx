@@ -25,8 +25,8 @@ function Login() {
   };
 
   const filteredProviders = providers.filter((provider) => {
-    // Dont use email if there is the cli query param
-    // For some reason passing &cli=true, make the magiclink redirect to admin.deco.cx ???
+    // Disable email provider when &cli=true is present
+    // Note: CLI login with email redirects incorrectly to admin.deco.cx instead of the deco.chat
     // TODO: A better solution
     if (cli && provider.name === "Email") {
       return false;

@@ -108,6 +108,154 @@ function createKnowledgeBaseSupabaseClient(envVars: Record<string, unknown>) {
 }
 
 /**
+ * Process file and generate chunks for a specific batch
+ */
+async function generateFileChunks(
+    fileUrl: string,
+    path: string | undefined,
+    metadata: Record<string, string | boolean> | undefined,
+    batchPage: number,
+    batchSize: number
+): Promise<{
+    enrichedChunks: Array<{
+        text: string;
+        metadata: Record<string, any>;
+    }>;
+    totalChunkCount: number;
+    fileMetadata: Record<string, any>;
+}> {
+    console.log(`Processing batch ${batchPage} for file:`, fileUrl);
+
+    // Process file and generate chunks
+    const fileProcessor = new FileProcessor({
+        chunkSize: 500,
+        chunkOverlap: 50,
+    });
+
+    const processedFile = await fileProcessor.processFile(fileUrl);
+
+    // Create file metadata combining all sources
+    const fileMetadata = {
+        ...metadata,
+        ...processedFile.metadata,
+        ...(path ? { path } : { fileUrl }),
+    };
+
+    const start = batchPage * batchSize;
+    const enrichedChunks = processedFile.chunks.slice(start, start + batchSize).map((chunk, index) => ({
+        text: chunk.text,
+        metadata: {
+            ...fileMetadata,
+            ...chunk.metadata,
+            chunkIndex: start + index,
+        },
+    }));
+
+    return {
+        enrichedChunks,
+        totalChunkCount: processedFile.metadata.chunkCount,
+        fileMetadata,
+    };
+}
+
+/**
+ * Generate embeddings for text chunks using OpenAI
+ */
+async function generateEmbeddings(
+    chunks: Array<{ text: string; metadata: Record<string, any> }>,
+    apiKey: string,
+    batchPage: number
+): Promise<number[][]> {
+    const openai = createOpenAI({
+        apiKey,
+    });
+    const embedder = openai.embedding("text-embedding-3-small");
+
+    const { embeddings } = await embedMany({
+        model: embedder,
+        values: chunks.map((item) => item.text),
+    });
+
+    console.log(`Generated ${embeddings.length} embeddings for batch ${batchPage}.`);
+    return embeddings;
+}
+
+/**
+ * Store vectors in the vector database
+ */
+async function storeVectorsInDatabase(
+    vector: any,
+    knowledgeBaseName: string,
+    embeddings: number[][],
+    chunks: Array<{ text: string; metadata: Record<string, any> }>
+): Promise<string[]> {
+    // Store vectors in database
+    const batchResult = await vector.upsert({
+        indexName: knowledgeBaseName,
+        vectors: embeddings,
+        metadata: chunks.map((item) => ({
+            metadata: {
+                ...item.metadata,
+                content: item.text,
+            },
+        })),
+    });
+
+    return batchResult;
+}
+
+/**
+ * Update asset record in Supabase with new document IDs and metadata
+ */
+async function updateAssetRecord(
+    params: {
+        workspace: string;
+        fileUrl: string;
+        newDocIds: string[];
+        filename: string | undefined;
+        path: string | undefined;
+        fileMetadata: Record<string, any>;
+    },
+    envVars: Record<string, unknown>
+): Promise<string[]> {
+    const { workspace, fileUrl, newDocIds, filename, path, fileMetadata } = params;
+    const supabase = createKnowledgeBaseSupabaseClient(envVars);
+
+    // Add fallback logic for filename
+    const finalFilename =
+        filename ||
+        (path ? basename(path) : undefined) ||
+        fileUrl;
+
+    // Update the asset record
+    const { data: previousAsset } = await supabase
+        .from("deco_chat_assets")
+        .select("doc_ids")
+        .eq("workspace", workspace)
+        .eq("file_url", fileUrl)
+        .single();
+
+    const docIds = previousAsset?.doc_ids ?? [];
+    const allStoredIds = [...docIds, ...newDocIds];
+
+    const { error } = await supabase
+        .from("deco_chat_assets")
+        .update({
+            doc_ids: allStoredIds,
+            filename: finalFilename,
+            metadata: fileMetadata,
+        })
+        .eq("workspace", workspace)
+        .eq("file_url", fileUrl);
+
+    if (error) {
+        throw new InternalServerError(`Failed to update asset: ${error.message}`);
+    }
+
+    return allStoredIds;
+}
+
+/**
  * Process a single batch of file chunks
  */
 export async function processBatch(
@@ -122,39 +270,20 @@ export async function processBatch(
     let allStoredIds: string[] = [];
     const vector = await getVectorClient(envVars, workspace);
 
-    try {
-        console.log(`Processing batch ${batchPage} for file:`, fileUrl);
+         try {
+         const { enrichedChunks, totalChunkCount, fileMetadata } = await generateFileChunks(
+             fileUrl,
+             path,
+             metadata,
+             batchPage,
+             batchSize
+         );
 
-        // Process file and generate chunks
-        const fileProcessor = new FileProcessor({
-            chunkSize: 500,
-            chunkOverlap: 50,
-        });
+         console.log(`Generated ${enrichedChunks.length} chunks for batch ${batchPage}.`);
 
-        const processedFile = await fileProcessor.processFile(fileUrl);
-
-        // Create file metadata combining all sources
-        const fileMetadata = {
-            ...metadata,
-            ...processedFile.metadata,
-            ...(path ? { path } : { fileUrl }),
-        };
-
-        const start = batchPage * batchSize;
-        const enrichedChunks = processedFile.chunks.slice(start, start + batchSize).map((chunk, index) => ({
-            text: chunk.text,
-            metadata: {
-                ...fileMetadata,
-                ...chunk.metadata,
-                chunkIndex: start + index,
-            },
-        }));
-
-        console.log(`Generated ${enrichedChunks.length} chunks for batch ${batchPage}.`);
-
-        if (enrichedChunks.length === 0) {
+         if (enrichedChunks.length === 0) {
             // No more chunks to process
-            const _totalPages = totalPages ?? Math.ceil(processedFile.metadata.chunkCount / batchSize);
+            const _totalPages = totalPages ?? Math.ceil(totalChunkCount / batchSize);
             return {
                 hasMore: false,
                 batchPage,
@@ -162,67 +291,22 @@ export async function processBatch(
             };
         }
 
-        // Generate embeddings
-        const openai = createOpenAI({
-            apiKey: env.OPENAI_API_KEY,
-        });
-        const embedder = openai.embedding("text-embedding-3-small");
+        const embeddings = await generateEmbeddings(enrichedChunks, env.OPENAI_API_KEY, batchPage);
 
-        const { embeddings } = await embedMany({
-            model: embedder,
-            values: enrichedChunks.map((item) => item.text),
-        });
+        allStoredIds = await storeVectorsInDatabase(vector, knowledgeBaseName, embeddings, enrichedChunks);
 
-        console.log(`Generated ${embeddings.length} embeddings for batch ${batchPage}.`);
+        const docIdsMergedWithDatabase = await updateAssetRecord({
+            workspace,
+            fileUrl,
+            newDocIds: allStoredIds,
+            filename,
+            path,
+            fileMetadata
+        }, envVars);
+        
+        allStoredIds = docIdsMergedWithDatabase;
 
-        // Store vectors in database
-        const batchResult = await vector.upsert({
-            indexName: knowledgeBaseName,
-            vectors: embeddings,
-            metadata: enrichedChunks.map((item) => ({
-                metadata: {
-                    ...item.metadata,
-                    content: item.text,
-                },
-            })),
-        });
-
-        allStoredIds = batchResult;
-
-        const supabase = createKnowledgeBaseSupabaseClient(envVars);
-
-        // Add fallback logic for filename
-        const finalFilename =
-            filename ||
-            (path ? basename(path) : undefined) ||
-            fileUrl;
-
-        // Update the asset record
-        const { data: previousAsset } = await supabase
-            .from("deco_chat_assets")
-            .select("doc_ids")
-            .eq("workspace", workspace)
-            .eq("file_url", fileUrl)
-            .single();
-
-        const docIds = previousAsset?.doc_ids ?? [];
-        allStoredIds = [...docIds, ...batchResult];
-
-        const { error } = await supabase
-            .from("deco_chat_assets")
-            .update({
-                doc_ids: allStoredIds,
-                filename: finalFilename,
-                metadata: fileMetadata,
-            })
-            .eq("workspace", workspace)
-            .eq("file_url", fileUrl);
-
-        if (error) {
-            throw new InternalServerError(`Failed to update asset: ${error.message}`);
-        }
-
-        const _totalPages = totalPages ?? Math.ceil(processedFile.metadata.chunkCount / batchSize);
+        const _totalPages = totalPages ?? Math.ceil(totalChunkCount / batchSize);
         const hasMore = batchPage + 1 < _totalPages;
 
         console.log(`Successfully processed batch ${batchPage} of ${_totalPages}. HasMore: ${hasMore}`);

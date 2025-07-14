@@ -35,7 +35,6 @@ import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
 
 export const app = new Hono<AppEnv>();
-// deno-lint-ignore no-explicit-any
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const envs = env(c);
   const slug = c.req.param("slug");

@@ -1,8 +1,11 @@
-import { WorkflowEntrypoint, WorkflowStep, WorkflowEvent } from 'cloudflare:workers';
-import { 
-  processBatch,
-  type KbFileProcessorMessage
-} from "@deco/sdk/workflows";
+import type {
+  Workflow,
+  WorkflowEvent,
+  WorkflowStep,
+} from "@cloudflare/workers-types";
+import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
+
+const { WorkflowEntrypoint } = await import("cloudflare:workers");
 
 // Environment interface for workflow
 interface Env extends Record<string, unknown> {
@@ -20,22 +23,27 @@ interface Env extends Record<string, unknown> {
 /**
  * Cloudflare Workflow for processing knowledge base files
  */
-export class KbFileProcessorWorkflow extends WorkflowEntrypoint<Env, KbFileProcessorMessage> {
-  override async run(event: WorkflowEvent<KbFileProcessorMessage>, step: WorkflowStep) {
+export class KbFileProcessorWorkflow
+  extends WorkflowEntrypoint<Env, KbFileProcessorMessage> {
+  override async run(
+    event: WorkflowEvent<KbFileProcessorMessage>,
+    step: WorkflowStep,
+  ) {
     const message = event.payload;
-    
-    console.log(`Workflow processing file: ${message.fileUrl}, batch: ${message.batchPage || 0}`);
+    console.log(
+      `Workflow processing file: ${message.fileUrl}, batch: ${
+        message.batchPage || 0
+      }`,
+    );
 
     // Process the current batch
-    const result = await step.do('process-batch', async () => {
+    const result = await step.do("process-batch", async () => {
       return await processBatch(message, this.env);
     });
 
-    console.log(`Workflow batch ${message.batchPage || 0} processed. HasMore: ${result.hasMore}`);
-
     // If there are more batches to process, trigger the next workflow instance
     if (result.hasMore) {
-      await step.do('trigger-next-batch', async () => {
+      await step.do("trigger-next-batch", async () => {
         const nextMessage: KbFileProcessorMessage = {
           ...message,
           batchPage: result.batchPage,
@@ -44,11 +52,9 @@ export class KbFileProcessorWorkflow extends WorkflowEntrypoint<Env, KbFileProce
 
         // Create new workflow instance for the next batch
         await this.env.KB_FILE_PROCESSOR.create({
-          params: nextMessage
+          params: nextMessage,
         });
 
-        console.log(`Triggered next workflow batch: ${result.batchPage} of ${result.totalPages}`);
-        
         return { triggered: true };
       });
     } else {
@@ -59,9 +65,9 @@ export class KbFileProcessorWorkflow extends WorkflowEntrypoint<Env, KbFileProce
       completed: !result.hasMore,
       batchPage: result.batchPage,
       totalPages: result.totalPages,
-      hasMore: result.hasMore
+      hasMore: result.hasMore,
     };
   }
 }
 
-export type { KbFileProcessorMessage }; 
+export type { KbFileProcessorMessage };

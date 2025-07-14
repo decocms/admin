@@ -84,7 +84,6 @@ export default {
       );
     });
   },
-
 };
 
 // Export the workflow

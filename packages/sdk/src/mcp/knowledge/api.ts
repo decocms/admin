@@ -33,13 +33,22 @@ export const KnowledgeFileMetadataSchema = z.object({
   agentId: z.string().optional(),
 }).merge(FileMetadataSchema);
 
-const addFileDefaults = <T extends {
-  fileUrl: string;
-  metadata: Json;
-  path: string | null;
-  docIds: string[] | null;
-  filename: string | null;
-}>(file: T): Omit<T, "metadata"> & { metadata: z.infer<typeof KnowledgeFileMetadataSchema> } => ({
+const addFileDefaults = <
+  T extends {
+    fileUrl: string;
+    metadata: Json;
+    path: string | null;
+    docIds: string[] | null;
+    filename: string | null;
+    status: string | null;
+  },
+>(file: T): Omit<T, "metadata"> & {
+  metadata: z.infer<typeof KnowledgeFileMetadataSchema>;
+  docIds: string[];
+  filename: string;
+  path: string;
+  status?: string;
+} => ({
   ...file,
   metadata: (file.metadata || {}) as z.infer<
     typeof KnowledgeFileMetadataSchema
@@ -47,6 +56,7 @@ const addFileDefaults = <T extends {
   docIds: file.docIds || [],
   filename: file.filename ?? "",
   path: file.path ?? "",
+  status: file.status ?? undefined,
 });
 
 const createKnowledgeBaseTool = createToolFactory<
@@ -332,7 +342,9 @@ export const addFile = createKnowledgeBaseTool({
         status: "processing",
       },
       { onConflict: "workspace,file_url" },
-    ).select("fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status")
+    ).select(
+      "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
+    )
       .single();
 
     if (!newFile || error) {

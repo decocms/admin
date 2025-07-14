@@ -17,7 +17,7 @@ export const FileMetadataSchema = z.object({
 });
 
 // File processing types
-interface ProcessedDocument {
+export interface ProcessedDocument {
   filename: string;
   content: string;
   chunks: Awaited<ReturnType<ReturnType<typeof MDocument.fromText>["chunk"]>>;

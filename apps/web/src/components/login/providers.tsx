@@ -47,10 +47,13 @@ export const providers: Provider[] = [
     iconURL:
       "https://assets.decocache.com/webdraw/15eec989-84bc-4905-a8e3-3beadf1e13c1/email.svg",
     authURL: ({ next, cli }) => {
-      const url = new URL(cli ? AUTH_URL_CLI : DECO_CHAT_API);
+      const url = new URL(globalThis.location.origin);
       url.pathname = "/login/magiclink";
       if (next) {
         url.searchParams.set("next", next);
+      }
+      if (cli) {
+        url.searchParams.set("cli", "true");
       }
       return url.toString();
     },

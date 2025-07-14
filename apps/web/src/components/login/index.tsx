@@ -24,6 +24,16 @@ function Login() {
     });
   };
 
+  const filteredProviders = providers.filter((provider) => {
+    // Dont use email if there is the cli query param
+    // For some reason passing &cli=true, make the magiclink redirect to admin.deco.cx ???
+    // TODO: A better solution
+    if (cli && provider.name === "Email") {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <SplitScreenLayout>
       <div className="flex flex-col justify-center gap-7 p-6 h-full">
@@ -40,7 +50,7 @@ function Login() {
           </div>
         </div>
         <div className="flex flex-col items-center gap-2.5">
-          {providers.map((provider) => {
+          {filteredProviders.map((provider) => {
             const isLastUsed = provider.name === lastLoginMethod;
             return (
               <div

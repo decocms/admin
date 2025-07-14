@@ -16,6 +16,7 @@ import {
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
 import { assertPrincipalIsUser } from "./assertions.ts";
+import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 
@@ -51,9 +52,7 @@ export const getUser = async (
     SUPABASE_SERVER_TOKEN,
     DECO_CHAT_API_JWT_PRIVATE_KEY,
     DECO_CHAT_API_JWT_PUBLIC_KEY,
-  } = getEnv(
-    honoCtxToAppCtx(ctx),
-  );
+  } = getEnv(honoCtxToAppCtx(ctx));
 
   const cookies = getCookies(ctx.req.raw.headers);
   const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVER_TOKEN, {
@@ -63,8 +62,7 @@ export const getUser = async (
           name,
           value,
         })),
-      setAll: (_cookies) => {
-      },
+      setAll: (_cookies) => {},
     },
   });
 
@@ -87,7 +85,7 @@ export const getUser = async (
 };
 
 export const createMagicLinkEmail = async (ctx: AppContext) => {
-  const formData = await ctx.req.json() as { email: string };
+  const formData = (await ctx.req.json()) as { email: string };
   const email = formData.email;
   const request = ctx.req.raw;
 
@@ -119,11 +117,14 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
   try {
     assertPrincipalIsUser(ctx.var);
     user = ctx.var.user;
-  } catch { /**/ }
+  } catch {
+    /**/
+  }
 
   // user already logged in, set by userMiddleware
   if (user && !user.is_anonymous) {
-    const origin = ctx.req.header("referer") || ctx.req.header("origin") ||
+    const origin = ctx.req.header("referer") ||
+      ctx.req.header("origin") ||
       "https://deco.chat";
     return ctx.redirect(origin);
   }
@@ -161,8 +162,9 @@ appLogin.all("/oauth", async (ctx: AppContext) => {
 });
 
 appLogin.all("/magiclink", async (ctx: AppContext) => {
-  const formData = await ctx.req.json() as { email: string };
+  const formData = (await ctx.req.json()) as { email: string; cli: boolean };
   const email = formData.email;
+  const cli = formData.cli;
   const request = ctx.req.raw;
 
   try {
@@ -172,7 +174,9 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
 
     // We do not send the full path to supabase but the email template
     // includes a condition to insert it (/auth/callback/magiclink)
-    const redirectTo = url.host.includes("localhost")
+    const redirectTo = cli
+      ? AUTH_URL_CLI
+      : url.host.includes("localhost")
       ? "http://localhost:3001/"
       : "https://api.deco.chat/";
 
@@ -233,9 +237,7 @@ appAuth.all("/callback/magiclink", async (ctx: AppContext) => {
     const type = url.searchParams.get("type") as EmailOtpType | null;
 
     if (!tokenHash || !type) {
-      throw new Error(
-        "Missing tokenHash or type",
-      );
+      throw new Error("Missing tokenHash or type");
     }
 
     const { error } = await db.auth.verifyOtp({

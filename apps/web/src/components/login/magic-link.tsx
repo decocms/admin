@@ -15,7 +15,7 @@ import { SplitScreenLayout } from "./layout.tsx";
 
 const useSendMagicLink = () => {
   const create = useMutation({
-    mutationFn: (prop: { email: string }) =>
+    mutationFn: (prop: { email: string; cli: boolean }) =>
       fetch(
         new URL("/login/magiclink", DECO_CHAT_API),
         { method: "POST", body: JSON.stringify(prop) },
@@ -34,7 +34,7 @@ function MagicLink() {
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
-    fetcher.mutate({ email });
+    fetcher.mutate({ email, cli: searchParams.get("cli") === "true" });
   };
 
   useEffect(function submitedOnce() {

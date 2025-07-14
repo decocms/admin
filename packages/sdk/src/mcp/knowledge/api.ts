@@ -33,13 +33,13 @@ export const KnowledgeFileMetadataSchema = z.object({
   agentId: z.string().optional(),
 }).merge(FileMetadataSchema);
 
-const addFileDefaults = (file: {
+const addFileDefaults = <T extends {
   fileUrl: string;
   metadata: Json;
   path: string | null;
   docIds: string[] | null;
   filename: string | null;
-}) => ({
+}>(file: T): Omit<T, "metadata"> & { metadata: z.infer<typeof KnowledgeFileMetadataSchema> } => ({
   ...file,
   metadata: (file.metadata || {}) as z.infer<
     typeof KnowledgeFileMetadataSchema
@@ -332,7 +332,7 @@ export const addFile = createKnowledgeBaseTool({
         status: "processing",
       },
       { onConflict: "workspace,file_url" },
-    ).select("fileUrl:file_url, metadata, path, docIds:doc_ids, filename")
+    ).select("fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status")
       .single();
 
     if (!newFile || error) {
@@ -365,7 +365,7 @@ export const listFiles = createKnowledgeBaseTool({
 
     const { data: files } = await c.db.from("deco_chat_assets")
       .select(
-        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename",
+        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
       ).eq("workspace", c.workspace.value)
       .eq("index_name", c.name);
 

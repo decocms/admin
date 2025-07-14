@@ -19,6 +19,7 @@
     "./client": "./src/client.ts"
   },
   "devDependencies": {
+    "ts-json-schema-generator": "^2.4.0",
     "wrangler": "^4.13.2"
   },
   "engines": {

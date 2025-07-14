@@ -1,4 +1,4 @@
-import { type Binding, WorkersMCPBindings } from "@deco/workers-runtime";
+import { WorkersMCPBindings } from "@deco/workers-runtime";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
@@ -6,106 +6,9 @@ import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import crypto from "node:crypto";
 import { getMimeType } from "./api.ts";
+import type { WranglerConfig } from "./wrangler.ts";
 
 const METADATA_FILE_NAME = "metadata.json";
-export interface MigrationBase {
-  tag: string;
-}
-
-export interface NewClassMigration extends MigrationBase {
-  new_classes: string[];
-}
-
-export interface DeletedClassMigration extends MigrationBase {
-  deleted_classes: string[];
-}
-
-export interface RenamedClassMigration extends MigrationBase {
-  renamed_classes: {
-    from: string;
-    to: string;
-  }[];
-}
-
-export type Migration =
-  | NewClassMigration
-  | DeletedClassMigration
-  | RenamedClassMigration;
-
-export interface KVNamespace {
-  binding: string;
-  id: string;
-}
-
-export interface Triggers {
-  crons: string[];
-}
-
-export interface Route {
-  pattern: string;
-  custom_domain?: boolean;
-}
-
-export interface WranglerConfig {
-  name: string;
-  main?: string;
-  scope?: string;
-  main_module?: string;
-  routes?: Route[];
-  compatibility_date?: string;
-  compatibility_flags?: string[];
-  vars?: Record<string, string>;
-  kv_namespaces?: KVNamespace[];
-  triggers?: Triggers;
-  //
-  ai?: {
-    binding: string;
-  };
-  browser?: {
-    binding: string;
-  };
-  durable_objects?: {
-    bindings?: { name: string; class_name: string }[];
-  };
-  hyperdrive?: { binding: string; id: string; localConnectionString: string }[];
-  d1_databases?: {
-    database_name: string;
-    database_id?: string;
-    binding: string;
-  }[];
-  queues?: {
-    consumers?: {
-      queue: string;
-      max_batch_timeout: number;
-    }[];
-    producers?: {
-      queue: string;
-      binding: string;
-    }[];
-  };
-  workflows?: {
-    name: string;
-    binding: string;
-    class_name?: string;
-    script_name?: string;
-  }[];
-  migrations?: Migration[];
-  assets?: {
-    directory?: string;
-    binding?: string;
-    jwt?: string;
-  };
-  keep_assets?: boolean;
-  //
-  deco?: {
-    integration?: {
-      friendlyName?: string;
-      icon?: string;
-      description?: string;
-    };
-    bindings?: Binding[];
-  };
-}
 // Common types and utilities
 export type DeployResult = {
   etag?: string;

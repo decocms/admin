@@ -1,6 +1,7 @@
 import type { MCPConnection } from "./connection.ts";
-import type { DefaultEnv, MCPBinding, RequestContext } from "./index.ts";
+import type { DefaultEnv, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
+import type { MCPBinding } from "./wrangler.ts";
 
 export const workspaceClient = (
   ctx: RequestContext,
@@ -29,7 +30,9 @@ export const createIntegrationBinding = (
   binding: MCPBinding,
   env: DefaultEnv,
 ) => {
-  const integrationId = binding.integration_id;
+  const integrationId = "integration_id" in binding
+    ? binding.integration_id
+    : undefined;
   if (!integrationId) {
     const ctx = env.DECO_CHAT_REQUEST_CONTEXT;
     const bindingFromState = ctx?.state?.[binding.name];

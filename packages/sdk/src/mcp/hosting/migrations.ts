@@ -1,4 +1,4 @@
-import type { Migration } from "./deployment.ts";
+import type { Migration } from "./wrangler.ts";
 
 interface SingleStepMigration {
   old_tag?: string;

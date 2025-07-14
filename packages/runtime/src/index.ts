@@ -7,6 +7,7 @@ import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
+import type { Binding, MCPBinding } from "./wrangler.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -34,20 +35,6 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   };
   [key: string]: unknown;
 }
-
-export interface BindingBase {
-  name: string;
-}
-
-export interface MCPBinding extends BindingBase {
-  type: "mcp";
-  /**
-   * If not provided, will return a function that takes the integration id and return the binding implementation..
-   */
-  integration_id?: string;
-}
-
-export type Binding = MCPBinding;
 
 export interface BindingsObject {
   bindings?: Binding[];
@@ -220,3 +207,5 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     },
   };
 };
+
+export { type Migration, type WranglerConfig } from "./wrangler.ts";

@@ -22,5 +22,8 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Generate JSON schema
+        run: cd ./packages/runtime && deno run -A scripts/generate-json-schema.ts
+
       - name: Publish package
         run: cd ./packages/runtime && deno install && deno publish --allow-slow-types

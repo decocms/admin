@@ -1,0 +1,122 @@
+export interface BindingBase {
+  name: string;
+}
+
+export interface MCPIntegrationIdBinding extends BindingBase {
+  type: "mcp";
+  /**
+   * If not provided, will return a function that takes the integration id and return the binding implementation..
+   */
+  integration_id: string;
+}
+
+export interface MCPIntegrationNameBinding extends BindingBase {
+  type: "mcp";
+  /**
+   * The name of the integration to bind.
+   */
+  integration_name: string;
+}
+
+export type MCPBinding = MCPIntegrationIdBinding | MCPIntegrationNameBinding;
+
+export type Binding = MCPBinding;
+
+export interface MigrationBase {
+  tag: string;
+}
+
+export interface NewClassMigration extends MigrationBase {
+  new_classes: string[];
+}
+
+export interface DeletedClassMigration extends MigrationBase {
+  deleted_classes: string[];
+}
+
+export interface RenamedClassMigration extends MigrationBase {
+  renamed_classes: {
+    from: string;
+    to: string;
+  }[];
+}
+
+export type Migration =
+  | NewClassMigration
+  | DeletedClassMigration
+  | RenamedClassMigration;
+
+export interface KVNamespace {
+  binding: string;
+  id: string;
+}
+
+export interface Triggers {
+  crons: string[];
+}
+
+export interface Route {
+  pattern: string;
+  custom_domain?: boolean;
+}
+
+export interface WranglerConfig {
+  name: string;
+  main?: string;
+  scope?: string;
+  main_module?: string;
+  routes?: Route[];
+  compatibility_date?: string;
+  compatibility_flags?: string[];
+  vars?: Record<string, string>;
+  kv_namespaces?: KVNamespace[];
+  triggers?: Triggers;
+  //
+  ai?: {
+    binding: string;
+  };
+  browser?: {
+    binding: string;
+  };
+  durable_objects?: {
+    bindings?: { name: string; class_name: string }[];
+  };
+  hyperdrive?: { binding: string; id: string; localConnectionString: string }[];
+  d1_databases?: {
+    database_name: string;
+    database_id?: string;
+    binding: string;
+  }[];
+  queues?: {
+    consumers?: {
+      queue: string;
+      max_batch_timeout: number;
+    }[];
+    producers?: {
+      queue: string;
+      binding: string;
+    }[];
+  };
+  workflows?: {
+    name: string;
+    binding: string;
+    class_name?: string;
+    script_name?: string;
+  }[];
+  migrations?: Migration[];
+  assets?: {
+    directory?: string;
+    binding?: string;
+    jwt?: string;
+  };
+  keep_assets?: boolean;
+  //
+  deco?: {
+    integration?: {
+      friendlyName?: string;
+      icon?: string;
+      description?: string;
+    };
+    bindings?: Binding[];
+  };
+}

@@ -14,11 +14,8 @@ import { getWorkspaceD1Database } from "../databases/api.ts";
 import { MCPClient } from "../index.ts";
 import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
-import {
-  type DeployResult,
-  deployToCloudflare,
-  type WranglerConfig,
-} from "./deployment.ts";
+import { type DeployResult, deployToCloudflare } from "./deployment.ts";
+import type { WranglerConfig } from "./wrangler.ts";
 
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";

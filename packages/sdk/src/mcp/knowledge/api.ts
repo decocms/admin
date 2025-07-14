@@ -329,6 +329,7 @@ export const addFile = createKnowledgeBaseTool({
         index_name: c.name,
         path,
         filename: finalFilename,
+        status: "processing",
       },
       { onConflict: "workspace,file_url" },
     ).select("fileUrl:file_url, metadata, path, docIds:doc_ids, filename")

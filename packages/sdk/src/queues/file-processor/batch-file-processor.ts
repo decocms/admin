@@ -214,11 +214,13 @@ async function updateAssetRecord(
         newDocIds: string[];
         filename: string | undefined;
         path: string | undefined;
+        // deno-lint-ignore no-explicit-any
         fileMetadata: Record<string, any>;
+        totalChunkCount: number;
     },
     envVars: Record<string, unknown>
 ): Promise<string[]> {
-    const { workspace, fileUrl, newDocIds, filename, path, fileMetadata } = params;
+    const { workspace, fileUrl, newDocIds, filename, path, fileMetadata, totalChunkCount } = params;
     const supabase = createKnowledgeBaseSupabaseClient(envVars);
 
     // Add fallback logic for filename
@@ -238,12 +240,15 @@ async function updateAssetRecord(
     const docIds = previousAsset?.doc_ids ?? [];
     const allStoredIds = [...docIds, ...newDocIds];
 
+    const finished = allStoredIds.length === totalChunkCount;
+
     const { error } = await supabase
         .from("deco_chat_assets")
         .update({
             doc_ids: allStoredIds,
             filename: finalFilename,
             metadata: fileMetadata,
+            ...(finished ? { status: "success" } : {}),
         })
         .eq("workspace", workspace)
         .eq("file_url", fileUrl);
@@ -301,9 +306,10 @@ export async function processBatch(
             newDocIds: allStoredIds,
             filename,
             path,
-            fileMetadata
+            fileMetadata,
+            totalChunkCount,
         }, envVars);
-        
+
         allStoredIds = docIdsMergedWithDatabase;
 
         const _totalPages = totalPages ?? Math.ceil(totalChunkCount / batchSize);

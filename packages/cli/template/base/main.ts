@@ -6,7 +6,7 @@ import {
   createWorkflow,
 } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
-import type { Env } from "./deco.gen.ts";
+import { type Env, StateSchema } from "./deco.gen.ts";
 
 const createMyTool = (_env: Env) =>
   createTool({
@@ -31,7 +31,10 @@ const createMyWorkflow = (env: Env) => {
     .commit();
 };
 
-const { Workflow, ...runtime } = withRuntime<Env>({
+const { Workflow, ...runtime } = withRuntime<Env, typeof StateSchema>({
+  oauth: {
+    state: StateSchema,
+  },
   workflows: [createMyWorkflow],
   tools: [createMyTool],
 });

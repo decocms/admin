@@ -79,10 +79,10 @@ export function useIntegrationInstallWithModal() {
         },
         name: keyName,
         policies: [
-          { effect: "allow", resource: "INTEGRATIONS_GET" },
-          { effect: "allow", resource: "DATABASES_RUN_SQL" },
+          { effect: "allow" as const, resource: "INTEGRATIONS_GET" },
+          { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
           ...(installState.scopes?.map((scope: string) => ({
-            effect: "allow",
+            effect: "allow" as const,
             resource: scope,
           })) ?? []),
         ],

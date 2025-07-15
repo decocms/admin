@@ -184,7 +184,7 @@ export function ConfirmMarketplaceInstallDialog({
 }
 
 function AddConnectionDialogContent({
-  title = "Add integration",
+  title = "Add app",
   filter,
   onSelect,
   forceTab,
@@ -237,7 +237,7 @@ function AddConnectionDialogContent({
                 size={16}
                 className="text-muted-foreground"
               />
-              <span>My integrations</span>
+              <span>My apps</span>
             </Button>
             <Button
               variant="ghost"
@@ -248,7 +248,7 @@ function AddConnectionDialogContent({
               onClick={() => setTab("new-connection")}
             >
               <Icon name="add" size={16} className="text-muted-foreground" />
-              <span>New integration</span>
+              <span>New app</span>
             </Button>
             <Button
               variant="ghost"
@@ -258,7 +258,7 @@ function AddConnectionDialogContent({
               onClick={() => navigateWorkspace("/connections")}
             >
               <Icon name="arrow_outward" size={16} />
-              <span className="group-hover:underline">Manage integrations</span>
+              <span className="group-hover:underline">Manage apps</span>
             </Button>
             {/* Filters will go here */}
           </aside>
@@ -278,7 +278,7 @@ function AddConnectionDialogContent({
                 <div className="flex flex-col h-full min-h-[200px] gap-4">
                   <div className="flex flex-col gap-2 py-8 w-full items-center">
                     <h3 className="text-2xl font-medium">
-                      No integrations found for the search "{search}"
+                      No apps found for the search "{search}"
                     </h3>
                     <p className="text-sm text-muted-foreground w-full text-center">
                       You can{" "}
@@ -311,10 +311,10 @@ function AddConnectionDialogContent({
                   <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
                     <div className="w-full flex items-center flex-col gap-2 py-8">
                       <h3 className="text-2xl font-medium">
-                        No integrations found
+                        No apps found
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Create a new integration to get started
+                        Create a new app to get started
                       </p>
                     </div>
                     <Marketplace
@@ -322,7 +322,7 @@ function AddConnectionDialogContent({
                       emptyState={
                         <div className="flex flex-col gap-2 py-8 w-full items-center">
                           <p className="text-sm text-muted-foreground">
-                            No integrations found for the search "{search}"
+                            No apps found for the search "{search}"
                           </p>
                         </div>
                       }
@@ -393,7 +393,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
 
     return (
       <Button variant="special">
-        <span className="hidden md:inline">Add integration</span>
+                        <span className="hidden md:inline">Add app</span>
       </Button>
     );
   }, [props.trigger]);

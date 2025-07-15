@@ -194,7 +194,7 @@ export function ConnectedAppsList() {
           ? (
             <EmptyState
               icon="linked_services"
-              title="No connected integrations yet"
+              title="No connected apps yet"
               description="Connect services to expand what your agents can do."
               buttonComponent={
                 <SelectConnectionDialog forceTab="new-connection" />

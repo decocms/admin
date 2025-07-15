@@ -1062,7 +1062,7 @@ export default function Page() {
       breadcrumb={
         <DefaultBreadcrumb
           items={[
-            { label: "Integrations", link: "/connections" },
+            { label: "Apps", link: "/connections" },
             ...(info?.name
               ? [{
                 label: (

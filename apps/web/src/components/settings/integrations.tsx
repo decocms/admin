@@ -59,7 +59,7 @@ function AddConnectionButton() {
       filter={connectionFilter}
       trigger={
         <Button variant="outline">
-          <Icon name="add" /> Add integration
+                          <Icon name="add" /> Add app
         </Button>
       }
     />

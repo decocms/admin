@@ -41,12 +41,12 @@ function IntegrationList(
 
   if (isLoading) {
     return (
-      <div className="p-4 text-muted-foreground">Loading integrations...</div>
+      <div className="p-4 text-muted-foreground">Loading apps...</div>
     );
   }
   if (filtered.length === 0) {
     return (
-      <div className="p-4 text-muted-foreground">No integrations found.</div>
+      <div className="p-4 text-muted-foreground">No apps found.</div>
     );
   }
   return (
@@ -207,7 +207,7 @@ function SelectorDialog(
           <Input
             placeholder={selectedIntegration
               ? `Search ${selectedIntegration.name} tools...`
-              : "Search integrations..."}
+              : "Search apps..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full border-none focus-visible:ring-0 placeholder:text-muted-foreground"

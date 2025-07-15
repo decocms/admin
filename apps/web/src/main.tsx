@@ -133,6 +133,14 @@ const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx"))
 );
 
+const BrowseAppsPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/browse-apps/page.tsx"))
+);
+
+const MonitorPage = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/monitor/page.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -287,6 +295,7 @@ const router = createBrowserRouter([
             index: true,
             Component: Home,
           },
+          { path: "browse-apps", Component: BrowseAppsPage },
           { path: "agents", Component: AgentList },
           { path: "agent/:id/:threadId", Component: AgentDetail },
           { path: "connections", Component: ConnectionsList },
@@ -294,6 +303,7 @@ const router = createBrowserRouter([
           { path: "connections/success", Component: ConnectionInstallSuccess },
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:id", Component: TriggerDetails },
+          { path: "monitor", Component: MonitorPage },
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },

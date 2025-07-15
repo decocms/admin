@@ -167,7 +167,7 @@ function CardsView(
 export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
   id: "NEW_CUSTOM_CONNECTION",
   name: "Create custom integration",
-  description: "Create a new integration with any MCP server",
+      description: "Create a new app with any MCP server",
   icon: "",
   provider: "deco",
 };

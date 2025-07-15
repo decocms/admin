@@ -6,7 +6,7 @@ export default function Page() {
     <IntegrationPageLayout
       tabs={{
         connections: {
-          title: "Integrations",
+          title: "Apps",
           Component: ConnectedAppsList,
           initialOpen: true,
         },

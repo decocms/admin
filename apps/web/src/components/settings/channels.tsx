@@ -497,7 +497,7 @@ function IntegrationSelect({
               />
               <InstalledConnections
                 query={query}
-                emptyState={<div>No integrations found</div>}
+                emptyState={<div>No apps found</div>}
                 onClick={handleIntegrationSelect}
               />
             </div>

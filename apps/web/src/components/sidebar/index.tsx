@@ -54,39 +54,42 @@ import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 
-const STATIC_ITEMS = [
+const DISCOVERY_ITEMS = [
+  {
+    url: "/browse-apps",
+    title: "Browse apps",
+    icon: "explore",
+  },
+];
+
+const MAIN_ITEMS = [
+  {
+    url: "/connections",
+    title: "Integrations",
+    icon: "widgets",
+  },
+  {
+    url: "/prompts",
+    title: "Prompts",
+    icon: "text_snippet",
+  },
   {
     url: "/agents",
     title: "Agents",
     icon: "robot_2",
   },
   {
-    url: "/connections",
-    title: "Integrations",
-    icon: "linked_services",
-  },
-  {
     url: "/workflows",
     title: "Workflows",
-    icon: "flowchart",
+    icon: "graph_2",
   },
   {
     url: "/triggers",
     title: "Triggers",
-    icon: "cable",
+    icon: "conversion_path",
   },
   {
-    url: "/prompts",
-    title: "Prompts",
-    icon: "local_library",
-  },
-  {
-    url: "/audits",
-    title: "Activity",
-    icon: "forum",
-  },
-  {
-    url: "/settings",
+    url: "/monitor",
     title: "Monitor",
     icon: "monitoring",
   },
@@ -485,7 +488,50 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {STATIC_ITEMS.filter((item) =>
+                  {DISCOVERY_ITEMS.map((item) => {
+                    const href = workspaceLink(item.url);
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <WithActive to={href}>
+                          {({ isActive }) => (
+                            <SidebarMenuButton
+                              asChild
+                              isActive={isActive}
+                              tooltip={item.title}
+                            >
+                              <Link
+                                to={href}
+                                onClick={() => {
+                                  trackEvent("sidebar_navigation_click", {
+                                    item: item.title,
+                                  });
+                                  isMobile && toggleSidebar();
+                                }}
+                              >
+                                <Icon
+                                  name={item.icon}
+                                  filled={isActive}
+                                  className="text-muted-foreground"
+                                />
+                                <span className="truncate">{item.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          )}
+                        </WithActive>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            
+            <SidebarSeparator className="!w-[224px]" />
+            
+            <SidebarGroup className="font-medium">
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-0.5">
+                  {MAIN_ITEMS.filter((item) =>
                     item.title !== "Workflows" || preferences.displayWorkflow
                   ).map((item) => {
                     const href = workspaceLink(item.url);

@@ -122,7 +122,7 @@ export function BindingSelector({
           {isLoading
             ? (
               <div className="p-4 text-muted-foreground flex items-center gap-2">
-                <Spinner size="xs" /> Loading integrations...
+                                    <Spinner size="xs" /> Loading apps...
               </div>
             )
             : (
@@ -141,7 +141,7 @@ export function BindingSelector({
                         className="text-muted-foreground"
                       />
                       <Input
-                        placeholder="Search integrations..."
+                        placeholder="Search apps..."
                         value={_search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="flex-1 h-full border-none focus-visible:ring-0 placeholder:text-muted-foreground bg-transparent px-2"
@@ -186,7 +186,7 @@ export function BindingSelector({
                 </div>
                 <div className="hidden md:block border-b border-border">
                   <Input
-                    placeholder="Search integrations..."
+                    placeholder="Search apps..."
                     value={_search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="rounded-none border-none focus-visible:ring-0 placeholder:text-muted-foreground"

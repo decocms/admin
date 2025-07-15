@@ -250,4 +250,5 @@ function Page() {
   );
 }
 
+export { AuditList };
 export default Page;

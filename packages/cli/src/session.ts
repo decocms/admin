@@ -48,7 +48,15 @@ export async function saveSession(
     ),
   );
   // Set file permissions to 600 (read/write for user only)
-  await Deno.chmod(sessionPath, 0o600);
+  // Skip chmod on Windows as it doesn't support Unix-style file permissions
+  if (Deno.build.os !== "windows") {
+    try {
+      await Deno.chmod(sessionPath, 0o600);
+    } catch (error) {
+      // Silently ignore chmod errors on systems that don't support it
+      console.warn("Warning: Could not set file permissions on session file:", error.message);
+    }
+  }
 }
 
 /**

@@ -26,8 +26,6 @@ export const KbFileProcessorMessageSchema = z.object({
     .optional(),
   workspace: z.string().min(1, "Workspace is required"),
   knowledgeBaseName: z.string().min(1, "Knowledge base name is required"),
-  totalPages: z.number().int().min(0).optional(),
-  batchPage: z.number().int().min(0).optional(),
 });
 
 export type KbFileProcessorMessage = z.infer<
@@ -45,7 +43,7 @@ export type BatchProcessorMessage = z.infer<typeof BatchProcessorMessageSchema>;
 // Processing result schema
 export const ProcessingResultSchema = z.object({
   hasMore: z.boolean(),
-  batchPage: z.number().int().min(0),
+  totalChunks: z.number().int().min(0),
   totalPages: z.number().int().min(0),
 });
 
@@ -129,8 +127,6 @@ async function generateFileChunks(
   fileUrl: string,
   path: string | undefined,
   metadata: Record<string, string | boolean> | undefined,
-  batchPage: number,
-  batchSize: number,
 ): Promise<{
   enrichedChunks: Array<{
     text: string;
@@ -154,14 +150,13 @@ async function generateFileChunks(
     ...(path ? { path } : { fileUrl }),
   };
 
-  const start = batchPage * batchSize;
-  const enrichedChunks = processedFile.chunks.slice(start, start + batchSize)
+  const enrichedChunks = processedFile.chunks
     .map((chunk, index) => ({
       text: chunk.text,
       metadata: {
         ...fileMetadata,
         ...chunk.metadata,
-        chunkIndex: start + index,
+        chunkIndex: index,
       },
     }));
 
@@ -296,8 +291,6 @@ export async function processBatch(
     metadata,
     workspace,
     knowledgeBaseName,
-    batchPage = 0,
-    totalPages,
   } = validatedMessage;
   const batchSize = getBatchSize(envVars);
 
@@ -310,33 +303,31 @@ export async function processBatch(
         fileUrl,
         path,
         metadata,
-        batchPage,
-        batchSize,
       );
 
     if (enrichedChunks.length === 0) {
       // No more chunks to process
-      const _totalPages = totalPages ?? Math.ceil(totalChunkCount / batchSize);
       return {
         hasMore: false,
-        batchPage,
-        totalPages: _totalPages,
+        totalChunks: totalChunkCount,
+        totalPages: Math.ceil(totalChunkCount / batchSize),
       };
     }
 
-    const embeddings = await generateEmbeddings(
-      enrichedChunks,
-      env.OPENAI_API_KEY,
-    );
+    for (let i = 0; i < enrichedChunks.length; i += batchSize) {
+      const batch = enrichedChunks.slice(i, i + batchSize);
+      const embeddings = await generateEmbeddings(batch, env.OPENAI_API_KEY);
+      allStoredIds.push(
+        ...await storeVectorsInDatabase(
+          vector,
+          knowledgeBaseName,
+          embeddings,
+          batch,
+        ),
+      );
+    }
 
-    allStoredIds = await storeVectorsInDatabase(
-      vector,
-      knowledgeBaseName,
-      embeddings,
-      enrichedChunks,
-    );
-
-    const docIdsMergedWithDatabase = await updateAssetRecord({
+    allStoredIds = await updateAssetRecord({
       workspace,
       fileUrl,
       newDocIds: allStoredIds,
@@ -346,15 +337,10 @@ export async function processBatch(
       totalChunkCount,
     }, envVars);
 
-    allStoredIds = docIdsMergedWithDatabase;
-
-    const _totalPages = totalPages ?? Math.ceil(totalChunkCount / batchSize);
-    const hasMore = batchPage + 1 < _totalPages;
-
     return {
-      hasMore,
-      batchPage: batchPage + 1,
-      totalPages: _totalPages,
+      hasMore: false,
+      totalChunks: totalChunkCount,
+      totalPages: Math.ceil(totalChunkCount / batchSize),
     };
   } catch (error) {
     // Cleanup stored vectors on error

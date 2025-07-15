@@ -41,29 +41,9 @@ export class KbFileProcessorWorkflow
       return await processBatch(message, this.env);
     });
 
-    // If there are more batches to process, trigger the next workflow instance
-    if (result.hasMore) {
-      await step.do("trigger-next-batch", async () => {
-        const nextMessage: KbFileProcessorMessage = {
-          ...message,
-          batchPage: result.batchPage,
-          totalPages: result.totalPages,
-        };
-
-        // Create new workflow instance for the next batch
-        await this.env.KB_FILE_PROCESSOR.create({
-          params: nextMessage,
-        });
-
-        return { triggered: true };
-      });
-    } else {
-      console.log(`Workflow processing completed for: ${message.fileUrl}`);
-    }
-
     return {
       completed: !result.hasMore,
-      batchPage: result.batchPage,
+      totalChunks: result.totalChunks,
       totalPages: result.totalPages,
       hasMore: result.hasMore,
     };

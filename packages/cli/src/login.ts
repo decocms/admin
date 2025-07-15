@@ -18,7 +18,7 @@ export const loginCommand = async () => {
             illumos: "xdg-open",
             android: "xdg-open",
             freebsd: "xdg-open",
-            netbsd: "xdg-open", 
+            netbsd: "xdg-open",
             windows: "start",
             darwin: "open",
             aix: "open",

@@ -11,7 +11,8 @@ export const loginCommand = async () => {
     {
       port: AUTH_PORT_CLI,
       onListen: () => {
-        const browser = Deno.env.get("BROWSER") ??
+        const browser =
+          Deno.env.get("BROWSER") ??
           (Deno.build.os === "linux" ? "xdg-open" : "open");
         const command = new Deno.Command(browser, { args: [DECO_CHAT_LOGIN] });
         command.spawn();
@@ -78,12 +79,12 @@ export const loginCommand = async () => {
             </script>
           </body>
         </html>`,
-          { headers: { "content-type": "text/html" } },
+          { headers: { "content-type": "text/html" } }
         );
       }
 
       return new Response("Not found", { status: 404 });
-    },
+    }
   );
 
   await done.promise;

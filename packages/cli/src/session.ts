@@ -56,7 +56,7 @@ export async function saveSession(
       // Silently ignore chmod errors on systems that don't support it
       console.warn(
         "Warning: Could not set file permissions on session file:",
-        error.message,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }

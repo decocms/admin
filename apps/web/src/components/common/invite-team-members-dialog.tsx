@@ -42,7 +42,8 @@ const inviteMemberSchema = z.object({
     z.object({
       email: z.string()
         .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
-          message: "Special characters are not allowed. Only standard ASCII characters are allowed in the email.",
+          message:
+            "Special characters are not allowed. Only standard ASCII characters are allowed in the email.",
         })
         .email({
           message: "Please enter a valid email address",
@@ -252,7 +253,9 @@ export function InviteTeamMembersDialog({
                                   {...field}
                                   autoComplete="email"
                                   disabled={inviteMemberMutation.isPending}
-                                  className={fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}
+                                  className={fieldState.error
+                                    ? "border-destructive focus-visible:ring-destructive"
+                                    : ""}
                                 />
                               </FormControl>
                               <FormMessage />

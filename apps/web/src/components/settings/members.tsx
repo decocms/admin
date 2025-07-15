@@ -38,7 +38,6 @@ import { Table, type TableColumn } from "../common/table/index.tsx";
 import { ActivityStatusCell, UserInfo } from "../common/table/table-cells.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { IntegrationIcon } from "../integrations/common.tsx";
 import { Avatar, AvatarFallback } from "@deco/ui/components/avatar.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
@@ -77,6 +76,7 @@ import {
   SidebarMenuItem,
 } from "@deco/ui/components/sidebar.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 
 function MemberTableHeader(
   { onChange, disabled, teamId }: {
@@ -212,13 +212,14 @@ function RoleDialogIntegrationListItem({
   setIntegrationTools,
   integration,
   searchTerm = "",
+  onNavigateToIntegration,
 }: {
   toolsSet: Record<string, string[]>;
   setIntegrationTools: (integrationId: string, tools: string[]) => void;
   integration: any;
   searchTerm?: string;
+  onNavigateToIntegration?: (integration: any) => void;
 }) {
-  const [toolsOpen, setToolsOpen] = useState(false);
   const { data: toolsData, isLoading } = useTools(integration.connection);
 
   const total = toolsData?.tools?.length ?? 0;
@@ -226,29 +227,6 @@ function RoleDialogIntegrationListItem({
   const enabledCount = allTools.filter((tool) => toolsSet[integration.id]?.includes(tool.name)).length;
   const isAll = enabledCount === total && total > 0;
   const isEmpty = !isLoading && allTools.length === 0;
-
-  // Helper function to check if a tool matches the search term
-  const toolMatchesSearch = (tool: any, lowerSearchTerm: string) => {
-    if (!lowerSearchTerm) return true;
-    const toolNameFormatted = tool.name.replace(/_/g, " ").toLowerCase();
-    const toolNameOriginal = tool.name.toLowerCase();
-    const toolDescription = tool.description?.toLowerCase() || "";
-    return toolNameFormatted.includes(lowerSearchTerm) ||
-      toolNameOriginal.includes(lowerSearchTerm) ||
-      toolDescription.includes(lowerSearchTerm);
-  };
-
-  // Filter tools based on search term
-  const filteredTools = allTools.filter((tool) => toolMatchesSearch(tool, searchTerm));
-
-  // Hide integration if searching and no tools match
-  if (searchTerm && filteredTools.length === 0 && !isLoading) {
-    return null;
-  }
-
-  // Auto-expand tools when searching
-  const shouldExpandTools = searchTerm && filteredTools.length > 0;
-  const effectiveToolsOpen = toolsOpen || shouldExpandTools;
 
   function handleAll(checked: boolean) {
     setIntegrationTools(
@@ -258,109 +236,203 @@ function RoleDialogIntegrationListItem({
   }
 
   return (
-    <div className="w-full flex flex-col rounded-xl transition-colors border border-border relative">
-      <div className="flex gap-4 p-3 rounded-t-xl">
-        <div className="flex gap-4 items-center justify-between w-full">
-          <div>
-                         <IntegrationIcon
-               icon={integration.icon}
-               name={integration.name}
-               className="h-10 w-10"
-             />
-          </div>
-          <div className="flex flex-col gap-1 w-full">
-            <span className="text-sm text-foreground font-medium text-left truncate">
+    <Card 
+      key={integration.id} 
+      className={`w-full ${isEmpty ? "cursor-default" : "cursor-pointer"}`}
+      onClick={() => !isEmpty && onNavigateToIntegration?.(integration)}
+    >
+      <CardContent className="flex items-center justify-between p-3 w-full">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <IntegrationAvatar
+            url={integration.icon}
+            fallback={integration.name}
+            size="sm"
+          />
+          <div className="flex flex-col min-w-0">
+            <h4 className="text-sm font-medium truncate text-foreground">
               {integration.name}
-            </span>
+            </h4>
+            <p className="text-xs text-muted-foreground truncate">
+              {isLoading ? (
+                <Skeleton className="h-3 w-16" />
+              ) : isEmpty ? (
+                "No tools available"
+              ) : (
+                `${enabledCount}/${total} tools selected`
+              )}
+            </p>
           </div>
+        </div>
+
+        {!isEmpty && (
+          <div className="flex items-center gap-2 ml-4">
+            <Checkbox
+              checked={isAll}
+              indeterminate={enabledCount > 0 && enabledCount < total}
+              onCheckedChange={handleAll}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <Icon
+              name="chevron_right"
+              className="text-muted-foreground"
+              size={20}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Integration detail view component
+function IntegrationDetailView({
+  integration,
+  toolsSet,
+  setIntegrationTools,
+  onBack,
+}: {
+  integration: any;
+  toolsSet: Record<string, string[]>;
+  setIntegrationTools: (integrationId: string, tools: string[]) => void;
+  onBack: () => void;
+}) {
+  const { data: toolsData, isLoading } = useTools(integration.connection);
+  const [toolsSearch, setToolsSearch] = useState("");
+
+  const total = toolsData?.tools?.length ?? 0;
+  const allTools = toolsData?.tools || [];
+  const enabledCount = allTools.filter((tool) => toolsSet[integration.id]?.includes(tool.name)).length;
+  const isAll = enabledCount === total && total > 0;
+
+  // Filter tools based on search
+  const filteredTools = allTools.filter((tool) => {
+    if (!toolsSearch) return true;
+    const searchTerm = toolsSearch.toLowerCase();
+    const toolNameFormatted = tool.name.replace(/_/g, " ").toLowerCase();
+    const toolNameOriginal = tool.name.toLowerCase();
+    const toolDescription = tool.description?.toLowerCase() || "";
+    return toolNameFormatted.includes(searchTerm) ||
+      toolNameOriginal.includes(searchTerm) ||
+      toolDescription.includes(searchTerm);
+  });
+
+  function handleAll(checked: boolean) {
+    setIntegrationTools(
+      integration.id,
+      checked ? allTools.map((tool) => tool.name) : [],
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Breadcrumbs */}
+      <div className="flex items-center gap-2 text-sm">
+        <button
+          onClick={onBack}
+          className="text-primary hover:text-primary/80 cursor-pointer"
+        >
+          Tools
+        </button>
+        <Icon name="chevron_right" size={16} className="text-muted-foreground" />
+        <span className="text-foreground">{integration.name}</span>
+      </div>
+
+      {/* Integration header */}
+      <div className="flex items-center gap-3 p-4">
+        <IntegrationAvatar
+          url={integration.icon}
+          fallback={integration.name}
+          size="md"
+        />
+        <div className="flex flex-col min-w-0">
+          <h3 className="text-base font-semibold text-foreground">
+            {integration.name}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : (
+              `${total} tools available`
+            )}
+          </p>
         </div>
       </div>
-      {isEmpty && (
-        <div className="flex gap-2 items-center justify-between px-4 py-4 border-t border-border">
-          <div className="flex gap-2 items-center">
-            <Icon name="settings" size={16} />
-            <span className="text-xs font-medium">Connection settings</span>
-          </div>
-          <Badge variant="destructive">
-            <Icon name="error" size={10} />
-            Error
-          </Badge>
-        </div>
-      )}
-      {!isEmpty && (
-        <div className="flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-background rounded-b-xl">
-          <span
-            onClick={() => setToolsOpen(!toolsOpen)}
-            className="text-muted-foreground text-sm h-10 flex items-center w-full pl-2 pr-4"
-          >
-            <div className="w-full flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Icon
-                  name="chevron_right"
-                  filled
-                  size={14}
-                  className={`inline-block mr-1 align-text-bottom text-foreground ${effectiveToolsOpen ? "rotate-90" : ""}`}
-                />
-                <span className={`text-xs font-medium text-muted-foreground ${isLoading ? "animate-pulse" : ""}`}>
-                  {isLoading
-                    ? "Loading tools..."
-                    : searchTerm
-                    ? `${filteredTools.length} matching tools`
-                    : "All tools"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  {enabledCount}/{total}
-                </span>
-                <Checkbox
-                  className="cursor-pointer"
-                  checked={isAll}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAll(!isAll);
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </span>
-          {effectiveToolsOpen && (
-            <div className="space-y-2 rounded-b-xl max-h-[350px] w-full overflow-y-auto">
-              {filteredTools?.map((tool) => {
-                const enabled = toolsSet[integration.id]?.includes(tool.name) ?? false;
-                const handleCheckboxChange = (checked: boolean) => {
-                  const withoutTool = toolsSet[integration.id]?.filter((t) => t !== tool.name);
-                  const withTool = [...(toolsSet[integration.id] || []), tool.name];
-                  const toolsToUpdate = checked ? withTool : withoutTool;
-                  setIntegrationTools(integration.id, toolsToUpdate);
-                };
 
-                return (
-                  <label
-                    key={tool.name}
-                    className="flex items-center justify-between gap-3 px-4 cursor-pointer"
-                  >
-                    <div className="flex flex-col min-w-0 border-l border-border border-dashed p-4 pr-0">
-                      <span className={`text-sm truncate cursor-pointer ${enabled ? "text-foreground" : "text-muted-foreground"}`}>
-                        {tool.name.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate">
-                        {tool.description || "No description"}
-                      </span>
-                    </div>
-                    <Checkbox
-                      checked={enabled}
-                      onCheckedChange={handleCheckboxChange}
-                      className="cursor-pointer"
-                    />
-                  </label>
-                );
-              })}
-            </div>
-          )}
+      {/* Tools search and controls */}
+      <div className="space-y-3">
+        <Input
+          placeholder="Search tools..."
+          value={toolsSearch}
+          onChange={(e) => setToolsSearch(e.target.value)}
+          className="w-full"
+        />
+        
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {enabledCount} of {filteredTools.length} tools selected
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            disabled={isLoading || total === 0}
+            onClick={() => handleAll(!isAll)}
+          >
+            {isAll ? "Deselect All" : "Select All"}
+          </Button>
         </div>
-      )}
+      </div>
+
+      {/* Tools list */}
+      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-5 w-5" />
+              </div>
+            ))}
+          </div>
+        ) : filteredTools.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {toolsSearch ? "No tools match your search." : "No tools available."}
+          </div>
+        ) : (
+          filteredTools.map((tool) => {
+            const enabled = toolsSet[integration.id]?.includes(tool.name) ?? false;
+            const handleCheckboxChange = (checked: boolean) => {
+              const withoutTool = toolsSet[integration.id]?.filter((t) => t !== tool.name);
+              const withTool = [...(toolsSet[integration.id] || []), tool.name];
+              const toolsToUpdate = checked ? withTool : withoutTool;
+              setIntegrationTools(integration.id, toolsToUpdate);
+            };
+
+            return (
+              <label
+                key={tool.name}
+                className="flex items-start justify-between gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className={`text-sm font-medium truncate ${enabled ? "text-foreground" : "text-muted-foreground"}`}>
+                    {tool.name.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </span>
+                  <span className="text-xs text-muted-foreground break-words">
+                    {tool.description || "No description"}
+                  </span>
+                </div>
+                <Checkbox
+                  checked={enabled}
+                  onCheckedChange={handleCheckboxChange}
+                  className="cursor-pointer mt-0.5 flex-shrink-0"
+                />
+              </label>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
@@ -397,13 +469,28 @@ function AddRoleDialog({
   const [agentsSearch, setAgentsSearch] = useState("");
   const [membersSearch, setMembersSearch] = useState("");
   const [selectingAllTools, setSelectingAllTools] = useState(false);
+  
+  // Navigation state for tools section
+  const [currentView, setCurrentView] = useState<'integrations' | 'integration-detail'>('integrations');
+  const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
 
   // Reset selected tab when dialog opens/closes or role changes
   useEffect(() => {
     if (open) {
       setSelectedTab(initialTab);
+      // Reset navigation state when dialog opens
+      setCurrentView('integrations');
+      setSelectedIntegration(null);
     }
   }, [open, initialTab]);
+
+  // Reset navigation state when switching tabs
+  useEffect(() => {
+    if (selectedTab !== 'tools') {
+      setCurrentView('integrations');
+      setSelectedIntegration(null);
+    }
+  }, [selectedTab]);
 
   const availableIntegrations = integrations.filter(i => 
     i.id.startsWith("i:") && 
@@ -458,6 +545,17 @@ function AddRoleDialog({
       delete newTools[integrationId];
       return { ...prev, tools: newTools };
     });
+  }, []);
+
+  // Navigation handlers for tools section
+  const handleNavigateToIntegration = useCallback((integration: any) => {
+    setSelectedIntegration(integration);
+    setCurrentView('integration-detail');
+  }, []);
+
+  const handleBackToIntegrations = useCallback(() => {
+    setCurrentView('integrations');
+    setSelectedIntegration(null);
   }, []);
 
   const handleAgentToggle = (agentId: string, checked: boolean) => {
@@ -629,81 +727,93 @@ function AddRoleDialog({
 
             {selectedTab === "tools" && (
               <div className="space-y-4">
-                <Input
-                  placeholder="Search integrations..."
-                  value={toolsSearch}
-                  onChange={(e) => setToolsSearch(e.target.value)}
-                  className="w-full"
-                />
-                
-                {/* Tools counter and select all button */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {(() => {
-                      const totalSelectedTools = Object.values(formData.tools).reduce((acc, tools) => acc + tools.length, 0);
-                      const selectedIntegrations = Object.keys(formData.tools).filter(id => formData.tools[id].length > 0).length;
-                      return `${totalSelectedTools} tools from ${selectedIntegrations} integrations`;
-                    })()}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    disabled={selectingAllTools}
-                    onClick={async () => {
-                      const hasAnySelected = Object.values(formData.tools).some(tools => tools.length > 0);
-                      
-                      if (hasAnySelected) {
-                        // Deselect all
-                        setFormData(prev => ({ ...prev, tools: {} }));
-                      } else {
-                        // Select all - fetch tools for each integration
-                        setSelectingAllTools(true);
-                        const newTools: Record<string, string[]> = {};
-                        
-                        try {
-                          for (const integration of filteredIntegrations) {
+                {currentView === 'integrations' ? (
+                  <>
+                    <Input
+                      placeholder="Search integrations..."
+                      value={toolsSearch}
+                      onChange={(e) => setToolsSearch(e.target.value)}
+                      className="w-full"
+                    />
+                    
+                    {/* Tools counter and select all button */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {(() => {
+                          const totalSelectedTools = Object.values(formData.tools).reduce((acc, tools) => acc + tools.length, 0);
+                          const selectedIntegrations = Object.keys(formData.tools).filter(id => formData.tools[id].length > 0).length;
+                          return `${totalSelectedTools} tools from ${selectedIntegrations} integrations`;
+                        })()}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={selectingAllTools}
+                        onClick={async () => {
+                          const hasAnySelected = Object.values(formData.tools).some(tools => tools.length > 0);
+                          
+                          if (hasAnySelected) {
+                            // Deselect all
+                            setFormData(prev => ({ ...prev, tools: {} }));
+                          } else {
+                            // Select all - fetch tools for each integration
+                            setSelectingAllTools(true);
+                            const newTools: Record<string, string[]> = {};
+                            
                             try {
-                              const toolsData = await listTools(integration.connection);
-                              const toolNames = toolsData.tools?.map(tool => tool.name) || [];
-                              newTools[integration.id] = toolNames;
-                            } catch (error) {
-                              console.error(`Failed to load tools for ${integration.name}:`, error);
-                              newTools[integration.id] = [];
+                              for (const integration of filteredIntegrations) {
+                                try {
+                                  const toolsData = await listTools(integration.connection);
+                                  const toolNames = toolsData.tools?.map(tool => tool.name) || [];
+                                  newTools[integration.id] = toolNames;
+                                } catch (error) {
+                                  console.error(`Failed to load tools for ${integration.name}:`, error);
+                                  newTools[integration.id] = [];
+                                }
+                              }
+                              
+                              setFormData(prev => ({ ...prev, tools: newTools }));
+                            } finally {
+                              setSelectingAllTools(false);
                             }
                           }
-                          
-                          setFormData(prev => ({ ...prev, tools: newTools }));
-                        } finally {
-                          setSelectingAllTools(false);
+                        }}
+                      >
+                        {selectingAllTools 
+                          ? "Loading..." 
+                          : Object.values(formData.tools).some(tools => tools.length > 0) 
+                            ? "Deselect All" 
+                            : "Select All"
                         }
-                      }
-                    }}
-                  >
-                    {selectingAllTools 
-                      ? "Loading..." 
-                      : Object.values(formData.tools).some(tools => tools.length > 0) 
-                        ? "Deselect All" 
-                        : "Select All"
-                    }
-                  </Button>
-                </div>
-
-                <div className="space-y-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredIntegrations.map(integration => (
-                    <RoleDialogIntegrationListItem
-                      key={integration.id}
-                      toolsSet={formData.tools}
-                      setIntegrationTools={setIntegrationTools}
-                      integration={integration}
-                      searchTerm=""
-                    />
-                  ))}
-                  {filteredIntegrations.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No integrations found.
+                      </Button>
                     </div>
-                  )}
-                </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredIntegrations.map(integration => (
+                        <RoleDialogIntegrationListItem
+                          key={integration.id}
+                          toolsSet={formData.tools}
+                          setIntegrationTools={setIntegrationTools}
+                          integration={integration}
+                          searchTerm=""
+                          onNavigateToIntegration={handleNavigateToIntegration}
+                        />
+                      ))}
+                      {filteredIntegrations.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No integrations found.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : currentView === 'integration-detail' && selectedIntegration ? (
+                  <IntegrationDetailView
+                    integration={selectedIntegration}
+                    toolsSet={formData.tools}
+                    setIntegrationTools={setIntegrationTools}
+                    onBack={handleBackToIntegrations}
+                  />
+                ) : null}
               </div>
             )}
 

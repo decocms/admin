@@ -54,7 +54,10 @@ export async function saveSession(
       await Deno.chmod(sessionPath, 0o600);
     } catch (error) {
       // Silently ignore chmod errors on systems that don't support it
-      console.warn("Warning: Could not set file permissions on session file:", error.message);
+      console.warn(
+        "Warning: Could not set file permissions on session file:",
+        error.message,
+      );
     }
   }
 }

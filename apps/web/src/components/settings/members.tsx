@@ -26,7 +26,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
-import React, { Suspense, useDeferredValue, useMemo, useState, useEffect } from "react";
+import React, { Suspense, useDeferredValue, useMemo, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { useUser } from "../../hooks/use-user.ts";
@@ -246,7 +246,7 @@ function RoleDialogIntegrationListItem({
           <IntegrationAvatar
             url={integration.icon}
             fallback={integration.name}
-            size="sm"
+            size="base"
           />
           <div className="flex flex-col min-w-0">
             <h4 className="text-sm font-medium truncate text-foreground">
@@ -338,11 +338,11 @@ function IntegrationDetailView({
       </div>
 
       {/* Integration header */}
-      <div className="flex items-center gap-3 p-4">
+      <div className="flex items-center gap-3 py-4">
         <IntegrationAvatar
           url={integration.icon}
           fallback={integration.name}
-          size="md"
+          size="base"
         />
         <div className="flex flex-col min-w-0">
           <h3 className="text-base font-semibold text-foreground">
@@ -383,7 +383,7 @@ function IntegrationDetailView({
       </div>
 
       {/* Tools list */}
-      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      <div className="space-y-2">
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(3)].map((_, i) => (
@@ -413,10 +413,10 @@ function IntegrationDetailView({
             return (
               <label
                 key={tool.name}
-                className="flex items-start justify-between gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                className="flex items-start justify-between gap-3 p-3 border rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
               >
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className={`text-sm font-medium truncate ${enabled ? "text-foreground" : "text-muted-foreground"}`}>
+                  <span className="text-sm font-medium truncate text-foreground">
                     {tool.name.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())}
                   </span>
                   <span className="text-xs text-muted-foreground break-words">
@@ -473,6 +473,9 @@ function AddRoleDialog({
   // Navigation state for tools section
   const [currentView, setCurrentView] = useState<'integrations' | 'integration-detail'>('integrations');
   const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
+  
+  // Ref for the scrollable content area
+  const contentAreaRef = useRef<HTMLDivElement>(null);
 
   // Reset selected tab when dialog opens/closes or role changes
   useEffect(() => {
@@ -551,11 +554,23 @@ function AddRoleDialog({
   const handleNavigateToIntegration = useCallback((integration: any) => {
     setSelectedIntegration(integration);
     setCurrentView('integration-detail');
+    // Reset scroll to top when navigating to integration detail
+    setTimeout(() => {
+      if (contentAreaRef.current) {
+        contentAreaRef.current.scrollTop = 0;
+      }
+    }, 10);
   }, []);
 
   const handleBackToIntegrations = useCallback(() => {
     setCurrentView('integrations');
     setSelectedIntegration(null);
+    // Reset scroll to top when going back to integrations list
+    setTimeout(() => {
+      if (contentAreaRef.current) {
+        contentAreaRef.current.scrollTop = 0;
+      }
+    }, 10);
   }, []);
 
   const handleAgentToggle = (agentId: string, checked: boolean) => {
@@ -657,7 +672,13 @@ function AddRoleDialog({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={selectedTab === "tools"}
-                  onClick={() => setSelectedTab("tools")}
+                  onClick={() => {
+                    setSelectedTab("tools");
+                    // If we're in integration detail view, go back to integrations list
+                    if (currentView === 'integration-detail') {
+                      handleBackToIntegrations();
+                    }
+                  }}
                   className="cursor-pointer justify-between"
                 >
                   <span>Tools</span>
@@ -700,7 +721,7 @@ function AddRoleDialog({
           </div>
 
           {/* Right content area */}
-          <div className="flex-1 pl-6 overflow-y-auto min-w-0">
+          <div ref={contentAreaRef} className="flex-1 pl-6 overflow-y-auto min-w-0">
             {selectedTab === "general" && (
               <div className="space-y-4">
                 <div className="space-y-2">

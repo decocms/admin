@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDownIcon, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { cn } from "../lib/utils.ts";
 import { Badge } from "./badge.tsx";
 import { Button } from "./button.tsx";
 import { Checkbox } from "./checkbox.tsx";
+import { Icon } from "./icon.tsx";
 import {
   Command,
   CommandEmpty,
@@ -144,16 +145,16 @@ export function MultiSelect({
                 })}
                 {selectedValues.length > maxCount && (
                   <Badge
-                    variant="outline"
-                    className="bg-muted text-muted-foreground"
+                    variant={variant === "default" ? "default" : "secondary"}
+                    className="flex-shrink-0"
                     style={{ animationDuration: `${animation}s` }}
                   >
                     +{selectedValues.length - maxCount}
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center shrink-0">
-                <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-50" />
+              <div className="flex items-center shrink-0 ml-2">
+                <Icon name="keyboard_arrow_down" size={20} className="shrink-0 opacity-50" />
               </div>
             </div>
           ) : (
@@ -161,7 +162,7 @@ export function MultiSelect({
               <span className="text-sm text-muted-foreground">
                 {placeholder}
               </span>
-              <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-50" />
+              <Icon name="keyboard_arrow_down" size={20} className="shrink-0 opacity-50" />
             </div>
           )}
         </Button>
@@ -199,7 +200,7 @@ export function MultiSelect({
                     onCheckedChange={(checked) => {
                       toggleAll();
                     }}
-                    className="mr-2"
+                    className="mr-2 [&_svg]:!text-primary-foreground"
                     onClick={(e) => e.stopPropagation()}
                   />
                   <span>(Select All)</span>
@@ -227,7 +228,7 @@ export function MultiSelect({
                         onCheckedChange={() => {
                           toggleOption(option);
                         }}
-                        className="mr-2"
+                        className="mr-2 [&_svg]:!text-primary-foreground"
                         onClick={(e) => e.stopPropagation()}
                       />
                       {option.icon && (

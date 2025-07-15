@@ -97,8 +97,8 @@ function MemberTableHeader(
         teamId={teamId}
         trigger={
           <Button>
-            <Icon name="add" />
-            Invite Members
+            <Icon name="person_add" />
+            Invite members
           </Button>
         }
       />
@@ -1059,8 +1059,8 @@ function MembersViewContent() {
   const user = useUser();
   const [tab, setTab] = useState<'members' | 'roles'>('members');
   const [rolesQuery, setRolesQuery] = useState("");
-  const [rolesSortKey, setRolesSortKey] = useState<string>("role");
-  const [rolesSortDirection, setRolesSortDirection] = useState<"asc" | "desc">("asc");
+  const [rolesSortKey, setRolesSortKey] = useState<string>("tools");
+  const [rolesSortDirection, setRolesSortDirection] = useState<"asc" | "desc">("desc");
   const inviteTeamMember = useInviteTeamMember();
   const [resendingInviteId, setResendingInviteId] = useState<string | null>(null);
   const { data: agents = [] } = useAgents();
@@ -1202,10 +1202,18 @@ function MembersViewContent() {
             {
         id: "roles",
         header: "Roles",
-        render: (row) => {
+                render: (row) => {
+          if (roles.length === 0) {
+            return (
+              <span className="text-muted-foreground text-sm">
+                No roles available
+              </span>
+            );
+          }
+
           if (row.type === "member" && row.member) {
             const selectedRoleIds = row.roles.map(r => r.id.toString());
-            const roleOptions = allRoles.map(role => ({
+            const roleOptions = roles.map(role => ({
               label: role.name,
               value: role.id.toString(),
             }));
@@ -1222,14 +1230,14 @@ function MembersViewContent() {
                   
                   // Process role changes
                   for (const roleId of rolesToAdd) {
-                    const role = allRoles.find(r => r.id.toString() === roleId);
+                    const role = roles.find(r => r.id.toString() === roleId);
                     if (role) {
                       await handleUpdateMemberRole(row.member!.user_id, role, true);
                     }
                   }
                   
                   for (const roleId of rolesToRemove) {
-                    const role = allRoles.find(r => r.id.toString() === roleId);
+                    const role = roles.find(r => r.id.toString() === roleId);
                     if (role) {
                       await handleUpdateMemberRole(row.member!.user_id, role, false);
                     }
@@ -1237,29 +1245,29 @@ function MembersViewContent() {
                 }}
                 placeholder="Select roles"
                 variant="secondary"
-                className="min-w-[140px] max-w-[216px]"
+                className="w-[240px]"
                 disabled={updateRoleMutation.isPending}
                 maxCount={2}
               />
             );
           } else if (row.type === "invite" && row.invite) {
             const selectedRoleIds = row.invite.roles.map(r => r.id.toString());
-            const roleOptions = allRoles.map(role => ({
+            const roleOptions = roles.map(role => ({
               label: role.name,
               value: role.id.toString(),
             }));
             
             return (
               <MultiSelect
-                options={roleOptions}
-                defaultValue={selectedRoleIds}
-                onValueChange={() => {}} // No-op for invites
-                placeholder="Select roles"
-                variant="secondary"
-                className="min-w-[140px] max-w-[216px]"
-                disabled={true}
-                maxCount={2}
-              />
+              options={roleOptions}
+              defaultValue={selectedRoleIds}
+              onValueChange={() => {}} // No-op for invites
+              placeholder="Select roles"
+              variant="secondary"
+              className="w-[240px]"
+              disabled={true}
+              maxCount={2}
+            />
             );
           }
           return null;
@@ -1388,6 +1396,7 @@ function MembersViewContent() {
     rejectInvite.variables,
     inviteTeamMember.isPending,
     resendingInviteId,
+    roles,
   ]);
 
   // Sorting logic
@@ -1453,10 +1462,10 @@ function MembersViewContent() {
     });
   }, [filteredData, sortKey, sortDirection]);
 
-  // Toggle chiplets for ListPageHeader - use allRoles instead of DEFAULT_ROLES
+  // Toggle chiplets for ListPageHeader - use real roles from backend
   const toggleItems = [
     { id: 'members', label: 'Members', count: members.length + invites.length, active: tab === 'members' },
-    { id: 'roles', label: 'Roles', count: allRoles.length, active: tab === 'roles' },
+    { id: 'roles', label: 'Roles', count: roles.length, active: tab === 'roles' },
   ];
 
   // Roles table columns - updated to use DEFAULT_ROLES
@@ -1675,8 +1684,8 @@ function MembersViewContent() {
     },
   ];
 
-  // Filter roles based on search - use allRoles
-  const filteredRoles = allRoles.filter(role => 
+  // Filter roles based on search - use real roles from backend
+  const filteredRoles = roles.filter(role => 
     role.name.toLowerCase().includes(rolesQuery.toLowerCase())
   );
 
@@ -1734,12 +1743,16 @@ function MembersViewContent() {
                 setRoleDialogOpen(true);
               }}>
                 <Icon name="add" />
-                Add Role
+                Add role
               </Button>
             </div>
-            {filteredRoles.length === 0 ? (
+            {roles.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No roles found.
+                No roles available. Create roles to manage team member permissions.
+              </div>
+            ) : filteredRoles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No roles found matching your search.
               </div>
             ) : (
               <Table

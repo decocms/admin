@@ -160,6 +160,7 @@ export const WORKSPACE_TOOLS = [
   databasesAPI.runSql,
   aiAPI.aiGenerate,
   aiAPI.aiGenerateImage,
+  aiAPI.listPrices,
 ] as const;
 
 export const AGENT_TOOLS = [
@@ -171,6 +172,7 @@ export const AGENT_TOOLS = [
 export const AI_TOOLS = [
   aiAPI.aiGenerate,
   aiAPI.aiGenerateImage,
+  aiAPI.listPrices,
 ] as const;
 
 export type GlobalTools = typeof GLOBAL_TOOLS;

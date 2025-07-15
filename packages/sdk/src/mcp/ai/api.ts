@@ -47,7 +47,7 @@ const createLLMUsageTransaction = (opts: {
   };
 };
 
-const createToolCallTransaction = (opts: {
+export const createToolCallTransaction = (opts: {
   toolId: string;
   mcpId: string;
   amount: number | string;
@@ -68,7 +68,7 @@ const createToolCallTransaction = (opts: {
   };
 };
 
-const getWalletClient = (c: AppContext) => {
+export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {
     throw new InternalServerError("WALLET_API_KEY is not set");
   }
@@ -260,58 +260,41 @@ export const aiGenerateImage = createTool({
   }),
   handler: async (_input, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
-
-    const wallet = getWalletClient(c);
-    const workspaceWalletId = WellKnownWallets.build(
-      ...WellKnownWallets.workspace.genCredits(c.workspace.value),
-    );
-
-    const balanceResponse = await wallet["GET /accounts/:id"]({
-      id: encodeURIComponent(workspaceWalletId),
-    });
-
-    if (balanceResponse.status === 404) {
-      throw new InternalServerError("Insufficient funds");
-    }
-
-    if (!balanceResponse.ok) {
-      throw new InternalServerError("Failed to check wallet balance");
-    }
-
-    const balanceData = await balanceResponse.json();
-    const balance = MicroDollar.fromMicrodollarString(balanceData.balance);
-
-    if (balance.isNegative() || balance.isZero()) {
-      throw new InternalServerError("Insufficient funds");
-    }
-    const transaction = createToolCallTransaction({
-      toolId: "image-generation",
-      mcpId: "openai",
-      amount: 10,
-      workspace: c.workspace.value,
-    });
-
-    const response = await wallet["POST /transactions"]({}, {
-      body: transaction,
-    });
-
-    if (!response.ok) {
-      console.error(
-        "Failed to create transaction",
-        response,
-        await response.text(),
-      );
-      throw new InternalServerError("Failed to create transaction");
-    }
-
-    const transactionData = await response.json();
-    const transactionId = transactionData.id;
+    await assertWorkspaceResourceAccess(c.tool.name, c)
 
     return {
       image: "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
-      transactionId,
-      cost: 10,
+      cost: 100,
     };
+  },
+});
+
+export const listPrices = createTool({
+  name: "DECO_LIST_PRICES",
+  description: "List the prices of the paid tools",
+  inputSchema: z.object({}),
+  outputSchema: z.object({
+    prices: z.array(z.object({
+      name: z.string().describe("The name of the tool"),
+      cost: z.number().describe("The cost of the tool"),
+    })),
+  }),
+  handler: async (_input, c) => {
+    assertHasWorkspace(c);
+    await c.resourceAccess.grant();
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    return {
+      prices: [
+        {
+          name: "AI_GENERATE",
+          cost: 10,
+        },
+        {
+          name: "AI_GENERATE_IMAGE",
+          cost: 10000,
+        },
+      ],
+    }
   },
 });

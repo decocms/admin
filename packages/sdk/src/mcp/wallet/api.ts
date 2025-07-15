@@ -104,7 +104,7 @@ const ToolsUsage = {
       total: MicroDollar.fromMicrodollarString(usage.total).display(),
       items: usage.items.map((item) => ({
         id: item.id,
-        label: item.label,
+        toolId: item.toolId,
         total: MicroDollar.fromMicrodollarString(item.total).toDollars(),
       })),
     };

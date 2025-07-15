@@ -397,7 +397,6 @@ CreditsUsedPerThread.Fallback = () => (
 function CreditsUsedPerTool({
 }: {
 }) {
-  const withWorkpaceLink = useWorkspaceLink();
   const [range, setRange] = useState<"day" | "week" | "month">("week");
   const tools = useUsagePerTool({ range });
 
@@ -410,7 +409,7 @@ function CreditsUsedPerTool({
   return (
     <Card className="bg-background w-full h-full flex flex-col rounded-md border-none gap-0">
       <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
-        <span>Credits Used Per Thread</span>
+        <span>Credits Used Per Tool</span>
         <Select
           value={range}
           onValueChange={(value: "day" | "week" | "month") => setRange(value)}
@@ -443,8 +442,11 @@ function CreditsUsedPerTool({
                   <div className="flex items-center justify-between p-4 mb-2 rounded-lg hover:bg-muted transition-colors cursor-pointer">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col gap-1">
+                        <span>
+                          {tool.id}
+                        </span>
                         <span className="text-sm font-medium text-foreground">
-                          {tool.label}
+                          {tool.toolId}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">
@@ -468,10 +470,10 @@ function CreditsUsedPerTool({
   );
 }
 
-CreditsUsedPerThread.Fallback = () => (
+CreditsUsedPerTool.Fallback = () => (
   <Card className="bg-background w-full h-full flex flex-col rounded-md border-none gap-0">
     <div className="w-full text-sm p-4 border-b border-border flex justify-between items-center">
-      <span>Credits Used Per Thread</span>
+      <span>Credits Used Per Tool</span>
     </div>
     <CardContent className="flex flex-col items-center justify-center gap-2 p-3 overflow-y-auto">
       {Array.from({ length: 10 }).map((_, index) => (

@@ -333,7 +333,7 @@ export interface WalletAPI {
       total: string;
       items: {
         id: string;
-        label: string;
+        toolId: string;
         total: string;
       }[];
     };

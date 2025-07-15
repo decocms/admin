@@ -1,6 +1,6 @@
 {
   "name": "@deco/cli",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "A CLI for interacting with deco.chat.",
   "license": "MIT",
   "exports": "./cli.ts",

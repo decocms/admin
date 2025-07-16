@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
 import type { CreateStubAPIOptions } from "./mcp.ts";
-import { jsonSchemaToZod } from "json-schema-to-zod";
 
 const getWorkspace = (workspace?: string) => {
   if (
@@ -195,9 +194,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return {
             id: tool.name,
             description: tool.description,
-            inputSchema: jsonSchemaToZod(tool.inputSchema),
+            inputSchema: options?.jsonSchemaToZod?.(tool.inputSchema) ??
+              tool.inputSchema,
             outputSchema: tool.outputSchema
-              ? jsonSchemaToZod(tool.outputSchema)
+              ? options?.jsonSchemaToZod?.(tool.outputSchema) ??
+                tool.outputSchema
               : undefined,
             execute: callToolFn,
           };

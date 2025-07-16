@@ -1,9 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { z } from "zod";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
+import type { z as zv4 } from "zod/v4";
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
 const { env } = await import("cloudflare:workers");
+
 export interface FetchOptions extends RequestInit {
   path?: string;
   segments?: string[];
@@ -124,12 +127,14 @@ export type MCPConnectionProvider =
   | (() => Promise<MCPConnection>)
   | MCPConnection;
 
+export type JSONSchemaToZodConverter = (jsonSchema: any) => zv4.ZodTypeAny;
 export interface CreateStubAPIOptions {
   decoChatApiUrl?: string;
   workspace?: string;
   token?: string;
   connection?: MCPConnectionProvider;
   debugId?: () => string;
+  jsonSchemaToZod?: JSONSchemaToZodConverter;
   getErrorByStatusCode?: (
     statusCode: number,
     message?: string,
@@ -140,5 +145,8 @@ export interface CreateStubAPIOptions {
 export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
-  return createMCPClientProxy<MCPClientFetchStub<TDefinition>>(options);
+  return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
+    ...options ?? {},
+    jsonSchemaToZod: convertJsonSchemaToZod,
+  });
 }

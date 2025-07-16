@@ -60,7 +60,6 @@ and follows a monorepo architecture powered by Deno workspaces.
 The project leverages Deno for various development tasks:
 
 - Dependency management
-- Code linting
-- Code formatting
-- Type checking
-
+- Code linting (deno run lint in package root folder or passing --config=./package.json)
+- Code formatting (deno run fmt in package root folder or passing --config=./package.json)
+- Type checking (deno run check in package root folder or passing --config=./package.json)

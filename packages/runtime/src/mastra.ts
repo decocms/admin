@@ -354,7 +354,6 @@ export const createMCPServer = <
       { capabilities: { tools: {} } },
     );
 
-    // since mastra tools are thenables, we need to await and add as a prop
     const tools = await Promise.all(
       options.tools?.map(async (tool) => {
         const toolResult = tool(bindings);
@@ -362,6 +361,7 @@ export const createMCPServer = <
       }) ?? [],
     );
 
+    // since mastra workflows are thenables, we need to await and add as a prop
     const workflows = await Promise.all(
       options.workflows?.map(async (workflow) => {
         const workflowResult = workflow(bindings);
@@ -378,7 +378,6 @@ export const createMCPServer = <
         .flat() ?? [];
 
     tools.push(...workflowTools);
-
     tools.push(decoChatOAuthToolFor<TSchema>(options.oauth));
 
     for (const tool of tools) {

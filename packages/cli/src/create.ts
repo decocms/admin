@@ -58,9 +58,9 @@ async function downloadTemplate(
     }
 
     // Remove the .git folder to avoid creating a local repository
+    // pointing to the wrong repo
     const gitDir = join(tempDir, ".git");
     await Deno.remove(gitDir, { recursive: true }).catch(() => {
-      // Ignore errors if .git folder doesn't exist
       console.warn(`Failed to remove .git folder: ${gitDir}`);
     });
 
@@ -228,6 +228,11 @@ export async function createCommand(
       throw new Error(`Template '${finalTemplateName}' not found`);
     }
 
+    const initGit = await Select.prompt({
+      message: "Initialize a git repository?",
+      options: ["No", "Yes"],
+    });
+
     // Prompt user to install MCP configuration for IDE
     const mcpResult = workspace
       ? await promptIDESetup(
@@ -244,6 +249,27 @@ export async function createCommand(
     }
 
     await customizeTemplate(targetDir, finalProjectName, workspace);
+
+    if (initGit === "Yes") {
+      try {
+        const gitInitCmd = new Deno.Command("git", {
+          args: ["init"],
+          cwd: targetDir,
+        });
+
+        const gitInitResult = await gitInitCmd.output();
+        if (gitInitResult.success) {
+          console.log(`✅ Git repository initialized in '${finalProjectName}'`);
+        } else {
+          console.warn("⚠️  Failed to initialize git repository");
+        }
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not initialize git repository:",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
 
     console.log(`\n🎉 Project '${finalProjectName}' created successfully!`);
     console.log(`\nNext steps:`);

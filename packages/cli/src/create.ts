@@ -57,6 +57,13 @@ async function downloadTemplate(
       throw new Error(`Failed to clone template repository: ${template.repo}`);
     }
 
+    // Remove the .git folder to avoid creating a local repository
+    const gitDir = join(tempDir, ".git");
+    await Deno.remove(gitDir, { recursive: true }).catch(() => {
+      // Ignore errors if .git folder doesn't exist
+      console.warn(`Failed to remove .git folder: ${gitDir}`);
+    });
+
     const templatePath = join(tempDir, template.path || "");
     const templateExists = await Deno.stat(templatePath).catch(() => false);
 

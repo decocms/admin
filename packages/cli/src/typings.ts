@@ -272,6 +272,18 @@ ${tsTypes}
    // this should be added to your package.json
   import { z } from "zod";
 
+  export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
+    [K in keyof T]: ((input: Parameters<T[K]>[0]) => Promise<ReturnType<T[K]>>) & {
+      asTool: () => Promise<{
+        inputSchema: z.ZodType<Parameters<T[K]>[0]>
+        outputSchema?: z.ZodType<ReturnType<T[K]>>
+        description: string
+        id: string
+        execute: ({ context }: { context: Parameters<T[K]>[0] }) => Promise<ReturnType<T[K]>>
+      }>
+    }
+  }
+
   export const StateSchema = z.object({
     ${
     props.filter((p) => p !== null && p[2] !== undefined).map((prop) => {
@@ -293,7 +305,7 @@ ${tsTypes}
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
     ${
     props.filter((p) => p !== null).map(([propName, tools]) => {
-      return `${propName}: {
+      return `${propName}: Mcp<{
         ${
         tools.map(([toolName, inputName, outputName]) => {
           return `
@@ -305,7 +317,7 @@ ${tsTypes}
           `;
         }).join("")
       }
-      };`;
+      }>;`;
     }).join("")
   }
   }

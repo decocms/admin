@@ -163,7 +163,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
 ): UserDefaultExport<TEnv, TSchema> & {
   Workflow: ReturnType<typeof Workflow>;
 } => {
-  const server = createMCPServer<TEnv, TSchema>(userFns);
+  const server = createMCPServer(userFns);
   return {
     Workflow: Workflow(userFns.workflows),
     fetch: async (

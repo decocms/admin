@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { CreateStubAPIOptions } from "./mcp.ts";
+import { jsonSchemaToZod } from "json-schema-to-zod";
 
 const getWorkspace = (workspace?: string) => {
   if (
@@ -88,7 +89,7 @@ async function makeApiCall(
     throw err;
   }
 
-  return config.mapper ? config.mapper(data) : data;
+  return config?.mapper?.(data) ?? data;
 }
 
 /**
@@ -149,17 +150,16 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             toolName: "INTEGRATIONS_LIST_TOOLS",
             payload: { connection },
             includeWorkspaceInPath: false,
-            mapper: (data) =>
-              (data as {
-                structuredContent: {
-                  tools: {
-                    name: string;
-                    inputSchema: any;
-                    outputSchema?: any;
-                    description: string;
-                  }[];
-                };
-              }).structuredContent.tools,
+            mapper: (data) => {
+              return (data as {
+                tools: {
+                  name: string;
+                  inputSchema: any;
+                  outputSchema?: any;
+                  description: string;
+                }[];
+              }).tools;
+            },
           }, options);
 
           return data as {
@@ -195,8 +195,10 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           return {
             id: tool.name,
             description: tool.description,
-            inputSchema: tool.inputSchema,
-            outputSchema: tool.outputSchema,
+            inputSchema: jsonSchemaToZod(tool.inputSchema),
+            outputSchema: tool.outputSchema
+              ? jsonSchemaToZod(tool.outputSchema)
+              : undefined,
             execute: callToolFn,
           };
         };

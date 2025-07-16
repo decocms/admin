@@ -1,5 +1,9 @@
 import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
-import type { AppContext, CreateMCPServerOptions } from "./mastra.ts";
+import {
+  type AppContext,
+  type CreateMCPServerOptions,
+  isWorkflow,
+} from "./mastra.ts";
 
 import { D1Store } from "@mastra/cloudflare-d1";
 import { Mastra, type Workflow as MastraWorkflow } from "@mastra/core";
@@ -58,10 +62,14 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
     ): Promise<{ workflow: MastraWorkflow }> {
       const bindedWorkflows = await Promise
         .all(
-          workflows?.map(async (w) => ({
-            workflow:
-              (await Promise.resolve(w(bindings)) as unknown as MastraWorkflow),
-          })) ?? [],
+          workflows?.map(async (workflow) => {
+            const workflowResult = workflow(bindings);
+            if (isWorkflow(workflowResult)) {
+              return { workflow: workflowResult };
+            }
+
+            return await workflowResult;
+          }) ?? [],
         );
       const workflowsMap = Object.fromEntries(
         bindedWorkflows.map((w) => [w.workflow.id, w.workflow]),

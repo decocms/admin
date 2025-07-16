@@ -11,7 +11,8 @@
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
     "@mastra/cloudflare-d1": "^0.12.1",
     "jose": "^6.0.11",
-    "zod-to-json-schema": "^3.24.4"
+    "zod-to-json-schema": "^3.24.4",
+    "json-schema-to-zod": "^2.6.1"
   },
   "exports": {
     ".": "./src/index.ts",

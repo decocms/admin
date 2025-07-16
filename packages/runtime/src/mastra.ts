@@ -2,9 +2,10 @@
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
   createTool as mastraCreateTool,
-  type Tool,
+  Tool,
   type ToolAction,
   type ToolExecutionContext,
+  type Workflow,
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import {
@@ -183,9 +184,9 @@ export interface CreateMCPServerOptions<
   workflows?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
-    ) =>
-      | Promise<ReturnType<typeof createWorkflow>>
-      | ReturnType<typeof createWorkflow>
+    ) => // this is a workaround to allow workflows to be thenables
+    | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
+    | ReturnType<typeof createWorkflow>
   >;
 }
 
@@ -334,6 +335,13 @@ type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
   callTool: CallTool<TEnv, TSchema>;
 };
 
+export const isWorkflow = (value: any): value is Workflow => {
+  return value && !(value instanceof Promise);
+};
+const isTool = (value: any): value is Tool => {
+  return value && value instanceof Tool;
+};
+
 export const createMCPServer = <
   TEnv = any,
   TSchema extends z.ZodTypeAny = never,
@@ -346,13 +354,25 @@ export const createMCPServer = <
       { capabilities: { tools: {} } },
     );
 
+    // since mastra tools are thenables, we need to await and add as a prop
     const tools = await Promise.all(
-      options.tools?.map((tool) => tool(bindings)) ?? [],
+      options.tools?.map(async (tool) => {
+        const toolResult = tool(bindings);
+        return isTool(toolResult) ? toolResult : await toolResult;
+      }) ?? [],
     );
 
     const workflows = await Promise.all(
-      options.workflows?.map((workflow) => workflow(bindings)) ?? [],
-    );
+      options.workflows?.map(async (workflow) => {
+        const workflowResult = workflow(bindings);
+        if (isWorkflow(workflowResult)) {
+          return { workflow: workflowResult };
+        }
+
+        return await workflowResult;
+      }) ?? [],
+    ).then((w) => w.map((w) => w.workflow));
+
     const workflowTools =
       workflows?.map((workflow) => createWorkflowTools(workflow, bindings))
         .flat() ?? [];

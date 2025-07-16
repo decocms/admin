@@ -109,28 +109,6 @@ const addSchemaNotation = (stringified: string) => {
   return `#:schema node_modules/@deco/workers-runtime/config-schema.json\n${stringified}`;
 };
 
-/**
- * Write the entire wrangler config to the config file.
- * @param config - The wrangler config to write.
- * @param cwd - The current working directory to write config to.
- * @param merge - Whether to merge with existing config or replace it.
- */
-export const writeWranglerConfig = async (
-  config: Partial<WranglerConfig>,
-  cwd?: string,
-) => {
-  const targetCwd = cwd || Deno.cwd();
-  const currentConfig = await readWranglerConfig(targetCwd);
-  const mergedConfig = { ...currentConfig, ...config };
-  const configPath = getConfigFilePath(targetCwd) ??
-    `${targetCwd}/${CONFIG_FILE}`;
-  await Deno.writeTextFile(
-    configPath,
-    addSchemaNotation(stringify(mergedConfig)),
-  );
-  console.log(`✅ Wrangler configuration written to: ${configPath}`);
-};
-
 export const addWorkflowDO = async () => {
   const wranglerConfig = await readWranglerConfig(Deno.cwd());
   const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
@@ -158,6 +136,29 @@ export const addWorkflowDO = async () => {
 };
 
 /**
+ * Write the entire wrangler config to the config file.
+ * @param config - The wrangler config to write.
+ * @param cwd - The current working directory to write config to.
+ * @param merge - Whether to merge with existing config or replace it.
+ */
+export const writeWranglerConfig = async (
+  config: Partial<WranglerConfig>,
+  cwd?: string,
+) => {
+  const targetCwd = cwd || Deno.cwd();
+  const wranglerConfig = await readWranglerConfig(targetCwd);
+  const mergedConfig = { ...wranglerConfig, ...config };
+
+  const configPath = getConfigFilePath(targetCwd) ??
+    `${targetCwd}/${CONFIG_FILE}`;
+  await Deno.writeTextFile(
+    configPath,
+    addSchemaNotation(stringify(mergedConfig)),
+  );
+  console.log(`✅ Wrangler configuration written to: ${configPath}`);
+};
+
+/**
  * Write the config to the current directory or any parent directory.
  * @param config - The config to write.
  * @param cwd - The current working directory to write config to.
@@ -172,16 +173,10 @@ export const writeConfigFile = async (
   const current = wranglerConfig.deco ?? {} as Partial<Config>;
   const mergedConfig = merge ? { ...current, ...config } : config;
 
-  const configPath = getConfigFilePath(targetCwd) ??
-    `${targetCwd}/${CONFIG_FILE}`;
-  await Deno.writeTextFile(
-    configPath,
-    addSchemaNotation(stringify({
-      ...wranglerConfig,
-      deco: mergedConfig,
-    })),
-  );
-  console.log(`✅ Deco configuration written to: ${configPath}`);
+  await writeWranglerConfig({
+    ...wranglerConfig,
+    deco: mergedConfig,
+  }, targetCwd);
 };
 
 /**

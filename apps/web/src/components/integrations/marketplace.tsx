@@ -174,10 +174,12 @@ export const NEW_CUSTOM_CONNECTION: MarketplaceIntegration = {
 
 export function Marketplace({
   filter,
+  categoryFilter,
   onClick,
   emptyState,
 }: {
   filter: string;
+  categoryFilter?: string;
   onClick: (integration: MarketplaceIntegration) => void;
   emptyState?: React.ReactNode;
 }) {
@@ -190,15 +192,30 @@ export function Marketplace({
       ...(marketplace?.integrations ?? []),
     ];
 
-    return filter
-      ? integrations.filter((integration: MarketplaceIntegration) =>
+    let filtered = integrations;
+
+    // Apply search filter
+    if (filter) {
+      filtered = filtered.filter((integration: MarketplaceIntegration) =>
         integration.name.toLowerCase().includes(searchTerm) ||
         (integration.description?.toLowerCase() ?? "").includes(searchTerm) ||
         integration.provider.toLowerCase().includes(searchTerm) ||
         (integration.friendlyName?.toLowerCase() ?? "").includes(searchTerm)
-      )
-      : integrations;
-  }, [marketplace, filter]);
+      );
+    }
+
+    // Apply category filter
+    if (categoryFilter && categoryFilter !== 'all') {
+      filtered = filtered.filter((integration: MarketplaceIntegration) => {
+        if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+          return categoryFilter === 'custom';
+        }
+        return integration.provider === categoryFilter;
+      });
+    }
+
+    return filtered;
+  }, [marketplace, filter, categoryFilter]);
 
   if (filteredIntegrations.length === 0 && emptyState) {
     return emptyState;

@@ -11,6 +11,7 @@ import { Button } from "@deco/ui/components/button.tsx";
 import { useMemo, useState } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import React from "react";
 import {
   Marketplace,
   type MarketplaceIntegration,
@@ -29,6 +30,39 @@ import {
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
 import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
+import { useMarketplaceIntegrations } from "@deco/sdk";
+import { IntegrationDetailView } from "./integration-detail-view.tsx";
+
+// Define categories based on providers and known integrations
+const INTEGRATION_CATEGORIES = {
+  deco: {
+    label: "Deco Apps",
+    icon: "verified",
+    description: "Official integrations built by Deco"
+  },
+  composio: {
+    label: "Composio",
+    icon: "extension",
+    description: "Productivity and business apps"
+  },
+  wppagent: {
+    label: "Communication",
+    icon: "chat",
+    description: "Messaging and communication tools"
+  },
+  custom: {
+    label: "Custom",
+    icon: "code",
+    description: "User-created integrations"
+  },
+  unknown: {
+    label: "Third Party",
+    icon: "public",
+    description: "External service integrations"
+  }
+} as const;
+
+type CategoryKey = keyof typeof INTEGRATION_CATEGORIES;
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -202,6 +236,8 @@ function AddConnectionDialogContent({
   );
   const tab = forceTab ?? _tab;
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey | 'all'>('all');
+  const [selectedIntegration, setSelectedIntegration] = useState<MarketplaceIntegration | null>(null);
   const createCustomConnection = useCreateCustomConnection();
   const [installingIntegration, setInstallingIntegration] = useState<
     MarketplaceIntegration | null
@@ -213,6 +249,52 @@ function AddConnectionDialogContent({
   }>({ open: false, url: "", integrationName: "" });
   const navigateWorkspace = useNavigateWorkspace();
   const showEmptyState = search.length > 0;
+  
+  const { data: marketplace } = useMarketplaceIntegrations();
+
+  // Get category counts for display
+  const categoryCounts = useMemo(() => {
+    if (!marketplace?.integrations) return {};
+    
+    const counts: Record<CategoryKey | 'all', number> = {
+      all: marketplace.integrations.length + 1, // +1 for custom connection
+      deco: 0,
+      composio: 0,
+      wppagent: 0,
+      custom: 0,
+      unknown: 0,
+    };
+
+    marketplace.integrations.forEach((integration) => {
+      const category = integration.provider as CategoryKey;
+      if (category in counts) {
+        counts[category]++;
+      } else {
+        counts.unknown++;
+      }
+    });
+
+    return counts;
+  }, [marketplace]);
+
+  const handleIntegrationClick = (integration: MarketplaceIntegration) => {
+    if (integration.id === NEW_CUSTOM_CONNECTION.id) {
+      createCustomConnection();
+      return;
+    }
+    setSelectedIntegration(integration);
+  };
+
+  const handleInstallIntegration = (integration: MarketplaceIntegration) => {
+    setInstallingIntegration(integration);
+    setSelectedIntegration(null);
+  };
+
+  const handleBackToList = () => {
+    setSelectedIntegration(null);
+  };
+
+
 
   return (
     <DialogContent
@@ -223,127 +305,162 @@ function AddConnectionDialogContent({
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
       <div className="flex h-[calc(100vh-10rem)]">
-        {!forceTab && (
-          <aside className="w-56 flex flex-col p-4 gap-1">
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start text-muted-foreground",
-                tab === "my-connections" && "bg-muted text-foreground",
-              )}
-              onClick={() => setTab("my-connections")}
-            >
-              <Icon
-                name="widgets"
-                size={16}
-                className="text-muted-foreground"
-              />
-              <span>My integrations</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start text-muted-foreground",
-                tab === "new-connection" && "bg-muted text-foreground",
-              )}
-              onClick={() => setTab("new-connection")}
-            >
-              <Icon name="add" size={16} className="text-muted-foreground" />
-              <span>New integration</span>
-            </Button>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start text-muted-foreground group",
-              )}
-              onClick={() => navigateWorkspace("/connections")}
-            >
-              <Icon name="arrow_outward" size={16} />
-              <span className="group-hover:underline">Manage integrations</span>
-            </Button>
-            {/* Filters will go here */}
-          </aside>
-        )}
+                 {/* Categories Sidebar */}
+         <aside className="w-64 flex flex-col bg-muted/20">
+           {/* Tab Selection */}
+           {!forceTab && (
+             <div className="p-4">
+               <div className="space-y-1">
+                 <Button
+                   variant="ghost"
+                   className={cn(
+                     "w-full justify-start",
+                     tab === "my-connections" && "bg-muted text-foreground",
+                   )}
+                   onClick={() => setTab("my-connections")}
+                 >
+                   <span>My integrations</span>
+                 </Button>
+                 <Button
+                   variant="ghost"
+                   className={cn(
+                     "w-full justify-start",
+                     tab === "new-connection" && "bg-muted text-foreground",
+                   )}
+                   onClick={() => setTab("new-connection")}
+                 >
+                   <span>Browse marketplace</span>
+                 </Button>
+               </div>
+             </div>
+           )}
 
-        <div className="h-full overflow-y-hidden p-4 pb-20 w-full">
-          <Input
-            placeholder="Find integration..."
-            value={search}
-            className="mb-4"
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {tab === "new-connection" && (
-            <Marketplace
-              filter={search}
-              emptyState={
-                <div className="flex flex-col h-full min-h-[200px] gap-4">
-                  <div className="flex flex-col gap-2 py-8 w-full items-center">
-                    <h3 className="text-2xl font-medium">
-                      No integrations found for the search "{search}"
-                    </h3>
-                    <p className="text-sm text-muted-foreground w-full text-center">
-                      You can{" "}
-                      <Button
-                        variant="link"
-                        className="px-0"
-                        onClick={() => setTab("my-connections")}
-                      >
-                        create a new custom integration
-                      </Button>{" "}
-                      instead.
-                    </p>
-                  </div>
-                </div>
-              }
-              onClick={async (integration) => {
-                if (integration.id === NEW_CUSTOM_CONNECTION.id) {
-                  await createCustomConnection();
-                  return;
-                }
-                setInstallingIntegration(integration);
-              }}
-            />
-          )}
-          {tab === "my-connections" && (
-            <InstalledConnections
-              query={search}
-              emptyState={showEmptyState
-                ? myConnectionsEmptyState ?? (
-                  <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
-                    <div className="w-full flex items-center flex-col gap-2 py-8">
-                      <h3 className="text-2xl font-medium">
-                        No integrations found
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Create a new integration to get started
-                      </p>
-                    </div>
-                    <Marketplace
-                      filter={search}
-                      emptyState={
-                        <div className="flex flex-col gap-2 py-8 w-full items-center">
-                          <p className="text-sm text-muted-foreground">
-                            No integrations found for the search "{search}"
-                          </p>
-                        </div>
-                      }
-                      onClick={async (integration) => {
-                        if (integration.id === NEW_CUSTOM_CONNECTION.id) {
-                          await createCustomConnection();
-                          return;
-                        }
-                        setInstallingIntegration(integration);
-                      }}
-                    />
-                  </div>
-                )
-                : null}
-              filter={filter}
-              onClick={(integration) => onSelect?.(integration)}
-            />
-          )}
+           {/* Categories - only show in marketplace tab */}
+           {tab === "new-connection" && (
+             <div className="flex-1 px-4 pb-4">
+               <div className="space-y-1">
+                 <Button
+                   variant="ghost"
+                   className={cn(
+                     "w-full justify-between",
+                     selectedCategory === 'all' && "bg-muted text-foreground",
+                   )}
+                   onClick={() => setSelectedCategory('all')}
+                 >
+                   <span>All</span>
+                   <span className="text-xs text-muted-foreground">
+                     {categoryCounts.all}
+                   </span>
+                 </Button>
+                 
+                 {Object.entries(INTEGRATION_CATEGORIES).map(([key, category]) => (
+                   <Button
+                     key={key}
+                     variant="ghost"
+                     className={cn(
+                       "w-full justify-between",
+                       selectedCategory === key && "bg-muted text-foreground",
+                     )}
+                     onClick={() => setSelectedCategory(key as CategoryKey)}
+                   >
+                     <span>{category.label}</span>
+                     <span className="text-xs text-muted-foreground">
+                       {categoryCounts[key as CategoryKey] || 0}
+                     </span>
+                   </Button>
+                 ))}
+               </div>
+             </div>
+           )}
+         </aside>
+
+                 {/* Main Content */}
+         <div className="flex-1 flex flex-col">
+           {/* Search */}
+           <div className="p-4">
+             <Input
+               placeholder="Find integration..."
+               value={search}
+               className="w-full"
+               onChange={(e) => setSearch(e.target.value)}
+             />
+           </div>
+
+                      {/* Content Area */}
+           <div className="flex-1 overflow-y-auto p-4">
+             {selectedIntegration && tab === "new-connection" ? (
+               <IntegrationDetailView
+                 integration={selectedIntegration}
+                 onBack={handleBackToList}
+                 onInstall={handleInstallIntegration}
+               />
+             ) : (
+               <>
+                 {tab === "new-connection" && (
+                   <Marketplace
+                     filter={search}
+                     categoryFilter={selectedCategory}
+                     emptyState={
+                       <div className="flex flex-col h-full min-h-[200px] gap-4">
+                         <div className="flex flex-col gap-2 py-8 w-full items-center">
+                           <h3 className="text-2xl font-medium">
+                             No integrations found for the search "{search}"
+                           </h3>
+                           <p className="text-sm text-muted-foreground w-full text-center">
+                             You can{" "}
+                             <Button
+                               variant="link"
+                               className="px-0"
+                               onClick={() => setTab("my-connections")}
+                             >
+                               create a new custom integration
+                             </Button>{" "}
+                             instead.
+                           </p>
+                         </div>
+                       </div>
+                     }
+                     onClick={handleIntegrationClick}
+                   />
+                 )}
+                 {tab === "my-connections" && (
+                   <InstalledConnections
+                     query={search}
+                     emptyState={showEmptyState
+                       ? myConnectionsEmptyState ?? (
+                         <div className="flex flex-col h-full min-h-[200px] gap-4 pb-16">
+                           <div className="w-full flex items-center flex-col gap-2 py-8">
+                             <h3 className="text-2xl font-medium">
+                               No integrations found
+                             </h3>
+                             <p className="text-sm text-muted-foreground">
+                               Create a new integration to get started
+                             </p>
+                           </div>
+                           <Marketplace
+                             filter={search}
+                             emptyState={
+                               <div className="flex flex-col gap-2 py-8 w-full items-center">
+                                 <p className="text-sm text-muted-foreground">
+                                   No integrations found for the search "{search}"
+                                 </p>
+                               </div>
+                             }
+                             onClick={handleIntegrationClick}
+                           />
+                         </div>
+                       )
+                       : null}
+                     filter={filter}
+                     onClick={(integration) => onSelect?.(integration)}
+                   />
+                 )}
+               </>
+             )}
+           </div>
         </div>
       </div>
+      
       <ConfirmMarketplaceInstallDialog
         integration={installingIntegration}
         setIntegration={setInstallingIntegration}

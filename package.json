@@ -20,8 +20,7 @@
     "db:migration": "supabase migration up --linked --include-all",
     "db:migration:create": "supabase migration new",
     "npm:build": "npm run build --workspace=apps/web",
-    "db:types": "supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
-    "rolesCLI": "deno run --env-file=./apps/web/.env -A scripts/role-and-policy-cli.ts"
+    "db:types": "supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts"
   },
   "workspaces": [
     "apps/*",

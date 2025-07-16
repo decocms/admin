@@ -81,7 +81,8 @@ async function makeApiCall(
       traceDebugId,
     ) ??
       new Error(
-        `http error ${response.status} ${JSON.stringify(config.payload)
+        `http error ${response.status} ${
+          JSON.stringify(config.payload)
         } ${config.toolName} ${message} ${traceDebugId}`,
       );
     throw err;
@@ -139,24 +140,26 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             ? await options.connection()
             : {
               type: "HTTP",
-              url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`
-                }${getWorkspace(options?.workspace)}/mcp`,
+              url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${
+                getWorkspace(options?.workspace)
+              }/mcp`,
             };
 
           const data = await makeApiCall({
             toolName: "INTEGRATIONS_LIST_TOOLS",
             payload: { connection },
             includeWorkspaceInPath: false,
-            mapper: (data) => (data as {
-              structuredContent: {
-                tools: {
-                  name: string;
-                  inputSchema: any;
-                  outputSchema?: any;
-                  description: string;
-                }[];
-              };
-            }).structuredContent.tools,
+            mapper: (data) =>
+              (data as {
+                structuredContent: {
+                  tools: {
+                    name: string;
+                    inputSchema: any;
+                    outputSchema?: any;
+                    description: string;
+                  }[];
+                };
+              }).structuredContent.tools,
           }, options);
 
           return data as {

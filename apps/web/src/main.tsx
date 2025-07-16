@@ -101,6 +101,10 @@ const Settings = lazy(() =>
   wrapWithUILoadingFallback(import("./components/settings/page.tsx"))
 );
 
+const Monitor = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/monitor/page.tsx"))
+);
+
 const TriggerList = lazy(() =>
   wrapWithUILoadingFallback(import("./components/triggers/list.tsx"))
 );
@@ -307,6 +311,7 @@ const router = createBrowserRouter([
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:id", Component: TriggerDetails },
           { path: "settings", Component: Settings },
+          { path: "monitor", Component: Monitor },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
           { path: "views/:id", Component: ViewDetail },

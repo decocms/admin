@@ -7,7 +7,6 @@ Agents that integrate seamlessly with your internal tools and data._
 
 ## Requirements
 
-- Deno
 - Node/NPM
 
 ## How to run
@@ -26,7 +25,7 @@ You can copy the `.env.example` file as a starting point:
 cp apps/web/.env.example apps/web/.env
 ```
 
-1. Run `deno install` to install dependencies
+1. Run `npm install` to install dependencies
 2. Run `npm start`
 
 ---

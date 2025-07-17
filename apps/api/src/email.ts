@@ -29,14 +29,12 @@ export function email(
   return contextStorage.run({ env, ctx }, async () => {
     const { EmailMessage } = await import("cloudflare:email");
     const db = getServerClient(env.SUPABASE_URL, env.SUPABASE_SERVER_TOKEN);
-    const stub: <
-      Constructor extends ActorConstructor<AIAgent>,
-    >(
+    const stub: <Constructor extends ActorConstructor<AIAgent>>(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
-        // @ts-expect-error - TODO: fix actors types
-        ? runtime.stub(c, env)
+        ? // @ts-expect-error - TODO: fix actors types
+          runtime.stub(c, env)
         : actors.stub(c.name);
     };
     const originalMessageId = message.headers.get("Message-ID");
@@ -85,13 +83,11 @@ export function email(
     msg.setSubject(replySubject); // Use the threaded subject instead of generic text
 
     const targetEmail = message.to;
-    const { data, error } = await db.from("deco_chat_channels").select(
-      "*, deco_chat_agents(id)",
-    )
-      .eq(
-        "discriminator",
-        targetEmail,
-      ).single();
+    const { data, error } = await db
+      .from("deco_chat_channels")
+      .select("*, deco_chat_agents(id)")
+      .eq("discriminator", targetEmail)
+      .single();
 
     if (error) {
       throw new Error(error.message);
@@ -106,14 +102,19 @@ export function email(
       `${data.workspace}/Agents/${firstAgent.id}`,
     );
 
-    const stream = await agent.stream([{
-      id: crypto.randomUUID(),
-      role: "user",
-      content: await readContent(message),
-    }], {
-      threadId: originalMessageId,
-      resourceId: originalMessageId,
-    });
+    const stream = await agent.stream(
+      [
+        {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: await readContent(message),
+        },
+      ],
+      {
+        threadId: originalMessageId,
+        resourceId: originalMessageId,
+      },
+    );
 
     let text = "";
     await processDataStream({

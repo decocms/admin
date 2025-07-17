@@ -11,15 +11,13 @@ export const withActorsStubMiddleware: MiddlewareHandler<AppEnv> = async (
   next,
 ) => {
   const stub: <
-    Constructor extends
-      | ActorConstructor<Trigger>
-      | ActorConstructor<AIAgent>,
+    Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
   >(
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>> = (c) => {
     return runtime instanceof ActorCfRuntime
-      // @ts-expect-error - TODO: fix actors types
-      ? runtime.stub(c, ctx.env)
+      ? // @ts-expect-error - TODO: fix actors types
+        runtime.stub(c, ctx.env)
       : actors.stub(c.name);
   };
 

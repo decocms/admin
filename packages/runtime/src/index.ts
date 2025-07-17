@@ -15,9 +15,10 @@ export {
 } from "./mcp.ts";
 
 export interface WorkspaceDB {
-  query: (
-    params: { sql: string; params: string[] },
-  ) => Promise<{ result: QueryResult[] }>;
+  query: (params: {
+    sql: string;
+    params: string[];
+  }) => Promise<{ result: QueryResult[] }>;
 }
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
@@ -139,10 +140,7 @@ export const withBindings = <TEnv>(
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
-    env[binding.name] = creatorByType[binding.type](
-      binding as any,
-      env,
-    );
+    env[binding.name] = creatorByType[binding.type](binding as any, env);
   }
 
   withDefaultBindings(env, env.DECO_CHAT_REQUEST_CONTEXT);
@@ -183,9 +181,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         }
         const toolCallInput = await req.json();
         const result = await server.callTool({
-          env: withBindings(env, getReqToken(req)) as
-            & TEnv
-            & DefaultEnv<TSchema>,
+          env: withBindings(env, getReqToken(req)) as TEnv &
+            DefaultEnv<TSchema>,
           ctx,
           req,
           toolCallId,
@@ -198,12 +195,10 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
           },
         });
       }
-      return userFns.fetch?.(
-        req,
-        withBindings(env, getReqToken(req)) as any,
-        ctx,
-      ) ||
-        new Response("Not found", { status: 404 });
+      return (
+        userFns.fetch?.(req, withBindings(env, getReqToken(req)) as any, ctx) ||
+        new Response("Not found", { status: 404 })
+      );
     },
   };
 };

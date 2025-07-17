@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check": "tsc --noEmit"
   },
   "exports": {
     "./components/*": "./src/components/*",

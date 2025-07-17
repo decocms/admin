@@ -29,7 +29,7 @@ jobs:
         run: bun run fmt
 
       - name: Run type check
-        run: bun run bun:check:types
+        run: bun run bun:check
 
       - name: Run test
         run: bun run test

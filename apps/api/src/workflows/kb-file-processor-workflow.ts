@@ -26,8 +26,10 @@ interface Env extends Record<string, unknown> {
 /**
  * Cloudflare Workflow for processing knowledge base files
  */
-export class KbFileProcessorWorkflow
-  extends WorkflowEntrypoint<Env, BatchProcessorMessage> {
+export class KbFileProcessorWorkflow extends WorkflowEntrypoint<
+  Env,
+  BatchProcessorMessage
+> {
   override async run(
     event: WorkflowEvent<BatchProcessorMessage>,
     step: WorkflowStep,

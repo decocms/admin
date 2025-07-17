@@ -7,12 +7,10 @@
     "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "deno lint --config ./package.json .",
-    "fmt": "deno fmt --config ./package.json .",
-    "check": "deno check --allow-import --config ./package.json .",
-    "build": "PWD=$PWD/apps/web npm run build",
-    "check:types": "npm run check:types --workspaces",
-    "bun:check:types": "bun run --filter=* check:types",
+    "lint": "biome lint",
+    "fmt": "biome format",
+    "check": "npm run check --workspaces",
+    "bun:check": "bun run --filter=* check",
     "lint:write": "biome lint --write",
     "fmt:write": "biome format --write",
     "check:write": "biome check --write",
@@ -21,6 +19,7 @@
     "db:repair": "supabase migration repair --status reverted",
     "db:migration": "supabase migration up --linked --include-all",
     "db:migration:create": "supabase migration new",
+    "build": "PWD=$PWD/apps/web npm run build",
     "npm:build": "npm run build --workspace=apps/web",
     "db:types": "supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts"
   },
@@ -33,11 +32,5 @@
     "concurrently": "^9.2.0",
     "typescript": "^5.8.3",
     "vitest": "3.2.4"
-  },
-  "lint": {
-    "plugins": [
-      "./plugins/ensure-tailwind-design-system-tokens.ts",
-      "./plugins/enforce-kebab-case-file-names.ts"
-    ]
   }
 }

@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check:types": "tsc --noEmit"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/provider": "^1.1.3",

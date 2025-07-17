@@ -16,7 +16,7 @@ const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
 // Domains we consider "self"
 const SELF_DOMAINS: string[] = [
   Hosts.API,
-  ...env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS],
+  ...(env.VITE_USE_LOCAL_BACKEND ? [] : [Hosts.APPS]),
   `localhost:${env.PORT || 8000}`,
 ];
 
@@ -69,11 +69,7 @@ globalThis.fetch = async function patchedFetch(
 // Default export that wraps app with per-request context initializer
 export default {
   email,
-  fetch(
-    request: Request,
-    env: any,
-    ctx: ExecutionContext,
-  ): Promise<Response> {
+  fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
     return contextStorage.run({ env, ctx }, async () => {
       return await instrumentedApp.fetch!(
         request as Request<unknown, IncomingRequestCfProperties<unknown>>,

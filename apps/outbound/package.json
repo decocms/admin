@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "deno serve -A --port 3001 --unstable-hmr --unstable-kv --env-file=../web/.env main.ts",
     "dev:wrangler": "wrangler dev --port 3001",
-    "check:types": "tsc --noEmit",
+    "check": "tsc --noEmit",
     "wrangler:types": "wrangler types"
   },
   "dependencies": {

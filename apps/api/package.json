@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --port 3001",
-    "check:types": "tsc --noEmit",
+    "check": "tsc --noEmit",
     "stripe:test": "stripe fixtures testing/stripe/fixtures/workspace-wallet-deposit.json",
     "wrangler:types": "wrangler types"
   },

@@ -76,9 +76,11 @@ interface KnowledgeBaseFileListProps {
   files: KnowledgeFile[];
 }
 
-export function KnowledgeBaseFileList(
-  { files, agentId, integration }: KnowledgeBaseFileListProps,
-) {
+export function KnowledgeBaseFileList({
+  files,
+  agentId,
+  integration,
+}: KnowledgeBaseFileListProps) {
   const prefix = agentKnowledgeBasePath(agentId);
   const removeFile = useDeleteFile();
   const knowledgeDeleteFile = useKnowledgeDeleteFile();
@@ -100,14 +102,14 @@ export function KnowledgeBaseFileList(
           {/* name */}
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium truncate">
-              {(file.status === "processing" || file.status === "failed" ||
+              {(file.status === "processing" ||
+                file.status === "failed" ||
                 file.uploading) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
                         className={cn(
-                          // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
                           "text-xs bg-gray-400 w-2 h-2 rounded-full inline-block mr-2",
                           file.status === "processing" && "bg-yellow-600",
                           file.status === "failed" && "bg-red-600",
@@ -119,10 +121,10 @@ export function KnowledgeBaseFileList(
                       {file.uploading
                         ? "Uploading"
                         : file.status === "processing"
-                        ? "Processing"
-                        : file.status === "failed"
-                        ? "Failed"
-                        : "Unknown status"}
+                          ? "Processing"
+                          : file.status === "failed"
+                            ? "Failed"
+                            : "Unknown status"}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -136,17 +138,13 @@ export function KnowledgeBaseFileList(
                 </span>
               )}
               {file.uploading && (
-                <span className="text-xs text-primary">
-                  Uploading...
-                </span>
+                <span className="text-xs text-primary">Uploading...</span>
               )}
 
               {knowledgeDeleteFile.isPending &&
                 knowledgeDeleteFile.variables.fileUrl === file.fileUrl && (
-                <span className="text-xs text-primary">
-                  removing...
-                </span>
-              )}
+                  <span className="text-xs text-primary">removing...</span>
+                )}
             </div>
           </div>
 
@@ -164,18 +162,22 @@ export function KnowledgeBaseFileList(
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                disabled={removeFile.isPending &&
-                  removeFile.variables.path === file.fileUrl}
+                disabled={
+                  removeFile.isPending &&
+                  removeFile.variables.path === file.fileUrl
+                }
                 onClick={() => {
                   if (knowledgeDeleteFile.isPending) return;
-                  file.path && removeFile.mutateAsync({
-                    root: prefix,
-                    path: file.path,
-                  });
-                  file.fileUrl && knowledgeDeleteFile.mutateAsync({
-                    fileUrl: file.fileUrl,
-                    connection: integration?.connection,
-                  });
+                  file.path &&
+                    removeFile.mutateAsync({
+                      root: prefix,
+                      path: file.path,
+                    });
+                  file.fileUrl &&
+                    knowledgeDeleteFile.mutateAsync({
+                      fileUrl: file.fileUrl,
+                      connection: integration?.connection,
+                    });
                 }}
                 className="text-destructive focus:text-destructive"
               >
@@ -195,9 +197,10 @@ interface AddFileToKnowledgeProps {
   uploadKnowledgeFiles: (files: File[]) => Promise<void>;
 }
 
-export function AddFileToKnowledgeButton(
-  { uploadKnowledgeFiles, disabled = false }: AddFileToKnowledgeProps,
-) {
+export function AddFileToKnowledgeButton({
+  uploadKnowledgeFiles,
+  disabled = false,
+}: AddFileToKnowledgeProps) {
   const [isUploading, setIsUploading] = useState(false);
   const knowledgeFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -240,10 +243,7 @@ export function AddFileToKnowledgeButton(
         onClick={triggerFileInput}
         disabled={isUploading || disabled}
       >
-        <Icon
-          name="add"
-          size={16}
-        />
+        <Icon name="add" size={16} />
         Add file
       </Button>
     </div>

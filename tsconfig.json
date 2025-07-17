@@ -63,7 +63,7 @@
 
     // Misc
     "forceConsistentCasingInFileNames": true,
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true

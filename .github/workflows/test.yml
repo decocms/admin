@@ -16,24 +16,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          deno-version: v2.x
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
-        run: deno install
+        run: npm ci
 
       - name: Run lint
-        run: deno run lint
+        run: npm run lint
 
-      - name: Run format
-        run: deno run fmt --check
+      - name: Run format check
+        run: npm run fmt
 
-      - name: Run check
-        env:
-          DENO_V8_FLAGS: --max-old-space-size=16384
-        run: deno run check
+      - name: Run type check
+        run: npm run check
 
-      - name: Run test
-        run: deno test --no-check
+      - name: Run tests
+        run: npm test

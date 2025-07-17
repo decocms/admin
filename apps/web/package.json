@@ -58,9 +58,10 @@
     "@types/json-schema": "^7.0.15",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react-swc": "^3.8.0",
+    "react-scan": "^0.4.3",
     "tailwindcss": "^4.1.1",
-    "vite": "^6.3.5",
-    "react-scan": "^0.4.3"
+    "vite": "^6.3.5"
   }
 }

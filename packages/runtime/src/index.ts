@@ -73,16 +73,26 @@ interface BindingTypeMap {
   mcp: MCPBinding;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  user_metadata: {
+    avatar_url: string;
+    full_name: string;
+    picture: string;
+    [key: string]: unknown;
+  };
+}
+
 export interface RequestContext<
   TSchema extends z.ZodTypeAny = any,
-  TUser = unknown,
 > {
   state: z.infer<TSchema>;
   token: string;
   workspace: string;
   ensureAuthenticated: (
     options?: { workspaceHint?: string },
-  ) => TUser | undefined;
+  ) => User | undefined;
 }
 
 // 2. Map binding type to its creator function
@@ -129,7 +139,7 @@ export class UnauthorizedError extends Error {
 const AUTH_CALLBACK_ENDPOINT = "/auth/callback";
 
 const AUTHENTICATED = (user?: unknown) => () => {
-  return user;
+  return user as User;
 };
 export const withBindings = <TEnv>(
   _env: TEnv,

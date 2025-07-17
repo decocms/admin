@@ -6,7 +6,8 @@ import type { AppEnv } from "../utils/context.ts";
 
 const tryParseUser = (user: unknown) => {
   if (typeof user === "string") {
-    return JSON.parse(user);
+    const { id, email, user_metadata } = JSON.parse(user);
+    return { id, email, user_metadata };
   }
   return user;
 };

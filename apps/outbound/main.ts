@@ -8,26 +8,20 @@ const Hosts = {
 
 type Client = ReturnType<typeof createServerClient>;
 let client: Client | undefined;
-const getServerClient = (
-  supabaseUrl: string,
-  supabaseKey: string,
-): Client => {
-  client ??= createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    { cookies: { getAll: () => [] } },
-  );
+const getServerClient = (supabaseUrl: string, supabaseKey: string): Client => {
+  client ??= createServerClient(supabaseUrl, supabaseKey, {
+    cookies: { getAll: () => [] },
+  });
 
   return client;
 };
 
-interface Env {
+interface EnvWithSecrets extends Env {
   DECO_CHAT_APP_ORIGIN: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
   DECO_CHAT_API_JWT_PRIVATE_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVER_TOKEN: string;
-  DECO_CHAT_API: Service;
 }
 
 const wellKnownHosts = Object.values(Hosts) as string[];
@@ -36,31 +30,23 @@ const isWellKnownHost = (host: string): boolean => {
 };
 
 export default {
-  fetch: async (req: Request, env: Env) => {
+  fetch: async (req: Request, env: EnvWithSecrets) => {
     try {
       const host = req.headers.get("host") ?? new URL(req.url).hostname;
       const fetcher = isWellKnownHost(host)
         ? (req: Request, opts?: RequestInit) =>
-          env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
+            env?.DECO_CHAT_API?.fetch(req, opts) ?? fetch(req, opts)
         : fetch;
       const isAuthorized = typeof req.headers.get("Authorization") === "string";
-      if (host !== Hosts.API || isAuthorized) { // just forward the request to the target url
-        return fetcher(
-          req,
-        );
+      if (host !== Hosts.API || isAuthorized) {
+        // just forward the request to the target url
+        return fetcher(req);
       }
 
       // otherwise, we need to authenticate the request
-      const {
-        DECO_CHAT_APP_ORIGIN,
-        SUPABASE_URL,
-        SUPABASE_SERVER_TOKEN,
-      } = env;
+      const { DECO_CHAT_APP_ORIGIN, SUPABASE_URL, SUPABASE_SERVER_TOKEN } = env;
 
-      if (
-        !DECO_CHAT_APP_ORIGIN || !SUPABASE_URL ||
-        !SUPABASE_SERVER_TOKEN
-      ) {
+      if (!DECO_CHAT_APP_ORIGIN || !SUPABASE_URL || !SUPABASE_SERVER_TOKEN) {
         return new Response("Missing environment variables", { status: 500 });
       }
 
@@ -86,10 +72,12 @@ export default {
       if (!issuer) {
         return fetcher(req);
       }
-      const token = await issuer.issue({
-        sub: `app:${DECO_CHAT_APP_ORIGIN}`,
-        aud: data?.workspace,
-      }).catch(() => null);
+      const token = await issuer
+        .issue({
+          sub: `app:${DECO_CHAT_APP_ORIGIN}`,
+          aud: data?.workspace,
+        })
+        .catch(() => null);
 
       if (!token) {
         return fetcher(req);
@@ -113,4 +101,4 @@ export default {
       );
     }
   },
-};
+} satisfies ExportedHandler<EnvWithSecrets>;

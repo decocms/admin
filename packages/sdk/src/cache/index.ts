@@ -90,12 +90,6 @@ export class WebCache<TCachedValue> {
     return cache.delete(cacheKey);
   }
 
-  async clear(): Promise<void> {
-    const cache = await this.cache;
-    const keys = await cache.keys();
-    await Promise.all(keys.map((key) => cache.delete(key)));
-  }
-
   async has(key: string): Promise<boolean> {
     const cache = await this.cache;
     const cacheKey = this.createCacheKey(key);

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "scripts": {
+    "check:types": "tsc --build --noEmit"
+  },
   "dependencies": {
     "cloudflare": "^4.2.0",
     "@deco/sdk": "^0.1.1",

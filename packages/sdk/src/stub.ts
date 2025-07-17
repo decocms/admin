@@ -39,7 +39,7 @@ export const stub = <T extends Actor>(name: string) => {
           });
         },
         createWebSocket: (url) => {
-          return new WebSocket(url);
+          return new WebSocket(url.toString());
         },
       },
     },

@@ -3,6 +3,9 @@
   "version": "0.1.1",
   "type": "module",
   "private": true,
+  "scripts": {
+    "check:types": "tsc --build --noEmit"
+  },
   "dependencies": {
     "@mastra/cloudflare-d1": "^0.12.1",
     "@mastra/rag": "^1.0.2",

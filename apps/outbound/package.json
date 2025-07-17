@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "deno serve -A --port 3001 --unstable-hmr --unstable-kv --env-file=../web/.env main.ts",
-    "dev:wrangler": "wrangler dev --port 3001"
+    "dev:wrangler": "wrangler dev --port 3001",
+    "check:types": "tsc --noEmit",
+    "wrangler:types": "wrangler types"
   },
   "dependencies": {
     "jose": "^6.0.11",
@@ -13,7 +15,8 @@
     "@supabase/supabase-js": "2.49.4"
   },
   "devDependencies": {
-    "wrangler": "^4.13.2"
+    "wrangler": "^4.13.2",
+    "@types/node": "24.0.14"
   },
   "engines": {
     "node": ">=20.0.0"

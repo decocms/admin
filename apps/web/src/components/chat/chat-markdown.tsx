@@ -87,7 +87,7 @@ function LazyHighlighterFallback() {
 function Table(props: React.HTMLAttributes<HTMLTableElement>) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tableToCsv = useCallback((table: HTMLTableElement | null): string => {
     if (!table) return "";

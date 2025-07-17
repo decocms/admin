@@ -77,12 +77,10 @@ function JsonTreeNode({
   data,
   keyName,
   level = 0,
-  _isLast = false,
 }: {
   data: unknown;
   keyName?: string;
   level?: number;
-  _isLast?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(level < 2); // Auto-expand first 2 levels
 
@@ -214,13 +212,12 @@ function JsonTreeNode({
 
       {isExpanded && (
         <div className="border-l border-border ml-2">
-          {entries.map(([key, value], index) => (
+          {entries.map(([key, value]) => (
             <JsonTreeNode
               key={key}
               data={value}
               keyName={key}
               level={level + 1}
-              _isLast={index === entries.length - 1}
             />
           ))}
         </div>

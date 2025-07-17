@@ -27,7 +27,6 @@ export function email(
   ctx: ExecutionContext,
 ) {
   return contextStorage.run({ env, ctx }, async () => {
-    // @ts-ignore: this is an import from cf
     const { EmailMessage } = await import("cloudflare:email");
     const db = getServerClient(env.SUPABASE_URL, env.SUPABASE_SERVER_TOKEN);
     const stub: <
@@ -36,6 +35,7 @@ export function email(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
+        // @ts-expect-error - TODO: fix actors types
         ? runtime.stub(c, env)
         : actors.stub(c.name);
     };
@@ -80,6 +80,7 @@ export function email(
     msg.setSender(message.to);
     msg.setRecipient(message.from);
     const cc = message.headers.get("Cc");
+    // @ts-expect-error - TODO(CAMUDO) - Check with candeia if this is correct or if we should delete this code
     cc && msg.setCc(message.cc);
     msg.setSubject(replySubject); // Use the threaded subject instead of generic text
 

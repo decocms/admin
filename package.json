@@ -11,6 +11,8 @@
     "fmt": "deno fmt --config ./package.json .",
     "check": "deno check --allow-import --config ./package.json .",
     "build": "PWD=$PWD/apps/web npm run build",
+    "check:types": "npm run check:types --workspaces",
+    "bun:check:types": "bun run --filter=* check:types",
     "lint:write": "biome lint --write",
     "fmt:write": "biome format --write",
     "check:write": "biome check --write",

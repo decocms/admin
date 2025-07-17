@@ -18,7 +18,8 @@ export const withActorsStubMiddleware: MiddlewareHandler<AppEnv> = async (
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>> = (c) => {
     return runtime instanceof ActorCfRuntime
-      ? runtime.stub(c, ctx.env as unknown as AppEnv)
+      // @ts-expect-error - TODO: fix actors types
+      ? runtime.stub(c, ctx.env)
       : actors.stub(c.name);
   };
 

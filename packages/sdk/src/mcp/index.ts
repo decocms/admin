@@ -34,6 +34,7 @@ import * as walletAPI from "./wallet/api.ts";
 import * as whatsappAPI from "./whatsapp/api.ts";
 import * as databasesAPI from "./databases/api.ts";
 import * as registryAPI from "./registry/api.ts";
+import * as oauthAPI from "./oauth/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -158,6 +159,7 @@ export const WORKSPACE_TOOLS = [
   apiKeysAPI.validateApiKey,
   databasesAPI.runSql,
   aiAPI.aiGenerate,
+  oauthAPI.oauthCodeCreate,
 ] as const;
 
 export const AGENT_TOOLS = [

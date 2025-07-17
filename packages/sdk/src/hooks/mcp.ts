@@ -425,3 +425,31 @@ export const useInstallFromMarketplace = () => {
 
   return mutation;
 };
+
+export const useCreateOAuthCodeForIntegration = () => {
+  const mutation = useMutation({
+    mutationFn: async (params: {
+      integrationId: string;
+      workspace: string;
+      redirectUri: string;
+      state?: string;
+    }) => {
+      const { integrationId, workspace, redirectUri, state } = params;
+
+      const { code } = await MCPClient.forWorkspace(workspace)
+        .OAUTH_CODE_CREATE({
+          integrationId,
+        });
+
+      const url = new URL(redirectUri);
+      url.searchParams.set("code", code);
+      state && url.searchParams.set("state", state);
+
+      return {
+        redirectTo: url.toString(),
+      };
+    },
+  });
+
+  return mutation;
+};

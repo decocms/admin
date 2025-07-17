@@ -1,5 +1,13 @@
-import { type Integration, SDKProvider, type Team, useIntegrations, useTeams } from "@deco/sdk";
-import { Suspense, useState } from "react";
+import {
+  type Integration,
+  SDKProvider,
+  type Team,
+  useCreateOAuthCodeForIntegration,
+  useIntegrations,
+  useTeams,
+  type Workspace,
+} from "@deco/sdk";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { z } from "zod";
 import {
@@ -19,11 +27,14 @@ import { useUser } from "../../hooks/use-user.ts";
 const OAuthSearchParamsSchema = z.object({
   client_id: z.string(),
   redirect_uri: z.string(),
-  next: z.string().optional(),
+  state: z.string().optional(),
   workspace_hint: z.string().optional(),
 });
 
-const preSelectTeam = (teams: CurrentTeam[], workspace_hint: string | undefined) => {
+const preSelectTeam = (
+  teams: CurrentTeam[],
+  workspace_hint: string | undefined,
+) => {
   if (teams.length === 1) {
     return teams[0];
   }
@@ -46,41 +57,155 @@ const useAppIntegrations = (appName: string) => {
     }
     return false;
   });
-}
+};
 
 const preSelectIntegration = (integrations: Integration[]) => {
   if (integrations.length === 1) {
     return integrations[0];
   }
   return null;
-}
+};
 
-function ShowInstalls({ appName }: { team: CurrentTeam, appName: string }) {
+function ShowInstalls({
+  appName,
+  setSelectedIntegration,
+  selectedIntegration,
+}: {
+  appName: string;
+  setSelectedIntegration: (integration: Integration | null) => void;
+  selectedIntegration: Integration | null;
+}) {
   const matchingIntegrations = useAppIntegrations(appName);
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(preSelectIntegration(matchingIntegrations));
 
-  if (!selectedIntegration) {
+  useEffect(() => {
+    setSelectedIntegration(preSelectIntegration(matchingIntegrations));
+  }, [appName]);
+
+  const [showIntegrationSelector, setShowIntegrationSelector] = useState(false);
+
+  if (!matchingIntegrations || matchingIntegrations.length === 0) {
     return <div>No integrations found</div>;
   }
 
-  if (selectedIntegration) {
+  if (!selectedIntegration) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="text-center space-y-6">
+          <h1 className="text-2xl font-bold">Select an integration</h1>
+          <p className="text-muted-foreground">
+            Choose which integration to install
+          </p>
+
+          <div className="w-full max-w-sm">
+            <Select
+              value=""
+              onValueChange={(value) =>
+                setSelectedIntegration(
+                  matchingIntegrations.find((integration) =>
+                    integration.id === value
+                  ) ?? null,
+                )}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an integration" />
+              </SelectTrigger>
+              <SelectContent>
+                {matchingIntegrations.map((integration) => (
+                  <SelectItem key={integration.id} value={integration.id}>
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        url={integration.icon}
+                        fallback={integration.name}
+                        size="sm"
+                        shape="square"
+                        objectFit="contain"
+                      />
+                      <span>{integration.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      <div className="flex items-center gap-4 p-4 border rounded-xl bg-card">
         <Avatar
           url={selectedIntegration.icon}
           fallback={selectedIntegration.name}
           size="lg"
           shape="square"
+          objectFit="contain"
         />
-        <h1 className="text-2xl font-bold">{selectedIntegration.name}</h1>
-        <p className="text-muted-foreground">{selectedIntegration.description}</p>
+        <div className="text-left">
+          <h3 className="font-semibold">{selectedIntegration.name}</h3>
+          <p className="text-sm text-muted-foreground">
+            {selectedIntegration.description}
+          </p>
+        </div>
       </div>
-    );
-  }
+
+      {matchingIntegrations.length > 1 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowIntegrationSelector(!showIntegrationSelector)}
+          className="gap-2"
+        >
+          <Icon name="edit" size={16} />
+          Change integration
+        </Button>
+      )}
+
+      {showIntegrationSelector && (
+        <div className="w-full max-w-sm space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Select a different integration:
+          </p>
+          <Select
+            value={selectedIntegration?.id}
+            onValueChange={(value) => {
+              setSelectedIntegration(
+                matchingIntegrations.find((integration) =>
+                  integration.id === value
+                ) ?? null,
+              );
+              setShowIntegrationSelector(false);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select an integration" />
+            </SelectTrigger>
+            <SelectContent>
+              {matchingIntegrations.map((integration) => (
+                <SelectItem key={integration.id} value={integration.id}>
+                  <div className="flex items-center gap-3">
+                    <Avatar
+                      url={integration.icon}
+                      fallback={integration.name}
+                      size="sm"
+                      shape="square"
+                      objectFit="contain"
+                    />
+                    <span>{integration.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AppsOAuth(
-  { client_id, redirect_uri, next, workspace_hint }: z.infer<
+  { client_id, redirect_uri, state, workspace_hint }: z.infer<
     typeof OAuthSearchParamsSchema
   >,
 ) {
@@ -90,6 +215,19 @@ function AppsOAuth(
     preSelectTeam(teams, workspace_hint),
   );
   const [showTeamSelector, setShowTeamSelector] = useState(false);
+  const [selectedIntegration, setSelectedIntegration] = useState<
+    Integration | null
+  >(null);
+
+  const createOAuthCode = useCreateOAuthCodeForIntegration();
+
+  const selectedWorkspace = useMemo(() => {
+    if (!team) {
+      return null;
+    }
+
+    return team.id === user.id ? `users/${user.id}` : `shared/${team.slug}`;
+  }, [team]);
 
   if (!teams || teams.length === 0) {
     return (
@@ -104,7 +242,7 @@ function AppsOAuth(
     );
   }
 
-  if (!team) {
+  if (!selectedWorkspace || !team) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <div className="text-center space-y-6">
@@ -212,12 +350,34 @@ function AppsOAuth(
           </div>
         )}
 
-        <SDKProvider workspace={team.id === user.id ? `users/${user.id}` : `shared/${team.slug}`}>
-          <ShowInstalls team={team} appName={client_id} />
+        <SDKProvider
+          workspace={selectedWorkspace as Workspace}
+        >
+          <ShowInstalls
+            appName={client_id}
+            setSelectedIntegration={setSelectedIntegration}
+            selectedIntegration={selectedIntegration}
+          />
         </SDKProvider>
 
         <div className="pt-4">
-          <Button className="w-full">
+          <Button
+            className="w-full"
+            onClick={async () => {
+              if (!selectedIntegration) {
+                return;
+              }
+
+              const { redirectTo } = await createOAuthCode.mutateAsync({
+                integrationId: selectedIntegration?.id,
+                workspace: selectedWorkspace,
+                redirectUri: redirect_uri,
+                state,
+              });
+
+              globalThis.location.href = redirectTo;
+            }}
+          >
             Continue with {team.label}
           </Button>
         </div>

@@ -461,14 +461,19 @@ export const getIntegration = createIntegrationManagementTool({
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
-  inputSchema: IntegrationSchema.partial(),
-  handler: async (integration, c) => {
+  inputSchema: IntegrationSchema
+    .partial()
+    .omit({ appName: true }),
+  handler: async (_integration, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { appId, ...integration } = _integration;
 
     const payload = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
+      app_id: appId ?? undefined,
       workspace: c.workspace.value,
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };

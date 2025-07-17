@@ -327,7 +327,7 @@ app.get("/apps/oauth", (c) => {
   target.search = url.search;
 
   return c.redirect(target.href);
-})
+});
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));

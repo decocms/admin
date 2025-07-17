@@ -5,6 +5,9 @@ import { honoCtxToAppCtx } from "../api.ts";
 import type { AppEnv } from "../utils/context.ts";
 
 export const handleCodeExchange = async (c: Context<AppEnv>) => {
+  try {
+    
+  console.log("handleCodeExchange");
   const appCtx = honoCtxToAppCtx(c);
 
   const { code } = await c.req.json();
@@ -29,5 +32,11 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
   const issuer = await JwtIssuer.forKeyPair(keyPair);
   const token = await issuer.issue(claims);
 
+  console.log("token", token);
+
   return c.json({ access_token: token });
+  } catch (error) {
+    console.error(error);
+    throw new HTTPException(500, { message: "Failed to exchange code" });
+  }
 };

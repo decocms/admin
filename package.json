@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "deno run -A npm:concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+    "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "PWD=$PWD/apps/web deno run build",
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",
@@ -58,7 +60,10 @@
     "raw-imports"
   ],
   "devDependencies": {
-    "supabase": "^2.22.12"
+    "supabase": "^2.22.12",
+    "concurrently": "^9.2.0",
+    "typescript": "^5.8.3",
+    "vitest": "3.2.4"
   },
   "lint": {
     "plugins": [

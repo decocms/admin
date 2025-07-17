@@ -1,46 +1,46 @@
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { generateDefaultValue } from "./generate-default-value.ts";
+import { generateDefaultValue } from "../src/components/json-schema/utils/generate-default-value.ts";
 import type { JSONSchema7 } from "json-schema";
+import { test, expect } from "vitest";
 
-Deno.test("generateDefaultValue - primitive types", () => {
+test("generateDefaultValue - primitive types", () => {
   // Test string
   const stringSchema: JSONSchema7 = { type: "string" };
-  assertEquals(generateDefaultValue(stringSchema), "");
+  expect(generateDefaultValue(stringSchema)).toBe("");
 
   // Test number
   const numberSchema: JSONSchema7 = { type: "number" };
-  assertEquals(generateDefaultValue(numberSchema), 0);
+  expect(generateDefaultValue(numberSchema)).toBe(0);
 
   // Test integer
   const integerSchema: JSONSchema7 = { type: "integer" };
-  assertEquals(generateDefaultValue(integerSchema), 0);
+  expect(generateDefaultValue(integerSchema)).toBe(0);
 
   // Test boolean
   const booleanSchema: JSONSchema7 = { type: "boolean" };
-  assertEquals(generateDefaultValue(booleanSchema), false);
+  expect(generateDefaultValue(booleanSchema)).toBe(false);
 
   // Test null
   const nullSchema: JSONSchema7 = { type: "null" };
-  assertEquals(generateDefaultValue(nullSchema), null);
+  expect(generateDefaultValue(nullSchema)).toBe(null);
 });
 
-Deno.test("generateDefaultValue - with default values", () => {
+test("generateDefaultValue - with default values", () => {
   // Test schema with default value
   const schemaWithDefault: JSONSchema7 = {
     type: "string",
     default: "Default Value",
   };
-  assertEquals(generateDefaultValue(schemaWithDefault), "Default Value");
+  expect(generateDefaultValue(schemaWithDefault)).toBe("Default Value");
 
   // Test number with default
   const numberWithDefault: JSONSchema7 = {
     type: "number",
     default: 42,
   };
-  assertEquals(generateDefaultValue(numberWithDefault), 42);
+  expect(generateDefaultValue(numberWithDefault)).toBe(42);
 });
 
-Deno.test("generateDefaultValue - with default values that not match schema", () => {
+test("generateDefaultValue - with default values that not match schema", () => {
   // Test schema with default value
   const schemaWithDefault: JSONSchema7 = {
     type: "string",
@@ -48,8 +48,7 @@ Deno.test("generateDefaultValue - with default values that not match schema", ()
   };
   const wrongValue = 1;
   // We preserve form data even if it doesn't match the schema type
-  assertEquals(
-    generateDefaultValue(schemaWithDefault, wrongValue),
+  expect(generateDefaultValue(schemaWithDefault, wrongValue)).toBe(
     "Default Value",
   );
 
@@ -62,19 +61,19 @@ Deno.test("generateDefaultValue - with default values that not match schema", ()
   };
   const wrongNumberValue = "not a number";
   // Should use the default value for this special case
-  assertEquals(generateDefaultValue(numberWithDefault, wrongNumberValue), 42);
+  expect(generateDefaultValue(numberWithDefault, wrongNumberValue)).toBe(42);
 });
 
-Deno.test("generateDefaultValue - enum values", () => {
+test("generateDefaultValue - enum values", () => {
   // Test schema with enum values
   const enumSchema: JSONSchema7 = {
     type: "string",
     enum: ["option1", "option2", "option3"],
   };
-  assertEquals(generateDefaultValue(enumSchema), "option1");
+  expect(generateDefaultValue(enumSchema)).toBe("option1");
 });
 
-Deno.test("generateDefaultValue - object type", () => {
+test("generateDefaultValue - object type", () => {
   // Test simple object
   const objectSchema: JSONSchema7 = {
     type: "object",
@@ -88,11 +87,11 @@ Deno.test("generateDefaultValue - object type", () => {
   const result = generateDefaultValue(objectSchema) as Record<string, unknown>;
 
   // Should have the required property
-  assertExists(result.name);
-  assertEquals(result.name, "");
+  expect(result.name).toBeDefined();
+  expect(result.name).toBe("");
 
   // Should not have non-required property
-  assertEquals(result.age, undefined);
+  expect(result.age).toBeUndefined();
 
   // Test object with all required properties
   const allRequiredSchema: JSONSchema7 = {
@@ -109,12 +108,12 @@ Deno.test("generateDefaultValue - object type", () => {
     unknown
   >;
 
-  assertExists(allRequiredResult.name);
-  assertExists(allRequiredResult.age);
-  assertEquals(allRequiredResult.age, 0);
+  expect(allRequiredResult.name).toBeDefined();
+  expect(allRequiredResult.age).toBeDefined();
+  expect(allRequiredResult.age).toBe(0);
 });
 
-Deno.test("generateDefaultValue - object type with formData doesn't matching schema", () => {
+test("generateDefaultValue - object type with formData doesn't matching schema", () => {
   // Test simple object
   const objectSchema: JSONSchema7 = {
     type: "object",
@@ -131,11 +130,11 @@ Deno.test("generateDefaultValue - object type with formData doesn't matching sch
   }) as Record<string, unknown>;
 
   // Should have the required property
-  assertExists(result.name);
-  assertEquals(result.name, "Name ok");
+  expect(result.name).toBeDefined();
+  expect(result.name).toBe("Name ok");
 
   // Should not have non-required property
-  assertEquals(result.age, undefined);
+  expect(result.age).toBeUndefined();
 
   // Test object with all required properties
   const allRequiredSchema: JSONSchema7 = {
@@ -152,12 +151,12 @@ Deno.test("generateDefaultValue - object type with formData doesn't matching sch
     age: "wrong",
   }) as Record<string, unknown>;
 
-  assertExists(allRequiredResult.name);
-  assertExists(allRequiredResult.age);
-  assertEquals(allRequiredResult.age, 0);
+  expect(allRequiredResult.name).toBeDefined();
+  expect(allRequiredResult.age).toBeDefined();
+  expect(allRequiredResult.age).toBe(0);
 });
 
-Deno.test("generateDefaultValue - nested objects", () => {
+test("generateDefaultValue - nested objects", () => {
   // Test nested object
   const nestedSchema: JSONSchema7 = {
     type: "object",
@@ -185,14 +184,14 @@ Deno.test("generateDefaultValue - nested objects", () => {
   const result = generateDefaultValue(nestedSchema) as Record<string, any>;
 
   // Check nested structure
-  assertExists(result.user);
-  assertExists(result.user.name);
-  assertExists(result.user.address);
-  assertExists(result.user.address.street);
-  assertEquals(result.user.address.city, undefined);
+  expect(result.user).toBeDefined();
+  expect(result.user.name).toBeDefined();
+  expect(result.user.address).toBeDefined();
+  expect(result.user.address.street).toBeDefined();
+  expect(result.user.address.city).toBeUndefined();
 });
 
-Deno.test("generateDefaultValue - array type", () => {
+test("generateDefaultValue - array type", () => {
   // Test empty array
   const arraySchema: JSONSchema7 = {
     type: "array",
@@ -200,7 +199,7 @@ Deno.test("generateDefaultValue - array type", () => {
   };
 
   const emptyArray = generateDefaultValue(arraySchema) as string[];
-  assertEquals(emptyArray, []);
+  expect(emptyArray).toEqual([]);
 
   // Test array with minItems
   const minItemsSchema: JSONSchema7 = {
@@ -210,12 +209,12 @@ Deno.test("generateDefaultValue - array type", () => {
   };
 
   const minItemsArray = generateDefaultValue(minItemsSchema) as number[];
-  assertEquals(minItemsArray.length, 2);
-  assertEquals(minItemsArray[0], 0);
-  assertEquals(minItemsArray[1], 0);
+  expect(minItemsArray.length).toBe(2);
+  expect(minItemsArray[0]).toBe(0);
+  expect(minItemsArray[1]).toBe(0);
 });
 
-Deno.test("generateDefaultValue - anyOf schema", () => {
+test("generateDefaultValue - anyOf schema", () => {
   // Test anyOf schema
   const anyOfSchema: JSONSchema7 = {
     anyOf: [
@@ -231,11 +230,11 @@ Deno.test("generateDefaultValue - anyOf schema", () => {
 
   // Should select a schema from anyOf options
   const result = generateDefaultValue(anyOfSchema);
-  assertNotEquals(result, null);
-  assertExists(result);
+  expect(result).not.toBeNull();
+  expect(result).toBeDefined();
 });
 
-Deno.test("generateDefaultValue - with form data", () => {
+test("generateDefaultValue - with form data", () => {
   const schema: JSONSchema7 = {
     type: "object",
     properties: {
@@ -253,11 +252,11 @@ Deno.test("generateDefaultValue - with form data", () => {
   >;
 
   // Should preserve form data values
-  assertEquals(result.name, "John");
-  assertEquals(result.age, 30);
+  expect(result.name).toBe("John");
+  expect(result.age).toBe(30);
 });
 
-Deno.test("generateDefaultValue - array with form data", () => {
+test("generateDefaultValue - array with form data", () => {
   const schema: JSONSchema7 = {
     type: "array",
     items: {
@@ -281,9 +280,9 @@ Deno.test("generateDefaultValue - array with form data", () => {
     value: number;
   }[];
 
-  assertEquals(result.length, 2);
-  assertEquals(result[0].name, "Item 1");
-  assertEquals(result[0].value, 10);
-  assertEquals(result[1].name, "Item 2");
-  assertEquals(result[1].value, 20);
+  expect(result.length).toBe(2);
+  expect(result[0].name).toBe("Item 1");
+  expect(result[0].value).toBe(10);
+  expect(result[1].name).toBe("Item 2");
+  expect(result[1].value).toBe(20);
 });

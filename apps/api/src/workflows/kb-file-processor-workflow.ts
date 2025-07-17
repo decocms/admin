@@ -1,11 +1,12 @@
 import type {
   Workflow,
-  WorkflowEvent,
-  WorkflowStep,
 } from "@cloudflare/workers-types";
-import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
-
-const { WorkflowEntrypoint } = await import("cloudflare:workers");
+import {
+  WorkflowEntrypoint,
+  type WorkflowEvent,
+  type WorkflowStep
+} from "cloudflare:workers";
+import { type BatchProcessorMessage, processBatch, type KbFileProcessorMessage } from "@deco/sdk/workflows";
 
 // Environment interface for workflow
 interface Env extends Record<string, unknown> {
@@ -24,9 +25,9 @@ interface Env extends Record<string, unknown> {
  * Cloudflare Workflow for processing knowledge base files
  */
 export class KbFileProcessorWorkflow
-  extends WorkflowEntrypoint<Env, KbFileProcessorMessage> {
+  extends WorkflowEntrypoint<Env, BatchProcessorMessage> {
   override async run(
-    event: WorkflowEvent<KbFileProcessorMessage>,
+    event: WorkflowEvent<BatchProcessorMessage>,
     step: WorkflowStep,
   ) {
     const message = event.payload;

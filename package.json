@@ -24,17 +24,6 @@
     "apps/*",
     "packages/*"
   ],
-  "workspace": [
-    "./apps/web",
-    "./apps/api",
-    "./apps/outbound",
-    "./packages/ui",
-    "./packages/sdk",
-    "./packages/ai",
-    "./packages/cli",
-    "./packages/cli/template/base",
-    "./packages/runtime"
-  ],
   "compilerOptions": {
     "experimentalDecorators": true,
     "lib": [

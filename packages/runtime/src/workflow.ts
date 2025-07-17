@@ -43,7 +43,7 @@ export interface WorkflowDO extends Rpc.DurableObjectBranded {
 }
 
 export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
-  return class Workflow extends DurableObject<DefaultEnv>
+  const wf: new (state: DurableObjectState, env: DefaultEnv) => DurableObject & WorkflowDO = class Workflow extends DurableObject<DefaultEnv>
     implements WorkflowDO {
     constructor(state: DurableObjectState, env: DefaultEnv) {
       super(state, env);
@@ -152,4 +152,6 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       };
     }
   };
+
+  return wf;
 };

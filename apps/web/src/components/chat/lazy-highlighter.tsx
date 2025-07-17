@@ -1,4 +1,5 @@
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+// @ts-ignore - correct 
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism/index.js";
 
 interface LazyHighlighterProps {

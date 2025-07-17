@@ -50,6 +50,7 @@ export async function getEnvVars(projectRoot?: string) {
     DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
     DECO_CHAT_API_TOKEN: session?.access_token ?? "",
     DECO_CHAT_BINDINGS: encodedBindings,
+    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8787",
   };
 
   if (config.local) {

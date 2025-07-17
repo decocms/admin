@@ -7,6 +7,7 @@ import {
   useTeamRoles,
   useUpdateMemberRole,
 } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -17,18 +18,17 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { Suspense, useDeferredValue, useMemo, useState } from "react";
-import { UserAvatar } from "../common/avatar/user.tsx";
 import { useUser } from "../../hooks/use-user.ts";
-import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
-import { toast } from "@deco/ui/components/sonner.tsx";
 import { RolesDropdown } from "../common/roles-dropdown.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { ActivityStatusCell, UserInfo } from "../common/table/table-cells.tsx";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 
 function MemberTableHeader({
   onChange,

@@ -1,5 +1,5 @@
+import { WebCache } from "@deco/sdk/cache";
 import type { ClientOf } from "@deco/sdk/http";
-import type { Workspace } from "@deco/sdk/path";
 import {
   MicroDollar,
   type Transaction,
@@ -7,8 +7,8 @@ import {
   WellKnownTransactions,
   WellKnownWallets,
 } from "@deco/sdk/mcp/wallet";
+import type { Workspace } from "@deco/sdk/path";
 import type { LanguageModelUsage } from "ai";
-import { WebCache } from "@deco/sdk/cache";
 
 export interface AgentWalletConfig {
   wallet: ClientOf<WalletAPI>;

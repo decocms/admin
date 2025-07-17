@@ -1,6 +1,6 @@
 import type {
-  PostgrestFilterBuilder,
   UnstableGetResult as GetResult,
+  PostgrestFilterBuilder,
 } from "@supabase/postgrest-js";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./schema.ts";

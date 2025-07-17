@@ -1,9 +1,9 @@
+import { Buffer } from "node:buffer";
 import { Confirm } from "@cliffy/prompt";
 import { walk } from "@std/fs";
+import { relative } from "@std/path/relative";
 import { createWorkspaceClient } from "../mcp.ts";
 import { getCurrentEnvVars } from "../wrangler.ts";
-import { relative } from "@std/path/relative";
-import { Buffer } from "node:buffer";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {

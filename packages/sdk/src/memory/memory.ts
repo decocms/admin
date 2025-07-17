@@ -1,14 +1,13 @@
+import { createOpenAI } from "@ai-sdk/openai";
 import type { Workspace } from "@deco/sdk/path";
 import type { Client as LibSQLClient } from "@libsql/client";
-import type { StorageThreadType } from "@mastra/core";
+import type { CoreMessage, StorageThreadType } from "@mastra/core";
 import type { SharedMemoryConfig } from "@mastra/core/memory";
+import { MemoryProcessor } from "@mastra/core/memory";
 import { Memory as MastraMemory } from "@mastra/memory";
+import type { TextPart, ToolCallPart } from "ai";
 import { slugify, slugifyForDNS, toAlphanumericId } from "../mcp/slugify.ts";
 import { LibSQLFactory, type LibSQLFactoryOpts } from "./libsql.ts";
-import { createOpenAI } from "@ai-sdk/openai";
-import { MemoryProcessor } from "@mastra/core/memory";
-import type { CoreMessage } from "@mastra/core";
-import type { TextPart, ToolCallPart } from "ai";
 
 export { slugify, slugifyForDNS, toAlphanumericId };
 type CreateThreadOpts = Parameters<MastraMemory["createThread"]>[0];

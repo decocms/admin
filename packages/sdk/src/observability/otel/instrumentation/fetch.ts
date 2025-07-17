@@ -1,7 +1,7 @@
 import {
   type Attributes,
-  type Context,
   context as api_context,
+  type Context,
   type Exception,
   propagation,
   SpanKind,
@@ -9,14 +9,14 @@ import {
   SpanStatusCode,
   trace,
 } from "@opentelemetry/api";
-import { getActiveConfig, type Initialiser, setConfig } from "../config.ts";
-import { wrap } from "../wrap.ts";
-import { instrumentEnv } from "./env.ts";
-import { exportSpans, proxyExecutionContext } from "./common.ts";
-import type { ResolvedTraceConfig } from "../types.ts";
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
-import { versionAttributes } from "./version.ts";
 import { REQUEST_CONTEXT_KEY } from "../../constants.ts";
+import { getActiveConfig, type Initialiser, setConfig } from "../config.ts";
+import type { ResolvedTraceConfig } from "../types.ts";
+import { wrap } from "../wrap.ts";
+import { exportSpans, proxyExecutionContext } from "./common.ts";
+import { instrumentEnv } from "./env.ts";
+import { versionAttributes } from "./version.ts";
 
 export type IncludeTraceContextFn = (request: Request) => boolean;
 export interface FetcherConfig {

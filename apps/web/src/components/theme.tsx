@@ -2,10 +2,11 @@
  * Very ugly code but the animation looks good.
  * Take the time to refactor this someday.
  */
-import type { CSSProperties } from "react";
+
 import { type ThemeVariable, useSDK, useWorkspaceTheme } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Kind of a stale cache for the theme so we don't show the splash screen

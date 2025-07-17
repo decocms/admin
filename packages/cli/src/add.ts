@@ -5,8 +5,8 @@ import {
   readWranglerConfig,
   writeConfigFile,
 } from "./config.ts";
-import { promptIntegrations } from "./utils/prompt-integrations.ts";
 import { readSession } from "./session.ts";
+import { promptIntegrations } from "./utils/prompt-integrations.ts";
 
 interface AddCommandOptions {
   workspace?: string;

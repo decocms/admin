@@ -1,8 +1,8 @@
 import {
+  type UseQueryOptions,
   useMutation,
   useQuery,
   useQueryClient,
-  type UseQueryOptions,
 } from "@tanstack/react-query";
 import {
   activateTrigger,

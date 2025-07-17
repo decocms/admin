@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Card as UICard, CardContent } from "@deco/ui/components/card.tsx";
+import { CardContent, Card as UICard } from "@deco/ui/components/card.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 import {
   createContext,
   Suspense,
@@ -53,11 +54,10 @@ import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { useFocusChat } from "./hooks.ts";
-import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
 
 export const useDuplicateAgent = (agent: Agent | null) => {
   const [duplicating, setDuplicating] = useState(false);

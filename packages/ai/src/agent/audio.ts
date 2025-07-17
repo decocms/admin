@@ -1,7 +1,7 @@
-import type { AudioMessage, Message } from "../types.ts";
 import { Buffer } from "node:buffer";
 import type { Agent as MastraAgent } from "@mastra/core/agent";
 import { OpenAIVoice } from "@mastra/voice-openai";
+import type { AudioMessage, Message } from "../types.ts";
 
 const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25MB
 

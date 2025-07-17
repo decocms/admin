@@ -1,12 +1,12 @@
 import { MDocument } from "@mastra/rag";
 import { extname } from "@std/path/posix";
+import { z } from "zod";
 import {
   type FileExt,
   FileExtSchema,
   getExtensionFromContentType,
   isAllowedFileExt,
 } from "../utils/knowledge.ts";
-import { z } from "zod";
 
 export { FileExtSchema } from "../utils/knowledge.ts";
 

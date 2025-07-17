@@ -1,3 +1,4 @@
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogContent,
@@ -5,9 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { type Country, PhoneInput } from "../settings/profile.tsx";
 import { useState } from "react";
+import { type Country, PhoneInput } from "../settings/profile.tsx";
 
 interface WhatsAppInviteDialogProps {
   isOpen: boolean;

@@ -1,11 +1,11 @@
+import crypto from "node:crypto";
 import { WorkersMCPBindings } from "@deco/workers-runtime";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
+import { getMimeType } from "./api.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
-import crypto from "node:crypto";
-import { getMimeType } from "./api.ts";
 import type { WranglerConfig } from "./wrangler.ts";
 
 const METADATA_FILE_NAME = "metadata.json";

@@ -1,6 +1,7 @@
 import type { ClientOf } from "@deco/sdk/http";
 import { z } from "zod";
 import { InternalServerError, UserInputError } from "../../errors.ts";
+import { Markup } from "../../plan.ts";
 import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
@@ -12,9 +13,8 @@ import {
   type WalletAPI,
   WellKnownWallets,
 } from "./index.ts";
-import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 import { getPlan } from "./plans.ts";
-import { Markup } from "../../plan.ts";
+import { createCheckoutSession as createStripeCheckoutSession } from "./stripe/checkout.ts";
 
 export const getWalletClient = (c: AppContext) => {
   if (!c.envVars.WALLET_API_KEY) {

@@ -1,6 +1,6 @@
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Card } from "@deco/ui/components/card.tsx";
 import { Label } from "@deco/ui/components/label.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 
 export interface SchemaProperty {

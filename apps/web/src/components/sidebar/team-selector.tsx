@@ -1,8 +1,8 @@
+import type { Theme } from "@deco/sdk";
 import { useTeam, useTeams } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -11,15 +11,15 @@ import {
   ResponsiveDropdownTrigger,
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { SidebarMenuButton } from "@deco/ui/components/sidebar.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useState } from "react";
 import { Link, useParams } from "react-router";
-import { useUser } from "../../hooks/use-user.ts";
-import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { Avatar } from "../common/avatar/index.tsx";
-import { CreateTeamDialog } from "./create-team-dialog.tsx";
-import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
-import type { Theme } from "@deco/sdk";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useUser } from "../../hooks/use-user.ts";
+import { Avatar } from "../common/avatar/index.tsx";
+import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
+import { CreateTeamDialog } from "./create-team-dialog.tsx";
 
 export interface CurrentTeam {
   avatarUrl: string | undefined;

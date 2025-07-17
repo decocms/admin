@@ -1,11 +1,11 @@
 import type { Agent } from "@deco/sdk";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import type { ComponentProps } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
+import type { ComponentProps } from "react";
 
 const DESCRIPTIONS = {
   PUBLIC: "Public",

@@ -1,14 +1,14 @@
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import {
   AgentInfo,
   DateTimeCell,
   UserInfo,
 } from "../common/table/table-cells.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
 
 type Thread = {
   id: string;

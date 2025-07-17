@@ -14,18 +14,18 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
+import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { Fragment, type ReactNode, useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
-import { Toaster } from "@deco/ui/components/sonner.tsx";
-import { useUser } from "../hooks/use-user.ts";
+import { useLocalStorage } from "../hooks/use-local-storage.ts";
 import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
+import { useUser } from "../hooks/use-user.ts";
 import RegisterActivity from "./common/register-activity.tsx";
 import Docked, { type Tab } from "./dock/index.tsx";
-import { AppSidebar } from "./sidebar/index.tsx";
-import { useLocalStorage } from "../hooks/use-local-storage.ts";
-import { WithWorkspaceTheme } from "./theme.tsx";
 import { ProfileModalProvider, useProfileModal } from "./profile-modal.tsx";
+import { AppSidebar } from "./sidebar/index.tsx";
+import { WithWorkspaceTheme } from "./theme.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   const user = useUser();

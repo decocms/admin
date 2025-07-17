@@ -1,8 +1,9 @@
 // Utility functions for saving and reading session data securely
+
+import { homedir } from "node:os";
 import { join } from "@std/path";
 import type { User } from "@supabase/supabase-js";
 import { decodeJwt } from "jose";
-import { homedir } from "node:os";
 import { z } from "zod";
 import { createClient } from "./supabase.ts";
 

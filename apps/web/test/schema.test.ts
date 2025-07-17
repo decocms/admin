@@ -1,3 +1,5 @@
+import type { JSONSchema7 } from "json-schema";
+import { expect, test } from "vitest";
 import {
   doesChildFieldMatchSchema,
   doesSchemaTypeMatchValue,
@@ -8,8 +10,6 @@ import {
   selectAnyOfSchema,
   typeMatches,
 } from "../src/components/json-schema/utils/schema.ts";
-import type { JSONSchema7 } from "json-schema";
-import { expect, test } from "vitest";
 
 test("formatPropertyName", () => {
   // Test camelCase to Title Case

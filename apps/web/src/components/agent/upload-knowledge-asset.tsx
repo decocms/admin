@@ -1,17 +1,22 @@
-import { useMemo, useRef, useState } from "react";
 import {
   type Integration,
   useDeleteFile,
   useKnowledgeDeleteFile,
 } from "@deco/sdk";
+import {
+  type FileExt,
+  formatFileSize,
+  isAllowedContentType,
+  isAllowedFileExt,
+} from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -20,12 +25,7 @@ import {
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { extname } from "@std/path/posix";
-import {
-  type FileExt,
-  formatFileSize,
-  isAllowedContentType,
-  isAllowedFileExt,
-} from "@deco/sdk/utils";
+import { useMemo, useRef, useState } from "react";
 import { agentKnowledgeBasePath } from "./hooks/use-agent-knowledge.ts";
 
 function FileIcon({ filename }: { filename: string }) {

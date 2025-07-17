@@ -4,14 +4,15 @@ import { decodeJwt } from "jose";
 import type { z } from "zod";
 import { getReqToken, handleAuthCallback, StateParser } from "./auth.ts";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
-import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
+import { type CreateMCPServerOptions, createMCPServer } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, MCPBinding } from "./wrangler.ts";
+
 export {
-  createMCPFetchStub,
   type CreateStubAPIOptions,
+  createMCPFetchStub,
   type ToolBinder,
 } from "./mcp.ts";
 

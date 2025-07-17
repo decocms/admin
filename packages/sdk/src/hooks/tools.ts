@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { MCPConnection } from "../models/mcp.ts";
 import { MCPClient } from "../fetcher.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 export interface MCPTool {
   name: string;
   description?: string;

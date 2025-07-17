@@ -1,6 +1,6 @@
-import { generateDefaultValues } from "../src/components/json-schema/utils/generate-default-values.ts";
 import type { JSONSchema7 } from "json-schema";
 import { expect, test } from "vitest";
+import { generateDefaultValues } from "../src/components/json-schema/utils/generate-default-values.ts";
 
 test("generateDefaultValues - empty or invalid schema", () => {
   // Test with null or undefined schema

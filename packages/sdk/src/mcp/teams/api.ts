@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { WebCache } from "../../cache/index.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
@@ -12,16 +13,15 @@ import {
   getWorkspaceBucketName,
 } from "../fs/api.ts";
 import { createTool } from "../members/api.ts";
-import { mergeThemes } from "./merge-theme.ts";
-import { getWalletClient } from "../wallet/api.ts";
 import { getTeamBySlug } from "../members/invites-utils.ts";
+import { getWalletClient } from "../wallet/api.ts";
+import { MicroDollar, type Transaction } from "../wallet/index.ts";
 import {
   isValidMonth,
   isValidYear,
   WellKnownTransactions,
 } from "../wallet/well-known.ts";
-import { MicroDollar, type Transaction } from "../wallet/index.ts";
-import { WebCache } from "../../cache/index.ts";
+import { mergeThemes } from "./merge-theme.ts";
 
 const OWNER_ROLE_ID = 1;
 

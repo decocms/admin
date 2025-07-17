@@ -1,13 +1,13 @@
+import { useIntegrations, useUpdateIntegration } from "@deco/sdk";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@deco/ui/components/card.tsx";
-import { useEffect } from "react";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { useIntegrations, useUpdateIntegration } from "@deco/sdk";
+import { useEffect } from "react";
 import { trackException } from "../../hooks/analytics.ts";
 import { notifyIntegrationUpdate } from "../../lib/broadcast-channels.ts";
 

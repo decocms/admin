@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   addEdge,
   Background,
@@ -15,17 +15,18 @@ import {
   useEdgesState,
   useNodesState,
 } from "@xyflow/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { JsonTreeViewer } from "../common/json-tree-viewer.tsx";
 

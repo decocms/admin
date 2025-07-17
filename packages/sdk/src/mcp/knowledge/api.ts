@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { basename } from "@std/path";
 import { embed, embedMany } from "ai";
 import { z } from "zod";
-import { basename } from "@std/path";
 import {
   DEFAULT_KNOWLEDGE_BASE_NAME,
   KNOWLEDGE_BASE_DIMENSION,
@@ -9,6 +9,8 @@ import {
 } from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
+import type { Json } from "../../storage/index.ts";
+import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 import {
   assertHasWorkspace,
   assertKbFileProcessor,
@@ -21,8 +23,6 @@ import {
   createToolGroup,
 } from "../context.ts";
 import { FileMetadataSchema } from "../file-processor.ts";
-import type { Json } from "../../storage/index.ts";
-import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;

@@ -8,6 +8,7 @@ import {
   useLeaveChannel,
   useRemoveChannel,
 } from "@deco/sdk/hooks";
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import type { Channel, Integration } from "@deco/sdk/models";
 import {
   AlertDialog,
@@ -19,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@deco/ui/components/alert-dialog.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@deco/ui/components/dialog.tsx";
 import { FormControl, FormItem, FormLabel } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
@@ -37,11 +44,6 @@ import { useMemo, useState } from "react";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { InstalledConnections } from "../integrations/installed-connections.tsx";
-import { Dialog } from "@deco/ui/components/dialog.tsx";
-import { DialogTrigger } from "@deco/ui/components/dialog.tsx";
-import { DialogContent } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 
 interface ChannelsProps {
   className?: string;

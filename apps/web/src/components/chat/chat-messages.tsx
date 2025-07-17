@@ -36,7 +36,7 @@ export function ChatMessages() {
 
   const scrollToBottom = useCallback(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, []);
+  }, [scrollRef]);
 
   useLayoutEffect(() => {
     scrollToBottom();
@@ -46,7 +46,7 @@ export function ChatMessages() {
     if (isAutoScrollEnabled(scrollRef.current)) {
       scrollToBottom();
     }
-  }, [messages, scrollToBottom, isAutoScrollEnabled]);
+  }, [messages, scrollToBottom, isAutoScrollEnabled, scrollRef]);
 
   useLayoutEffect(() => {
     let cancel = false;
@@ -73,7 +73,7 @@ export function ChatMessages() {
       cancel = true;
       observer.disconnect();
     };
-  }, [messages, setAutoScroll]);
+  }, [messages, setAutoScroll, scrollRef]);
 
   const isEmpty = messages.length === 0;
 

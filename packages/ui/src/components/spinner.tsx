@@ -1,6 +1,5 @@
-import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@deco/ui/lib/utils.ts";
+import { cva, type VariantProps } from "class-variance-authority";
 
 const variants = cva("animate-spin", {
   variants: {

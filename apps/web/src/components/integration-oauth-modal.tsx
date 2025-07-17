@@ -1,4 +1,11 @@
-import { FormProvider, useForm } from "react-hook-form";
+import {
+  getRegistryApp,
+  type Integration,
+  listIntegrations,
+  useSDK,
+} from "@deco/sdk";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -6,18 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Separator } from "@deco/ui/components/separator.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import type { JSONSchema7 } from "json-schema";
+import { FormProvider, useForm } from "react-hook-form";
 import JsonSchemaForm, { type OptionItem } from "./json-schema/index.tsx";
 import { generateDefaultValues } from "./json-schema/utils/generate-default-values.ts";
-import {
-  getRegistryApp,
-  type Integration,
-  listIntegrations,
-  useSDK,
-} from "@deco/sdk";
 
 interface Permission {
   scope: string;

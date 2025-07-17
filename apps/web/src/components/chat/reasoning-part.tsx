@@ -1,7 +1,7 @@
-import { MemoizedMarkdown } from "./chat-markdown.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useEffect, useState } from "react";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useEffect, useState } from "react";
+import { MemoizedMarkdown } from "./chat-markdown.tsx";
 
 interface ReasoningPartProps {
   reasoning: string;

@@ -1,5 +1,4 @@
 import type { TriggerOutput } from "@deco/sdk";
-import type { JSONSchema7 } from "json-schema";
 import {
   useAgents,
   useCreateTrigger,
@@ -42,14 +41,15 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { JSONSchema7 } from "json-schema";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import JsonSchemaForm from "../json-schema/index.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
+import JsonSchemaForm from "../json-schema/index.tsx";
 
 // Form schema for the new trigger form
 const TriggerFormSchema = z

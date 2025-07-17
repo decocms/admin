@@ -8,12 +8,12 @@ import {
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { useIsMobile } from "@deco/ui/hooks/use-mobile.ts";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
 
 interface BindingSelectorProps {
   open: boolean;

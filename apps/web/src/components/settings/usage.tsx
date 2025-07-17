@@ -34,10 +34,10 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Label, Pie, PieChart } from "recharts";
-import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
-import { UserAvatar } from "../common/avatar/user.tsx";
+import { useUser } from "../../hooks/use-user.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { UserAvatar } from "../common/avatar/user.tsx";
 
 function color(id: string) {
   const colors = [

@@ -1,16 +1,16 @@
 import type { MCPTool } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Form } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
-import { useEffect, useState } from "react";
-import { Form } from "@deco/ui/components/form.tsx";
-import { useForm } from "react-hook-form";
 import { ajvResolver } from "@hookform/resolvers/ajv";
 import type { JSONSchema7 } from "json-schema";
-import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
-import JSONSchemaForm, { type SchemaType } from "../json-schema/index.tsx";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useCopy } from "../../hooks/use-copy.ts";
+import JSONSchemaForm, { type SchemaType } from "../json-schema/index.tsx";
+import { generateDefaultValues } from "../json-schema/utils/generate-default-values.ts";
 
 interface ToolCallFormProps {
   tool: MCPTool;

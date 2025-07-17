@@ -8,9 +8,9 @@ import {
 } from "./config.ts";
 import { genEnv } from "./typings.ts";
 import { promptIDESetup, writeIDEConfig } from "./utils/prompt-ide-setup.ts";
+import { promptIntegrations } from "./utils/prompt-integrations.ts";
 import { promptWorkspace } from "./utils/prompt-workspace.ts";
 import { slugify } from "./utils/slugify.ts";
-import { promptIntegrations } from "./utils/prompt-integrations.ts";
 
 interface Template {
   name: string;

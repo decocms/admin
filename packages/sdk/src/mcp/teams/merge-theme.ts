@@ -1,5 +1,5 @@
-import type { Theme } from "../../theme.ts";
 import type { Json } from "../../storage/index.ts";
+import type { Theme } from "../../theme.ts";
 
 export function mergeThemes(
   currentTheme: Json | null,

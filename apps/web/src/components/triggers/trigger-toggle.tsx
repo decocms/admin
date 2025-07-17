@@ -1,5 +1,5 @@
-import { useActivateTrigger, useDeactivateTrigger } from "@deco/sdk";
 import type { TriggerOutput } from "@deco/sdk";
+import { useActivateTrigger, useDeactivateTrigger } from "@deco/sdk";
 import { Switch } from "@deco/ui/components/switch.tsx";
 import { useState } from "react";
 

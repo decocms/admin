@@ -3,6 +3,7 @@ import { compile } from "json-schema-to-typescript";
 import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import type { DecoBinding } from "./config.ts";
 import { createWorkspaceClient } from "./mcp.ts";
+
 interface Options {
   workspace: string;
   local?: boolean;

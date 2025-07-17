@@ -7,13 +7,13 @@ import {
   createMCPToolsStub,
   EMAIL_TOOLS,
   Entrypoint,
+  GLOBAL_TOOLS,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
   getWorkspaceBucketName,
-  GLOBAL_TOOLS,
   PolicyClient,
   type ToolLike,
-  withMCPErrorHandling,
   WORKSPACE_TOOLS,
+  withMCPErrorHandling,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type Context, Hono } from "hono";
@@ -26,14 +26,14 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
 import { fetchScript } from "./apps.ts";
 import { ROUTES as loginRoutes } from "./auth/index.ts";
-import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withActorsMiddleware } from "./middlewares/actors.ts";
+import { withActorsStubMiddleware } from "./middlewares/actors-stub.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
+import { handleCodeExchange } from "./oauth/code.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
-import { handleCodeExchange } from "./oauth/code.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {

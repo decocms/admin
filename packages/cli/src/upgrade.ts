@@ -1,7 +1,7 @@
-import denoJson from "../deno.json" with { type: "json" };
-import * as semver from "@std/semver";
 import { Confirm } from "@cliffy/prompt";
 import { bold, green, red, yellow } from "@std/fmt/colors";
+import * as semver from "@std/semver";
+import denoJson from "../deno.json" with { type: "json" };
 
 const getLatestVersion = async (): Promise<semver.SemVer> => {
   const signal = AbortSignal.timeout(2_000);

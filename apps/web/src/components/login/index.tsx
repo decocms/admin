@@ -1,9 +1,9 @@
-import { SplitScreenLayout } from "./layout.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { providers } from "./providers.tsx";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useEffect, useState } from "react";
+import { SplitScreenLayout } from "./layout.tsx";
+import { providers } from "./providers.tsx";
 
 function Login() {
   const [searchParams] = useSearchParams();

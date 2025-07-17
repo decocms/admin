@@ -1,4 +1,6 @@
+import { EmailMessage } from "cloudflare:email";
 import { processDataStream } from "@ai-sdk/ui-utils";
+import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import { ActorCfRuntime } from "@deco/actors/cf";
 import { actors } from "@deco/actors/proxy";
@@ -6,14 +8,12 @@ import { AIAgent } from "@deco/ai/actors";
 import { DECO_BOTS_DOMAIN } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { getServerClient } from "@deco/sdk/storage";
-import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
-import { EmailMessage } from "cloudflare:email";
 // @ts-ignore: this is an import from cf
 import { createMimeMessage } from "mimetext";
-import { runtime } from "./middlewares/actors.ts";
-import type { Bindings } from "./utils/context.ts";
 // Add postal-mime import at the top
 import PostalMime from "postal-mime";
+import { runtime } from "./middlewares/actors.ts";
+import type { Bindings } from "./utils/context.ts";
 
 const readContent = async (message: ForwardableEmailMessage) => {
   // Parse the MIME message to extract structured content

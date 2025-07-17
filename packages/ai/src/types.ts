@@ -4,11 +4,12 @@ import type { Actor } from "@deco/actors";
 import type { GenerateOptions, StreamOptions, Toolset } from "@deco/sdk/models";
 import type { StorageThreadType } from "@mastra/core";
 import type {
+  Message as AIMessage,
   GenerateObjectResult,
   GenerateTextResult,
-  Message as AIMessage,
 } from "ai";
 import type { AgentMetadata } from "./agent.ts";
+
 export type { TriggerData } from "./triggers/trigger.ts";
 export type { GenerateOptions, StreamOptions, Toolset };
 

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
+import { AsyncLocalStorage } from "node:async_hooks";
+import { EventEmitter } from "node:events";
 import {
   type Context,
   type ContextManager,
   ROOT_CONTEXT,
 } from "@opentelemetry/api";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { EventEmitter } from "node:events";
 
 type Func<T> = (...args: unknown[]) => T;
 

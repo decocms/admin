@@ -1,6 +1,6 @@
-import { Markup } from "../src/plan.ts";
-import type { PlanWithTeamMetadata } from "../src/plan.ts";
 import { expect, test } from "vitest";
+import type { PlanWithTeamMetadata } from "../src/plan.ts";
+import { Markup } from "../src/plan.ts";
 
 const usd = (dollars: number) => dollars * 100;
 

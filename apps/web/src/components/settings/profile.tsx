@@ -1,5 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { useEffect, useState } from "react";
+
+import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
+import { countries } from "@deco/sdk/utils" with { type: "json" };
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogClose,
@@ -9,12 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { UserAvatar } from "../common/avatar/user.tsx";
-import { countries } from "@deco/sdk/utils" with { type: "json" };
-import { useProfile, useUpdateProfile } from "@deco/sdk/hooks";
+import { useEffect, useState } from "react";
 import { useUser } from "../../hooks/use-user.ts";
+import { UserAvatar } from "../common/avatar/user.tsx";
 
 export interface Country {
   code: string;

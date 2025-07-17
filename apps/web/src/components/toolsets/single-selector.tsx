@@ -1,3 +1,4 @@
+import type { Integration, MCPTool } from "@deco/sdk";
 import { useIntegrations, useTools } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -7,12 +8,10 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useState } from "react";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
-import type { Integration } from "@deco/sdk";
-import type { MCPTool } from "@deco/sdk";
-import { cn } from "@deco/ui/lib/utils.ts";
 
 interface SingleToolSelectorProps {
   value: string | null;

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
-import type { AppContext } from "../../context.ts";
 import { assertHasWorkspace } from "../../assertions.ts";
+import type { AppContext } from "../../context.ts";
 import { createCurrencyClient } from "../index.ts";
 
 const getStripeClient = (secretKey: string) => {

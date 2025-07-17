@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
+import process from "node:process";
 // NOTE:
 // Do not use private class fields or methods prefixed with '#'.
 // JavaScript's private syntax (#) is not compatible with Proxy objects,
@@ -33,7 +34,6 @@ import type { Json } from "@deco/sdk/storage";
 import { createServerClient } from "@supabase/ssr";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
-import process from "node:process";
 import { AIAgent } from "../agent.ts";
 import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";

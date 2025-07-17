@@ -1,11 +1,4 @@
 import {
-  type Dispatch,
-  type SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
-import {
   type Agent,
   type Integration,
   KNOWLEDGE_BASE_DIMENSION,
@@ -21,6 +14,13 @@ import {
   parseToValidIndexName,
 } from "@deco/sdk/utils";
 import { toast } from "@deco/ui/components/sonner.tsx";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 interface UseAgentKnowledgeIntegrationProps {
   setIntegrationTools: (integrationId: string, tools: string[]) => void;

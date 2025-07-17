@@ -20,8 +20,8 @@ import {
   GetWebhookTriggerUrlOutputSchema,
   type ListTriggersOutput,
   ListTriggersOutputSchema,
-  type Trigger as TriggerType,
   TriggerSchema,
+  type Trigger as TriggerType,
 } from "../../models/trigger.ts";
 
 import type { Json, QueryResult } from "../../storage/index.ts";

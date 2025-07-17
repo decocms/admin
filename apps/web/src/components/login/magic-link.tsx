@@ -1,5 +1,5 @@
+import { DECO_CHAT_API } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Link, useSearchParams } from "react-router";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -8,9 +8,9 @@ import {
   QueryClientProvider,
   useMutation,
 } from "@tanstack/react-query";
-import { DECO_CHAT_API } from "@deco/sdk";
 import type { FormEventHandler } from "react";
 import { useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { SplitScreenLayout } from "./layout.tsx";
 
 const useSendMagicLink = () => {

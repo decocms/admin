@@ -1,11 +1,18 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { marked } from "marked";
-import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { lazy, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 
 const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 
@@ -23,7 +30,7 @@ function LazyHighlighterFallback() {
       }}
     >
       {lines.map((width, i) => (
-        <div key={i} className="flex gap-2 items-center my-1">
+        <div key={width} className="flex gap-2 items-center my-1">
           {i > 2 && i < 7 && (
             <div
               className="w-4 h-4 rounded-sm opacity-40 animate-pulse"

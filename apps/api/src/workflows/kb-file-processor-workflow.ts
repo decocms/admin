@@ -1,9 +1,9 @@
-import type { Workflow } from "@cloudflare/workers-types";
 import {
   WorkflowEntrypoint,
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
+import type { Workflow } from "@cloudflare/workers-types";
 import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
 
 // Environment interface for workflow

@@ -11,6 +11,8 @@
 // Also, visibility modifiers (like 'private' or 'protected') from TypeScript
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 
+import process from "node:process";
+import { Readable } from "node:stream";
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
@@ -32,8 +34,8 @@ import {
 import { contextStorage } from "@deco/sdk/fetch";
 import {
   type AppContext,
-  assertWorkspaceResourceAccess,
   AuthorizationClient,
+  assertWorkspaceResourceAccess,
   createResourceAccess,
   fromWorkspaceString,
   type LLMVault,
@@ -75,8 +77,6 @@ import {
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
 import jsonSchemaToZod from "json-schema-to-zod";
-import process from "node:process";
-import { Readable } from "node:stream";
 import { z } from "zod";
 import type { MCPConnection } from "../../sdk/src/index.ts";
 import { createWalletClient } from "../../sdk/src/mcp/wallet/index.ts";
@@ -92,9 +92,9 @@ import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
-  GenerateOptions,
   Message as AIMessage,
+  GenerateOptions,
+  AIAgent as IIAgent,
   StreamOptions,
   Thread,
   ThreadQueryOptions,

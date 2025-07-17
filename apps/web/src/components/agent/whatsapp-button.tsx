@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   type Agent,
   useAgent,
@@ -25,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
 import { useProfileModalContext } from "../profile-modal.tsx";

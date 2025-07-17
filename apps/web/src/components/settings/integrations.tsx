@@ -23,15 +23,15 @@ import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { useAgentSettingsForm } from "../agent/edit.tsx";
 import {
-  AddFileToKnowledgeButton,
-  KnowledgeBaseFileList,
-  type KnowledgeFile,
-} from "../agent/upload-knowledge-asset.tsx";
-import {
   type UploadFile,
   useAgentKnowledgeIntegration,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
+import {
+  AddFileToKnowledgeButton,
+  KnowledgeBaseFileList,
+  type KnowledgeFile,
+} from "../agent/upload-knowledge-asset.tsx";
 import {
   AppKeys,
   getConnectionAppKey,

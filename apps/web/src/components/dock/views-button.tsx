@@ -1,5 +1,4 @@
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { openPanel, type Tab, useDock } from "./index.tsx";
 import {
   ResponsiveDropdown,
   ResponsiveDropdownContent,
@@ -8,6 +7,7 @@ import {
 } from "@deco/ui/components/responsive-dropdown.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { createPrependPortal } from "../../utils/react-prepend-portal.ts";
+import { openPanel, type Tab, useDock } from "./index.tsx";
 
 // The order of this object's properties matters for sorting
 const WELL_KNOWN_VIEW_ICONS = {

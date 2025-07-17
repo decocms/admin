@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSDK } from "./index.ts";
 import {
   createKnowledge,
   knowledgeAddFile,
@@ -8,6 +7,7 @@ import {
 } from "../crud/knowledge.ts";
 import type { Integration } from "../index.ts";
 import { KEYS } from "./api.ts";
+import { useSDK } from "./index.ts";
 
 const getConnectionUrl = ({ connection }: ForConnection) =>
   connection && "url" in connection ? connection.url : "";

@@ -1,10 +1,10 @@
 import Stripe from "stripe";
 import { WebhookEventIgnoredError } from "../../../errors.ts";
+import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
 import type { AppContext } from "../../context.ts";
 import type { Transaction } from "../client.ts";
 import { createCurrencyClient, MicroDollar } from "../index.ts";
 import { getPlan } from "../plans.ts";
-import { Markup, type PlanWithTeamMetadata } from "../../../plan.ts";
 
 export const verifyAndParseStripeEvent = (
   payload: string,

@@ -1,13 +1,13 @@
 import {
   type Attributes,
-  type Context,
   context as api_context,
+  type Context,
   type Span,
   SpanKind,
   type SpanOptions,
-  trace,
   TraceFlags,
   type Tracer,
+  trace,
 } from "@opentelemetry/api";
 import { sanitizeAttributes } from "@opentelemetry/core";
 import type { Resource } from "@opentelemetry/resources";

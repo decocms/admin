@@ -6,6 +6,7 @@ import {
   useSDK,
   useWriteFile,
 } from "@deco/sdk";
+import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -28,13 +29,12 @@ import {
 } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { formatFilename } from "../../utils/format.ts";
 import { AudioButton } from "./audio-button.tsx";
 import { useChatContext } from "./context.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea } from "./rich-text.tsx";
 import ToolsButton from "./tools-button.tsx";
-import { formatFilename } from "../../utils/format.ts";
-import { Hosts } from "@deco/sdk/hosts";
 
 export function ChatInput() {
   return (

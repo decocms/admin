@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { useState } from "react";
+
 import {
   useCreateAPIKey,
   useCreateIntegration,
@@ -9,6 +9,7 @@ import {
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
+import { useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 
 // Default policies required for all integrations

@@ -1,12 +1,12 @@
 import type { Message } from "@ai-sdk/react";
+import { useFile } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo } from "react";
 import { MemoizedMarkdown } from "./chat-markdown.tsx";
-import { ToolMessage } from "./tool-message.tsx";
 import { ReasoningPart } from "./reasoning-part.tsx";
-import { useFile } from "@deco/sdk";
+import { ToolMessage } from "./tool-message.tsx";
 
 interface ChatMessageProps {
   message: Message;

@@ -1,8 +1,7 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
-
 import { cn } from "@deco/ui/lib/utils.ts";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "./button.tsx";
 import {
   Command,

@@ -2,7 +2,7 @@ import { useCreatePrompt } from "@deco/sdk";
 import { toMention } from "@deco/sdk/utils";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { BubbleMenu as TiptapBubbleMenu, type Editor } from "@tiptap/react";
+import { type Editor, BubbleMenu as TiptapBubbleMenu } from "@tiptap/react";
 import { mentionToTag } from "./common.ts";
 
 interface Props {

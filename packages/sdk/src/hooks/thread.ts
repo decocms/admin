@@ -19,9 +19,9 @@ import {
   updateThreadMetadata,
   updateThreadTitle,
 } from "../crud/thread.ts";
+import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import { MCPClient } from "../fetcher.ts";
 
 // Minimum delay to prevent UI flickering during title generation
 const TITLE_GENERATION_MIN_DELAY_MS = 2000;
@@ -36,11 +36,20 @@ export const useThread = (threadId: string) => {
 };
 
 /** Hook for fetching messages from a thread */
-export const useThreadMessages = (threadId: string) => {
+export const useThreadMessages = (
+  threadId: string,
+  { enabled = true }: { enabled?: boolean } = {},
+) => {
   const { workspace } = useSDK();
   return useSuspenseQuery({
     queryKey: KEYS.THREAD_MESSAGES(workspace, threadId),
-    queryFn: ({ signal }) => getThreadMessages(workspace, threadId, { signal }),
+    queryFn: ({ signal }) => {
+      if (!enabled) {
+        return [];
+      }
+
+      return getThreadMessages(workspace, threadId, { signal });
+    },
     staleTime: 0,
     gcTime: 0,
   });

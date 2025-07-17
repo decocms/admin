@@ -1,12 +1,12 @@
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
-  Table as UITable,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  Table as UITable,
 } from "@deco/ui/components/table.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 import type { ReactNode } from "react";
 
 export interface TableColumn<T> {

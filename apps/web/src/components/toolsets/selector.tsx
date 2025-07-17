@@ -1,19 +1,19 @@
 import { type Integration, type MCPTool, useTools } from "@deco/sdk";
 import { useProfile } from "@deco/sdk/hooks";
 import { Badge } from "@deco/ui/components/badge.tsx";
-import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { useState } from "react";
-import { IntegrationIcon } from "../integrations/common.tsx";
-import { ExpandableDescription } from "./description.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
+import { Checkbox } from "@deco/ui/components/checkbox.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
+import { IntegrationIcon } from "../integrations/common.tsx";
+import { ExpandableDescription } from "./description.tsx";
 
 interface ToolsMap {
   [integrationId: string]: string[];

@@ -1,23 +1,23 @@
-import { Suspense, useState } from "react";
-import { useNavigate } from "react-router";
-import { toast } from "@deco/ui/components/sonner.tsx";
 import {
   type Invite,
   useAcceptInvite,
   useInvites,
   useRejectInvite,
 } from "@deco/sdk";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { Suspense, useState } from "react";
+import { useNavigate } from "react-router";
 import { timeAgo } from "../../utils/time-ago.ts";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
-import { EmptyState } from "../common/empty-state.tsx";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 
 function InviteCard({
   invite,

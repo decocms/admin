@@ -1,19 +1,18 @@
 import { type Context, type Span, trace } from "@opentelemetry/api";
+import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
 import type {
   ReadableSpan,
   SpanExporter,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
-import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
+import { getActiveConfig } from "./config.ts";
+import type { TailSampleFn } from "./sampling.ts";
+import type { PostProcessorFn } from "./types.ts";
 import {
   type Action,
   type State,
   stateMachine,
 } from "./vendor/ts-checked-fsm/StateMachine.ts";
-
-import { getActiveConfig } from "./config.ts";
-import type { TailSampleFn } from "./sampling.ts";
-import type { PostProcessorFn } from "./types.ts";
 
 type CompletedTrace = {
   traceId: string;

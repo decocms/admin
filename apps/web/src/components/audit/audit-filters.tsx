@@ -1,4 +1,5 @@
 import type { Agent, Member } from "@deco/sdk";
+import { Combobox } from "@deco/ui/components/combobox.tsx";
 import {
   Select,
   SelectContent,
@@ -6,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Combobox } from "@deco/ui/components/combobox.tsx";
 
 interface AuditFiltersProps {
   agents: Agent[];

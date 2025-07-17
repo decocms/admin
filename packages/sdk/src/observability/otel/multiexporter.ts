@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import type { SpanExporter } from "@opentelemetry/sdk-trace-base";
+
 import { type ExportResult, ExportResultCode } from "@opentelemetry/core";
+import type { SpanExporter } from "@opentelemetry/sdk-trace-base";
 
 // First implementation, completely synchronous, more tested.
 

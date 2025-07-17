@@ -17,11 +17,11 @@ import {
   WellKnownMcpGroupIds,
 } from "@deco/sdk";
 import { useEffect, useMemo } from "react";
+import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import {
   INTEGRATION_CHANNEL,
   type IntegrationMessage,
 } from "../../lib/broadcast-channels.ts";
-import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 
 export interface GroupedApp {
   id: string;

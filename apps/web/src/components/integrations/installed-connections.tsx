@@ -1,8 +1,8 @@
 import { type Integration, useIntegrations } from "@deco/sdk";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { useMemo } from "react";
-import { IntegrationIcon } from "./common.tsx";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
+import { IntegrationIcon } from "./common.tsx";
 
 function CardsView({
   integrations,

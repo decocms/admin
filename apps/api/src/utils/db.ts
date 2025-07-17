@@ -1,7 +1,7 @@
 import {
   type createServerClient,
-  serializeCookieHeader,
   type SetAllCookies,
+  serializeCookieHeader,
 } from "@supabase/ssr";
 
 export type Options = Parameters<typeof createServerClient>;

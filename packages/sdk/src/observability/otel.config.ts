@@ -1,3 +1,4 @@
+import process from "node:process";
 import { getActorLocator } from "@deco/actors";
 import { context, type Span } from "@opentelemetry/api";
 import {
@@ -13,7 +14,6 @@ import {
 import type { ResolveConfigFn } from "./otel/sdk.ts";
 import { DebugSampler } from "./samplers/debug.ts";
 import { headersStringToObject } from "./utils.ts";
-import process from "node:process";
 
 const processSpan = (span: ReadableSpan): ReadableSpan => {
   const method = span.attributes["http.request.method"] as string;

@@ -1,7 +1,7 @@
 import type { JSONSchema7 } from "json-schema";
+import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import type { SchemaType } from "../index.tsx";
 import { generateDefaultValues } from "./generate-default-values.ts";
-import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 // Format property name for display
 export function formatPropertyName(name: string): string {

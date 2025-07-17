@@ -36,10 +36,10 @@
  * ```
  */
 import { Select } from "@cliffy/prompt";
+import { z } from "zod";
 import { createWorkspaceClient } from "../mcp.ts";
 import { readSession } from "../session.ts";
 import { sanitizeConstantName } from "./slugify.ts";
-import { z } from "zod";
 
 interface Integration {
   id: string;

@@ -1,4 +1,4 @@
-import { JwtIssuer, type JWTPayload } from "@deco/sdk/auth";
+import { type JWTPayload, JwtIssuer } from "@deco/sdk/auth";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { honoCtxToAppCtx } from "../api.ts";

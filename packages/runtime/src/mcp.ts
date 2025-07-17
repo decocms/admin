@@ -1,11 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
+
+import { env } from "cloudflare:workers";
 import { z } from "zod";
-import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import type { z as zv4 } from "zod/v4";
+import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import type { MCPConnection } from "./connection.ts";
 import type { DefaultEnv } from "./index.ts";
 import { createMCPClientProxy } from "./proxy.ts";
-import { env } from "cloudflare:workers";
 
 export interface FetchOptions extends RequestInit {
   path?: string;

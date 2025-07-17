@@ -1,9 +1,10 @@
-import { Icon } from "@deco/ui/components/icon.tsx";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@deco/ui/components/tooltip.tsx";
+  DEFAULT_MODEL,
+  type Model,
+  useModels,
+  WELL_KNOWN_MODELS,
+} from "@deco/sdk";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   ResponsiveSelect,
   ResponsiveSelectContent,
@@ -11,13 +12,12 @@ import {
   ResponsiveSelectTrigger,
   ResponsiveSelectValue,
 } from "@deco/ui/components/responsive-select.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
 import {
-  DEFAULT_MODEL,
-  type Model,
-  useModels,
-  WELL_KNOWN_MODELS,
-} from "@deco/sdk";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 
 const mapLegacyModelId = (modelId: string): string => {

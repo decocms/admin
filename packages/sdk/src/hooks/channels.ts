@@ -10,9 +10,9 @@ import {
   listChannels,
 } from "../crud/channels.ts";
 import { InternalServerError } from "../errors.ts";
+import type { Integration } from "../index.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
-import type { Integration } from "../index.ts";
 
 export const useCreateChannel = () => {
   const client = useQueryClient();

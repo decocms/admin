@@ -6,17 +6,17 @@ import type {
   User as SupaUser,
 } from "@supabase/supabase-js";
 import { Hono } from "hono";
+import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
 import { honoCtxToAppCtx } from "../api.ts";
 import {
+  type HonoAppContext as AppContext,
   AUTH_URL,
   getEnv,
-  type HonoAppContext as AppContext,
   type Principal,
 } from "../utils/context.ts";
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
 import { assertPrincipalIsUser } from "./assertions.ts";
-import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 

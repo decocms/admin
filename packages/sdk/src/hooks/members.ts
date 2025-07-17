@@ -5,22 +5,22 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import {
+  type Invite as _Invite,
+  type Role as _Role,
   acceptInvite,
   getMyInvites,
   getTeamMembers,
   getTeamRoles,
-  type Invite as _Invite,
   inviteTeamMembers,
   type Member,
   registerActivity,
   rejectInvite,
   removeTeamMember,
-  type Role as _Role,
   updateMemberRole,
 } from "../crud/members.ts";
+import { type User, useSDK } from "../index.ts";
 import { KEYS } from "./api.ts";
 import { useTeams } from "./teams.ts";
-import { type User, useSDK } from "../index.ts";
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
 

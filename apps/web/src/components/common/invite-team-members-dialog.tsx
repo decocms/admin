@@ -1,14 +1,6 @@
-import type React from "react";
-import {
-  cloneElement,
-  type MouseEventHandler,
-  type ReactElement,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { toast } from "@deco/ui/components/sonner.tsx";
 import { useInviteTeamMember, useTeamRoles } from "@deco/sdk";
+import { Badge } from "@deco/ui/components/badge.tsx";
+import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
   DialogClose,
@@ -17,11 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { useFieldArray, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -31,9 +18,22 @@ import {
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { Protect } from "../wallet/plan.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type React from "react";
+import {
+  cloneElement,
+  type MouseEventHandler,
+  type ReactElement,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { z } from "zod";
 import { useContactUsUrl } from "../../hooks/use-contact-us.ts";
-import { Badge } from "@deco/ui/components/badge.tsx";
+import { Protect } from "../wallet/plan.tsx";
 import { RolesDropdown } from "./roles-dropdown.tsx";
 
 // Form validation schema

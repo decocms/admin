@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   FormControl,
   FormDescription,
@@ -14,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
+import { useEffect, useState } from "react";
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
-import type { OptionItem } from "../index.tsx";
 import { IntegrationIcon } from "../../integrations/common.tsx";
+import type { OptionItem } from "../index.tsx";
 
 interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;

@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import {
+  createWalletCheckoutSession,
+  Markup,
+  usePlan,
+  useSDK,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -10,14 +14,10 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/use-user.ts";
-import {
-  createWalletCheckoutSession,
-  Markup,
-  usePlan,
-  useSDK,
-} from "@deco/sdk";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
 

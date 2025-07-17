@@ -1,18 +1,18 @@
-import { z } from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
-import { embedMany } from "ai";
+import type { MastraVector } from "@mastra/core";
 import { basename } from "@std/path";
+import { embedMany } from "ai";
+import { z } from "zod";
+import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
+import { InternalServerError } from "../../errors.ts";
+import type { AppContext } from "../../mcp/context.ts";
 import {
   FileProcessor,
   type ProcessedDocument,
 } from "../../mcp/file-processor.ts";
-import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
-import { InternalServerError } from "../../errors.ts";
-import type { AppContext } from "../../mcp/context.ts";
-import { getServerClient } from "../../storage/supabase/client.ts";
-import type { MastraVector } from "@mastra/core";
 import type { Workspace } from "../../path.ts";
+import { getServerClient } from "../../storage/supabase/client.ts";
 
 // Workflow message schema for knowledge base file processing
 export const KbFileProcessorMessageSchema = z.object({

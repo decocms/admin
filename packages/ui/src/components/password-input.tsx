@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { useState } from "react";
+
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
+import { useState } from "react";
 
 interface PasswordInputProps {
   value?: string;

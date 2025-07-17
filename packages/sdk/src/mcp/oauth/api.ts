@@ -1,3 +1,4 @@
+import { decodeJwt } from "jose";
 import { z } from "zod";
 import {
   assertHasWorkspace,
@@ -5,7 +6,7 @@ import {
 } from "../assertions.ts";
 import { createToolGroup } from "../context.ts";
 import { MCPClient } from "../index.ts";
-import { decodeJwt } from "jose";
+
 const createTool = createToolGroup("OAuth", {
   name: "OAuth Management",
   description: "Create and manage OAuth codes securely.",

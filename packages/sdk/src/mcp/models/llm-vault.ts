@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface LLMVault {
   readApiKey(modelId: string): Promise<{ model: string; apiKey: string }>;

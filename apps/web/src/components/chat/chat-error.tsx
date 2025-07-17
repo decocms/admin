@@ -1,17 +1,16 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useEffect } from "react";
-import { Link } from "react-router";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { useChatContext } from "./context.tsx";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@deco/ui/components/tooltip.tsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { ExpandableDescription } from "../toolsets/description.tsx";
+import { useChatContext } from "./context.tsx";
 
 function getErrorMessage(error: Error) {
   try {

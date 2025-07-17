@@ -1,12 +1,12 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
 import type {
   SpeechRecognition,
   SpeechRecognitionError,
   SpeechRecognitionEvent,
 } from "../../types/speech.d.ts";
-import { Icon } from "@deco/ui/components/icon.tsx";
 
 interface AudioButtonProps {
   onMessage: (message: string) => void;

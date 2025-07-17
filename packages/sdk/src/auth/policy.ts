@@ -185,11 +185,10 @@ export class PolicyClient {
       .eq("members.user_id", userId);
 
     const policies = data?.map((memberRole) => ({
-      statements: memberRole.roles.role_policies
-        .flatMap(
-          (rolePolicies) =>
-            (rolePolicies.policies.statements as unknown as Statement[]) ?? [],
-        ),
+      statements: memberRole.roles.role_policies.flatMap(
+        (rolePolicies) =>
+          (rolePolicies.policies.statements as unknown as Statement[]) ?? [],
+      ),
     }));
 
     if (policiesError || !policies) {

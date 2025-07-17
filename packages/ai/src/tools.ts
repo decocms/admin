@@ -266,10 +266,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
           // If we reach here, no content was detected
           if (attempt < maxAttempts) {
             // Exponential backoff with jitter
-            const baseDelay = Math.min(
-              500 * 2 ** (attempt - 1),
-              maxDelay,
-            );
+            const baseDelay = Math.min(500 * 2 ** (attempt - 1), maxDelay);
             const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
             const delay = baseDelay + jitter;
 
@@ -288,10 +285,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
           // Check if it's a timeout error
           if (error instanceof Error && error.name === "AbortError") {
             if (attempt < maxAttempts) {
-              const baseDelay = Math.min(
-                1000 * 2 ** (attempt - 1),
-                maxDelay,
-              );
+              const baseDelay = Math.min(1000 * 2 ** (attempt - 1), maxDelay);
               const jitter = Math.random() * 0.1 * baseDelay;
               const delay = baseDelay + jitter;
 
@@ -312,10 +306,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
             (error instanceof Error && error.message.includes("fetch"));
 
           if (isRetryable && attempt < maxAttempts) {
-            const baseDelay = Math.min(
-              1000 * 2 ** (attempt - 1),
-              maxDelay,
-            );
+            const baseDelay = Math.min(1000 * 2 ** (attempt - 1), maxDelay);
             const jitter = Math.random() * 0.1 * baseDelay;
             const delay = baseDelay + jitter;
 

@@ -566,7 +566,7 @@ export function TriggerModal({
       const currentAgentId = data.agentId || agentId || agents[0]?.id;
       if (data.triggerType === "webhook") {
         // Webhook + Agent: output schema and output tool
-        let schemaObj: object | undefined ;
+        let schemaObj: object | undefined;
         if (data.outputSchema && data.outputSchema.trim().length > 0) {
           try {
             schemaObj = JSON.parse(data.outputSchema);

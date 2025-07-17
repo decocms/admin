@@ -105,7 +105,7 @@ export const migrationDiff = (
   const currentBindings = doBindings ?? [];
   let simulatedBindings: DoBinding[] = [];
   let foundCurrentState = false;
-  let oldTag: string | undefined ;
+  let oldTag: string | undefined;
 
   const migration: SingleStepMigration = {};
 

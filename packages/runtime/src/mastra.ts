@@ -420,8 +420,9 @@ export const createMCPServer = <
     ).then((w) => w.map((w) => w.workflow));
 
     const workflowTools =
-      workflows
-        ?.flatMap((workflow) => createWorkflowTools(workflow, bindings)) ?? [];
+      workflows?.flatMap((workflow) =>
+        createWorkflowTools(workflow, bindings),
+      ) ?? [];
 
     tools.push(...workflowTools);
     tools.push(decoChatOAuthToolFor<TSchema>(options.oauth));

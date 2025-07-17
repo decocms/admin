@@ -12,7 +12,7 @@ export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY, {
   capture_pageview: false,
 });
 
-let lastUserId: string | undefined ;
+let lastUserId: string | undefined;
 
 onUserChange((user) => {
   if (!user || user.is_anonymous) return;

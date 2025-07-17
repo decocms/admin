@@ -97,15 +97,15 @@ export const handleAuthCallback = async (
       return new Response("No access token received", { status: 401 });
     }
 
-    // Set cookie with the token and redirect
-    const response = Response.redirect(next, 302);
-    response.headers.set(
-      "Set-Cookie",
-      `deco_page_auth=${access_token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400`,
-    );
-
-    return response;
-  } catch {
-    return new Response("Authentication failed", { status: 500 });
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: next,
+        "Set-Cookie":
+          `deco_page_auth=${access_token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400`,
+      },
+    });
+  } catch (err) {
+    return new Response(`Authentication failed ${err}`, { status: 500 });
   }
 };

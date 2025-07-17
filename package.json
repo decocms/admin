@@ -10,7 +10,7 @@
     "build": "PWD=$PWD/apps/web deno run build",
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",
-    "check": "deno check --allow-import --config ./package.json .",
+    "check": "tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules && deno install",
     "db:repair": "supabase migration repair --status reverted",
@@ -63,6 +63,7 @@
     "supabase": "^2.22.12",
     "concurrently": "^9.2.0",
     "typescript": "^5.8.3",
+    "@types/node": "^22.10.6",
     "vitest": "3.2.4"
   },
   "lint": {

@@ -19,36 +19,11 @@
     "db:migration": "supabase migration up --linked --include-all",
     "db:migration:create": "supabase migration new",
     "npm:build": "npm run build --workspace=apps/web",
-    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts",
-    "rolesCLI": "deno run --env-file=./apps/web/.env -A scripts/role-and-policy-cli.ts"
+    "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "compilerOptions": {
-    "experimentalDecorators": true,
-    "lib": [
-      "deno.window",
-      "dom",
-      "esnext",
-      "deno.ns",
-      "deno.unstable",
-      "dom.iterable"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  },
-  "exclude": [
-    ".github/",
-    "**/.wrangler",
-    "apps/web/public/**",
-    "packages/runtime/src/cf-imports.ts"
-  ],
-  "lock": false,
-  "unstable": [
-    "kv",
-    "raw-imports"
   ],
   "devDependencies": {
     "@biomejs/biome": "2.1.2",
@@ -57,11 +32,5 @@
     "supabase": "^2.22.12",
     "typescript": "^5.8.3",
     "vitest": "3.2.4"
-  },
-  "lint": {
-    "plugins": [
-      "./plugins/ensure-tailwind-design-system-tokens.ts",
-      "./plugins/enforce-kebab-case-file-names.ts"
-    ]
   }
 }

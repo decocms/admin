@@ -30,5 +30,5 @@ export const createClient = <T>(init?: CustomInit): MCPClient<T> => {
         return mergedInit.handleResponse?.(response) ?? response.json();
       };
     },
-  }) as MCPClient<T>;
+  ) as MCPClient<T>;
 };

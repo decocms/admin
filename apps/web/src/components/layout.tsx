@@ -15,14 +15,7 @@ import {
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
-import {
-  createContext,
-  Fragment,
-  type ReactNode,
-  useContext,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, type ReactNode, useState } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
 import { useUser } from "../hooks/use-user.ts";
@@ -31,23 +24,27 @@ import RegisterActivity from "./common/register-activity.tsx";
 import Docked, { type Tab } from "./dock/index.tsx";
 import { AppSidebar } from "./sidebar/index.tsx";
 import { useLocalStorage } from "../hooks/use-local-storage.ts";
-import { ProfileSettings } from "./settings/profile.tsx";
 import { WithWorkspaceTheme } from "./theme.tsx";
+import { ProfileModalProvider, useProfileModal } from "./profile-modal.tsx";
 
-// Context for profile modal
-interface ProfileModalContextType {
-  openProfileModal: (onPhoneSaved?: () => void) => void;
-  closeProfileModal: () => void;
-}
-export const ProfileModalContext = createContext<
-  ProfileModalContextType | undefined
->(undefined);
-export function useProfileModal() {
-  const ctx = useContext(ProfileModalContext);
-  if (!ctx) {
-    throw new Error("useProfileModal must be used within ProfileModalContext");
-  }
-  return ctx;
+export function BaseRouteLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const user = useUser();
+  const { teamSlug } = useParams();
+
+  const rootContext: Workspace = teamSlug
+    ? `shared/${teamSlug}`
+    : `users/${user?.id}`;
+
+  return (
+    <SDKProvider workspace={rootContext}>
+      {children}
+      <Toaster />
+    </SDKProvider>
+  );
 }
 
 export function RouteLayout() {
@@ -57,35 +54,24 @@ export function RouteLayout() {
   } = useLocalStorage({ key: "deco-chat-sidebar", defaultValue: true });
   const [open, setOpen] = useState(defaultOpen);
   const { teamSlug } = useParams();
-  const user = useUser();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const pendingProfileAction = useRef<(() => void) | null>(null);
 
-  function openProfileModal(onPhoneSaved?: () => void) {
-    if (onPhoneSaved) pendingProfileAction.current = onPhoneSaved;
-    setProfileOpen(true);
-  }
-  function closeProfileModal() {
-    setProfileOpen(false);
-    pendingProfileAction.current = null;
-  }
-  function handlePhoneSaved() {
-    if (pendingProfileAction.current) {
-      pendingProfileAction.current();
-      pendingProfileAction.current = null;
-    }
-    setProfileOpen(false);
-  }
-
-  const rootContext: Workspace = teamSlug
-    ? `shared/${teamSlug}`
-    : `users/${user?.id}`;
+  const {
+    profileOpen,
+    setProfileOpen,
+    openProfileModal,
+    closeProfileModal,
+    handlePhoneSaved,
+  } = useProfileModal();
 
   return (
-    <SDKProvider workspace={rootContext}>
+    <BaseRouteLayout>
       <WithWorkspaceTheme>
-        <ProfileModalContext.Provider
-          value={{ openProfileModal, closeProfileModal }}
+        <ProfileModalProvider
+          profileOpen={profileOpen}
+          setProfileOpen={setProfileOpen}
+          openProfileModal={openProfileModal}
+          closeProfileModal={closeProfileModal}
+          handlePhoneSaved={handlePhoneSaved}
         >
           <SidebarProvider
             open={open}
@@ -103,17 +89,11 @@ export function RouteLayout() {
             <SidebarInset className="h-full flex-col bg-sidebar">
               <Outlet />
             </SidebarInset>
-            <ProfileSettings
-              open={profileOpen}
-              onOpenChange={setProfileOpen}
-              onPhoneSaved={handlePhoneSaved}
-            />
             <RegisterActivity teamSlug={teamSlug} />
-            <Toaster />
           </SidebarProvider>
-        </ProfileModalContext.Provider>
+        </ProfileModalProvider>
       </WithWorkspaceTheme>
-    </SDKProvider>
+    </BaseRouteLayout>
   );
 }
 

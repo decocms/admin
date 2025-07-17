@@ -1,6 +1,7 @@
 export * from "./constants.ts";
 export * from "./plan.ts";
 
+export * from "./crud/teams.ts";
 export * from "./crud/agent.ts";
 export * from "./crud/fs.tsx";
 export * from "./crud/groups.ts";

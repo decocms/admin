@@ -1,4 +1,4 @@
-type MCPClient<T> = {
+export type MCPClient<T> = {
   // deno-lint-ignore no-explicit-any
   [K in keyof T]: T[K] extends (...args: any) => any ? (
       args: Parameters<T[K]>[0],

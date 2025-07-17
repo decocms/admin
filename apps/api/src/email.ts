@@ -7,7 +7,7 @@ import { DECO_BOTS_DOMAIN } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { getServerClient } from "@deco/sdk/storage";
 import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
-import { EmailMessage } from "cloudflare:email"
+import { EmailMessage } from "cloudflare:email";
 // @ts-ignore: this is an import from cf
 import { createMimeMessage } from "mimetext";
 import { runtime } from "./middlewares/actors.ts";

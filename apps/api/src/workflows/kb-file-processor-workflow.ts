@@ -1,12 +1,14 @@
-import type {
-  Workflow,
-} from "@cloudflare/workers-types";
+import type { Workflow } from "@cloudflare/workers-types";
 import {
   WorkflowEntrypoint,
   type WorkflowEvent,
-  type WorkflowStep
+  type WorkflowStep,
 } from "cloudflare:workers";
-import { type BatchProcessorMessage, processBatch, type KbFileProcessorMessage } from "@deco/sdk/workflows";
+import {
+  type BatchProcessorMessage,
+  type KbFileProcessorMessage,
+  processBatch,
+} from "@deco/sdk/workflows";
 
 // Environment interface for workflow
 interface Env extends Record<string, unknown> {

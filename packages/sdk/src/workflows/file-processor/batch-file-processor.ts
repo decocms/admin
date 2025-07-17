@@ -32,14 +32,6 @@ export type KbFileProcessorMessage = z.infer<
   typeof KbFileProcessorMessageSchema
 >;
 
-// Extended message for batch processing
-export const BatchProcessorMessageSchema = KbFileProcessorMessageSchema.extend({
-  totalPages: z.number().int().min(0),
-  batchPage: z.number().int().min(0),
-});
-
-export type BatchProcessorMessage = z.infer<typeof BatchProcessorMessageSchema>;
-
 // Processing result schema
 export const ProcessingResultSchema = z.object({
   hasMore: z.boolean(),

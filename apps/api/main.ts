@@ -7,8 +7,7 @@ import { getRuntimeKey } from "hono/adapter";
 import { default as app } from "./src/app.ts";
 import { email } from "./src/email.ts";
 import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
-
-const { env } = await import("cloudflare:workers");
+import { env } from "cloudflare:workers";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);

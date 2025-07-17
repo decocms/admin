@@ -1,7 +1,7 @@
 import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from "jose";
 export type { JWTPayload };
+import { env } from "cloudflare:workers";
 
-const { env } = await import("cloudflare:workers");
 export const alg = "RSASSA-PKCS1-v1_5";
 export const hash = "SHA-256";
 

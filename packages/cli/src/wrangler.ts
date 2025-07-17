@@ -62,7 +62,8 @@ export async function getEnvVars(projectRoot?: string) {
 
   const { name, scope } = wrangler;
   if (name) {
-    env.DECO_CHAT_APP_NAME = `@${scope ?? workspace}/${name}`;
+    const [_, slug] = workspace.split("/");
+    env.DECO_CHAT_APP_NAME = `@${scope ?? slug}/${name}`;
   }
 
   if (config.local) {

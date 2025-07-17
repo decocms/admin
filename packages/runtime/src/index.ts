@@ -123,7 +123,7 @@ export class UnauthorizedError extends Error {
 
 const AUTH_CALLBACK_ENDPOINT = "/auth/callback";
 
-const AUTHENTICATED = () => {};
+const AUTHENTICATED = () => { };
 export const withBindings = <TEnv>(
   _env: TEnv,
   tokenOrContext?: string | RequestContext,
@@ -242,10 +242,11 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         return await fetcher(req, env, ctx);
       } catch (e) {
         if (e instanceof UnauthorizedError) {
+          const referer = req.headers.get("referer");
           e.redirectTo.searchParams.set(
             "state",
             StateParser.stringify({
-              next: req.url,
+              next: referer ?? req.url,
             }),
           );
           return Response.redirect(e.redirectTo, 302);

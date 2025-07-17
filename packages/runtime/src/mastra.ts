@@ -39,6 +39,42 @@ const createRuntimeContext = (prev?: RuntimeContext<AppContext>) => {
   runtimeContext.set("req", req);
   return runtimeContext;
 };
+
+/**
+ * creates a private tool that always ensure for athentication before being executed
+ */
+export function createPrivateTool<
+  TSchemaIn extends z.ZodSchema | undefined = undefined,
+  TSchemaOut extends z.ZodSchema | undefined = undefined,
+  TContext extends ToolExecutionContext<TSchemaIn> = ToolExecutionContext<
+    TSchemaIn
+  >,
+  TExecute extends ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"] =
+    ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+>(
+  opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
+    execute?: TExecute;
+  },
+): [TSchemaIn, TSchemaOut, TExecute] extends
+  [z.ZodSchema, z.ZodSchema, Function]
+  ? Tool<TSchemaIn, TSchemaOut, TContext> & {
+    inputSchema: TSchemaIn;
+    outputSchema: TSchemaOut;
+    execute: (context: TContext) => Promise<any>;
+  }
+  : Tool<TSchemaIn, TSchemaOut, TContext> {
+  const execute = opts.execute;
+  if (typeof execute === "function") {
+    opts.execute = ((input, options) => {
+      const env = input.runtimeContext.get("env") as DefaultEnv;
+      if (env) {
+        env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+      }
+      return execute(input, options);
+    }) as TExecute;
+  }
+  return createTool(opts);
+}
 export function createTool<
   TSchemaIn extends z.ZodSchema | undefined = undefined,
   TSchemaOut extends z.ZodSchema | undefined = undefined,

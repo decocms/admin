@@ -7,11 +7,6 @@ export type Json =
   | Json[];
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)";
-  };
   public: {
     Tables: {
       admin_ai_usage: {
@@ -717,6 +712,7 @@ export type Database = {
         Row: {
           access: string | null;
           access_id: string | null;
+          app_id: string | null;
           connection: Json;
           created_at: string;
           description: string | null;
@@ -728,6 +724,7 @@ export type Database = {
         Insert: {
           access?: string | null;
           access_id?: string | null;
+          app_id?: string | null;
           connection: Json;
           created_at?: string;
           description?: string | null;
@@ -739,6 +736,7 @@ export type Database = {
         Update: {
           access?: string | null;
           access_id?: string | null;
+          app_id?: string | null;
           connection?: Json;
           created_at?: string;
           description?: string | null;
@@ -755,7 +753,35 @@ export type Database = {
             referencedRelation: "deco_chat_access";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "deco_chat_integrations_app_id_fkey";
+            columns: ["app_id"];
+            isOneToOne: false;
+            referencedRelation: "deco_chat_apps_registry";
+            referencedColumns: ["id"];
+          },
         ];
+      };
+      deco_chat_oauth_codes: {
+        Row: {
+          claims: Json;
+          code: string;
+          created_at: string;
+          workspace: string;
+        };
+        Insert: {
+          claims: Json;
+          code: string;
+          created_at?: string;
+          workspace: string;
+        };
+        Update: {
+          claims?: Json;
+          code?: string;
+          created_at?: string;
+          workspace?: string;
+        };
+        Relationships: [];
       };
       deco_chat_plans: {
         Row: {

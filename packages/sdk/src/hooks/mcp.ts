@@ -322,15 +322,16 @@ export const useInstallFromMarketplace = () => {
     { appName: string; returnUrl: string; provider: string }
   >({
     mutationFn: async (
-      { appName, provider, returnUrl }: {
+      { appName, provider, returnUrl, appId }: {
         appName: string;
         returnUrl: string;
         provider: string;
+        appId?: string;
       },
     ) => {
       const result: { installationId: string } = await MCPClient
         .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName, provider });
+        .DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
 
       const integration = await loadIntegration(
         workspace,

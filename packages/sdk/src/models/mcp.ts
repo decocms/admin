@@ -52,6 +52,8 @@ export const IntegrationSchema = z.object({
   icon: z.string().optional(),
   /** Access level of the integration */
   access: z.string().optional().nullable(),
+  /** App ID */
+  appId: z.string().optional().nullable(),
   /** Connection configuration */
   connection: z.discriminatedUnion("type", [
     HTTPConnectionSchema,

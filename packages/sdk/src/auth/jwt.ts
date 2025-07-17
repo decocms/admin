@@ -75,6 +75,8 @@ export const getKeyPair = async () => {
   return await keys;
 };
 
+export const DECO_CHAT_KEY_ID = "deco-chat-api-key";
+
 export async function createJWT<
   TClaims extends Record<string, unknown> = Record<string, unknown>,
 >(
@@ -83,7 +85,7 @@ export async function createJWT<
   expiresIn?: number | string | Date,
 ): Promise<string> {
   let jwt = new SignJWT(payload)
-    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: DECO_CHAT_KEY_ID })
     .setIssuedAt();
   if (expiresIn) {
     jwt = jwt.setExpirationTime(expiresIn);
@@ -105,7 +107,7 @@ export async function verifyJWT<
   return payload as JwtPayloadWithClaims<TClaims>;
 }
 
-const DECO_CHAT_ISSUER = "deco.chat";
+const DECO_CHAT_ISSUER = "https://api.deco.chat";
 
 export type JwtPayloadWithClaims<
   TClaims extends Record<string, unknown> = Record<string, unknown>,

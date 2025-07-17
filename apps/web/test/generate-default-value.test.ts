@@ -1,6 +1,6 @@
 import { generateDefaultValue } from "../src/components/json-schema/utils/generate-default-value.ts";
 import type { JSONSchema7 } from "json-schema";
-import { test, expect } from "vitest";
+import { expect, test } from "vitest";
 
 test("generateDefaultValue - primitive types", () => {
   // Test string

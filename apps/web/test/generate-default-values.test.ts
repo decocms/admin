@@ -1,11 +1,13 @@
 import { generateDefaultValues } from "../src/components/json-schema/utils/generate-default-values.ts";
 import type { JSONSchema7 } from "json-schema";
-import { test, expect } from "vitest";
+import { expect, test } from "vitest";
 
 test("generateDefaultValues - empty or invalid schema", () => {
   // Test with null or undefined schema
   expect(generateDefaultValues(null as unknown as JSONSchema7)).toEqual({});
-  expect(generateDefaultValues(undefined as unknown as JSONSchema7)).toEqual({});
+  expect(generateDefaultValues(undefined as unknown as JSONSchema7)).toEqual(
+    {},
+  );
 
   // Test with non-object schema
   expect(generateDefaultValues({ type: "string" } as JSONSchema7)).toEqual({});

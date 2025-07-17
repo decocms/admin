@@ -267,7 +267,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
           if (attempt < maxAttempts) {
             // Exponential backoff with jitter
             const baseDelay = Math.min(
-              500 * Math.pow(2, attempt - 1),
+              500 * 2 ** (attempt - 1),
               maxDelay,
             );
             const jitter = Math.random() * 0.1 * baseDelay; // Add 10% jitter
@@ -289,7 +289,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
           if (error instanceof Error && error.name === "AbortError") {
             if (attempt < maxAttempts) {
               const baseDelay = Math.min(
-                1000 * Math.pow(2, attempt - 1),
+                1000 * 2 ** (attempt - 1),
                 maxDelay,
               );
               const jitter = Math.random() * 0.1 * baseDelay;
@@ -313,7 +313,7 @@ export const POLL_FOR_CONTENT = createInnateTool({
 
           if (isRetryable && attempt < maxAttempts) {
             const baseDelay = Math.min(
-              1000 * Math.pow(2, attempt - 1),
+              1000 * 2 ** (attempt - 1),
               maxDelay,
             );
             const jitter = Math.random() * 0.1 * baseDelay;
@@ -835,7 +835,7 @@ async function uploadWithRetry(
 
       if (attempt < maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
-        const delay = Math.pow(2, attempt - 1) * 1000;
+        const delay = 2 ** (attempt - 1) * 1000;
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }

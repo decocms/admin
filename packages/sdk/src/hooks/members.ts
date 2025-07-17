@@ -112,7 +112,7 @@ export const useRejectInvite = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id: id }: { id: string; teamId?: number }) =>
+    mutationFn: ({ id }: { id: string; teamId?: number }) =>
       rejectInvite(id),
     onSuccess: (_, variables) => {
       variables.teamId === undefined &&

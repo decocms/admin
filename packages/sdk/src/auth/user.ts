@@ -63,7 +63,7 @@ export async function getUserBySupabaseCookie(
   if (!user) {
     return jwt;
   }
-  let cachettl = undefined;
+  let cachettl ;
   if (sessionToken) {
     const { data: session } = await supabase.auth.getSession();
     cachettl = session?.session?.expires_at;

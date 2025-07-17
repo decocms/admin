@@ -136,7 +136,7 @@ export const listThreads = createTool({
       args.push(resourceId);
     }
 
-    let cursorWhereClauseIdx: number | undefined = undefined;
+    let cursorWhereClauseIdx: number | undefined ;
     if (cursor) {
       const operator = isDesc ? "<" : ">";
       cursorWhereClauseIdx = whereClauses.length;

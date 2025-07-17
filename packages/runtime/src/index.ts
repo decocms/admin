@@ -270,4 +270,4 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   };
 };
 
-export { type Migration, type WranglerConfig } from "./wrangler.ts";
+export type { Migration, WranglerConfig } from "./wrangler.ts";

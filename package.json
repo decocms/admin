@@ -10,7 +10,7 @@
     "build": "PWD=$PWD/apps/web deno run build",
     "lint": "biome lint",
     "fmt": "biome format",
-    "lint:write": "biome lint --write",
+    "lint:write": "biome lint --fix",
     "fmt:write": "biome format --write",
     "check": "tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",

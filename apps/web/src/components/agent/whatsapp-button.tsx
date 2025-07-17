@@ -284,7 +284,7 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
-                <img src="/img/zap.svg" className="w-4 h-4" />
+                <img src="/img/zap.svg" alt="WhatsApp Logo" className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -368,7 +368,7 @@ function formatDuration(start?: string, end?: string): string {
 function processStepGraph(graph: any): any[] {
   if (!graph) return [];
   if (Array.isArray(graph)) {
-    return graph.map((node) => processStepGraph(node)).flat();
+    return graph.flatMap((node) => processStepGraph(node));
   }
 
   switch (graph.type) {
@@ -407,7 +407,7 @@ function processStepGraph(graph: any): any[] {
         {
           type: "parallel",
           isParallel: true,
-          steps: graph.steps.map((step: any) => processStepGraph(step)).flat(),
+          steps: graph.steps.flatMap((step: any) => processStepGraph(step)),
         },
       ];
     case "if": {

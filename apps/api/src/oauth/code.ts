@@ -21,7 +21,7 @@ export const handleCodeExchange = async (c: Context<AppEnv>) => {
     const { data, error } = await appCtx.db.from("deco_chat_oauth_codes")
       .select(
         "*",
-      ).eq("code", code);
+      ).eq("code", code).maybeSingle();
 
     if (error || !data) {
       throw new HTTPException(500, { message: "Failed to exchange code" });

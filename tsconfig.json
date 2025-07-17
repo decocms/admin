@@ -82,6 +82,7 @@
     "**/.wrangler",
     "apps/web/public/**",
     "packages/cli/",
+    "packages/runtime/src/workflow.ts",
     "packages/runtime/src/cf-imports.ts",
     "packages/runtime/scripts/generate-cf-imports.ts",
     "packages/runtime/scripts/generate-json-schema.ts",

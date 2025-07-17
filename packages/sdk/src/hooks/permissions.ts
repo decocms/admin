@@ -4,7 +4,7 @@ import { MCPClient } from "../fetcher.ts";
 import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
-interface PermissionDescription {
+export interface PermissionDescription {
   scope: string;
   description: string;
 }

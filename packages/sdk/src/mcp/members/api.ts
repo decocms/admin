@@ -52,12 +52,12 @@ export const updateActivityLog = async (c: AppContext, {
     .eq("user_id", userId);
 };
 
-interface Role {
+export interface Role {
   id: number;
   name: string;
 }
 
-interface InviteAPIData {
+export interface InviteAPIData {
   email: string;
   id: string;
   roles: Role[];
@@ -68,7 +68,7 @@ const isRole = (
   r: any,
 ): r is Role => Boolean(r);
 
-interface DbMember {
+export interface DbMember {
   id: number;
   user_id: string | null;
   created_at: string | null;

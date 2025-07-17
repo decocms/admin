@@ -7,9 +7,9 @@ type MCPClient<T> = {
     : never;
 };
 
-type CustomInit = RequestInit & {
+export type CustomInit = RequestInit & {
   handleResponse?: (response: Response) => Promise<unknown>;
-}
+};
 
 export const createClient = <T>(init?: CustomInit): MCPClient<T> => {
   return new Proxy({}, {

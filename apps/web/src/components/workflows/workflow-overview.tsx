@@ -267,7 +267,7 @@ function WorkflowRunsTable({ runs, onRunClick }: {
 
 function WorkflowOverviewTab() {
   const { workflowName = "" } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const page = Number(searchParams.get("page") || 1);
   const per_page = Number(searchParams.get("per_page") || 10);
 
@@ -293,10 +293,6 @@ function WorkflowOverviewTab() {
     navigateWorkspace(
       `/workflows/${encodeURIComponent(workflowName)}/instances/${run.runId}`,
     );
-  }
-
-  function _handlePageChange(newPage: number) {
-    setSearchParams({ page: String(newPage), per_page: String(per_page) });
   }
 
   function handleRefresh() {

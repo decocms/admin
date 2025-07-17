@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 const STORAGE_EVENT = "deco-chat::storage-change";
 
-interface UseLocalStorageSetterProps<T> {
+interface UseLocalStorageSetterProps {
   key: string;
 }
 
-function useLocalStorageSetter<T>({ key }: UseLocalStorageSetterProps<T>) {
-  function update(value: T) {
+function useLocalStorageSetter({ key }: UseLocalStorageSetterProps) {
+  function update(value: unknown) {
     if (value === null) {
       localStorage.removeItem(key);
     } else {

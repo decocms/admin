@@ -21,7 +21,7 @@ import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.ts
 import type { Theme } from "@deco/sdk";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
-interface CurrentTeam {
+export interface CurrentTeam {
   avatarUrl: string | undefined;
   slug: string;
   id: number | string;
@@ -59,7 +59,7 @@ export function useCurrentTeam(): CurrentTeam {
   };
 }
 
-function useUserTeams() {
+export function useUserTeams() {
   const { data: teams } = useTeams();
   const personalTeam = useUserTeam();
   const { slug: currentSlug } = useCurrentTeam();

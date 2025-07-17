@@ -1,5 +1,5 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { WellKnownMcpGroups } from "@deco/sdk";
+import { DECO_CHAT_WEB, WellKnownMcpGroups } from "@deco/sdk";
 import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
@@ -318,6 +318,16 @@ app.get("/.well-known/jwks.json", async () => {
 });
 // External webhooks
 app.post("/webhooks/stripe", handleStripeWebhook);
+
+// Apps oauth
+app.get("/apps/oauth", (c) => {
+  const url = new URL(c.req.raw.url);
+  const target = new URL(DECO_CHAT_WEB);
+  target.pathname = "/apps-auth";
+  target.search = url.search;
+
+  return c.redirect(target.href);
+})
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));

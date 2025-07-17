@@ -61,7 +61,7 @@ const mapIntegration = (
   const appScope = integration.deco_chat_apps_registry
     ?.deco_chat_registry_scopes?.scope_name;
   if (registryName && appScope) {
-    appName = `@${registryName}/${appScope}`;
+    appName = `@${appScope}/${registryName}`;
   }
   return {
     ...integration,

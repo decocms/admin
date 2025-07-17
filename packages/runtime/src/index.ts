@@ -73,11 +73,16 @@ interface BindingTypeMap {
   mcp: MCPBinding;
 }
 
-export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
+export interface RequestContext<
+  TSchema extends z.ZodTypeAny = any,
+  TUser = unknown,
+> {
   state: z.infer<TSchema>;
   token: string;
   workspace: string;
-  ensureAuthenticated: (options?: { workspaceHint?: string }) => void;
+  ensureAuthenticated: (
+    options?: { workspaceHint?: string },
+  ) => TUser | undefined;
 }
 
 // 2. Map binding type to its creator function
@@ -123,7 +128,9 @@ export class UnauthorizedError extends Error {
 
 const AUTH_CALLBACK_ENDPOINT = "/auth/callback";
 
-const AUTHENTICATED = () => {};
+const AUTHENTICATED = (user?: unknown) => () => {
+  return user;
+};
 export const withBindings = <TEnv>(
   _env: TEnv,
   tokenOrContext?: string | RequestContext,
@@ -137,11 +144,12 @@ export const withBindings = <TEnv>(
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
       workspace: decoded.aud as string,
-      ensureAuthenticated: AUTHENTICATED,
+      ensureAuthenticated: AUTHENTICATED(decoded.user),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
-    context.ensureAuthenticated = AUTHENTICATED;
+    const decoded = decodeJwt(tokenOrContext.token);
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user);
   } else {
     context = {
       state: undefined,

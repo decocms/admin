@@ -1,15 +1,12 @@
 import {
   type Integration,
   SDKProvider,
-  type Team,
   useCreateOAuthCodeForIntegration,
   useIntegrations,
-  type useTeams,
   type Workspace,
 } from "@deco/sdk";
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
-import { z } from "zod";
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Select,
   SelectContent,
@@ -17,12 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Avatar } from "../common/avatar/index.tsx";
-import { BaseRouteLayout } from "../layout";
-import { type CurrentTeam, useUserTeams } from "../sidebar/team-selector.tsx";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
+import { z } from "zod";
 import { useUser } from "../../hooks/use-user.ts";
+import { Avatar } from "../common/avatar/index.tsx";
+import { BaseRouteLayout } from "../layout.tsx";
+import { type CurrentTeam, useUserTeams } from "../sidebar/team-selector.tsx";
 
 const OAuthSearchParamsSchema = z.object({
   client_id: z.string(),

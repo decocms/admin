@@ -14,6 +14,7 @@ const HTTP_VERBS: Set<
 export interface TypedRequestInit<T> extends Omit<RequestInit, "body"> {
   body: T;
 }
+// @ts-ignore dont care about this override
 export interface TypedResponse<T> extends Response {
   json: () => Promise<T>;
 }

@@ -3,7 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "check:types": "tsc --noEmit"
+  },
   "exports": {
     "./components/*": "./src/components/*",
     "./hooks/*": "./src/hooks/*",

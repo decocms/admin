@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "check:types": "tsc --build --noEmit"
+    "check:types": "tsc --noEmit"
   },
   "dependencies": {
     "@mastra/cloudflare-d1": "^0.12.1",

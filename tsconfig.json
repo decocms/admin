@@ -85,6 +85,6 @@
     "packages/runtime/src/cf-imports.ts",
     "packages/runtime/scripts/generate-cf-imports.ts",
     "packages/runtime/scripts/generate-json-schema.ts",
-    "plugins/*",
+    "plugins/*"
   ]
 }

@@ -161,7 +161,7 @@ export const createAgent = createTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const [{ data, error }] = await Promise.all([
+    const { data, error } = await
       c.db
         .from("deco_chat_agents")
         // @ts-ignore - @Camudo push your code
@@ -171,8 +171,7 @@ export const createAgent = createTool({
           workspace: c.workspace.value,
         })
         .select()
-        .single(),
-    ]);
+        .single();
 
     if (error) {
       throw new InternalServerError(error.message);

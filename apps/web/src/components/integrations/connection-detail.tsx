@@ -1,25 +1,3 @@
-import { Button } from "@deco/ui/components/button.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Navigate, useParams, useSearchParams } from "react-router";
-import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { isWellKnownApp, useGroupedApp } from "./apps.ts";
-import { IntegrationIcon } from "./common.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@deco/ui/components/select.tsx";
-import { AgentAvatar } from "../common/avatar/agent.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import {
   type Integration,
   type MCPConnection,
@@ -27,14 +5,38 @@ import {
   useToolCall,
   useTools,
 } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
-
+import { Button } from "@deco/ui/components/button.tsx";
 import {
-  RemoveConnectionAlert,
-  useRemoveConnection,
-} from "./remove-connection.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
-import { PasswordInput } from "@deco/ui/components/password-input.tsx";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@deco/ui/components/dropdown-menu.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useParams, useSearchParams } from "react-router";
+import { AgentAvatar } from "../common/avatar/agent.tsx";
+import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
+import { isWellKnownApp, useGroupedApp } from "./apps.ts";
+import { IntegrationIcon } from "./common.tsx";
+
+import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@deco/ui/components/accordion.tsx";
+import { Card } from "@deco/ui/components/card.tsx";
 import {
   Form,
   FormControl,
@@ -43,32 +45,30 @@ import {
   FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
-import { useForm } from "react-hook-form";
-import { useUpdateIntegration, useWriteFile } from "@deco/sdk";
-import { trackEvent } from "../../hooks/analytics.ts";
-import { Card } from "@deco/ui/components/card.tsx";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@deco/ui/components/accordion.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { PasswordInput } from "@deco/ui/components/password-input.tsx";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@deco/ui/components/tabs.tsx";
-import { formatToolName } from "../chat/utils/format-tool-name.ts";
-import { ToolCallForm } from "./tool-call-form.tsx";
-import { ToolCallResult } from "./tool-call-result.tsx";
-import type { MCPToolCallResult } from "./types.ts";
+import { useForm } from "react-hook-form";
+import { trackEvent } from "../../hooks/analytics.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
+import type { MarketplaceIntegration } from "./marketplace.tsx";
+import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import {
+  RemoveConnectionAlert,
+  useRemoveConnection,
+} from "./remove-connection.tsx";
 import {
   ConfirmMarketplaceInstallDialog,
 } from "./select-connection-dialog.tsx";
-import type { MarketplaceIntegration } from "./marketplace.tsx";
-import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
+import { ToolCallForm } from "./tool-call-form.tsx";
+import { ToolCallResult } from "./tool-call-result.tsx";
+import type { MCPToolCallResult } from "./types.ts";
 
 function ConnectionInstanceActions({
   onConfigure,
@@ -702,8 +702,8 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
       {parameters.length > 0
         ? (
           parameters.map((param) => (
-            <div className="flex flex-col gap-2">
-              <div key={param.name} className="flex items-center gap-2">
+            <div className="flex flex-col gap-2" key={param.name}>
+              <div className="flex items-center gap-2">
                 <Icon
                   name={param.type === "string" ? "text_fields" : "category"}
                   size={16}

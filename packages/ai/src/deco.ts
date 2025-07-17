@@ -139,8 +139,8 @@ export const getTools = (
       if (!func.$ref || func.$ref === RESOLVABLE_DEFINITION) return;
       const funcDefinition = schemas.definitions[idFromDefinition(func.$ref)];
       const resolveType =
-        (funcDefinition.properties?.__resolveType as { default: string })
-          .default;
+        (funcDefinition.properties?.__resolveType as { default: string } | undefined)
+          ?.default ?? "";
 
       const getInputSchemaId = () => {
         if ("inputSchema" in func) {

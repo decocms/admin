@@ -112,7 +112,7 @@ export const createApiKey = createTool({
       throw new InternalServerError(error.message);
     }
     const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
         public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
         private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
@@ -309,9 +309,8 @@ export const checkAccess = createTool({
     assertHasWorkspace(c);
     c.resourceAccess.grant(); // this is public because it uses the current key from context
 
-    let user = c.user;
     if (key) {
-      const fromJWT = await userFromJWT(
+      await userFromJWT(
         key,
         c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
           c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
@@ -321,7 +320,6 @@ export const checkAccess = createTool({
           }
           : undefined,
       );
-      user = fromJWT ?? user;
     }
     const hasAccess = await Promise.all(tools.map(async (tool) => {
       return [

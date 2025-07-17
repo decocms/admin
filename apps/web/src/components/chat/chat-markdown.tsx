@@ -1,11 +1,10 @@
+import { Button } from "@deco/ui/components/button.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
 import { marked } from "marked";
-import { memo, Suspense, useCallback, useMemo, useRef } from "react";
+import { lazy, memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
-import { lazy, useState } from "react";
-import { Button } from "@deco/ui/components/button.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
 
 const LazyHighlighter = lazy(() => import("./lazy-highlighter.tsx"));
 
@@ -113,7 +112,7 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
     await navigator.clipboard.writeText(csv);
     setCopied(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setCopied(false), 1200);
+    timeoutRef.current = setTimeout(() => setCopied(false), 1200) as unknown as number;
   }, [tableToCsv]);
 
   return (

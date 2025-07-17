@@ -2,7 +2,7 @@
 
 import { Check, ChevronsUpDown } from "lucide-react";
 
-import { cn } from "@deco/ui/lib/utils";
+import { cn } from "@deco/ui/lib/utils.ts";
 import { Button } from "./button.tsx";
 import {
   Command,

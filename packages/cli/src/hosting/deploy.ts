@@ -1,9 +1,9 @@
 import { Confirm } from "@cliffy/prompt";
 import { walk } from "@std/fs";
-import { createWorkspaceClient } from "../mcp.ts";
-import { getCurrentEnvVars } from "../wrangler.ts";
 import { relative } from "@std/path/relative";
 import { Buffer } from "node:buffer";
+import { createWorkspaceClient } from "../mcp.ts";
+import { getCurrentEnvVars } from "../wrangler.ts";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {
@@ -128,7 +128,7 @@ export const deploy = async (
         wranglerConfigStatus = `${configFile} ✅ (found in ${configPath})`;
         found = true;
         break;
-      } catch (_) {
+      } catch {
         // not found, try next
       }
     }

@@ -20,8 +20,8 @@ import {
   GetWebhookTriggerUrlOutputSchema,
   type ListTriggersOutput,
   ListTriggersOutputSchema,
-  type Trigger as TriggerType,
   TriggerSchema,
+  type Trigger as TriggerType,
 } from "../../models/trigger.ts";
 
 import type { Json, QueryResult } from "../../storage/index.ts";
@@ -445,7 +445,7 @@ export const activateTrigger = createTool({
         success: true,
         message: "Trigger activated successfully",
       };
-    } catch (_) {
+    } catch {
       return {
         success: false,
         message: "Failed to activate trigger",
@@ -507,7 +507,7 @@ export const deactivateTrigger = createTool({
         success: true,
         message: "Trigger deactivated successfully",
       };
-    } catch (_) {
+    } catch {
       return {
         success: false,
         message: "Failed to deactivate trigger",

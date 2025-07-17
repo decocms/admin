@@ -98,7 +98,7 @@ export function instrumentState(state: DurableObjectState) {
 
 let cold_start = true;
 export type DOClass = {
-  new (state: DurableObjectState, env: any): DurableObject;
+  new(state: DurableObjectState, env: any): DurableObject;
 };
 export function executeDOFetch(
   fetchFn: FetchFn,
@@ -196,8 +196,6 @@ function instrumentFetchFn(
           request,
           id,
         );
-      } catch (error) {
-        throw error;
       } finally {
         exportSpans();
       }
@@ -227,8 +225,6 @@ function instrumentAlarmFn(
           bound,
           id,
         );
-      } catch (error) {
-        throw error;
       } finally {
         exportSpans();
       }

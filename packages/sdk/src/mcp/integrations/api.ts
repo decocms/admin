@@ -6,6 +6,7 @@ import {
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import {
   type Agent,
   AgentSchema,
@@ -39,7 +40,6 @@ import {
 } from "../index.ts";
 import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
-import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import { createServerClient } from "../utils.ts";
 
 // Tool factories for each group
@@ -858,7 +858,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
         );
 
         const id = parsed.installId ??
-          (parsed.data?.connection as { token?: string }).token ??
+          (parsed.data?.connection as { token?: string } | undefined)?.token ??
           crypto.randomUUID();
 
         client.close();

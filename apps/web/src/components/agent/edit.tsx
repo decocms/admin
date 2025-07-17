@@ -29,6 +29,8 @@ import { createContext, Suspense, useContext, useEffect, useMemo } from "react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { useCreateAgent } from "../../hooks/use-create-agent.ts";
+import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
+import { isFilePath } from "../../utils/path.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
@@ -45,8 +47,6 @@ import AgentPreview, { useTabsForAgent } from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { WhatsAppButton } from "./whatsapp-button.tsx";
-import { isFilePath } from "../../utils/path.ts";
-import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
 interface Props {
   agentId?: string;
@@ -415,10 +415,10 @@ export default function Page(props: Props) {
       }
     >
       <FormProvider
+        key={chatKey}
         {...props}
         agentId={agentId}
         threadId={threadId!}
-        key={chatKey}
       />
     </Suspense>
   );

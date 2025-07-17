@@ -6,6 +6,7 @@ import type {
   User as SupaUser,
 } from "@supabase/supabase-js";
 import { Hono } from "hono";
+import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
 import { honoCtxToAppCtx } from "../api.ts";
 import {
   AUTH_URL,
@@ -16,7 +17,6 @@ import {
 import { getCookies, setHeaders } from "../utils/cookie.ts";
 import { authSetCookie, getServerClientOptions } from "../utils/db.ts";
 import { assertPrincipalIsUser } from "./assertions.ts";
-import { AUTH_URL_CLI } from "../../../../packages/sdk/src/constants.ts";
 
 const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 
@@ -62,7 +62,7 @@ export const getUser = async (
           name,
           value,
         })),
-      setAll: (_cookies) => {},
+      setAll: (_cookies) => { },
     },
   });
 
@@ -107,7 +107,7 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
       },
     });
     return { email };
-  } catch (_) {
+  } catch {
     return { error: "" };
   }
 };
@@ -177,8 +177,8 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
     const redirectTo = cli
       ? AUTH_URL_CLI
       : url.host.includes("localhost")
-      ? "http://localhost:3001/"
-      : "https://api.deco.chat/";
+        ? "http://localhost:3001/"
+        : "https://api.deco.chat/";
 
     await db.auth.signInWithOtp({
       email,
@@ -187,7 +187,7 @@ appLogin.all("/magiclink", async (ctx: AppContext) => {
       },
     });
     return ctx.json({ email });
-  } catch (_) {
+  } catch {
     return ctx.json({ error: "" }, 400);
   }
 });

@@ -102,6 +102,7 @@ export default {
         new Request(req.url, {
           method: req.method,
           headers: reqHeaders,
+          // eslint-disable-next-line eslint-plugin-unicorn(no-invalid-fetch-options)
           body: req.body,
           redirect: req.redirect,
         }),

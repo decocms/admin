@@ -1,4 +1,4 @@
-import { describe, expect, it, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { MicroDollar } from "../src/mcp/wallet/microdollar.ts";
 
 describe("MicroDollar - fromMicrodollarString and toMicrodollarString", () => {

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxc-transform/configuration_schema.json",
+  "linter": {
+    "rules": {
+      "typescript": "all",
+      "react": "all",
+      "import": "all",
+      "jsx-a11y": "all",
+      "unicorn": "all",
+      "promise": "all"
+    },
+    "deny": [
+      "no-console",
+      "no-debugger"
+    ],
+    "allow": [
+      "no-unused-vars",
+      "prefer-const"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentType": "space",
+    "indentSize": 2,
+    "lineEnding": "lf",
+    "trailingComma": "all",
+    "semicolons": "always",
+    "singleQuote": false,
+    "quoteProps": "asNeeded",
+    "jsxSingleQuote": false,
+    "bracketSpacing": true,
+    "bracketSameLine": false,
+    "arrowParens": "always",
+    "printWidth": 100
+  },
+  "transform": {},
+  "minifier": {
+    "enabled": false
+  }
+} 

@@ -4,10 +4,7 @@ import {
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
-import {
-  type KbFileProcessorMessage,
-  processBatch,
-} from "@deco/sdk/workflows";
+import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
 
 // Environment interface for workflow
 interface Env extends Record<string, unknown> {

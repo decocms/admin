@@ -8,8 +8,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "PWD=$PWD/apps/web deno run build",
-    "lint": "deno lint --config ./package.json .",
-    "fmt": "deno fmt --config ./package.json .",
+    "lint": "biome lint",
+    "fmt": "biome format",
+    "lint:write": "biome lint --write",
+    "fmt:write": "biome format --write",
     "check": "tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules && deno install",
@@ -49,10 +51,11 @@
     "raw-imports"
   ],
   "devDependencies": {
-    "supabase": "^2.22.12",
-    "concurrently": "^9.2.0",
-    "typescript": "^5.8.3",
+    "@biomejs/biome": "2.1.2",
     "@types/node": "^22.10.6",
+    "concurrently": "^9.2.0",
+    "supabase": "^2.22.12",
+    "typescript": "^5.8.3",
     "vitest": "3.2.4"
   },
   "lint": {

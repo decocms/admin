@@ -45,14 +45,14 @@ import { useForm } from "react-hook-form";
 import { Link, useMatch } from "react-router";
 import { z } from "zod";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useUser } from "../../hooks/use-user.ts";
 import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
+import { useUser } from "../../hooks/use-user.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 
 const STATIC_ITEMS = [
   {
@@ -272,7 +272,7 @@ function SidebarThreadItem(
     try {
       updateTitle.mutateAsync({ threadId: thread.id, title: data.title });
       setIsEditing(false);
-    } catch (_) {
+    } catch {
       methods.setValue("title", thread.title);
       setIsEditing(false);
     }

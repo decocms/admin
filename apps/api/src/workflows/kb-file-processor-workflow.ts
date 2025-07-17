@@ -3,7 +3,7 @@ import type {
   WorkflowEvent,
   WorkflowStep,
 } from "@cloudflare/workers-types";
-import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
+import { processBatch, type KbFileProcessorMessage } from "@deco/sdk/workflows";
 
 const { WorkflowEntrypoint } = await import("cloudflare:workers");
 
@@ -31,8 +31,7 @@ export class KbFileProcessorWorkflow
   ) {
     const message = event.payload;
     console.log(
-      `Workflow processing file: ${message.fileUrl}, batch: ${
-        message.batchPage || 0
+      `Workflow processing file: ${message.fileUrl}, batch: ${message.batchPage || 0
       }`,
     );
 

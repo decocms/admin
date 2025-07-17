@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any ban-types
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types */
 import { HttpServerTransport } from "@deco/mcp/http";
 import {
   createTool as mastraCreateTool,
@@ -9,8 +9,8 @@ import {
 } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import {
-  createStep as mastraCreateStep,
   createWorkflow,
+  createStep as mastraCreateStep,
   type DefaultEngineType,
   type ExecuteFunction,
   type Step as MastraStep,
@@ -46,7 +46,7 @@ export function createTool<
     TSchemaIn
   >,
   TExecute extends ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"] =
-    ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
+  ToolAction<TSchemaIn, TSchemaOut, TContext>["execute"],
 >(
   opts: ToolAction<TSchemaIn, TSchemaOut, TContext> & {
     execute?: TExecute;
@@ -185,8 +185,8 @@ export interface CreateMCPServerOptions<
     (
       env: Env & DefaultEnv<TSchema>,
     ) => // this is a workaround to allow workflows to be thenables
-    | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
-    | ReturnType<typeof createWorkflow>
+      | Promise<{ workflow: ReturnType<typeof createWorkflow> }>
+      | ReturnType<typeof createWorkflow>
   >;
 }
 

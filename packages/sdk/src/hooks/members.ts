@@ -9,18 +9,16 @@ import {
   getMyInvites,
   getTeamMembers,
   getTeamRoles,
-  type Invite as _Invite,
   inviteTeamMembers,
   type Member,
   registerActivity,
   rejectInvite,
   removeTeamMember,
-  type Role as _Role,
-  updateMemberRole,
+  updateMemberRole
 } from "../crud/members.ts";
+import { type User, useSDK } from "../index.ts";
 import { KEYS } from "./api.ts";
 import { useTeams } from "./teams.ts";
-import { type User, useSDK } from "../index.ts";
 
 type TeamMembers = Awaited<ReturnType<typeof getTeamMembers>>;
 
@@ -113,7 +111,7 @@ export const useRejectInvite = () => {
 
   return useMutation({
     mutationFn: (
-      { id: id }: { id: string; teamId?: number },
+      { id }: { id: string; teamId?: number },
     ) => rejectInvite(id),
     onSuccess: (_, variables) => {
       variables.teamId === undefined &&

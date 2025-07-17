@@ -14,8 +14,8 @@ export abstract class BaseActor<
   public metadata?: TMetadata;
   constructor(env?: object) {
     this.env = {
-      ...process?.env ?? {},
-      ...env ?? {},
+      ...process?.env,
+      ...env,
     } as Record<string, string>;
   }
 

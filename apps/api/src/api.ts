@@ -1,6 +1,6 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { getKeyPair } from "@deco/sdk/auth";
 import { WellKnownMcpGroups } from "@deco/sdk";
+import { getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
   AuthorizationClient,
@@ -356,6 +356,7 @@ app.on([
     script,
     new Request(url, {
       redirect: c.req.raw.redirect,
+      // eslint-disable-next-line eslint-plugin-unicorn(no-invalid-fetch-options)
       body: c.req.raw.body,
       method: c.req.raw.method,
       headers,

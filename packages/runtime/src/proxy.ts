@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { CreateStubAPIOptions } from "./mcp.ts";
 
 const getWorkspace = (workspace?: string) => {
@@ -81,8 +81,7 @@ async function makeApiCall(
       traceDebugId,
     ) ??
       new Error(
-        `http error ${response.status} ${
-          JSON.stringify(config.payload)
+        `http error ${response.status} ${JSON.stringify(config.payload)
         } ${config.toolName} ${message} ${traceDebugId}`,
       );
     throw err;
@@ -140,9 +139,8 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
             ? await options.connection()
             : {
               type: "HTTP",
-              url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${
-                getWorkspace(options?.workspace)
-              }/mcp`,
+              url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(options?.workspace)
+                }/mcp`,
             };
 
           const data = await makeApiCall({
@@ -198,7 +196,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
               tool.inputSchema,
             outputSchema: tool.outputSchema
               ? options?.jsonSchemaToZod?.(tool.outputSchema) ??
-                tool.outputSchema
+              tool.outputSchema
               : undefined,
             execute: callToolFn,
           };

@@ -14,8 +14,8 @@
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { ActorState, InvokeMiddlewareOptions } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import type { Agent as Configuration } from "@deco/sdk";
-import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
+import type { Agent as Configuration, User } from "@deco/sdk";
+import { BaseActor, type AuthMetadata } from "@deco/sdk/actors";
 import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
 import {
   DEFAULT_MAX_STEPS,
@@ -31,16 +31,16 @@ import {
 } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import {
-  type AppContext,
-  assertWorkspaceResourceAccess,
   AuthorizationClient,
-  createResourceAccess,
-  fromWorkspaceString,
-  type LLMVault,
   MCPClient,
-  type MCPClientStub,
   PolicyClient,
   SupabaseLLMVault,
+  assertWorkspaceResourceAccess,
+  createResourceAccess,
+  fromWorkspaceString,
+  type AppContext,
+  type LLMVault,
+  type MCPClientStub,
   type WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { AgentMemoryConfig } from "@deco/sdk/memory";
@@ -55,22 +55,22 @@ import {
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
 import {
-  type StorageThreadType,
   Telemetry,
+  type StorageThreadType,
   type WorkingMemory,
 } from "@mastra/core";
-import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
+import type { ToolsInput, ToolsetsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
 import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
 import type { TextPart } from "ai";
 import {
+  smoothStream,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModelUsage,
   type Message,
-  smoothStream,
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";
@@ -84,17 +84,17 @@ import { resolveMentions } from "../../sdk/src/utils/prompt-mentions.ts";
 import { convertToAIMessage } from "./agent/ai-message.ts";
 import { createAgentOpenAIVoice } from "./agent/audio.ts";
 import {
-  createLLMInstance,
   DEFAULT_ACCOUNT_ID,
+  createLLMInstance,
   getLLMConfig,
 } from "./agent/llm.ts";
 import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
 import type {
-  AIAgent as IIAgent,
-  GenerateOptions,
   Message as AIMessage,
+  GenerateOptions,
+  AIAgent as IIAgent,
   StreamOptions,
   Thread,
   ThreadQueryOptions,
@@ -273,7 +273,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       params: {},
       envVars: this.env as any,
       db: this.db,
-      user: metadata?.user!,
+      user: metadata?.user as unknown as User,
       isLocal: metadata?.user == null,
       stub: this.state.stub as AppContext["stub"],
       cookie: metadata?.userCookie ?? undefined,
@@ -622,8 +622,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     return contextStorage.run({
       env: this.actorEnv,
       ctx: {
-        passThroughOnException: () => {},
-        waitUntil: () => {},
+        passThroughOnException: () => { },
+        waitUntil: () => { },
         props: {},
       },
     }, fn);
@@ -631,7 +631,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
 
   _token() {
     const keyPair = this.env.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
+      this.env.DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
         public: this.env.DECO_CHAT_API_JWT_PUBLIC_KEY,
         private: this.env.DECO_CHAT_API_JWT_PRIVATE_KEY,
@@ -688,7 +688,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     const response = await this._runWithContext(async () => {
       return await next({
         ...opts,
-        metadata: { ...opts?.metadata ?? {}, timings },
+        metadata: { ...opts?.metadata, timings },
       });
     });
     methodTiming.end();
@@ -812,19 +812,15 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       throw new Error("Agent not initialized");
     }
 
-    try {
-      const readableStream = await this._maybeAgent.voice.speak(text, {
-        speaker: options?.voice || "echo",
-        properties: {
-          speed: options?.speed || 1.0,
-          pitch: "default",
-        },
-      });
+    const readableStream = await this._maybeAgent.voice.speak(text, {
+      speaker: options?.voice || "echo",
+      properties: {
+        speed: options?.speed || 1.0,
+        pitch: "default",
+      },
+    });
 
-      return readableStream;
-    } catch (error) {
-      throw error;
-    }
+    return readableStream;
   }
 
   async listen(buffer: Uint8Array) {
@@ -1108,9 +1104,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         "agent.id": this.state.id,
         model: options?.model ?? this._configuration?.model,
         "thread.id": thread.threadId,
-        "openrouter.bypass": `${
-          bypassOpenRouter ?? options?.bypassOpenRouter ?? false
-        }`,
+        "openrouter.bypass": `${bypassOpenRouter ?? options?.bypassOpenRouter ?? false
+          }`,
       },
     });
     let ended = false;

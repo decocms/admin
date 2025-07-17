@@ -311,7 +311,7 @@ export default function MentionDropdown({
           {category.children?.length
             ? category.children.map((item) => {
               return (
-                <Tooltip open={isSelected(item)}>
+                <Tooltip key={item.id} open={isSelected(item)}>
                   <TooltipTrigger asChild>
                     <Button
                       key={item.id}

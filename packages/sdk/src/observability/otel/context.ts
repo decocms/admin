@@ -74,6 +74,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
   }
 
   private _bindFunction<T extends Function>(context: Context, target: T): T {
+    // eslint-disable-next-line typescript-eslint(no-this-alias)
     const manager = this;
     const contextWrapper = function (this: never, ...args: unknown[]) {
       return manager.with(context, () => target.apply(this, args));
@@ -136,6 +137,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
    * @param original reference to the patched method
    */
   private _patchRemoveListener(ee: EventEmitter, original: Function) {
+    // eslint-disable-next-line typescript-eslint(no-this-alias)
     const contextManager = this;
     return function (this: never, event: string, listener: Func<void>) {
       const events = contextManager._getPatchMap(ee)?.[event];
@@ -154,6 +156,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
    * @param original reference to the patched method
    */
   private _patchRemoveAllListeners(ee: EventEmitter, original: Function) {
+    // eslint-disable-next-line typescript-eslint(no-this-alias)
     const contextManager = this;
     return function (this: never, event: string) {
       const map = contextManager._getPatchMap(ee);
@@ -180,6 +183,7 @@ abstract class AbstractAsyncHooksContextManager implements ContextManager {
     original: Function,
     context: Context,
   ) {
+    // eslint-disable-next-line typescript-eslint(no-this-alias)
     const contextManager = this;
     return function (this: never, event: string, listener: Func<void>) {
       /**

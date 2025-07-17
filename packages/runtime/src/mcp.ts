@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 import { convertJsonSchemaToZod } from "zod-from-json-schema";
 import type { z as zv4 } from "zod/v4";
@@ -106,21 +106,21 @@ export interface ToolBinder<
   opt?: true;
 }
 export type MCPClientStub<TDefinition extends readonly ToolBinder[]> = {
-  [K in TDefinition[number] as K["name"]]: K extends
-    ToolBinder<string, infer TInput, infer TReturn> ? (
-      params: TInput,
-      init?: RequestInit,
-    ) => Promise<TReturn>
-    : never;
+  [K in TDefinition[number]as K["name"]]: K extends
+  ToolBinder<string, infer TInput, infer TReturn> ? (
+    params: TInput,
+    init?: RequestInit,
+  ) => Promise<TReturn>
+  : never;
 };
 
 export type MCPClientFetchStub<TDefinition extends readonly ToolBinder[]> = {
-  [K in TDefinition[number] as K["name"]]: K extends
-    ToolBinder<string, infer TInput, infer TReturn> ? (
-      params: TInput,
-      init?: RequestInit,
-    ) => Promise<TReturn>
-    : never;
+  [K in TDefinition[number]as K["name"]]: K extends
+  ToolBinder<string, infer TInput, infer TReturn> ? (
+    params: TInput,
+    init?: RequestInit,
+  ) => Promise<TReturn>
+  : never;
 };
 
 export type MCPConnectionProvider =
@@ -146,7 +146,7 @@ export function createMCPFetchStub<TDefinition extends readonly ToolBinder[]>(
   options?: CreateStubAPIOptions,
 ): MCPClientFetchStub<TDefinition> {
   return createMCPClientProxy<MCPClientFetchStub<TDefinition>>({
-    ...options ?? {},
+    ...options,
     jsonSchemaToZod: convertJsonSchemaToZod,
   });
 }

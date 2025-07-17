@@ -1,5 +1,6 @@
 import { Command } from "@cliffy/command";
 import denoJson from "./deno.json" with { type: "json" };
+import { addCommand } from "./src/add.ts";
 import {
   getConfig,
   getLocal,
@@ -23,7 +24,6 @@ import {
 } from "./src/utils/prompt-ide-setup.ts";
 import { whoamiCommand } from "./src/whoami.ts";
 import { ensureDevEnvironment, getEnvVars } from "./src/wrangler.ts";
-import { addCommand } from "./src/add.ts";
 
 // Placeholder for login command implementation
 const login = new Command()
@@ -68,7 +68,7 @@ const hostingList = new Command()
   .action(async (args) => {
     return listApps({
       workspace: args.workspace ??
-        await readSession().then((session) => session?.workspace!),
+        await readSession().then((session) => session?.workspace ?? ""),
     });
   });
 

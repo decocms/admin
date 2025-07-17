@@ -288,6 +288,7 @@ Deno.test("MicroDollar - edge cases and error handling", async (t) => {
     const largeNegative = MicroDollar.fromMicrodollarString(
       "-999999999999_999999",
     );
+    // eslint-disable-next-line eslint(no-loss-of-precision)
     assertEquals(largeNegative.toDollars(), -999999999999.999999);
     assertEquals(largeNegative.isNegative(), true);
     assertEquals(largeNegative.toMicrodollarString(), "-999999999999_999999");

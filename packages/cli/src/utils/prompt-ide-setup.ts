@@ -60,7 +60,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
 
       const config = {
         mcpServers: {
-          ...(existingConfig.mcpServers || {}),
+          ...existingConfig.mcpServers,
           ...mcpConfig.mcpServers,
         },
       };
@@ -92,7 +92,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
 
       const config = {
         mcpServers: {
-          ...(existingConfig.mcpServers || {}),
+          ...existingConfig.mcpServers,
           ...mcpConfig.mcpServers,
         },
       };

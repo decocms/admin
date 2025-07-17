@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
@@ -11,7 +11,7 @@ import type { Binding, MCPBinding } from "./wrangler.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
-  type ToolBinder,
+  type ToolBinder
 } from "./mcp.ts";
 
 export interface WorkspaceDB {

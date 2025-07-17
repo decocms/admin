@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@deco/ui/components/select.tsx";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { z } from "zod";
 import { useUser } from "../../hooks/use-user.ts";
@@ -41,7 +41,10 @@ const preSelectTeam = (
     return null;
   }
 
-  return teams.find((team) => team.slug === workspace_hint) ?? null;
+  return teams.find((team) =>
+    team.slug === workspace_hint ||
+    team.slug === workspace_hint.split("/").pop()
+  ) ?? null;
 };
 
 const useAppIntegrations = (appName: string) => {
@@ -391,14 +394,37 @@ export default function AppsAuthLayout() {
   );
 
   if (!result.success) {
-    return <div>Invalid search params</div>;
+    return (
+      <BaseRouteLayout>
+        <div className="flex flex-col items-center justify-center h-screen">
+          <div className="text-center space-y-6 max-w-md">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
+                <Icon name="error" size={32} className="text-destructive" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold">Authentication Error</h1>
+            <p className="text-muted-foreground">
+              Something went wrong when authenticating your access to that app.
+              Please try again or contact us if the problem persists.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => globalThis.history.back()}
+              className="gap-2"
+            >
+              <Icon name="arrow_left_alt" size={16} />
+              Go back
+            </Button>
+          </div>
+        </div>
+      </BaseRouteLayout>
+    );
   }
 
   return (
     <BaseRouteLayout>
-      <Suspense fallback={<div>Loading...</div>}>
-        <AppsOAuth {...result.data} />
-      </Suspense>
+      <AppsOAuth {...result.data} />
     </BaseRouteLayout>
   );
 }

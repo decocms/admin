@@ -177,7 +177,7 @@ export const withBindings = <TEnv>(
           `${env.DECO_CHAT_APP_ENTRYPOINT}${AUTH_CALLBACK_ENDPOINT}`,
         );
         workspaceHint &&
-          authUri.searchParams.set("workspaceHint", workspaceHint);
+          authUri.searchParams.set("workspace_hint", workspaceHint);
         throw new UnauthorizedError("Unauthorized", authUri);
       },
     };

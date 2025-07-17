@@ -4,39 +4,49 @@ import { HTTPException } from "hono/http-exception";
 import { honoCtxToAppCtx } from "../api.ts";
 import type { AppEnv } from "../utils/context.ts";
 
+const tryParseUser = (user: unknown) => {
+  if (typeof user === "string") {
+    return JSON.parse(user);
+  }
+  return user;
+};
+
 export const handleCodeExchange = async (c: Context<AppEnv>) => {
   try {
-    
-  console.log("handleCodeExchange");
-  const appCtx = honoCtxToAppCtx(c);
+    const appCtx = honoCtxToAppCtx(c);
 
-  const { code } = await c.req.json();
+    const { code } = await c.req.json();
 
-  const { data, error } = await appCtx.db.from("deco_chat_oauth_codes").select(
-    "*",
-  ).eq("code", code);
+    const { data, error } = await appCtx.db.from("deco_chat_oauth_codes")
+      .select(
+        "*",
+      ).eq("code", code);
 
-  if (error || !data) {
-    throw new HTTPException(500, { message: "Failed to exchange code" });
-  }
-
-  const { claims } = data as unknown as { claims: JWTPayload };
-
-  const keyPair = appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-    ? {
-      public: appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-      private: appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+    if (error || !data) {
+      throw new HTTPException(500, { message: "Failed to exchange code" });
     }
-    : undefined;
-  const issuer = await JwtIssuer.forKeyPair(keyPair);
-  const token = await issuer.issue(claims);
 
-  console.log("token", token);
+    const { claims } = data as unknown as { claims: JWTPayload };
 
-  return c.json({ access_token: token });
-  } catch (error) {
-    console.error(error);
+    const keyPair = appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: appCtx.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: appCtx.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
+    const token = await issuer.issue({
+      ...claims,
+      user: "user" in claims ? tryParseUser(claims.user) : undefined,
+    });
+
+    await appCtx.db.from("deco_chat_oauth_codes")
+      .delete()
+      .eq("code", code);
+
+    return c.json({ access_token: token });
+  } catch {
     throw new HTTPException(500, { message: "Failed to exchange code" });
   }
 };

@@ -4,7 +4,7 @@ import {
   type Team,
   useCreateOAuthCodeForIntegration,
   useIntegrations,
-  useTeams,
+  type useTeams,
   type Workspace,
 } from "@deco/sdk";
 import { Suspense, useEffect, useMemo, useState } from "react";

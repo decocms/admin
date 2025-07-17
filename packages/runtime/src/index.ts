@@ -123,7 +123,7 @@ export class UnauthorizedError extends Error {
 
 const AUTH_CALLBACK_ENDPOINT = "/auth/callback";
 
-const AUTHENTICATED = () => { };
+const AUTHENTICATED = () => {};
 export const withBindings = <TEnv>(
   _env: TEnv,
   tokenOrContext?: string | RequestContext,

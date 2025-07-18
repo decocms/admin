@@ -51,10 +51,7 @@ function MagicLink() {
     <SplitScreenLayout>
       <div className="flex flex-col items-center justify-center p-6 h-full">
         <span className="text-muted-foreground text-center inline-flex items-center gap-1 pb-16">
-          <Icon
-            name="arrow_back"
-            size={16}
-          />
+          <Icon name="arrow_back" size={16} />
           <Link
             to={`/login?next=${next}`}
             className="text-sm flex items-center gap-1 hover:underline"
@@ -63,17 +60,8 @@ function MagicLink() {
           </Link>
         </span>
         {fetcher.data === undefined && !setOnce.current ? (
-          <form
-            method="post"
-            onSubmit={handleSubmit}
-          >
-            {next ? (
-              <input
-                type="hidden"
-                name="next"
-                value={next}
-              />
-            ) : null}
+          <form method="post" onSubmit={handleSubmit}>
+            {next ? <input type="hidden" name="next" value={next} /> : null}
             <div className="flex flex-col gap-8">
               <div className="text-lg font-semibold leading-none tracking-tight">
                 <div className="flex flex-col items-center gap-5">
@@ -105,10 +93,7 @@ function MagicLink() {
             </div>
           </form>
         ) : (
-          <form
-            method="post"
-            onSubmit={handleSubmit}
-          >
+          <form method="post" onSubmit={handleSubmit}>
             <div className="flex flex-col items-center gap-2">
               <h2 className="text-xl font-bold pt-4">Check your email</h2>
               <p className="text-muted-foreground font-medium">{email}</p>

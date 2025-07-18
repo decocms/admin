@@ -113,10 +113,7 @@ export function ConfirmMarketplaceInstallDialog({
   if (!integration) return null;
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={() => setIntegration(null)}
-    >
+    <Dialog open={open} onOpenChange={() => setIntegration(null)}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -138,10 +135,7 @@ export function ConfirmMarketplaceInstallDialog({
               {!integration.verified && (
                 <div className="mt-4 p-3 bg-accent border border-border rounded-xl text-sm">
                   <div className="flex items-center gap-2">
-                    <Icon
-                      name="info"
-                      size={16}
-                    />
+                    <Icon name="info" size={16} />
                     <span className="font-medium">Third-party integration</span>
                   </div>
                   <p className="mt-1">
@@ -246,11 +240,7 @@ function AddConnectionDialogContent({
               )}
               onClick={() => setTab("new-connection")}
             >
-              <Icon
-                name="add"
-                size={16}
-                className="text-muted-foreground"
-              />
+              <Icon name="add" size={16} className="text-muted-foreground" />
               <span>New integration</span>
             </Button>
             <Button
@@ -258,10 +248,7 @@ function AddConnectionDialogContent({
               className={cn("w-full justify-start text-muted-foreground group")}
               onClick={() => navigateWorkspace("/connections")}
             >
-              <Icon
-                name="arrow_outward"
-                size={16}
-              />
+              <Icon name="arrow_outward" size={16} />
               <span className="group-hover:underline">Manage integrations</span>
             </Button>
             {/* Filters will go here */}
@@ -403,10 +390,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
   }, [props.trigger]);
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <AddConnectionDialogContent
         title={props.title}

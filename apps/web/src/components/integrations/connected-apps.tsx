@@ -43,10 +43,7 @@ function AppCard({
           </div>
         </div>
         <div className="px-4 py-3 border-t border-border">
-          <Badge
-            variant="secondary"
-            className="text-xs"
-          >
+          <Badge variant="secondary" className="text-xs">
             {app.instances} Instance{app.instances > 1 ? "s" : ""}
           </Badge>
         </div>
@@ -65,11 +62,7 @@ function CardsView({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
       {apps.map((app) => (
-        <AppCard
-          key={app.id}
-          app={app}
-          onClick={onClick}
-        />
+        <AppCard key={app.id} app={app} onClick={onClick} />
       ))}
     </div>
   );
@@ -109,10 +102,7 @@ function TableView({
       id: "instance-count",
       header: "Instances",
       render: (app) => (
-        <Badge
-          variant="secondary"
-          className="text-xs"
-        >
+        <Badge variant="secondary" className="text-xs">
           {app.instances} Instance{app.instances > 1 ? "s" : ""}
         </Badge>
       ),
@@ -138,10 +128,7 @@ function TableView({
       header: "People with access",
       render: () => (
         <div className="flex items-center gap-2">
-          <Icon
-            name="group"
-            size={16}
-          />
+          <Icon name="group" size={16} />
           <span className="text-sm">Team</span>
         </div>
       ),
@@ -207,15 +194,9 @@ export function ConnectedAppsList() {
             }
           />
         ) : viewMode === "cards" ? (
-          <CardsView
-            apps={apps}
-            onClick={navigateToApp}
-          />
+          <CardsView apps={apps} onClick={navigateToApp} />
         ) : (
-          <TableView
-            apps={apps}
-            onClick={navigateToApp}
-          />
+          <TableView apps={apps} onClick={navigateToApp} />
         )}
       </div>
     </div>

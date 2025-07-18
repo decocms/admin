@@ -41,12 +41,7 @@ export function ChatFinishReason() {
         style={{ gridTemplateColumns: "auto 1fr auto" }}
       >
         <div className="w-5 h-5 flex items-center justify-center">
-          <Icon
-            name="error"
-            filled
-            className="text-destructive"
-            size={20}
-          />
+          <Icon name="error" filled className="text-destructive" size={20} />
         </div>
 
         <div className="flex flex-col gap-1">

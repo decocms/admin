@@ -116,10 +116,7 @@ function ShowInstalls({
               </SelectTrigger>
               <SelectContent>
                 {matchingIntegrations.map((integration) => (
-                  <SelectItem
-                    key={integration.id}
-                    value={integration.id}
-                  >
+                  <SelectItem key={integration.id} value={integration.id}>
                     <div className="flex items-center gap-3">
                       <Avatar
                         url={integration.icon}
@@ -165,10 +162,7 @@ function ShowInstalls({
           onClick={() => setShowIntegrationSelector(!showIntegrationSelector)}
           className="gap-2"
         >
-          <Icon
-            name="edit"
-            size={16}
-          />
+          <Icon name="edit" size={16} />
           Change integration
         </Button>
       )}
@@ -194,10 +188,7 @@ function ShowInstalls({
             </SelectTrigger>
             <SelectContent>
               {matchingIntegrations.map((integration) => (
-                <SelectItem
-                  key={integration.id}
-                  value={integration.id}
-                >
+                <SelectItem key={integration.id} value={integration.id}>
                   <div className="flex items-center gap-3">
                     <Avatar
                       url={integration.icon}
@@ -277,10 +268,7 @@ function AppsOAuth({
               </SelectTrigger>
               <SelectContent>
                 {teams.map((team) => (
-                  <SelectItem
-                    key={team.slug}
-                    value={team.slug}
-                  >
+                  <SelectItem key={team.slug} value={team.slug}>
                     <div className="flex items-center gap-3">
                       <Avatar
                         url={team.avatarUrl}
@@ -329,10 +317,7 @@ function AppsOAuth({
             onClick={() => setShowTeamSelector(!showTeamSelector)}
             className="gap-2"
           >
-            <Icon
-              name="edit"
-              size={16}
-            />
+            <Icon name="edit" size={16} />
             Change team
           </Button>
         </div>
@@ -354,10 +339,7 @@ function AppsOAuth({
               </SelectTrigger>
               <SelectContent>
                 {teams.map((teamOption) => (
-                  <SelectItem
-                    key={teamOption.slug}
-                    value={teamOption.slug}
-                  >
+                  <SelectItem key={teamOption.slug} value={teamOption.slug}>
                     <div className="flex items-center gap-3">
                       <Avatar
                         url={teamOption.avatarUrl}
@@ -421,11 +403,7 @@ export default function AppsAuthLayout() {
           <div className="text-center space-y-6 max-w-md">
             <div className="flex justify-center">
               <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-                <Icon
-                  name="error"
-                  size={32}
-                  className="text-destructive"
-                />
+                <Icon name="error" size={32} className="text-destructive" />
               </div>
             </div>
             <h1 className="text-2xl font-bold">Authentication Error</h1>
@@ -438,10 +416,7 @@ export default function AppsAuthLayout() {
               onClick={() => globalThis.history.back()}
               className="gap-2"
             >
-              <Icon
-                name="arrow_left_alt"
-                size={16}
-              />
+              <Icon name="arrow_left_alt" size={16} />
               Go back
             </Button>
           </div>

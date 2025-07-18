@@ -32,11 +32,7 @@ function PropertyType({
     return (
       <div className="flex gap-1">
         {anyOf.map((t, i) => (
-          <Badge
-            key={i}
-            variant="outline"
-            className="text-xs"
-          >
+          <Badge key={i} variant="outline" className="text-xs">
             {t.const ?? t.type}
           </Badge>
         ))}
@@ -44,10 +40,7 @@ function PropertyType({
     );
   }
   return (
-    <Badge
-      variant="outline"
-      className="text-xs"
-    >
+    <Badge variant="outline" className="text-xs">
       {type ?? "object"}
     </Badge>
   );
@@ -64,10 +57,7 @@ function PropertyDisplay({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">{name}</Label>
-        <PropertyType
-          type={property.type}
-          anyOf={property.anyOf}
-        />
+        <PropertyType type={property.type} anyOf={property.anyOf} />
       </div>
       {property.description && (
         <p className="text-xs text-muted-foreground">{property.description}</p>
@@ -75,20 +65,13 @@ function PropertyDisplay({
       {property.properties && (
         <div className="ml-4 space-y-4 border-l pl-4">
           {Object.entries(property.properties).map(([propName, prop]) => (
-            <PropertyDisplay
-              key={propName}
-              name={propName}
-              property={prop}
-            />
+            <PropertyDisplay key={propName} name={propName} property={prop} />
           ))}
         </div>
       )}
       {property.items && (
         <div className="ml-4 space-y-4 border-l pl-4">
-          <PropertyDisplay
-            name="items"
-            property={property.items}
-          />
+          <PropertyDisplay name="items" property={property.items} />
         </div>
       )}
       {property.enum && (
@@ -96,11 +79,7 @@ function PropertyDisplay({
           <Label className="text-xs font-medium">Allowed Values</Label>
           <div className="mt-1 flex flex-wrap gap-1">
             {property.enum.map((value, i) => (
-              <Badge
-                key={i}
-                variant="secondary"
-                className="text-xs"
-              >
+              <Badge key={i} variant="secondary" className="text-xs">
                 {value}
               </Badge>
             ))}
@@ -110,10 +89,7 @@ function PropertyDisplay({
       {property.default !== undefined && (
         <div className="mt-2">
           <Label className="text-xs font-medium">Default Value</Label>
-          <Badge
-            variant="secondary"
-            className="text-xs mt-1"
-          >
+          <Badge variant="secondary" className="text-xs mt-1">
             {String(property.default)}
           </Badge>
         </div>
@@ -138,11 +114,7 @@ export function SchemaDisplay({ schema, title }: SchemaDisplayProps) {
           {schema.properties && (
             <div className="space-y-4">
               {Object.entries(schema.properties).map(([name, property]) => (
-                <PropertyDisplay
-                  key={name}
-                  name={name}
-                  property={property}
-                />
+                <PropertyDisplay key={name} name={name} property={property} />
               ))}
             </div>
           )}
@@ -151,11 +123,7 @@ export function SchemaDisplay({ schema, title }: SchemaDisplayProps) {
               <Label className="text-sm font-medium">Required Fields</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {schema.required.map((field) => (
-                  <Badge
-                    key={field}
-                    variant="secondary"
-                    className="text-xs"
-                  >
+                  <Badge key={field} variant="secondary" className="text-xs">
                     {field}
                   </Badge>
                 ))}

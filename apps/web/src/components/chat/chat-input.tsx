@@ -354,10 +354,7 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                       className="h-8 w-8 border hover:bg-muted"
                       title="Attach files"
                     >
-                      <Icon
-                        className="text-sm"
-                        name="add"
-                      />
+                      <Icon className="text-sm" name="add" />
                     </Button>
                   ) : null}
                 </div>
@@ -385,10 +382,7 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                       isLoading ? "Stop generating" : "Send message (Enter)"
                     }
                   >
-                    <Icon
-                      filled
-                      name={isLoading ? "stop" : "send"}
-                    />
+                    <Icon filled name={isLoading ? "stop" : "send"} />
                   </Button>
                 </div>
               </div>
@@ -431,11 +425,7 @@ function FileDropOverlay({ display }: { display: boolean }) {
           "p-8 shadow-2xl rounded-2xl border border-border bg-background/95",
         )}
       >
-        <Icon
-          name="upload"
-          size={48}
-          className="text-foreground"
-        />
+        <Icon name="upload" size={48} className="text-foreground" />
         <span className="text-lg font-semibold text-foreground">
           Drop files to upload
         </span>
@@ -474,11 +464,7 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
         ) : status === "error" ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Icon
-                name="error"
-                size={32}
-                className="text-destructive"
-              />
+              <Icon name="error" size={32} className="text-destructive" />
             </TooltipTrigger>
             <TooltipContent className="flex flex-col items-center">
               Error uploading file {error?.toString()}
@@ -488,15 +474,9 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               {file.type.startsWith("image/") && url ? (
-                <img
-                  src={url}
-                  className="h-full w-full object-cover"
-                />
+                <img src={url} className="h-full w-full object-cover" />
               ) : (
-                <Icon
-                  name="draft"
-                  size={32}
-                />
+                <Icon name="draft" size={32} />
               )}
             </TooltipTrigger>
             <TooltipContent className="flex flex-col items-center">

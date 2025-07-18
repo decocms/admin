@@ -26,14 +26,18 @@
   },
   "javascript": {
     "formatter": {
+      "enabled": true,
       "quoteStyle": "double",
       "jsxQuoteStyle": "double",
       "quoteProperties": "asNeeded",
       "trailingCommas": "all",
       "semicolons": "always",
-      "arrowParentheses": "always",
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf",
+      "lineWidth": 80,
       "bracketSameLine": false,
-      "attributePosition": "multiline"
+      "attributePosition": "auto"
     },
     "jsxRuntime": "transparent"
   },

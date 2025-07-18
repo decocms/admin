@@ -41,10 +41,7 @@ const limit = 11;
 
 function AuditListErrorFallback() {
   return (
-    <Alert
-      variant="destructive"
-      className="my-8"
-    >
+    <Alert variant="destructive" className="my-8">
       <AlertTitle>Error loading audit events</AlertTitle>
       <AlertDescription>
         Something went wrong while loading the audit events.

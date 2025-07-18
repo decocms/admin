@@ -70,10 +70,7 @@ function CapabilityBadge({
         <div
           className={`flex items-center justify-center h-6 w-6 rounded-sm ${config.bg}`}
         >
-          <Icon
-            name={config.icon}
-            className={config.text}
-          />
+          <Icon name={config.icon} className={config.text} />
         </div>
       </TooltipTrigger>
       <TooltipContent>
@@ -87,18 +84,12 @@ function ModelItemContent({ model }: { model: Model }) {
   return (
     <div className="p-2 md:w-[400px] flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">
-        <img
-          src={model.logo}
-          className="w-5 h-5"
-        />
+        <img src={model.logo} className="w-5 h-5" />
         <span className="text-normal text-foreground">{model.name}</span>
       </div>
       <div className="flex items-center gap-2 ml-auto">
         {model.capabilities.map((capability) => (
-          <CapabilityBadge
-            key={capability}
-            capability={capability}
-          />
+          <CapabilityBadge key={capability} capability={capability} />
         ))}
       </div>
     </div>
@@ -112,12 +103,7 @@ function SelectedModelDisplay({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      {model.logo && (
-        <img
-          src={model.logo}
-          className="w-4 h-4"
-        />
-      )}
+      {model.logo && <img src={model.logo} className="w-4 h-4" />}
       <span className="text-xs text-foreground">{model.name}</span>
     </div>
   );

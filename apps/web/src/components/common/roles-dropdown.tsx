@@ -67,10 +67,7 @@ export function RolesDropdown({
           className={`h-5.5 w-5.5 p-0 rounded-md ${triggerClassName || ""}`}
           disabled={disabled}
         >
-          <Icon
-            name="add"
-            size={14}
-          />
+          <Icon name="add" size={14} />
           <span className="sr-only">Manage roles</span>
         </Button>
       </DropdownMenuTrigger>

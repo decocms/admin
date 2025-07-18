@@ -116,10 +116,7 @@ function ThemeVariableInput({
                     onClick={() => onChange("")}
                     className="absolute right-2 top-0 bottom-0 flex items-center text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <Icon
-                      name="close"
-                      size={16}
-                    />
+                    <Icon name="close" size={16} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -225,10 +222,7 @@ function DeleteTeamDialog({
   error: string | null;
 }) {
   return (
-    <AlertDialog
-      open={isOpen}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogTrigger asChild>
         <Button
           className="w-fit"
@@ -263,11 +257,7 @@ function DeleteTeamDialog({
           >
             {isPending ? (
               <span className="flex items-center gap-2">
-                <Spinner
-                  size="xs"
-                  variant="destructive"
-                />{" "}
-                Deleting...
+                <Spinner size="xs" variant="destructive" /> Deleting...
               </span>
             ) : (
               "Delete"

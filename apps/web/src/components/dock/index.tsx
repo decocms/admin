@@ -83,10 +83,7 @@ const TAB_COMPONENTS = {
             size="icon"
             onClick={() => props.api.close()}
           >
-            <Icon
-              name="close"
-              size={12}
-            />
+            <Icon name="close" size={12} />
           </Button>
         </div>
       </div>

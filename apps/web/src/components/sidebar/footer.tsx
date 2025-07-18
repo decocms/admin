@@ -108,10 +108,7 @@ function UserPreferencesModal({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>User Preferences</DialogTitle>
@@ -250,17 +247,11 @@ function UserPreferencesModal({
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                >
+                <Button type="button" variant="outline">
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={!isDirty}
-              >
+              <Button type="submit" disabled={!isDirty}>
                 Save Preferences
               </Button>
             </DialogFooter>
@@ -308,11 +299,7 @@ function LoggedUser() {
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
         <SidebarMenuButton className="ml-1 cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
-          <UserAvatar
-            url={userAvatarURL}
-            fallback={userName}
-            size="xs"
-          />
+          <UserAvatar url={userAvatarURL} fallback={userName} size="xs" />
           <span className="text-sm grow">{user.metadata?.full_name}</span>
 
           <Suspense fallback={null}>
@@ -333,10 +320,7 @@ function LoggedUser() {
             className="flex items-center gap-2 text-sm w-full cursor-pointer"
             onClick={() => setProfileOpen(true)}
           >
-            <Icon
-              name="account_circle"
-              className="text-muted-foreground"
-            />
+            <Icon name="account_circle" className="text-muted-foreground" />
             Profile
           </button>
         </ResponsiveDropdownItem>
@@ -346,10 +330,7 @@ function LoggedUser() {
             className="flex items-center gap-2 text-sm w-full cursor-pointer"
             onClick={() => setPreferencesOpen(true)}
           >
-            <Icon
-              name="tune"
-              className="text-muted-foreground"
-            />
+            <Icon name="tune" className="text-muted-foreground" />
             Preferences
           </button>
         </ResponsiveDropdownItem>
@@ -406,10 +387,7 @@ function LoggedUser() {
             rel="noopener noreferrer"
             className="flex w-full items-center gap-2 text-sm cursor-pointer"
           >
-            <Icon
-              name="language"
-              className="text-muted-foreground"
-            />
+            <Icon name="language" className="text-muted-foreground" />
             Homepage
             <Icon
               name="arrow_outward"
@@ -426,20 +404,13 @@ function LoggedUser() {
             href={logoutUrl}
             className="flex items-center gap-2 text-sm cursor-pointer"
           >
-            <Icon
-              name="logout"
-              size={16}
-              className="text-muted-foreground"
-            />
+            <Icon name="logout" size={16} className="text-muted-foreground" />
             Log out
           </a>
         </ResponsiveDropdownItem>
       </ResponsiveDropdownContent>
       {profileOpen && (
-        <ProfileSettings
-          open={profileOpen}
-          onOpenChange={setProfileOpen}
-        />
+        <ProfileSettings open={profileOpen} onOpenChange={setProfileOpen} />
       )}
       {preferencesOpen && (
         <UserPreferencesModal
@@ -457,10 +428,7 @@ function AnonymouseUser() {
   return (
     <SidebarMenuButton>
       <Link to={to}>
-        <Icon
-          name="person"
-          size={16}
-        />
+        <Icon name="person" size={16} />
         Sign in
       </Link>
     </SidebarMenuButton>

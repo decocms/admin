@@ -60,26 +60,11 @@ function ToolStatus({
   const getIcon = (state: string) => {
     switch (state) {
       case "call":
-        return (
-          <Spinner
-            size="xs"
-            variant="default"
-          />
-        );
+        return <Spinner size="xs" variant="default" />;
       case "result":
-        return (
-          <Icon
-            name="check"
-            className="text-muted-foreground"
-          />
-        );
+        return <Icon name="check" className="text-muted-foreground" />;
       case "error":
-        return (
-          <Icon
-            name="close"
-            className="text-muted-foreground"
-          />
-        );
+        return <Icon name="close" className="text-muted-foreground" />;
       default:
         return "•";
     }

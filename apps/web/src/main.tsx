@@ -152,12 +152,7 @@ const DEFAULT_PATH = "/agents";
  */
 function Home() {
   const workspaceLink = useWorkspaceLink();
-  return (
-    <Navigate
-      to={workspaceLink(DEFAULT_PATH)}
-      replace
-    />
-  );
+  return <Navigate to={workspaceLink(DEFAULT_PATH)} replace />;
 }
 
 function ErrorFallback() {

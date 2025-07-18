@@ -263,10 +263,7 @@ export function HistoryCard({
           <div className="flex items-center gap-1">
             <Avatar className="size-4">
               {avatarUrl ? (
-                <AvatarImage
-                  src={avatarUrl}
-                  alt={userName}
-                />
+                <AvatarImage src={avatarUrl} alt={userName} />
               ) : (
                 <AvatarFallback className="text-xs">
                   {userName
@@ -285,15 +282,8 @@ export function HistoryCard({
         <div className="flex-1" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 p-0 ml-1"
-            >
-              <Icon
-                name="more_vert"
-                size={18}
-              />
+            <Button variant="ghost" size="icon" className="size-6 p-0 ml-1">
+              <Icon name="more_vert" size={18} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -302,10 +292,7 @@ export function HistoryCard({
                 handleStartEditing();
               }}
             >
-              <Icon
-                name="border_color"
-                size={12}
-              />
+              <Icon name="border_color" size={12} />
               Rename
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -313,10 +300,7 @@ export function HistoryCard({
                 handleRestoreVersion();
               }}
             >
-              <Icon
-                name="replay"
-                size={12}
-              />
+              <Icon name="replay" size={12} />
               Restore this version
             </DropdownMenuItem>
           </DropdownMenuContent>

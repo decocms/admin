@@ -390,22 +390,13 @@ function CronSelectInput({
   return (
     <div className="flex flex-col gap-2">
       <FormLabel htmlFor="cron-frequency">Frequency *</FormLabel>
-      <Select
-        value={selected}
-        onValueChange={handlePresetChange}
-      >
-        <SelectTrigger
-          id="cron-frequency"
-          className="w-full"
-        >
+      <Select value={selected} onValueChange={handlePresetChange}>
+        <SelectTrigger id="cron-frequency" className="w-full">
           <SelectValue placeholder="Select frequency" />
         </SelectTrigger>
         <SelectContent>
           {cronPresets.map((p) => (
-            <SelectItem
-              key={p.value}
-              value={p.value}
-            >
+            <SelectItem key={p.value} value={p.value}>
               {p.label}
             </SelectItem>
           ))}
@@ -782,16 +773,10 @@ export function TriggerModal({
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{triggerAction}</DialogTrigger>
       <Form {...form}>
-        <form
-          id="trigger-form"
-          onSubmit={form.handleSubmit(onSubmit)}
-        >
+        <form id="trigger-form" onSubmit={form.handleSubmit(onSubmit)}>
           <DialogContent
             onClick={(e) => e.stopPropagation()}
             className="max-w-2xl h-[90vh] grid grid-rows-[auto_1fr_auto]"
@@ -838,10 +823,7 @@ export function TriggerModal({
                       <FormItem>
                         <FormLabel>Name *</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Enter trigger name"
-                            {...field}
-                          />
+                          <Input placeholder="Enter trigger name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -905,10 +887,7 @@ export function TriggerModal({
                                     : "cursor-pointer"
                                 }`}
                               >
-                                <Icon
-                                  name="webhook"
-                                  className="h-4 w-4"
-                                />
+                                <Icon name="webhook" className="h-4 w-4" />
                                 Webhook
                               </Label>
                             </div>
@@ -936,10 +915,7 @@ export function TriggerModal({
                                     : "cursor-pointer"
                                 }`}
                               >
-                                <Icon
-                                  name="schedule"
-                                  className="h-4 w-4"
-                                />
+                                <Icon name="schedule" className="h-4 w-4" />
                                 Cron
                               </Label>
                             </div>
@@ -1030,10 +1006,7 @@ export function TriggerModal({
                                     : "cursor-pointer"
                                 }`}
                               >
-                                <Icon
-                                  name="robot_2"
-                                  className="h-4 w-4"
-                                />
+                                <Icon name="robot_2" className="h-4 w-4" />
                                 Agent
                               </Label>
                             </div>
@@ -1061,11 +1034,7 @@ export function TriggerModal({
                                     : "cursor-pointer"
                                 }`}
                               >
-                                <Icon
-                                  name="build"
-                                  filled
-                                  className="h-4 w-4"
-                                />
+                                <Icon name="build" filled className="h-4 w-4" />
                                 Tool
                               </Label>
                             </div>

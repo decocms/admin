@@ -64,11 +64,7 @@ export default function BubbleMenu({ editor }: Props) {
         className="gap-2 border-l rounded-none"
         onClick={handleReplaceSelectionWithApiResult}
       >
-        <Icon
-          name="text_snippet"
-          className="text-muted-foreground"
-          size={16}
-        />
+        <Icon name="text_snippet" className="text-muted-foreground" size={16} />
         <span className="text-sm text-foreground font-medium">
           Save as prompt
         </span>

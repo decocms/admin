@@ -66,10 +66,7 @@ function CopyLinkButton({
         }, 2000);
       }}
     >
-      <Icon
-        name={isCopied ? "check" : "link"}
-        size={16}
-      />
+      <Icon name={isCopied ? "check" : "link"} size={16} />
       Copy link
     </Button>
   );
@@ -89,10 +86,7 @@ function AdvancedTab() {
     <ScrollArea className="h-full w-full">
       <Form {...form}>
         <div className="h-full w-full p-4 max-w-3xl mx-auto">
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-6 py-2 pb-16"
-          >
+          <form onSubmit={handleSubmit} className="space-y-6 py-2 pb-16">
             <FormField
               name="visibility"
               render={({ field }) => {
@@ -127,10 +121,7 @@ function AdvancedTab() {
                         <SelectContent>
                           <SelectItem value="WORKSPACE">
                             <div className="flex items-center gap-2">
-                              <Icon
-                                className="text-foreground"
-                                name="groups"
-                              />
+                              <Icon className="text-foreground" name="groups" />
                               <span className="text-foreground">Team</span>
                               <span className="text-xs text-muted-foreground">
                                 Members of your team can access and edit the
@@ -140,10 +131,7 @@ function AdvancedTab() {
                           </SelectItem>
                           <SelectItem value="PUBLIC">
                             <div className="flex items-center gap-2">
-                              <Icon
-                                className="text-foreground"
-                                name="public"
-                              />
+                              <Icon className="text-foreground" name="public" />
                               <span className="text-foreground">Public</span>
                               <span className="text-xs text-muted-foreground">
                                 Anyone with the link can view and use the agent.
@@ -171,10 +159,7 @@ function AdvancedTab() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Icon
-                          name="open_in_new"
-                          className="w-4 h-4"
-                        />
+                        <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
                     <FormDescription>
@@ -265,10 +250,7 @@ function AdvancedTab() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Icon
-                          name="open_in_new"
-                          className="w-4 h-4"
-                        />
+                        <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
                     <FormDescription>
@@ -304,10 +286,7 @@ function AdvancedTab() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Icon
-                          name="open_in_new"
-                          className="w-4 h-4"
-                        />
+                        <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
                     <FormDescription>
@@ -339,10 +318,7 @@ function AdvancedTab() {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <Icon
-                              name="open_in_new"
-                              className="w-4 h-4"
-                            />
+                            <Icon name="open_in_new" className="w-4 h-4" />
                           </a>
                         </FormLabel>
                         <FormDescription>
@@ -432,10 +408,7 @@ function AdvancedTab() {
                           </SelectTrigger>
                           <SelectContent>
                             {roles.map((role) => (
-                              <SelectItem
-                                key={role.id}
-                                value={role.name}
-                              >
+                              <SelectItem key={role.id} value={role.name}>
                                 <Icon
                                   name={
                                     role.name === "owner"

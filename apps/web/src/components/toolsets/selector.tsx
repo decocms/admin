@@ -31,15 +31,8 @@ function IntegrationListItemActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-        >
-          <Icon
-            name="more_horiz"
-            className="text-foreground"
-            size={16}
-          />
+        <Button variant="ghost" size="icon">
+          <Icon name="more_horiz" className="text-foreground" size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -166,17 +159,11 @@ export function IntegrationListItem({
           )}
         >
           <div className="flex gap-2 items-center">
-            <Icon
-              name="settings"
-              size={16}
-            />
+            <Icon name="settings" size={16} />
             <span className="text-xs font-medium">Connection settings</span>
           </div>
           <Badge variant="destructive">
-            <Icon
-              name="error"
-              size={10}
-            />
+            <Icon name="error" size={10} />
             Error
           </Badge>
         </div>
@@ -291,10 +278,7 @@ function ToolList({
     return (
       <div className={cn("space-y-2", className)}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-6 bg-muted animate-pulse rounded"
-          />
+          <div key={i} className="h-6 bg-muted animate-pulse rounded" />
         ))}
       </div>
     );

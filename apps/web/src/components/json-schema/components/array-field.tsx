@@ -88,10 +88,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
           <FormControl>
             <div className="space-y-4">
               {fields.map((field, index) => (
-                <Card
-                  key={field.id}
-                  className="relative"
-                >
+                <Card key={field.id} className="relative">
                   <CardContent className="py-4">
                     {/* Header with item number and action buttons */}
                     <div className="w-full absolute -top-4 h-8 flex justify-between items-center px-2">
@@ -108,10 +105,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           disabled={disabled || index === 0}
                           className="w-8"
                         >
-                          <Icon
-                            name="keyboard_arrow_up"
-                            size={20}
-                          />
+                          <Icon name="keyboard_arrow_up" size={20} />
                         </Button>
 
                         <Button
@@ -122,10 +116,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           disabled={disabled || index === fields.length - 1}
                           className="w-8"
                         >
-                          <Icon
-                            name="keyboard_arrow_down"
-                            size={20}
-                          />
+                          <Icon name="keyboard_arrow_down" size={20} />
                         </Button>
 
                         <Button
@@ -136,10 +127,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           disabled={disabled}
                           className="w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
-                          <Icon
-                            name="close"
-                            size={20}
-                          />
+                          <Icon name="close" size={20} />
                         </Button>
                       </div>
                     </div>
@@ -164,10 +152,7 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                 disabled={disabled}
                 className="w-full"
               >
-                <Icon
-                  name="add"
-                  className="h-4 w-4 mr-2"
-                />
+                <Icon name="add" className="h-4 w-4 mr-2" />
                 Add {title}
               </Button>
             </div>

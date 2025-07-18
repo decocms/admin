@@ -90,10 +90,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
           onClick={toggleListening}
           className="h-8 w-8"
         >
-          <Icon
-            filled
-            name={isListening ? "stop" : "mic"}
-          />
+          <Icon filled name={isListening ? "stop" : "mic"} />
         </Button>
       </div>
     </div>

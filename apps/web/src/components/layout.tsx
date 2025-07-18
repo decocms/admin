@@ -154,19 +154,13 @@ export function PageLayout({
               variant="ghost"
               className="p-1 size-8"
             >
-              <Icon
-                name="dock_to_right"
-                className="text-muted-foreground"
-              />
+              <Icon name="dock_to_right" className="text-muted-foreground" />
             </Button>
           </div>
         )}
       </div>
       <div className="h-full p-0 md:p-1">
-        <Docked
-          tabs={tabs}
-          hideViewsButton={hideViewsButton}
-        />
+        <Docked tabs={tabs} hideViewsButton={hideViewsButton} />
       </div>
     </Docked.Provider>
   );
@@ -190,10 +184,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
           onClick={() => toggleSidebar()}
           className={cn(isMobile && "hidden", "size-8")}
         >
-          <Icon
-            name="dock_to_right"
-            className="text-muted-foreground"
-          />
+          <Icon name="dock_to_right" className="text-muted-foreground" />
         </Button>
       )}
 

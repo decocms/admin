@@ -27,16 +27,8 @@ const ResponsiveDropdown = ({
 
   return (
     <ResponsiveDropdownContext.Provider value={{ setOpen }}>
-      <dropdown.DropdownMenu
-        open={open}
-        onOpenChange={setOpen}
-        {...props}
-      >
-        <drawer.Drawer
-          open={open}
-          onOpenChange={setOpen}
-          {...props}
-        >
+      <dropdown.DropdownMenu open={open} onOpenChange={setOpen} {...props}>
+        <drawer.Drawer open={open} onOpenChange={setOpen} {...props}>
           {children}
         </drawer.Drawer>
       </dropdown.DropdownMenu>
@@ -118,15 +110,9 @@ const ResponsiveDropdownSeparator = ({
   const isMobile = useIsMobile();
 
   return isMobile ? (
-    <dropdown.DropdownMenuSeparator
-      className={cn(className)}
-      {...props}
-    />
+    <dropdown.DropdownMenuSeparator className={cn(className)} {...props} />
   ) : (
-    <dropdown.DropdownMenuSeparator
-      className={cn(className)}
-      {...props}
-    />
+    <dropdown.DropdownMenuSeparator className={cn(className)} {...props} />
   );
 };
 

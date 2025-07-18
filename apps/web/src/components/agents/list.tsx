@@ -116,11 +116,7 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
           asChild
         >
           <div className="w-8 h-8 flex items-center justify-center">
-            <IntegrationIcon
-              icon={icon}
-              size="xs"
-              name={integration.name}
-            />
+            <IntegrationIcon icon={icon} size="xs" name={integration.name} />
           </div>
         </TooltipTrigger>
         <TooltipContent>
@@ -139,10 +135,7 @@ function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
   return (
     <div className="flex gap-0 flex-wrap">
       {integrations.map(([toolSetId]) => (
-        <ErrorBoundary
-          key={toolSetId}
-          fallback={null}
-        >
+        <ErrorBoundary key={toolSetId} fallback={null}>
           <Suspense fallback={null}>
             <IntegrationMiniature toolSetId={toolSetId} />
           </Suspense>
@@ -194,10 +187,7 @@ function Actions({ agent }: { agent: Agent }) {
               duplicate();
             }}
           >
-            <Icon
-              name="content_copy"
-              className="mr-2"
-            />
+            <Icon name="content_copy" className="mr-2" />
             {duplicating ? "Duplicating..." : "Duplicate"}
           </DropdownMenuItem>
           {agent.visibility === "PUBLIC" && (
@@ -209,10 +199,7 @@ function Actions({ agent }: { agent: Agent }) {
                 copyLink();
               }}
             >
-              <Icon
-                name="link"
-                className="mr-2"
-              />
+              <Icon name="link" className="mr-2" />
               Copy link
             </DropdownMenuItem>
           )}
@@ -223,18 +210,12 @@ function Actions({ agent }: { agent: Agent }) {
               setDeleteDialogOpen(true);
             }}
           >
-            <Icon
-              name="delete"
-              className="mr-2"
-            />
+            <Icon name="delete" className="mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <AlertDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      >
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -285,11 +266,7 @@ function Card({ agent }: { agent: Agent }) {
       <CardContent className="gap-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-3 w-full">
           <div className="relative w-full">
-            <AgentAvatar
-              url={agent.avatar}
-              fallback={agent.name}
-              size="lg"
-            />
+            <AgentAvatar url={agent.avatar} fallback={agent.name} size="lg" />
             <div
               className="absolute top-0 right-0"
               onClick={(e) => e.stopPropagation()}
@@ -300,10 +277,7 @@ function Card({ agent }: { agent: Agent }) {
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               {agent.name}
-              <AgentVisibility.Icon
-                agent={agent}
-                size={16}
-              />
+              <AgentVisibility.Icon agent={agent} size={16} />
             </div>
             <div className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
               {agent.description || "No description"}
@@ -378,12 +352,7 @@ function TableView({ agents }: { agents: Agent[] }) {
     {
       id: "integrations",
       header: "Connections",
-      render: (agent: Agent) => (
-        <IntegrationBadges
-          agent={agent}
-          max={5}
-        />
-      ),
+      render: (agent: Agent) => <IntegrationBadges agent={agent} max={5} />,
     },
     {
       id: "actions",
@@ -423,10 +392,7 @@ function CardsView({ agents }: { agents: Agent[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5 gap-3 peer">
       {agents.map((agent) => (
-        <div
-          key={agent.id}
-          className="relative group"
-        >
+        <div key={agent.id} className="relative group">
           <Card agent={agent} />
         </div>
       ))}
@@ -583,11 +549,7 @@ export default function Page() {
           <DefaultBreadcrumb items={[{ label: "Agents", link: "/agents" }]} />
         }
         actionButtons={
-          <Button
-            onClick={handleCreate}
-            variant="special"
-            className="gap-2"
-          >
+          <Button onClick={handleCreate} variant="special" className="gap-2">
             <Icon name="add" />
             <span className="hidden md:inline">New agent</span>
           </Button>

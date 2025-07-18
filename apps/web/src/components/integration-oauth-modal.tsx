@@ -94,10 +94,7 @@ export function IntegrationOAuthModal({
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={onClose}
-    >
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Install {integrationName}</DialogTitle>
@@ -126,10 +123,7 @@ export function IntegrationOAuthModal({
                         {permission.description}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
+                        <Badge variant="outline" className="text-xs">
                           {permission.scope}
                         </Badge>
                       </div>

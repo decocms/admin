@@ -39,10 +39,7 @@ export function StringField<T extends FieldValues = FieldValues>({
             {isRequired && <span className="text-destructive ml-1">*</span>}
           </FormLabel>
           <FormControl>
-            <Input
-              {...field}
-              disabled={disabled}
-            />
+            <Input {...field} disabled={disabled} />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />

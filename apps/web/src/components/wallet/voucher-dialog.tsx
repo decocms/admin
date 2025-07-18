@@ -28,20 +28,10 @@ export function VoucherDialog() {
   });
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={setIsOpen}
-    >
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full"
-        >
-          <Icon
-            name="redeem"
-            size={16}
-            className="mr-2"
-          />
+        <Button variant="outline" className="w-full">
+          <Icon name="redeem" size={16} className="mr-2" />
           Redeem voucher
         </Button>
       </DialogTrigger>
@@ -51,10 +41,7 @@ export function VoucherDialog() {
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
-            <label
-              htmlFor="code"
-              className="text-sm font-medium"
-            >
+            <label htmlFor="code" className="text-sm font-medium">
               Voucher Code
             </label>
             <Input

@@ -67,11 +67,7 @@ function InviteTeamMembersDialogFeatureWall() {
       </DialogHeader>
       <div className="flex flex-col items-center justify-center gap-6 py-8">
         <div className="rounded-full bg-muted p-4 w-16 h-16 flex items-center justify-center">
-          <Icon
-            name="lock"
-            className="text-muted-foreground"
-            size={24}
-          />
+          <Icon name="lock" className="text-muted-foreground" size={24} />
         </div>
         <div className="text-center">
           <h3 className="text-lg font-medium text-foreground">
@@ -85,10 +81,7 @@ function InviteTeamMembersDialogFeatureWall() {
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button
-            variant="outline"
-            type="button"
-          >
+          <Button variant="outline" type="button">
             Close
           </Button>
         </DialogClose>
@@ -221,10 +214,7 @@ export function InviteTeamMembersDialog({
   return (
     <>
       {wrappedTrigger}
-      <Dialog
-        open={isOpen}
-        onOpenChange={handleOpenChange}
-      >
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <Protect
           check={(plan) => !plan.isAtSeatLimit}
           fallback={<InviteTeamMembersDialogFeatureWall />}
@@ -284,10 +274,7 @@ export function InviteTeamMembersDialog({
                                         (r) => r.id.toString() === roleId,
                                       );
                                       return role ? (
-                                        <Badge
-                                          variant="outline"
-                                          key={roleId}
-                                        >
+                                        <Badge variant="outline" key={roleId}>
                                           {role.name}
                                         </Badge>
                                       ) : null;
@@ -350,10 +337,7 @@ export function InviteTeamMembersDialog({
                     onClick={handleAddInvitee}
                     disabled={inviteMemberMutation.isPending}
                   >
-                    <Icon
-                      name="add"
-                      className="mr-2"
-                    />
+                    <Icon name="add" className="mr-2" />
                     Add another invitee
                   </Button>
                 </div>

@@ -80,15 +80,8 @@ function ConnectionInstanceActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="ml-2"
-        >
-          <Icon
-            name="more_horiz"
-            size={16}
-          />
+        <Button variant="ghost" size="icon" className="ml-2">
+          <Icon name="more_horiz" size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -275,16 +268,10 @@ function ConfigureConnectionInstanceForm({
                     className="hidden"
                     onChange={handleFileChange}
                   />
-                  <Input
-                    type="hidden"
-                    {...field}
-                  />
+                  <Input type="hidden" {...field} />
                   <FormControl>
                     {iconValue ? (
-                      <div
-                        onClick={triggerFileInput}
-                        className="w-14 h-14"
-                      >
+                      <div onClick={triggerFileInput} className="w-14 h-14">
                         <IntegrationIcon
                           icon={iconValue}
                           className={cn(
@@ -298,10 +285,7 @@ function ConfigureConnectionInstanceForm({
                         onClick={triggerFileInput}
                         className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
                       >
-                        <Icon
-                          name="upload"
-                          size={24}
-                        />
+                        <Icon name="upload" size={24} />
                         <span className="text-xs text-muted-foreground/70 text-center px-1">
                           Select an icon
                         </span>
@@ -319,10 +303,7 @@ function ConfigureConnectionInstanceForm({
               onClick={triggerFileInput}
               disabled={isUploading}
             >
-              <Icon
-                name="upload"
-                size={16}
-              />
+              <Icon name="upload" size={16} />
               Upload image
             </Button>
           </div>
@@ -409,10 +390,7 @@ function ConfigureConnectionInstanceForm({
                           optional
                         </span>
                         <FormControl>
-                          <PasswordInput
-                            placeholder="token"
-                            {...field}
-                          />
+                          <PasswordInput placeholder="token" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -429,10 +407,7 @@ function ConfigureConnectionInstanceForm({
                     <FormItem>
                       <FormLabel>WebSocket URL</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="wss://example.com/ws"
-                          {...field}
-                        />
+                        <Input placeholder="wss://example.com/ws" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -449,10 +424,7 @@ function ConfigureConnectionInstanceForm({
                       <FormItem>
                         <FormLabel>Tenant ID</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="tenant-id"
-                            {...field}
-                          />
+                          <Input placeholder="tenant-id" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -468,10 +440,7 @@ function ConfigureConnectionInstanceForm({
                           optional
                         </span>
                         <FormControl>
-                          <PasswordInput
-                            placeholder="token"
-                            {...field}
-                          />
+                          <PasswordInput placeholder="token" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -490,10 +459,7 @@ function ConfigureConnectionInstanceForm({
             >
               Discard changes
             </Button>
-            <Button
-              type="submit"
-              disabled={isSaving || numberOfChanges === 0}
-            >
+            <Button type="submit" disabled={isSaving || numberOfChanges === 0}>
               Save
             </Button>
           </div>
@@ -559,10 +525,7 @@ function ConnectionInstanceItem({
       className="w-full p-4 flex items-center gap-2 rounded-xl border border-border"
       key={instance.id}
     >
-      <IntegrationIcon
-        icon={instance.icon}
-        name={instance.name}
-      />
+      <IntegrationIcon icon={instance.icon} name={instance.name} />
       <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
         <h5 className="text-sm font-medium truncate">{instance.name}</h5>
         <p className="text-sm text-muted-foreground truncate">
@@ -667,10 +630,7 @@ function Overview({
         </div>
       </div>
       {!isWellKnown && data.info?.provider !== "custom" ? (
-        <Button
-          variant="special"
-          onClick={handleAddConnection}
-        >
+        <Button variant="special" onClick={handleAddConnection}>
           <span className="hidden md:inline">Add connection</span>
         </Button>
       ) : null}
@@ -727,10 +687,7 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
       {parameters.length > 0 ? (
         parameters.map((param) => (
           <div className="flex flex-col gap-2">
-            <div
-              key={param.name}
-              className="flex items-center gap-2"
-            >
+            <div key={param.name} className="flex items-center gap-2">
               <Icon
                 name={param.type === "string" ? "text_fields" : "category"}
                 size={16}
@@ -831,22 +788,14 @@ function Tool({ tool, connection }: ToolProps) {
   };
 
   return (
-    <Accordion
-      type="single"
-      collapsible
-      className="w-full"
-    >
+    <Accordion type="single" collapsible className="w-full">
       <AccordionItem
         value={tool.name}
         className="border border-border overflow-hidden !border-b rounded-xl p-0"
       >
         <AccordionTrigger className="p-4 hover:no-underline cursor-pointer hover:bg-accent rounded-t-xl rounded-b-none">
           <div className="flex items-start gap-3 w-full text-left">
-            <Icon
-              name="build"
-              filled
-              size={16}
-            />
+            <Icon name="build" filled size={16} />
             <div className="flex flex-col gap-1 min-w-0 flex-1">
               <div className="font-medium text-sm truncate">
                 {formatToolName(tool.name)}
@@ -863,40 +812,22 @@ function Tool({ tool, connection }: ToolProps) {
           </div>
         </AccordionTrigger>
         <AccordionContent className="bg-secondary/50 p-4">
-          <Tabs
-            defaultValue="parameters"
-            className="w-full"
-          >
+          <Tabs defaultValue="parameters" className="w-full">
             <TabsList>
-              <TabsTrigger
-                value="parameters"
-                className="px-4"
-              >
+              <TabsTrigger value="parameters" className="px-4">
                 Parameters
               </TabsTrigger>
-              <TabsTrigger
-                value="test-form"
-                className="px-4"
-              >
+              <TabsTrigger value="test-form" className="px-4">
                 Test form
               </TabsTrigger>
-              <TabsTrigger
-                value="test-raw"
-                className="px-4"
-              >
+              <TabsTrigger value="test-raw" className="px-4">
                 Test raw
               </TabsTrigger>
             </TabsList>
-            <TabsContent
-              value="parameters"
-              className="mt-4"
-            >
+            <TabsContent value="parameters" className="mt-4">
               <ParametersViewer tool={tool} />
             </TabsContent>
-            <TabsContent
-              value="test-form"
-              className="mt-4"
-            >
+            <TabsContent value="test-form" className="mt-4">
               <ToolCallForm
                 tool={tool}
                 onSubmit={handleToolCall}
@@ -905,18 +836,12 @@ function Tool({ tool, connection }: ToolProps) {
                 rawMode={false}
               />
               {toolCallResponse && (
-                <Card
-                  className="p-4 mt-4"
-                  data-tool-result
-                >
+                <Card className="p-4 mt-4" data-tool-result>
                   <ToolCallResult response={toolCallResponse} />
                 </Card>
               )}
             </TabsContent>
-            <TabsContent
-              value="test-raw"
-              className="mt-4"
-            >
+            <TabsContent value="test-raw" className="mt-4">
               <ToolCallForm
                 tool={tool}
                 onSubmit={handleToolCall}
@@ -925,10 +850,7 @@ function Tool({ tool, connection }: ToolProps) {
                 rawMode
               />
               {toolCallResponse && (
-                <Card
-                  className="p-4 mt-4"
-                  data-tool-result
-                >
+                <Card className="p-4 mt-4" data-tool-result>
                   <ToolCallResult response={toolCallResponse} />
                 </Card>
               )}
@@ -957,10 +879,7 @@ function ToolsInspector({
   // Create a helper component for displaying instance names
   const InstanceSelectItem = ({ instance }: { instance: Integration }) => {
     return (
-      <SelectItem
-        key={instance.id}
-        value={instance.id}
-      >
+      <SelectItem key={instance.id} value={instance.id}>
         <IntegrationIcon
           icon={instance.icon}
           name={instance.name}
@@ -999,10 +918,7 @@ function ToolsInspector({
   );
 
   return (
-    <div
-      ref={toolsRef}
-      className="w-full p-4 flex flex-col items-center gap-4"
-    >
+    <div ref={toolsRef} className="w-full p-4 flex flex-col items-center gap-4">
       <h6 className="text-sm text-muted-foreground font-medium w-full">
         Tools
       </h6>
@@ -1019,10 +935,7 @@ function ToolsInspector({
           </SelectTrigger>
           <SelectContent>
             {data.instances.map((instance) => (
-              <InstanceSelectItem
-                key={instance.id}
-                instance={instance}
-              />
+              <InstanceSelectItem key={instance.id} instance={instance} />
             ))}
           </SelectContent>
         </Select>
@@ -1037,10 +950,7 @@ function ToolsInspector({
       <div className="flex flex-col gap-4 w-full min-h-[80vh]">
         {tools.isLoading ? (
           Array.from({ length: 8 }).map((_, idx) => (
-            <Skeleton
-              key={idx}
-              className="rounded-lg w-full h-[76px]"
-            />
+            <Skeleton key={idx} className="rounded-lg w-full h-[76px]" />
           ))
         ) : tools.isError ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -1057,21 +967,14 @@ function ToolsInspector({
               </pre>
             </div>
             <Button onClick={() => tools.refetch()}>
-              <Icon
-                name="refresh"
-                size={16}
-              />
+              <Icon name="refresh" size={16} />
               Refresh
             </Button>
           </div>
         ) : (
           filteredTools.map((tool) =>
             connection ? (
-              <Tool
-                key={tool.name}
-                connection={connection}
-                tool={tool}
-              />
+              <Tool key={tool.name} connection={connection} tool={tool} />
             ) : null,
           )
         )}
@@ -1091,21 +994,13 @@ function AppDetail({ appKey }: { appKey: string }) {
   ] = useState<string>();
 
   if (!app.instances) {
-    return (
-      <Navigate
-        to={workspaceLink("/connections")}
-        replace
-      />
-    );
+    return <Navigate to={workspaceLink("/connections")} replace />;
   }
 
   return (
     <div className="w-full flex flex-col items-center h-full overflow-y-scroll">
       <div className="w-full max-w-[850px] flex flex-col gap-4 mt-6">
-        <Overview
-          data={app}
-          appKey={appKey}
-        />
+        <Overview data={app} appKey={appKey} />
         <Instances
           data={app}
           onTestTools={(connectionId) =>

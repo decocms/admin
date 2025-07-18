@@ -152,11 +152,7 @@ function JsonTreeNode({
       // Ensure we're definitely passing a string
       const stringValue = String(value);
       return (
-        <ExpandableString
-          value={stringValue}
-          className={colorClass}
-          isQuoted
-        />
+        <ExpandableString value={stringValue} className={colorClass} isQuoted />
       );
     }
 
@@ -200,10 +196,7 @@ function JsonTreeNode({
           setIsExpanded(!isExpanded);
         }}
       >
-        <Icon
-          name={isExpanded ? "expand_more" : "chevron_right"}
-          size={16}
-        />
+        <Icon name={isExpanded ? "expand_more" : "chevron_right"} size={16} />
         {renderKey()}
         <span className={getTypeColor(data)}>{getValuePreview(data)}</span>
       </div>

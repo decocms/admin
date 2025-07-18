@@ -47,10 +47,7 @@ function CopyButton({ value }: { value: unknown }) {
       onClick={handleCopy}
       title={copied ? "Copied!" : "Copy to clipboard"}
     >
-      <Icon
-        name={copied ? "check" : "content_copy"}
-        size={16}
-      />
+      <Icon name={copied ? "check" : "content_copy"} size={16} />
     </Button>
   );
 }
@@ -189,11 +186,7 @@ function JsonTreeNode({
       // Ensure we're definitely passing a string
       const stringValue = String(value);
       return (
-        <ExpandableString
-          value={stringValue}
-          className={colorClass}
-          isQuoted
-        />
+        <ExpandableString value={stringValue} className={colorClass} isQuoted />
       );
     }
 
@@ -349,37 +342,13 @@ function getStatusBadgeVariant(
 
 function getStatusIcon(status: string) {
   if (status === "success" || status === "completed") {
-    return (
-      <Icon
-        name="check_circle"
-        size={18}
-        className="text-success"
-      />
-    );
+    return <Icon name="check_circle" size={18} className="text-success" />;
   } else if (status === "failed" || status === "error") {
-    return (
-      <Icon
-        name="error"
-        size={18}
-        className="text-destructive"
-      />
-    );
+    return <Icon name="error" size={18} className="text-destructive" />;
   } else if (status === "running") {
-    return (
-      <Icon
-        name="sync"
-        size={18}
-        className="text-primary"
-      />
-    );
+    return <Icon name="sync" size={18} className="text-primary" />;
   } else {
-    return (
-      <Icon
-        name="schedule"
-        size={18}
-        className="text-muted-foreground"
-      />
-    );
+    return <Icon name="schedule" size={18} className="text-muted-foreground" />;
   }
 }
 
@@ -590,10 +559,7 @@ function InstanceDetailTab() {
             </CardContent>
           </Card>
           <Card className="p-3 sm:p-4 mb-4">
-            <OutputField
-              label="Input Params"
-              value={context?.input}
-            />
+            <OutputField label="Input Params" value={context?.input} />
             <OutputField
               label="Output"
               value={

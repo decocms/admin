@@ -8,22 +8,14 @@ import { cn } from "@deco/ui/lib/utils.ts";
 function HoverCard({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
-  return (
-    <HoverCardPrimitive.Root
-      data-slot="hover-card"
-      {...props}
-    />
-  );
+  return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
 function HoverCardTrigger({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
   return (
-    <HoverCardPrimitive.Trigger
-      data-slot="hover-card-trigger"
-      {...props}
-    />
+    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
   );
 }
 

@@ -82,11 +82,7 @@ export function DepositDialog() {
             trackEvent("wallet_add_credits_click", { userId: user?.id })
           }
         >
-          <Icon
-            name="add"
-            size={16}
-            className="mr-2"
-          />
+          <Icon name="add" size={16} className="mr-2" />
           Add credits
         </Button>
       </DialogTrigger>

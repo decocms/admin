@@ -78,10 +78,7 @@ function PromptTab() {
     <ScrollArea className="h-full w-full [&>div>div]:h-full">
       <Form {...form}>
         <div className="h-full w-full p-6 mx-auto @container">
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-6 h-full"
-          >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 h-full">
             <div className="flex flex-col @[640px]:flex-row gap-3 w-full">
               <div className="flex flex-col @[640px]:flex-row items-start @[640px]:items-center gap-6 flex-1">
                 <FormField
@@ -119,10 +116,7 @@ function PromptTab() {
                                     className="text-white text-xl"
                                   />
                                 </div>
-                                <Input
-                                  type="hidden"
-                                  {...field}
-                                />
+                                <Input type="hidden" {...field} />
                               </>
                             )}
                           </div>

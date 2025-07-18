@@ -78,10 +78,7 @@ export function InstalledConnections({
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="flex-1 min-h-0 overflow-x-auto">
-        <CardsView
-          integrations={filteredIntegrations}
-          onRowClick={onClick}
-        />
+        <CardsView integrations={filteredIntegrations} onRowClick={onClick} />
       </div>
     </div>
   );

@@ -48,10 +48,7 @@ function WorkflowsCardView({
                   {workflow.name}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Icon
-                    name="play_circle"
-                    size={12}
-                  />
+                  <Icon name="play_circle" size={12} />
                   <span>{workflow.totalRuns} runs</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -69,19 +66,13 @@ function WorkflowsCardView({
               <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <div className="text-success">
-                    <Icon
-                      name="check_circle"
-                      size={12}
-                    />
+                    <Icon name="check_circle" size={12} />
                   </div>
                   <span>{workflow.successCount}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="text-destructive">
-                    <Icon
-                      name="error"
-                      size={12}
-                    />
+                    <Icon name="error" size={12} />
                   </div>
                   <span>{workflow.errorCount}</span>
                 </div>

@@ -123,11 +123,7 @@ function CurrentTeamDropdownOptions({
           className="w-full flex items-center gap-2 cursor-pointer"
         >
           <span className="grid place-items-center p-1">
-            <Icon
-              name="settings"
-              size={16}
-              className="text-muted-foreground"
-            />
+            <Icon name="settings" size={16} className="text-muted-foreground" />
           </span>
           <span className="md:text-sm">Settings</span>
         </Link>
@@ -141,11 +137,7 @@ function CurrentTeamDropdownOptions({
         }}
       >
         <span className="grid place-items-center p-1">
-          <Icon
-            name="person_add"
-            size={16}
-            className="text-muted-foreground"
-          />
+          <Icon name="person_add" size={16} className="text-muted-foreground" />
         </span>
         <span className="md:text-sm flex-grow justify-self-start">
           Invite members
@@ -185,10 +177,7 @@ function TeamsToSwitch({ query }: { query: string }) {
     <div className="flex flex-col gap-2 h-36 overflow-y-auto">
       <div className="flex flex-col gap-2 h-36 overflow-y-auto">
         {filteredTeams.map((team) => (
-          <ResponsiveDropdownItem
-            asChild
-            key={team.slug}
-          >
+          <ResponsiveDropdownItem asChild key={team.slug}>
             <Link
               to={`/${team.slug}`}
               className="w-full flex items-center gap-2 cursor-pointer"
@@ -212,10 +201,7 @@ function TeamsToSwitch({ query }: { query: string }) {
 TeamsToSwitch.Skeleton = () => (
   <div className="h-36 flex flex-col gap-2 overflow-y-auto">
     {Array.from({ length: 3 }).map((_, index) => (
-      <Skeleton
-        key={index}
-        className="h-9 w-full rounded-xl"
-      />
+      <Skeleton key={index} className="h-9 w-full rounded-xl" />
     ))}
   </div>
 );
@@ -254,11 +240,7 @@ function SwitchTeam({
           className="h-6 w-6"
           onClick={toggleSearch}
         >
-          <Icon
-            name="search"
-            size={16}
-            className="text-muted-foreground"
-          />
+          <Icon name="search" size={16} className="text-muted-foreground" />
         </Button>
       </div>
 
@@ -297,11 +279,7 @@ function SwitchTeam({
         onClick={onRequestCreateTeam}
       >
         <span className="grid place-items-center p-1">
-          <Icon
-            name="add"
-            size={16}
-            className="text-muted-foreground"
-          />
+          <Icon name="add" size={16} className="text-muted-foreground" />
         </span>
         <span className="md:text-sm">Create team</span>
       </ResponsiveDropdownItem>
@@ -325,10 +303,7 @@ export function TeamSelector() {
         <Suspense fallback={<CurrentTeamDropdownTrigger />}>
           <CurrentTeamDropdownTrigger />
         </Suspense>
-        <ResponsiveDropdownContent
-          align="start"
-          className="md:w-[240px]"
-        >
+        <ResponsiveDropdownContent align="start" className="md:w-[240px]">
           <Suspense fallback={<CurrentTeamDropdownOptions.Skeleton />}>
             <CurrentTeamDropdownOptions
               onRequestInvite={() => setIsInviteDialogOpen(true)}

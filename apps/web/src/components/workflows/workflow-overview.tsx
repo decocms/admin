@@ -35,10 +35,7 @@ function WorkflowStatsChart({ stats }: { stats: WorkflowStats }) {
 
   return (
     <div className="relative w-[120px] h-[120px]">
-      <ResponsiveContainer
-        width={120}
-        height={120}
-      >
+      <ResponsiveContainer width={120} height={120}>
         <PieChart>
           <Pie
             data={data}
@@ -49,10 +46,7 @@ function WorkflowStatsChart({ stats }: { stats: WorkflowStats }) {
             stroke="none"
           >
             {data.map((_entry, idx) => (
-              <Cell
-                key={`cell-${idx}`}
-                fill={DONUT_COLORS[idx]}
-              />
+              <Cell key={`cell-${idx}`} fill={DONUT_COLORS[idx]} />
             ))}
           </Pie>
         </PieChart>
@@ -72,10 +66,7 @@ function WorkflowStatsCard({ stats }: { stats: WorkflowStats }) {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center gap-2 text-lg font-semibold">
-        <Icon
-          name="analytics"
-          size={20}
-        />
+        <Icon name="analytics" size={20} />
         Workflow Statistics
       </div>
 
@@ -349,10 +340,7 @@ function WorkflowOverviewTab() {
         <div className="flex-1 min-h-0 px-6 flex flex-col space-y-6">
           {/* Header */}
           <div className="flex items-center gap-2 text-lg font-semibold">
-            <Icon
-              name="history"
-              size={20}
-            />
+            <Icon name="history" size={20} />
             Recent Runs
           </div>
 
@@ -361,11 +349,7 @@ function WorkflowOverviewTab() {
             {paginatedRuns.length === 0 ? (
               <div className="flex items-center justify-center h-full text-center text-muted-foreground">
                 <div className="space-y-4">
-                  <Icon
-                    name="work"
-                    size={48}
-                    className="mx-auto opacity-50"
-                  />
+                  <Icon name="work" size={48} className="mx-auto opacity-50" />
                   <div className="space-y-2">
                     <p className="text-lg font-medium">No runs found</p>
                     <p className="text-sm">

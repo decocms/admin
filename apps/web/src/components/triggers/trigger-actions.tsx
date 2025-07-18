@@ -33,10 +33,7 @@ export function TriggerActions({
             size="icon"
             onClick={(e) => e.stopPropagation()}
           >
-            <Icon
-              name="more_vert"
-              size={20}
-            />
+            <Icon name="more_vert" size={20} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -46,10 +43,7 @@ export function TriggerActions({
               setIsEditModalOpen(true);
             }}
           >
-            <Icon
-              name="edit"
-              className="h-4 w-4 mr-2"
-            />
+            <Icon name="edit" className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -59,10 +53,7 @@ export function TriggerActions({
               onOpenChange(true);
             }}
           >
-            <Icon
-              name="delete"
-              className="h-4 w-4 mr-2"
-            />
+            <Icon name="delete" className="h-4 w-4 mr-2" />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>

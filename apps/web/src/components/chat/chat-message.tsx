@@ -244,12 +244,7 @@ export function ChatMessage({
                   );
                 } else if (part.type === "image") {
                   if (!part.image) return null;
-                  return (
-                    <ImagePart
-                      image={part.image}
-                      key={index}
-                    />
-                  );
+                  return <ImagePart image={part.image} key={index} />;
                 } else if (
                   part.type === "tool-invocation-group" &&
                   part.toolInvocations
@@ -266,10 +261,7 @@ export function ChatMessage({
               })}
             </div>
           ) : (
-            <MemoizedMarkdown
-              id={message.id}
-              content={message.content}
-            />
+            <MemoizedMarkdown id={message.id} content={message.content} />
           )}
 
           {attachments && attachments.length > 0 && (
@@ -337,10 +329,7 @@ export function ChatMessage({
                   size="sm"
                   className="text-muted-foreground hover:text-foreground p-0 hover:bg-transparent"
                 >
-                  <Icon
-                    name="content_copy"
-                    className="mr-1 text-sm"
-                  />
+                  <Icon name="content_copy" className="mr-1 text-sm" />
                   Copy message
                 </Button>
               </div>

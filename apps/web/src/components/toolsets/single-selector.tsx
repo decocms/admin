@@ -189,10 +189,7 @@ function SelectorDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleDialogChange}
-    >
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="max-w-md w-full p-0 gap-0">
         <DialogHeader>
           <div className="flex items-center justify-between p-3 border-b border-border">
@@ -206,10 +203,7 @@ function SelectorDialog({
                     setSearch("");
                   }}
                 >
-                  <Icon
-                    name="arrow_back"
-                    size={18}
-                  />
+                  <Icon name="arrow_back" size={18} />
                   Back to integrations
                 </button>
               )}

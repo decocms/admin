@@ -305,10 +305,7 @@ export default function MentionDropdown({
   return (
     <div className="rounded-xl flex flex-col gap-3 bg-popover border text-sm w-50 p-1 shadow-xl">
       {currentCategory.map((category) => (
-        <div
-          key={category.id}
-          className="flex flex-col gap-1"
-        >
+        <div key={category.id} className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground font-medium px-2 py-1.5">
             {category.label}
           </span>
@@ -370,10 +367,7 @@ export default function MentionDropdown({
             })
           ) : (
             <span className="text-xs my-2 text-muted-foreground flex items-center justify-center gap-1">
-              <Icon
-                name="quick_reference_all"
-                size={14}
-              />
+              <Icon name="quick_reference_all" size={14} />
               No results found
             </span>
           )}

@@ -35,10 +35,7 @@ function StartNode({ data }: { data: any }) {
 
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-success rounded-full border-2 border-success-foreground shadow-lg relative">
-      <Icon
-        name="play_arrow"
-        size={24}
-      />
+      <Icon name="play_arrow" size={24} />
       <Handle
         type="source"
         position={Position.Bottom}
@@ -65,10 +62,7 @@ function EndNode({ data }: { data: any }) {
 
   return (
     <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full border-2 border-muted-foreground shadow-lg relative">
-      <Icon
-        name="stop"
-        size={24}
-      />
+      <Icon name="stop" size={24} />
       <Handle
         type="target"
         position={Position.Top}
@@ -108,10 +102,7 @@ function CopyButton({ value }: { value: unknown }) {
       onClick={handleCopy}
       title={copied ? "Copied!" : "Copy to clipboard"}
     >
-      <Icon
-        name={copied ? "check" : "content_copy"}
-        size={16}
-      />
+      <Icon name={copied ? "check" : "content_copy"} size={16} />
     </Button>
   );
 }
@@ -201,10 +192,7 @@ function StepDetailContentFlow({
             className="w-full flex items-center justify-between p-4 bg-destructive/5 hover:bg-destructive/10 rounded-lg border border-destructive/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
-              <Icon
-                name="error"
-                size={20}
-              />
+              <Icon name="error" size={20} />
               Error
             </h3>
             <div className="flex items-center gap-2">
@@ -235,10 +223,7 @@ function StepDetailContentFlow({
             className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-lg border border-primary/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-              <Icon
-                name="input"
-                size={20}
-              />
+              <Icon name="input" size={20} />
               Input
             </h3>
             <div className="flex items-center gap-2">
@@ -269,10 +254,7 @@ function StepDetailContentFlow({
             className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 rounded-lg border border-success/20 transition-colors"
           >
             <h3 className="text-lg font-semibold text-success flex items-center gap-2">
-              <Icon
-                name="check_circle"
-                size={20}
-              />
+              <Icon name="check_circle" size={20} />
               Output
             </h3>
             <div className="flex items-center gap-2">
@@ -315,10 +297,7 @@ function StepDetailModal({
   const hasInput = step?.data?.stepData?.payload;
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={onClose}
-    >
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="!max-w-[85vw] !w-[85vw] max-h-[90vh] overflow-hidden flex flex-col sm:!max-w-[85vw]">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between">
@@ -334,10 +313,7 @@ function StepDetailModal({
               </Badge>
               {step?.data?.duration && (
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <Icon
-                    name="timer"
-                    size={16}
-                  />
+                  <Icon name="timer" size={16} />
                   <span>{step.data.duration}</span>
                 </div>
               )}
@@ -396,40 +372,15 @@ function WorkflowStepNode({
   const statusIcon = () => {
     switch (data.status) {
       case "completed":
-        return (
-          <Icon
-            name="check_circle"
-            size={16}
-          />
-        );
+        return <Icon name="check_circle" size={16} />;
       case "failed":
-        return (
-          <Icon
-            name="error"
-            size={16}
-          />
-        );
+        return <Icon name="error" size={16} />;
       case "running":
-        return (
-          <Icon
-            name="hourglass_empty"
-            size={16}
-          />
-        );
+        return <Icon name="hourglass_empty" size={16} />;
       case "skipped":
-        return (
-          <Icon
-            name="remove_circle"
-            size={16}
-          />
-        );
+        return <Icon name="remove_circle" size={16} />;
       default:
-        return (
-          <Icon
-            name="radio_button_unchecked"
-            size={16}
-          />
-        );
+        return <Icon name="radio_button_unchecked" size={16} />;
     }
   };
 
@@ -466,19 +417,13 @@ function WorkflowStepNode({
               <h3 className="font-semibold text-sm truncate">{data.label}</h3>
             </div>
             <div className="text-muted-foreground flex-shrink-0">
-              <Icon
-                name="open_in_new"
-                size={14}
-              />
+              <Icon name="open_in_new" size={14} />
             </div>
           </div>
 
           {data.duration && (
             <div className="text-xs font-medium flex items-center gap-1 mt-1">
-              <Icon
-                name="timer"
-                size={12}
-              />
+              <Icon name="timer" size={12} />
               {data.duration}
             </div>
           )}
@@ -938,10 +883,7 @@ export function WorkflowFlowVisualization({
           <Card className="bg-card/90 backdrop-blur-sm border shadow-lg">
             <CardContent className="p-4">
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <Icon
-                  name="analytics"
-                  size={16}
-                />
+                <Icon name="analytics" size={16} />
                 Workflow Status
               </h3>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -974,24 +916,15 @@ export function WorkflowFlowVisualization({
             <CardContent className="p-3">
               <div className="text-xs text-muted-foreground space-y-1">
                 <div className="flex items-center gap-2">
-                  <Icon
-                    name="mouse"
-                    size={12}
-                  />
+                  <Icon name="mouse" size={12} />
                   <span>Click nodes for details</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Icon
-                    name="zoom_in"
-                    size={12}
-                  />
+                  <Icon name="zoom_in" size={12} />
                   <span>Scroll to zoom</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Icon
-                    name="pan_tool"
-                    size={12}
-                  />
+                  <Icon name="pan_tool" size={12} />
                   <span>Drag to pan</span>
                 </div>
               </div>

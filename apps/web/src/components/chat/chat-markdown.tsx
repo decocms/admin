@@ -23,10 +23,7 @@ function LazyHighlighterFallback() {
       }}
     >
       {lines.map((width, i) => (
-        <div
-          key={i}
-          className="flex gap-2 items-center my-1"
-        >
+        <div key={i} className="flex gap-2 items-center my-1">
           {i > 2 && i < 7 && (
             <div
               className="w-4 h-4 rounded-sm opacity-40 animate-pulse"
@@ -127,10 +124,7 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
           type="button"
         >
           Copy as CSV
-          <Icon
-            name={copied ? "check" : "content_copy"}
-            size={12}
-          />
+          <Icon name={copied ? "check" : "content_copy"} size={12} />
         </Button>
       </div>
       <div className="overflow-x-auto mb-4 rounded-lg border border-border">
@@ -153,24 +147,9 @@ const MemoizedMarkdownBlock = memo(
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          p: (props) => (
-            <p
-              {...props}
-              className="leading-relaxed"
-            />
-          ),
-          strong: (props) => (
-            <strong
-              {...props}
-              className="font-bold"
-            />
-          ),
-          em: (props) => (
-            <em
-              {...props}
-              className="italic"
-            />
-          ),
+          p: (props) => <p {...props} className="leading-relaxed" />,
+          strong: (props) => <strong {...props} className="font-bold" />,
+          em: (props) => <em {...props} className="italic" />,
           a: (props) => (
             <a
               {...props}
@@ -180,23 +159,12 @@ const MemoizedMarkdownBlock = memo(
             />
           ),
           ul: (props) => (
-            <ul
-              {...props}
-              className="list-disc ml-6 my-4 space-y-2"
-            />
+            <ul {...props} className="list-disc ml-6 my-4 space-y-2" />
           ),
           ol: (props) => (
-            <ol
-              {...props}
-              className="list-decimal ml-6 my-4 space-y-2"
-            />
+            <ol {...props} className="list-decimal ml-6 my-4 space-y-2" />
           ),
-          li: (props) => (
-            <li
-              {...props}
-              className="leading-relaxed"
-            />
-          ),
+          li: (props) => <li {...props} className="leading-relaxed" />,
           code: (props) => (
             <code
               {...props}
@@ -215,10 +183,7 @@ const MemoizedMarkdownBlock = memo(
           ),
           table: (props) => <Table {...props} />,
           thead: (props) => (
-            <thead
-              {...props}
-              className="bg-muted"
-            >
+            <thead {...props} className="bg-muted">
               {props.children}
             </thead>
           ),
@@ -235,10 +200,7 @@ const MemoizedMarkdownBlock = memo(
             />
           ),
           td: (props) => (
-            <td
-              {...props}
-              className="px-4 py-2 border-b border-border"
-            />
+            <td {...props} className="px-4 py-2 border-b border-border" />
           ),
         }}
       >
@@ -280,18 +242,12 @@ function CodeBlock({
           aria-label="Copy code"
           className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
         >
-          <Icon
-            name={copied ? "check" : "content_copy"}
-            size={14}
-          />
+          <Icon name={copied ? "check" : "content_copy"} size={14} />
         </Button>
       </div>
 
       <Suspense fallback={<LazyHighlighterFallback />}>
-        <LazyHighlighter
-          language={language}
-          content={content}
-        />
+        <LazyHighlighter language={language} content={content} />
       </Suspense>
     </div>
   );
@@ -320,10 +276,7 @@ export const MemoizedMarkdown = ({
     }
 
     return (
-      <MemoizedMarkdownBlock
-        content={block.raw}
-        key={`${id}-block_${index}`}
-      />
+      <MemoizedMarkdownBlock content={block.raw} key={`${id}-block_${index}`} />
     );
   });
 };

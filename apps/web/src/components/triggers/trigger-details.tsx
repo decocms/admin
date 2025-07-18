@@ -42,10 +42,7 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
           className="flex items-center gap-1 text-sm justify-start w-min px-4"
           onClick={onBack}
         >
-          <Icon
-            name="arrow_back"
-            className="h-4 w-4"
-          />
+          <Icon name="arrow_back" className="h-4 w-4" />
           Back to triggers
         </Button>
       )}
@@ -55,10 +52,7 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
           <div className="flex items-center gap-2">
             <TriggerIcon type={trigger.data.type} />
             <h2 className="text-xl font-semibold">{trigger.data.title}</h2>
-            <Badge
-              variant="outline"
-              className="ml-2"
-            >
+            <Badge variant="outline" className="ml-2">
               {trigger.data.type}
             </Badge>
             <div className="ml-auto flex items-center gap-2">
@@ -68,10 +62,7 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
                 onOpenChange={setIsEditModalOpen}
                 triggerAction={
                   <Button variant="special">
-                    <Icon
-                      name="edit"
-                      className="h-4 w-4 mr-2"
-                    />
+                    <Icon name="edit" className="h-4 w-4 mr-2" />
                     Edit Trigger
                   </Button>
                 }
@@ -145,17 +136,9 @@ function TriggerIcon({ type }: { type: Trigger["type"] }) {
   return (
     <div className="flex items-center justify-center p-2 bg-primary/10 rounded-md">
       {type === "cron" && (
-        <Icon
-          name="calendar_today"
-          className="text-primary"
-        />
+        <Icon name="calendar_today" className="text-primary" />
       )}
-      {type === "webhook" && (
-        <Icon
-          name="webhook"
-          className="text-primary"
-        />
-      )}
+      {type === "webhook" && <Icon name="webhook" className="text-primary" />}
     </div>
   );
 }

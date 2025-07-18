@@ -159,11 +159,7 @@ function PromptActions({ onDelete, disabled }: PromptActionsProps) {
           onClick={onDelete}
           className="text-destructive focus:bg-destructive/10"
         >
-          <Icon
-            name="delete"
-            className="mr-2"
-          />{" "}
-          Delete
+          <Icon name="delete" className="mr-2" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -21,20 +21,14 @@ export const DeleteTriggerModal = ({
 }) => {
   const { mutate: deleteTrigger } = useDeleteTrigger();
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>Delete Trigger</DialogHeader>
         <DialogDescription>
           Are you sure you want to delete this trigger?
         </DialogDescription>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button

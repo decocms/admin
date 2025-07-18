@@ -10,6 +10,24 @@ interface Options {
   selfUrl?: string;
 }
 
+// Sanitize description for safe use in JSDoc block comments
+const formatDescription = (desc: string | undefined) => {
+  if (!desc) return "";
+
+  return desc
+    // Escape */ sequences that would break the comment block
+    .replace(/\*\//g, "*\\/")
+    // Normalize line endings
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    // Split into lines and format each line
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => ` * ${line}`)
+    .join("\n");
+};
+
 function slugify(name: string) {
   return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 }
@@ -314,24 +332,6 @@ ${tsTypes}
       return `${propName}: Mcp<{
         ${
         tools.map(([toolName, inputName, outputName, description]) => {
-          // Sanitize description for safe use in JSDoc block comments
-          const formatDescription = (desc: string | undefined) => {
-            if (!desc) return "";
-
-            return desc
-              // Escape */ sequences that would break the comment block
-              .replace(/\*\//g, "*\\/")
-              // Normalize line endings
-              .replace(/\r\n/g, "\n")
-              .replace(/\r/g, "\n")
-              // Split into lines and format each line
-              .split("\n")
-              .map((line) => line.trim())
-              .filter((line) => line.length > 0)
-              .map((line) => ` * ${line}`)
-              .join("\n");
-          };
-
           const docComment = description
             ? `/**\n${formatDescription(description)}\n */`
             : "";

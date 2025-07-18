@@ -130,8 +130,8 @@ export const callTool = createIntegrationManagementTool({
         {
           name: toolCall.name,
           arguments: toolCall.arguments || {},
-          // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
         },
+        // @ts-expect-error TODO: remove this once this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
         CallToolResultSchema,
       );
 
@@ -580,8 +580,8 @@ const searchMarketplaceIntegations = async (
       {
         name: "SEARCH",
         arguments: { query },
-        // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
       },
+      // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
       CallToolResultSchema,
     );
 
@@ -907,8 +907,8 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
           {
             name: "CONFIGURE",
             arguments: { id: args.id },
-            // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
           },
+          // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
           CallToolResultSchema,
         );
 

@@ -66,8 +66,7 @@ export function WhatsAppInviteDialog({
               variant="outline"
               onClick={handleCancel}
               type="button"
-              disabled={isLoading}
-            >
+              disabled={isLoading}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

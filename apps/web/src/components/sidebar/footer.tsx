@@ -119,8 +119,7 @@ function UserPreferencesModal({
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-6 py-2"
-          >
+            className="flex flex-col gap-6 py-2">
             <FormField
               name="defaultModel"
               render={({ field }) => (
@@ -155,8 +154,7 @@ function UserPreferencesModal({
                     </FormControl>
                     <FormLabel
                       htmlFor="openrouter-switch"
-                      className="cursor-pointer"
-                    >
+                      className="cursor-pointer">
                       Use OpenRouter
                     </FormLabel>
                   </div>
@@ -181,8 +179,7 @@ function UserPreferencesModal({
                     </FormControl>
                     <FormLabel
                       htmlFor="smoothStream"
-                      className="cursor-pointer"
-                    >
+                      className="cursor-pointer">
                       Smooth Stream
                     </FormLabel>
                   </div>
@@ -207,8 +204,7 @@ function UserPreferencesModal({
                     </FormControl>
                     <FormLabel
                       htmlFor="sendReasoning"
-                      className="cursor-pointer"
-                    >
+                      className="cursor-pointer">
                       Reasoning
                     </FormLabel>
                   </div>
@@ -233,8 +229,7 @@ function UserPreferencesModal({
                     </FormControl>
                     <FormLabel
                       htmlFor="displayWorkflow"
-                      className="cursor-pointer"
-                    >
+                      className="cursor-pointer">
                       Workflows
                     </FormLabel>
                   </div>
@@ -312,14 +307,12 @@ function LoggedUser() {
       <ResponsiveDropdownContent
         side="top"
         align="start"
-        className="md:w-[240px]"
-      >
+        className="md:w-[240px]">
         <ResponsiveDropdownItem asChild>
           <button
             type="button"
             className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setProfileOpen(true)}
-          >
+            onClick={() => setProfileOpen(true)}>
             <Icon name="account_circle" className="text-muted-foreground" />
             Profile
           </button>
@@ -328,8 +321,7 @@ function LoggedUser() {
           <button
             type="button"
             className="flex items-center gap-2 text-sm w-full cursor-pointer"
-            onClick={() => setPreferencesOpen(true)}
-          >
+            onClick={() => setPreferencesOpen(true)}>
             <Icon name="tune" className="text-muted-foreground" />
             Preferences
           </button>
@@ -338,8 +330,7 @@ function LoggedUser() {
           <Link
             to={href}
             onClick={handleClickInvite}
-            className="flex items-center gap-2 text-sm w-full cursor-pointer"
-          >
+            className="flex items-center gap-2 text-sm w-full cursor-pointer">
             <Icon
               name="mail"
               filled={!!match}
@@ -360,8 +351,7 @@ function LoggedUser() {
             href="https://github.com/deco-cx/chat"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
-          >
+            className="flex w-full items-center gap-2 text-sm cursor-pointer">
             <img
               src="/img/github.svg"
               alt="GitHub"
@@ -385,8 +375,7 @@ function LoggedUser() {
             href="/about"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center gap-2 text-sm cursor-pointer"
-          >
+            className="flex w-full items-center gap-2 text-sm cursor-pointer">
             <Icon name="language" className="text-muted-foreground" />
             Homepage
             <Icon
@@ -402,8 +391,7 @@ function LoggedUser() {
         <ResponsiveDropdownItem asChild>
           <a
             href={logoutUrl}
-            className="flex items-center gap-2 text-sm cursor-pointer"
-          >
+            className="flex items-center gap-2 text-sm cursor-pointer">
             <Icon name="logout" size={16} className="text-muted-foreground" />
             Log out
           </a>
@@ -450,8 +438,7 @@ export function SidebarFooter() {
     <Suspense fallback={<Skeleton />}>
       <ErrorBoundary
         shouldCatch={(error) => error instanceof UnauthorizedError}
-        fallback={<AnonymouseUser />}
-      >
+        fallback={<AnonymouseUser />}>
         <SidebarFooterInner>
           <SidebarMenu>
             <SidebarMenuItem>

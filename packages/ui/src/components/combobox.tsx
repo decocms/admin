@@ -29,8 +29,7 @@ export function Combobox({
         <Button
           variant="outline"
           role="combobox"
-          className="w-[200px] justify-between"
-        >
+          className="w-[200px] justify-between">
           {value
             ? options.find((option) => option.value === value)?.label
             : "Select..."}
@@ -54,8 +53,7 @@ export function Combobox({
                     onChange(
                       currentValue === value ? "" : (currentValue ?? ""),
                     );
-                  }}
-                >
+                  }}>
                   {option.label}
                   <Check
                     className={cn(

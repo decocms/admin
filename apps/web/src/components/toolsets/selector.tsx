@@ -38,14 +38,12 @@ function IntegrationListItemActions({
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onSelect={onConfigure}
-          className="text-foreground focus:bg-primary/10"
-        >
+          className="text-foreground focus:bg-primary/10">
           Configure
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => onRemove(integration.id)}
-          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-        >
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive">
           Remove
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -124,8 +122,7 @@ export function IntegrationListItem({
       className={cn(
         "w-full flex flex-col rounded-xl transition-colors border border-border relative",
         isEmpty && "order-last",
-      )}
-    >
+      )}>
       <div className="flex gap-4 p-2 rounded-t-xl">
         <div className="flex gap-4 items-center justify-between w-full">
           <div>
@@ -156,8 +153,7 @@ export function IntegrationListItem({
           className={cn(
             "flex gap-2 items-center justify-between px-4 py-4 border-t border-border cursor-pointer",
             "hover:bg-muted rounded-b-xl",
-          )}
-        >
+          )}>
           <div className="flex gap-2 items-center">
             <Icon name="settings" size={16} />
             <span className="text-xs font-medium">Connection settings</span>
@@ -173,15 +169,13 @@ export function IntegrationListItem({
           className={cn(
             "flex flex-col items-start gap-1 min-w-0 border-t border-border cursor-pointer bg-background rounded-b-xl",
             !effectiveToolsOpen && "hover:bg-muted",
-          )}
-        >
+          )}>
           <span
             onClick={() => setToolsOpen(!toolsOpen)}
             className={cn(
               "text-muted-foreground text-sm h-10 flex items-center w-full hover:bg-muted pl-2 pr-4",
               !effectiveToolsOpen && "rounded-b-xl",
-            )}
-          >
+            )}>
             <div className="w-full flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <Icon
@@ -197,8 +191,7 @@ export function IntegrationListItem({
                   className={cn(
                     "text-xs font-medium text-muted-foreground",
                     isLoading && "animate-pulse",
-                  )}
-                >
+                  )}>
                   {isLoading
                     ? "Loading tools..."
                     : searchTerm
@@ -302,15 +295,13 @@ function ToolList({
           <label
             key={tool.name}
             className="flex items-center justify-between gap-3 px-4 hover:bg-muted cursor-pointer"
-            htmlFor={`${integration.id}-${tool.name}`}
-          >
+            htmlFor={`${integration.id}-${tool.name}`}>
             <div className="flex flex-col min-w-0 border-l border-border border-dashed p-4 pr-0">
               <span
                 className={cn(
                   "text-sm truncate cursor-pointer text-foreground",
                   !enabled && "text-muted-foreground",
-                )}
-              >
+                )}>
                 {beautifyToolName(tool.name)}
               </span>
               {tool.description && (

@@ -66,8 +66,7 @@ function ChannelCard({
       className={cn(
         "border border-input rounded-xl py-2 px-3 h-10 flex gap-2 items-center",
         !isAgentVariant && "justify-between",
-      )}
-    >
+      )}>
       <div className="flex items-center gap-2">
         <IntegrationIcon
           icon={integration?.icon ?? ""}
@@ -281,8 +280,7 @@ export function Channels({ className }: ChannelsProps) {
             <Button
               onClick={() => setShowCreateForm(true)}
               className="gap-2 h-8 w-8"
-              type="button"
-            >
+              type="button">
               <Icon name="add" size={16} />
             </Button>
           </div>
@@ -297,8 +295,7 @@ export function Channels({ className }: ChannelsProps) {
               className="ml-auto cursor-pointer"
               type="button"
               onClick={() => handleLeaveChannel(channel.id)}
-              disabled={isLeavingChannel(channel.id)}
-            >
+              disabled={isLeavingChannel(channel.id)}>
               {isLeavingChannel(channel.id) ? (
                 <Spinner size="sm" />
               ) : (
@@ -330,16 +327,14 @@ export function Channels({ className }: ChannelsProps) {
               <ChannelCard
                 key={channel.id}
                 channel={channel}
-                variant="available"
-              >
+                variant="available">
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleJoinChannel(channel.id)}
                     disabled={isJoiningChannel(channel.id)}
-                    className="h-6 px-2 text-xs"
-                  >
+                    className="h-6 px-2 text-xs">
                     {isJoiningChannel(channel.id) ? (
                       <div className="flex items-center gap-1">
                         <Spinner size="xs" />
@@ -355,8 +350,7 @@ export function Channels({ className }: ChannelsProps) {
                     className="cursor-pointer hover:text-destructive"
                     type="button"
                     onClick={() => handleRemoveChannel(channel.id)}
-                    disabled={isChannelRemoving(channel.id)}
-                  >
+                    disabled={isChannelRemoving(channel.id)}>
                     {isChannelRemoving(channel.id) ? (
                       <Spinner size="xs" />
                     ) : (
@@ -402,8 +396,7 @@ export function Channels({ className }: ChannelsProps) {
               onClick={() => {
                 setShowCreateForm(false);
                 setDiscriminator("");
-              }}
-            >
+              }}>
               Cancel
             </Button>
             <Button
@@ -416,8 +409,7 @@ export function Channels({ className }: ChannelsProps) {
                 }
                 handleCreateChannel(integration.id);
               }}
-              className="gap-2"
-            >
+              className="gap-2">
               {isCreating ? (
                 <>
                   <Spinner size="sm" />
@@ -538,8 +530,7 @@ function IntegrationSelect({
                   isChannelsBinding
                     ? "bg-green-100 text-green-800"
                     : "bg-red-100 text-red-800"
-                }`}
-              >
+                }`}>
                 {isChannelsBinding
                   ? "Channels Binding ✓"
                   : "Not Channels Binding ✗"}
@@ -588,8 +579,7 @@ function ConnectionChannels({
               setDiscriminator(value);
               setName(nameForChannel);
             }}
-            disabled={isLoadingAvailableChannels}
-          >
+            disabled={isLoadingAvailableChannels}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a channel" />
             </SelectTrigger>

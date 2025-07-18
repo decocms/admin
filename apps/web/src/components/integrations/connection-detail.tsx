@@ -89,8 +89,7 @@ function ConnectionInstanceActions({
         <DropdownMenuItem onSelect={onTestTools}>Test tools</DropdownMenuItem>
         <DropdownMenuItem
           onSelect={onDelete}
-          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-        >
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive">
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -253,8 +252,7 @@ function ConfigureConnectionInstanceForm({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
+          className="flex flex-col gap-6">
           <div className="flex items-end gap-4">
             <FormField
               control={form.control}
@@ -283,8 +281,7 @@ function ConfigureConnectionInstanceForm({
                     ) : (
                       <div
                         onClick={triggerFileInput}
-                        className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl"
-                      >
+                        className="w-14 h-14 flex flex-col items-center justify-center gap-1 border border-border bg-background rounded-xl">
                         <Icon name="upload" size={24} />
                         <span className="text-xs text-muted-foreground/70 text-center px-1">
                           Select an icon
@@ -301,8 +298,7 @@ function ConfigureConnectionInstanceForm({
               variant="outline"
               className="h-10"
               onClick={triggerFileInput}
-              disabled={isUploading}
-            >
+              disabled={isUploading}>
               <Icon name="upload" size={16} />
               Upload image
             </Button>
@@ -341,8 +337,7 @@ function ConfigureConnectionInstanceForm({
                         handleConnectionTypeChange(value);
                       }}
                       defaultValue={field.value}
-                      value={field.value}
-                    >
+                      value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a connection type" />
@@ -455,8 +450,7 @@ function ConfigureConnectionInstanceForm({
               type="button"
               variant="outline"
               onClick={closeForm}
-              disabled={isSaving}
-            >
+              disabled={isSaving}>
               Discard changes
             </Button>
             <Button type="submit" disabled={isSaving || numberOfChanges === 0}>
@@ -508,8 +502,7 @@ function ConnectionInstanceItem({
       <div
         ref={instanceRef}
         className="w-full"
-        id={`connection-${instance.id}`}
-      >
+        id={`connection-${instance.id}`}>
         <ConfigureConnectionInstanceForm
           instance={instance}
           closeForm={() => setIsConfiguring(false)}
@@ -523,8 +516,7 @@ function ConnectionInstanceItem({
       ref={instanceRef}
       id={`connection-${instance.id}`}
       className="w-full p-4 flex items-center gap-2 rounded-xl border border-border"
-      key={instance.id}
-    >
+      key={instance.id}>
       <IntegrationIcon icon={instance.icon} name={instance.name} />
       <div className="h-12 flex flex-col gap-1 flex-1 min-w-0">
         <h5 className="text-sm font-medium truncate">{instance.name}</h5>
@@ -697,8 +689,7 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
                 className={cn(
                   "text-xs text-muted-foreground",
                   param.required && "font-medium",
-                )}
-              >
+                )}>
                 {param.required ? "Required" : "Optional"}
               </span>
             </div>
@@ -791,8 +782,7 @@ function Tool({ tool, connection }: ToolProps) {
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem
         value={tool.name}
-        className="border border-border overflow-hidden !border-b rounded-xl p-0"
-      >
+        className="border border-border overflow-hidden !border-b rounded-xl p-0">
         <AccordionTrigger className="p-4 hover:no-underline cursor-pointer hover:bg-accent rounded-t-xl rounded-b-none">
           <div className="flex items-start gap-3 w-full text-left">
             <Icon name="build" filled size={16} />
@@ -803,8 +793,7 @@ function Tool({ tool, connection }: ToolProps) {
               {tool.description && (
                 <div
                   className="text-sm font-normal text-muted-foreground line-clamp-2"
-                  title={tool.description}
-                >
+                  title={tool.description}>
                   {tool.description}
                 </div>
               )}
@@ -928,8 +917,7 @@ function ToolsInspector({
           onValueChange={(value) => {
             const instance = data.instances.find((i) => i.id === value);
             setSelectedIntegration(instance ?? null);
-          }}
-        >
+          }}>
           <SelectTrigger className="max-w-[300px] w-full">
             <SelectValue placeholder="Select connection" />
           </SelectTrigger>

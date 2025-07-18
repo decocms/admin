@@ -17,8 +17,7 @@ export function ViewModeSwitcher({
         size="icon"
         aria-label="Card view"
         onClick={() => onChange("cards")}
-        className={viewMode === "cards" ? "bg-muted" : ""}
-      >
+        className={viewMode === "cards" ? "bg-muted" : ""}>
         <Icon
           name="grid_view"
           size={16}
@@ -32,8 +31,7 @@ export function ViewModeSwitcher({
         size="icon"
         aria-label="Table view"
         onClick={() => onChange("table")}
-        className={viewMode === "table" ? "bg-muted" : ""}
-      >
+        className={viewMode === "table" ? "bg-muted" : ""}>
         <Icon
           name="menu"
           size={16}

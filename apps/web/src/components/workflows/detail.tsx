@@ -45,8 +45,7 @@ function CopyButton({ value }: { value: unknown }) {
       variant="ghost"
       className="ml-2"
       onClick={handleCopy}
-      title={copied ? "Copied!" : "Copy to clipboard"}
-    >
+      title={copied ? "Copied!" : "Copy to clipboard"}>
       <Icon name={copied ? "check" : "content_copy"} size={16} />
     </Button>
   );
@@ -81,8 +80,7 @@ function ExpandableString({
             e.stopPropagation();
             setShowFull(true);
           }}
-          title="Click to show full content"
-        >
+          title="Click to show full content">
           ... show {stringValue.length - 100} more chars
         </button>
       </span>
@@ -101,8 +99,7 @@ function ExpandableString({
             e.stopPropagation();
             setShowFull(false);
           }}
-          title="Click to collapse"
-        >
+          title="Click to collapse">
           collapse
         </button>
       )}
@@ -204,8 +201,7 @@ function JsonTreeNode({
     return (
       <div
         className="flex items-start gap-2 py-1 font-mono text-sm"
-        style={{ paddingLeft: `${indentLevel}px` }}
-      >
+        style={{ paddingLeft: `${indentLevel}px` }}>
         <span className="w-4"></span> {/* Space for expand icon */}
         {renderKey()}
         {renderPrimitive(data)}
@@ -228,8 +224,7 @@ function JsonTreeNode({
         onClick={(e) => {
           e.stopPropagation();
           setIsExpanded(!isExpanded);
-        }}
-      >
+        }}>
         <Icon
           name={isExpanded ? "expand_more" : "chevron_right"}
           size={16}
@@ -269,8 +264,7 @@ function JsonTreeViewer({
     return (
       <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         <ExpandableString
           value={parsed}
           className="whitespace-pre-wrap break-words font-mono text-current"
@@ -285,8 +279,7 @@ function JsonTreeViewer({
     return (
       <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         <pre className="whitespace-pre-wrap break-words font-mono text-current">
           {parsed === null ? "null" : "undefined"}
         </pre>
@@ -299,8 +292,7 @@ function JsonTreeViewer({
     return (
       <div
         className={compact ? "text-sm" : "bg-muted rounded p-3 text-sm"}
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={(e) => e.stopPropagation()}>
         <pre className="whitespace-pre-wrap break-words font-mono text-current">
           {String(parsed)}
         </pre>
@@ -312,8 +304,7 @@ function JsonTreeViewer({
   return (
     <div
       className={compact ? "max-h-64 overflow-y-auto" : "bg-muted rounded p-3"}
-      onClick={(e) => e.stopPropagation()}
-    >
+      onClick={(e) => e.stopPropagation()}>
       <JsonTreeNode data={parsed} />
     </div>
   );
@@ -501,8 +492,7 @@ function InstanceDetailTab() {
                   <span className="text-xl font-bold">Status</span>
                   <Badge
                     variant={badgeVariant}
-                    className="text-base px-3 py-1 capitalize"
-                  >
+                    className="text-base px-3 py-1 capitalize">
                     {status}
                   </Badge>
                   <Icon

@@ -170,8 +170,7 @@ export default function Page() {
             <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDiscard}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -180,8 +179,7 @@ export default function Page() {
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
-        uiOptions={{ showEditAgent: false }}
-      >
+        uiOptions={{ showEditAgent: false }}>
         <Context.Provider
           value={{
             form,
@@ -190,8 +188,7 @@ export default function Page() {
             onSubmit,
             promptVersion,
             setPromptVersion,
-          }}
-        >
+          }}>
           <PageLayout
             hideViewsButton
             tabs={prompt.readonly ? FORM_TAB : TABS}
@@ -209,8 +206,7 @@ export default function Page() {
                           title: "History",
                           position: { direction: "right" },
                         });
-                      }}
-                    >
+                      }}>
                       <Icon name="history" />
                     </Button>
                   </TooltipTrigger>
@@ -219,8 +215,7 @@ export default function Page() {
                 <div
                   className={cn(
                     promptVersion ? "opacity-100" : "opacity-0 w-0",
-                  )}
-                >
+                  )}>
                   <Button variant="default" onClick={handleRestoreVersion}>
                     Restore version
                   </Button>
@@ -230,14 +225,12 @@ export default function Page() {
                     "flex items-center gap-2",
                     "transition-opacity",
                     numberOfChanges > 0 ? "opacity-100" : "opacity-0 w-0",
-                  )}
-                >
+                  )}>
                   <Button
                     type="button"
                     variant="outline"
                     className="text-foreground"
-                    onClick={handleDiscard}
-                  >
+                    onClick={handleDiscard}>
                     Discard
                   </Button>
                   <Button
@@ -245,8 +238,7 @@ export default function Page() {
                     disabled={!numberOfChanges || prompt.readonly}
                     onClick={() => {
                       onSubmit(form.getValues());
-                    }}
-                  >
+                    }}>
                     {isMutating ? (
                       <>
                         <Spinner size="xs" />

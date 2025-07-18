@@ -76,8 +76,7 @@ export function RemoveConnectionAlert({
           <AlertDialogAction
             onClick={onDelete}
             disabled={isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-          >
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2">
             {isDeleting ? (
               <>
                 <Spinner />

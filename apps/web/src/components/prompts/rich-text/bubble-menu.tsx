@@ -44,8 +44,7 @@ export default function BubbleMenu({ editor }: Props) {
   return (
     <TiptapBubbleMenu
       className="rounded-xl border bg-background shadow-md flex"
-      editor={editor}
-    >
+      editor={editor}>
       {/* <Button
         type="button"
         variant="ghost"
@@ -62,8 +61,7 @@ export default function BubbleMenu({ editor }: Props) {
         variant="ghost"
         size="sm"
         className="gap-2 border-l rounded-none"
-        onClick={handleReplaceSelectionWithApiResult}
-      >
+        onClick={handleReplaceSelectionWithApiResult}>
         <Icon name="text_snippet" className="text-muted-foreground" size={16} />
         <span className="text-sm text-foreground font-medium">
           Save as prompt

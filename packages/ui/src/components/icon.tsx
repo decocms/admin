@@ -55,8 +55,7 @@ export function Icon({
         ...style,
         fontSize: `${size}px`,
       }}
-      {...props}
-    >
+      {...props}>
       {name}
     </span>
   );

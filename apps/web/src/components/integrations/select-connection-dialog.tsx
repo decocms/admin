@@ -209,8 +209,7 @@ function AddConnectionDialogContent({
   return (
     <DialogContent
       className="p-0 min-w-[80vw] min-h-[80vh] gap-0"
-      closeButtonClassName="top-5 right-4"
-    >
+      closeButtonClassName="top-5 right-4">
       <DialogHeader className="flex flex-row justify-between items-center p-2 h-14 px-5 pr-12">
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
@@ -223,8 +222,7 @@ function AddConnectionDialogContent({
                 "w-full justify-start text-muted-foreground",
                 tab === "my-connections" && "bg-muted text-foreground",
               )}
-              onClick={() => setTab("my-connections")}
-            >
+              onClick={() => setTab("my-connections")}>
               <Icon
                 name="widgets"
                 size={16}
@@ -238,16 +236,14 @@ function AddConnectionDialogContent({
                 "w-full justify-start text-muted-foreground",
                 tab === "new-connection" && "bg-muted text-foreground",
               )}
-              onClick={() => setTab("new-connection")}
-            >
+              onClick={() => setTab("new-connection")}>
               <Icon name="add" size={16} className="text-muted-foreground" />
               <span>New integration</span>
             </Button>
             <Button
               variant="ghost"
               className={cn("w-full justify-start text-muted-foreground group")}
-              onClick={() => navigateWorkspace("/connections")}
-            >
+              onClick={() => navigateWorkspace("/connections")}>
               <Icon name="arrow_outward" size={16} />
               <span className="group-hover:underline">Manage integrations</span>
             </Button>
@@ -276,8 +272,7 @@ function AddConnectionDialogContent({
                       <Button
                         variant="link"
                         className="px-0"
-                        onClick={() => setTab("my-connections")}
-                      >
+                        onClick={() => setTab("my-connections")}>
                         create a new custom integration
                       </Button>{" "}
                       instead.

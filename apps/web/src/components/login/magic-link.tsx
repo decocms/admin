@@ -54,8 +54,7 @@ function MagicLink() {
           <Icon name="arrow_back" size={16} />
           <Link
             to={`/login?next=${next}`}
-            className="text-sm flex items-center gap-1 hover:underline"
-          >
+            className="text-sm flex items-center gap-1 hover:underline">
             Back to login options
           </Link>
         </span>
@@ -84,8 +83,7 @@ function MagicLink() {
                 <Button
                   type="submit"
                   className="w-full gap-2"
-                  disabled={fetcher.isPending}
-                >
+                  disabled={fetcher.isPending}>
                   {fetcher.isPending ? <Spinner size="xs" /> : null}
                   Send magic link
                 </Button>
@@ -112,8 +110,7 @@ function MagicLink() {
               <Button
                 type="submit"
                 className="w-full gap-2"
-                disabled={fetcher.isPending}
-              >
+                disabled={fetcher.isPending}>
                 {fetcher.isPending ? <Spinner size="xs" /> : null}
                 Resend verification email
               </Button>

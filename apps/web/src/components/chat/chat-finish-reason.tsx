@@ -38,8 +38,7 @@ export function ChatFinishReason() {
     <div className="w-full border border-border rounded-2xl mb-4 empty:hidden">
       <div
         className="p-4 grid gap-2"
-        style={{ gridTemplateColumns: "auto 1fr auto" }}
-      >
+        style={{ gridTemplateColumns: "auto 1fr auto" }}>
         <div className="w-5 h-5 flex items-center justify-center">
           <Icon name="error" filled className="text-destructive" size={20} />
         </div>
@@ -57,8 +56,7 @@ export function ChatFinishReason() {
           variant="secondary"
           onClick={() => {
             append({ role: "user", content: "Continue" });
-          }}
-        >
+          }}>
           Continue from here
         </Button>
       </div>

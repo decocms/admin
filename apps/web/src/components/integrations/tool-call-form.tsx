@@ -28,8 +28,7 @@ export function RawJsonView({ json }: { json: unknown }) {
         className="absolute top-2 right-2"
         size="icon"
         onClick={() => handleCopy(JSON.stringify(json, null, 2))}
-        variant="outline"
-      >
+        variant="outline">
         <Icon name={copied ? "check" : "content_copy"} size={16} />
       </Button>
       <pre className="p-2 rounded-xl max-h-[200px] border border-border bg-muted text-xs overflow-auto">
@@ -127,8 +126,7 @@ export function ToolCallForm({
             <Button
               onClick={handleRawSubmit}
               className="flex-1 gap-2"
-              disabled={isLoading}
-            >
+              disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Spinner size="xs" />
@@ -142,8 +140,7 @@ export function ToolCallForm({
               <Button
                 variant="outline"
                 onClick={onCancel}
-                className="flex items-center gap-2"
-              >
+                className="flex items-center gap-2">
                 <Icon name="close" />
                 Cancel
               </Button>
@@ -162,8 +159,7 @@ export function ToolCallForm({
               <Button
                 type="submit"
                 className="flex-1 gap-2"
-                disabled={isLoading}
-              >
+                disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Spinner size="xs" />

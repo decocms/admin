@@ -67,8 +67,7 @@ export function RouteLayout() {
           setProfileOpen={setProfileOpen}
           openProfileModal={openProfileModal}
           closeProfileModal={closeProfileModal}
-          handlePhoneSaved={handlePhoneSaved}
-        >
+          handlePhoneSaved={handlePhoneSaved}>
           <SidebarProvider
             open={open}
             onOpenChange={(open) => {
@@ -81,8 +80,7 @@ export function RouteLayout() {
                 "--sidebar-width": "16rem",
                 "--sidebar-width-mobile": "14rem",
               } as Record<string, string>
-            }
-          >
+            }>
             <AppSidebar />
             <SidebarInset className="h-full flex-col bg-sidebar">
               <Outlet />
@@ -118,8 +116,7 @@ export function PageLayout({
             onClick={toggleSidebar}
             size="icon"
             variant="ghost"
-            className={cn("p-1")}
-          >
+            className={cn("p-1")}>
             <Icon name="menu" />
           </Button>
         </div>
@@ -131,8 +128,7 @@ export function PageLayout({
             "mb-0 md:-mb-2 empty:mb-0",
             "min-h-14 empty:min-h-0",
             "justify-self-center md:justify-self-start",
-          )}
-        >
+          )}>
           {breadcrumb}
         </div>
         <div
@@ -142,8 +138,7 @@ export function PageLayout({
             "mb-0 md:-mb-2 empty:mb-0",
             "min-h-14 empty:min-h-0",
             "justify-self-end",
-          )}
-        >
+          )}>
           {actionButtons}
         </div>
         {!open && (
@@ -152,8 +147,7 @@ export function PageLayout({
               onClick={toggleSidebar}
               size="icon"
               variant="ghost"
-              className="p-1 size-8"
-            >
+              className="p-1 size-8">
               <Icon name="dock_to_right" className="text-muted-foreground" />
             </Button>
           </div>
@@ -182,8 +176,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
           variant="ghost"
           size="icon"
           onClick={() => toggleSidebar()}
-          className={cn(isMobile && "hidden", "size-8")}
-        >
+          className={cn(isMobile && "hidden", "size-8")}>
           <Icon name="dock_to_right" className="text-muted-foreground" />
         </Button>
       )}
@@ -217,8 +210,7 @@ export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
                     <BreadcrumbLink
                       asChild
                       href={link}
-                      className="inline-flex items-center gap-2"
-                    >
+                      className="inline-flex items-center gap-2">
                       <Link to={link}>{item.label}</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>

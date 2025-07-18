@@ -120,8 +120,7 @@ function CurrentTeamDropdownOptions({
       <ResponsiveDropdownItem asChild>
         <Link
           to={buildWorkspaceLink("/settings")}
-          className="w-full flex items-center gap-2 cursor-pointer"
-        >
+          className="w-full flex items-center gap-2 cursor-pointer">
           <span className="grid place-items-center p-1">
             <Icon name="settings" size={16} className="text-muted-foreground" />
           </span>
@@ -134,8 +133,7 @@ function CurrentTeamDropdownOptions({
           // Prevent event from bubbling up to parent elements
           e.stopPropagation();
           onRequestInvite();
-        }}
-      >
+        }}>
         <span className="grid place-items-center p-1">
           <Icon name="person_add" size={16} className="text-muted-foreground" />
         </span>
@@ -180,8 +178,7 @@ function TeamsToSwitch({ query }: { query: string }) {
           <ResponsiveDropdownItem asChild key={team.slug}>
             <Link
               to={`/${team.slug}`}
-              className="w-full flex items-center gap-2 cursor-pointer"
-            >
+              className="w-full flex items-center gap-2 cursor-pointer">
               <Avatar
                 shape="square"
                 url={team.avatarUrl}
@@ -238,8 +235,7 @@ function SwitchTeam({
           variant="ghost"
           size="icon"
           className="h-6 w-6"
-          onClick={toggleSearch}
-        >
+          onClick={toggleSearch}>
           <Icon name="search" size={16} className="text-muted-foreground" />
         </Button>
       </div>
@@ -276,8 +272,7 @@ function SwitchTeam({
 
       <ResponsiveDropdownItem
         className="gap-2 cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-default aria-disabled:pointer-events-none"
-        onClick={onRequestCreateTeam}
-      >
+        onClick={onRequestCreateTeam}>
         <span className="grid place-items-center p-1">
           <Icon name="add" size={16} className="text-muted-foreground" />
         </span>

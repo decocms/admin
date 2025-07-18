@@ -36,8 +36,7 @@ export const DeleteTriggerModal = ({
             onClick={() => {
               deleteTrigger(trigger.id);
               onOpenChange(false);
-            }}
-          >
+            }}>
             Delete
           </Button>
         </DialogFooter>

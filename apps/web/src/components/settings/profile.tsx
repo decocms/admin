@@ -179,8 +179,7 @@ export function ProfileSettings({
                 type="button"
                 onClick={handleCopyUserId}
                 className="p-1 hover:bg-muted rounded transition-colors"
-                aria-label="Copy user ID"
-              >
+                aria-label="Copy user ID">
                 <Icon
                   name={userIdCopied ? "check" : "content_copy"}
                   size={12}
@@ -212,8 +211,7 @@ export function ProfileSettings({
             type="button"
             variant="default"
             onClick={handleSave}
-            disabled={updateProfile.isPending || isLoading}
-          >
+            disabled={updateProfile.isPending || isLoading}>
             {updateProfile.isPending ? "Saving..." : "Save"}
           </Button>
           <DialogClose asChild>
@@ -296,8 +294,7 @@ export function PhoneInput({
     <div className="w-full max-w-xs flex flex-col gap-2">
       <label
         htmlFor="profile-phone"
-        className="text-sm font-medium text-muted-foreground"
-      >
+        className="text-sm font-medium text-muted-foreground">
         Phone Number
       </label>
       <div className="flex items-center gap-2">

@@ -21,8 +21,7 @@ export function TriggerCard({
     <Card className="overflow-hidden border rounded-xl hover:shadow-md transition-shadow cursor-pointer relative">
       <CardContent
         className="p-6 flex flex-col gap-4"
-        onClick={() => onClick(trigger)}
-      >
+        onClick={() => onClick(trigger)}>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <TriggerToggle trigger={trigger} />

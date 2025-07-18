@@ -25,8 +25,7 @@ function BalanceCard() {
             variant="ghost"
             className="w-8 h-8"
             size="icon"
-            onClick={account.refetch}
-          >
+            onClick={account.refetch}>
             <Icon
               name="refresh"
               size={16}
@@ -39,8 +38,7 @@ function BalanceCard() {
             <ErrorBoundary
               fallback={
                 <p className="text-destructive">Error loading balance</p>
-              }
-            >
+              }>
               <AccountBalance />
             </ErrorBoundary>
           </Suspense>

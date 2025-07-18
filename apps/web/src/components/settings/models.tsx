@@ -63,8 +63,7 @@ export function ModelLogo({ logo, name }: ModelLogoProps) {
         "rounded-2xl relative flex items-center justify-center p-2 h-16 w-16",
         "before:content-[''] before:absolute before:inset-0 before:rounded-2xl before:p-[1px] before:bg-gradient-to-t before:from-border before:to-border/50",
         "before:![mask:linear-gradient(#000_0_0)_exclude_content-box,_linear-gradient(#000_0_0)]",
-      )}
-    >
+      )}>
       <Avatar
         shape="square"
         url={logo}
@@ -137,8 +136,7 @@ function ModelsView() {
         <Button
           variant="default"
           className="ml-auto"
-          onClick={() => setIsOpen(true)}
-        >
+          onClick={() => setIsOpen(true)}>
           <Icon name="add" className="mr-2 h-4 w-4" />
           Add Model
         </Button>
@@ -185,8 +183,7 @@ const ModelActions = ({
         <Button
           variant="ghost"
           size="icon"
-          onClick={(e) => e.stopPropagation()}
-        >
+          onClick={(e) => e.stopPropagation()}>
           <Icon name="more_vert" size={20} />
         </Button>
       </DropdownMenuTrigger>
@@ -196,8 +193,7 @@ const ModelActions = ({
           onClick={(e) => {
             e.stopPropagation();
             onEditClick();
-          }}
-        >
+          }}>
           <Icon name="edit" className="h-4 w-4 mr-2" />
           Edit
         </DropdownMenuItem>
@@ -206,8 +202,7 @@ const ModelActions = ({
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClick();
-          }}
-        >
+          }}>
           <Icon name="delete" className="h-4 w-4 mr-2" />
           Delete
         </DropdownMenuItem>
@@ -444,8 +439,7 @@ function TableView({ models }: { models: Model[] }) {
           <Form {...modalForm}>
             <form
               onSubmit={modalForm.handleSubmit(onSubmit)}
-              className="space-y-6"
-            >
+              className="space-y-6">
               <div className="flex items-center gap-6">
                 <Avatar
                   shape="square"
@@ -508,8 +502,7 @@ function TableView({ models }: { models: Model[] }) {
                           if (logo) {
                             setLogo(logo);
                           }
-                        }}
-                      >
+                        }}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select Model" />
                         </SelectTrigger>
@@ -517,8 +510,7 @@ function TableView({ models }: { models: Model[] }) {
                           {WELL_KNOWN_MODELS.map((model) => (
                             <SelectItem
                               key={model.model.split(":")[1]}
-                              value={model.model}
-                            >
+                              value={model.model}>
                               {model.logo && (
                                 <img
                                   src={model.logo}

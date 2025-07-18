@@ -432,8 +432,7 @@ function CronSelectInput({
                 href="https://crontab.guru"
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary underline"
-              >
+                className="text-primary underline">
                 Use this generator to create and test expressions
               </a>
               .
@@ -779,8 +778,7 @@ export function TriggerModal({
         <form id="trigger-form" onSubmit={form.handleSubmit(onSubmit)}>
           <DialogContent
             onClick={(e) => e.stopPropagation()}
-            className="max-w-2xl h-[90vh] grid grid-rows-[auto_1fr_auto]"
-          >
+            className="max-w-2xl h-[90vh] grid grid-rows-[auto_1fr_auto]">
             <DialogHeader>
               <DialogTitle>
                 {isEditing ? "Edit trigger" : "New Trigger"}
@@ -861,15 +859,13 @@ export function TriggerModal({
                             onValueChange={field.onChange}
                             value={field.value}
                             className="flex space-x-4"
-                            disabled={isEditing}
-                          >
+                            disabled={isEditing}>
                             <div
                               className={`flex items-center space-x-2 ${
                                 isEditing
                                   ? "cursor-not-allowed"
                                   : "cursor-pointer"
-                              }`}
-                            >
+                              }`}>
                               <RadioGroupItem
                                 value="webhook"
                                 id="webhook"
@@ -885,8 +881,7 @@ export function TriggerModal({
                                   isEditing
                                     ? "cursor-not-allowed"
                                     : "cursor-pointer"
-                                }`}
-                              >
+                                }`}>
                                 <Icon name="webhook" className="h-4 w-4" />
                                 Webhook
                               </Label>
@@ -896,8 +891,7 @@ export function TriggerModal({
                                 isEditing
                                   ? "cursor-not-allowed"
                                   : "cursor-pointer"
-                              }`}
-                            >
+                              }`}>
                               <RadioGroupItem
                                 value="cron"
                                 id="cron"
@@ -913,8 +907,7 @@ export function TriggerModal({
                                   isEditing
                                     ? "cursor-not-allowed"
                                     : "cursor-pointer"
-                                }`}
-                              >
+                                }`}>
                                 <Icon name="schedule" className="h-4 w-4" />
                                 Cron
                               </Label>
@@ -980,15 +973,15 @@ export function TriggerModal({
                             onValueChange={field.onChange}
                             value={field.value}
                             className="flex space-x-4"
-                            disabled={isEditing || !!agentId || !!integrationId}
-                          >
+                            disabled={
+                              isEditing || !!agentId || !!integrationId
+                            }>
                             <div
                               className={`flex items-center space-x-2 ${
                                 isEditing || !!agentId || !!integrationId
                                   ? "cursor-not-allowed"
                                   : "cursor-pointer"
-                              }`}
-                            >
+                              }`}>
                               <RadioGroupItem
                                 value="agent"
                                 id="agent"
@@ -1004,8 +997,7 @@ export function TriggerModal({
                                   isEditing || !!agentId || !!integrationId
                                     ? "cursor-not-allowed"
                                     : "cursor-pointer"
-                                }`}
-                              >
+                                }`}>
                                 <Icon name="robot_2" className="h-4 w-4" />
                                 Agent
                               </Label>
@@ -1015,8 +1007,7 @@ export function TriggerModal({
                                 isEditing || !!agentId || !!integrationId
                                   ? "cursor-not-allowed"
                                   : "cursor-pointer"
-                              }`}
-                            >
+                              }`}>
                               <RadioGroupItem
                                 value="tool"
                                 id="tool"
@@ -1032,8 +1023,7 @@ export function TriggerModal({
                                   isEditing || !!agentId || !!integrationId
                                     ? "cursor-not-allowed"
                                     : "cursor-pointer"
-                                }`}
-                              >
+                                }`}>
                                 <Icon name="build" filled className="h-4 w-4" />
                                 Tool
                               </Label>
@@ -1057,8 +1047,7 @@ export function TriggerModal({
                             <Select
                               value={field.value}
                               onValueChange={field.onChange}
-                              disabled={isEditing || !!agentId}
-                            >
+                              disabled={isEditing || !!agentId}>
                               <SelectTrigger className="w-full h-12 rounded-full border border-border text-left px-4">
                                 <SelectValue placeholder="Select agent">
                                   {(() => {
@@ -1092,8 +1081,7 @@ export function TriggerModal({
                                   <SelectItem
                                     key={agent.id}
                                     value={agent.id}
-                                    className="[&>span]:max-w-full"
-                                  >
+                                    className="[&>span]:max-w-full">
                                     <div className="flex items-center gap-2 px-3 py-2 min-w-0">
                                       <AgentAvatar
                                         size="xs"
@@ -1136,8 +1124,7 @@ export function TriggerModal({
                               <Select
                                 value={field.value}
                                 onValueChange={field.onChange}
-                                disabled={isEditing || !!integrationId}
-                              >
+                                disabled={isEditing || !!integrationId}>
                                 <SelectTrigger className="w-full h-12 rounded-full border border-border text-left px-4">
                                   <SelectValue placeholder="Select integration">
                                     {(() => {
@@ -1170,8 +1157,7 @@ export function TriggerModal({
                                     <SelectItem
                                       key={integration.id}
                                       value={integration.id}
-                                      className="[&>span]:max-w-full"
-                                    >
+                                      className="[&>span]:max-w-full">
                                       <div className="flex items-center gap-2 px-3 py-2 min-w-0">
                                         <IntegrationAvatar
                                           url={integration.icon}
@@ -1225,8 +1211,7 @@ export function TriggerModal({
                                 <Select
                                   value={field.value}
                                   onValueChange={field.onChange}
-                                  disabled={isEditing}
-                                >
+                                  disabled={isEditing}>
                                   <SelectTrigger className="w-full h-12 rounded-full border border-border text-left px-4">
                                     <SelectValue placeholder="Select tool">
                                       {(() => {
@@ -1257,8 +1242,7 @@ export function TriggerModal({
                                       <SelectItem
                                         key={tool.name}
                                         value={tool.name}
-                                        className="[&>span]:max-w-full"
-                                      >
+                                        className="[&>span]:max-w-full">
                                         <div className="flex flex-col items-start gap-1 px-3 py-2 w-full min-w-0">
                                           <div className="flex items-center gap-2 w-full">
                                             <Icon
@@ -1372,15 +1356,13 @@ export function TriggerModal({
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange?.(false)}
-                  disabled={isPending}
-                >
+                  disabled={isPending}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isPending || (!hasAgents && !hasIntegrations)}
-                  form="trigger-form"
-                >
+                  form="trigger-form">
                   {isPending
                     ? isEditing
                       ? "Updating..."

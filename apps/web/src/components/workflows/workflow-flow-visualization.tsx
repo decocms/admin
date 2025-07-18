@@ -100,8 +100,7 @@ function CopyButton({ value }: { value: unknown }) {
       variant="ghost"
       className="ml-2"
       onClick={handleCopy}
-      title={copied ? "Copied!" : "Copy to clipboard"}
-    >
+      title={copied ? "Copied!" : "Copy to clipboard"}>
       <Icon name={copied ? "check" : "content_copy"} size={16} />
     </Button>
   );
@@ -189,8 +188,7 @@ function StepDetailContentFlow({
           <button
             type="button"
             onClick={() => toggleSection("error")}
-            className="w-full flex items-center justify-between p-4 bg-destructive/5 hover:bg-destructive/10 rounded-lg border border-destructive/20 transition-colors"
-          >
+            className="w-full flex items-center justify-between p-4 bg-destructive/5 hover:bg-destructive/10 rounded-lg border border-destructive/20 transition-colors">
             <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
               <Icon name="error" size={20} />
               Error
@@ -220,8 +218,7 @@ function StepDetailContentFlow({
           <button
             type="button"
             onClick={() => toggleSection("input")}
-            className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-lg border border-primary/20 transition-colors"
-          >
+            className="w-full flex items-center justify-between p-4 bg-primary/5 hover:bg-primary/10 rounded-lg border border-primary/20 transition-colors">
             <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
               <Icon name="input" size={20} />
               Input
@@ -251,8 +248,7 @@ function StepDetailContentFlow({
           <button
             type="button"
             onClick={() => toggleSection("output")}
-            className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 rounded-lg border border-success/20 transition-colors"
-          >
+            className="w-full flex items-center justify-between p-4 bg-success/5 hover:bg-success/10 rounded-lg border border-success/20 transition-colors">
             <h3 className="text-lg font-semibold text-success flex items-center gap-2">
               <Icon name="check_circle" size={20} />
               Output
@@ -307,8 +303,7 @@ function StepDetailModal({
               </DialogTitle>
               <Badge
                 variant={getStatusBadgeVariant(step?.data?.status || "")}
-                className="text-sm"
-              >
+                className="text-sm">
                 {step?.data?.status}
               </Badge>
               {step?.data?.duration && (
@@ -408,8 +403,7 @@ function WorkflowStepNode({
 
       <Card
         className={`${cardClasses} ${borderClasses} ${bgClasses} w-48 min-h-[80px]`}
-        onClick={data.onClick}
-      >
+        onClick={data.onClick}>
         <CardContent className="p-3 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -863,8 +857,7 @@ export function WorkflowFlowVisualization({
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         minZoom={0.3}
         maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-      >
+        proOptions={{ hideAttribution: true }}>
         <Background
           gap={20}
           size={1}

@@ -59,8 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
           value={{
             state: this.state,
             reset: () => this.reset(),
-          }}
-        >
+          }}>
           {this.props.fallback ?? null}
         </Context.Provider>
       );

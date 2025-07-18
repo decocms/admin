@@ -64,8 +64,7 @@ function CopyLinkButton({
         setTimeout(() => {
           setIsCopied(false);
         }, 2000);
-      }}
-    >
+      }}>
       <Icon name={isCopied ? "check" : "link"} size={16} />
       Copy link
     </Button>
@@ -113,8 +112,7 @@ function AdvancedTab() {
                     <FormControl>
                       <Select
                         value={field.value ?? "PRIVATE"}
-                        onValueChange={field.onChange}
-                      >
+                        onValueChange={field.onChange}>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -157,8 +155,7 @@ function AdvancedTab() {
                       <a
                         href="https://mastra.ai/en/docs/agents/overview#using-maxsteps"
                         target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                        rel="noopener noreferrer">
                         <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
@@ -248,8 +245,7 @@ function AdvancedTab() {
                       <a
                         href="https://mastra.ai/en/docs/memory/overview#conversation-history"
                         target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                        rel="noopener noreferrer">
                         <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
@@ -284,8 +280,7 @@ function AdvancedTab() {
                       <a
                         href="https://mastra.ai/en/docs/memory/semantic-recall"
                         target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                        rel="noopener noreferrer">
                         <Icon name="open_in_new" className="w-4 h-4" />
                       </a>
                     </FormLabel>
@@ -316,8 +311,7 @@ function AdvancedTab() {
                           <a
                             href="https://mastra.ai/en/docs/memory/working-memory"
                             target="_blank"
-                            rel="noopener noreferrer"
-                          >
+                            rel="noopener noreferrer">
                             <Icon name="open_in_new" className="w-4 h-4" />
                           </a>
                         </FormLabel>
@@ -401,8 +395,7 @@ function AdvancedTab() {
                       <FormControl>
                         <Select
                           value={`${field.value}`}
-                          onValueChange={field.onChange}
-                        >
+                          onValueChange={field.onChange}>
                           <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>

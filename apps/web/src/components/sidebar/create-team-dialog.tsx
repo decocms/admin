@@ -97,8 +97,7 @@ export function CreateTeamDialog({
           <form
             className="space-y-6"
             onSubmit={form.handleSubmit(onSubmit)}
-            autoComplete="off"
-          >
+            autoComplete="off">
             <FormField
               control={form.control}
               name="name"
@@ -143,8 +142,7 @@ export function CreateTeamDialog({
                 variant="default"
                 disabled={
                   !form.formState.isValid || createTeam.isPending || !slug
-                }
-              >
+                }>
                 {createTeam.isPending ? (
                   <span className="flex items-center gap-2">
                     <Spinner size="xs" /> Creating...

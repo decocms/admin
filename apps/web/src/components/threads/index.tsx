@@ -62,8 +62,7 @@ function Item({ agentId, thread }: { agentId: string; thread: Thread }) {
       type="button"
       onClick={() =>
         focusChat(agentId, thread.id.replace(`${user?.id ?? ""}-`, ""))
-      }
-    >
+      }>
       {thread.title}
     </button>
   );
@@ -91,8 +90,7 @@ function App({ agentId }: { agentId: string }) {
     <div
       className={cn(
         "p-4 text-foreground w-full max-w-2xl mx-auto space-y-4 inline-block",
-      )}
-    >
+      )}>
       {hasNoThreads ? (
         <div className="text-center py-12">
           <h2 className="text-lg font-medium text-foreground mb-2">

@@ -55,8 +55,7 @@ export function VoucherDialog() {
           <Button
             onClick={() => redeemVoucher()}
             disabled={!voucher || isPending}
-            className="w-full"
-          >
+            className="w-full">
             {isPending ? "Redeeming..." : "Redeem"}
           </Button>
         </div>

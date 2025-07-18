@@ -80,8 +80,7 @@ export function DepositDialog() {
           className="w-full"
           onClick={() =>
             trackEvent("wallet_add_credits_click", { userId: user?.id })
-          }
-        >
+          }>
           <Icon name="add" size={16} className="mr-2" />
           Add credits
         </Button>
@@ -165,8 +164,7 @@ export function DepositDialog() {
               if (result.url) {
                 globalThis.location.href = result.url;
               }
-            }}
-          >
+            }}>
             {createCheckoutSession.error ? "Try again" : "Add credits"}
           </Button>
         </div>

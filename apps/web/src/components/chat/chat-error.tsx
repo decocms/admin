@@ -69,8 +69,7 @@ export function ChatError() {
               size="sm"
               variant="secondary"
               className="bg-background hover:bg-background/80 shadow-none border border-input py-3 px-4 h-10"
-              asChild
-            >
+              asChild>
               <Link to={workspaceLink("/settings")}>
                 <Icon name="wallet" className="mr-2" />
                 Add credits
@@ -108,8 +107,7 @@ export function ChatError() {
                     onMouseDown={(e) => e.preventDefault()}
                     tabIndex={0}
                     role="button"
-                    aria-label="Copy Error Id"
-                  >
+                    aria-label="Copy Error Id">
                     {correlationIdRef.current}
                   </span>
                 </TooltipTrigger>
@@ -135,8 +133,7 @@ export function ChatError() {
                 }),
                 "The previous attempt resulted in an error. I'll try to address the error and provide a better response.",
               ]);
-            }}
-          >
+            }}>
             <Icon name="refresh" />
             Retry
           </Button>

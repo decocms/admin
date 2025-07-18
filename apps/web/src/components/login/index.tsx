@@ -57,21 +57,18 @@ function Login() {
                   isLastUsed
                     ? "relative w-full min-w-80 border-2 border-primary rounded-lg bg-primary/5"
                     : "w-full min-w-80"
-                }
-              >
+                }>
                 <Button
                   variant="outline"
                   className="p-5 min-w-80 hover:text-foreground w-full"
-                  asChild
-                >
+                  asChild>
                   <Link
                     to={provider.authURL({
                       next: next || globalThis.location.origin,
                       cli,
                     })}
                     className="flex items-center gap-2.5 h-6"
-                    onClick={() => handleProviderClick(provider.name)}
-                  >
+                    onClick={() => handleProviderClick(provider.name)}>
                     <img
                       className={provider.iconClassName}
                       loading="lazy"

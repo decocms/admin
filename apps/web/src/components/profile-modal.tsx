@@ -73,8 +73,7 @@ export function ProfileModalProvider({
 }) {
   return (
     <ProfileModalContext.Provider
-      value={{ openProfileModal, closeProfileModal }}
-    >
+      value={{ openProfileModal, closeProfileModal }}>
       {children}
       <ProfileSettings
         open={profileOpen}

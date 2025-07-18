@@ -118,8 +118,7 @@ function ListPromptsLayout() {
           onClick={handleCreate}
           disabled={create.isPending}
           variant="special"
-          className="gap-2"
-        >
+          className="gap-2">
           {create.isPending ? (
             <>
               <Spinner size="xs" />
@@ -149,16 +148,14 @@ function PromptActions({ onDelete, disabled }: PromptActionsProps) {
           size="icon"
           variant="ghost"
           className="focus:bg-accent/30"
-          disabled={disabled}
-        >
+          disabled={disabled}>
           <Icon name="more_vert" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={onDelete}
-          className="text-destructive focus:bg-destructive/10"
-        >
+          className="text-destructive focus:bg-destructive/10">
           <Icon name="delete" className="mr-2" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -178,8 +175,7 @@ function PromptCard({
   return (
     <Card
       className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-      onClick={() => onConfigure(prompt)}
-    >
+      onClick={() => onConfigure(prompt)}>
       <CardContent className="p-4">
         <div className="grid grid-cols-[1fr_min-content] gap-4 items-start">
           <div className="flex flex-col gap-1 min-w-0">
@@ -384,8 +380,7 @@ function ListPrompts() {
       </div>
       <AlertDialog
         open={deleteDialogOpen}
-        onOpenChange={handleDeleteDialogOpenChange}
-      >
+        onOpenChange={handleDeleteDialogOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -399,8 +394,7 @@ function ListPrompts() {
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
-            >
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2">
               {deleting ? (
                 <>
                   <Spinner />

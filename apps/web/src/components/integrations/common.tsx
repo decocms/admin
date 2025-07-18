@@ -40,8 +40,7 @@ export function VerifiedIntegrationBadge() {
       <TooltipTrigger>
         <Badge
           variant="outline"
-          className="text-xs h-6 rounded-lg flex items-center gap-1 px-2 w-fit"
-        >
+          className="text-xs h-6 rounded-lg flex items-center gap-1 px-2 w-fit">
           <Icon name="verified" size={16} />
           <span className="font-medium">deco.chat</span>
         </Badge>

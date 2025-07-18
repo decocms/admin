@@ -97,8 +97,7 @@ function PromptTab() {
                         <FormControl>
                           <div
                             className="w-16 h-16 group aspect-square flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
-                            onClick={triggerFileInput}
-                          >
+                            onClick={triggerFileInput}>
                             {isUploading ? (
                               <Skeleton
                                 className={cn("w-full h-full rounded-xl")}

@@ -73,8 +73,7 @@ function BreadcrumbSeparator({
       role="presentation"
       aria-hidden="true"
       className={cn("[&>svg]:size-3.5", className)}
-      {...props}
-    >
+      {...props}>
       {children ?? <ChevronRight />}
     </li>
   );
@@ -90,8 +89,7 @@ function BreadcrumbEllipsis({
       role="presentation"
       aria-hidden="true"
       className={cn("flex size-10 items-center justify-center", className)}
-      {...props}
-    >
+      {...props}>
       <MoreHorizontal className="size-4" />
       <span className="sr-only">More</span>
     </span>

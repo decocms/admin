@@ -44,8 +44,7 @@ function IntegrationListItem({
         "w-full flex flex-col gap-2 p-4 lg:px-3 lg:py-2 rounded-xl transition-colors cursor-pointer border relative",
         "hover:bg-muted/50",
         selectedIntegration === integration.id && "bg-muted",
-      )}
-    >
+      )}>
       <div className="flex items-center gap-3">
         <IntegrationIcon
           icon={integration.icon}
@@ -131,8 +130,7 @@ export function BindingSelector({
                 className={cn(
                   "flex flex-col md:hidden",
                   selectedIntegration ? "hidden" : "block",
-                )}
-              >
+                )}>
                 <div className="border-b border-border">
                   <div className="flex items-center h-14 px-4 gap-2">
                     <Icon
@@ -171,14 +169,12 @@ export function BindingSelector({
                 className={cn(
                   "flex flex-col md:hidden",
                   selectedIntegration ? "block" : "hidden",
-                )}
-              >
+                )}>
                 <div className="flex items-center gap-2 px-4 py-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setSelectedIntegration(null)}
-                  >
+                    onClick={() => setSelectedIntegration(null)}>
                     <Icon name="arrow_back" size={20} />
                   </Button>
                   <span className="text-muted-foreground">Back</span>
@@ -220,8 +216,7 @@ export function BindingSelector({
           <Button
             onClick={handleUpdate}
             className="bg-primary hover:bg-primary/90 rounded-lg font-normal"
-            disabled={selectedIntegration === null || isLoading}
-          >
+            disabled={selectedIntegration === null || isLoading}>
             Select Integration
           </Button>
         </div>

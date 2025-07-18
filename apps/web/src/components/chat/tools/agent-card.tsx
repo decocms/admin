@@ -40,8 +40,7 @@ export function AgentCard({
             variant="secondary"
             size="icon"
             onClick={onEdit}
-            className="absolute right-4 top-4 bg-muted hover:bg-muted/90"
-          >
+            className="absolute right-4 top-4 bg-muted hover:bg-muted/90">
             <Icon name="edit" />
           </Button>
         )}
@@ -67,8 +66,7 @@ export function AgentCard({
               focusChat(id, crypto.randomUUID(), { history: false });
             }}
             size="sm"
-            className="text-sm"
-          >
+            className="text-sm">
             View Agent
           </Button>
         )}

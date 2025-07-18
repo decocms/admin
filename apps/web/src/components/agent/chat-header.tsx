@@ -9,8 +9,7 @@ export function ChatHeader() {
   return (
     <ErrorBoundary
       fallback={<ChatHeader.Fallback />}
-      shouldCatch={(e) => e instanceof NotFoundError}
-    >
+      shouldCatch={(e) => e instanceof NotFoundError}>
       <Suspense fallback={<ChatHeader.Skeleton />}>
         <ChatHeader.UI />
       </Suspense>

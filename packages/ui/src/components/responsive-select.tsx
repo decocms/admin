@@ -50,8 +50,7 @@ const ResponsiveSelect = ({
         onOpenChange={setOpen}
         value={value}
         onValueChange={setValue}
-        {...props}
-      >
+        {...props}>
         <drawer.Drawer open={open} onOpenChange={setOpen} {...props}>
           {children}
         </drawer.Drawer>
@@ -93,8 +92,7 @@ const ResponsiveSelectItem = ({
     <div
       {...restProps}
       onClick={() => setValue(props.value)}
-      className={cn(className)}
-    >
+      className={cn(className)}>
       {children}
     </div>
   ) : (

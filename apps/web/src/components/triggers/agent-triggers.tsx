@@ -69,8 +69,7 @@ export function AgentTriggers() {
             <Button
               variant="special"
               title="Add Trigger"
-              onClick={(e) => e.stopPropagation()}
-            >
+              onClick={(e) => e.stopPropagation()}>
               <Icon name="add" />
               <span className="hidden md:inline">New trigger</span>
             </Button>
@@ -122,8 +121,7 @@ export function ListTriggersEmpty() {
           <Button
             variant="special"
             title="Add Trigger"
-            onClick={(e) => e.stopPropagation()}
-          >
+            onClick={(e) => e.stopPropagation()}>
             <Icon name="add" />
             <span className="hidden md:inline">New Trigger</span>
           </Button>

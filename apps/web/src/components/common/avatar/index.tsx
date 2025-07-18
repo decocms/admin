@@ -172,15 +172,13 @@ function UnifiedAvatar({
   return (
     <AvatarUI
       className={cn(avatarVariants({ shape, size }), className)}
-      {...props}
-    >
+      {...props}>
       {isIconUrl && iconName ? (
         <div
           className={cn(
             "flex items-center justify-center w-full h-full",
             fallbackColor,
-          )}
-        >
+          )}>
           <Icon name={iconName} size={getIconSize(size)} />
         </div>
       ) : (

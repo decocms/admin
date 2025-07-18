@@ -68,8 +68,7 @@ function CapabilityBadge({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center justify-center h-6 w-6 rounded-sm ${config.bg}`}
-        >
+          className={`flex items-center justify-center h-6 w-6 rounded-sm ${config.bg}`}>
           <Icon name={config.icon} className={config.text} />
         </div>
       </TooltipTrigger>
@@ -136,14 +135,12 @@ export function ModelSelector({
       open={open}
       onOpenChange={setOpen}
       value={mapLegacyModelId(model)}
-      onValueChange={(value) => handleModelChange(value)}
-    >
+      onValueChange={(value) => handleModelChange(value)}>
       <ResponsiveSelectTrigger
         className={cn(
           "!h-9 text-xs hover:bg-muted py-0 px-2 shadow-none cursor-pointer",
           variant === "borderless" && "md:border-none",
-        )}
-      >
+        )}>
         <ResponsiveSelectValue placeholder="Select model">
           <SelectedModelDisplay model={selectedModel} />
         </ResponsiveSelectValue>
@@ -157,8 +154,7 @@ export function ModelSelector({
             className={cn(
               "p-0 focus:bg-muted text-foreground focus:text-foreground cursor-pointer",
               model.id === selectedModel?.id && "bg-muted/50",
-            )}
-          >
+            )}>
             <ModelItemContent model={model} />
           </ResponsiveSelectItem>
         ))}

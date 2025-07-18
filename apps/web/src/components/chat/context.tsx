@@ -231,8 +231,7 @@ export function ChatProvider({
         retry: handleRetry,
         select: handlePickerSelect,
         correlationIdRef,
-      }}
-    >
+      }}>
       {children}
     </Context.Provider>
   );

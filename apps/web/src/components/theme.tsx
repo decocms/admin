@@ -213,8 +213,7 @@ export function WithWorkspaceTheme({
       {showSplash && (
         <div
           ref={splashScreenRef}
-          className="fixed inset-0 flex items-center justify-center z-50 bg-white"
-        >
+          className="fixed inset-0 flex items-center justify-center z-50 bg-white">
           <div
             ref={circleRef}
             // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
@@ -233,8 +232,7 @@ export function WithWorkspaceTheme({
           )}
           <div
             ref={splashRef}
-            className="relative flex flex-col items-center justify-center"
-          >
+            className="relative flex flex-col items-center justify-center">
             <div className="p-4 rounded-full bg-white">
               <img
                 ref={logoRef}

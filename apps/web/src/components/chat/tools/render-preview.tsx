@@ -44,8 +44,7 @@ function ImageActionButton({
       className={BUTTON_STYLES.base}
       onClick={onClick}
       aria-label={label}
-      {...(href ? { asChild: true } : {})}
-    >
+      {...(href ? { asChild: true } : {})}>
       {href ? (
         <a href={href} download={download} onClick={(e) => e.stopPropagation()}>
           <Icon name={icon} className={BUTTON_STYLES.icon} />
@@ -82,8 +81,7 @@ function ImagePreview({
         "relative w-max rounded-lg my-4 overflow-hidden group/image",
         className,
       )}
-      onClick={onOpenDialog}
-    >
+      onClick={onOpenDialog}>
       <div className="absolute top-2 right-2 opacity-0 group-hover/image:opacity-100 transition-opacity z-10 flex gap-2">
         <ImageActionButton
           icon="expand_content"
@@ -172,8 +170,7 @@ function HtmlPreview({
       className={cn(
         "relative w-max flex flex-col rounded-lg mb-4 p-1",
         className,
-      )}
-    >
+      )}>
       <div className="flex items-center justify-between p-2 pr-0">
         <div className="flex items-center gap-2">
           <Icon name="draft" className="text-sm text-muted-foreground" />
@@ -186,8 +183,7 @@ function HtmlPreview({
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full hover:bg-muted"
-          aria-label="Expand preview"
-        >
+          aria-label="Expand preview">
           <Icon
             name="expand_content"
             className="text-sm text-muted-foreground"

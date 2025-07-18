@@ -12,29 +12,29 @@ export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export { EMAIL_TOOLS } from "./email/api.ts";
-import * as agentsAPI from "./agents/api.ts";
 import * as agentAPI from "./agent/api.ts";
+import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
 import * as apiKeysAPI from "./api-keys/api.ts";
 import * as channelsAPI from "./channels/api.ts";
 import { type AppContext, State, type Tool } from "./context.ts";
+import * as databasesAPI from "./databases/api.ts";
 import * as fsAPI from "./fs/api.ts";
 import * as hostingAPI from "./hosting/api.ts";
 import * as integrationsAPI from "./integrations/api.ts";
 import * as knowledgeAPI from "./knowledge/api.ts";
 import * as membersAPI from "./members/api.ts";
 import * as modelsAPI from "./models/api.ts";
+import * as oauthAPI from "./oauth/api.ts";
 import * as profilesAPI from "./profiles/api.ts";
 import * as promptsAPI from "./prompts/api.ts";
+import * as registryAPI from "./registry/api.ts";
 import type { CreateStubHandlerOptions, MCPClientStub } from "./stub.ts";
 import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
 import * as whatsappAPI from "./whatsapp/api.ts";
-import * as databasesAPI from "./databases/api.ts";
-import * as registryAPI from "./registry/api.ts";
-import * as oauthAPI from "./oauth/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -159,6 +159,7 @@ export const WORKSPACE_TOOLS = [
   apiKeysAPI.validateApiKey,
   databasesAPI.runSql,
   aiAPI.aiGenerate,
+  aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,
 ] as const;
 

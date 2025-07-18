@@ -54,6 +54,7 @@ export function useTools(connection: MCPConnection) {
       connection.type,
       // deno-lint-ignore no-explicit-any
       (connection as any).url ||
+        // deno-lint-ignore no-explicit-any
         (connection as any).tenant ||
         // deno-lint-ignore no-explicit-any
         (connection as any).name,

@@ -21,8 +21,8 @@ export const listApps = async ({ workspace }: Options) => {
     {
       name: "HOSTING_APPS_LIST",
       arguments: {},
-      // deno-lint-ignore no-explicit-any
     },
+    // deno-lint-ignore no-explicit-any
     z.any() as any,
   );
 

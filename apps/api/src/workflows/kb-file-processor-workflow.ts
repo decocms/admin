@@ -4,7 +4,13 @@ import {
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
-import { type KbFileProcessorMessage, processBatch } from "@deco/sdk/workflows";
+import {
+  type KbFileProcessorMessage,
+  KbFileProcessorMessageSchema,
+  processBatch,
+  WorkflowEnvSchema,
+} from "@deco/sdk/workflows";
+import { NonRetryableError } from "cloudflare:workflows";
 
 // Environment interface for workflow
 interface Env extends Record<string, unknown> {
@@ -30,17 +36,39 @@ export class KbFileProcessorWorkflow
   ) {
     const message = event.payload;
 
-    // Process the current batch
-    const result = await step.do("process-batch", async () => {
-      return await processBatch(message, this.env);
-    });
+    try {
+      try {
+        KbFileProcessorMessageSchema.parse(message);
+        WorkflowEnvSchema.parse(this.env);
+      } catch {
+        throw new NonRetryableError("Invalid message or environment variables");
+      }
 
-    return {
-      completed: !result.hasMore,
-      totalChunks: result.totalChunks,
-      totalPages: result.totalPages,
-      hasMore: result.hasMore,
-    };
+      // Process the current batch
+      const result = await step.do("process-batch", {
+        retries: {
+          limit: 1,
+          delay: 5_000,
+        },
+      }, async () => {
+        return await processBatch(message, this.env);
+      });
+
+      return {
+        completed: !result.hasMore,
+        totalChunks: result.totalChunks,
+        totalPages: result.totalPages,
+        hasMore: result.hasMore,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // no need to retry if the error is because of a rollback, it will be repeating the same error
+      if (message.toLowerCase().includes("sqlite error: cannot rollback")) {
+        throw new NonRetryableError(message);
+      }
+
+      throw error;
+    }
   }
 }
 

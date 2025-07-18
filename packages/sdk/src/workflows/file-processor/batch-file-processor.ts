@@ -61,14 +61,15 @@ export const WorkflowEnvSchema = z.object({
   ),
   VECTOR_BATCH_SIZE: z.string().optional(),
 });
+type WorkflowEnvs = z.infer<typeof WorkflowEnvSchema>;
 
 const DEFAULT_BATCH_SIZE = 50;
 
 /**
  * Get batch size from environment variable or use default
  */
-export function getBatchSize(envVars: Record<string, unknown>): number {
-  const envBatchSize = envVars.VECTOR_BATCH_SIZE;
+export function getBatchSize(env: WorkflowEnvs): number {
+  const envBatchSize = env.VECTOR_BATCH_SIZE;
   if (typeof envBatchSize === "string") {
     const parsed = parseInt(envBatchSize, 10);
     if (!isNaN(parsed) && parsed > 0) {
@@ -82,11 +83,9 @@ export function getBatchSize(envVars: Record<string, unknown>): number {
  * Get vector client for the workspace
  */
 async function getVectorClient(
-  envVars: Record<string, unknown>,
   workspace: string,
+  env: WorkflowEnvs,
 ) {
-  const env = WorkflowEnvSchema.parse(envVars);
-
   const mem = await WorkspaceMemory.create({
     workspace: workspace as Workspace, // Cast to avoid type issues in workflow context
     tursoAdminToken: env.TURSO_ADMIN_TOKEN,
@@ -107,8 +106,7 @@ async function getVectorClient(
 /**
  * Create Supabase client for knowledge base operations
  */
-function createKnowledgeBaseSupabaseClient(envVars: Record<string, unknown>) {
-  const env = WorkflowEnvSchema.parse(envVars);
+function createKnowledgeBaseSupabaseClient(env: WorkflowEnvs) {
   return getServerClient(env.SUPABASE_URL, env.SUPABASE_SERVER_TOKEN);
 }
 
@@ -218,7 +216,7 @@ async function updateAssetRecord(
     fileMetadata: Record<string, any>;
     totalChunkCount: number;
   },
-  envVars: Record<string, unknown>,
+  env: WorkflowEnvs,
 ): Promise<string[]> {
   const {
     workspace,
@@ -229,7 +227,7 @@ async function updateAssetRecord(
     fileMetadata,
     totalChunkCount,
   } = params;
-  const supabase = createKnowledgeBaseSupabaseClient(envVars);
+  const supabase = createKnowledgeBaseSupabaseClient(env);
 
   // Add fallback logic for filename
   const finalFilename = filename ||
@@ -272,10 +270,8 @@ async function updateAssetRecord(
  */
 export async function processBatch(
   message: KbFileProcessorMessage,
-  envVars: Record<string, unknown>,
+  env: z.infer<typeof WorkflowEnvSchema>,
 ): Promise<ProcessingResult> {
-  const validatedMessage = KbFileProcessorMessageSchema.parse(message);
-  const env = WorkflowEnvSchema.parse(envVars);
   const {
     fileUrl,
     path,
@@ -283,11 +279,11 @@ export async function processBatch(
     metadata,
     workspace,
     knowledgeBaseName,
-  } = validatedMessage;
-  const batchSize = getBatchSize(envVars);
+  } = message;
+  const batchSize = getBatchSize(env);
 
   let allStoredIds: string[] = [];
-  const vector = await getVectorClient(envVars, workspace);
+  const vector = await getVectorClient(workspace, env);
 
   try {
     const { enrichedChunks, totalChunkCount, fileMetadata } =
@@ -327,7 +323,7 @@ export async function processBatch(
       path,
       fileMetadata,
       totalChunkCount,
-    }, envVars);
+    }, env);
 
     return {
       hasMore: false,
@@ -350,11 +346,11 @@ export async function processBatch(
     );
 
     // Update asset status to failed
-    await updateAssetStatusToFailed(envVars, {
+    await updateAssetStatusToFailed({
       workspace,
       fileUrl,
       error: error instanceof Error ? error.message : String(error),
-    });
+    }, env);
 
     throw error;
   }
@@ -376,15 +372,15 @@ export async function sendToKbFileProcessorWorkflow(
  * Update asset status to failed in the database
  */
 export async function updateAssetStatusToFailed(
-  envVars: Record<string, unknown>,
   params: {
     workspace: string;
     fileUrl: string;
     error: string;
   },
+  env: WorkflowEnvs,
 ): Promise<void> {
   try {
-    const supabase = createKnowledgeBaseSupabaseClient(envVars);
+    const supabase = createKnowledgeBaseSupabaseClient(env);
 
     await supabase
       .from("deco_chat_assets")

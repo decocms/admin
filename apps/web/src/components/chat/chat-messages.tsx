@@ -110,7 +110,8 @@ export function ChatMessages() {
               `[[data-disable-auto-scroll="false"]_&]:pointer-events-none`,
             )}
             onClick={() => scrollToBottom()}
-            aria-label="Scroll to bottom">
+            aria-label="Scroll to bottom"
+          >
             <Icon name="arrow_downward" />
           </div>
         )}

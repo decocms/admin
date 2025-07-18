@@ -48,7 +48,8 @@ export function SelectField<T extends FieldValues = FieldValues>({
           <Select
             onValueChange={field.onChange}
             defaultValue={field.value}
-            disabled={disabled}>
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Select an option" />

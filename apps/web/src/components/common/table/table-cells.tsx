@@ -29,7 +29,8 @@ function AgentInfo({ agentId, className }: AgentInfoProps) {
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
           <AgentAvatar
             url={agent?.avatar}
             fallback={
@@ -98,20 +99,24 @@ function UserInfo({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
           <UserAvatar url={avatarUrl} fallback={name} size="sm" />
           <div
             className={`flex-col items-start text-left leading-tight w-full ${
               showDetails ? "hidden md:flex" : "flex"
-            }`}>
+            }`}
+          >
             <span
               className="truncate block text-xs font-medium text-foreground"
-              style={{ maxWidth }}>
+              style={{ maxWidth }}
+            >
               {name || "Unknown"}
             </span>
             <span
               className="truncate block text-xs font-normal text-muted-foreground"
-              style={{ maxWidth }}>
+              style={{ maxWidth }}
+            >
               {email || ""}
             </span>
           </div>
@@ -150,7 +155,8 @@ export function DateTimeCell({
   const dateObj = typeof value === "string" ? new Date(value) : value;
   return (
     <div
-      className={`flex flex-col items-start text-left leading-tight ${className}`}>
+      className={`flex flex-col items-start text-left leading-tight ${className}`}
+    >
       <span className="font-medium text-foreground">
         {format(dateObj, dateFormat)}
       </span>
@@ -178,7 +184,8 @@ function IntegrationInfo({
     <Tooltip>
       <TooltipTrigger asChild>
         <div
-          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}>
+          className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
+        >
           <IntegrationIcon
             icon={integration?.icon}
             name={integration?.name || integrationId || "Unknown"}

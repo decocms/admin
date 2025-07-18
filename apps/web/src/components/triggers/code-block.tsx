@@ -30,14 +30,16 @@ export function CodeBlock({
         className={cn(
           "rounded-md bg-muted p-2 text-xs font-mono whitespace-pre-wrap pr-10",
           className,
-        )}>
+        )}
+      >
         {children}
       </pre>
       <button
         type="button"
         onClick={handleCopy}
         className="absolute top-0 right-0 p-2 cursor-pointer"
-        aria-label="Copy to clipboard">
+        aria-label="Copy to clipboard"
+      >
         <Icon name={copied ? "check" : "content_copy"} />
       </button>
     </div>

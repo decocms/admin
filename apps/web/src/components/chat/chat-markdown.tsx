@@ -20,7 +20,8 @@ function LazyHighlighterFallback() {
         borderRadius: "0 0 0.5rem 0.5rem",
         overflow: "auto",
         minHeight: "4rem",
-      }}>
+      }}
+    >
       {lines.map((width, i) => (
         <div key={i} className="flex gap-2 items-center my-1">
           {i > 2 && i < 7 && (
@@ -120,7 +121,8 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
           onClick={handleCopyCsv}
           aria-label="Copy as CSV"
           className="text-muted-foreground hover:text-foreground h-6 text-[10px]"
-          type="button">
+          type="button"
+        >
           Copy as CSV
           <Icon name={copied ? "check" : "content_copy"} size={12} />
         </Button>
@@ -129,7 +131,8 @@ function Table(props: React.HTMLAttributes<HTMLTableElement>) {
         <table
           ref={tableRef}
           {...props}
-          className="min-w-full border-collapse text-sm">
+          className="min-w-full border-collapse text-sm"
+        >
           {props.children}
         </table>
       </div>
@@ -171,7 +174,8 @@ const MemoizedMarkdownBlock = memo(
           pre: (props) => (
             <pre
               {...props}
-              className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded">
+              className="flex max-w-[calc(640px-64px)] my-4 bg-muted rounded"
+            >
               <code className="flex-1 min-w-0 p-4 text-sm font-mono whitespace-pre overflow-x-auto">
                 {props.children}
               </code>
@@ -198,7 +202,8 @@ const MemoizedMarkdownBlock = memo(
           td: (props) => (
             <td {...props} className="px-4 py-2 border-b border-border" />
           ),
-        }}>
+        }}
+      >
         {content}
       </ReactMarkdown>
     );
@@ -235,7 +240,8 @@ function CodeBlock({
           variant="ghost"
           onClick={handleCopy}
           aria-label="Copy code"
-          className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8">
+          className="text-muted-foreground hover:text-foreground rounded-lg h-8 w-8"
+        >
           <Icon name={copied ? "check" : "content_copy"} size={14} />
         </Button>
       </div>

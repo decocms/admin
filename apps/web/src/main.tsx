@@ -32,7 +32,8 @@ export const wrapWithUILoadingFallback = <P,>(
           <div className="h-full w-full flex items-center justify-center">
             <Spinner />
           </div>
-        }>
+        }
+      >
         <Comp {...(p as JSX.IntrinsicAttributes & P)} />
       </Suspense>
     ),

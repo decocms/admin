@@ -19,7 +19,8 @@ export function DetailForm() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6 px-1 mx-auto">
+          className="space-y-6 px-1 mx-auto"
+        >
           <div className="flex items-center gap-6">
             <FormField
               control={form.control}

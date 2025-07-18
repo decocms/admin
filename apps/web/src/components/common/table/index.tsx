@@ -83,7 +83,8 @@ export function Table<T>({
                   style={{ cursor: col.sortable ? "pointer" : undefined }}
                   onClick={
                     col.sortable && onSort ? () => onSort(col.id) : undefined
-                  }>
+                  }
+                >
                   <span className="flex items-center gap-1">
                     {col.header}
                     {col.sortable && (
@@ -103,7 +104,8 @@ export function Table<T>({
             <TableRow
               key={i}
               className={onRowClick ? "cursor-pointer hover:bg-muted/30" : ""}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}>
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
               {columns.map((col, _idx) => (
                 <TableCell
                   key={col.id}
@@ -111,7 +113,8 @@ export function Table<T>({
                     "px-4 py-2 " +
                     (col.cellClassName ? col.cellClassName + " " : "") +
                     "truncate overflow-hidden whitespace-nowrap"
-                  }>
+                  }
+                >
                   {col.render
                     ? col.render(row)
                     : col.accessor

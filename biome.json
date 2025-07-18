@@ -32,7 +32,7 @@
       "trailingCommas": "all",
       "semicolons": "always",
       "arrowParentheses": "always",
-      "bracketSameLine": true,
+      "bracketSameLine": false,
       "attributePosition": "auto"
     },
     "jsxRuntime": "transparent"

@@ -24,7 +24,8 @@ function AppCard({
   return (
     <Card
       className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-      onClick={() => onClick(app)}>
+      onClick={() => onClick(app)}
+    >
       <CardContent className="p-0">
         <div className="grid grid-cols-[min-content_1fr_min-content] gap-4 items-start p-4">
           <IntegrationAvatar

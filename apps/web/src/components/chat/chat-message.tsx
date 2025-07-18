@@ -199,12 +199,14 @@ export function ChatMessage({
       className={cn(
         "w-full group relative flex items-start gap-4 px-4 z-20 text-foreground group",
         isUser ? "flex-row-reverse py-4" : "flex-row",
-      )}>
+      )}
+    >
       <div
         className={cn(
           "flex flex-col gap-1",
           isUser ? "items-end max-w-[70%]" : "w-full items-start",
-        )}>
+        )}
+      >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>{timestamp}</span>
         </div>
@@ -213,7 +215,8 @@ export function ChatMessage({
           className={cn(
             "w-full not-only:rounded-2xl text-base break-words overflow-wrap-anywhere",
             isUser ? "bg-muted p-3" : "bg-transparent",
-          )}>
+          )}
+        >
           {message.parts ? (
             <div className="space-y-2 w-full">
               {mergedParts.map((part, index) => {
@@ -270,7 +273,8 @@ export function ChatMessage({
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors">
+                    className="relative group flex items-center gap-2 p-2 bg-muted rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                  >
                     {attachment.contentType?.startsWith("image/") ? (
                       <div className="relative">
                         <img
@@ -323,7 +327,8 @@ export function ChatMessage({
                   onClick={handleCopy}
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground hover:text-foreground p-0 hover:bg-transparent">
+                  className="text-muted-foreground hover:text-foreground p-0 hover:bg-transparent"
+                >
                   <Icon name="content_copy" className="mr-1 text-sm" />
                   Copy message
                 </Button>

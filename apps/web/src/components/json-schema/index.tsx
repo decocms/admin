@@ -228,7 +228,8 @@ function Field<T extends FieldValues = Record<string, unknown>>({
         return (
           <div
             key={name}
-            className="object-field border rounded-md p-4 [.array-field-content_&]:border-none [.array-field-content_&]:rounded-none">
+            className="object-field border rounded-md p-4 [.array-field-content_&]:border-none [.array-field-content_&]:rounded-none"
+          >
             <h3 className="text-md font-medium mb-2 [.array-field-content_&]:hidden">
               {title}
             </h3>

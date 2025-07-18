@@ -126,7 +126,8 @@ function CardsView({
           <Card
             key={integration.id}
             className="group hover:shadow-md transition-shadow rounded-2xl cursor-pointer h-[116px]"
-            onClick={() => onRowClick(integration)}>
+            onClick={() => onRowClick(integration)}
+          >
             <CardContent className="p-4">
               <div className="grid grid-cols-[min-content_1fr] gap-4">
                 <IntegrationIcon

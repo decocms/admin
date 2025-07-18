@@ -43,7 +43,8 @@ function WorkflowStatsChart({ stats }: { stats: WorkflowStats }) {
             nameKey="name"
             innerRadius={35}
             outerRadius={55}
-            stroke="none">
+            stroke="none"
+          >
             {data.map((_entry, idx) => (
               <Cell key={`cell-${idx}`} fill={DONUT_COLORS[idx]} />
             ))}
@@ -313,7 +314,8 @@ function WorkflowOverviewTab() {
                 size="icon"
                 onClick={handleRefresh}
                 disabled={isRefetchingAllRuns || isRefetchingInstances}
-                className="h-10 w-10 shrink-0">
+                className="h-10 w-10 shrink-0"
+              >
                 <Icon
                   name="refresh"
                   size={16}

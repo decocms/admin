@@ -23,7 +23,8 @@ function LazyHighlighter({ language, content }: LazyHighlighterProps) {
       }}
       codeTagProps={{
         className: "font-mono",
-      }}>
+      }}
+    >
       {content}
     </SyntaxHighlighter>
   );

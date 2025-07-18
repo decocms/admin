@@ -56,7 +56,8 @@ function PasswordInput({
           size="sm"
           className="h-8 w-8 p-0"
           onClick={togglePasswordVisibility}
-          title={showPassword ? "Hide password" : "Show password"}>
+          title={showPassword ? "Hide password" : "Show password"}
+        >
           <Icon
             name={showPassword ? "visibility_off" : "visibility"}
             size={16}
@@ -69,7 +70,8 @@ function PasswordInput({
           className="h-8 w-8 p-0"
           onClick={handleCopy}
           disabled={!value}
-          title={copySuccess ? "Copied!" : "Copy token"}>
+          title={copySuccess ? "Copied!" : "Copy token"}
+        >
           <Icon name={copySuccess ? "check" : "content_copy"} size={16} />
         </Button>
       </div>

@@ -32,7 +32,8 @@ export function EmptyState() {
   return (
     <ErrorBoundary
       fallback={<EmptyState.Fallback />}
-      shouldCatch={(e) => e instanceof NotFoundError}>
+      shouldCatch={(e) => e instanceof NotFoundError}
+    >
       <Suspense fallback={<EmptyState.Skeleton />}>
         <EmptyState.UI />
       </Suspense>
@@ -80,7 +81,8 @@ EmptyState.UI = () => {
             {uiOptions.showEditAgent && (
               <Button
                 variant="outline"
-                onClick={() => editAgent(agentId, crypto.randomUUID())}>
+                onClick={() => editAgent(agentId, crypto.randomUUID())}
+              >
                 <Icon name="tune" size={16} />
                 Edit agent
               </Button>

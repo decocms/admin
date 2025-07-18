@@ -59,7 +59,8 @@ function IntegrationList({
           type="button"
           key={integration.id}
           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left cursor-pointer"
-          onClick={() => onSelect(integration)}>
+          onClick={() => onSelect(integration)}
+        >
           <IntegrationIcon
             icon={integration.icon}
             name={integration.name}
@@ -121,7 +122,8 @@ function ToolList({ integration, value, search, onSelect }: ToolListProps) {
             className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left ${
               value === `${integration.id}/${tool.name}` ? "bg-muted" : ""
             }`}
-            onClick={() => onSelect(tool)}>
+            onClick={() => onSelect(tool)}
+          >
             <IntegrationIcon
               icon={integration.icon}
               name={integration.name}
@@ -199,7 +201,8 @@ function SelectorDialog({
                   onClick={() => {
                     setSelectedIntegration(null);
                     setSearch("");
-                  }}>
+                  }}
+                >
                   <Icon name="arrow_back" size={18} />
                   Back to integrations
                 </button>
@@ -269,7 +272,8 @@ export function SingleToolSelector({
         className={cn("w-full justify-between truncate", {
           "px-1": selected,
         })}
-        onClick={() => setOpen(true)}>
+        onClick={() => setOpen(true)}
+      >
         {selected ? (
           <span className="flex items-center gap-2">
             <IntegrationIcon

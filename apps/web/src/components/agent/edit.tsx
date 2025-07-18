@@ -90,7 +90,8 @@ const Chat = () => {
                   focusChat(agentId, crypto.randomUUID(), {
                     history: false,
                   })
-                }>
+                }
+              >
                 New Thread
               </Button>
             </div>
@@ -198,7 +199,8 @@ function ActionButtons({
           variant="outline"
           disabled={form.formState.isSubmitting}
           onClick={discardChanges}
-          className={hasChanges ? "inline-flex" : "hidden"}>
+          className={hasChanges ? "inline-flex" : "hidden"}
+        >
           Discard
         </Button>
       )}
@@ -207,7 +209,8 @@ function ActionButtons({
         className={hasChanges ? "inline-flex" : "hidden"}
         variant="special"
         onClick={handleSubmit}
-        disabled={!numberOfChanges || form.formState.isSubmitting}>
+        disabled={!numberOfChanges || form.formState.isSubmitting}
+      >
         {form.formState.isSubmitting ? (
           <>
             <Spinner size="xs" />
@@ -324,7 +327,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
             <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={discardChanges}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -338,7 +342,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
           showThreadTools: false,
           showEditAgent: false,
           showModelSelector: false,
-        }}>
+        }}
+      >
         <AgentSettingsFormContext.Provider
           value={{
             form: form as UseFormReturn<Agent>,
@@ -348,7 +353,8 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
               (i) => !i.id.includes(agentId),
             ),
             agent,
-          }}>
+          }}
+        >
           <PageLayout
             tabs={tabs}
             key={agentId}
@@ -405,7 +411,8 @@ export default function Page(props: Props) {
         <div className="h-full w-full flex items-center justify-center">
           <Spinner />
         </div>
-      }>
+      }
+    >
       <FormProvider
         {...props}
         agentId={agentId}

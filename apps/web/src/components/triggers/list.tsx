@@ -80,7 +80,8 @@ export default function ListTriggersLayout() {
           <Button
             variant="special"
             title="Add Trigger"
-            onClick={() => setIsCreateModalOpen(true)}>
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Icon name="add" />
             <span className="hidden md:inline">New Trigger</span>
           </Button>

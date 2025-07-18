@@ -113,7 +113,8 @@ function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
             const appKey = AppKeys.build(getConnectionAppKey(integration));
             navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
           }}
-          asChild>
+          asChild
+        >
           <div className="w-8 h-8 flex items-center justify-center">
             <IntegrationIcon icon={icon} size="xs" name={integration.name} />
           </div>
@@ -173,7 +174,8 @@ function Actions({ agent }: { agent: Agent }) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}
+          >
             <Icon name="more_horiz" />
           </Button>
         </DropdownMenuTrigger>
@@ -183,7 +185,8 @@ function Actions({ agent }: { agent: Agent }) {
             onClick={(e) => {
               e.stopPropagation();
               duplicate();
-            }}>
+            }}
+          >
             <Icon name="content_copy" className="mr-2" />
             {duplicating ? "Duplicating..." : "Duplicate"}
           </DropdownMenuItem>
@@ -194,7 +197,8 @@ function Actions({ agent }: { agent: Agent }) {
                 e.stopPropagation();
 
                 copyLink();
-              }}>
+              }}
+            >
               <Icon name="link" className="mr-2" />
               Copy link
             </DropdownMenuItem>
@@ -204,7 +208,8 @@ function Actions({ agent }: { agent: Agent }) {
             onClick={(e) => {
               e.stopPropagation();
               setDeleteDialogOpen(true);
-            }}>
+            }}
+          >
             <Icon name="delete" className="mr-2" />
             Delete
           </DropdownMenuItem>
@@ -228,7 +233,8 @@ function Actions({ agent }: { agent: Agent }) {
                 await handleDelete();
               }}
               disabled={removeAgent.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {removeAgent.isPending ? (
                 <>
                   <Spinner size="xs" />
@@ -255,14 +261,16 @@ function Card({ agent }: { agent: Agent }) {
         focusAgent(agent.id, crypto.randomUUID(), {
           history: false,
         });
-      }}>
+      }}
+    >
       <CardContent className="gap-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-3 w-full">
           <div className="relative w-full">
             <AgentAvatar url={agent.avatar} fallback={agent.name} size="lg" />
             <div
               className="absolute top-0 right-0"
-              onClick={(e) => e.stopPropagation()}>
+              onClick={(e) => e.stopPropagation()}
+            >
               <Actions agent={agent} />
             </div>
           </div>

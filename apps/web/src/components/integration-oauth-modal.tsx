@@ -115,7 +115,8 @@ export function IntegrationOAuthModal({
                 {permissions.map((permission, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                  >
                     <div className="flex-shrink-0 text-success">✓</div>
                     <div className="flex-1">
                       <div className="text-sm font-medium">
@@ -148,7 +149,8 @@ export function IntegrationOAuthModal({
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting || isLoading}
-                    className="w-full">
+                    className="w-full"
+                  >
                     {form.formState.isSubmitting || isLoading
                       ? "Installing..."
                       : `Install ${integrationName}`}

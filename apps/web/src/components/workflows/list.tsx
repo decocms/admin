@@ -39,7 +39,8 @@ function WorkflowsCardView({
         <Card
           key={workflow.name}
           className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-          onClick={() => onClick(workflow)}>
+          onClick={() => onClick(workflow)}
+        >
           <CardContent className="p-0">
             <div className="grid grid-cols-[1fr_min-content] gap-4 items-start p-4">
               <div className="flex flex-col gap-2 min-w-0">
@@ -53,7 +54,8 @@ function WorkflowsCardView({
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={getStatusBadgeVariant(workflow.lastRun.status)}
-                    className="text-xs">
+                    className="text-xs"
+                  >
                     {formatStatus(workflow.lastRun.status)}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -248,7 +250,8 @@ function WorkflowsTab() {
                   size="icon"
                   onClick={() => refetch()}
                   disabled={isRefetching}
-                  className="h-10 w-10">
+                  className="h-10 w-10"
+                >
                   <Icon
                     name="refresh"
                     size={16}

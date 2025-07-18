@@ -94,7 +94,8 @@ function ActionsButtons() {
                 focusChat(agentId, crypto.randomUUID(), {
                   history: false,
                 })
-              }>
+              }
+            >
               <Icon name="edit_square" />
             </Button>
           </TooltipTrigger>
@@ -111,7 +112,8 @@ function ActionsButtons() {
                 focusAgent(agentId, crypto.randomUUID(), {
                   history: false,
                 })
-              }>
+              }
+            >
               <Icon name="tune" />
             </Button>
           </TooltipTrigger>
@@ -153,7 +155,8 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                           focusChat(agentId, crypto.randomUUID(), {
                             history: false,
                           })
-                        }>
+                        }
+                      >
                         <Icon name="edit_square" /> New chat
                       </DropdownMenuItem>
                     )}
@@ -163,7 +166,8 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                         focusAgent(agentId, crypto.randomUUID(), {
                           history: false,
                         })
-                      }>
+                      }
+                    >
                       <Icon name="tune" /> Edit agent
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -225,14 +229,16 @@ function Page(props: Props) {
         <div className="h-full w-full flex items-center justify-center">
           <Spinner />
         </div>
-      }>
+      }
+    >
       <ChatProvider
         agentId={agentId}
         threadId={threadId}
         uiOptions={{
           showThreadTools: agentId === WELL_KNOWN_AGENT_IDS.teamAgent,
           showThreadMessages: props.showThreadMessages ?? true,
-        }}>
+        }}
+      >
         <AgentMetadataUpdater agentId={agentId} />
         <PageLayout
           tabs={TABS}

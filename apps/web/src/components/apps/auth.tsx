@@ -109,7 +109,8 @@ function ShowInstalls({
                     (integration) => integration.id === value,
                   ) ?? null,
                 )
-              }>
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select an integration" />
               </SelectTrigger>
@@ -159,7 +160,8 @@ function ShowInstalls({
           variant="outline"
           size="sm"
           onClick={() => setShowIntegrationSelector(!showIntegrationSelector)}
-          className="gap-2">
+          className="gap-2"
+        >
           <Icon name="edit" size={16} />
           Change integration
         </Button>
@@ -179,7 +181,8 @@ function ShowInstalls({
                 ) ?? null,
               );
               setShowIntegrationSelector(false);
-            }}>
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select an integration" />
             </SelectTrigger>
@@ -258,7 +261,8 @@ function AppsOAuth({
               value=""
               onValueChange={(value) =>
                 setTeam(teams.find((team) => team.slug === value) ?? null)
-              }>
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a team" />
               </SelectTrigger>
@@ -311,7 +315,8 @@ function AppsOAuth({
             variant="outline"
             size="sm"
             onClick={() => setShowTeamSelector(!showTeamSelector)}
-            className="gap-2">
+            className="gap-2"
+          >
             <Icon name="edit" size={16} />
             Change team
           </Button>
@@ -327,7 +332,8 @@ function AppsOAuth({
               onValueChange={(value) => {
                 setTeam(teams.find((team) => team.slug === value) ?? null);
                 setShowTeamSelector(false);
-              }}>
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a team" />
               </SelectTrigger>
@@ -374,7 +380,8 @@ function AppsOAuth({
               });
 
               globalThis.location.href = redirectTo;
-            }}>
+            }}
+          >
             Continue with {team.label}
           </Button>
         </div>
@@ -407,7 +414,8 @@ export default function AppsAuthLayout() {
             <Button
               variant="outline"
               onClick={() => globalThis.history.back()}
-              className="gap-2">
+              className="gap-2"
+            >
               <Icon name="arrow_left_alt" size={16} />
               Go back
             </Button>

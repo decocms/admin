@@ -214,12 +214,14 @@ function MembersViewContent() {
               <div className="flex flex-col items-start text-left leading-tight w-full">
                 <span
                   className="truncate block text-xs font-medium text-foreground"
-                  style={{ maxWidth: "250px" }}>
+                  style={{ maxWidth: "250px" }}
+                >
                   {row.email}
                 </span>
                 <span
                   className="truncate block text-xs font-normal text-muted-foreground"
-                  style={{ maxWidth: "250px" }}>
+                  style={{ maxWidth: "250px" }}
+                >
                   Pending
                 </span>
               </div>
@@ -291,7 +293,8 @@ function MembersViewContent() {
               }}
               disabled={
                 removeMemberMutation.isPending || rejectInvite.isPending
-              }>
+              }
+            >
               {(() => {
                 // Check if this is the current user
                 const isCurrentUser =

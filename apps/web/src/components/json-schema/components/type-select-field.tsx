@@ -85,13 +85,13 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
               }
             }}
             defaultValue={field.value?.value}
-            disabled={disabled || loading}>
+            disabled={disabled || loading}
+          >
             <FormControl>
               <SelectTrigger className="h-11">
                 <SelectValue
-                  placeholder={
-                    loading ? "Loading..." : "Select an integration"
-                  }>
+                  placeholder={loading ? "Loading..." : "Select an integration"}
+                >
                   {field.value?.value && selectedOption && (
                     <div className="flex items-center gap-3">
                       <IntegrationIcon
@@ -112,7 +112,8 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
                 <SelectItem
                   key={option.value}
                   value={option.value}
-                  className="py-3">
+                  className="py-3"
+                >
                   <div className="flex items-center gap-3 w-full">
                     <IntegrationIcon
                       icon={option.icon}

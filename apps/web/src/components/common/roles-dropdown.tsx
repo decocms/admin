@@ -65,14 +65,16 @@ export function RolesDropdown({
           variant="outline"
           size="icon"
           className={`h-5.5 w-5.5 p-0 rounded-md ${triggerClassName || ""}`}
-          disabled={disabled}>
+          disabled={disabled}
+        >
           <Icon name="add" size={14} />
           <span className="sr-only">Manage roles</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className={`w-56 p-2 ${contentClassName || ""}`}>
+        className={`w-56 p-2 ${contentClassName || ""}`}
+      >
         <div className="text-xs font-medium px-2 py-1.5">Roles</div>
         {roles.map((role) => {
           const checked = isRoleSelected(role);
@@ -81,7 +83,8 @@ export function RolesDropdown({
               checked={checked}
               disabled={disabled}
               onSelect={(e) => e.preventDefault()}
-              onClick={(e) => handleRoleClick(role, e)}>
+              onClick={(e) => handleRoleClick(role, e)}
+            >
               <span className="capitalize">{role.name}</span>
             </DropdownMenuCheckboxItem>
           );

@@ -88,7 +88,8 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
           variant={isListening ? "default" : "outline"}
           size="icon"
           onClick={toggleListening}
-          className="h-8 w-8">
+          className="h-8 w-8"
+        >
           <Icon filled name={isListening ? "stop" : "mic"} />
         </Button>
       </div>

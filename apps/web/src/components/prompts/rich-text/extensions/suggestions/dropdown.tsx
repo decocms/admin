@@ -324,7 +324,8 @@ export default function MentionDropdown({
                       className={cn(
                         "w-full line-clamp-1 text-left justify-start flex gap-2 rounded-lg px-2 py-1.5 hover:bg-accent",
                         isSelected(item) && "bg-accent",
-                      )}>
+                      )}
+                    >
                       {item.icon && (
                         <Icon
                           name={item.icon}
@@ -343,7 +344,8 @@ export default function MentionDropdown({
                       }}
                       className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
                       align="start"
-                      side="right">
+                      side="right"
+                    >
                       {typeof item.tooltip === "string" ? (
                         <>
                           <div className="flex items-center justify-between gap-2 text-muted-foreground">

@@ -151,7 +151,8 @@ function DeleteThreadModal({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={deleteThread.isPending}>
+            disabled={deleteThread.isPending}
+          >
             {deleteThread.isPending ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
@@ -185,7 +186,8 @@ function ThreadActions({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-            }}>
+            }}
+          >
             <Icon
               name="more_vert"
               size={16}
@@ -200,7 +202,8 @@ function ThreadActions({
               e.stopPropagation();
               setOpen(false);
               onEdit();
-            }}>
+            }}
+          >
             <Icon name="edit" className="mr-2" size={16} />
             Rename
           </DropdownMenuItem>
@@ -212,7 +215,8 @@ function ThreadActions({
                 setOpen(false);
                 setShowDeleteModal(true);
               }}
-              className="text-destructive focus:text-destructive">
+              className="text-destructive focus:text-destructive"
+            >
               <Icon name="delete" className="mr-2" size={16} />
               Delete
             </DropdownMenuItem>
@@ -285,13 +289,15 @@ function SidebarThreadItem({
               asChild
               isActive={isActive}
               tooltip={thread.title}
-              className="h-9 w-full -ml-1 pr-8 gap-3">
+              className="h-9 w-full -ml-1 pr-8 gap-3"
+            >
               {isEditing ? (
                 <Form {...methods}>
                   <form
                     ref={formRef}
                     onSubmit={handleSubmit}
-                    className="flex-1">
+                    className="flex-1"
+                  >
                     <Input
                       {...methods.register("title")}
                       className="h-8 text-sm w-5/6"
@@ -308,7 +314,8 @@ function SidebarThreadItem({
               ) : (
                 <Link
                   to={buildThreadUrl(thread)}
-                  onClick={() => onThreadClick(thread)}>
+                  onClick={() => onThreadClick(thread)}
+                >
                   <AgentAvatar
                     url={agent?.avatar}
                     fallback={agent?.name ?? WELL_KNOWN_AGENT_IDS.teamAgent}
@@ -460,7 +467,8 @@ export function AppSidebar() {
                           { history: false },
                         );
                         isMobile && toggleSidebar();
-                      }}>
+                      }}
+                    >
                       <Icon
                         name="edit_square"
                         size={16}
@@ -483,7 +491,8 @@ export function AppSidebar() {
                             <SidebarMenuButton
                               asChild
                               isActive={isActive}
-                              tooltip={item.title}>
+                              tooltip={item.title}
+                            >
                               <Link
                                 to={href}
                                 onClick={() => {
@@ -491,7 +500,8 @@ export function AppSidebar() {
                                     item: item.title,
                                   });
                                   isMobile && toggleSidebar();
-                                }}>
+                                }}
+                              >
                                 <Icon
                                   name={item.icon}
                                   filled={isActive}

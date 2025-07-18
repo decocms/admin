@@ -78,7 +78,8 @@ function InviteCard({
               onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
               size="sm"
-              className="h-8">
+              className="h-8"
+            >
               {isAcceptLoading ? (
                 <Spinner size="xs" />
               ) : (
@@ -91,7 +92,8 @@ function InviteCard({
               disabled={isAnyLoading}
               variant="outline"
               size="sm"
-              className="h-8">
+              className="h-8"
+            >
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (
@@ -379,7 +381,8 @@ function TableView({
               onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
               size="sm"
-              className="h-8">
+              className="h-8"
+            >
               {isAcceptLoading ? (
                 <Spinner size="xs" />
               ) : (
@@ -392,7 +395,8 @@ function TableView({
               disabled={isAnyLoading}
               variant="outline"
               size="sm"
-              className="h-8">
+              className="h-8"
+            >
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (

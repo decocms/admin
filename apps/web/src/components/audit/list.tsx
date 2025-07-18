@@ -223,7 +223,8 @@ function AuditList() {
             <div className="flex justify-center items-center h-64">
               <Spinner />
             </div>
-          }>
+          }
+        >
           <AuditListContent />
         </Suspense>
       </ErrorBoundary>

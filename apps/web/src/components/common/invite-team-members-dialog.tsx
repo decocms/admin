@@ -88,7 +88,8 @@ function InviteTeamMembersDialogFeatureWall() {
         <Button
           variant="default"
           onClick={() => globalThis.open(contactUsUrl, "_blank")}
-          type="button">
+          type="button"
+        >
           Contact Us
         </Button>
       </DialogFooter>
@@ -216,7 +217,8 @@ export function InviteTeamMembersDialog({
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <Protect
           check={(plan) => !plan.isAtSeatLimit}
-          fallback={<InviteTeamMembersDialogFeatureWall />}>
+          fallback={<InviteTeamMembersDialogFeatureWall />}
+        >
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Invite Team Members</DialogTitle>
@@ -225,12 +227,14 @@ export function InviteTeamMembersDialog({
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(handleInviteMembers)}
-                className="space-y-6">
+                className="space-y-6"
+              >
                 <div className="space-y-6">
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex gap-3 items-start border-b pb-5 mb-2">
+                      className="flex gap-3 items-start border-b pb-5 mb-2"
+                    >
                       <div className="flex-1 grid grid-cols-2 gap-3">
                         <FormField
                           control={form.control}
@@ -318,7 +322,8 @@ export function InviteTeamMembersDialog({
                         onClick={() => handleRemoveInvitee(index)}
                         disabled={
                           fields.length <= 1 || inviteMemberMutation.isPending
-                        }>
+                        }
+                      >
                         <Icon name="remove" />
                       </Button>
                     </div>
@@ -330,7 +335,8 @@ export function InviteTeamMembersDialog({
                     size="sm"
                     className="mt-2 w-full"
                     onClick={handleAddInvitee}
-                    disabled={inviteMemberMutation.isPending}>
+                    disabled={inviteMemberMutation.isPending}
+                  >
                     <Icon name="add" className="mr-2" />
                     Add another invitee
                   </Button>
@@ -348,14 +354,16 @@ export function InviteTeamMembersDialog({
                       setIsOpen(false);
                     }}
                     type="button"
-                    disabled={inviteMemberMutation.isPending}>
+                    disabled={inviteMemberMutation.isPending}
+                  >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={
                       inviteMemberMutation.isPending || !form.formState.isValid
-                    }>
+                    }
+                  >
                     {inviteMemberMutation.isPending
                       ? "Inviting..."
                       : "Invite Members"}

@@ -124,7 +124,8 @@ function CreditsUsedPerAgentCard({
               value={range}
               onValueChange={(value: "day" | "week" | "month") =>
                 setRange(value)
-              }>
+              }
+            >
               <SelectTrigger className="!h-7 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -173,9 +174,8 @@ function CreditsUsedPerAgentCard({
         <div className="flex items-center gap-2">
           <Select
             value={range}
-            onValueChange={(value: "day" | "week" | "month") =>
-              setRange(value)
-            }>
+            onValueChange={(value: "day" | "week" | "month") => setRange(value)}
+          >
             <SelectTrigger className="!h-7 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -201,7 +201,8 @@ function CreditsUsedPerAgentCard({
               width: "250px",
               height: "200px",
             }}
-            className="mx-auto aspect-square max-h-[250px]">
+            className="mx-auto aspect-square max-h-[250px]"
+          >
             <PieChart>
               <ChartTooltip
                 cursor={false}
@@ -211,7 +212,8 @@ function CreditsUsedPerAgentCard({
                 data={agentsChartData}
                 dataKey="total"
                 nameKey="agentId"
-                innerRadius={47.5}>
+                innerRadius={47.5}
+              >
                 <Label
                   content={({ viewBox }) => {
                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -220,17 +222,20 @@ function CreditsUsedPerAgentCard({
                           x={viewBox.cx}
                           y={viewBox.cy}
                           textAnchor="middle"
-                          dominantBaseline="middle">
+                          dominantBaseline="middle"
+                        >
                           <tspan
                             x={viewBox.cx}
                             y={viewBox.cy}
-                            className="fill-foreground text-lg">
+                            className="fill-foreground text-lg"
+                          >
                             {total}
                           </tspan>
                           <tspan
                             x={viewBox.cx}
                             y={(viewBox.cy || 0) + 18}
-                            className="fill-muted-foreground text-[10px]">
+                            className="fill-muted-foreground text-[10px]"
+                          >
                             Total
                           </tspan>
                         </text>
@@ -248,7 +253,8 @@ function CreditsUsedPerAgentCard({
               <Link
                 to={withWorkpaceLink(
                   `/agent/${agent.id}/${crypto.randomUUID()}`,
-                )}>
+                )}
+              >
                 <div className="flex items-center gap-2 hover:underline">
                   <span
                     className="inline-block w-3 h-3 rounded-full"
@@ -312,7 +318,8 @@ function CreditsUsedPerThread({
         <span>Credits Used Per Thread</span>
         <Select
           value={range}
-          onValueChange={(value: "day" | "week" | "month") => setRange(value)}>
+          onValueChange={(value: "day" | "week" | "month") => setRange(value)}
+        >
           <SelectTrigger className="!h-7 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -486,7 +493,8 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
           variant="outline"
           size="sm"
           asChild
-          className="mt-2 w-full justify-center">
+          className="mt-2 w-full justify-center"
+        >
           <Link to={withWorkpaceLink(`/audit/${thread.id}`)}>
             <Icon name="open_in_new" size={16} />
             View messages

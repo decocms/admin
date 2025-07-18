@@ -55,7 +55,8 @@ const adapter =
           <div className="flex items-center justify-center h-full">
             <Spinner />
           </div>
-        }>
+        }
+      >
         <Component {...props.params} />
       </Suspense>
     );
@@ -73,13 +74,15 @@ const TAB_COMPONENTS = {
       <div className="w-min">
         <div
           data-active
-          className="flex items-center justify-between gap-1 p-2 px-3 group">
+          className="flex items-center justify-between gap-1 p-2 px-3 group"
+        >
           <p className="text-sm whitespace-nowrap">{props.api.title}</p>
           <Button
             className="p-1 h-6 w-6"
             variant="ghost"
             size="icon"
-            onClick={() => props.api.close()}>
+            onClick={() => props.api.close()}
+          >
             <Icon name="close" size={12} />
           </Button>
         </div>
@@ -321,7 +324,8 @@ Docked.Provider = ({
         totalTabs,
         openPanels,
         setOpenPanels,
-      }}>
+      }}
+    >
       {children}
     </Context.Provider>
   );

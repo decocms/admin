@@ -114,7 +114,8 @@ function ThemeVariableInput({
                   <button
                     type="button"
                     onClick={() => onChange("")}
-                    className="absolute right-2 top-0 bottom-0 flex items-center text-muted-foreground hover:text-foreground transition-colors">
+                    className="absolute right-2 top-0 bottom-0 flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <Icon name="close" size={16} />
                   </button>
                 </TooltipTrigger>
@@ -226,7 +227,8 @@ function DeleteTeamDialog({
         <Button
           className="w-fit"
           variant="destructive"
-          disabled={isReadOnly || isPending}>
+          disabled={isReadOnly || isPending}
+        >
           Delete
         </Button>
       </AlertDialogTrigger>
@@ -251,7 +253,8 @@ function DeleteTeamDialog({
               e.preventDefault();
               await onDelete();
             }}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40">
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40"
+          >
             {isPending ? (
               <span className="flex items-center gap-2">
                 <Spinner size="xs" variant="destructive" /> Deleting...
@@ -386,7 +389,8 @@ export function GeneralSettings() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => globalThis.location.reload()}>
+            onClick={() => globalThis.location.reload()}
+          >
             Refresh
           </Button>
         </div>,
@@ -408,7 +412,8 @@ export function GeneralSettings() {
               <Form {...form}>
                 <form
                   className="space-y-8"
-                  onSubmit={form.handleSubmit(onSubmit)}>
+                  onSubmit={form.handleSubmit(onSubmit)}
+                >
                   <div className="flex flex-col items-center w-full">
                     <FormField
                       control={form.control}
@@ -420,7 +425,8 @@ export function GeneralSettings() {
                           <FormControl>
                             <div
                               className="relative group cursor-pointer"
-                              onClick={() => fileInputRef.current?.click()}>
+                              onClick={() => fileInputRef.current?.click()}
+                            >
                               <Avatar
                                 shape="square"
                                 fallback={currentTeamName}
@@ -627,7 +633,8 @@ export function GeneralSettings() {
                         isReadOnly ||
                         !form.formState.isDirty ||
                         form.formState.isSubmitting
-                      }>
+                      }
+                    >
                       Discard
                     </Button>
                     <Button
@@ -638,7 +645,8 @@ export function GeneralSettings() {
                         !form.formState.isDirty ||
                         form.formState.isSubmitting ||
                         updateTeam.isPending
-                      }>
+                      }
+                    >
                       {updateTeam.isPending ? "Saving..." : "Save"}
                     </Button>
                   </div>

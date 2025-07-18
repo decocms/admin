@@ -96,7 +96,8 @@ function Page() {
           }}
         />
       }
-      shouldCatch={(e) => e instanceof UnauthorizedError}>
+      shouldCatch={(e) => e instanceof UnauthorizedError}
+    >
       <Suspense
         // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
         key={chatKey}
@@ -104,7 +105,8 @@ function Page() {
           <div className="h-full w-full flex items-center justify-center">
             <Spinner />
           </div>
-        }>
+        }
+      >
         <SDKProvider workspace={workspace}>
           <ChatProvider
             agentId={agentId}
@@ -116,14 +118,16 @@ function Page() {
               showThreadMessages: false,
               showAgentVisibility: false,
               showEditAgent: false,
-            }}>
+            }}
+          >
             <SidebarProvider
               style={
                 {
                   "--sidebar-width": "16rem",
                   "--sidebar-width-mobile": "14rem",
                 } as Record<string, string>
-              }>
+              }
+            >
               <SidebarInset>
                 <PageLayout
                   tabs={TABS}

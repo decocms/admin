@@ -60,7 +60,8 @@ function CopyLinkButton({
         setTimeout(() => {
           setIsCopied(false);
         }, 2000);
-      }}>
+      }}
+    >
       <Icon name={isCopied ? "check" : "link"} size={16} />
       Copy link
     </Button>
@@ -156,7 +157,8 @@ function SettingsTab() {
                             <FormControl>
                               <div
                                 className="w-16 h-16 group aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer relative overflow-hidden"
-                                onClick={triggerFileInput}>
+                                onClick={triggerFileInput}
+                              >
                                 {isUploading ? (
                                   <Skeleton
                                     className={cn("w-full h-full rounded-xl")}
@@ -285,7 +287,8 @@ function SettingsTab() {
                     <FormControl>
                       <Select
                         value={field.value ?? "PRIVATE"}
-                        onValueChange={field.onChange}>
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -339,7 +342,8 @@ function SettingsTab() {
                       <FormControl>
                         <Select
                           value={`${field.value}`}
-                          onValueChange={field.onChange}>
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>

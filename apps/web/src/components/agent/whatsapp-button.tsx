@@ -259,7 +259,8 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
           ? () => globalThis.open(getWhatsAppLink(agent), "_blank")
           : handleWhatsAppClick
       }
-      className={isMobile ? "w-full justify-center gap-4" : ""}>
+      className={isMobile ? "w-full justify-center gap-4" : ""}
+    >
       <img
         src="/img/zap.svg"
         className={isMobile ? "w-[14px] h-[14px] ml-[-6px]" : "w-4 h-4"} // xd

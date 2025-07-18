@@ -76,7 +76,8 @@ export default function HistoryTab() {
                 content: versions[0]?.content ?? "",
                 readonly: false,
               });
-            }}>
+            }}
+          >
             <div className="flex flex-col justify-end items-center gap-2 h-[64px]">
               {versions.length > 1 && (
                 <div
@@ -219,7 +220,8 @@ export function HistoryCard({
           readonly: true,
         });
         setPromptVersion(version.id);
-      }}>
+      }}
+    >
       <div className="flex flex-col justify-center items-center gap-2 h-full relative">
         <div
           className={cn(
@@ -246,7 +248,8 @@ export function HistoryCard({
           ) : (
             <span
               className="text-sm font-semibold cursor-pointer hover:bg-muted px-1 py-0.5 rounded"
-              onClick={() => handleStartEditing()}>
+              onClick={() => handleStartEditing()}
+            >
               {version.version_name ||
                 new Date(version.created_at).toLocaleString("en-US", {
                   month: "short",
@@ -287,14 +290,16 @@ export function HistoryCard({
             <DropdownMenuItem
               onClick={() => {
                 handleStartEditing();
-              }}>
+              }}
+            >
               <Icon name="border_color" size={12} />
               Rename
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 handleRestoreVersion();
-              }}>
+              }}
+            >
               <Icon name="replay" size={12} />
               Restore this version
             </DropdownMenuItem>

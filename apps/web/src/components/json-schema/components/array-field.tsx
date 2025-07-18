@@ -103,7 +103,8 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           size="sm"
                           onClick={() => handleMoveUp(index)}
                           disabled={disabled || index === 0}
-                          className="w-8">
+                          className="w-8"
+                        >
                           <Icon name="keyboard_arrow_up" size={20} />
                         </Button>
 
@@ -113,7 +114,8 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           size="sm"
                           onClick={() => handleMoveDown(index)}
                           disabled={disabled || index === fields.length - 1}
-                          className="w-8">
+                          className="w-8"
+                        >
                           <Icon name="keyboard_arrow_down" size={20} />
                         </Button>
 
@@ -123,7 +125,8 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                           size="sm"
                           onClick={() => handleRemove(index)}
                           disabled={disabled}
-                          className="w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                          className="w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
                           <Icon name="close" size={20} />
                         </Button>
                       </div>
@@ -147,7 +150,8 @@ export function ArrayField<T extends FieldValues = FieldValues>({
                 variant="outline"
                 onClick={handleAddItem}
                 disabled={disabled}
-                className="w-full">
+                className="w-full"
+              >
                 <Icon name="add" className="h-4 w-4 mr-2" />
                 Add {title}
               </Button>

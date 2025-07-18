@@ -47,7 +47,8 @@ function DockedToggleButton({
           position: { direction: "right" },
         })
       }
-      className={cn(className, openPanels.has(id) ? "bg-accent" : "")}>
+      className={cn(className, openPanels.has(id) ? "bg-accent" : "")}
+    >
       {children}
     </Button>
   );
@@ -59,7 +60,8 @@ ToolsButton.Skeleton = () => (
     title="Chat settings"
     variant="outline"
     size="sm"
-    disabled>
+    disabled
+  >
     <Icon name="build" />
   </DockedToggleButton>
 );
@@ -77,7 +79,8 @@ ToolsButton.UI = () => {
       id="tools"
       title="Chat settings"
       variant="outline"
-      size="sm">
+      size="sm"
+    >
       <Icon name="build" />
       <span className="text-xs">{numberOfTools}</span>
     </DockedToggleButton>

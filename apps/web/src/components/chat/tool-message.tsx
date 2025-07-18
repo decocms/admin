@@ -120,7 +120,8 @@ function ToolStatus({
       )}
       onClick={isSingle ? onClick : undefined}
       onMouseEnter={() => setShowCopyButton(true)}
-      onMouseLeave={() => setShowCopyButton(false)}>
+      onMouseLeave={() => setShowCopyButton(false)}
+    >
       <div className="flex items-start gap-2">
         <button
           type="submit"
@@ -128,12 +129,14 @@ function ToolStatus({
           className={cn(
             "w-full flex items-start gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors",
             !isSingle && "hover:bg-accent rounded-lg p-2",
-          )}>
+          )}
+        >
           <div className="relative flex flex-col items-center min-h-[20px]">
             <div
               className={cn(
                 "w-5 h-5 rounded-full border flex items-center justify-center bg-muted",
-              )}>
+              )}
+            >
               {getIcon(tool.state)}
             </div>
             {!isLast && !isExpanded && (
@@ -155,7 +158,8 @@ function ToolStatus({
               <div
                 ref={contentRef}
                 className="text-left mt-2 rounded-lg bg-primary border border-border overflow-hidden w-full relative"
-                onClick={(e) => e.stopPropagation()}>
+                onClick={(e) => e.stopPropagation()}
+              >
                 {showCopyButton && (
                   <Button
                     variant="ghost"
@@ -165,7 +169,8 @@ function ToolStatus({
                       handleCopy();
                     }}
                     className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted transition-colors"
-                    title="Copy tool details">
+                    title="Copy tool details"
+                  >
                     <Icon
                       name="content_copy"
                       className="w-4 h-4 text-muted-foreground"
@@ -174,7 +179,8 @@ function ToolStatus({
                 )}
                 <pre
                   className="p-4 text-xs whitespace-pre-wrap break-all overflow-y-auto max-h-[500px]"
-                  onClick={(e) => e.stopPropagation()}>
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <code className="text-primary-foreground select-text cursor-auto">
                     {getToolJson()}
                   </code>
@@ -282,7 +288,8 @@ export function ToolMessage({
           className={cn(
             "flex flex-col gap-2 w-full border border-border rounded-2xl",
             timelineTools.length > 1 && "p-2",
-          )}>
+          )}
+        >
           {timelineTools.map((tool, index) => (
             <ToolStatus
               key={tool.toolCallId}

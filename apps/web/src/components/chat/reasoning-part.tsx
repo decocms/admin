@@ -45,7 +45,8 @@ export function ReasoningPart({
         className={cn(
           "flex items-center justify-between p-4 transition-colors",
           isStreaming ? "bg-muted animate-pulse" : "hover:bg-muted",
-        )}>
+        )}
+      >
         <div className="flex items-center gap-2">
           <Icon name="psychology" className="text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">
@@ -61,13 +62,15 @@ export function ReasoningPart({
         className={cn(
           "transition-all duration-200 ease-in-out",
           isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",
-        )}>
+        )}
+      >
         <div className={cn("p-4 border-t", isStreaming && "bg-muted")}>
           <div
             className={cn(
               "prose prose-sm max-w-none text-sm",
               isStreaming && "text-xs text-muted-foreground",
-            )}>
+            )}
+          >
             <MemoizedMarkdown
               key={index}
               id={`${messageId}-${index}-reasoning`}

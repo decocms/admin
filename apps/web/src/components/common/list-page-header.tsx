@@ -46,7 +46,8 @@ export function Chiplet(props: ChipletProps) {
             item.active && "bg-accent",
           )}
           onClick={() => onClick(item)}
-          type="button">
+          type="button"
+        >
           {item.label}
           <span className="text-xs text-muted-foreground">{item.count}</span>
         </Button>

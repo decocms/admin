@@ -23,7 +23,8 @@ export function Picker({ options, question, onSelect, disabled }: PickerProps) {
             size="sm"
             disabled={disabled}
             className="rounded-full hover:bg-primary hover:text-primary-foreground transition-colors"
-            onClick={() => onSelect(option.value)}>
+            onClick={() => onSelect(option.value)}
+          >
             {option.label}
           </Button>
         ))}

@@ -92,7 +92,8 @@ export function KnowledgeBaseFileList({
       {files.map((file) => (
         <div
           key={file.name ?? file.fileUrl}
-          className="flex items-center gap-3 justify-between p-2 h-14">
+          className="flex items-center gap-3 justify-between p-2 h-14"
+        >
           {/* icon */}
           <div className="w-10 h-10 p-2 rounded-xl bg-primary/10 flex-shrink-0">
             <FileIcon filename={file.name ?? file.fileUrl} />
@@ -155,7 +156,8 @@ export function KnowledgeBaseFileList({
                 variant="ghost"
                 size="sm"
                 className="flex-shrink-0 h-8 w-8 p-0"
-                disabled={!file.fileUrl}>
+                disabled={!file.fileUrl}
+              >
                 <Icon name="more_horiz" size={16} />
               </Button>
             </DropdownMenuTrigger>
@@ -178,7 +180,8 @@ export function KnowledgeBaseFileList({
                       connection: integration?.connection,
                     });
                 }}
-                className="text-destructive focus:text-destructive">
+                className="text-destructive focus:text-destructive"
+              >
                 <Icon name="delete" size={16} className="mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -239,7 +242,8 @@ export function AddFileToKnowledgeButton({
         type="button"
         variant="outline"
         onClick={triggerFileInput}
-        disabled={isUploading || disabled}>
+        disabled={isUploading || disabled}
+      >
         <Icon name="add" size={16} />
         Add file
       </Button>

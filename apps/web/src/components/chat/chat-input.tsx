@@ -40,7 +40,8 @@ export function ChatInput() {
   return (
     <ErrorBoundary
       fallback={<ChatInput.UI disabled />}
-      shouldCatch={(e) => e instanceof NotFoundError}>
+      shouldCatch={(e) => e instanceof NotFoundError}
+    >
       <Suspense fallback={<ChatInput.UI disabled />}>
         <ChatInput.Suspense />
       </Suspense>
@@ -313,13 +314,15 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
         className={cn(
           "relative flex items-center gap-2 pt-0",
           disabled && "pointer-events-none opacity-50 cursor-not-allowed",
-        )}>
+        )}
+      >
         <div className="w-full">
           <div className="relative rounded-md w-full mx-auto">
             <div className="relative flex flex-col">
               <div
                 className="overflow-y-auto relative"
-                style={{ maxHeight: "164px" }}>
+                style={{ maxHeight: "164px" }}
+              >
                 <RichTextArea
                   value={input}
                   onChange={handleRichTextChange}
@@ -349,7 +352,8 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       className="h-8 w-8 border hover:bg-muted"
-                      title="Attach files">
+                      title="Attach files"
+                    >
                       <Icon className="text-sm" name="add" />
                     </Button>
                   ) : null}
@@ -376,7 +380,8 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
                     className="h-8 w-8 transition-all hover:opacity-70"
                     title={
                       isLoading ? "Stop generating" : "Send message (Enter)"
-                    }>
+                    }
+                  >
                     <Icon filled name={isLoading ? "stop" : "send"} />
                   </Button>
                 </div>
@@ -418,7 +423,8 @@ function FileDropOverlay({ display }: { display: boolean }) {
           "flex flex-col items-center justify-center gap-2",
           "pointer-events-none animate-fade-in",
           "p-8 shadow-2xl rounded-2xl border border-border bg-background/95",
-        )}>
+        )}
+      >
         <Icon name="upload" size={48} className="text-foreground" />
         <span className="text-lg font-semibold text-foreground">
           Drop files to upload
@@ -447,7 +453,8 @@ function FilePreviewItem({ uploadedFile, removeFile }: FilePreviewItemProps) {
         size="icon"
         className="absolute -top-2 -right-2 h-5 w-5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-sm bg-primary text-primary-foreground hover:bg-primary/50 hover:text-sidebar"
         onClick={removeFile}
-        title="Remove file">
+        title="Remove file"
+      >
         <Icon name="close" />
       </Button>
 

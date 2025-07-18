@@ -61,7 +61,8 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
             className={cn("text-sm mb-1 rounded-lg hover:bg-muted")}
             onClick={() => {
               openPanel({ id, component: id, title: tab.title });
-            }}>
+            }}
+          >
             <Icon
               name={
                 WELL_KNOWN_VIEW_ICONS[
@@ -85,7 +86,8 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
                 className={cn("text-xs hover:bg-muted")}
                 onClick={() => {
                   openPanel({ id, component: id, title: tab.title });
-                }}>
+                }}
+              >
                 {tab.title}
               </ResponsiveDropdownItem>
             ))}
@@ -109,7 +111,8 @@ export function ViewsButton() {
   return createPrependPortal(
     <div
       key="views-button"
-      className="flex items-center text-foreground justify-center w-9 h-8 pr-1">
+      className="flex items-center text-foreground justify-center w-9 h-8 pr-1"
+    >
       <ViewsButtonInner tabs={tabs} />
     </div>,
     firstContainer,

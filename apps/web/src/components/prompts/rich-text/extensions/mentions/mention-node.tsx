@@ -59,7 +59,8 @@ export default function MentionNode({
       <Tooltip>
         <TooltipTrigger
           type="button"
-          className="inline-flex items-end rounded-md bg-muted px-1 group text-foreground gap-1 py-0.5 -mb-0.5">
+          className="inline-flex items-end rounded-md bg-muted px-1 group text-foreground gap-1 py-0.5 -mb-0.5"
+        >
           {prompt?.icon && (
             <span className="bg-purple-light rounded-md p-0.5 text-foreground aspect-square flex">
               <Icon name={prompt.icon} size={12} />
@@ -72,20 +73,23 @@ export default function MentionNode({
         {prompt && (
           <TooltipContent
             side="bottom"
-            className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary">
+            className="max-w-sm bg-secondary text-secondary-foreground shadow-xl rounded-xl p-2 border [&>span>svg]:!bg-secondary [&>span>svg]:!fill-secondary"
+          >
             <div className="flex items-center justify-between gap-2 text-muted-foreground">
               <p
                 contentEditable={!!prompt}
                 suppressContentEditableWarning
                 onBlur={handleChange}
-                className="font-medium text-xs line-clamp-1 px-3">
+                className="font-medium text-xs line-clamp-1 px-3"
+              >
                 {prompt.label}
               </p>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleDetach}
-                type="button">
+                type="button"
+              >
                 <Icon name="link_off" size={16} />
               </Button>
             </div>

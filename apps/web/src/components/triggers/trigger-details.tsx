@@ -40,7 +40,8 @@ export function TriggerDetails({ id: _triggerId, onBack }: Props) {
         <Button
           variant="ghost"
           className="flex items-center gap-1 text-sm justify-start w-min px-4"
-          onClick={onBack}>
+          onClick={onBack}
+        >
           <Icon name="arrow_back" className="h-4 w-4" />
           Back to triggers
         </Button>

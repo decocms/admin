@@ -24,7 +24,8 @@ export function Header() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="size-8">
+              className="size-8"
+            >
               <Icon
                 name={isMobile ? "menu" : "dock_to_right"}
                 size={16}

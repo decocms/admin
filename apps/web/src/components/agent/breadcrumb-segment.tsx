@@ -16,7 +16,8 @@ export function AgentBreadcrumbSegment({
   return (
     <ErrorBoundary
       fallback={null}
-      shouldCatch={(e) => e instanceof NotFoundError}>
+      shouldCatch={(e) => e instanceof NotFoundError}
+    >
       <Suspense fallback={<AgentBreadcrumbSegment.Loading />}>
         <AgentBreadcrumbSegment.UI agentId={agentId} variant={variant} />
       </Suspense>

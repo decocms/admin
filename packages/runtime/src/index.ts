@@ -218,7 +218,12 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     }
     if (url.pathname === AUTH_START_ENDPOINT) {
       env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
-      return new Response("You are authenticated", { status: 200 });
+      const redirectTo = new URL(
+        "/",
+        url,
+      );
+      const next = url.searchParams.get("next");
+      return Response.redirect(next ?? redirectTo, 302);
     }
     if (url.pathname === "/mcp") {
       return server.fetch(req, withBindings(env, getReqToken(req)), ctx);

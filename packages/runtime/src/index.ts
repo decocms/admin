@@ -273,10 +273,11 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
           const isBrowser = typeof referer === "string" &&
             req.headers.get("user-agent") != null;
           if (isBrowser) {
+            const url = new URL(req.url);
             e.redirectTo.searchParams.set(
               "state",
               StateParser.stringify({
-                next: referer ?? req.url,
+                next: url.searchParams.get("next") ?? referer ?? req.url,
               }),
             );
             return Response.redirect(e.redirectTo, 302);

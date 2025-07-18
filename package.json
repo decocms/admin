@@ -20,6 +20,7 @@
     "npm:build": "npm run build --workspace=apps/web",
     "db:types": "npx supabase gen types typescript --project-id ozksgdmyrqcxcwhnbepg --schema public > packages/sdk/src/storage/supabase/schema.ts"
   },
+  "lock": false,
   "workspaces": [
     "apps/*",
     "packages/*"

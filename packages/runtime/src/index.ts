@@ -137,6 +137,7 @@ export class UnauthorizedError extends Error {
 }
 
 const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
+const AUTH_START_ENDPOINT = "/oauth/start";
 const AUTHENTICATED = (user?: unknown) => () => {
   return user as User;
 };
@@ -214,6 +215,10 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         apiUrl: env.DECO_CHAT_API_URL,
         appName: env.DECO_CHAT_APP_NAME,
       });
+    }
+    if (url.pathname === AUTH_START_ENDPOINT) {
+      env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+      return new Response("You are authenticated", { status: 200 });
     }
     if (url.pathname === "/mcp") {
       return server.fetch(req, withBindings(env, getReqToken(req)), ctx);

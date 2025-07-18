@@ -50,6 +50,8 @@
     "./capybaras": "./src/capybaras.ts"
   },
   "lint": {
-    "plugins": ["./plugins/enforce-kebab-case-file-names.ts"]
+    "plugins": [
+      "./plugins/enforce-kebab-case-file-names.ts"
+    ]
   }
 }

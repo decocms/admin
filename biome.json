@@ -12,11 +12,7 @@
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 80,
-    "lineEnding": "lf",
-    "bracketSpacing": true,
-    "expand": "auto"
+    "indentWidth": 2
   },
   "linter": {
     "enabled": false,
@@ -26,20 +22,8 @@
   },
   "javascript": {
     "formatter": {
-      "enabled": true,
-      "quoteStyle": "double",
-      "jsxQuoteStyle": "double",
-      "quoteProperties": "asNeeded",
-      "trailingCommas": "all",
-      "semicolons": "always",
-      "indentStyle": "space",
-      "indentWidth": 2,
-      "lineEnding": "lf",
-      "lineWidth": 80,
-      "bracketSameLine": false,
-      "attributePosition": "auto"
-    },
-    "jsxRuntime": "transparent"
+      "quoteStyle": "double"
+    }
   },
   "assist": {
     "enabled": false,

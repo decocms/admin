@@ -183,14 +183,8 @@ function InvitesListContent() {
       ? invites.filter(
           (invite) =>
             invite.teamName.toLowerCase().includes(search.toLowerCase()) ||
-            (invite.inviter.name &&
-              invite.inviter.name
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (invite.inviter.email &&
-              invite.inviter.email
-                .toLowerCase()
-                .includes(search.toLowerCase())),
+            invite.inviter.name?.toLowerCase().includes(search.toLowerCase()) ||
+            invite.inviter.email?.toLowerCase().includes(search.toLowerCase()),
         )
       : invites;
 

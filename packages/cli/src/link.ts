@@ -9,7 +9,7 @@ interface LinkOptions {
 
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    let command;
+    let command: Deno.Command;
     switch (Deno.build.os) {
       case "darwin":
         command = new Deno.Command("pbcopy", { stdin: "piped" });

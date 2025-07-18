@@ -287,6 +287,7 @@ describe("MicroDollar - edge cases and error handling", () => {
     const largeNegative = MicroDollar.fromMicrodollarString(
       "-999999999999_999999",
     );
+    // biome-ignore lint/correctness/noPrecisionLoss: test passes
     expect(largeNegative.toDollars()).toBe(-999999999999.999999);
     expect(largeNegative.isNegative()).toBe(true);
     expect(largeNegative.toMicrodollarString()).toBe("-999999999999_999999");

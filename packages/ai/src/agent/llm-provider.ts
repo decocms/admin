@@ -128,7 +128,7 @@ export const createLLMProvider: ProviderFactory = (opts) => {
   }
 
   const supportsOpenRouter = provider.supportsOpenRouter !== false;
-  const openRouterApiKey = opts.envs["OPENROUTER_API_KEY"];
+  const openRouterApiKey = opts.envs.OPENROUTER_API_KEY;
   if (
     !supportsOpenRouter ||
     !openRouterApiKey ||

@@ -166,12 +166,12 @@ export function PageLayout({
   );
 }
 
-interface BreadcrumbItem {
+interface BreadcrumbItemData {
   label: string | ReactNode;
   link?: string;
 }
 
-export function DefaultBreadcrumb({ items }: { items: BreadcrumbItem[] }) {
+export function DefaultBreadcrumb({ items }: { items: BreadcrumbItemData[] }) {
   const { toggleSidebar, open, isMobile } = useSidebar();
   const withWorkspace = useWorkspaceLink();
 

@@ -702,8 +702,12 @@ async function processAudioStream(
           };
 
           if (readableStream._readableState?.length > 0) {
-            let chunk;
-            while ((chunk = readableStream.read()) !== null) {
+            let chunk: Buffer | null;
+            while (true) {
+              chunk = readableStream.read();
+              if (chunk === null) {
+                break;
+              }
               if (chunk instanceof Buffer) {
                 totalSize += chunk.length;
                 if (totalSize > MAX_MEMORY_BUFFER) {

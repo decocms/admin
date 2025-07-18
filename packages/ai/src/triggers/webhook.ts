@@ -84,7 +84,7 @@ export const hooks: TriggerHooks<TriggerData & { type: "webhook" }> = {
       const val = trigger.metadata?.params?.[key];
       const parser = parseOptions[key];
       if (val && key && parser) {
-        // deno-lint-ignore no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: fine
         options[key] = parser(val) as any;
       }
     }

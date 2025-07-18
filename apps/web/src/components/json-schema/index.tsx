@@ -26,8 +26,7 @@ export interface JsonSchemaFormProps<
   form: UseFormReturn<T>;
   disabled?: boolean;
   onSubmit: (e: FormEvent) => Promise<void> | void;
-  // deno-lint-ignore no-explicit-any
-  error?: any;
+  error?: unknown;
   submitButton?: ReactNode;
   optionsLoader?: (type: string) => Promise<OptionItem[]> | OptionItem[];
 }
@@ -58,11 +57,11 @@ export default function Form<T extends FieldValues = Record<string, unknown>>({
         />
       )}
 
-      {error && (
+      {error ? (
         <div className="text-sm text-destructive mt-2">
           {JSON.stringify(error)}
         </div>
-      )}
+      ) : null}
 
       {submitButton && <div className="flex gap-2">{submitButton}</div>}
     </form>
@@ -205,7 +204,7 @@ function Field<T extends FieldValues = Record<string, unknown>>({
       );
     case "object":
       // Check if this object has a __type property for dynamic select
-      if (schema.properties && schema.properties.__type && optionsLoader) {
+      if (schema.properties?.__type && optionsLoader) {
         const typeSchema = schema.properties.__type as JSONSchema7;
         if (typeSchema.default && typeof typeSchema.default === "string") {
           return (

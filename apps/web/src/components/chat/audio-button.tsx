@@ -61,7 +61,7 @@ export const AudioButton: React.FC<AudioButtonProps> = ({ onMessage }) => {
         }
       };
     }
-  }, []);
+  }, [onMessage]);
 
   const toggleListening = useCallback(() => {
     if (!recognition) return;

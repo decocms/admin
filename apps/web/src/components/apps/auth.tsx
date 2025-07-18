@@ -232,7 +232,7 @@ function AppsOAuth({
     }
 
     return team.id === user.id ? `users/${user.id}` : `shared/${team.slug}`;
-  }, [team]);
+  }, [team, user.id]);
 
   if (!teams || teams.length === 0) {
     return (

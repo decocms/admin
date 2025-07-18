@@ -75,6 +75,7 @@ function CopyLinkButton({
 function AdvancedTab() {
   const { form, agent, handleSubmit } = useAgentSettingsForm();
   const roles = useCurrentTeamRoles();
+  const { workspace } = useSDK();
 
   const useWorkingMemory = useWatch({
     control: form.control,
@@ -90,7 +91,6 @@ function AdvancedTab() {
             <FormField
               name="visibility"
               render={({ field }) => {
-                const { workspace } = useSDK();
                 const isPublic = field.value === "PUBLIC";
                 const publicLink = getPublicChatLink(agent.id, workspace);
 

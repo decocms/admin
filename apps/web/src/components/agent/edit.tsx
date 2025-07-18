@@ -401,8 +401,8 @@ export default function Page(props: Props) {
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
-  if (!agentId) {
-    throw new NotFoundError("Agent not found");
+  if (!agentId || !threadId) {
+    throw new NotFoundError("Agent or thread not found");
   }
 
   return (
@@ -416,7 +416,7 @@ export default function Page(props: Props) {
       <FormProvider
         {...props}
         agentId={agentId}
-        threadId={threadId!}
+        threadId={threadId}
         key={chatKey}
       />
     </Suspense>

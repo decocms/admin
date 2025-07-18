@@ -202,25 +202,16 @@ function AgentMetadataUpdater({ agentId }: { agentId: string }) {
   return null;
 }
 
-function Page(props: Props) {
-  const params = useParams();
-  const agentId = useMemo(
-    () => props.agentId || params.id,
-    [props.agentId, params.id],
-  );
-
-  if (!agentId) {
-    return <div>Agent not found</div>;
-  }
-
-  const propThreadId = props.threadId || params.threadId;
-  const threadId = useMemo(
-    () => propThreadId || agentId,
-    [propThreadId, agentId],
-  );
-
+function AgentChatContent({
+  agentId,
+  threadId,
+  showThreadMessages,
+}: {
+  agentId: string;
+  threadId: string;
+  showThreadMessages?: boolean;
+}) {
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
-
   return (
     <Suspense
       // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
@@ -236,7 +227,7 @@ function Page(props: Props) {
         threadId={threadId}
         uiOptions={{
           showThreadTools: agentId === WELL_KNOWN_AGENT_IDS.teamAgent,
-          showThreadMessages: props.showThreadMessages ?? true,
+          showThreadMessages: showThreadMessages ?? true,
         }}
       >
         <AgentMetadataUpdater agentId={agentId} />
@@ -252,6 +243,28 @@ function Page(props: Props) {
         />
       </ChatProvider>
     </Suspense>
+  );
+}
+
+function Page(props: Props) {
+  const params = useParams();
+  const propThreadId = props.threadId || params.threadId;
+
+  const agentId = useMemo(
+    () => props.agentId || params.id,
+    [props.agentId, params.id],
+  );
+
+  if (!agentId) {
+    return <div>Agent not found</div>;
+  }
+
+  return (
+    <AgentChatContent
+      agentId={agentId}
+      threadId={propThreadId ?? agentId}
+      showThreadMessages={props.showThreadMessages}
+    />
   );
 }
 

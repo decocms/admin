@@ -17,7 +17,7 @@ import type { Bindings } from "./utils/context.ts";
 
 const readContent = async (message: ForwardableEmailMessage) => {
   // Parse the MIME message to extract structured content
-  // deno-lint-ignore no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: fixing in the future.
   const email = await PostalMime.parse(message.raw as any);
 
   // Return the text content, fallback to HTML if text is not available
@@ -34,7 +34,7 @@ export function email(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
-        ? // deno-lint-ignore no-explicit-any
+        ? // biome-ignore lint/suspicious/noExplicitAny: fixing in the future.
           runtime.stub(c, env as any)
         : actors.stub(c.name);
     };
@@ -117,9 +117,13 @@ export function email(
       },
     );
 
+    if (!stream.body) {
+      throw new Error("No stream body");
+    }
+
     let text = "";
     await processDataStream({
-      stream: stream.body!,
+      stream: stream.body,
       onTextPart: (part) => {
         text += part;
       },

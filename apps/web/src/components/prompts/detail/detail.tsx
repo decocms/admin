@@ -1,4 +1,5 @@
 import {
+  NotFoundError,
   type Prompt,
   PromptValidationSchema,
   useAgent,
@@ -60,7 +61,12 @@ export default function Page() {
   const agentId = WELL_KNOWN_AGENT_IDS.promptAgent;
 
   const { id } = useParams();
-  const promptId = id!;
+  const promptId = id;
+
+  if (!promptId) {
+    throw new NotFoundError("Prompt not found");
+  }
+
   const threadId = promptId;
 
   const { data: _prompt } = usePrompt(promptId);

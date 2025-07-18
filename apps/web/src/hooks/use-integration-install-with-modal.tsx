@@ -62,8 +62,12 @@ export function useIntegrationInstallWithModal() {
 
             // Check if the registry app has scope information
             // Note: This might not exist in the current schema, but we can check
-            if (registryApp && "scopes" in registryApp) {
-              scopes = (registryApp as any).scopes || [];
+            if (
+              registryApp &&
+              "scopes" in registryApp &&
+              Array.isArray(registryApp.scopes)
+            ) {
+              scopes = registryApp.scopes || [];
             }
           } catch (error) {
             console.warn("Failed to get registry app info:", error);

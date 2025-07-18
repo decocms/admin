@@ -80,6 +80,7 @@ export function RolesDropdown({
           const checked = isRoleSelected(role);
           return (
             <DropdownMenuCheckboxItem
+              key={role.id}
               checked={checked}
               disabled={disabled}
               onSelect={(e) => e.preventDefault()}

@@ -28,7 +28,9 @@ export interface Country {
   placeholder: string;
 }
 
-function getCountryConfig(country: any): Country {
+function getCountryConfig(
+  country: Omit<Country, "mask" | "validate" | "placeholder">,
+): Country {
   if (country.dial_code === "+55") {
     return {
       ...country,
@@ -111,7 +113,7 @@ export function ProfileSettings({
           setSuccess(true);
           if (onPhoneSaved) onPhoneSaved();
         },
-        onError: (err: any) =>
+        onError: (err: Error) =>
           setError(err.message || "Failed to update profile"),
       },
     );
@@ -269,7 +271,7 @@ export function PhoneInput({
   function handleDialCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value;
     const formattedRaw = !raw.startsWith("+")
-      ? "+" + raw.replace(/\D/g, "")
+      ? `+${raw.replace(/\D/g, "")}`
       : raw;
     setDialCode(formattedRaw);
     const match = COUNTRIES?.find(

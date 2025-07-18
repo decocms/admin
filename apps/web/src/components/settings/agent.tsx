@@ -89,6 +89,7 @@ export const useCurrentTeamRoles = () => {
 function SettingsTab() {
   const { form, agent, handleSubmit } = useAgentSettingsForm();
   const roles = useCurrentTeamRoles();
+  const { workspace } = useSDK();
 
   const writeFileMutation = useWriteFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -264,7 +265,6 @@ function SettingsTab() {
             <FormField
               name="visibility"
               render={({ field }) => {
-                const { workspace } = useSDK();
                 const isPublic = field.value === "PUBLIC";
                 const publicLink = getPublicChatLink(agent.id, workspace);
 

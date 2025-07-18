@@ -1,6 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { marked } from "marked";
+import { marked, type Token } from "marked";
 import {
   lazy,
   memo,
@@ -271,20 +271,23 @@ export const MemoizedMarkdown = ({
 }) => {
   const blocks = useMemo(() => marked.lexer(content), [content]);
 
-  return blocks.map((block, index) => {
+  const blockKey = useCallback(
+    (block: Token) => {
+      const contentHash = block.raw ? block.raw.slice(0, 50) : "";
+      const type = block.type;
+      return `${id}-${type}-${contentHash}`;
+    },
+    [id],
+  );
+
+  return blocks.map((block) => {
+    const key = blockKey(block);
+
     if (block.type === "code") {
-      return (
-        <CodeBlock
-          language={block.lang}
-          content={block.text}
-          key={`${id}-block_${index}`}
-        />
-      );
+      return <CodeBlock language={block.lang} content={block.text} key={key} />;
     }
 
-    return (
-      <MemoizedMarkdownBlock content={block.raw} key={`${id}-block_${index}`} />
-    );
+    return <MemoizedMarkdownBlock content={block.raw} key={key} />;
   });
 };
 

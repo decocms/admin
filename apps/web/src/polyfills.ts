@@ -1,4 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
+/** biome-ignore-all lint/suspicious/noExplicitAny: polyfills */
+/** biome-ignore-all lint/style/noNonNullAssertion: polyfills */
 if (!globalThis.crypto) {
   globalThis.crypto = {} as Crypto;
 }

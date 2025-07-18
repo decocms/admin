@@ -200,7 +200,9 @@ function ErrorFallback() {
           </>
         }
         buttonProps={{
-          onClick: () => (globalThis.location.href = "/"),
+          onClick: () => {
+            globalThis.location.href = "/";
+          },
           children: "Go back to home",
         }}
       />
@@ -222,7 +224,9 @@ function ErrorFallback() {
           </>
         }
         buttonProps={{
-          onClick: () => (globalThis.location.href = "/"),
+          onClick: () => {
+            globalThis.location.href = "/";
+          },
           children: "Go back to home",
         }}
       />
@@ -315,7 +319,11 @@ const router = createBrowserRouter([
   },
 ]);
 
-createRoot(document.getElementById("root")!).render(
+const root = document.getElementById("root");
+if (!root) {
+  throw new Error("Root element not found");
+}
+createRoot(root).render(
   <StrictMode>
     <RouterProvider router={router} />
   </StrictMode>,

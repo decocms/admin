@@ -16,7 +16,6 @@ export interface Option {
   type: "category" | "option";
   label: string;
   icon?: string;
-  // deno-lint-ignore no-explicit-any
   handle?: (props: { editor: Editor; command: (props: any) => void }) => void;
   tooltip?: string | React.ReactNode;
   children?: Option[];
@@ -25,7 +24,6 @@ export interface Option {
 interface Props {
   items: Option[];
   editor: Editor;
-  // deno-lint-ignore no-explicit-any
   command: (props: any) => void;
   range: Range;
   ref: Ref<unknown>;
@@ -312,7 +310,7 @@ export default function MentionDropdown({
           {category.children?.length ? (
             category.children.map((item) => {
               return (
-                <Tooltip open={isSelected(item)}>
+                <Tooltip key={item.id} open={isSelected(item)}>
                   <TooltipTrigger asChild>
                     <Button
                       key={item.id}

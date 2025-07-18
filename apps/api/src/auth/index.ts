@@ -23,8 +23,8 @@ const AUTH_CALLBACK_OAUTH = "/auth/callback/oauth";
 const appAuth = new Hono();
 const appLogin = new Hono();
 export const ROUTES = {
-  ["/auth"]: appAuth,
-  ["/login"]: appLogin,
+  "/auth": appAuth,
+  "/login": appLogin,
 } as const;
 
 const createDbAndHeadersForRequest = (ctx: AppContext) => {
@@ -113,7 +113,7 @@ export const createMagicLinkEmail = async (ctx: AppContext) => {
 };
 
 appLogin.all("/oauth", async (ctx: AppContext) => {
-  let user;
+  let user: Principal | undefined;
   try {
     assertPrincipalIsUser(ctx.var);
     user = ctx.var.user;

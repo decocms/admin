@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: fine
 import z, { type ZodObject } from "zod";
 
 export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
@@ -15,7 +15,7 @@ export function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
     return z.union(types).describe(value.description || "");
   }
 
-  let zodType;
+  let zodType: z.ZodTypeAny;
   switch (value.type) {
     case "string":
       zodType = z
@@ -86,7 +86,7 @@ export function jsonSchemaToModel(
   const zodSchema: Record<string, any> = {};
   for (const [key, _] of Object.entries(properties)) {
     const value = _ as any;
-    let zodType;
+    let zodType: z.ZodTypeAny;
     if (value.anyOf) {
       const anyOfTypes = value.anyOf.map((schema: any) =>
         jsonSchemaPropertiesToTSTypes(schema),

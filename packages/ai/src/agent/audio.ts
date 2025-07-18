@@ -34,8 +34,9 @@ export async function transcribeBase64Audio({
     },
   });
 
-  // deno-lint-ignore no-explicit-any
-  const transcription = await agent.voice.listen(stream as any);
+  const transcription = await agent.voice.listen(
+    stream as unknown as NodeJS.ReadableStream,
+  );
   return transcription as string;
 }
 

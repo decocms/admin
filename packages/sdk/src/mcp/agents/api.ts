@@ -133,7 +133,7 @@ export const getAgent = createTool({
             .single(),
     ]);
 
-    if ((error && error.code == NO_DATA_ERROR) || !data) {
+    if ((error && error.code === NO_DATA_ERROR) || !data) {
       throw new NotFoundError(id);
     }
 

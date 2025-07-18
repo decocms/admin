@@ -43,12 +43,12 @@ interface ImagePart {
   image: string;
 }
 
-interface ReasoningPart {
+interface LLMReasoningPart {
   type: "reasoning";
   reasoning: string;
 }
 
-type Part = TextPart | ToolPart | ReasoningPart | ImagePart;
+type Part = TextPart | ToolPart | LLMReasoningPart | ImagePart;
 
 function mergeParts(parts: Part[] | undefined): MessagePart[] {
   if (!parts) return [];
@@ -220,13 +220,14 @@ export function ChatMessage({
           {message.parts ? (
             <div className="space-y-2 w-full">
               {mergedParts.map((part, index) => {
+                const partKey = `${message.id}-${index}`;
                 if (part.type === "reasoning") {
                   const isLastReasoningPart = mergedParts
                     .slice(index + 1)
                     .every((p) => p.type !== "reasoning");
                   return (
                     <ReasoningPart
-                      key={index}
+                      key={partKey}
                       reasoning={part.reasoning || ""}
                       messageId={message.id}
                       index={index}
@@ -237,21 +238,21 @@ export function ChatMessage({
                 } else if (part.type === "text") {
                   return (
                     <MemoizedMarkdown
-                      key={index}
-                      id={`${message.id}-${index}`}
+                      key={partKey}
+                      id={partKey}
                       content={part.content || ""}
                     />
                   );
                 } else if (part.type === "image") {
                   if (!part.image) return null;
-                  return <ImagePart image={part.image} key={index} />;
+                  return <ImagePart image={part.image} key={partKey} />;
                 } else if (
                   part.type === "tool-invocation-group" &&
                   part.toolInvocations
                 ) {
                   return (
                     <ToolMessage
-                      key={index}
+                      key={partKey}
                       toolInvocations={part.toolInvocations}
                       isLastMessage={isLastMessage}
                     />

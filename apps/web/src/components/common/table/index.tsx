@@ -111,7 +111,7 @@ export function Table<T>({
                   key={col.id}
                   className={
                     "px-4 py-2 " +
-                    (col.cellClassName ? col.cellClassName + " " : "") +
+                    (col.cellClassName ? `${col.cellClassName} ` : "") +
                     "truncate overflow-hidden whitespace-nowrap"
                   }
                 >

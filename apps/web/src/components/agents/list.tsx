@@ -419,7 +419,11 @@ type Visibility = (typeof VISIBILITIES)[number];
 
 function List() {
   const [state, dispatch] = useReducer(listReducer, initialState);
-  const { handleCreate } = useContext(Context)!;
+  const context = useContext(Context);
+  if (!context) {
+    throw new Error("Context not found");
+  }
+  const { handleCreate } = context;
   const { filter } = state;
   const { data: agents } = useAgents();
   const [viewMode, setViewMode] = useViewMode("agents");
@@ -435,7 +439,7 @@ function List() {
     );
 
     return agents?.reduce((acc, agent) => {
-      acc["all"].push(agent);
+      acc.all.push(agent);
       acc[agent.visibility.toLowerCase()]?.push(agent);
 
       return acc;
@@ -482,10 +486,10 @@ function List() {
             agents.length === 0
               ? "robot_2"
               : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
+                  agentsByVisibility.public.length === 0
                 ? "public"
                 : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
+                    agentsByVisibility.workspace.length === 0
                   ? "groups"
                   : "search_off"
           }
@@ -493,10 +497,10 @@ function List() {
             agents.length === 0
               ? "No agents yet"
               : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
+                  agentsByVisibility.public.length === 0
                 ? "No public agents available"
                 : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
+                    agentsByVisibility.workspace.length === 0
                   ? "No team agents yet"
                   : "No agents match your filter"
           }
@@ -504,10 +508,10 @@ function List() {
             agents.length === 0
               ? "You haven't created any agents yet. Create one to get started."
               : visibility === "public" &&
-                  agentsByVisibility["public"].length === 0
+                  agentsByVisibility.public.length === 0
                 ? "Once agents are shared publicly, they'll appear here for anyone to explore and try out."
                 : visibility === "workspace" &&
-                    agentsByVisibility["workspace"].length === 0
+                    agentsByVisibility.workspace.length === 0
                   ? "Agents shared with your team will show up here. Create one to start collaborating."
                   : "Try adjusting your search. If you still can't find what you're looking for, you can create a new agent."
           }

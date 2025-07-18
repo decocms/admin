@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: fine
 import {
   CallToolResultSchema,
   type DecoConnection,
@@ -107,8 +107,8 @@ const getMCPServerTools = async (
                   {
                     name: tool.name,
                     arguments: context,
-                    // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
                   },
+                  // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
                   CallToolResultSchema,
                 );
 

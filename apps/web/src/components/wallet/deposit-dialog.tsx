@@ -61,7 +61,7 @@ export function DepositDialog() {
 
   function validateAmount() {
     const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount < MINIMUM_AMOUNT) {
+    if (Number.isNaN(amount) || amount < MINIMUM_AMOUNT) {
       setAmountError(
         `Minimum deposit amount is ${formatCurrency(
           MINIMUM_AMOUNT.toString(),

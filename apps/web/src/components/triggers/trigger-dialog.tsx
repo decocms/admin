@@ -166,7 +166,9 @@ function JsonSchemaInput({
         setError("Schema must be a valid JSON object");
       }
     } catch (err) {
-      setError("Invalid JSON: " + (err as Error).message);
+      setError(
+        `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -237,7 +239,9 @@ function ArgumentsInput({
         schemaForm.reset(parsed);
         setError(null);
       } catch (err) {
-        setError("Invalid JSON: " + (err as Error).message);
+        setError(
+          `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }, [jsonSchema, value, schemaForm]);
@@ -249,7 +253,9 @@ function ArgumentsInput({
       onChange(jsonString);
       setError(null);
     } catch (err) {
-      setError("Failed to serialize form data: " + (err as Error).message);
+      setError(
+        `Failed to serialize form data: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   };
 
@@ -266,7 +272,9 @@ function ArgumentsInput({
         setError("Arguments must be a valid JSON object");
       }
     } catch (err) {
-      setError("Invalid JSON: " + (err as Error).message);
+      setError(
+        `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

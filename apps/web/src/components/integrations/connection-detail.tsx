@@ -686,8 +686,8 @@ function ParametersViewer({ tool }: Pick<ToolProps, "tool">) {
     <div className="flex flex-col gap-2">
       {parameters.length > 0 ? (
         parameters.map((param) => (
-          <div className="flex flex-col gap-2">
-            <div key={param.name} className="flex items-center gap-2">
+          <div key={param.name} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
               <Icon
                 name={param.type === "string" ? "text_fields" : "category"}
                 size={16}
@@ -913,8 +913,7 @@ function ToolsInspector({
   const filteredTools = tools.data.tools.filter(
     (tool) =>
       tool.name.toLowerCase().includes(search.toLowerCase()) ||
-      (tool.description &&
-        tool.description.toLowerCase().includes(search.toLowerCase())),
+      tool.description?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -1017,8 +1016,12 @@ function AppDetail({ appKey }: { appKey: string }) {
 }
 
 export default function Page() {
-  const { appKey: _appKey } = useParams();
-  const appKey = _appKey!;
+  const { appKey } = useParams();
+
+  if (!appKey) {
+    throw new Error("App key not in URL");
+  }
+
   const app = useGroupedApp({
     appKey,
   });

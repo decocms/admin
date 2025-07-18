@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/** biome-ignore-all lint/suspicious/noExplicitAny: someone should fix this very vibe coded file */
 import { useWorkflowStatus } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";

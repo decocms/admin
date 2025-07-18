@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: fine
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
@@ -150,7 +150,7 @@ export const withBindings = <TEnv>(
 ): TEnv => {
   const env = _env as DefaultEnv<any>;
 
-  let context;
+  let context: RequestContext;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
     context = {

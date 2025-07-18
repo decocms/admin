@@ -22,16 +22,21 @@ import { KEYS } from "./api.ts";
 import { useSDK } from "./store.tsx";
 
 export function useTrigger(
-  triggerId: string,
+  triggerId: string | null,
   options?: Omit<
-    UseQueryOptions<TriggerOutput, Error, TriggerOutput, string[]>,
+    UseQueryOptions<
+      TriggerOutput | null,
+      Error,
+      TriggerOutput | null,
+      string[]
+    >,
     "queryKey" | "queryFn"
   >,
 ) {
   const { workspace } = useSDK();
   return useQuery({
-    queryKey: KEYS.TRIGGER(workspace, triggerId),
-    queryFn: () => getTrigger(workspace, triggerId),
+    queryKey: KEYS.TRIGGER(workspace, triggerId ?? "null"),
+    queryFn: () => (triggerId ? getTrigger(workspace, triggerId) : null),
     staleTime: 0,
     ...options,
   });

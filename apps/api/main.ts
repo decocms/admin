@@ -58,6 +58,7 @@ globalThis.fetch = async function patchedFetch(
       throw new Error("Missing context for internal self-invocation");
     }
     // Delegate to internal handler
+    // biome-ignore lint/style/noNonNullAssertion: should always work
     return await instrumentedApp.fetch!(
       req as Request<unknown, IncomingRequestCfProperties<unknown>>,
       context.env,
@@ -73,6 +74,7 @@ export default {
   email,
   fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
     return contextStorage.run({ env, ctx }, async () => {
+      // biome-ignore lint/style/noNonNullAssertion: should always work
       return await instrumentedApp.fetch!(
         request as Request<unknown, IncomingRequestCfProperties<unknown>>,
         env,

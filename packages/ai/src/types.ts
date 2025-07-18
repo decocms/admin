@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: fine
 import type { JSONSchema7 } from "@ai-sdk/provider";
 import type { Actor } from "@deco/actors";
 import type { GenerateOptions, StreamOptions, Toolset } from "@deco/sdk/models";
@@ -124,5 +124,5 @@ export interface AIAgent extends Actor {
    * @param audioBase64 - Base64 encoded audio data
    * @returns Promise containing the transcription result
    */
-  listen(buffer: Uint8Array): Promise<string | void | NodeJS.ReadableStream>;
+  listen(buffer: Uint8Array): Promise<string | NodeJS.ReadableStream>;
 }

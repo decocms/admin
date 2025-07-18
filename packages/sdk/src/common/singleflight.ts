@@ -71,7 +71,9 @@ export const singleFlight = <T>(): SingleFlight<T> => {
     if (promise !== undefined) {
       return promise;
     }
-    return (active[key] = f().finally(() => delete active[key]));
+    const fnPromise = f().finally(() => delete active[key]);
+    active[key] = fnPromise;
+    return fnPromise;
   };
   return {
     do: sfDo,

@@ -23,9 +23,8 @@ interface Mention {
 export function extractMentionsFromString(systemPrompt: string): Mention[] {
   const unescapedSystemPrompt = unescapeHTML(systemPrompt);
   const mentions: Mention[] = [];
-  let match;
 
-  while ((match = MENTION_REGEX.exec(unescapedSystemPrompt)) !== null) {
+  for (const match of unescapedSystemPrompt.matchAll(MENTION_REGEX)) {
     const type = match[2] as Mentionables;
     if (mentionableTypes.includes(type)) {
       mentions.push({

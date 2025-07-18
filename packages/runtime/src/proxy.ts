@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: fine
 import type { CreateStubAPIOptions } from "./mcp.ts";
 
 const getWorkspace = (workspace?: string) => {
@@ -180,10 +180,11 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           >
         | undefined;
       const listToolsOnce = () => {
-        return (tools ??= listToolsFn().catch((error) => {
+        tools ??= listToolsFn().catch((error) => {
           console.error("Failed to list tools", error);
           return [];
-        }));
+        });
+        return tools;
       };
       callToolFn.asTool = async () => {
         const tools = await listToolsOnce();

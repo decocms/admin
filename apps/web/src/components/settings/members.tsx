@@ -185,8 +185,8 @@ function MembersViewContent() {
       );
     } catch (error) {
       toast.error(
-        // deno-lint-ignore no-explicit-any
-        (typeof error === "object" && (error as any)?.message) ||
+        (typeof error === "object" &&
+          (error as { message?: string })?.message) ||
           "Failed to update role",
       );
       console.error("Failed to update member role:", error);
@@ -245,7 +245,10 @@ function MembersViewContent() {
                 roles={roles}
                 selectedRoles={row.roles}
                 onRoleClick={(role, checked) => {
-                  handleUpdateMemberRole(row.member!.user_id, role, checked);
+                  if (!row.member) {
+                    throw new Error("Member not found");
+                  }
+                  handleUpdateMemberRole(row.member.user_id, role, checked);
                 }}
                 disabled={updateRoleMutation.isPending}
               />

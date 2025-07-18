@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+/** biome-ignore-all lint/suspicious/noExplicitAny: todo: fix vibecode */
 
 import {
   addEdge,

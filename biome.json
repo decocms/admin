@@ -18,7 +18,14 @@
     "enabled": true,
     "rules": {
       "a11y": "off",
-      "recommended": true
+      "recommended": true,
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noDocumentCookie": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      }
     }
   },
   "javascript": {

@@ -21,7 +21,11 @@ export function ChatHeader() {
 ChatHeader.Fallback = () => {
   return (
     <div className="flex items-center gap-3 h-10">
-      <Icon name="smart_toy" size={16} className="opacity-50" />
+      <Icon
+        name="smart_toy"
+        size={16}
+        className="opacity-50"
+      />
       <h1 className="text-sm font-medium tracking-tight opacity-50">
         This agent has been deleted
       </h1>

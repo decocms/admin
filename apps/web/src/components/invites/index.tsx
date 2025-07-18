@@ -44,7 +44,11 @@ function InviteCard({
             </h3>
             <div className="flex gap-1 flex-wrap">
               {invite.roles.map((role) => (
-                <Badge key={role.id} variant="outline" className="text-xs">
+                <Badge
+                  key={role.id}
+                  variant="outline"
+                  className="text-xs"
+                >
                   {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
                 </Badge>
               ))}
@@ -83,7 +87,11 @@ function InviteCard({
               {isAcceptLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="check" className="mr-1" size={14} />
+                <Icon
+                  name="check"
+                  className="mr-1"
+                  size={14}
+                />
               )}
               Accept
             </Button>
@@ -97,7 +105,11 @@ function InviteCard({
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="close" className="mr-1" size={14} />
+                <Icon
+                  name="close"
+                  className="mr-1"
+                  size={14}
+                />
               )}
               Reject
             </Button>
@@ -113,7 +125,10 @@ function InvitesListSkeleton() {
     <div className="flex flex-col gap-4 h-full p-4">
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} className="overflow-hidden border rounded-xl">
+          <Card
+            key={index}
+            className="overflow-hidden border rounded-xl"
+          >
             <CardContent className="p-6 flex flex-col gap-4">
               <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-2 flex-1">
@@ -349,7 +364,11 @@ function TableView({
       render: (invite) => (
         <div className="flex gap-1 flex-wrap">
           {invite.roles.map((role) => (
-            <Badge key={role.id} variant="outline" className="text-xs">
+            <Badge
+              key={role.id}
+              variant="outline"
+              className="text-xs"
+            >
               {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
             </Badge>
           ))}
@@ -376,7 +395,10 @@ function TableView({
         const isAnyLoading = isAcceptLoading || isRejectLoading;
 
         return (
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="flex gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Button
               onClick={() => onAccept(invite.id)}
               disabled={isAnyLoading}
@@ -386,7 +408,11 @@ function TableView({
               {isAcceptLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="check" className="mr-1" size={14} />
+                <Icon
+                  name="check"
+                  className="mr-1"
+                  size={14}
+                />
               )}
               Accept
             </Button>
@@ -400,7 +426,11 @@ function TableView({
               {isRejectLoading ? (
                 <Spinner size="xs" />
               ) : (
-                <Icon name="close" className="mr-1" size={14} />
+                <Icon
+                  name="close"
+                  className="mr-1"
+                  size={14}
+                />
               )}
               Reject
             </Button>

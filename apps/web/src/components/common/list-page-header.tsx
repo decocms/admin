@@ -64,12 +64,21 @@ export function ListPageHeader({ filter, input, view }: Props) {
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
       <div className="flex items-center gap-2">
         {filter?.items.map((chiplet) => (
-          <Chiplet key={chiplet.id} item={chiplet} onClick={filter.onClick} />
+          <Chiplet
+            key={chiplet.id}
+            item={chiplet}
+            onClick={filter.onClick}
+          />
         ))}
       </div>
       <div className="flex items-center gap-2 justify-self-auto md:justify-self-end p-1">
         {view && <ViewModeSwitcher {...view} />}
-        {input && <Input className="w-80 text-sm" {...input} />}
+        {input && (
+          <Input
+            className="w-80 text-sm"
+            {...input}
+          />
+        )}
       </div>
     </div>
   );

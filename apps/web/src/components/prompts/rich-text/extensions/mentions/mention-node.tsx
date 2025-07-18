@@ -55,7 +55,11 @@ export default function MentionNode({
   };
 
   return (
-    <NodeViewWrapper as="span" data-id={id} data-type="mention">
+    <NodeViewWrapper
+      as="span"
+      data-id={id}
+      data-type="mention"
+    >
       <Tooltip>
         <TooltipTrigger
           type="button"
@@ -63,7 +67,10 @@ export default function MentionNode({
         >
           {prompt?.icon && (
             <span className="bg-purple-light rounded-md p-0.5 text-foreground aspect-square flex">
-              <Icon name={prompt.icon} size={12} />
+              <Icon
+                name={prompt.icon}
+                size={12}
+              />
             </span>
           )}
           <span className="leading-none">
@@ -90,7 +97,10 @@ export default function MentionNode({
                 onClick={handleDetach}
                 type="button"
               >
-                <Icon name="link_off" size={16} />
+                <Icon
+                  name="link_off"
+                  size={16}
+                />
               </Button>
             </div>
             <div className="px-2.5 py-1.5 italic text-sm max-h-96 overflow-y-auto">

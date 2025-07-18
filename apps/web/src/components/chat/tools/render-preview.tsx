@@ -47,11 +47,21 @@ function ImageActionButton({
       {...(href ? { asChild: true } : {})}
     >
       {href ? (
-        <a href={href} download={download} onClick={(e) => e.stopPropagation()}>
-          <Icon name={icon} className={BUTTON_STYLES.icon} />
+        <a
+          href={href}
+          download={download}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon
+            name={icon}
+            className={BUTTON_STYLES.icon}
+          />
         </a>
       ) : (
-        <Icon name={icon} className={BUTTON_STYLES.icon} />
+        <Icon
+          name={icon}
+          className={BUTTON_STYLES.icon}
+        />
       )}
     </Button>
   );
@@ -127,7 +137,10 @@ interface ImageDialogProps {
 
 function ImageDialog({ src, title, isOpen, onClose }: ImageDialogProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={onClose}
+    >
       <DialogContent className="max-w-[95vw] max-h-[95vh] sm:max-w-2xl sm:max-h-2xl p-0 border-none shadow-xl rounded-2xl">
         <div className="absolute top-2 right-2 z-10 flex gap-2">
           <ImageActionButton
@@ -176,7 +189,10 @@ function HtmlPreview({
     >
       <div className="flex items-center justify-between p-2 pr-0">
         <div className="flex items-center gap-2">
-          <Icon name="draft" className="text-sm text-muted-foreground" />
+          <Icon
+            name="draft"
+            className="text-sm text-muted-foreground"
+          />
           <p className="text-sm font-medium tracking-tight">
             {title || "Preview"}
           </p>

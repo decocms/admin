@@ -108,7 +108,11 @@ function App({ agentId }: { agentId: string }) {
             <div className="flex flex-col items-start w-full">
               <Category>Today</Category>
               {groupedThreads.today.map((thread) => (
-                <Item key={thread.id} agentId={agentId} thread={thread} />
+                <Item
+                  key={thread.id}
+                  agentId={agentId}
+                  thread={thread}
+                />
               ))}
             </div>
           )}
@@ -117,16 +121,27 @@ function App({ agentId }: { agentId: string }) {
             <div className="flex flex-col items-start w-full">
               <Category>Yesterday</Category>
               {groupedThreads.yesterday.map((thread) => (
-                <Item key={thread.id} agentId={agentId} thread={thread} />
+                <Item
+                  key={thread.id}
+                  agentId={agentId}
+                  thread={thread}
+                />
               ))}
             </div>
           )}
 
           {olderDates.map((date) => (
-            <div key={date} className="flex flex-col items-start w-full">
+            <div
+              key={date}
+              className="flex flex-col items-start w-full"
+            >
               <Category>{date}</Category>
               {groupedThreads.older[date].map((thread) => (
-                <Item key={thread.id} agentId={agentId} thread={thread} />
+                <Item
+                  key={thread.id}
+                  agentId={agentId}
+                  thread={thread}
+                />
               ))}
             </div>
           ))}

@@ -53,7 +53,11 @@ export function TriggerCard({
         </div>
       </CardContent>
       <div className="absolute top-6 right-6">
-        <TriggerActions trigger={trigger} open={open} onOpenChange={setOpen} />
+        <TriggerActions
+          trigger={trigger}
+          open={open}
+          onOpenChange={setOpen}
+        />
       </div>
     </Card>
   );

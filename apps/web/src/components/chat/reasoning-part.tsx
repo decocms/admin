@@ -48,7 +48,10 @@ export function ReasoningPart({
         )}
       >
         <div className="flex items-center gap-2">
-          <Icon name="psychology" className="text-muted-foreground" />
+          <Icon
+            name="psychology"
+            className="text-muted-foreground"
+          />
           <span className="text-sm font-medium text-foreground">
             Agent thinking
           </span>

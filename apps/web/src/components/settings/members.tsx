@@ -63,7 +63,11 @@ function MemberTableHeader({
 function MembersViewLoading() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
-      <MemberTableHeader disabled onChange={() => {}} teamId={undefined} />
+      <MemberTableHeader
+        disabled
+        onChange={() => {}}
+        teamId={undefined}
+      />
       <div className="flex justify-center p-8">
         <Spinner />
         <span className="ml-2">Loading members...</span>
@@ -203,14 +207,22 @@ function MembersViewContent() {
           // For actual members, use the standardized UserInfo component
           if (row.type === "member" && row.userId) {
             return (
-              <UserInfo userId={row.userId} showDetails maxWidth="250px" />
+              <UserInfo
+                userId={row.userId}
+                showDetails
+                maxWidth="250px"
+              />
             );
           }
 
           // For pending invites, use custom implementation since they don't have userId yet
           return (
             <div className="flex gap-2 items-center min-w-[48px]">
-              <UserAvatar fallback={row.email} size="sm" muted />
+              <UserAvatar
+                fallback={row.email}
+                size="sm"
+                muted
+              />
               <div className="flex flex-col items-start text-left leading-tight w-full">
                 <span
                   className="truncate block text-xs font-medium text-foreground"
@@ -236,7 +248,10 @@ function MembersViewContent() {
         render: (row) => (
           <span className="inline-flex gap-2">
             {row.roles.slice(0, 3).map((role) => (
-              <Badge variant="outline" key={role.id}>
+              <Badge
+                variant="outline"
+                key={role.id}
+              >
                 {role.name}
               </Badge>
             ))}
@@ -273,7 +288,10 @@ function MembersViewContent() {
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button
+              variant="ghost"
+              size="icon"
+            >
               <span className="sr-only">Open menu</span>
               <Icon name="more_horiz" />
             </Button>
@@ -402,7 +420,10 @@ function MembersViewContent() {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <MemberTableHeader onChange={setQuery} teamId={teamId} />
+        <MemberTableHeader
+          onChange={setQuery}
+          teamId={teamId}
+        />
         {members.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No members found. Add team members to get started.

@@ -146,7 +146,10 @@ export function ProfileSettings({
   }, [profile]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Profile</DialogTitle>
@@ -217,7 +220,10 @@ export function ProfileSettings({
             {updateProfile.isPending ? "Saving..." : "Save"}
           </Button>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+            >
               Close
             </Button>
           </DialogClose>

@@ -72,7 +72,10 @@ export function ChatError() {
               asChild
             >
               <Link to={workspaceLink("/settings")}>
-                <Icon name="wallet" className="mr-2" />
+                <Icon
+                  name="wallet"
+                  className="mr-2"
+                />
                 Add credits
               </Link>
             </Button>
@@ -85,7 +88,10 @@ export function ChatError() {
   return (
     <div className="animate-in slide-in-from-bottom duration-300 flex items-center gap-2 ml-3">
       <div className="flex items-center gap-4 p-4 bg-destructive/5 text-destructive rounded-xl text-sm">
-        <Icon name="info" size={20} />
+        <Icon
+          name="info"
+          size={20}
+        />
         <div className="flex flex-col">
           <p>An error occurred while generating the response.</p>
           {error && (
@@ -113,7 +119,10 @@ export function ChatError() {
                     {correlationIdRef.current}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="top" align="center">
+                <TooltipContent
+                  side="top"
+                  align="center"
+                >
                   {copied ? "Copied!" : "Copy"}
                 </TooltipContent>
               </Tooltip>

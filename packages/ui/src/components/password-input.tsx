@@ -72,7 +72,10 @@ function PasswordInput({
           disabled={!value}
           title={copySuccess ? "Copied!" : "Copy token"}
         >
-          <Icon name={copySuccess ? "check" : "content_copy"} size={16} />
+          <Icon
+            name={copySuccess ? "check" : "content_copy"}
+            size={16}
+          />
         </Button>
       </div>
     </div>

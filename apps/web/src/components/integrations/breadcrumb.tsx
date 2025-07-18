@@ -32,7 +32,10 @@ export function IntegrationPageLayout({ tabs }: { tabs: Record<string, Tab> }) {
         actionButtons={<SelectConnectionDialog forceTab="new-connection" />}
         tabs={tabs}
       />
-      <AlertDialog open={!!error} onOpenChange={() => setError(null)}>
+      <AlertDialog
+        open={!!error}
+        onOpenChange={() => setError(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Error</AlertDialogTitle>
@@ -75,7 +78,10 @@ export const Header = ({
             active: !!teamConnectionsViewActive,
             label: (
               <span className="flex items-center gap-2">
-                <Icon name="groups" size={16} />
+                <Icon
+                  name="groups"
+                  size={16}
+                />
                 Team
               </span>
             ),
@@ -91,7 +97,10 @@ export const Header = ({
             tooltip: "Coming soon",
             label: (
               <span className="flex items-center gap-2">
-                <Icon name="lock" size={16} />
+                <Icon
+                  name="lock"
+                  size={16}
+                />
                 Private
               </span>
             ),

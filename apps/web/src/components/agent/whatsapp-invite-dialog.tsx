@@ -41,13 +41,19 @@ export function WhatsAppInviteDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Invite to WhatsApp</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <PhoneInput
             dialCode={dialCode}
             country={country}
@@ -70,7 +76,10 @@ export function WhatsAppInviteDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button
+              type="submit"
+              disabled={isLoading}
+            >
               {isLoading ? "Sending..." : "Send Invite"}
             </Button>
           </DialogFooter>

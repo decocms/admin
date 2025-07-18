@@ -30,7 +30,10 @@ export function RawJsonView({ json }: { json: unknown }) {
         onClick={() => handleCopy(JSON.stringify(json, null, 2))}
         variant="outline"
       >
-        <Icon name={copied ? "check" : "content_copy"} size={16} />
+        <Icon
+          name={copied ? "check" : "content_copy"}
+          size={16}
+        />
       </Button>
       <pre className="p-2 rounded-xl max-h-[200px] border border-border bg-muted text-xs overflow-auto">
         {JSON.stringify(json, null, 2)}

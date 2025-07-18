@@ -52,7 +52,11 @@ const ResponsiveSelect = ({
         onValueChange={setValue}
         {...props}
       >
-        <drawer.Drawer open={open} onOpenChange={setOpen} {...props}>
+        <drawer.Drawer
+          open={open}
+          onOpenChange={setOpen}
+          {...props}
+        >
           {children}
         </drawer.Drawer>
       </select.Select>
@@ -110,7 +114,10 @@ const ResponsiveSelectTrigger = ({
 
   return isMobile ? (
     <drawer.DrawerTrigger asChild>
-      <Button variant="outline" {...props}>
+      <Button
+        variant="outline"
+        {...props}
+      >
         {children}
       </Button>
     </drawer.DrawerTrigger>

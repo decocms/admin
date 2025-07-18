@@ -181,7 +181,10 @@ function UnifiedAvatar({
             fallbackColor,
           )}
         >
-          <Icon name={iconName} size={getIconSize(size)} />
+          <Icon
+            name={iconName}
+            size={getIconSize(size)}
+          />
         </div>
       ) : (
         <>

@@ -49,7 +49,12 @@ export function useTabsForAgent(
     agent.views.forEach((view, index) => {
       const tabKey = `view-${index}`;
       viewTabs[tabKey] = {
-        Component: () => <Preview src={view.url} title={view.name} />,
+        Component: () => (
+          <Preview
+            src={view.url}
+            title={view.name}
+          />
+        ),
         title: view.name,
         initialOpen: index === 0 ? "within" : false, // Open first view by default
         active: index === 0,

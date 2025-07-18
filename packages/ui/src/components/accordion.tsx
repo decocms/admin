@@ -9,7 +9,12 @@ import { cn } from "@deco/ui/lib/utils.ts";
 function Accordion({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
-  return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
+  return (
+    <AccordionPrimitive.Root
+      data-slot="accordion"
+      {...props}
+    />
+  );
 }
 
 function AccordionItem({

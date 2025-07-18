@@ -81,7 +81,11 @@ export function EmptyStateCard({
   return (
     <div className="flex flex-col items-center justify-center h-full w-full py-8">
       <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-        <Icon name="query_stats" size={24} className="text-muted-foreground" />
+        <Icon
+          name="query_stats"
+          size={24}
+          className="text-muted-foreground"
+        />
       </div>
       <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
       <p className="text-xs text-muted-foreground text-center max-w-[200px]">
@@ -130,13 +134,22 @@ function CreditsUsedPerAgentCard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="day" className="text-xs">
+                <SelectItem
+                  value="day"
+                  className="text-xs"
+                >
                   Today
                 </SelectItem>
-                <SelectItem value="week" className="text-xs">
+                <SelectItem
+                  value="week"
+                  className="text-xs"
+                >
                   This Week
                 </SelectItem>
-                <SelectItem value="month" className="text-xs">
+                <SelectItem
+                  value="month"
+                  className="text-xs"
+                >
                   This Month
                 </SelectItem>
               </SelectContent>
@@ -180,13 +193,22 @@ function CreditsUsedPerAgentCard({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="day" className="text-xs">
+              <SelectItem
+                value="day"
+                className="text-xs"
+              >
                 Today
               </SelectItem>
-              <SelectItem value="week" className="text-xs">
+              <SelectItem
+                value="week"
+                className="text-xs"
+              >
                 This Week
               </SelectItem>
-              <SelectItem value="month" className="text-xs">
+              <SelectItem
+                value="month"
+                className="text-xs"
+              >
                 This Month
               </SelectItem>
             </SelectContent>
@@ -206,7 +228,12 @@ function CreditsUsedPerAgentCard({
             <PieChart>
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent hideLabel labelKey="label" />}
+                content={
+                  <ChartTooltipContent
+                    hideLabel
+                    labelKey="label"
+                  />
+                }
               />
               <Pie
                 data={agentsChartData}
@@ -249,7 +276,10 @@ function CreditsUsedPerAgentCard({
         </div>
         <ul className="flex flex-col overflow-y-auto max-h-[200px] gap-4 min-w-[180px]">
           {enrichedAgents.map((agent) => (
-            <li key={agent.id} className="flex items-center gap-2">
+            <li
+              key={agent.id}
+              className="flex items-center gap-2"
+            >
               <Link
                 to={withWorkpaceLink(
                   `/agent/${agent.id}/${crypto.randomUUID()}`,
@@ -324,13 +354,22 @@ function CreditsUsedPerThread({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="day" className="text-xs">
+            <SelectItem
+              value="day"
+              className="text-xs"
+            >
               Today
             </SelectItem>
-            <SelectItem value="week" className="text-xs">
+            <SelectItem
+              value="week"
+              className="text-xs"
+            >
               This Week
             </SelectItem>
-            <SelectItem value="month" className="text-xs">
+            <SelectItem
+              value="month"
+              className="text-xs"
+            >
               This Month
             </SelectItem>
           </SelectContent>
@@ -400,7 +439,10 @@ CreditsUsedPerThread.Fallback = () => (
     </div>
     <CardContent className="flex flex-col items-center justify-center gap-2 p-3 overflow-y-auto">
       {Array.from({ length: 10 }).map((_, index) => (
-        <div key={index} className="w-full h-[72px] bg-muted rounded-md" />
+        <div
+          key={index}
+          className="w-full h-[72px] bg-muted rounded-md"
+        />
       ))}
     </CardContent>
   </Card>
@@ -496,7 +538,10 @@ function ThreadDetails({ thread, withWorkpaceLink }: ThreadDetailsProps) {
           className="mt-2 w-full justify-center"
         >
           <Link to={withWorkpaceLink(`/audit/${thread.id}`)}>
-            <Icon name="open_in_new" size={16} />
+            <Icon
+              name="open_in_new"
+              size={16}
+            />
             View messages
           </Link>
         </Button>
@@ -559,7 +604,10 @@ export default function Usage() {
         </div>
         <div className="w-full h-full max-h-[400px]">
           <Suspense fallback={<CreditsUsedPerThread.Fallback />}>
-            <CreditsUsedPerThread agents={agents} teamMembers={members} />
+            <CreditsUsedPerThread
+              agents={agents}
+              teamMembers={members}
+            />
           </Suspense>
         </div>
       </div>

@@ -42,7 +42,10 @@ function ListTriggersSkeleton() {
         <div>
           <div className="flex flex-col divide-y divide-border">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4">
+              <div
+                key={i}
+                className="flex items-center gap-4 px-6 py-4"
+              >
                 <Skeleton className="w-64 h-6 rounded" />
                 <Skeleton className="w-44 h-6 rounded" />
                 <Skeleton className="w-32 h-6 rounded" />
@@ -197,7 +200,12 @@ function TableView({ triggers }: { triggers: TriggerOutput[] }) {
       );
       const toolName = data.callTool.toolName;
 
-      return <IntegrationInfo integration={integration} toolName={toolName} />;
+      return (
+        <IntegrationInfo
+          integration={integration}
+          toolName={toolName}
+        />
+      );
     }
 
     return <span className="text-muted-foreground">Unknown target</span>;

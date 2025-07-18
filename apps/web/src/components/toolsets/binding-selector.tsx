@@ -117,7 +117,10 @@ export function BindingSelector({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent className="h-full max-w-full md:h-auto md:max-w-[900px] w-full p-0 gap-0 flex flex-col border-none rounded-none md:rounded-lg [&>button]:hidden">
         <DialogTitle className="hidden">Bindings List</DialogTitle>
         <div className="flex flex-col">
@@ -152,7 +155,10 @@ export function BindingSelector({
                   <div className="p-4">
                     <div className="space-y-2">
                       {filtered?.map((integration) => (
-                        <ErrorBoundary key={integration.id} fallback={null}>
+                        <ErrorBoundary
+                          key={integration.id}
+                          fallback={null}
+                        >
                           <IntegrationListItem
                             key={`mobile-${integration.id}`}
                             integration={integration}
@@ -179,7 +185,10 @@ export function BindingSelector({
                     size="icon"
                     onClick={() => setSelectedIntegration(null)}
                   >
-                    <Icon name="arrow_back" size={20} />
+                    <Icon
+                      name="arrow_back"
+                      size={20}
+                    />
                   </Button>
                   <span className="text-muted-foreground">Back</span>
                 </div>
@@ -214,7 +223,10 @@ export function BindingSelector({
           )}
         </div>
         <div className="flex justify-end gap-2 px-6 py-4 border-t mt-auto">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button

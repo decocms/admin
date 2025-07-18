@@ -91,7 +91,11 @@ function ConnectionInstallSuccess() {
         ) : (
           <>
             <CardHeader className="text-center">
-              <Icon name="check_circle" size={36} className="text-special" />
+              <Icon
+                name="check_circle"
+                size={36}
+                className="text-special"
+              />
               <CardTitle className="text-xl font-medium">
                 Integration Connected Successfully!
               </CardTitle>

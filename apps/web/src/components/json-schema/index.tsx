@@ -47,7 +47,10 @@ export default function Form<T extends FieldValues = Record<string, unknown>>({
 
   // Handle root schema
   return (
-    <form className="space-y-4" onSubmit={onSubmit}>
+    <form
+      className="space-y-4"
+      onSubmit={onSubmit}
+    >
       {schema.type === "object" && schema.properties && (
         <ObjectProperties<T>
           properties={schema.properties}
@@ -311,7 +314,10 @@ function Field<T extends FieldValues = Record<string, unknown>>({
     }
     default:
       return (
-        <div key={name} className="text-sm text-muted-foreground">
+        <div
+          key={name}
+          className="text-sm text-muted-foreground"
+        >
           Field type '{type}' not supported
         </div>
       );

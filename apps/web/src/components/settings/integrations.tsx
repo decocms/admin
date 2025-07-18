@@ -231,7 +231,10 @@ function Knowledge() {
 
   if (hasNoFiles) {
     return (
-      <div className="flex flex-col gap-2" key="empty-kb">
+      <div
+        className="flex flex-col gap-2"
+        key="empty-kb"
+      >
         <KnowledgeHeading />
         <div className="flex flex-col gap-2 items-center justify-center h-full min-h-[200px] rounded-xl bg-muted border border-border border-dashed">
           <img
@@ -252,7 +255,10 @@ function Knowledge() {
   }
 
   return (
-    <FormItem className="flex flex-col gap-2" key="files-kb">
+    <FormItem
+      className="flex flex-col gap-2"
+      key="files-kb"
+    >
       <div className="flex items-center gap-2">
         <div className="grow flex flex-col gap-2">
           <KnowledgeHeading />
@@ -434,7 +440,10 @@ function ToolsAndKnowledgeTab() {
     <ScrollArea className="h-full w-full">
       <Form {...form}>
         <div className="h-full w-full p-4 max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             <Connections />
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
             <Knowledge />

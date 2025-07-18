@@ -33,7 +33,7 @@
       "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSameLine": false,
-      "attributePosition": "auto"
+      "attributePosition": "multiline"
     },
     "jsxRuntime": "transparent"
   },

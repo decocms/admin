@@ -57,7 +57,10 @@ export function SelectField<T extends FieldValues = FieldValues>({
             </FormControl>
             <SelectContent>
               {options.map((option) => (
-                <SelectItem key={option} value={option}>
+                <SelectItem
+                  key={option}
+                  value={option}
+                >
                   {option}
                 </SelectItem>
               ))}

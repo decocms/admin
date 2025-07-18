@@ -246,7 +246,10 @@ export function WithWorkspaceTheme({
           </div>
         </div>
       )}
-      <div className="h-full w-full" style={variables as CSSProperties}>
+      <div
+        className="h-full w-full"
+        style={variables as CSSProperties}
+      >
         {children}
       </div>
     </>

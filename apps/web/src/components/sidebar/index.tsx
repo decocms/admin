@@ -135,7 +135,10 @@ function DeleteThreadModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Thread</DialogTitle>
@@ -145,7 +148,10 @@ function DeleteThreadModal({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+          >
             Cancel
           </Button>
           <Button
@@ -177,7 +183,10 @@ function ThreadActions({
 
   return (
     <>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu
+        open={open}
+        onOpenChange={setOpen}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -195,7 +204,10 @@ function ThreadActions({
             />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuContent
+          align="end"
+          onClick={(e) => e.stopPropagation()}
+        >
           <DropdownMenuItem
             onClick={(e) => {
               e.preventDefault();
@@ -204,7 +216,11 @@ function ThreadActions({
               onEdit();
             }}
           >
-            <Icon name="edit" className="mr-2" size={16} />
+            <Icon
+              name="edit"
+              className="mr-2"
+              size={16}
+            />
             Rename
           </DropdownMenuItem>
           {!isCurrentThread && (
@@ -217,7 +233,11 @@ function ThreadActions({
               }}
               className="text-destructive focus:text-destructive"
             >
-              <Icon name="delete" className="mr-2" size={16} />
+              <Icon
+                name="delete"
+                className="mr-2"
+                size={16}
+              />
               Delete
             </DropdownMenuItem>
           )}
@@ -281,7 +301,10 @@ function SidebarThreadItem({
   };
 
   return (
-    <SidebarMenuItem key={thread.id} className="relative group/item">
+    <SidebarMenuItem
+      key={thread.id}
+      className="relative group/item"
+    >
       <div className="w-full">
         <WithActive to={buildThreadUrl(thread)}>
           {({ isActive }) => (
@@ -419,7 +442,10 @@ function SidebarThreads() {
                 <SidebarGroupContent>
                   <SidebarGroupLabel>{date}</SidebarGroupLabel>
                   <SidebarMenu className="gap-0.5">
-                    <SidebarThreadList threads={threads} agents={agents} />
+                    <SidebarThreadList
+                      threads={threads}
+                      agents={agents}
+                    />
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -433,7 +459,10 @@ function SidebarThreads() {
 SidebarThreads.Skeleton = () => (
   <div className="flex flex-col gap-4">
     {Array.from({ length: 20 }).map((_, index) => (
-      <div key={index} className="w-full h-10 px-2">
+      <div
+        key={index}
+        className="w-full h-10 px-2"
+      >
         <Skeleton className="h-full bg-sidebar-accent rounded-sm" />
       </div>
     ))}

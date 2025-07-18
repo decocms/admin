@@ -221,7 +221,10 @@ export default function Page() {
                     promptVersion ? "opacity-100" : "opacity-0 w-0",
                   )}
                 >
-                  <Button variant="default" onClick={handleRestoreVersion}>
+                  <Button
+                    variant="default"
+                    onClick={handleRestoreVersion}
+                  >
                     Restore version
                   </Button>
                 </div>

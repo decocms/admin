@@ -283,7 +283,10 @@ export function Channels({ className }: ChannelsProps) {
               className="gap-2 h-8 w-8"
               type="button"
             >
-              <Icon name="add" size={16} />
+              <Icon
+                name="add"
+                size={16}
+              />
             </Button>
           </div>
         </div>
@@ -292,7 +295,11 @@ export function Channels({ className }: ChannelsProps) {
       {agentChannels.map((channel: Channel) => {
         if (!channel) return null;
         return (
-          <ChannelCard key={channel.id} channel={channel} variant="agent">
+          <ChannelCard
+            key={channel.id}
+            channel={channel}
+            variant="agent"
+          >
             <button
               className="ml-auto cursor-pointer"
               type="button"
@@ -302,7 +309,10 @@ export function Channels({ className }: ChannelsProps) {
               {isLeavingChannel(channel.id) ? (
                 <Spinner size="sm" />
               ) : (
-                <Icon name="close" size={16} />
+                <Icon
+                  name="close"
+                  size={16}
+                />
               )}
             </button>
           </ChannelCard>
@@ -360,7 +370,10 @@ export function Channels({ className }: ChannelsProps) {
                     {isChannelRemoving(channel.id) ? (
                       <Spinner size="xs" />
                     ) : (
-                      <Icon name="delete" size={16} />
+                      <Icon
+                        name="delete"
+                        size={16}
+                      />
                     )}
                   </button>
                 </div>
@@ -425,7 +438,10 @@ export function Channels({ className }: ChannelsProps) {
                 </>
               ) : (
                 <>
-                  <Icon name="add" size={16} />
+                  <Icon
+                    name="add"
+                    size={16}
+                  />
                   Create Channel
                 </>
               )}
@@ -497,10 +513,16 @@ function IntegrationSelect({
 
   return (
     <div className="w-full">
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+      >
         <DialogTrigger>
           <Button>
-            <Icon name="add" size={16} />
+            <Icon
+              name="add"
+              size={16}
+            />
             Select integration
           </Button>
         </DialogTrigger>
@@ -596,7 +618,10 @@ function ConnectionChannels({
             <SelectContent className="w-full">
               {availableChannels?.channels?.map((channel) => {
                 return (
-                  <SelectItem key={channel.value} value={channel.value}>
+                  <SelectItem
+                    key={channel.value}
+                    value={channel.value}
+                  >
                     {channel.label}
                   </SelectItem>
                 );

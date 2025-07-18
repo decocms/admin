@@ -62,7 +62,10 @@ function CopyLinkButton({
         }, 2000);
       }}
     >
-      <Icon name={isCopied ? "check" : "link"} size={16} />
+      <Icon
+        name={isCopied ? "check" : "link"}
+        size={16}
+      />
       Copy link
     </Button>
   );
@@ -135,7 +138,10 @@ function SettingsTab() {
     <ScrollArea className="h-full w-full">
       <Form {...form}>
         <div className="h-full w-full p-4 max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="space-y-6 py-2 pb-16">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6 py-2 pb-16"
+          >
             <FormField
               name="name"
               render={({ field }) => (
@@ -176,7 +182,10 @@ function SettingsTab() {
                                         className="text-white text-xl"
                                       />
                                     </div>
-                                    <Input type="hidden" {...field} />
+                                    <Input
+                                      type="hidden"
+                                      {...field}
+                                    />
                                   </>
                                 )}
                               </div>
@@ -189,7 +198,10 @@ function SettingsTab() {
                     <div className="flex-1 flex flex-col gap-1">
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter agent name" {...field} />
+                        <Input
+                          placeholder="Enter agent name"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </div>
@@ -349,7 +361,10 @@ function SettingsTab() {
                           </SelectTrigger>
                           <SelectContent>
                             {roles.map((role) => (
-                              <SelectItem key={role.id} value={role.name}>
+                              <SelectItem
+                                key={role.id}
+                                value={role.name}
+                              >
                                 <Icon
                                   name={
                                     role.name === "owner"

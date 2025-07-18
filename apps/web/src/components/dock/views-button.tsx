@@ -48,10 +48,16 @@ function ViewsButtonInner({ tabs }: { tabs: Record<string, Tab> }) {
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger>
         <div className="w-8 h-8 hover:bg-background flex items-center justify-center cursor-pointer rounded-xl">
-          <Icon name="layers" size={16} />
+          <Icon
+            name="layers"
+            size={16}
+          />
         </div>
       </ResponsiveDropdownTrigger>
-      <ResponsiveDropdownContent align="start" className="p-2 md:min-w-48">
+      <ResponsiveDropdownContent
+        align="start"
+        className="p-2 md:min-w-48"
+      >
         <span className="p-1 text-xs text-muted-foreground font-medium">
           Views
         </span>

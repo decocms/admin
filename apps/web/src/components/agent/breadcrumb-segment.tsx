@@ -19,7 +19,10 @@ export function AgentBreadcrumbSegment({
       shouldCatch={(e) => e instanceof NotFoundError}
     >
       <Suspense fallback={<AgentBreadcrumbSegment.Loading />}>
-        <AgentBreadcrumbSegment.UI agentId={agentId} variant={variant} />
+        <AgentBreadcrumbSegment.UI
+          agentId={agentId}
+          variant={variant}
+        />
       </Suspense>
     </ErrorBoundary>
   );
@@ -41,7 +44,11 @@ AgentBreadcrumbSegment.UI = ({
   return (
     <div className="flex items-center gap-2">
       {variant !== "summary" && (
-        <AgentAvatar url={agent.avatar} fallback={agent.name} size="xs" />
+        <AgentAvatar
+          url={agent.avatar}
+          fallback={agent.name}
+          size="xs"
+        />
       )}
       <h1 className="text-sm font-medium tracking-tight text-foreground text-nowrap">
         {agent.name}

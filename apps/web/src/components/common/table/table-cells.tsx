@@ -101,7 +101,11 @@ function UserInfo({
         <div
           className={`flex items-center gap-2 min-w-[48px] ${className ?? ""}`}
         >
-          <UserAvatar url={avatarUrl} fallback={name} size="sm" />
+          <UserAvatar
+            url={avatarUrl}
+            fallback={name}
+            size="sm"
+          />
           <div
             className={`flex-col items-start text-left leading-tight w-full ${
               showDetails ? "hidden md:flex" : "flex"

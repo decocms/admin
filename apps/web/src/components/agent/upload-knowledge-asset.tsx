@@ -46,7 +46,10 @@ function FileIcon({ filename }: { filename: string }) {
 
   return (
     <span className="relative w-6 flex items-center justify-center">
-      <svg width={24} height={24}>
+      <svg
+        width={24}
+        height={24}
+      >
         <use href="/img/sheet.svg" />
       </svg>
       <span className={cn("mt-2 absolute uppercase text-[6px] spacing", color)}>
@@ -158,7 +161,10 @@ export function KnowledgeBaseFileList({
                 className="flex-shrink-0 h-8 w-8 p-0"
                 disabled={!file.fileUrl}
               >
-                <Icon name="more_horiz" size={16} />
+                <Icon
+                  name="more_horiz"
+                  size={16}
+                />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -182,7 +188,11 @@ export function KnowledgeBaseFileList({
                 }}
                 className="text-destructive focus:text-destructive"
               >
-                <Icon name="delete" size={16} className="mr-2" />
+                <Icon
+                  name="delete"
+                  size={16}
+                  className="mr-2"
+                />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -244,7 +254,10 @@ export function AddFileToKnowledgeButton({
         onClick={triggerFileInput}
         disabled={isUploading || disabled}
       >
-        <Icon name="add" size={16} />
+        <Icon
+          name="add"
+          size={16}
+        />
         Add file
       </Button>
     </div>

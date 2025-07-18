@@ -139,7 +139,10 @@ function ModelsView() {
           className="ml-auto"
           onClick={() => setIsOpen(true)}
         >
-          <Icon name="add" className="mr-2 h-4 w-4" />
+          <Icon
+            name="add"
+            className="mr-2 h-4 w-4"
+          />
           Add Model
         </Button>
       </div>
@@ -153,13 +156,19 @@ function ModelsView() {
 const KeyCell = ({ model, onClick }: { model: Model; onClick: () => void }) => {
   if (model.byDeco) {
     return (
-      <Button variant="outline" onClick={onClick}>
+      <Button
+        variant="outline"
+        onClick={onClick}
+      >
         Add Custom Key
       </Button>
     );
   }
   return (
-    <span className="flex items-center gap-2 px-4 py-2" onClick={onClick}>
+    <span
+      className="flex items-center gap-2 px-4 py-2"
+      onClick={onClick}
+    >
       <Icon name="key" /> Custom Key
     </span>
   );
@@ -187,7 +196,10 @@ const ModelActions = ({
           size="icon"
           onClick={(e) => e.stopPropagation()}
         >
-          <Icon name="more_vert" size={20} />
+          <Icon
+            name="more_vert"
+            size={20}
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -198,7 +210,10 @@ const ModelActions = ({
             onEditClick();
           }}
         >
-          <Icon name="edit" className="h-4 w-4 mr-2" />
+          <Icon
+            name="edit"
+            className="h-4 w-4 mr-2"
+          />
           Edit
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -208,7 +223,10 @@ const ModelActions = ({
             onDeleteClick();
           }}
         >
-          <Icon name="delete" className="h-4 w-4 mr-2" />
+          <Icon
+            name="delete"
+            className="h-4 w-4 mr-2"
+          />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -228,7 +246,10 @@ const ModelInfoCell = ({ model }: { model: Model }) => {
           size="xs"
         />
       ) : (
-        <Icon name="conversion_path" className="text-muted-foreground" />
+        <Icon
+          name="conversion_path"
+          className="text-muted-foreground"
+        />
       )}
       <div>
         <div className="flex items-center gap-2">
@@ -435,7 +456,10 @@ function TableView({ models }: { models: Model[] }) {
         onSort={handleSort}
         onRowClick={(model) => handleModelOpenChange(true, model)}
       />
-      <Dialog open={modalOpen} onOpenChange={handleModelOpenChange}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={handleModelOpenChange}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Model</DialogTitle>
@@ -561,11 +585,18 @@ function TableView({ models }: { models: Model[] }) {
                 />
               </div>
               <div className="flex items-center justify-end gap-3">
-                <Button type="submit" variant="default" disabled={isMutating}>
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={isMutating}
+                >
                   {isMutating ? "Saving..." : "Save"}
                 </Button>
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">
+                  <Button
+                    type="button"
+                    variant="outline"
+                  >
                     Discard
                   </Button>
                 </DialogClose>

@@ -50,8 +50,14 @@ export function AuditFilters({
       </div>
       {sortedMembers.length > 0 && (
         <div className="flex flex-col gap-2 min-w-[180px]">
-          <Select value={selectedUser ?? "all"} onValueChange={onUserChange}>
-            <SelectTrigger id="user-select" className="w-full">
+          <Select
+            value={selectedUser ?? "all"}
+            onValueChange={onUserChange}
+          >
+            <SelectTrigger
+              id="user-select"
+              className="w-full"
+            >
               <SelectValue placeholder="All users" />
             </SelectTrigger>
             <SelectContent>
@@ -63,7 +69,10 @@ export function AuditFilters({
                   member.user_id;
                 const email = member.profiles?.email;
                 return (
-                  <SelectItem key={member.user_id} value={member.user_id}>
+                  <SelectItem
+                    key={member.user_id}
+                    value={member.user_id}
+                  >
                     <span>
                       {name}
                       {email && email !== name && (

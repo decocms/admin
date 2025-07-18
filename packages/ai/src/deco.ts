@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: ok
 import type { JSONSchema7 } from "@ai-sdk/provider";
 
 export interface Tool {

@@ -5,7 +5,7 @@
  * @param tools - Object with tool names as keys and tool objects as values
  * @returns Array of tools with name added to each tool object
  */
-// deno-lint-ignore no-explicit-any
+// biome-ignore-all lint/suspicious/noExplicitAny: ok
 export function mapToolEntries<T extends Record<string, any>>(
   tools: T,
 ): Array<T[keyof T] & { name: string }> {

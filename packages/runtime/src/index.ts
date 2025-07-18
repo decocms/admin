@@ -136,8 +136,7 @@ export class UnauthorizedError extends Error {
   }
 }
 
-const AUTH_CALLBACK_ENDPOINT = "/auth/callback";
-
+const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
 const AUTHENTICATED = (user?: unknown) => () => {
   return user as User;
 };
@@ -261,13 +260,18 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       } catch (e) {
         if (e instanceof UnauthorizedError) {
           const referer = req.headers.get("referer");
-          e.redirectTo.searchParams.set(
-            "state",
-            StateParser.stringify({
-              next: referer ?? req.url,
-            }),
-          );
-          return Response.redirect(e.redirectTo, 302);
+          const isBrowser = typeof referer === "string" &&
+            req.headers.get("user-agent") != null;
+          if (isBrowser) {
+            e.redirectTo.searchParams.set(
+              "state",
+              StateParser.stringify({
+                next: referer ?? req.url,
+              }),
+            );
+            return Response.redirect(e.redirectTo, 302);
+          }
+          return new Response(null, { status: 401 });
         }
         throw e;
       }

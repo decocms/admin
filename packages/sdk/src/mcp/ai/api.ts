@@ -7,7 +7,7 @@ import {
   type LanguageModelUsage,
 } from "ai";
 import { z } from "zod";
-import { DEFAULT_MODEL } from "../../constants.ts";
+import { DEFAULT_MODEL, WELL_KNOWN_MODELS } from "../../constants.ts";
 import type { PlanWithTeamMetadata } from "../../plan.ts";
 import {
   assertHasWorkspace,
@@ -86,16 +86,21 @@ const validateWalletBalance = async (c: AppContext) => {
     throw new InternalServerError("Insufficient funds");
   }
 
-  return wallet;
+  return { wallet };
 };
 
 const setupLLMInstance = async (modelId: string, c: AppContext) => {
   assertHasWorkspace(c);
-  const llmVault = new SupabaseLLMVault(
-    c.db,
-    c.envVars.LLMS_ENCRYPTION_KEY,
-    c.workspace.value,
+  const wellKnownModel = WELL_KNOWN_MODELS.find((model) =>
+    model.id === modelId
   );
+  const llmVault = wellKnownModel || !c.envVars.LLMS_ENCRYPTION_KEY
+    ? undefined
+    : new SupabaseLLMVault(
+      c.db,
+      c.envVars.LLMS_ENCRYPTION_KEY,
+      c.workspace.value,
+    );
   const llmConfig = await getLLMConfig({
     modelId,
     llmVault,
@@ -264,7 +269,7 @@ export const aiGenerate = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const wallet = await validateWalletBalance(c);
+    const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const llm = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
@@ -306,7 +311,7 @@ export const aiGenerateObject = createTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const wallet = await validateWalletBalance(c);
+    const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
     const llm = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);

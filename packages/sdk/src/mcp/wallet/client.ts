@@ -310,6 +310,18 @@ export interface WalletAPI {
         id: string;
         label: string;
         total: string;
+        transactions: Array<{
+          id: string;
+          timestamp: string;
+          amount: string;
+          agentId: string;
+          generatedBy: string;
+          tokens: {
+            totalTokens: number;
+            promptTokens: number;
+            completionTokens: number;
+          };
+        }>;
       }[];
     };
   };
@@ -330,6 +342,18 @@ export interface WalletAPI {
           promptTokens: number;
           completionTokens: number;
         };
+        transactions: Array<{
+          id: string;
+          timestamp: string;
+          amount: string;
+          agentId: string;
+          generatedBy: string;
+          tokens: {
+            totalTokens: number;
+            promptTokens: number;
+            completionTokens: number;
+          };
+        }>;
       }[];
     };
   };

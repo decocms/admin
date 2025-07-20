@@ -94,7 +94,7 @@ export const listThreads = createTool({
   description:
     "List all threads in a workspace with cursor-based pagination and filtering",
   inputSchema: z.object({
-    limit: z.number().min(1).max(20).default(10).optional(),
+    limit: z.number().min(1).max(100).default(10).optional(),
     agentId: z.string().optional(),
     resourceId: z.string().optional(),
     orderBy: z.enum([

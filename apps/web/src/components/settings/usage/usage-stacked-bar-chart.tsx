@@ -8,101 +8,6 @@ import {
 import { UsageType } from "./usage.tsx";
 import { color } from "./util.ts";
 
-interface UsageItem {
-  id: string;
-  total: string | number;
-  generatedBy?: string;
-}
-
-interface ThreadItem extends UsageItem {
-  generatedBy: string;
-}
-
-function parseCost(cost: string | number): number {
-  if (typeof cost === "number") return cost;
-  const parsed = parseFloat(cost.replace("$", ""));
-  return isNaN(parsed) ? 0 : parsed;
-}
-
-function generateDistributionFactors(totalPeriods: number): number[] {
-  const factors: number[] = [];
-
-  for (let i = 0; i < totalPeriods; i++) {
-    const seed = i * 12345 + totalPeriods * 67890;
-    const pseudoRandom = Math.abs(Math.sin(seed)) * 0.5 + 0.5;
-    const normalizedIndex = i / (totalPeriods - 1);
-    const bellCurve = Math.exp(-Math.pow(normalizedIndex - 0.5, 2) / 0.2);
-    const factor = pseudoRandom * (0.5 + bellCurve * 0.5);
-    factors.push(factor);
-  }
-
-  const sum = factors.reduce((acc, factor) => acc + factor, 0);
-  return factors.map((factor) => factor / sum);
-}
-
-function getPeriods(timeRange: string): number {
-  return timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
-}
-
-function formatDate(
-  date: Date,
-  timeRange: string,
-  periods: number,
-  index: number,
-): string {
-  const adjustedDate = new Date(date);
-
-  if (timeRange === "day") {
-    adjustedDate.setHours(adjustedDate.getHours() - (periods - 1 - index));
-    return adjustedDate.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } else if (timeRange === "week") {
-    adjustedDate.setDate(adjustedDate.getDate() - (periods - 1 - index));
-    return adjustedDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  } else {
-    const weeksAgo = periods - 1 - index;
-    adjustedDate.setDate(adjustedDate.getDate() - (weeksAgo * 7));
-    const startWeek = new Date(adjustedDate);
-    const endWeek = new Date(adjustedDate);
-    endWeek.setDate(endWeek.getDate() + 6);
-    return `${
-      startWeek.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-    }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
-  }
-}
-
-function formatFullDate(
-  date: Date,
-  timeRange: string,
-  periods: number,
-  index: number,
-): string {
-  const adjustedDate = new Date(date);
-
-  if (timeRange === "day") {
-    adjustedDate.setHours(adjustedDate.getHours() - (periods - 1 - index));
-  } else if (timeRange === "week") {
-    adjustedDate.setDate(adjustedDate.getDate() - (periods - 1 - index));
-  } else {
-    const weeksAgo = periods - 1 - index;
-    adjustedDate.setDate(adjustedDate.getDate() - (weeksAgo * 7));
-  }
-
-  return adjustedDate.toLocaleDateString("en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
 function roundCosts(data: ChartItemData[]): ChartItemData[] {
   const roundedData = data.map((item) => ({
     ...item,
@@ -129,57 +34,111 @@ function createAgentChartData(
     return [];
   }
 
-  const periods = getPeriods(timeRange);
-  const distributionFactors = generateDistributionFactors(periods);
+  // Collect all transactions from all agents
+  const allTransactions: Array<{
+    timestamp: string;
+    amount: number;
+    agentId: string;
+    agentName: string;
+    agentAvatar: string;
+  }> = [];
 
-  const agentsWithUsage = agents
-    .filter((agent) => agentUsage.items?.some((item) => item.id === agent.id))
-    .map((agent) => {
-      const usage = agentUsage.items?.find((item) => item.id === agent.id);
-      return {
-        agent,
-        totalCost: usage ? parseCost(usage.total) : 0,
-      };
-    })
-    .sort((a, b) => b.totalCost - a.totalCost)
-    .slice(0, 5);
+  agentUsage.items.forEach((item) => {
+    const agent = agents.find((a) => a.id === item.id);
+    if (agent && item.transactions) {
+      item.transactions.forEach((transaction) => {
+        allTransactions.push({
+          timestamp: transaction.timestamp,
+          amount: transaction.amount,
+          agentId: item.id,
+          agentName: agent.name,
+          agentAvatar: agent.avatar,
+        });
+      });
+    }
+  });
 
-  if (agentsWithUsage.length === 0) {
+  if (allTransactions.length === 0) {
     return [];
   }
 
-  const allAgentsCost = agentUsage.items?.reduce(
-    (sum: number, item) => sum + parseCost(item.total),
-    0,
-  ) || 0;
-  const top5Cost = agentsWithUsage.reduce(
-    (sum, item) => sum + item.totalCost,
-    0,
-  );
-  const otherAgentsCost = Math.max(0, allAgentsCost - top5Cost);
+  // Group transactions by time periods based on timeRange
+  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
+  const now = new Date();
+  const periodData: ChartDayData[] = [];
 
-  return Array.from({ length: periods }, (_, i) => {
-    const periodFactor = distributionFactors[i];
-    const date = new Date();
+  for (let i = 0; i < periods; i++) {
+    const periodStart = new Date(now);
+    const periodEnd = new Date(now);
 
-    const top5AgentData = agentsWithUsage.map(({ agent, totalCost }) => ({
-      id: agent.id,
-      name: agent.name,
-      avatar: agent.avatar,
-      cost: totalCost * periodFactor,
-      color: color(agent.id),
+    if (timeRange === "day") {
+      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
+      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
+    } else if (timeRange === "week") {
+      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
+      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
+    } else {
+      const weeksAgo = periods - 1 - i;
+      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
+      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
+    }
+
+    // Filter transactions for this period
+    const periodTransactions = allTransactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.timestamp);
+      return transactionDate >= periodStart && transactionDate < periodEnd;
+    });
+
+    // Group by agent and calculate costs
+    const agentCosts = new Map<
+      string,
+      { cost: number; name: string; avatar: string }
+    >();
+
+    periodTransactions.forEach((transaction) => {
+      const existing = agentCosts.get(transaction.agentId);
+      if (existing) {
+        existing.cost += transaction.amount;
+      } else {
+        agentCosts.set(transaction.agentId, {
+          cost: transaction.amount,
+          name: transaction.agentName,
+          avatar: transaction.agentAvatar,
+        });
+      }
+    });
+
+    // Get top 5 agents for this period
+    const top5Agents = Array.from(agentCosts.entries())
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .slice(0, 5);
+
+    const top5AgentData = top5Agents.map(([agentId, data]) => ({
+      id: agentId,
+      name: data.name,
+      avatar: data.avatar,
+      cost: data.cost,
+      color: color(agentId),
       percentage: 0,
       type: "agent",
     }));
 
+    // Calculate "Other" category
+    const totalPeriodCost = Array.from(agentCosts.values()).reduce(
+      (sum, data) => sum + data.cost,
+      0,
+    );
+    const top5Cost = top5AgentData.reduce((sum, item) => sum + item.cost, 0);
+    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
+
     const allAgentData = [...top5AgentData];
 
-    if (otherAgentsCost > 0) {
+    if (otherCost > 0) {
       allAgentData.push({
         id: "other",
         name: "Other",
         avatar: "",
-        cost: otherAgentsCost * periodFactor,
+        cost: otherCost,
         color: "#E5E7EB",
         percentage: 0,
         type: "agent",
@@ -189,13 +148,42 @@ function createAgentChartData(
     const roundedAgentData = roundCosts(allAgentData);
     const total = roundedAgentData.reduce((sum, item) => sum + item.cost, 0);
 
-    return {
-      date: formatDate(date, timeRange, periods, i),
-      fullDate: formatFullDate(date, timeRange, periods, i),
+    // Format date for display
+    let dateLabel: string;
+    if (timeRange === "day") {
+      dateLabel = periodStart.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (timeRange === "week") {
+      dateLabel = periodStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    } else {
+      const endWeek = new Date(periodStart);
+      endWeek.setDate(endWeek.getDate() + 6);
+      dateLabel = `${
+        periodStart.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
+    }
+
+    periodData.push({
+      date: dateLabel,
+      fullDate: periodStart.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
       items: roundedAgentData,
       total,
-    };
-  });
+    });
+  }
+
+  return periodData;
 }
 
 function createUserChartData(
@@ -207,79 +195,112 @@ function createUserChartData(
     return [];
   }
 
-  const periods = getPeriods(timeRange);
-  const distributionFactors = generateDistributionFactors(periods);
-
-  // Group threads by user and calculate total cost per user
-  const userMap = new Map<
-    string,
-    { totalCost: number; member: Member | null }
-  >();
+  // Collect all transactions from all threads
+  const allTransactions: Array<{
+    timestamp: string;
+    amount: number;
+    userId: string;
+    userName: string;
+    member: Member | null;
+  }> = [];
 
   threadUsage.items.forEach((thread) => {
-    const userId = thread.generatedBy;
-    const threadCost = parseCost(thread.total);
-
-    if (!userMap.has(userId)) {
-      const member = members.find((m) => m.profiles.id === userId);
-      userMap.set(userId, {
-        totalCost: 0,
-        member: member || null,
+    const member = members.find((m) => m.profiles.id === thread.generatedBy);
+    if (thread.transactions) {
+      thread.transactions.forEach((transaction) => {
+        allTransactions.push({
+          timestamp: transaction.timestamp,
+          amount: transaction.amount,
+          userId: thread.generatedBy,
+          userName: member?.profiles?.email || "Unknown User",
+          member: member || null,
+        });
       });
     }
-
-    userMap.get(userId)!.totalCost += threadCost;
   });
 
-  const usersWithCost = Array.from(userMap.entries())
-    .map(([userId, data]) => ({
-      userId,
-      totalCost: data.totalCost,
-      member: data.member,
-      name: data.member?.profiles?.email || "Unknown User",
-    }))
-    .sort((a, b) => b.totalCost - a.totalCost)
-    .slice(0, 5);
-
-  if (usersWithCost.length === 0) {
+  if (allTransactions.length === 0) {
     return [];
   }
 
-  const totalUserCost = Array.from(userMap.values()).reduce(
-    (sum, user) => sum + user.totalCost,
-    0,
-  );
-  const top5UserCost = usersWithCost.reduce(
-    (sum, user) => sum + user.totalCost,
-    0,
-  );
-  const otherUserCost = Math.max(0, totalUserCost - top5UserCost);
+  // Group transactions by time periods based on timeRange
+  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
+  const now = new Date();
+  const periodData: ChartDayData[] = [];
 
-  return Array.from({ length: periods }, (_, i) => {
-    const periodFactor = distributionFactors[i];
-    const date = new Date();
+  for (let i = 0; i < periods; i++) {
+    const periodStart = new Date(now);
+    const periodEnd = new Date(now);
 
-    const top5UserData = usersWithCost.map((
-      { userId, totalCost, name, member },
-    ) => ({
+    if (timeRange === "day") {
+      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
+      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
+    } else if (timeRange === "week") {
+      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
+      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
+    } else {
+      const weeksAgo = periods - 1 - i;
+      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
+      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
+    }
+
+    // Filter transactions for this period
+    const periodTransactions = allTransactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.timestamp);
+      return transactionDate >= periodStart && transactionDate < periodEnd;
+    });
+
+    // Group by user and calculate costs
+    const userCosts = new Map<
+      string,
+      { cost: number; name: string; member: Member | null }
+    >();
+
+    periodTransactions.forEach((transaction) => {
+      const existing = userCosts.get(transaction.userId);
+      if (existing) {
+        existing.cost += transaction.amount;
+      } else {
+        userCosts.set(transaction.userId, {
+          cost: transaction.amount,
+          name: transaction.userName,
+          member: transaction.member,
+        });
+      }
+    });
+
+    // Get top 5 users for this period
+    const top5Users = Array.from(userCosts.entries())
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .slice(0, 5);
+
+    const top5UserData = top5Users.map(([userId, data]) => ({
       id: userId,
-      name: name,
+      name: data.name,
       avatar: "",
-      cost: totalCost * periodFactor,
+      cost: data.cost,
       color: color(userId),
       percentage: 0,
       type: "user",
-      member: member,
+      member: data.member,
     }));
+
+    // Calculate "Other" category
+    const totalPeriodCost = Array.from(userCosts.values()).reduce(
+      (sum, data) => sum + data.cost,
+      0,
+    );
+    const top5Cost = top5UserData.reduce((sum, item) => sum + item.cost, 0);
+    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
 
     const allUserData = [...top5UserData];
 
-    if (otherUserCost > 0) {
+    if (otherCost > 0) {
       allUserData.push({
         id: "other",
         name: "Other",
         avatar: "",
-        cost: otherUserCost * periodFactor,
+        cost: otherCost,
         color: "#E5E7EB",
         percentage: 0,
         type: "user",
@@ -290,13 +311,42 @@ function createUserChartData(
     const roundedUserData = roundCosts(allUserData);
     const total = roundedUserData.reduce((sum, item) => sum + item.cost, 0);
 
-    return {
-      date: formatDate(date, timeRange, periods, i),
-      fullDate: formatFullDate(date, timeRange, periods, i),
+    // Format date for display
+    let dateLabel: string;
+    if (timeRange === "day") {
+      dateLabel = periodStart.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (timeRange === "week") {
+      dateLabel = periodStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    } else {
+      const endWeek = new Date(periodStart);
+      endWeek.setDate(endWeek.getDate() + 6);
+      dateLabel = `${
+        periodStart.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
+    }
+
+    periodData.push({
+      date: dateLabel,
+      fullDate: periodStart.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
       items: roundedUserData,
       total,
-    };
-  });
+    });
+  }
+
+  return periodData;
 }
 
 function createThreadChartData(
@@ -307,58 +357,104 @@ function createThreadChartData(
     return [];
   }
 
-  const periods = getPeriods(timeRange);
-  const distributionFactors = generateDistributionFactors(periods);
+  // Collect all transactions from all threads
+  const allTransactions: Array<{
+    timestamp: string;
+    amount: number;
+    threadId: string;
+    threadTitle: string;
+  }> = [];
 
-  const threadsWithCost = threadUsage.items
-    .map((thread) => {
-      const totalCost = parseCost(thread.total);
-      return {
-        ...thread,
-        totalCost,
-        title: `Thread ${thread.id.slice(-8)}`,
-      };
-    })
-    .sort((a, b) => b.totalCost - a.totalCost)
-    .slice(0, 5);
+  threadUsage.items.forEach((thread) => {
+    if (thread.transactions) {
+      thread.transactions.forEach((transaction) => {
+        allTransactions.push({
+          timestamp: transaction.timestamp,
+          amount: transaction.amount,
+          threadId: thread.id,
+          threadTitle: `Thread ${thread.id.slice(-8)}`,
+        });
+      });
+    }
+  });
 
-  if (threadsWithCost.length === 0) {
+  if (allTransactions.length === 0) {
     return [];
   }
 
-  const allThreadsCost = threadUsage.items.reduce((sum: number, thread) => {
-    return sum + parseCost(thread.total);
-  }, 0);
-  const top5ThreadsCost = threadsWithCost.reduce(
-    (sum, thread) => sum + thread.totalCost,
-    0,
-  );
-  const otherThreadsCost = Math.max(0, allThreadsCost - top5ThreadsCost);
+  // Group transactions by time periods based on timeRange
+  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
+  const now = new Date();
+  const periodData: ChartDayData[] = [];
 
-  return Array.from({ length: periods }, (_, i) => {
-    const periodFactor = distributionFactors[i];
-    const date = new Date();
+  for (let i = 0; i < periods; i++) {
+    const periodStart = new Date(now);
+    const periodEnd = new Date(now);
 
-    const top5ThreadData = threadsWithCost.map((
-      { id, totalCost, title },
-    ) => ({
-      id: id,
-      name: title,
+    if (timeRange === "day") {
+      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
+      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
+    } else if (timeRange === "week") {
+      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
+      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
+    } else {
+      const weeksAgo = periods - 1 - i;
+      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
+      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
+    }
+
+    // Filter transactions for this period
+    const periodTransactions = allTransactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.timestamp);
+      return transactionDate >= periodStart && transactionDate < periodEnd;
+    });
+
+    // Group by thread and calculate costs
+    const threadCosts = new Map<string, { cost: number; title: string }>();
+
+    periodTransactions.forEach((transaction) => {
+      const existing = threadCosts.get(transaction.threadId);
+      if (existing) {
+        existing.cost += transaction.amount;
+      } else {
+        threadCosts.set(transaction.threadId, {
+          cost: transaction.amount,
+          title: transaction.threadTitle,
+        });
+      }
+    });
+
+    // Get top 5 threads for this period
+    const top5Threads = Array.from(threadCosts.entries())
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .slice(0, 5);
+
+    const top5ThreadData = top5Threads.map(([threadId, data]) => ({
+      id: threadId,
+      name: data.title,
       avatar: "",
-      cost: totalCost * periodFactor,
-      color: color(id),
+      cost: data.cost,
+      color: color(threadId),
       percentage: 0,
       type: "thread",
     }));
 
+    // Calculate "Other" category
+    const totalPeriodCost = Array.from(threadCosts.values()).reduce(
+      (sum, data) => sum + data.cost,
+      0,
+    );
+    const top5Cost = top5ThreadData.reduce((sum, item) => sum + item.cost, 0);
+    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
+
     const allThreadData = [...top5ThreadData];
 
-    if (otherThreadsCost > 0) {
+    if (otherCost > 0) {
       allThreadData.push({
         id: "other",
         name: "Other",
         avatar: "",
-        cost: otherThreadsCost * periodFactor,
+        cost: otherCost,
         color: "#E5E7EB",
         percentage: 0,
         type: "thread",
@@ -368,13 +464,42 @@ function createThreadChartData(
     const roundedThreadData = roundCosts(allThreadData);
     const total = roundedThreadData.reduce((sum, item) => sum + item.cost, 0);
 
-    return {
-      date: formatDate(date, timeRange, periods, i),
-      fullDate: formatFullDate(date, timeRange, periods, i),
+    // Format date for display
+    let dateLabel: string;
+    if (timeRange === "day") {
+      dateLabel = periodStart.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (timeRange === "week") {
+      dateLabel = periodStart.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    } else {
+      const endWeek = new Date(periodStart);
+      endWeek.setDate(endWeek.getDate() + 6);
+      dateLabel = `${
+        periodStart.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
+    }
+
+    periodData.push({
+      date: dateLabel,
+      fullDate: periodStart.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
       items: roundedThreadData,
       total,
-    };
-  });
+    });
+  }
+
+  return periodData;
 }
 
 export function UsageStackedBarChart({

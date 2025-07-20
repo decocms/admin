@@ -1,6 +1,6 @@
 import {
   useAgents,
-  useThreads,
+  useAuditEvents,
   useUsagePerAgent,
   useUsagePerThread,
   WELL_KNOWN_AGENTS,
@@ -61,9 +61,9 @@ export function Usage() {
   const teamMembers = useMembersWithUnknownUsers({
     userIdsToEnsureExist: threadUsage.items.map((thread) => thread.generatedBy),
   });
-  const currentUserThreads = useThreads({
-    limit: 20,
+  const threads = useAuditEvents({
     orderBy: "updatedAt_desc",
+    limit: 100,
   });
 
   const totals = useMemo(() => {
@@ -181,7 +181,7 @@ export function Usage() {
               agents={agents.data || []}
               threadUsage={threadUsage}
               members={teamMembers}
-              currentUserThreads={currentUserThreads.data?.threads || []}
+              threadHistory={threads.data?.threads || []}
             />
           </Suspense>
         )}

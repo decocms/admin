@@ -9,15 +9,17 @@ export function ThreadsTable({
   agents,
   threadUsage,
   members,
-  currentUserThreads,
+  threadHistory,
 }: {
   agents: Agent[];
   threadUsage: ThreadUsage;
   members: Member[];
-  currentUserThreads?: Thread[];
+  threadHistory: Thread[];
 }) {
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  console.log(threadHistory);
 
   // Enrich thread data with agent and user information
   const enrichedThreads = useMemo(() => {
@@ -30,7 +32,7 @@ export function ThreadsTable({
       const user = members.find((m) => m.profiles.id === thread.generatedBy);
 
       // Try to get actual thread details if available
-      const threadDetail = currentUserThreads?.find((t) => t.id === thread.id);
+      const threadDetail = threadHistory.find((t) => t.id === thread.id);
 
       // Ensure totalCost is always a proper number for sorting - handle dollar sign
       const parsedCost = typeof thread.total === "string"
@@ -61,7 +63,7 @@ export function ThreadsTable({
         updatedAt: threadDetail?.updatedAt || new Date().toISOString(),
       };
     }); // Remove the filter that was hiding all data
-  }, [threadUsage.items, agents, members, currentUserThreads]);
+  }, [threadUsage.items, agents, members, threadHistory]);
 
   // Define table columns
   const columns: TableColumn<typeof enrichedThreads[0]>[] = [

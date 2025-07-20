@@ -77,6 +77,14 @@ const ThreadsUsage = {
         total: MicroDollar.fromMicrodollarString(thread.total).display({
           showAllDecimals: true,
         }),
+        transactions: thread.transactions.map((transaction) => ({
+          id: transaction.id,
+          timestamp: transaction.timestamp,
+          amount: MicroDollar.fromMicrodollarString(transaction.amount)
+            .toDollars(),
+          agentId: transaction.agentId,
+          generatedBy: transaction.generatedBy,
+        })),
       })).filter(isNotNull),
     };
   },
@@ -106,6 +114,14 @@ const AgentsUsage = {
         id: item.id,
         label: item.label,
         total: MicroDollar.fromMicrodollarString(item.total).toDollars(),
+        transactions: item.transactions.map((transaction) => ({
+          id: transaction.id,
+          timestamp: transaction.timestamp,
+          amount: MicroDollar.fromMicrodollarString(transaction.amount)
+            .toDollars(),
+          agentId: transaction.agentId,
+          generatedBy: transaction.generatedBy,
+        })),
       })),
     };
   },

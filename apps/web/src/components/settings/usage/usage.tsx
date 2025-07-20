@@ -62,7 +62,7 @@ export function Usage() {
     userIdsToEnsureExist: threadUsage.items.map((thread) => thread.generatedBy),
   });
   const currentUserThreads = useThreads({
-    limit: 80,
+    limit: 20,
     orderBy: "updatedAt_desc",
   });
 

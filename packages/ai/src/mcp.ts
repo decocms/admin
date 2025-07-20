@@ -25,6 +25,7 @@ import { getToolsForInnateIntegration } from "./storage/tools.ts";
 import { createTool } from "./utils/create-tool.ts";
 import { jsonSchemaToModel } from "./utils/json-schema-to-model.ts";
 import { mapToolEntries } from "./utils/tool-entries.ts";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 const ApiDecoChatURLs = [
   "https://api.deco.chat",
@@ -293,6 +294,7 @@ const handleMCPResponse = async (client: Client) => {
 
   return { tools: result.tools, instructions, capabilities, version };
 };
+
 export const swrMCPMetadata = (
   mcpServer: Pick<Integration, "connection" | "name">,
 ) => {
@@ -312,7 +314,7 @@ export async function listToolsByConnectionType(
 ) {
   switch (connection.type) {
     case "INNATE": {
-      const mcpClient = MCPClient.forContext({
+      const mcpClient: any = MCPClient.forContext({
         ...ctx,
         workspace: ctx.workspace ??
           (connection.workspace
@@ -328,12 +330,42 @@ export async function listToolsByConnectionType(
         return { error: `Integration ${connection.name} not found` };
       }
 
-      const tools = await mcpServerTools({
-        ...maybeIntegration,
-        id: connection.name,
-      }, {} as AIAgent);
+      if (
+        maybeIntegration.connection?.type === "HTTP" ||
+        maybeIntegration.connection?.type === "Websocket" ||
+        maybeIntegration.connection?.type === "SSE"
+      ) {
+        return await swrMCPMetadata({
+          name: maybeIntegration.name || connection.name,
+          connection: maybeIntegration.connection,
+        });
+      } else {
+        const tools = await mcpServerTools({
+          ...maybeIntegration,
+          id: connection.name,
+        }, {} as AIAgent);
 
-      return { tools: mapToolEntries(tools) };
+        // Convert the Zod-based tools back to JSON schema format
+        const apiTools = Object.entries(tools).map(([name, tool]) => {
+          // Extract the original schemas if they exist, otherwise create default schemas
+          const inputSchema = (tool as any).inputSchema?._def
+            ? zodToJsonSchema((tool as any).inputSchema)
+            : { type: "object", additionalProperties: true };
+
+          const outputSchema = (tool as any).outputSchema?._def
+            ? zodToJsonSchema((tool as any).outputSchema)
+            : { type: "object", additionalProperties: true };
+
+          return {
+            name,
+            description: (tool as any).description || "",
+            inputSchema,
+            outputSchema,
+          };
+        });
+
+        return { tools: apiTools };
+      }
     }
     case "Deco": {
       const decoTools = await getDecoSiteTools(connection);

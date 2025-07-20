@@ -106,6 +106,7 @@ export const WORKSPACE_TOOLS = [
   walletAPI.getWalletAccount,
   walletAPI.getThreadsUsage,
   walletAPI.getAgentsUsage,
+  walletAPI.getBillingHistory,
   walletAPI.createCheckoutSession,
   walletAPI.redeemWalletVoucher,
   walletAPI.createWalletVoucher,

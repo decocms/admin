@@ -333,6 +333,20 @@ export interface WalletAPI {
       }[];
     };
   };
+  "GET /billing/history": {
+    searchParams: {
+      workspace: string;
+      range: "day" | "week" | "month" | "year";
+    };
+    response: {
+      items: {
+        id: string;
+        amount: string;
+        timestamp: string;
+        type: TransactionType;
+      }[];
+    };
+  };
 }
 
 // for local dev

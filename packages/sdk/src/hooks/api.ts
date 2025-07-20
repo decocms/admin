@@ -158,6 +158,14 @@ export const KEYS = {
     workspace: Workspace,
     range: "day" | "week" | "month",
   ) => ["wallet-usage-threads", workspace, range],
+  WALLET_BILLING_HISTORY: (
+    workspace: Workspace,
+    range: "day" | "week" | "month" | "year",
+  ) => [
+    "wallet-billing-history",
+    workspace,
+    range,
+  ],
   WORKSPACE_PLAN: (workspace: Workspace) => ["workspace-plan", workspace],
   WORKFLOWS: (workspace: Workspace, page?: number, per_page?: number) => [
     "workflows",

@@ -111,6 +111,34 @@ const AgentsUsage = {
   },
 };
 
+const BillingHistory = {
+  fetch: async (
+    wallet: ClientOf<WalletAPI>,
+    workspace: string,
+    range: "day" | "week" | "month" | "year",
+  ) => {
+    const historyResponse = await wallet["GET /billing/history"]({
+      workspace: encodeURIComponent(workspace),
+      range,
+    });
+
+    if (!historyResponse.ok) {
+      throw new Error("Failed to fetch billing history");
+    }
+
+    return historyResponse.json();
+  },
+  format: (history: WalletAPI["GET /billing/history"]["response"]) => {
+    return {
+      items: history.items.map((item) => ({
+        ...item,
+        amount: MicroDollar.fromMicrodollarString(item.amount).display(),
+      })),
+    };
+  },
+};
+
+
 const createTool = createToolGroup("Wallet", {
   name: "Wallet & Billing",
   description: "Handle payments and subscriptions.",
@@ -188,6 +216,36 @@ export const getAgentsUsage = createTool({
       range,
     );
     return AgentsUsage.format(usage);
+  },
+});
+
+export const getBillingHistory = createTool({
+  name: "GET_BILLING_HISTORY",
+  description: "Get the billing history for the current tenant's wallet",
+  inputSchema: z.object({
+    range: z.enum(["day", "week", "month", "year"]),
+  }),
+  outputSchema: z.object({
+    items: z.array(z.object({
+      id: z.string(),
+      amount: z.string(),
+      timestamp: z.string(),
+      type: z.string(),
+    })),
+  }),
+  handler: async ({ range }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const wallet = getWalletClient(c);
+
+    const history = await BillingHistory.fetch(
+      wallet,
+      c.workspace.value,
+      range,
+    );
+    return BillingHistory.format(history);
   },
 });
 

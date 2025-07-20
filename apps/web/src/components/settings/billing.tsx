@@ -1,74 +1,30 @@
-import { Suspense, useMemo, useState } from "react";
 import {
-  type PlanWithTeamMetadata,
   usePlan,
+  useBillingHistory,
   useWorkspaceWalletBalance,
-  WELL_KNOWN_PLANS,
+  type BillingHistoryItem,
 } from "@deco/sdk";
+import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
+import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  CardContent
 } from "@deco/ui/components/card.tsx";
-import { Icon } from "@deco/ui/components/icon.tsx";
-import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
-import { Separator } from "@deco/ui/components/separator.tsx";
-import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Progress } from "@deco/ui/components/progress.tsx";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  DialogTitle
 } from "@deco/ui/components/dialog.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { Progress } from "@deco/ui/components/progress.tsx";
+import { Skeleton } from "@deco/ui/components/skeleton.tsx";
+import { Suspense, useMemo, useState } from "react";
+import { ErrorBoundary } from "../../error-boundary.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import { DepositDialog } from "../wallet/deposit-dialog.tsx";
 import { VoucherDialog } from "../wallet/voucher-dialog.tsx";
-import { ErrorBoundary } from "../../error-boundary.tsx";
-
-// Mock billing data - replace with actual data hooks when available
-const mockTransactions = [
-  {
-    id: "tx_1",
-    date: "2025-01-15",
-    description: "Monthly Subscription - Growth Plan",
-    type: "subscription" as const,
-    amount: -2500,
-    status: "completed" as const,
-  },
-  {
-    id: "tx_2",
-    date: "2025-01-14",
-    description: "Wallet Top-up",
-    type: "topup" as const,
-    amount: 100.00,
-    status: "completed" as const,
-  },
-  {
-    id: "tx_3",
-    date: "2025-01-10",
-    description: "Monthly Subscription - Growth Plan",
-    type: "subscription" as const,
-    amount: -2500,
-    status: "completed" as const,
-  },
-  {
-    id: "tx_4",
-    date: "2025-01-08",
-    description: "Wallet Top-up",
-    type: "topup" as const,
-    amount: 50.00,
-    status: "completed" as const,
-  },
-];
-
-type Transaction = typeof mockTransactions[0];
 
 interface PlanFeature {
   name: string;
@@ -249,9 +205,9 @@ function PlanInfoCard() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">AI usage rate</span>
+              <span className="text-muted-foreground">Deposit fee</span>
               <span className="font-medium text-primary">
-                {plan.markup}% markup
+                {plan.markup}%
               </span>
             </div>
           </div>
@@ -496,95 +452,112 @@ function PlanCard(
   );
 }
 
+const isFreeReward = (item: BillingHistoryItem) => {
+  return item.type === "WorkspaceGenCreditReward" && item.id.includes("free-two-dollars-");
+};
+
 function TransactionsTable() {
   const [sortKey, setSortKey] = useState<string>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const history = useBillingHistory({ range: "year" });
 
-  const getStatusBadge = (status: Transaction["status"]) => {
-    const variants = {
-      completed: "default",
-      pending: "secondary",
-      failed: "destructive",
-    } as const;
+  const getTypeIcon = (item: BillingHistoryItem) => {
+    const type = item.type;
 
-    const labels = {
-      completed: "Completed",
-      pending: "Pending",
-      failed: "Failed",
-    };
+    if (isFreeReward(item)) {
+      return (
+        <Icon
+          name="redeem"
+          size={16}
+          className="text-primary"
+        />
+      );
+    }
 
-    return (
-      <Badge variant={variants[status]} className="text-xs">
-        {labels[status]}
-      </Badge>
-    );
-  };
-
-  const getTypeIcon = (type: Transaction["type"]) => {
     const icons = {
-      subscription: "workspace_premium",
-      topup: "add_circle",
+      WorkspaceRedeemVoucher: "redeem",
+      WorkspaceGenCreditReward: "workspace_premium",
+      WorkspaceCashIn: "add_circle",
     };
 
     const colors = {
-      subscription: "text-blue-600",
-      topup: "text-green-600",
+      WorkspaceRedeemVoucher: "text-primary",
+      WorkspaceGenCreditReward: "text-primary",
+      WorkspaceCashIn: "text-primary",
     };
 
     return (
       <Icon
-        name={icons[type]}
+        name={icons[type as keyof typeof icons]}
         size={16}
-        className={colors[type]}
+        className={colors[type as keyof typeof colors]}
       />
     );
   };
 
-  const columns: TableColumn<Transaction>[] = [
+  const getTypeDescription = (item: BillingHistoryItem) => {
+    const type = item.type;
+
+    if (isFreeReward(item)) {
+      return {
+        title: "Free credit",
+        description: "Free credit received for signing up",
+      };
+    }
+
+    const titles = {
+      WorkspaceRedeemVoucher: "Voucher redeemed",
+      WorkspaceGenCreditReward: "Monthly credit",
+      WorkspaceCashIn: "Wallet top-up",
+    };
+
+    const descriptions = {
+      WorkspaceRedeemVoucher: "Redeemed a voucher",
+      WorkspaceGenCreditReward: "Plan subscription payment",
+      WorkspaceCashIn: "Added funds to your wallet",
+    };
+
+    return {
+      title: titles[type as keyof typeof titles],
+      description: descriptions[type as keyof typeof descriptions],
+    };
+  };
+
+  const columns: TableColumn<BillingHistoryItem>[] = [
     {
       id: "type",
       header: "",
-      render: (transaction) => getTypeIcon(transaction.type),
-    },
-    {
-      id: "date",
-      header: "Date",
-      render: (transaction) => new Date(transaction.date).toLocaleDateString(),
-      sortable: true,
-    },
-    {
-      id: "description",
-      header: "Description",
-      render: (transaction) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{transaction.description}</span>
-          <span className="text-xs text-muted-foreground capitalize">
-            {transaction.type}
-          </span>
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      id: "status",
-      header: "Status",
-      render: (transaction) => getStatusBadge(transaction.status),
-      sortable: true,
+      render: (transaction) => getTypeIcon(transaction),
     },
     {
       id: "amount",
       header: "Amount",
       render: (transaction) => (
         <span
-          className={`font-medium ${
-            transaction.amount > 0 ? "text-green-600" : "text-foreground"
-          }`}
+          className={`font-medium text-foreground`}
         >
-          {transaction.amount > 0 ? "+" : ""}${Math.abs(
-            transaction.amount / 100,
-          ).toFixed(2)}
+          {transaction.amount}
         </span>
       ),
+      sortable: false,
+    },
+    {
+      id: "description",
+      header: "Description",
+      render: (transaction) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{getTypeDescription(transaction).title}</span>
+          <span className="text-xs text-muted-foreground">
+            {getTypeDescription(transaction).description}
+          </span>
+        </div>
+      ),
+      sortable: false,
+    },
+    {
+      id: "date",
+      header: "Date",
+      render: (transaction) => new Date(transaction.timestamp).toLocaleDateString(),
       sortable: true,
     },
   ];
@@ -600,24 +573,20 @@ function TransactionsTable() {
 
   const sortedTransactions = useMemo(() => {
     const getSortValue = (
-      transaction: Transaction,
+      transaction: typeof history.items[number],
       key: string,
     ): string | number => {
       switch (key) {
         case "date":
-          return new Date(transaction.date).getTime();
-        case "description":
-          return transaction.description.toLowerCase();
-        case "status":
-          return transaction.status;
-        case "amount":
-          return transaction.amount;
+          return new Date(transaction.timestamp).getTime();
+        case "type":
+          return transaction.type;
         default:
           return "";
       }
     };
 
-    return [...mockTransactions].sort((a, b) => {
+    return [...history.items].sort((a, b) => {
       const aVal = getSortValue(a, sortKey);
       const bVal = getSortValue(b, sortKey);
 
@@ -637,7 +606,7 @@ function TransactionsTable() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Billing History</h3>
+        <h3 className="text-lg font-semibold">Billing history</h3>
         <p className="text-sm text-muted-foreground">
           Your subscription payments and wallet top-ups
         </p>

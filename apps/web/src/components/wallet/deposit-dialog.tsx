@@ -113,7 +113,7 @@ export function DepositDialog() {
                 <>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">
-                      Your Plan Markup ({plan.markup}%):
+                      Your plan deposit fee ({plan.markup}%):
                     </span>
                     <span>
                       {formatCurrency((Markup.add({

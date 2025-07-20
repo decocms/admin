@@ -22,6 +22,15 @@ export const getAgentsUsage = (
       range,
     });
 
+export const getBillingHistory = (
+  workspace: string,
+  range: "day" | "week" | "month" | "year",
+) =>
+  MCPClient.forWorkspace(workspace)
+    .GET_BILLING_HISTORY({
+      range,
+    });
+
 export const createWalletCheckoutSession = ({
   workspace,
   amountUSDCents,

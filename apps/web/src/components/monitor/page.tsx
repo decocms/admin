@@ -1,6 +1,6 @@
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import UsageSettings from "../settings/usage.tsx";
+import { Usage } from "../settings/usage/usage.tsx";
 import ActivitySettings from "../settings/activity.tsx";
 import BillingSettings from "../settings/billing.tsx";
 
@@ -13,7 +13,7 @@ const TABS: Record<string, Tab> = {
   },
   usage: {
     title: "Usage",
-    Component: UsageSettings,
+    Component: Usage,
     initialOpen: true,
   },
   billing: {

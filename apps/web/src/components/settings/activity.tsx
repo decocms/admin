@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
-import { Alert, AlertDescription, AlertTitle } from "@deco/ui/components/alert.tsx";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@deco/ui/components/alert.tsx";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { AuditListContent } from "../audit/list.tsx";
 
@@ -31,4 +35,4 @@ export default function ActivitySettings() {
       </ErrorBoundary>
     </div>
   );
-} 
+}

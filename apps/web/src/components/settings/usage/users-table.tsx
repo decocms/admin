@@ -1,46 +1,35 @@
+import type { Member, ThreadUsage, ThreadUsageItem } from "@deco/sdk";
 import { useMemo, useState } from "react";
-import type { Agent, Member } from "@deco/sdk";
-import { Table, type TableColumn } from "../../common/table/index.tsx";
-import { AgentAvatar } from "../../common/avatar/agent.tsx";
-import { color } from "./util.ts";
 import { UserAvatar } from "../../common/avatar/user.tsx";
+import { Table, type TableColumn } from "../../common/table/index.tsx";
+import { color } from "./util.ts";
 
 export function UsersTable({
-  agents,
   threadUsage,
   members,
 }: {
-  agents: Agent[];
-  threadUsage: any;
+  threadUsage: ThreadUsage;
   members: Member[];
 }) {
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Debug: Log the input data
-  console.log("UsersTable - threadUsage:", threadUsage);
-  console.log("UsersTable - threadUsage.items:", threadUsage.items);
-  console.log("UsersTable - members:", members);
-
-  // Log sample thread data
-  if (threadUsage.items && threadUsage.items.length > 0) {
-    console.log("Sample thread data:", threadUsage.items[0]);
-  }
-
   // Aggregate thread usage data by user
   const enrichedUsers = useMemo(() => {
     if (!threadUsage.items || threadUsage.items.length === 0) {
-      console.log("No threadUsage items available for users");
       return [];
     }
 
-    console.log("Processing threadUsage items for users:", threadUsage.items);
-    console.log("Sample thread item:", threadUsage.items[0]);
-
-    const userMap = new Map<string, any>();
+    const userMap = new Map<string, {
+      userId: string;
+      threads: ThreadUsageItem[];
+      totalCost: number;
+      totalTokens: number;
+      agentIds: Set<string>;
+    }>();
 
     // Group threads by user
-    threadUsage.items.forEach((thread: any) => {
+    threadUsage.items.forEach((thread) => {
       const userId = thread.generatedBy;
       if (!userMap.has(userId)) {
         userMap.set(userId, {
@@ -53,6 +42,11 @@ export function UsersTable({
       }
 
       const userData = userMap.get(userId);
+
+      if (!userData) {
+        throw new Error("Could not load thread usage");
+      }
+
       userData.threads.push(thread);
 
       // Parse the thread cost more carefully - handle dollar sign
@@ -64,13 +58,7 @@ export function UsersTable({
       userData.totalCost += validCost;
       userData.totalTokens += thread.tokens?.totalTokens || 0;
       userData.agentIds.add(thread.agentId);
-
-      console.log(
-        `User ${userId}: added thread ${thread.id}, original cost=${thread.total}, parsed=${threadCost}, valid=${validCost}, running total=${userData.totalCost}`,
-      );
     });
-
-    console.log("UserMap after processing:", userMap);
 
     // Convert to array and enrich with member information
     const users = Array.from(userMap.values()).map((userData) => {
@@ -92,7 +80,6 @@ export function UsersTable({
       };
     });
 
-    console.log("Enriched users:", users);
     return users;
   }, [threadUsage.items, members]);
 

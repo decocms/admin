@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Agent, AgentUsageItem } from "@deco/sdk";
+import type { Agent, AgentUsage, AgentUsageItem, ThreadUsage } from "@deco/sdk";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { color } from "./util.ts";
@@ -138,40 +138,47 @@ export function UsageTable({
   threadUsage,
 }: {
   agents: Agent[];
-  agentUsage: any;
-  threadUsage: any;
+  agentUsage: AgentUsage;
+  threadUsage: ThreadUsage;
 }) {
+  console.log(agentUsage);
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedAgentDetails, setSelectedAgentDetails] = useState<
-    { agent: Agent; metrics: any } | null
+    { agent: Agent; metrics: AgentUsageMetrics } | null
   >(null);
 
   // Combine usage data to get comprehensive metrics per agent
   const enrichedAgents = useMemo(() => {
     return agents.map((agent) => {
-      const agentUsageData = agentUsage.items?.find((item: any) =>
+      const agentUsageData = agentUsage.items?.find((item) =>
         item.id === agent.id
       );
-      const agentThreads = threadUsage.items?.filter((thread: any) =>
+      const agentThreads = threadUsage.items?.filter((thread) =>
         thread.agentId === agent.id
       ) || [];
 
       // Calculate metrics from thread data
-      const totalTokens = agentThreads.reduce((sum: number, thread: any) =>
-        sum + (thread.tokens?.totalTokens || 0), 0);
-      const promptTokens = agentThreads.reduce((sum: number, thread: any) =>
-        sum + (thread.tokens?.promptTokens || 0), 0);
-      const completionTokens = agentThreads.reduce((sum: number, thread: any) =>
-        sum + (thread.tokens?.completionTokens || 0), 0);
+      const totalTokens = agentThreads.reduce(
+        (sum, thread) => sum + (thread.tokens?.totalTokens || 0),
+        0,
+      );
+      const promptTokens = agentThreads.reduce(
+        (sum, thread) => sum + (thread.tokens?.promptTokens || 0),
+        0,
+      );
+      const completionTokens = agentThreads.reduce(
+        (sum, thread) => sum + (thread.tokens?.completionTokens || 0),
+        0,
+      );
       const threadsCount = agentThreads.length;
-      const uniqueUsers = new Set(agentThreads.map((thread: any) =>
+      const uniqueUsers = new Set(agentThreads.map((thread) =>
         thread.generatedBy
       )).size;
 
       const metrics = {
         agentUsage: agentUsageData,
-        totalCost: agentUsageData ? parseFloat(agentUsageData.total) || 0 : 0,
+        totalCost: agentUsageData ? agentUsageData.total : "0",
         totalTokens,
         promptTokens,
         completionTokens,

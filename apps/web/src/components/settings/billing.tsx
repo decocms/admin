@@ -8,12 +8,6 @@ import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Progress } from "@deco/ui/components/progress.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
@@ -42,79 +36,6 @@ interface PlanInfo {
   features: PlanFeature[];
   support: string;
 }
-
-const availablePlans: PlanInfo[] = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    period: "month",
-    credits: 2,
-    seats: 2,
-    markup: 20,
-    features: [
-      { name: "AI Credits", included: true, limit: "$2" },
-      { name: "Top-up credits", included: true },
-      { name: "Basic support", included: true },
-    ],
-    support: "Community support",
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    price: 500,
-    period: "month",
-    credits: 425,
-    seats: 10,
-    markup: 15,
-    features: [
-      { name: "AI Credits", included: true, limit: "$425" },
-      { name: "Optimized AI Usage Rate", included: true, limit: "15% markup" },
-      { name: "Support via ticket", included: true },
-      { name: "Weekly Office Hours", included: true },
-      { name: "Premium support upgrade", included: true, limit: "$1k" },
-    ],
-    support: "Ticket support",
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    price: 2500,
-    period: "month",
-    credits: 2250,
-    seats: 50,
-    markup: 10,
-    popular: true,
-    current: true,
-    features: [
-      { name: "AI Credits", included: true, limit: "$2,250" },
-      { name: "Better AI Usage Rate", included: true, limit: "10% markup" },
-      { name: "Workspace management", included: true },
-      { name: "Support with SLA", included: true },
-      { name: "Success Team support", included: true },
-      { name: "Technical support", included: true, limit: "1h/week" },
-    ],
-    support: "Priority support with SLA",
-  },
-  {
-    id: "scale",
-    name: "Scale",
-    price: 5000,
-    period: "month",
-    credits: 4750,
-    seats: 100,
-    markup: 5,
-    features: [
-      { name: "AI Credits", included: true, limit: "$4,750" },
-      { name: "Best AI Usage Rate", included: true, limit: "5% markup" },
-      { name: "Workspace management", included: true },
-      { name: "Priority support with SLA", included: true },
-      { name: "Dedicated Success Team", included: true },
-      { name: "Technical support", included: true, limit: "3h/week" },
-    ],
-    support: "Dedicated Success Team",
-  },
-];
 
 function WalletBalanceCard() {
   const { balance, refetch, isRefetching } = useWorkspaceWalletBalance();
@@ -158,293 +79,64 @@ function WalletBalanceCard() {
 }
 
 function PlanInfoCard() {
-  const [showPlansModal, setShowPlansModal] = useState(false);
   const plan = usePlan();
-  // Calculate used seats
+
   const usedSeats = plan.user_seats - plan.remainingSeats;
   const seatLimit = plan.user_seats;
 
   return (
-    <>
-      <Card className="p-6 rounded-xl border h-full">
-        <CardContent className="p-0 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Icon
-                name="workspace_premium"
-                size={20}
-                className="text-muted-foreground"
-              />
-              <span className="text-sm font-medium text-muted-foreground">
-                Current Plan
-              </span>
-            </div>
-            <Badge variant="secondary" className="text-xs">
-              {plan.title}
-            </Badge>
+    <Card className="p-6 rounded-xl border h-full">
+      <CardContent className="p-0 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Icon
+              name="workspace_premium"
+              size={20}
+              className="text-muted-foreground"
+            />
+            <span className="text-sm font-medium text-muted-foreground">
+              Current Plan
+            </span>
           </div>
+          <Badge variant="secondary" className="text-xs">
+            {plan.title}
+          </Badge>
+        </div>
 
-          <div className="space-y-3 text-sm flex-1">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Seats used</span>
-                <span className="font-medium">{usedSeats}/{seatLimit}</span>
-              </div>
-              <Progress
-                value={(usedSeats / seatLimit) * 100}
-                className="h-2"
-              />
-            </div>
+        <div className="space-y-3 text-sm flex-1">
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Monthly cost</span>
-              <span className="font-medium">
-                ${plan.monthly_credit_in_dollars}
-              </span>
+              <span className="text-muted-foreground">Seats used</span>
+              <span className="font-medium">{usedSeats}/{seatLimit}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Deposit fee</span>
-              <span className="font-medium text-primary">
-                {plan.markup}%
-              </span>
-            </div>
+            <Progress
+              value={(usedSeats / seatLimit) * 100}
+              className="h-2"
+            />
           </div>
-
-          <Button
-            variant="outline"
-            className="w-full mt-4"
-            onClick={() => setShowPlansModal(true)}
-          >
-            <Icon name="upgrade" size={16} />
-            View All Plans
-          </Button>
-        </CardContent>
-      </Card>
-
-      <PlansModal
-        isOpen={showPlansModal}
-        onClose={() => setShowPlansModal(false)}
-      />
-    </>
-  );
-}
-
-function PlansModal(
-  { isOpen, onClose }: { isOpen: boolean; onClose: () => void },
-) {
-  const handlePlanSelect = (planId: string) => {
-    console.log(`Selected plan: ${planId}`);
-    onClose();
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[1200px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Choose Your Plan</DialogTitle>
-        </DialogHeader>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {availablePlans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                onSelect={handlePlanSelect}
-              />
-            ))}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Monthly cost</span>
+            <span className="font-medium">
+              ${plan.monthly_credit_in_dollars}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Deposit fee</span>
+            <span className="font-medium text-primary">
+              {plan.markup}%
+            </span>
           </div>
         </div>
 
-        {/* Custom Plan Card */}
-        <Card className="p-6 border-dashed mx-6 mb-6">
-          <CardContent className="p-0 text-center space-y-4">
-            <div className="space-y-2">
-              <h4 className="text-lg font-semibold">Custom Plan</h4>
-              <p className="text-sm text-muted-foreground">
-                For organizations with specific needs
-              </p>
-            </div>
-            <div className="text-sm space-y-1">
-              <div className="flex items-center justify-center gap-2">
-                <Icon name="check" size={14} className="text-green-600" />
-                <span>500+ Builder Seats</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <Icon name="check" size={14} className="text-green-600" />
-                <span>Self-hosting options</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <Icon name="check" size={14} className="text-green-600" />
-                <span>Custom integrations</span>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <Icon name="check" size={14} className="text-green-600" />
-                <span>BYOK (Bring Your Own Keys)</span>
-              </div>
-            </div>
-            <Button variant="outline" className="w-full">
-              <Icon name="forum" size={16} className="mr-2" />
-              Contact Us
-            </Button>
-          </CardContent>
-        </Card>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function PlanCard(
-  { plan, onSelect }: { plan: PlanInfo; onSelect: (planId: string) => void },
-) {
-  const isPopular = plan.popular;
-  const isCurrent = plan.current;
-
-  return (
-    <Card
-      className={`relative overflow-hidden transition-all hover:shadow-lg min-h-[500px] flex flex-col ${
-        isCurrent ? "ring-2 ring-primary shadow-md" : ""
-      } ${isPopular ? "border-primary shadow-md scale-105" : ""}`}
-    >
-      {/* Header with gradient background */}
-      <div
-        className={`relative px-6 py-6 text-center ${
-          isPopular
-            ? "bg-gradient-to-br from-primary/10 to-primary/5"
-            : isCurrent
-            ? "bg-gradient-to-br from-muted/50 to-muted/20"
-            : "bg-gradient-to-br from-muted/30 to-muted/10"
-        }`}
-      >
-        {/* Badges */}
-        {isPopular && (
-          <div className="absolute top-2 left-2">
-            <Badge className="bg-primary text-primary-foreground text-xs font-medium">
-              Most Popular
-            </Badge>
-          </div>
-        )}
-        {isCurrent && (
-          <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="text-xs font-medium">
-              Current
-            </Badge>
-          </div>
-        )}
-
-        {/* Plan icon */}
-        <div
-          className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-            isPopular
-              ? "bg-primary text-primary-foreground"
-              : isCurrent
-              ? "bg-muted text-muted-foreground"
-              : "bg-muted/60 text-muted-foreground"
-          }`}
-        >
-          <Icon
-            name={plan.id === "free"
-              ? "star_border"
-              : plan.id === "starter"
-              ? "rocket_launch"
-              : plan.id === "growth"
-              ? "trending_up"
-              : "enterprise"}
-            size={20}
-          />
-        </div>
-
-        {/* Plan name */}
-        <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-
-        {/* Pricing */}
-        <div className="flex items-baseline justify-center gap-1 mb-2">
-          <span className="text-4xl font-bold">${plan.price / 100}</span>
-          <span className="text-muted-foreground text-sm">/{plan.period}</span>
-        </div>
-
-        {/* Tagline */}
-        <p className="text-sm text-muted-foreground">
-          {plan.id === "free"
-            ? "Get started for free"
-            : plan.id === "starter"
-            ? "Perfect for small teams"
-            : plan.id === "growth"
-            ? "For growing businesses"
-            : "For large organizations"}
-        </p>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 p-6 space-y-6">
-        {/* Key metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{plan.seats}</div>
-            <div className="text-xs text-muted-foreground">Seats</div>
-          </div>
-          <div className="text-center p-3 bg-muted/20 rounded-lg">
-            <div className="text-2xl font-bold text-primary">
-              ${plan.credits / 100}
-            </div>
-            <div className="text-xs text-muted-foreground">AI Credits</div>
-          </div>
-        </div>
-
-        {/* Usage rate highlight */}
-        <div className="text-center p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
-          <div className="text-lg font-semibold text-green-700">
-            {plan.markup}% markup
-          </div>
-          <div className="text-xs text-muted-foreground">AI Usage Rate</div>
-        </div>
-
-        {/* Features */}
-        <div className="space-y-3">
-          {plan.features.slice(0, 3).map((feature) => (
-            <div
-              key={`${plan.id}-${feature.name}`}
-              className="flex items-start gap-3"
-            >
-              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
-                <Icon name="check" size={12} />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-foreground">
-                  {feature.name}
-                </div>
-                {feature.limit && (
-                  <div className="text-xs text-muted-foreground">
-                    {feature.limit}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="p-6 pt-0">
         <Button
-          variant={isCurrent ? "secondary" : isPopular ? "default" : "outline"}
-          className={`w-full ${
-            isPopular ? "bg-primary hover:bg-primary/90" : ""
-          }`}
-          disabled={isCurrent}
-          onClick={() => onSelect(plan.id)}
+          variant="outline"
+          className="w-full mt-4"
+          disabled
         >
-          {isCurrent
-            ? "Current Plan"
-            : plan.price === 0
-            ? "Downgrade"
-            : "Upgrade"}
+          <Icon name="upgrade" size={16} />
+          View All Plans (soon)
         </Button>
-
-        {/* Support info */}
-        <div className="text-center mt-2">
-          <span className="text-xs text-muted-foreground">{plan.support}</span>
-        </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }

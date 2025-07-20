@@ -1,4 +1,4 @@
-import type { Agent, Member } from "@deco/sdk";
+import type { Agent, AgentUsage, Member, ThreadUsage } from "@deco/sdk";
 import { useMemo } from "react";
 import {
   ChartDayData,
@@ -122,7 +122,7 @@ function roundCosts(data: ChartItemData[]): ChartItemData[] {
 
 function createAgentChartData(
   agents: Agent[],
-  agentUsage: { items?: UsageItem[] },
+  agentUsage: AgentUsage,
   timeRange: string,
 ): ChartDayData[] {
   if (!agentUsage.items || agentUsage.items.length === 0) {
@@ -199,7 +199,7 @@ function createAgentChartData(
 }
 
 function createUserChartData(
-  threadUsage: { items?: ThreadItem[] },
+  threadUsage: ThreadUsage,
   members: Member[],
   timeRange: string,
 ): ChartDayData[] {
@@ -300,7 +300,7 @@ function createUserChartData(
 }
 
 function createThreadChartData(
-  threadUsage: { items?: ThreadItem[] },
+  threadUsage: ThreadUsage,
   timeRange: string,
 ): ChartDayData[] {
   if (!threadUsage.items || threadUsage.items.length === 0) {
@@ -330,7 +330,7 @@ function createThreadChartData(
     return sum + parseCost(thread.total);
   }, 0);
   const top5ThreadsCost = threadsWithCost.reduce(
-    (sum: number, thread: any) => sum + thread.totalCost,
+    (sum, thread) => sum + thread.totalCost,
     0,
   );
   const otherThreadsCost = Math.max(0, allThreadsCost - top5ThreadsCost);
@@ -340,7 +340,7 @@ function createThreadChartData(
     const date = new Date();
 
     const top5ThreadData = threadsWithCost.map((
-      { id, totalCost, title }: any,
+      { id, totalCost, title },
     ) => ({
       id: id,
       name: title,
@@ -386,8 +386,8 @@ export function UsageStackedBarChart({
   usageType,
 }: {
   agents: Agent[];
-  agentUsage: any;
-  threadUsage: any;
+  agentUsage: AgentUsage;
+  threadUsage: ThreadUsage;
   members: Member[];
   timeRange: string;
   usageType: UsageType;

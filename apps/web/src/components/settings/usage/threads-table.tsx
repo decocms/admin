@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Agent, Member } from "@deco/sdk";
+import type { Agent, Member, Thread, ThreadUsage } from "@deco/sdk";
 import { Table, type TableColumn } from "../../common/table/index.tsx";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { color } from "./util.ts";
@@ -9,47 +9,34 @@ export function ThreadsTable({
   agents,
   threadUsage,
   members,
-  threadDetails,
+  currentUserThreads,
 }: {
   agents: Agent[];
-  threadUsage: any;
+  threadUsage: ThreadUsage;
   members: Member[];
-  threadDetails?: any;
+  currentUserThreads?: Thread[];
 }) {
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  // Debug: Log the threadUsage data
-  console.log("ThreadsTable - threadUsage:", threadUsage);
-  console.log("ThreadsTable - agents:", agents);
-  console.log("ThreadsTable - members:", members);
-
   // Enrich thread data with agent and user information
   const enrichedThreads = useMemo(() => {
     if (!threadUsage.items || threadUsage.items.length === 0) {
-      console.log("No threadUsage items available");
       return [];
     }
 
-    console.log("Processing threadUsage items:", threadUsage.items);
-
-    return threadUsage.items.map((thread: any) => {
+    return threadUsage.items.map((thread) => {
       const agent = agents.find((a) => a.id === thread.agentId);
       const user = members.find((m) => m.profiles.id === thread.generatedBy);
 
       // Try to get actual thread details if available
-      const threadDetail = threadDetails?.data?.threads?.find((t: any) =>
-        t.id === thread.id
-      );
+      const threadDetail = currentUserThreads?.find((t) => t.id === thread.id);
 
       // Ensure totalCost is always a proper number for sorting - handle dollar sign
       const parsedCost = typeof thread.total === "string"
         ? parseFloat(thread.total.replace("$", ""))
         : (typeof thread.total === "number" ? thread.total : 0);
       const totalCost = isNaN(parsedCost) ? 0 : parsedCost;
-      console.log(
-        `Thread ${thread.id}: original cost=${thread.total}, parsed=${parsedCost}, final=${totalCost}, type=${typeof totalCost}`,
-      );
 
       return {
         ...thread,
@@ -74,7 +61,7 @@ export function ThreadsTable({
         updatedAt: threadDetail?.updatedAt || new Date().toISOString(),
       };
     }); // Remove the filter that was hiding all data
-  }, [threadUsage.items, agents, members, threadDetails]);
+  }, [threadUsage.items, agents, members, currentUserThreads]);
 
   // Define table columns
   const columns: TableColumn<typeof enrichedThreads[0]>[] = [
@@ -205,9 +192,6 @@ export function ThreadsTable({
       return 0;
     });
   }, [enrichedThreads, sortKey, sortDirection]);
-
-  console.log("ThreadsTable - enrichedThreads:", enrichedThreads);
-  console.log("ThreadsTable - sortedThreads:", sortedThreads);
 
   return (
     <Table

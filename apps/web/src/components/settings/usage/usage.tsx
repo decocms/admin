@@ -48,7 +48,6 @@ const labelsByUsageType = {
 
 export function Usage() {
   const [usageType, setUsageType] = useState<UsageType>("agent");
-  const [selectedAgent, setSelectedAgent] = useState("all");
   const [timeRange, setTimeRange] = useState<TimeRange>("week");
 
   const agents = useAgentsMergedWithWellKnown();
@@ -60,12 +59,10 @@ export function Usage() {
   });
 
   const teamMembers = useMembersWithUnknownUsers({
-    userIdsToEnsureExist: threadUsage.items.map((thread: any) =>
-      thread.generatedBy
-    ),
+    userIdsToEnsureExist: threadUsage.items.map((thread) => thread.generatedBy),
   });
-  const threadDetails = useThreads({
-    limit: 20,
+  const currentUserThreads = useThreads({
+    limit: 80,
     orderBy: "updatedAt_desc",
   });
 
@@ -87,7 +84,7 @@ export function Usage() {
 
     if (usageType === "thread") {
       const count = threadUsage.items?.length || 0;
-      const cost = threadUsage.items?.reduce((sum: number, thread: any) => {
+      const cost = threadUsage.items?.reduce((sum, thread) => {
         const parsedCost = typeof thread.total === "string"
           ? parseFloat(thread.total.replace("$", ""))
           : (typeof thread.total === "number" ? thread.total : 0);
@@ -104,16 +101,15 @@ export function Usage() {
     if (usageType === "user") {
       // Calculate unique users from threadUsage
       const uniqueUsers = new Set(
-        threadUsage.items?.map((thread: any) => thread.generatedBy) || [],
+        threadUsage.items?.map((thread) => thread.generatedBy) || [],
       );
-      const totalUserCost =
-        threadUsage.items?.reduce((sum: number, thread: any) => {
-          const parsedCost = typeof thread.total === "string"
-            ? parseFloat(thread.total.replace("$", ""))
-            : (typeof thread.total === "number" ? thread.total : 0);
-          const validCost = isNaN(parsedCost) ? 0 : parsedCost;
-          return sum + validCost;
-        }, 0) || 0;
+      const totalUserCost = threadUsage.items?.reduce((sum, thread) => {
+        const parsedCost = typeof thread.total === "string"
+          ? parseFloat(thread.total.replace("$", ""))
+          : (typeof thread.total === "number" ? thread.total : 0);
+        const validCost = isNaN(parsedCost) ? 0 : parsedCost;
+        return sum + validCost;
+      }, 0) || 0;
       const formattedCost = totalUserCost.toFixed(2);
 
       return {
@@ -133,11 +129,8 @@ export function Usage() {
         <UsageFilters
           usageType={usageType}
           setUsageType={setUsageType}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
           timeRange={timeRange}
           setTimeRange={setTimeRange}
-          agents={agents.data || []}
         />
 
         <div className="flex gap-4 w-full">
@@ -188,7 +181,7 @@ export function Usage() {
               agents={agents.data || []}
               threadUsage={threadUsage}
               members={teamMembers}
-              threadDetails={threadDetails}
+              currentUserThreads={currentUserThreads.data?.threads || []}
             />
           </Suspense>
         )}
@@ -196,7 +189,6 @@ export function Usage() {
         {usageType === "user" && (
           <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
             <UsersTable
-              agents={agents.data || []}
               threadUsage={threadUsage}
               members={teamMembers}
             />

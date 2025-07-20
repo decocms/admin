@@ -1,4 +1,3 @@
-import { assertEquals, assertExists } from "@std/assert";
 import {
   doesChildFieldMatchSchema,
   doesSchemaTypeMatchValue,
@@ -8,83 +7,83 @@ import {
   getDetectedType,
   selectAnyOfSchema,
   typeMatches,
-} from "./schema.ts";
+} from "../src/components/json-schema/utils/schema.ts";
 import type { JSONSchema7 } from "json-schema";
+import { expect, test } from "vitest";
 
-Deno.test("formatPropertyName", () => {
+test("formatPropertyName", () => {
   // Test camelCase to Title Case
-  assertEquals(formatPropertyName("firstName"), "First Name");
+  expect(formatPropertyName("firstName")).toBe("First Name");
 
   // Test snake_case to Title Case (won't work without additional handling)
-  assertEquals(formatPropertyName("first_name"), "First_name");
+  expect(formatPropertyName("first_name")).toBe("First_name");
 
   // Test already capitalized word
-  assertEquals(formatPropertyName("FirstName"), "First Name");
+  expect(formatPropertyName("FirstName")).toBe("First Name");
 
   // Test single character
-  assertEquals(formatPropertyName("a"), "A");
+  expect(formatPropertyName("a")).toBe("A");
 
   // Test empty string
-  assertEquals(formatPropertyName(""), "");
+  expect(formatPropertyName("")).toBe("");
 });
 
-Deno.test("getDetectedType", () => {
+test("getDetectedType", () => {
   // Test primitive types
-  assertEquals(getDetectedType("string value"), "string");
-  assertEquals(getDetectedType(123), "number");
-  assertEquals(getDetectedType(true), "boolean");
+  expect(getDetectedType("string value")).toBe("string");
+  expect(getDetectedType(123)).toBe("number");
+  expect(getDetectedType(true)).toBe("boolean");
 
   // Test null
-  assertEquals(getDetectedType(null), "null");
+  expect(getDetectedType(null)).toBe("null");
 
   // Test arrays
-  assertEquals(getDetectedType([1, 2, 3]), "array");
-  assertEquals(getDetectedType([]), "array");
+  expect(getDetectedType([1, 2, 3])).toBe("array");
+  expect(getDetectedType([])).toBe("array");
 
   // Test objects
-  assertEquals(getDetectedType({ key: "value" }), "object");
-  assertEquals(getDetectedType({}), "object");
+  expect(getDetectedType({ key: "value" })).toBe("object");
+  expect(getDetectedType({})).toBe("object");
 });
 
-Deno.test("doesSchemaTypeMatchValue", () => {
+test("doesSchemaTypeMatchValue", () => {
   // Test undefined schema type (should match anything)
-  assertEquals(doesSchemaTypeMatchValue(undefined, "string"), true);
+  expect(doesSchemaTypeMatchValue(undefined, "string")).toBe(true);
 
   // Test string type
-  assertEquals(doesSchemaTypeMatchValue("string", "string"), true);
-  assertEquals(doesSchemaTypeMatchValue("string", "number"), false);
+  expect(doesSchemaTypeMatchValue("string", "string")).toBe(true);
+  expect(doesSchemaTypeMatchValue("string", "number")).toBe(false);
 
   // Test number/integer type
-  assertEquals(doesSchemaTypeMatchValue("number", "number"), true);
-  assertEquals(doesSchemaTypeMatchValue("integer", "number"), true);
+  expect(doesSchemaTypeMatchValue("number", "number")).toBe(true);
+  expect(doesSchemaTypeMatchValue("integer", "number")).toBe(true);
 
   // Test array of types
-  assertEquals(doesSchemaTypeMatchValue(["string", "null"], "string"), true);
-  assertEquals(
+  expect(doesSchemaTypeMatchValue(["string", "null"], "string")).toBe(true);
+  expect(
     doesSchemaTypeMatchValue(["string", "number"], "boolean"),
-    false,
-  );
-  assertEquals(doesSchemaTypeMatchValue(["integer", "null"], "number"), true);
+  ).toBe(false);
+  expect(doesSchemaTypeMatchValue(["integer", "null"], "number")).toBe(true);
 });
 
-Deno.test("typeMatches", () => {
+test("typeMatches", () => {
   // Test undefined schema type (should match anything)
-  assertEquals(typeMatches(undefined, "string"), true);
+  expect(typeMatches(undefined, "string")).toBe(true);
 
   // Test string type
-  assertEquals(typeMatches("string", "string"), true);
-  assertEquals(typeMatches("string", "number"), false);
+  expect(typeMatches("string", "string")).toBe(true);
+  expect(typeMatches("string", "number")).toBe(false);
 
   // Test number/integer type
-  assertEquals(typeMatches("number", "number"), true);
-  assertEquals(typeMatches("integer", "number"), true);
+  expect(typeMatches("number", "number")).toBe(true);
+  expect(typeMatches("integer", "number")).toBe(true);
 
   // Test array of types
-  assertEquals(typeMatches(["string", "null"], "string"), true);
-  assertEquals(typeMatches(["string", "number"], "boolean"), false);
+  expect(typeMatches(["string", "null"], "string")).toBe(true);
+  expect(typeMatches(["string", "number"], "boolean")).toBe(false);
 });
 
-Deno.test("findMatchingAnyOfSchema - basic type matching", () => {
+test("findMatchingAnyOfSchema - basic type matching", () => {
   const schemas: JSONSchema7[] = [
     { type: "string" },
     { type: "number" },
@@ -93,17 +92,17 @@ Deno.test("findMatchingAnyOfSchema - basic type matching", () => {
 
   // Test matching by type
   const stringSchema = findMatchingAnyOfSchema(schemas, "test string");
-  assertEquals(stringSchema?.type, "string");
+  expect(stringSchema?.type).toBe("string");
 
   const numberSchema = findMatchingAnyOfSchema(schemas, 42);
-  assertEquals(numberSchema?.type, "number");
+  expect(numberSchema?.type).toBe("number");
 
   // Test no match
   const noMatch = findMatchingAnyOfSchema(schemas, true);
-  assertEquals(noMatch, undefined);
+  expect(noMatch).toBeUndefined();
 });
 
-Deno.test("findMatchingAnyOfSchema - object properties matching", () => {
+test("findMatchingAnyOfSchema - object properties matching", () => {
   const schemas: JSONSchema7[] = [
     {
       type: "object",
@@ -126,18 +125,18 @@ Deno.test("findMatchingAnyOfSchema - object properties matching", () => {
     schemas,
     { name: "John", age: 30 },
   );
-  assertExists(nameAgeSchema?.properties?.name);
-  assertExists(nameAgeSchema?.properties?.age);
+  expect(nameAgeSchema?.properties?.name).toBeDefined();
+  expect(nameAgeSchema?.properties?.age).toBeDefined();
 
   const nameSchema = findMatchingAnyOfSchema(
     schemas,
     { firstName: "John", lastName: "Doe" },
   );
-  assertExists(nameSchema?.properties?.firstName);
-  assertExists(nameSchema?.properties?.lastName);
+  expect(nameSchema?.properties?.firstName).toBeDefined();
+  expect(nameSchema?.properties?.lastName).toBeDefined();
 });
 
-Deno.test("findMatchingAnyOfSchema - required properties", () => {
+test("findMatchingAnyOfSchema - required properties", () => {
   const schemas: JSONSchema7[] = [
     {
       type: "object",
@@ -154,17 +153,17 @@ Deno.test("findMatchingAnyOfSchema - required properties", () => {
     schemas,
     { name: "John", age: 30 },
   );
-  assertExists(match);
+  expect(match).toBeDefined();
 
   // Should not match when required properties are missing
   const noMatch = findMatchingAnyOfSchema(
     schemas,
     { name: "John" },
   );
-  assertEquals(noMatch, undefined);
+  expect(noMatch).toBeUndefined();
 });
 
-Deno.test("doesChildFieldMatchSchema", () => {
+test("doesChildFieldMatchSchema", () => {
   const schema: JSONSchema7 = {
     type: "object",
     properties: {
@@ -174,20 +173,19 @@ Deno.test("doesChildFieldMatchSchema", () => {
   };
 
   // Test matching field
-  assertEquals(doesChildFieldMatchSchema("user.name", "user.", schema), true);
-  assertEquals(doesChildFieldMatchSchema("user.age", "user.", schema), true);
+  expect(doesChildFieldMatchSchema("user.name", "user.", schema)).toBe(true);
+  expect(doesChildFieldMatchSchema("user.age", "user.", schema)).toBe(true);
 
   // Test non-matching field
-  assertEquals(doesChildFieldMatchSchema("user.email", "user.", schema), false);
+  expect(doesChildFieldMatchSchema("user.email", "user.", schema)).toBe(false);
 
   // Test non-object schema
-  assertEquals(
+  expect(
     doesChildFieldMatchSchema("user.name", "user.", { type: "string" }),
-    false,
-  );
+  ).toBe(false);
 });
 
-Deno.test("getDefaultAnyOfSchema", () => {
+test("getDefaultAnyOfSchema", () => {
   // Test schema with default
   const schemasWithDefault: JSONSchema7[] = [
     { type: "string" },
@@ -195,8 +193,8 @@ Deno.test("getDefaultAnyOfSchema", () => {
     { type: "boolean" },
   ];
   const defaultSchema = getDefaultAnyOfSchema(schemasWithDefault);
-  assertEquals(defaultSchema.type, "number");
-  assertEquals(defaultSchema.default, 42);
+  expect(defaultSchema.type).toBe("number");
+  expect(defaultSchema.default).toBe(42);
 
   // Test non-null preference
   const schemasWithNull: JSONSchema7[] = [
@@ -205,7 +203,7 @@ Deno.test("getDefaultAnyOfSchema", () => {
     { type: ["number", "null"] },
   ];
   const nonNullSchema = getDefaultAnyOfSchema(schemasWithNull);
-  assertEquals(nonNullSchema.type, "string");
+  expect(nonNullSchema.type).toBe("string");
 
   // Test first item fallback
   const basicSchemas: JSONSchema7[] = [
@@ -213,10 +211,10 @@ Deno.test("getDefaultAnyOfSchema", () => {
     { type: "string" },
   ];
   const firstSchema = getDefaultAnyOfSchema(basicSchemas);
-  assertEquals(firstSchema.type, "boolean");
+  expect(firstSchema.type).toBe("boolean");
 });
 
-Deno.test("selectAnyOfSchema - with form data", () => {
+test("selectAnyOfSchema - with form data", () => {
   const schema: JSONSchema7 = {
     anyOf: [
       { type: "string" },
@@ -233,13 +231,13 @@ Deno.test("selectAnyOfSchema - with form data", () => {
 
   // Test with string data
   const stringSchema = selectAnyOfSchema(schema, "test");
-  assertEquals(stringSchema.type, "string");
+  expect(stringSchema.type).toBe("string");
 
   // Test with object data
   const objectSchema = selectAnyOfSchema(schema, { name: "John" });
-  assertEquals(objectSchema.type, "object");
+  expect(objectSchema.type).toBe("object");
 
   // Test with no matching data
   const anySchema = selectAnyOfSchema(schema, true);
-  assertExists(anySchema); // Should return default schema
+  expect(anySchema).toBeDefined(); // Should return default schema
 });

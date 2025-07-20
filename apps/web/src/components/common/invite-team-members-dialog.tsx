@@ -1,3 +1,4 @@
+import type React from "react";
 import {
   cloneElement,
   type MouseEventHandler,
@@ -39,9 +40,14 @@ import { RolesDropdown } from "./roles-dropdown.tsx";
 const inviteMemberSchema = z.object({
   invitees: z.array(
     z.object({
-      email: z.string().email({
-        message: "Please enter a valid email address",
-      }),
+      email: z.string()
+        .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+          message:
+            "Special characters are not allowed. Only standard ASCII characters are allowed in the email.",
+        })
+        .email({
+          message: "Please enter a valid email address",
+        }),
       roleId: z.array(z.string()).min(1, { message: "Please select a role" }),
     }),
   ).min(1),
@@ -133,6 +139,7 @@ export function InviteTeamMembersDialog({
 
   const form = useForm<InviteMemberFormData>({
     resolver: zodResolver(inviteMemberSchema),
+    mode: "onBlur",
     defaultValues: {
       invitees: [{ email: "", roleId: ownerRoleId ? [ownerRoleId] : [] }],
     },
@@ -237,7 +244,7 @@ export function InviteTeamMembersDialog({
                         <FormField
                           control={form.control}
                           name={`invitees.${index}.email`}
-                          render={({ field }) => (
+                          render={({ field, fieldState }) => (
                             <FormItem>
                               <FormLabel className="shrink-0">Email</FormLabel>
                               <FormControl>
@@ -246,6 +253,9 @@ export function InviteTeamMembersDialog({
                                   {...field}
                                   autoComplete="email"
                                   disabled={inviteMemberMutation.isPending}
+                                  className={fieldState.error
+                                    ? "border-destructive focus-visible:ring-destructive"
+                                    : ""}
                                 />
                               </FormControl>
                               <FormMessage />

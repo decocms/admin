@@ -634,6 +634,7 @@ Important Notes:
       DECO_CHAT_API_TOKEN: token,
       DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
       DECO_CHAT_APP_NAME: appName,
+      DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug),
     };
 
     await Promise.all(

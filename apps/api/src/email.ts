@@ -7,6 +7,7 @@ import { DECO_BOTS_DOMAIN } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { getServerClient } from "@deco/sdk/storage";
 import type { ForwardableEmailMessage } from "@cloudflare/workers-types";
+import { EmailMessage } from "cloudflare:email";
 // @ts-ignore: this is an import from cf
 import { createMimeMessage } from "mimetext";
 import { runtime } from "./middlewares/actors.ts";
@@ -16,7 +17,8 @@ import PostalMime from "postal-mime";
 
 const readContent = async (message: ForwardableEmailMessage) => {
   // Parse the MIME message to extract structured content
-  const email = await PostalMime.parse(message.raw);
+  // deno-lint-ignore no-explicit-any
+  const email = await PostalMime.parse(message.raw as any);
 
   // Return the text content, fallback to HTML if text is not available
   return email.text || email.html || "";
@@ -27,8 +29,6 @@ export function email(
   ctx: ExecutionContext,
 ) {
   return contextStorage.run({ env, ctx }, async () => {
-    // @ts-ignore: this is an import from cf
-    const { EmailMessage } = await import("cloudflare:email");
     const db = getServerClient(env.SUPABASE_URL, env.SUPABASE_SERVER_TOKEN);
     const stub: <
       Constructor extends ActorConstructor<AIAgent>,
@@ -36,7 +36,8 @@ export function email(
       c: Constructor,
     ) => StubFactory<InstanceType<Constructor>> = (c) => {
       return runtime instanceof ActorCfRuntime
-        ? runtime.stub(c, env)
+        // deno-lint-ignore no-explicit-any
+        ? runtime.stub(c, env as any)
         : actors.stub(c.name);
     };
     const originalMessageId = message.headers.get("Message-ID");
@@ -80,6 +81,7 @@ export function email(
     msg.setSender(message.to);
     msg.setRecipient(message.from);
     const cc = message.headers.get("Cc");
+    // @ts-expect-error - this exists
     cc && msg.setCc(message.cc);
     msg.setSubject(replySubject); // Use the threaded subject instead of generic text
 

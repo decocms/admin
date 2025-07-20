@@ -1,7 +1,7 @@
-import { mergeThemes } from "./merge-theme.ts";
-import { assertEquals } from "jsr:@std/assert";
+import { mergeThemes } from "../src/mcp/teams/merge-theme.ts";
+import { expect, test } from "vitest";
 
-Deno.test("mergeThemes - basic merge", () => {
+test("mergeThemes - basic merge", () => {
   const currentTheme = {
     picture: "https://example.com/picture.png",
     variables: {
@@ -19,7 +19,7 @@ Deno.test("mergeThemes - basic merge", () => {
 
   const mergedTheme = mergeThemes(currentTheme, newTheme);
 
-  assertEquals(mergedTheme, {
+  expect(mergedTheme).toEqual({
     picture: "https://example.com/picture2.png",
     variables: {
       "--background": "#000000",
@@ -28,7 +28,7 @@ Deno.test("mergeThemes - basic merge", () => {
   });
 });
 
-Deno.test("mergeThemes - null current theme", () => {
+test("mergeThemes - null current theme", () => {
   const newTheme = {
     picture: "https://example.com/picture.png",
     variables: {
@@ -38,7 +38,7 @@ Deno.test("mergeThemes - null current theme", () => {
 
   const mergedTheme = mergeThemes(null, newTheme);
 
-  assertEquals(mergedTheme, {
+  expect(mergedTheme).toEqual({
     picture: "https://example.com/picture.png",
     variables: {
       "--background": "#000000",
@@ -46,7 +46,7 @@ Deno.test("mergeThemes - null current theme", () => {
   });
 });
 
-Deno.test("mergeThemes - undefined new theme", () => {
+test("mergeThemes - undefined new theme", () => {
   const currentTheme = {
     picture: "https://example.com/picture.png",
     variables: {
@@ -60,10 +60,10 @@ Deno.test("mergeThemes - undefined new theme", () => {
 
   const mergedTheme = mergeThemes(currentTheme, undefined);
 
-  assertEquals(mergedTheme, currentTheme);
+  expect(mergedTheme).toEqual(currentTheme);
 });
 
-Deno.test("mergeThemes - with Google Font", () => {
+test("mergeThemes - with Google Font", () => {
   const currentTheme = {
     picture: "https://example.com/picture.png",
     variables: {
@@ -88,7 +88,7 @@ Deno.test("mergeThemes - with Google Font", () => {
 
   const mergedTheme = mergeThemes(currentTheme, newTheme);
 
-  assertEquals(mergedTheme, {
+  expect(mergedTheme).toEqual({
     picture: "https://example.com/picture2.png",
     variables: {
       "--background": "#000000",
@@ -101,7 +101,7 @@ Deno.test("mergeThemes - with Google Font", () => {
   });
 });
 
-Deno.test("mergeThemes - with Custom Font", () => {
+test("mergeThemes - with Custom Font", () => {
   const currentTheme = {
     picture: "https://example.com/picture.png",
     variables: {
@@ -128,7 +128,7 @@ Deno.test("mergeThemes - with Custom Font", () => {
 
   const mergedTheme = mergeThemes(currentTheme, newTheme);
 
-  assertEquals(mergedTheme, {
+  expect(mergedTheme).toEqual({
     picture: "https://example.com/picture2.png",
     variables: {
       "--background": "#000000",
@@ -142,7 +142,7 @@ Deno.test("mergeThemes - with Custom Font", () => {
   });
 });
 
-Deno.test("mergeThemes - invalid current theme", () => {
+test("mergeThemes - invalid current theme", () => {
   const invalidTheme = "not an object";
   const newTheme = {
     picture: "https://example.com/picture.png",
@@ -153,7 +153,7 @@ Deno.test("mergeThemes - invalid current theme", () => {
 
   const mergedTheme = mergeThemes(invalidTheme, newTheme);
 
-  assertEquals(mergedTheme, {
+  expect(mergedTheme).toEqual({
     picture: "https://example.com/picture.png",
     variables: {
       "--background": "#000000",

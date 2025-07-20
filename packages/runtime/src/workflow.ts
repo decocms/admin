@@ -1,8 +1,12 @@
 import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
-import type { AppContext, CreateMCPServerOptions } from "./mastra.ts";
+import {
+  type AppContext,
+  type CreateMCPServerOptions,
+  isWorkflow,
+} from "./mastra.ts";
 
 import { D1Store } from "@mastra/cloudflare-d1";
-import { Mastra } from "@mastra/core";
+import { Mastra, type Workflow as MastraWorkflow } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import { DurableObject } from "./cf-imports.ts";
 
@@ -41,8 +45,11 @@ export interface WorkflowDO extends Rpc.DurableObjectBranded {
 export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
   return class Workflow extends DurableObject<DefaultEnv>
     implements WorkflowDO {
-    constructor(state: DurableObjectState, env: DefaultEnv) {
-      super(state, env);
+    constructor(
+      public override ctx: DurableObjectState,
+      public override env: DefaultEnv,
+    ) {
+      super(ctx, env);
     }
 
     bindings(ctx: RequestContext) {
@@ -52,10 +59,23 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       );
     }
 
-    workflow(workflowId: string, bindings: DefaultEnv) {
-      const bindedWorkflows = workflows?.map((w) => w(bindings)) || [];
+    async getWorkflow(
+      workflowId: string,
+      bindings: DefaultEnv,
+    ): Promise<{ workflow: MastraWorkflow }> {
+      const bindedWorkflows = await Promise
+        .all(
+          workflows?.map(async (workflow) => {
+            const workflowResult = workflow(bindings);
+            if (isWorkflow(workflowResult)) {
+              return { workflow: workflowResult };
+            }
+
+            return await workflowResult;
+          }) ?? [],
+        );
       const workflowsMap = Object.fromEntries(
-        bindedWorkflows.map((w) => [w.id, w]),
+        bindedWorkflows.map((w) => [w.workflow.id, w.workflow]),
       );
       const d1Storage = new D1Store({
         client: bindings.DECO_CHAT_WORKSPACE_DB,
@@ -70,13 +90,13 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
           serviceName: `app-${this.env.DECO_CHAT_SCRIPT_SLUG}`,
         },
       });
-
-      return mastra.getWorkflow(workflowId);
+      // since mastra workflows are thenables, so we need to wrap then into an object
+      return { workflow: mastra.getWorkflow(workflowId) };
     }
 
     async start({ workflowId, runId, args, ctx }: StartWorkflowArgs) {
       const bindings = this.bindings(ctx);
-      const workflow = this.workflow(workflowId, bindings);
+      const { workflow } = await this.getWorkflow(workflowId, bindings);
 
       const run = await workflow.createRunAsync({
         runId: this.ctx.id.name ?? runId,
@@ -94,7 +114,11 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
     }
 
     async cancel({ workflowId, runId, ctx }: CancelWorkflowArgs) {
-      const run = await this.workflow(workflowId, this.bindings(ctx))
+      const { workflow } = await this.getWorkflow(
+        workflowId,
+        this.bindings(ctx),
+      );
+      const run = await workflow
         .createRunAsync({
           runId: this.ctx.id.name ?? runId,
         });
@@ -113,7 +137,8 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
       ctx,
     }: ResumeWorkflowArgs) {
       const bindings = this.bindings(ctx);
-      const run = await this.workflow(workflowId, bindings).createRunAsync({
+      const { workflow } = await this.getWorkflow(workflowId, bindings);
+      const run = await workflow.createRunAsync({
         runId: this.ctx.id.name ?? runId,
       });
 

@@ -18,7 +18,8 @@ export const withActorsStubMiddleware: MiddlewareHandler<AppEnv> = async (
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>> = (c) => {
     return runtime instanceof ActorCfRuntime
-      ? runtime.stub(c, ctx.env as unknown as AppEnv)
+      // deno-lint-ignore no-explicit-any
+      ? runtime.stub(c, ctx.env as any)
       : actors.stub(c.name);
   };
 

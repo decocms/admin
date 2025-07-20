@@ -12,6 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@deco/ui/components/dropdown-menu.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { extname } from "@std/path/posix";
 import {
@@ -60,7 +66,7 @@ export interface KnowledgeFile {
   fileUrl: string;
   name: string;
   metadata?: Record<string, unknown>;
-
+  status?: string;
   uploading?: boolean;
 }
 
@@ -94,6 +100,33 @@ export function KnowledgeBaseFileList(
           {/* name */}
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium truncate">
+              {(file.status === "processing" || file.status === "failed" ||
+                file.uploading) && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={cn(
+                          // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
+                          "text-xs bg-gray-400 w-2 h-2 rounded-full inline-block mr-2",
+                          file.status === "processing" && "bg-yellow-600",
+                          file.status === "failed" && "bg-red-600",
+                          file.uploading && "bg-blue-600",
+                        )}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {file.uploading
+                        ? "Uploading"
+                        : file.status === "processing"
+                        ? "Processing"
+                        : file.status === "failed"
+                        ? "Failed"
+                        : "Unknown status"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {file.name}
             </span>
             <div className="flex items-center gap-2">

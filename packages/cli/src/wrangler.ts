@@ -1,5 +1,10 @@
 import { join } from "node:path";
-import { addWorkflowDO, getConfig, getConfigFilePath } from "./config.ts";
+import {
+  addWorkflowDO,
+  getConfig,
+  getConfigFilePath,
+  readWranglerConfig,
+} from "./config.ts";
 import { readSession } from "./session.ts";
 
 const envFile = ".dev.vars";
@@ -38,19 +43,28 @@ export async function getEnvVars(projectRoot?: string) {
   if (!projectRoot) {
     projectRoot = getProjectRoot();
   }
-  const [currentEnvVars, session, config] = await Promise.all([
+  const [currentEnvVars, session, config, wrangler] = await Promise.all([
     getCurrentEnvVars(projectRoot),
     readSession(),
     getConfig({}),
+    readWranglerConfig(projectRoot),
   ]);
   const encodedBindings = btoa(JSON.stringify(config.bindings));
 
+  const workspace = config.workspace ?? session?.workspace;
   const env: Record<string, string> = {
     ...currentEnvVars,
-    DECO_CHAT_WORKSPACE: config.workspace ?? session?.workspace,
+    DECO_CHAT_WORKSPACE: workspace,
     DECO_CHAT_API_TOKEN: session?.access_token ?? "",
     DECO_CHAT_BINDINGS: encodedBindings,
+    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8787",
   };
+
+  const { name, scope } = wrangler;
+  if (name) {
+    const [_, slug] = workspace.split("/");
+    env.DECO_CHAT_APP_NAME = `@${scope ?? slug}/${name}`;
+  }
 
   if (config.local) {
     env.DECO_CHAT_API_URL = "http://localhost:3001";

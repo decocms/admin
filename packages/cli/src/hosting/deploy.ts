@@ -5,6 +5,14 @@ import { getCurrentEnvVars } from "../wrangler.ts";
 import { relative } from "@std/path/relative";
 import { Buffer } from "node:buffer";
 
+function tryParseJson(text: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export type FileLike = {
   path: string;
   content: string;
@@ -156,7 +164,9 @@ export const deploy = async (
   });
 
   if (response.isError && Array.isArray(response.content)) {
-    throw new Error(response.content[0]?.text ?? "Unknown error");
+    const errorText = response.content[0]?.text;
+    const errorTextJson = tryParseJson(errorText ?? "");
+    throw new Error(errorTextJson ?? errorText ?? "Unknown error");
   }
 
   const { entrypoint } = response.structuredContent as { entrypoint: string };

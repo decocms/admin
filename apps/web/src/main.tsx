@@ -133,6 +133,10 @@ const WorkflowDetailPage = lazy(() =>
   wrapWithUILoadingFallback(import("./components/workflows/detail.tsx"))
 );
 
+const AppAuth = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/apps/auth.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -278,6 +282,10 @@ const router = createBrowserRouter([
       {
         path: "/chats",
         Component: PublicChats,
+      },
+      {
+        path: "/apps-auth",
+        Component: AppAuth,
       },
       {
         path: "/:teamSlug?",

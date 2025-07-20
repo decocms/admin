@@ -1,6 +1,6 @@
 import { HttpServerTransport } from "@deco/mcp/http";
-import { getKeyPair } from "@deco/sdk/auth";
-import { WellKnownMcpGroups } from "@deco/sdk";
+import { DECO_CHAT_WEB, WellKnownMcpGroups } from "@deco/sdk";
+import { DECO_CHAT_KEY_ID, getKeyPair } from "@deco/sdk/auth";
 import {
   AGENT_TOOLS,
   AuthorizationClient,
@@ -33,6 +33,7 @@ import { setUserMiddleware } from "./middlewares/user.ts";
 import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
+import { handleCodeExchange } from "./oauth/code.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -52,6 +53,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     policy: policyClient,
     authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
+    kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspace: slug && root
       ? {
         root,
@@ -251,6 +253,8 @@ app.post(
   createMCPHandlerFor(EMAIL_TOOLS),
 );
 
+app.post("/apps/code-exchange", handleCodeExchange);
+
 app.post("/:root/:slug/triggers/:id", handleTrigger);
 
 // Login and auth routes
@@ -307,12 +311,23 @@ const getPublicKey = async (): Promise<JsonWebKey> => {
   const [publicKey] = await getKeyPair();
   return publicKey;
 };
-const keyId = "deco-chat-api-key";
 app.get("/.well-known/jwks.json", async () => {
-  return Response.json({ keys: [{ ...await getPublicKey(), kid: keyId }] });
+  return Response.json({
+    keys: [{ ...await getPublicKey(), kid: DECO_CHAT_KEY_ID }],
+  });
 });
 // External webhooks
 app.post("/webhooks/stripe", handleStripeWebhook);
+
+// Apps oauth
+app.get("/apps/oauth", (c) => {
+  const url = new URL(c.req.raw.url);
+  const target = new URL(DECO_CHAT_WEB);
+  target.pathname = "/apps-auth";
+  target.search = url.search;
+
+  return c.redirect(target.href);
+});
 
 // Health check endpoint
 app.get("/health", (c: Context) => c.json({ status: "ok" }));

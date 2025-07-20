@@ -48,3 +48,9 @@ new_classes = ["TestDO"]
 [[migrations]]
 tag = "v3"
 deleted_classes = ["TestDO"]
+
+# Workflow bindings for knowledge base file processing
+[[workflows]]
+name = "kb-file-processor"
+binding = "KB_FILE_PROCESSOR"
+class_name = "KbFileProcessorWorkflow"

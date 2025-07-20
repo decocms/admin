@@ -27,7 +27,7 @@ import {
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useFocusChat } from "../agents/hooks.ts";
 import { useChatContext } from "../chat/context.tsx";
-import { useProfileModal } from "../layout.tsx";
+import { useProfileModalContext } from "../profile-modal.tsx";
 import { WhatsAppInviteDialog } from "./whatsapp-invite-dialog.tsx";
 
 const PHONE_NUMBER = "11920902075";
@@ -55,7 +55,7 @@ export function WhatsAppButton({ isMobile = false }: { isMobile?: boolean }) {
   const { data: profile } = useProfile();
   const { data: whatsappUser } = useWhatsAppUser(profile?.phone ?? "");
   const focusChat = useFocusChat();
-  const { openProfileModal } = useProfileModal();
+  const { openProfileModal } = useProfileModalContext();
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agentId as keyof typeof WELL_KNOWN_AGENTS],

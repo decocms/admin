@@ -131,6 +131,59 @@ export const createApiKey = createTool({
   },
 });
 
+export const reissueApiKey = createTool({
+  name: "API_KEYS_REISSUE",
+  description: "Reissue an existing API key with new claims",
+  inputSchema: z.object({
+    id: z.string().describe("The ID of the API key to reissue"),
+    claims: z.any().optional().describe(
+      "New claims to be added to the API key",
+    ),
+  }),
+  handler: async ({ id, claims }, c) => {
+    assertHasWorkspace(c);
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const db = c.db;
+    const workspace = c.workspace.value;
+
+    // First, verify the API key exists and is accessible
+    const { data: apiKey, error } = await db.from("deco_chat_api_keys")
+      .select(SELECT_API_KEY_QUERY)
+      .eq("id", id)
+      .eq("workspace", workspace)
+      .is("deleted_at", null)
+      .single();
+
+    if (error) {
+      throw new InternalServerError(error.message);
+    }
+
+    if (!apiKey) {
+      throw new NotFoundError("API key not found");
+    }
+
+    // Generate new JWT token with the provided claims
+    const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      ? {
+        public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+        private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+      }
+      : undefined;
+
+    const issuer = await JwtIssuer.forKeyPair(keyPair);
+    const value = await issuer.issue({
+      ...claims,
+      sub: `api-key:${apiKey.id}`,
+      aud: workspace,
+      iat: new Date().getTime(),
+    });
+
+    return { ...mapApiKey(apiKey), value };
+  },
+});
+
 export const getApiKey = createTool({
   name: "API_KEYS_GET",
   description: "Get an API key by ID",

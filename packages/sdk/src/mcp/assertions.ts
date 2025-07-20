@@ -15,6 +15,12 @@ type WithWorkspace<TAppContext extends AppContext = AppContext> =
     workspace: { root: string; slug: string; value: Workspace };
   };
 
+type WithKbFileProcessor<TAppContext extends AppContext = AppContext> =
+  & Omit<TAppContext, "kbFileProcessor">
+  & {
+    kbFileProcessor: Workflow;
+  };
+
 export type WithTool<TAppContext extends AppContext = AppContext> =
   & Omit<TAppContext, "tool">
   & {
@@ -162,3 +168,11 @@ export const assertTeamResourceAccess = async (
     `Cannot access ${resource} in team ${teamIdOrSlug}`,
   );
 };
+
+export function assertKbFileProcessor(
+  c: AppContext,
+): asserts c is WithKbFileProcessor<AppContext> {
+  if (!c.kbFileProcessor) {
+    throw new ForbiddenError("KbFileProcessor not found");
+  }
+}

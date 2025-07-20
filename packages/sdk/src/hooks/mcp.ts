@@ -322,15 +322,16 @@ export const useInstallFromMarketplace = () => {
     { appName: string; returnUrl: string; provider: string }
   >({
     mutationFn: async (
-      { appName, provider, returnUrl }: {
+      { appName, provider, returnUrl, appId }: {
         appName: string;
         returnUrl: string;
         provider: string;
+        appId?: string;
       },
     ) => {
       const result: { installationId: string } = await MCPClient
         .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName, provider });
+        .DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
 
       const integration = await loadIntegration(
         workspace,
@@ -419,6 +420,34 @@ export const useInstallFromMarketplace = () => {
         listKey,
         (old) => !old ? [processedIntegration] : [processedIntegration, ...old],
       );
+    },
+  });
+
+  return mutation;
+};
+
+export const useCreateOAuthCodeForIntegration = () => {
+  const mutation = useMutation({
+    mutationFn: async (params: {
+      integrationId: string;
+      workspace: string;
+      redirectUri: string;
+      state?: string;
+    }) => {
+      const { integrationId, workspace, redirectUri, state } = params;
+
+      const { code } = await MCPClient.forWorkspace(workspace)
+        .OAUTH_CODE_CREATE({
+          integrationId,
+        });
+
+      const url = new URL(redirectUri);
+      url.searchParams.set("code", code);
+      state && url.searchParams.set("state", state);
+
+      return {
+        redirectTo: url.toString(),
+      };
     },
   });
 

@@ -6,6 +6,7 @@ import {
 } from "@deco/ai/mcp";
 import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import {
   type Agent,
   AgentSchema,
@@ -37,7 +38,7 @@ import {
   NotFoundError,
   WellKnownBindings,
 } from "../index.ts";
-import { KNOWLEDGE_BASE_GROUP, listKnowledgeBases } from "../knowledge/api.ts";
+import { listKnowledgeBases } from "../knowledge/api.ts";
 import { getRegistryApp, listRegistryApps } from "../registry/api.ts";
 import { createServerClient } from "../utils.ts";
 import { WalletBinding } from "../bindings/binder.ts";  
@@ -47,8 +48,33 @@ import {
   WellKnownWallets,
 } from "../wallet/index.ts";
 
+const SELECT_INTEGRATION_QUERY = `
+          *,
+          deco_chat_apps_registry(
+            name,
+            deco_chat_registry_scopes(scope_name)
+          )
+        ` as const;
 // Tool factories for each group
-
+const mapIntegration = (
+  integration: QueryResult<
+    "deco_chat_integrations",
+    typeof SELECT_INTEGRATION_QUERY
+  >,
+) => {
+  let appName: undefined | string;
+  const registryName = integration.deco_chat_apps_registry?.name;
+  const appScope = integration.deco_chat_apps_registry
+    ?.deco_chat_registry_scopes?.scope_name;
+  if (registryName && appScope) {
+    appName = `@${appScope}/${registryName}`;
+  }
+  return {
+    ...integration,
+    appName,
+    id: formatId("i", integration.id),
+  };
+};
 export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
@@ -358,7 +384,7 @@ export const listIntegrations = createIntegrationManagementTool({
     ] = await Promise.all([
       c.db
         .from("deco_chat_integrations")
-        .select("*")
+        .select(SELECT_INTEGRATION_QUERY)
         .ilike("workspace", workspace),
       c.db
         .from("deco_chat_agents")
@@ -398,10 +424,7 @@ export const listIntegrations = createIntegrationManagementTool({
         knowledgeBases.names ?? [],
         c.token,
       ),
-      ...filteredIntegrations.map((item) => ({
-        ...item,
-        id: formatId("i", item.id),
-      })),
+      ...filteredIntegrations.map(mapIntegration),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
@@ -476,12 +499,19 @@ export const getIntegration = createIntegrationManagementTool({
     }
     assertHasWorkspace(c);
 
-    const selectPromise = c.db
-      .from(type === "i" ? "deco_chat_integrations" : "deco_chat_agents")
-      .select("*")
-      .eq("id", uuid)
-      .eq("workspace", c.workspace.value)
-      .single().then((r) => r);
+    const selectPromise = type === "i"
+      ? c.db
+        .from("deco_chat_integrations")
+        .select(SELECT_INTEGRATION_QUERY)
+        .eq("id", uuid)
+        .eq("workspace", c.workspace.value)
+        .single().then((r) => r)
+      : c.db
+        .from("deco_chat_agents")
+        .select("*")
+        .eq("id", uuid)
+        .eq("workspace", c.workspace.value)
+        .single().then((r) => r);
 
     const knowledgeBases = await listKnowledgeBases.handler({});
 
@@ -520,7 +550,12 @@ export const getIntegration = createIntegrationManagementTool({
     }
 
     return IntegrationSchema.parse({
-      ...data,
+      ...mapIntegration(
+        data as unknown as QueryResult<
+          "deco_chat_integrations",
+          typeof SELECT_INTEGRATION_QUERY
+        >,
+      ),
       id: formatId(type, data.id),
     });
   },
@@ -529,14 +564,19 @@ export const getIntegration = createIntegrationManagementTool({
 export const createIntegration = createIntegrationManagementTool({
   name: "INTEGRATIONS_CREATE",
   description: "Create a new integration",
-  inputSchema: IntegrationSchema.partial(),
-  handler: async (integration, c) => {
+  inputSchema: IntegrationSchema
+    .partial()
+    .omit({ appName: true }),
+  handler: async (_integration, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    const { appId, ...integration } = _integration;
 
     const payload = {
       ...NEW_INTEGRATION_TEMPLATE,
       ...integration,
+      app_id: appId ?? undefined,
       workspace: c.workspace.value,
       id: integration.id ? parseId(integration.id).uuid : undefined,
     };
@@ -905,6 +945,9 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
     provider: z.string().optional().describe(
       "The provider of the integration to install. To know the available providers, use the DECO_INTEGRATIONS_SEARCH tool",
     ),
+    appId: z.string().optional().describe(
+      "The id of the app to install the integration for. To know the available app ids, use the DECO_INTEGRATIONS_SEARCH tool",
+    ),
   }),
   outputSchema: z.object({
     installationId: z.string().describe(
@@ -941,6 +984,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
       integration = {
         id: crypto.randomUUID(),
         name: app.friendlyName ?? `@${app.scopeName}/${app.name}`,
+        appId: args.appId,
         description: app.description,
         icon: app.icon,
         connection: app.connection,

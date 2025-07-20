@@ -1,7 +1,7 @@
 import { decodeJwt, type JWTPayload, jwtVerify, SignJWT } from "jose";
 export type { JWTPayload };
+import { env } from "cloudflare:workers";
 
-const { env } = await import("cloudflare:workers");
 export const alg = "RSASSA-PKCS1-v1_5";
 export const hash = "SHA-256";
 
@@ -83,7 +83,7 @@ export async function createJWT<
   expiresIn?: number | string | Date,
 ): Promise<string> {
   let jwt = new SignJWT(payload)
-    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: "deco-chat-api-key" })
     .setIssuedAt();
   if (expiresIn) {
     jwt = jwt.setExpirationTime(expiresIn);
@@ -105,7 +105,7 @@ export async function verifyJWT<
   return payload as JwtPayloadWithClaims<TClaims>;
 }
 
-const DECO_CHAT_ISSUER = "deco.chat";
+const DECO_CHAT_ISSUER = "https://api.deco.chat";
 
 export type JwtPayloadWithClaims<
   TClaims extends Record<string, unknown> = Record<string, unknown>,

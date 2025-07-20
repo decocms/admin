@@ -16,3 +16,4 @@ export * from "./prompts.ts";
 export * from "./knowledge.ts";
 export * from "./keys.ts";
 export * from "./registry.ts";
+export * from "./permissions.ts";

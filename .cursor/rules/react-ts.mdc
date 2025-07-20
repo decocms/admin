@@ -78,4 +78,356 @@ alwaysApply: true
         │   │   ├── toggle-group.tsx
         │   │   ├── toggle.tsx
         │   │   └── tooltip.tsx
-            
+
+
+## React Best Practices
+
+### Performance Optimization
+This application is data-intensive and render-intensive. Optimize performance by:
+
+**useMemo for Expensive Computations:**
+```tsx
+// ✅ Good - Memoize expensive filtering/sorting operations
+const filteredAgents = useMemo(() => {
+  return agents.filter(agent => 
+    agent.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ).sort((a, b) => a.name.localeCompare(b.name));
+}, [agents, searchTerm]); // Dependencies are primitives or stable references
+
+// ❌ Bad - Creating new objects in render without memoization
+return agents.filter(agent => agent.active).map(agent => ({
+  ...agent,
+  displayName: agent.name.toUpperCase()
+}));
+```
+
+**Memoizing Objects and Arrays:**
+```tsx
+// ✅ Good - Stable object references
+const defaultValues = useMemo(() => ({
+  name: agent?.name || "",
+  description: agent?.description || "",
+  instructions: agent?.instructions || "",
+}), [agent?.name, agent?.description, agent?.instructions]);
+
+// ❌ Bad - New object created every render
+const defaultValues = {
+  name: agent?.name || "",
+  description: agent?.description || "",
+};
+```
+
+**useDeferredValue for Search Operations:**
+```tsx
+// ✅ Good - Use useDeferredValue for search to prevent blocking user input
+import { useDeferredValue, useMemo, useState } from "react";
+
+export function AgentSearch() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const { data: agents } = useAgents();
+
+  // Search runs with deferred value, keeping input responsive
+  const filteredAgents = useMemo(() => {
+    if (!deferredSearchTerm) return agents;
+    return agents?.filter(agent =>
+      agent.name.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
+      agent.description?.toLowerCase().includes(deferredSearchTerm.toLowerCase())
+    );
+  }, [agents, deferredSearchTerm]);
+
+  return (
+    <>
+      <Input
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search agents..."
+      />
+      {filteredAgents?.map(agent => <AgentCard key={agent.id} agent={agent} />)}
+    </>
+  );
+}
+
+// ❌ Bad - Search blocks input on every keystroke
+const filteredAgents = useMemo(() => {
+  return agents?.filter(agent =>
+    agent.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}, [agents, searchTerm]); // Runs on every keystroke, can block UI
+```
+
+### Data Flow and MCP Tools
+Follow the established data patterns from MCP (Model Context Protocol) Tools:
+
+**Consistent Data Fetching:**
+```tsx
+// ✅ Follow MCP patterns for data access
+const { data: agents, isLoading } = useAgents();
+const { data: integrations } = useIntegrations();
+const { mutateAsync: updateAgent } = useUpdateAgent();
+
+// Use proper loading states and error handling
+if (isLoading) return <Spinner />;
+```
+
+### Design System Usage
+
+**Always Use UI Components from @deco/ui:**
+```tsx
+// ✅ Good - Use design system components
+import { Button } from "@deco/ui/components/button.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
+import { Card, CardContent, CardHeader } from "@deco/ui/components/card.tsx";
+
+// ❌ Bad - Creating custom components that duplicate design system
+<button className="px-4 py-2 bg-blue-500 text-white rounded">
+  Custom Button
+</button>
+```
+
+### Form Management
+
+**Prefer React Hook Form over useState:**
+```tsx
+// ✅ Good - Use react-hook-form with proper validation
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const schema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  roleId: z.array(z.string()).min(1, "Please select a role"),
+});
+
+const form = useForm<FormData>({
+  resolver: zodResolver(schema),
+  defaultValues: { email: "", roleId: [] },
+  mode: "onBlur", // Validate on blur for better UX
+});
+
+// ❌ Bad - Managing form state manually
+const [email, setEmail] = useState("");
+const [emailError, setEmailError] = useState("");
+const [roleId, setRoleId] = useState([]);
+```
+
+**Avoid Prop Drilling with Form Context:**
+```tsx
+// ✅ Good - Use context for form sharing
+const FormContext = createContext<UseFormReturn<FormData> | null>(null);
+
+export function FormProvider({ children }: { children: ReactNode }) {
+  const form = useForm<FormData>();
+  return (
+    <FormContext.Provider value={form}>
+      {children}
+    </FormContext.Provider>
+  );
+}
+
+export function useFormContext() {
+  const context = useContext(FormContext);
+  if (!context) throw new Error("useFormContext must be used within FormProvider");
+  return context;
+}
+```
+
+**Use Design System Form Components:**
+```tsx
+// ✅ Good - Use form components with proper error handling
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@deco/ui/components/form.tsx";
+
+<FormField
+  control={form.control}
+  name="email"
+  render={({ field, fieldState }) => (
+    <FormItem>
+      <FormLabel>
+        Email {isRequired && <span className="text-destructive ml-1">*</span>}
+      </FormLabel>
+      <FormControl>
+        <Input 
+          {...field} 
+          className={fieldState.error ? "border-destructive focus-visible:ring-destructive" : ""}
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+### Component Architecture
+
+**Single Responsibility Principle:**
+```tsx
+// ✅ Good - Focused, composable components
+export function AgentCard({ agent }: { agent: Agent }) {
+  return (
+    <Card>
+      <AgentHeader agent={agent} />
+      <AgentContent agent={agent} />
+      <AgentActions agent={agent} />
+    </Card>
+  );
+}
+
+function AgentHeader({ agent }: { agent: Agent }) {
+  return (
+    <CardHeader>
+      <AgentAvatar agent={agent} />
+      <div>
+        <h3>{agent.name}</h3>
+        <p>{agent.description}</p>
+      </div>
+    </CardHeader>
+  );
+}
+
+// ❌ Bad - Monolithic component handling everything
+export function AgentManager() {
+  // 200+ lines of mixed concerns
+  // - Data fetching
+  // - UI rendering
+  // - Form handling
+  // - Business logic
+}
+```
+
+**Composability and Reusability:**
+```tsx
+// ✅ Good - Composable avatar system
+<AgentAvatar agent={agent} size="sm" />
+<IntegrationAvatar integration={integration} size="lg" />
+<UserAvatar user={user} size="default" />
+
+// Components can be combined in different contexts
+<Card>
+  <div className="flex items-center gap-2">
+    <AgentAvatar agent={agent} size="sm" />
+    <span>{agent.name}</span>
+  </div>
+</Card>
+```
+
+### Dependency Array Best Practices
+
+**Ensure Stable References:**
+```tsx
+// ✅ Good - Dependencies with stable references
+const processedData = useMemo(() => {
+  return data.map(item => transformItem(item));
+}, [data]); // `data` comes from API hook with stable reference
+
+const handleSubmit = useCallback((formData: FormData) => {
+  mutateAsync(formData);
+}, [mutateAsync]); // `mutateAsync` from react-query is stable
+
+// ❌ Bad - Objects created inline in dependency array
+const result = useMemo(() => {
+  return processItems(items, options);
+}, [items, { sortBy: 'name', order: 'asc' }]); // New object every render!
+
+// ✅ Good - Memoize the options object
+const options = useMemo(() => ({ sortBy: 'name', order: 'asc' }), []);
+const result = useMemo(() => {
+  return processItems(items, options);
+}, [items, options]);
+```
+
+### Error Handling and Loading States
+
+**Consistent Error and Loading Patterns:**
+```tsx
+// ✅ Good - Proper error and loading handling
+export function AgentList() {
+  const { data: agents, isLoading, error } = useAgents();
+
+  if (isLoading) return <Spinner />;
+  if (error) return <ErrorMessage error={error} />;
+  if (!agents?.length) return <EmptyState message="No agents found" />;
+
+  return (
+    <div className="space-y-4">
+      {agents.map(agent => (
+        <AgentCard key={agent.id} agent={agent} />
+      ))}
+    </div>
+  );
+}
+```
+
+**Extract Logic into Components Instead of Inline Functions:**
+```tsx
+// ❌ Bad - Using immediately invoked function expressions (IIFEs) in JSX
+function UserProfile({ user }: { user: User }) {
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      {(() => {
+        if (user.isPremium) {
+          return <Badge variant="gold">Premium</Badge>;
+        }
+        if (user.isActive) {
+          return <Badge variant="green">Active</Badge>;
+        }
+        return <Badge variant="gray">Inactive</Badge>;
+      })()}
+      
+      {(() => {
+        const achievements = user.achievements.filter(a => a.isVisible);
+        if (!achievements.length) return null;
+        return (
+          <div>
+            {achievements.map(achievement => (
+              <span key={achievement.id}>{achievement.name}</span>
+            ))}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+// ✅ Good - Extract complex logic into separate components
+function UserProfile({ user }: { user: User }) {
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <UserStatusBadge user={user} />
+      <UserAchievements achievements={user.achievements} />
+    </div>
+  );
+}
+
+function UserStatusBadge({ user }: { user: User }) {
+  if (user.isPremium) {
+    return <Badge variant="gold">Premium</Badge>;
+  }
+  if (user.isActive) {
+    return <Badge variant="green">Active</Badge>;
+  }
+  return <Badge variant="gray">Inactive</Badge>;
+}
+
+function UserAchievements({ achievements }: { achievements: Achievement[] }) {
+  const visibleAchievements = achievements.filter(a => a.isVisible);
+  
+  if (!visibleAchievements.length) return null;
+  
+  return (
+    <div>
+      {visibleAchievements.map(achievement => (
+        <span key={achievement.id}>{achievement.name}</span>
+      ))}
+    </div>
+  );
+}
+```

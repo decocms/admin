@@ -1,4 +1,5 @@
 import type { TriggerOutput } from "@deco/sdk";
+import type { JSONSchema7 } from "json-schema";
 import {
   useAgents,
   useCreateTrigger,
@@ -41,9 +42,10 @@ import {
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import JsonSchemaForm from "../json-schema/index.tsx";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { IntegrationAvatar } from "../common/avatar/integration.tsx";
@@ -188,13 +190,44 @@ function JsonSchemaInput({ value, onChange }: {
   );
 }
 
-function ArgumentsInput({ value, onChange }: {
+function ArgumentsInput({ value, onChange, jsonSchema }: {
   value: string | undefined;
   onChange: (v: string) => void;
+  jsonSchema?: JSONSchema7;
 }) {
   const [error, setError] = useState<string | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+  // Create a separate form for JSON Schema component
+  const schemaForm = useForm({
+    defaultValues: {},
+  });
+
+  // Parse initial value and set form defaults
+  useEffect(() => {
+    if (jsonSchema && value) {
+      try {
+        const parsed = JSON.parse(value);
+        schemaForm.reset(parsed);
+        setError(null);
+      } catch (err) {
+        setError("Invalid JSON: " + (err as Error).message);
+      }
+    }
+  }, [jsonSchema, value, schemaForm]);
+
+  // Handle schema form changes
+  const handleSchemaFormChange = (formData: Record<string, unknown>) => {
+    try {
+      const jsonString = JSON.stringify(formData, null, 2);
+      onChange(jsonString);
+      setError(null);
+    } catch (err) {
+      setError("Failed to serialize form data: " + (err as Error).message);
+    }
+  };
+
+  // Handle textarea changes
+  function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
     onChange(val);
     try {
@@ -210,11 +243,55 @@ function ArgumentsInput({ value, onChange }: {
     }
   }
 
+  // Watch form changes and update parent
+  useEffect(() => {
+    if (jsonSchema) {
+      const subscription = schemaForm.watch((formData) => {
+        if (formData && Object.keys(formData).length > 0) {
+          handleSchemaFormChange(formData);
+        }
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [jsonSchema, schemaForm]);
+
+  // Check if JSON schema is provided and has meaningful content
+  const hasValidSchema = jsonSchema &&
+    jsonSchema.type === "object" &&
+    jsonSchema.properties &&
+    Object.keys(jsonSchema.properties).length > 0;
+
+  // If JSON schema is provided with properties, render the schema form
+  if (hasValidSchema) {
+    return (
+      <div className="space-y-2">
+        <JsonSchemaForm
+          schema={jsonSchema}
+          form={schemaForm}
+          onSubmit={(e) => {
+            e.preventDefault();
+            // Form submission is handled by the parent
+          }}
+          error={error}
+        />
+        {error && <div className="text-xs text-destructive mt-1">{error}</div>}
+        <div className="bg-muted border border-border rounded p-3 text-xs text-foreground">
+          <div className="font-semibold mb-1">Schema-based Arguments:</div>
+          <p>
+            Fill out the form above based on the tool's parameter schema. The
+            values will be automatically converted to the correct JSON format.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to textarea when no schema is provided
   return (
     <div className="space-y-2">
       <Textarea
         value={value || ""}
-        onChange={handleChange}
+        onChange={handleTextareaChange}
         rows={5}
         className={error ? "border-destructive" : ""}
         placeholder="Enter tool arguments as JSON..."
@@ -1219,18 +1296,29 @@ export function TriggerModal({
                     <FormField
                       control={form.control}
                       name="arguments"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Arguments *</FormLabel>
-                          <FormControl>
-                            <ArgumentsInput
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        // Get the selected tool's input schema
+                        const selectedTool = tools.find((tool) =>
+                          tool.name === form.watch("toolName")
+                        );
+                        const inputSchema = selectedTool?.inputSchema as
+                          | JSONSchema7
+                          | undefined;
+
+                        return (
+                          <FormItem>
+                            <FormLabel>Arguments *</FormLabel>
+                            <FormControl>
+                              <ArgumentsInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                jsonSchema={inputSchema}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   )}
                 </div>

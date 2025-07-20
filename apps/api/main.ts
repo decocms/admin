@@ -6,8 +6,8 @@ import { instrument } from "@deco/sdk/observability";
 import { getRuntimeKey } from "hono/adapter";
 import { default as app } from "./src/app.ts";
 import { email } from "./src/email.ts";
-
-const { env } = await import("cloudflare:workers");
+import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
+import { env } from "cloudflare:workers";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
@@ -84,3 +84,6 @@ export default {
     });
   },
 };
+
+// Export the workflow
+export { KbFileProcessorWorkflow };

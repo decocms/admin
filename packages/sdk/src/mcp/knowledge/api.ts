@@ -2,11 +2,16 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { embed, embedMany } from "ai";
 import { z } from "zod";
 import { basename } from "@std/path";
-import { KNOWLEDGE_BASE_DIMENSION } from "../../constants.ts";
+import {
+  DEFAULT_KNOWLEDGE_BASE_NAME,
+  KNOWLEDGE_BASE_DIMENSION,
+  KNOWLEDGE_BASE_GROUP,
+} from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
 import {
   assertHasWorkspace,
+  assertKbFileProcessor,
   assertWorkspaceResourceAccess,
   type WithTool,
 } from "../assertions.ts";
@@ -15,27 +20,35 @@ import {
   createToolFactory,
   createToolGroup,
 } from "../context.ts";
-import { FileMetadataSchema, FileProcessor } from "../file-processor.ts";
+import { FileMetadataSchema } from "../file-processor.ts";
 import type { Json } from "../../storage/index.ts";
+import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
 }
-export const KNOWLEDGE_BASE_GROUP = "knowledge_base";
-export const DEFAULT_KNOWLEDGE_BASE_NAME = "standard";
 
 // Legacy schema for backward compatibility during migration
 export const KnowledgeFileMetadataSchema = z.object({
   agentId: z.string().optional(),
 }).merge(FileMetadataSchema);
 
-const addFileDefaults = (file: {
-  fileUrl: string;
-  metadata: Json;
-  path: string | null;
-  docIds: string[] | null;
-  filename: string | null;
-}) => ({
+const addFileDefaults = <
+  T extends {
+    fileUrl: string;
+    metadata: Json;
+    path: string | null;
+    docIds: string[] | null;
+    filename: string | null;
+    status: string | null;
+  },
+>(file: T): Omit<T, "metadata"> & {
+  metadata: z.infer<typeof KnowledgeFileMetadataSchema>;
+  docIds: string[];
+  filename: string;
+  path: string;
+  status?: string;
+} => ({
   ...file,
   metadata: (file.metadata || {}) as z.infer<
     typeof KnowledgeFileMetadataSchema
@@ -43,6 +56,7 @@ const addFileDefaults = (file: {
   docIds: file.docIds || [],
   filename: file.filename ?? "",
   path: file.path ?? "",
+  status: file.status ?? undefined,
 });
 
 const createKnowledgeBaseTool = createToolFactory<
@@ -312,59 +326,39 @@ export const addFile = createKnowledgeBaseTool({
     c,
   ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const fileProcessor = new FileProcessor({
-      chunkSize: 500,
-      chunkOverlap: 50,
-    });
-
-    const proccessedFile = await fileProcessor.processFile(fileUrl);
-
-    const fileMetadata = {
-      ..._metadata,
-      ...proccessedFile.metadata,
-      fileSize: proccessedFile.metadata.fileSize,
-      chunkCount: proccessedFile.metadata.chunkCount,
-    };
-
-    const contentItems = proccessedFile.chunks.map((
-      chunk: { text: string; metadata: Record<string, string> },
-      idx,
-    ) => ({
-      content: chunk.text,
-      metadata: {
-        ...fileMetadata,
-        ...chunk.metadata,
-        chunkIndex: idx,
-        fileUrl: fileUrl,
-        path: path,
-      },
-    }));
-
-    const docIds = await batchUpsertVectorContent(contentItems, c);
-
+    assertKbFileProcessor(c);
     assertHasWorkspace(c);
 
-    // Add fallback logic for filename
-    const finalFilename = filename ??
-      (path ? basename(path) : undefined) ??
+    const finalFilename = filename ||
+      (path ? basename(path) : undefined) ||
       fileUrl;
-
     const { data: newFile, error } = await c.db.from("deco_chat_assets").upsert(
       {
         file_url: fileUrl,
         workspace: c.workspace.value,
         index_name: c.name,
         path,
-        doc_ids: docIds,
         filename: finalFilename,
-        metadata: fileMetadata,
+        status: "processing",
       },
-    ).select("fileUrl:file_url, metadata, path, docIds:doc_ids, filename")
+      { onConflict: "workspace,file_url" },
+    ).select(
+      "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
+    )
       .single();
 
     if (!newFile || error) {
       throw new InternalServerError("Failed to update file metadata");
     }
+
+    await startKbFileProcessorWorkflow(c, {
+      fileUrl,
+      metadata: _metadata,
+      path,
+      filename,
+      workspace: c.workspace.value,
+      knowledgeBaseName: c.name,
+    });
 
     return addFileDefaults(newFile);
   },
@@ -383,7 +377,7 @@ export const listFiles = createKnowledgeBaseTool({
 
     const { data: files } = await c.db.from("deco_chat_assets")
       .select(
-        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename",
+        "fileUrl:file_url, metadata, path, docIds:doc_ids, filename, status",
       ).eq("workspace", c.workspace.value)
       .eq("index_name", c.name);
 
@@ -411,13 +405,7 @@ export const deleteFile = createKnowledgeBaseTool({
       .eq("file_url", fileUrl)
       .single();
 
-    const docIds = file?.doc_ids;
-
-    if (!docIds) {
-      return {};
-    }
-
-    await forget.handler({ docIds });
+    file?.doc_ids && await forget.handler({ docIds: file.doc_ids });
     const { error } = await c.db.from("deco_chat_assets").delete().eq(
       "file_url",
       fileUrl,
@@ -429,6 +417,6 @@ export const deleteFile = createKnowledgeBaseTool({
       );
     }
 
-    return { file, docIds };
+    return { file, docIds: file?.doc_ids ?? [] };
   },
 });

@@ -3,8 +3,12 @@ import type { DefaultEnv, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
 import type { MCPBinding } from "./wrangler.ts";
 
+type WorkspaceClientContext = Omit<
+  RequestContext,
+  "ensureAuthenticated" | "state"
+>;
 export const workspaceClient = (
-  ctx: RequestContext,
+  ctx: WorkspaceClientContext,
 ): ReturnType<typeof MCPClient["forWorkspace"]> => {
   return MCPClient.forWorkspace(
     ctx.workspace,
@@ -14,7 +18,7 @@ export const workspaceClient = (
 
 const mcpClientForIntegrationId = (
   integrationId: string,
-  ctx: RequestContext,
+  ctx: WorkspaceClientContext,
 ) => {
   const client = workspaceClient(ctx);
   let integration: Promise<{ connection: MCPConnection }> | null = null;
@@ -50,6 +54,5 @@ export const createIntegrationBinding = (
   return mcpClientForIntegrationId(integrationId, {
     workspace: env.DECO_CHAT_WORKSPACE,
     token: env.DECO_CHAT_API_TOKEN,
-    state: {},
   });
 };

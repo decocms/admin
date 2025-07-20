@@ -1,5 +1,5 @@
 import type { AuthUser, SupabaseClient } from "@supabase/supabase-js";
-import { jwtDecode } from "jwt-decode";
+import { decodeJwt } from "jose";
 import { LRUCache } from "lru-cache";
 import type { Principal } from "../mcp/context.ts";
 import { JwtIssuer, type JwtIssuerKeyPair } from "./jwt.ts";
@@ -72,7 +72,7 @@ export async function getUserBySupabaseCookie(
   }
   if (accessToken) {
     try {
-      const decoded = jwtDecode(accessToken, { header: true }) as {
+      const decoded = decodeJwt(accessToken) as {
         expires_at: number;
       };
       cachettl = (decoded.expires_at * MILLISECONDS) - Date.now();

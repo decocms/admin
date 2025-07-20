@@ -1,1 +1,1 @@
-export const { DurableObject } = await import("cloudflare:workers");
+export { DurableObject } from "cloudflare:workers";

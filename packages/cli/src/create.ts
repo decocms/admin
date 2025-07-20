@@ -1,7 +1,11 @@
 import { Input, Select } from "@cliffy/prompt";
 import { copy, ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { type Config, getConfig, writeConfigFile } from "./config.ts";
+import {
+  type Config,
+  readWranglerConfig,
+  writeWranglerConfig,
+} from "./config.ts";
 import { genEnv } from "./typings.ts";
 import { promptIDESetup, writeIDEConfig } from "./utils/prompt-ide-setup.ts";
 import { promptWorkspace } from "./utils/prompt-workspace.ts";
@@ -14,6 +18,7 @@ interface Template {
   repo: string;
   branch?: string;
   path?: string;
+  wranglerRoot?: string;
 }
 
 const AVAILABLE_TEMPLATES: Template[] = [
@@ -30,6 +35,7 @@ const AVAILABLE_TEMPLATES: Template[] = [
       "MCP Server with Tools, Workflows and React + Tailwind for Views.",
     repo: "deco-cx/react-tailwind-views",
     branch: "main",
+    wranglerRoot: "server",
   },
 ];
 
@@ -57,6 +63,13 @@ async function downloadTemplate(
       throw new Error(`Failed to clone template repository: ${template.repo}`);
     }
 
+    // Remove the .git folder to avoid creating a local repository
+    // pointing to the wrong repo
+    const gitDir = join(tempDir, ".git");
+    await Deno.remove(gitDir, { recursive: true }).catch(() => {
+      console.warn(`Failed to remove .git folder: ${gitDir}`);
+    });
+
     const templatePath = join(tempDir, template.path || "");
     const templateExists = await Deno.stat(templatePath).catch(() => false);
 
@@ -73,11 +86,17 @@ async function downloadTemplate(
   }
 }
 
-async function customizeTemplate(
-  targetDir: string,
-  projectName: string,
-  workspace?: string,
-): Promise<void> {
+async function customizeTemplate({
+  targetDir,
+  projectName,
+  workspace,
+  wranglerRoot,
+}: {
+  targetDir: string;
+  projectName: string;
+  workspace?: string;
+  wranglerRoot?: string;
+}): Promise<void> {
   const packageJsonPath = join(targetDir, "package.json");
 
   try {
@@ -101,28 +120,31 @@ async function customizeTemplate(
   if (workspace) {
     try {
       // Read current config from target directory
-      const currentConfig = await getConfig({ cwd: targetDir });
+      const currentConfig = await readWranglerConfig(wranglerRoot || targetDir);
       const bindings = await promptIntegrations(false, workspace);
 
       // Merge with new project name and workspace
       const newConfig = {
         ...currentConfig,
-        app: projectName,
-        workspace: workspace,
-        bindings,
+        deco: {
+          ...currentConfig.deco,
+          workspace,
+          bindings,
+        },
+        name: projectName,
       };
 
       // Write the new config file
-      await writeConfigFile(newConfig, targetDir);
+      await writeWranglerConfig(newConfig, wranglerRoot || targetDir);
 
       // Generate environment variables file
       const envContent = await genEnv({
         workspace: workspace,
         local: false,
-        bindings: newConfig.bindings || [],
+        bindings: newConfig.deco.bindings || [],
       });
 
-      const outputPath = join(targetDir, "deco.gen.ts");
+      const outputPath = join(wranglerRoot || targetDir, "deco.gen.ts");
       await Deno.writeTextFile(outputPath, envContent);
       console.log(`✅ Environment types written to: ${outputPath}`);
     } catch (error) {
@@ -221,6 +243,13 @@ export async function createCommand(
       throw new Error(`Template '${finalTemplateName}' not found`);
     }
 
+    const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || "");
+
+    const initGit = await Select.prompt({
+      message: "Initialize a git repository?",
+      options: ["No", "Yes"],
+    });
+
     // Prompt user to install MCP configuration for IDE
     const mcpResult = workspace
       ? await promptIDESetup(
@@ -236,13 +265,39 @@ export async function createCommand(
       await writeIDEConfig(mcpResult);
     }
 
-    await customizeTemplate(targetDir, finalProjectName, workspace);
+    await customizeTemplate({
+      targetDir,
+      projectName: finalProjectName,
+      workspace,
+      wranglerRoot,
+    });
+
+    if (initGit === "Yes") {
+      try {
+        const gitInitCmd = new Deno.Command("git", {
+          args: ["init"],
+          cwd: targetDir,
+        });
+
+        const gitInitResult = await gitInitCmd.output();
+        if (gitInitResult.success) {
+          console.log(`✅ Git repository initialized in '${finalProjectName}'`);
+        } else {
+          console.warn("⚠️  Failed to initialize git repository");
+        }
+      } catch (error) {
+        console.warn(
+          "⚠️  Could not initialize git repository:",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
 
     console.log(`\n🎉 Project '${finalProjectName}' created successfully!`);
     console.log(`\nNext steps:`);
     console.log(`  cd ${finalProjectName}`);
     console.log(`  npm install`);
-    console.log(`  deco dev`);
+    console.log(`  npm run dev`);
   } catch (error) {
     console.error(
       "❌ Failed to create project:",

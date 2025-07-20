@@ -2,6 +2,7 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
+import { getReqToken, handleAuthCallback, StateParser } from "./auth.ts";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
@@ -24,6 +25,7 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_CHAT_REQUEST_CONTEXT: RequestContext<TSchema>;
   DECO_CHAT_APP_NAME: string;
   DECO_CHAT_SCRIPT_SLUG: string;
+  DECO_CHAT_APP_ENTRYPOINT: string;
   DECO_CHAT_API_URL?: string;
   DECO_CHAT_WORKSPACE: string;
   DECO_CHAT_API_JWT_PUBLIC_KEY: string;
@@ -71,10 +73,26 @@ interface BindingTypeMap {
   mcp: MCPBinding;
 }
 
-export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
+export interface User {
+  id: string;
+  email: string;
+  user_metadata: {
+    avatar_url: string;
+    full_name: string;
+    picture: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface RequestContext<
+  TSchema extends z.ZodTypeAny = any,
+> {
   state: z.infer<TSchema>;
   token: string;
   workspace: string;
+  ensureAuthenticated: (
+    options?: { workspaceHint?: string },
+  ) => User | undefined;
 }
 
 // 2. Map binding type to its creator function
@@ -111,6 +129,18 @@ const withDefaultBindings = (env: DefaultEnv, ctx: RequestContext) => {
   };
 };
 
+export class UnauthorizedError extends Error {
+  constructor(message: string, public redirectTo: URL) {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
+const AUTH_START_ENDPOINT = "/oauth/start";
+const AUTHENTICATED = (user?: unknown) => () => {
+  return user as User;
+};
 export const withBindings = <TEnv>(
   _env: TEnv,
   tokenOrContext?: string | RequestContext,
@@ -124,14 +154,32 @@ export const withBindings = <TEnv>(
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
       workspace: decoded.aud as string,
+      ensureAuthenticated: AUTHENTICATED(decoded.user),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
+    const decoded = decodeJwt(tokenOrContext.token);
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user);
   } else {
     context = {
       state: undefined,
       token: env.DECO_CHAT_API_TOKEN,
       workspace: env.DECO_CHAT_WORKSPACE,
+      ensureAuthenticated: (options?: { workspaceHint?: string }) => {
+        const workspaceHint = options?.workspaceHint ?? env.DECO_CHAT_WORKSPACE;
+        const authUri = new URL(
+          "/apps/oauth",
+          env.DECO_CHAT_API_URL ?? "https://api.deco.chat",
+        );
+        authUri.searchParams.set("client_id", env.DECO_CHAT_APP_NAME);
+        authUri.searchParams.set(
+          "redirect_uri",
+          `${env.DECO_CHAT_APP_ENTRYPOINT}${AUTH_CALLBACK_ENDPOINT}`,
+        );
+        workspaceHint &&
+          authUri.searchParams.set("workspace_hint", workspaceHint);
+        throw new UnauthorizedError("Unauthorized", authUri);
+      },
     };
   }
 
@@ -150,20 +198,66 @@ export const withBindings = <TEnv>(
   return env as TEnv;
 };
 
-const getReqToken = (req: Request) => {
-  const token = req.headers.get("Authorization");
-  if (!token) {
-    return undefined;
-  }
-  return token.split(" ")[1];
-};
-
 export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
   userFns: UserDefaultExport<TEnv, TSchema>,
 ): UserDefaultExport<TEnv, TSchema> & {
   Workflow: ReturnType<typeof Workflow>;
 } => {
   const server = createMCPServer<TEnv, TSchema>(userFns);
+  const fetcher = async (
+    req: Request,
+    env: TEnv & DefaultEnv<TSchema>,
+    ctx: ExecutionContext,
+  ) => {
+    const url = new URL(req.url);
+    if (url.pathname === AUTH_CALLBACK_ENDPOINT) {
+      return handleAuthCallback(req, {
+        apiUrl: env.DECO_CHAT_API_URL,
+        appName: env.DECO_CHAT_APP_NAME,
+      });
+    }
+    if (url.pathname === AUTH_START_ENDPOINT) {
+      env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
+      const redirectTo = new URL(
+        "/",
+        url,
+      );
+      const next = url.searchParams.get("next");
+      return Response.redirect(next ?? redirectTo, 302);
+    }
+    if (url.pathname === "/mcp") {
+      return server.fetch(req, withBindings(env, getReqToken(req)), ctx);
+    }
+
+    if (url.pathname.startsWith("/mcp/call-tool")) {
+      const toolCallId = url.pathname.split("/").pop();
+      if (!toolCallId) {
+        return new Response("Not found", { status: 404 });
+      }
+      const toolCallInput = await req.json();
+      const result = await server.callTool({
+        env: withBindings(env, getReqToken(req)) as
+          & TEnv
+          & DefaultEnv<TSchema>,
+        ctx,
+        req,
+        toolCallId,
+        toolCallInput,
+      });
+
+      return new Response(JSON.stringify(result), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    }
+    return userFns.fetch?.(
+      req,
+      withBindings(env, getReqToken(req)) as any,
+      ctx,
+    ) ||
+      new Response("Not found", { status: 404 });
+  };
   return {
     Workflow: Workflow(userFns.workflows),
     fetch: async (
@@ -171,39 +265,27 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
-      const url = new URL(req.url);
-      if (url.pathname === "/mcp") {
-        return server.fetch(req, withBindings(env, getReqToken(req)), ctx);
-      }
-
-      if (url.pathname.startsWith("/mcp/call-tool")) {
-        const toolCallId = url.pathname.split("/").pop();
-        if (!toolCallId) {
-          return new Response("Not found", { status: 404 });
+      try {
+        return await fetcher(req, env, ctx);
+      } catch (e) {
+        if (e instanceof UnauthorizedError) {
+          const referer = req.headers.get("referer");
+          const isBrowser = typeof referer === "string" &&
+            req.headers.get("user-agent") != null;
+          if (isBrowser) {
+            const url = new URL(req.url);
+            e.redirectTo.searchParams.set(
+              "state",
+              StateParser.stringify({
+                next: url.searchParams.get("next") ?? referer ?? req.url,
+              }),
+            );
+            return Response.redirect(e.redirectTo, 302);
+          }
+          return new Response(null, { status: 401 });
         }
-        const toolCallInput = await req.json();
-        const result = await server.callTool({
-          env: withBindings(env, getReqToken(req)) as
-            & TEnv
-            & DefaultEnv<TSchema>,
-          ctx,
-          req,
-          toolCallId,
-          toolCallInput,
-        });
-
-        return new Response(JSON.stringify(result), {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        throw e;
       }
-      return userFns.fetch?.(
-        req,
-        withBindings(env, getReqToken(req)) as any,
-        ctx,
-      ) ||
-        new Response("Not found", { status: 404 });
     },
   };
 };

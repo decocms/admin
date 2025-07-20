@@ -28,7 +28,7 @@ export interface JsonSchemaFormProps<
   onSubmit: (e: FormEvent) => Promise<void> | void;
   // deno-lint-ignore no-explicit-any
   error?: any;
-  submitButton: ReactNode;
+  submitButton?: ReactNode;
   optionsLoader?: (type: string) => Promise<OptionItem[]> | OptionItem[];
 }
 
@@ -69,9 +69,11 @@ export default function Form<T extends FieldValues = Record<string, unknown>>(
         </div>
       )}
 
-      <div className="flex gap-2">
-        {submitButton}
-      </div>
+      {submitButton && (
+        <div className="flex gap-2">
+          {submitButton}
+        </div>
+      )}
     </form>
   );
 }

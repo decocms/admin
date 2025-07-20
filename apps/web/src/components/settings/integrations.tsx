@@ -198,6 +198,7 @@ function Knowledge() {
           fileUrl: file.fileUrl,
           ...file.metadata,
           name: file.filename,
+          status: file.status,
         }))
         : [],
     [files],

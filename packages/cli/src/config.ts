@@ -58,6 +58,8 @@ export type Config = z.infer<typeof decoConfigSchema>;
 
 export interface WranglerConfig {
   [key: string]: unknown;
+  name?: string;
+  scope?: string;
   assets?: {
     directory?: string;
   };

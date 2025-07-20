@@ -1,21 +1,18 @@
 import {
-  usePlan,
-  useBillingHistory,
-  useWorkspaceWalletBalance,
   type BillingHistoryItem,
+  useBillingHistory,
+  usePlan,
+  useWorkspaceWalletBalance,
 } from "@deco/sdk";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import {
-  Card,
-  CardContent
-} from "@deco/ui/components/card.tsx";
+import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Progress } from "@deco/ui/components/progress.tsx";
@@ -453,7 +450,8 @@ function PlanCard(
 }
 
 const isFreeReward = (item: BillingHistoryItem) => {
-  return item.type === "WorkspaceGenCreditReward" && item.id.includes("free-two-dollars-");
+  return item.type === "WorkspaceGenCreditReward" &&
+    item.id.includes("free-two-dollars-");
 };
 
 function TransactionsTable() {
@@ -546,7 +544,9 @@ function TransactionsTable() {
       header: "Description",
       render: (transaction) => (
         <div className="flex flex-col">
-          <span className="font-medium">{getTypeDescription(transaction).title}</span>
+          <span className="font-medium">
+            {getTypeDescription(transaction).title}
+          </span>
           <span className="text-xs text-muted-foreground">
             {getTypeDescription(transaction).description}
           </span>
@@ -557,7 +557,8 @@ function TransactionsTable() {
     {
       id: "date",
       header: "Date",
-      render: (transaction) => new Date(transaction.timestamp).toLocaleDateString(),
+      render: (transaction) =>
+        new Date(transaction.timestamp).toLocaleDateString(),
       sortable: true,
     },
   ];

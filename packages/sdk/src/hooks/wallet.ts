@@ -74,7 +74,9 @@ export function useBillingHistory({
   return billingHistory;
 }
 
-export type BillingHistoryItem = Awaited<ReturnType<typeof useBillingHistory>>["items"][number];
+export type BillingHistoryItem = Awaited<
+  ReturnType<typeof useBillingHistory>
+>["items"][number];
 
 export function usePlan() {
   const { workspace } = useSDK();

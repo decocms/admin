@@ -138,7 +138,6 @@ const BillingHistory = {
   },
 };
 
-
 const createTool = createToolGroup("Wallet", {
   name: "Wallet & Billing",
   description: "Handle payments and subscriptions.",

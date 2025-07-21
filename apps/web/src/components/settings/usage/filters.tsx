@@ -38,7 +38,7 @@ export function UsageFilters({
         <SelectContent>
           <SelectItem value="day">Last 24 hours</SelectItem>
           <SelectItem value="week">Last 7 days</SelectItem>
-          <SelectItem value="month">Last 30 days</SelectItem>
+          <SelectItem value="month">This month</SelectItem>
         </SelectContent>
       </Select>
     </div>

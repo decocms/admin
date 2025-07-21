@@ -9,22 +9,28 @@ import { useState } from "react";
 import { AgentAvatar } from "../../common/avatar/agent.tsx";
 import { UserAvatar } from "../../common/avatar/user.tsx";
 
-export interface ChartItemData {
+export interface ChartBarStackItem {
   id: string;
   name: string;
   avatar?: string;
   cost: number;
   color: string;
-  percentage: number;
   type: string;
   member?: Member | null;
 }
 
-export interface ChartDayData {
-  date: string;
-  fullDate: string;
-  items: ChartItemData[];
+export interface ChartBarStack {
+  label: string;
+  items: ChartBarStackItem[];
   total: number;
+}
+
+interface EnrichedChartBarStackItem extends ChartBarStackItem {
+  percentage: number;
+}
+
+interface EnrichedChartBarStack extends ChartBarStack {
+  items: EnrichedChartBarStackItem[];
 }
 
 function YAxisLabels({ chartMax }: { chartMax: number }) {
@@ -72,9 +78,9 @@ function ChartColumn({
   hoveredColumn,
   setHoveredColumn,
 }: {
-  day: ChartDayData;
+  day: EnrichedChartBarStack;
   index: number;
-  chartData: ChartDayData[];
+  chartData: EnrichedChartBarStack[];
   chartMax: number;
   hoveredColumn: number | null;
   setHoveredColumn: (index: number | null) => void;
@@ -104,7 +110,10 @@ function ChartColumn({
           onMouseLeave={() => setHoveredColumn(null)}
         >
           <div className="w-full flex flex-col justify-end gap-0.5 h-full">
-            {day.items.map((item: ChartItemData, itemIndex: number) => (
+            {day.items.map((
+              item: EnrichedChartBarStackItem,
+              itemIndex: number,
+            ) => (
               <div
                 key={`${item.id}-${itemIndex}`}
                 className="w-full rounded-md min-h-[4px]"
@@ -123,9 +132,12 @@ function ChartColumn({
         className="bg-background text-foreground shadow-lg pointer-events-none [&_[class*='bg-primary']]:!bg-background [&_[class*='fill-primary']]:!fill-background"
       >
         <div className="space-y-2">
-          <div className="text-sm font-medium">{day.fullDate}</div>
+          <div className="text-sm font-medium">{day.label}</div>
           <div className="space-y-1">
-            {day.items.map((item: ChartItemData, itemIndex: number) => (
+            {day.items.map((
+              item: EnrichedChartBarStackItem,
+              itemIndex: number,
+            ) => (
               <div
                 key={itemIndex}
                 className="flex items-center justify-between gap-4"
@@ -177,7 +189,7 @@ function ChartColumn({
   );
 }
 
-function XAxisLabels({ chartData }: { chartData: ChartDayData[] }) {
+function XAxisLabels({ chartData }: { chartData: EnrichedChartBarStack[] }) {
   const columnWidth = chartData.length > 12
     ? "50px"
     : chartData.length <= 7
@@ -187,7 +199,7 @@ function XAxisLabels({ chartData }: { chartData: ChartDayData[] }) {
 
   return (
     <div className="absolute left-10 right-0 bottom-0 px-8 flex justify-between pt-1 h-6">
-      {chartData.map((day: ChartDayData, index: number) => (
+      {chartData.map((day: EnrichedChartBarStack, index: number) => (
         <div
           key={`label-${index}`}
           className="text-xs text-center text-foreground px-1"
@@ -198,9 +210,9 @@ function XAxisLabels({ chartData }: { chartData: ChartDayData[] }) {
         >
           <div
             className="whitespace-nowrap overflow-hidden text-ellipsis"
-            title={day.date}
+            title={day.label}
           >
-            {day.date}
+            {day.label}
           </div>
         </div>
       ))}
@@ -208,10 +220,29 @@ function XAxisLabels({ chartData }: { chartData: ChartDayData[] }) {
   );
 }
 
-export function StackedBarChart({ chartData }: { chartData: ChartDayData[] }) {
+function withDistributedPercentage(
+  data: ChartBarStackItem[],
+): EnrichedChartBarStackItem[] {
+  const total = data.reduce((sum, item) => sum + item.cost, 0);
+  return data.map((item) => ({
+    ...item,
+    percentage: (item.cost / total) * 100,
+  }));
+}
+
+export function StackedBarChart(
+  { chartData: _data }: { chartData: ChartBarStack[] },
+) {
   const [hoveredColumn, setHoveredColumn] = useState<number | null>(null);
 
-  const maxValue = Math.max(...chartData.map((d: ChartDayData) => d.total));
+  const chartData = _data.map((day) => ({
+    ...day,
+    items: withDistributedPercentage(day.items),
+  }));
+
+  const maxValue = Math.max(
+    ...chartData.map((d: EnrichedChartBarStack) => d.total),
+  );
   const chartMax = maxValue > 0
     ? Math.max(0.1, Math.ceil(maxValue * 1.1 * 100) / 100)
     : 0.1;
@@ -223,7 +254,7 @@ export function StackedBarChart({ chartData }: { chartData: ChartDayData[] }) {
         <GridLines chartMax={chartMax} />
 
         <div className="absolute left-10 right-0 top-0 bottom-6 px-8 flex items-end justify-between">
-          {chartData.map((day: ChartDayData, index: number) => (
+          {chartData.map((day: EnrichedChartBarStack, index: number) => (
             <ChartColumn
               key={index}
               day={day}

@@ -141,7 +141,6 @@ export function UsageTable({
   agentUsage: AgentUsage;
   threadUsage: ThreadUsage;
 }) {
-  console.log(agentUsage);
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedAgentDetails, setSelectedAgentDetails] = useState<

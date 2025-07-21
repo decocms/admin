@@ -1,54 +1,290 @@
-import type { Agent, AgentUsage, Member, ThreadUsage } from "@deco/sdk";
+import type {
+  Agent,
+  AgentUsage,
+  AgentUsageItem,
+  Member,
+  ThreadUsage,
+} from "@deco/sdk";
 import { useMemo } from "react";
-import {
-  ChartDayData,
-  ChartItemData,
-  StackedBarChart,
-} from "./stacked-bar-chart.tsx";
-import { UsageType } from "./usage.tsx";
+import { ChartBarStack, StackedBarChart } from "./stacked-bar-chart.tsx";
+import { TimeRange, UsageType } from "./usage.tsx";
 import { color } from "./util.ts";
 
-function roundCosts(data: ChartItemData[]): ChartItemData[] {
-  const roundedData = data.map((item) => ({
-    ...item,
-    cost: Math.round(item.cost * 100) / 100,
-  }));
-
-  const roundedTotalCost = roundedData.reduce(
-    (sum, item) => sum + item.cost,
-    0,
-  );
-
-  return roundedData.map((item) => ({
-    ...item,
-    percentage: roundedTotalCost > 0 ? (item.cost / roundedTotalCost) * 100 : 0,
-  }));
+function hourId(transaction: { timestamp: string }): string {
+  const date = new Date(transaction.timestamp);
+  let hour = date.getHours();
+  const isAM = hour < 12;
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  const period = isAM ? "AM" : "PM";
+  return `${hour12}${period}`;
 }
 
-function createAgentChartData(
+function dayId(transaction: { timestamp: string }): string {
+  const date = new Date(transaction.timestamp);
+  const options = { month: "short", day: "numeric" } as const;
+  return date.toLocaleDateString("en-US", options);
+}
+
+/**
+ * Generates a human-readable week ID string showing the date range (Sun - Sat).
+ * Example: "Jan 13 - Jan 20"
+ * @param {{ timestamp: string }} transaction - The transaction object.
+ * @returns {string} The week range string.
+ */
+function weekId(transaction: { timestamp: string }): string {
+  const date = new Date(transaction.timestamp);
+
+  // Find the start of the week (Sunday)
+  const startDate = new Date(date);
+  startDate.setDate(date.getDate() - date.getDay()); // setDate handles month/year rollovers
+  startDate.setHours(0, 0, 0, 0); // Optional: Reset time to midnight
+
+  // Find the end of the week (Saturday)
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 6);
+  endDate.setHours(23, 59, 59, 999); // Optional: Set time to the end of the day
+
+  const options = { month: "short", day: "numeric" } as const;
+
+  const startDateString = startDate.toLocaleDateString("en-US", options);
+  const endDateString = endDate.toLocaleDateString("en-US", options);
+
+  return `${startDateString} - ${endDateString}`;
+}
+
+function allDayHoursKeys(): string[] {
+  return Array.from({ length: 24 }, (_, i) => hourId({ timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString() }));
+}
+
+function allWeekDaysKeys(): string[] {
+  return Array.from({ length: 7 }, (_, i) => dayId({ timestamp: new Date(new Date().setDate(new Date().getDate() - i)).toISOString() })).reverse();
+}
+
+function allMonthWeeksKeys(): string[] {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+  
+  // Find the first day of the month
+  const firstOfMonth = new Date(year, month, 1);
+  // Find the last day of the month
+  const lastOfMonth = new Date(year, month + 1, 0);
+
+  // Find the Sunday before or on the first of the month
+  const firstWeekStart = new Date(firstOfMonth);
+  firstWeekStart.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+  firstWeekStart.setHours(0, 0, 0, 0);
+
+  // Find the Saturday after or on the last of the month
+  const lastWeekEnd = new Date(lastOfMonth);
+  lastWeekEnd.setDate(lastOfMonth.getDate() + (6 - lastOfMonth.getDay()));
+  lastWeekEnd.setHours(23, 59, 59, 999);
+
+  const weekIds: string[] = [];
+  let current = new Date(firstWeekStart);
+
+  while (current <= lastWeekEnd) {
+    // Generate week ID using the same logic as weekId function
+    const weekIdStr = weekId({ timestamp: current.toISOString() });
+    weekIds.push(weekIdStr);
+    
+    // Move to next week (add 7 days)
+    current.setDate(current.getDate() + 7);
+  }
+
+  return weekIds;
+}
+
+function createMap<T extends BaseTransaction>({
+  keys,
+  fillWith,
+  getKey,
+}:{
+  keys: () => string[],
+  fillWith: T[],
+  getKey: (transaction: T) => string,
+}): Record<string, T[]> {
+  const map: Record<string, T[]> = {};
+
+  keys().forEach((key) => {
+    if (!map[key]) {
+      map[key] = [];
+    }
+  });
+
+  fillWith.forEach((transaction) => {
+    const key = getKey(transaction);
+    if (!map[key]) {
+      console.warn(`Key ${key} not found in map, creating new entry`);
+      map[key] = [];
+    }
+    map[key].push(transaction);
+  });
+
+  return map;
+}
+
+interface AgentChartTransaction {
+  timestamp: string;
+  amount: number;
+  agentId: string;
+  agentName: string;
+  agentAvatar: string;
+}
+
+interface BaseTransaction {
+  timestamp: string;
+  amount: number;
+}
+
+type StackBuilder<T extends BaseTransaction> = (opts: {
+  transactions: T[],
+  label: string,
+}) => ChartBarStack;
+
+/**
+ * Creates bar stacks for putting into the stacked bar chart.
+ */
+const createStackBuilder = <T extends BaseTransaction>({
+  getKey,
+  getType,
+  getName,
+  getAvatar,
+  getAdditionalData,
+}: {
+  getKey: (transaction: T) => string;
+  getName: (transaction: T) => string;
+  getAvatar: (transaction: T) => string;
+  getAdditionalData: (transaction: T) => Record<string, unknown>;
+  getType: () => string;
+}): StackBuilder<T> => {
+  const buildStack: StackBuilder<T> = ({ transactions, label }) => {
+    if (transactions.length === 0) {
+      return {
+        total: 0,
+        label,
+        items: [],
+      };
+    }
+
+    const total = transactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0,
+    );
+
+    const costs = new Map<
+      string,
+      {
+        cost: number;
+        name: string;
+        avatar: string;
+        additionalData: Record<string, unknown>;
+      }
+    >();
+
+    transactions.forEach((transaction) => {
+      const key = getKey(transaction);
+      const existing = costs.get(key);
+      if (existing) {
+        existing.cost += transaction.amount;
+      } else {
+        costs.set(key, {
+          cost: transaction.amount,
+          name: getName(transaction),
+          avatar: getAvatar(transaction),
+          additionalData: getAdditionalData(transaction),
+        });
+      }
+    });
+
+    const top5 = Array.from(costs.entries())
+      .sort((a, b) => b[1].cost - a[1].cost)
+      .slice(0, 5);
+
+    const top5Data = top5.map(([key, data]) => ({
+      id: key,
+      name: data.name,
+      avatar: data.avatar,
+      cost: data.cost,
+      color: color(key),
+      type: getType(),
+      ...(data.additionalData ?? {}),
+    }));
+
+    const totalPeriodCost = Array.from(costs.values()).reduce(
+      (sum, data) => sum + data.cost,
+      0,
+    );
+    const top5Cost = top5Data.reduce((sum, item) => sum + item.cost, 0);
+    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
+
+    const allData = [...top5Data];
+
+    if (otherCost > 0) {
+      allData.push({
+        id: "other",
+        name: "Other",
+        avatar: "",
+        cost: otherCost,
+        color: "#E5E7EB",
+        type: getType(),
+      });
+    }
+
+    return {
+      total,
+      label,
+      items: allData,
+    };
+  };
+
+  return buildStack;
+};
+
+const buildAgentStack = 
+  createStackBuilder<AgentChartTransaction>({
+    getKey: (transaction) => transaction.agentId,
+    getName: (transaction) => transaction.agentName,
+    getAvatar: (transaction) => transaction.agentAvatar,
+    getAdditionalData: () => ({}),
+    getType: () => "agent",
+  });
+
+const buildUserStack = 
+  createStackBuilder<UserChartTransaction>({
+    getKey: (transaction) => transaction.userId,
+    getName: (transaction) => transaction.userName,
+    getAvatar: () => "",
+    getType: () => "user",
+    getAdditionalData: (transaction) => ({ member: transaction.member }),
+  });
+
+const buildThreadStack = 
+  createStackBuilder<ThreadChartTransaction>({
+    getKey: (transaction) => transaction.threadId,
+    getName: (transaction) => transaction.threadTitle,
+    getAvatar: () => "",
+    getType: () => "thread",
+    getAdditionalData: () => ({}),
+  });
+
+export function createAgentChartData(
   agents: Agent[],
   agentUsage: AgentUsage,
-  timeRange: string,
-): ChartDayData[] {
+  timeRange: TimeRange,
+): ChartBarStack[] {
   if (!agentUsage.items || agentUsage.items.length === 0) {
     return [];
   }
 
-  // Collect all transactions from all agents
-  const allTransactions: Array<{
-    timestamp: string;
-    amount: number;
-    agentId: string;
-    agentName: string;
-    agentAvatar: string;
-  }> = [];
+  const allTransactions: Array<AgentChartTransaction> = [];
 
   agentUsage.items.forEach((item) => {
     const agent = agents.find((a) => a.id === item.id);
     if (agent && item.transactions) {
       item.transactions.forEach((transaction) => {
         allTransactions.push({
-          timestamp: transaction.timestamp,
+          timestamp: new Date(transaction.timestamp).toISOString(),
           amount: transaction.amount,
           agentId: item.id,
           agentName: agent.name,
@@ -62,147 +298,85 @@ function createAgentChartData(
     return [];
   }
 
-  // Group transactions by time periods based on timeRange
-  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
-  const now = new Date();
-  const periodData: ChartDayData[] = [];
+  if (timeRange === "day") {
+    const keys = allDayHoursKeys();
+    const allTransactionsByDay = createMap({
+      keys: allDayHoursKeys,
+      fillWith: allTransactions,
+      getKey: dayId,
+    });
+    console.log("keys", keys);
+    console.log("allTransactionsByDay", Object.keys(allTransactionsByDay));
+    console.log("today", dayId({ timestamp: new Date().toISOString() }));
+    const todayTransactions =
+      allTransactionsByDay[dayId({ timestamp: new Date().toISOString() })];
 
-  for (let i = 0; i < periods; i++) {
-    const periodStart = new Date(now);
-    const periodEnd = new Date(now);
-
-    if (timeRange === "day") {
-      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
-      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
-    } else if (timeRange === "week") {
-      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
-      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
-    } else {
-      const weeksAgo = periods - 1 - i;
-      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
-      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
+    if (!todayTransactions) {
+      throw new Error("Could not calculate agent chart data for today");
     }
 
-    // Filter transactions for this period
-    const periodTransactions = allTransactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.timestamp);
-      return transactionDate >= periodStart && transactionDate < periodEnd;
+    const allTransactionsByHour = createMap({
+      keys: allDayHoursKeys,
+      fillWith: todayTransactions,
+      getKey: hourId,
     });
-
-    // Group by agent and calculate costs
-    const agentCosts = new Map<
-      string,
-      { cost: number; name: string; avatar: string }
-    >();
-
-    periodTransactions.forEach((transaction) => {
-      const existing = agentCosts.get(transaction.agentId);
-      if (existing) {
-        existing.cost += transaction.amount;
-      } else {
-        agentCosts.set(transaction.agentId, {
-          cost: transaction.amount,
-          name: transaction.agentName,
-          avatar: transaction.agentAvatar,
-        });
-      }
-    });
-
-    // Get top 5 agents for this period
-    const top5Agents = Array.from(agentCosts.entries())
-      .sort((a, b) => b[1].cost - a[1].cost)
-      .slice(0, 5);
-
-    const top5AgentData = top5Agents.map(([agentId, data]) => ({
-      id: agentId,
-      name: data.name,
-      avatar: data.avatar,
-      cost: data.cost,
-      color: color(agentId),
-      percentage: 0,
-      type: "agent",
+    const groups = Object.entries(allTransactionsByHour);
+    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
+      transactions: transactions ?? [],
+      label,
     }));
-
-    // Calculate "Other" category
-    const totalPeriodCost = Array.from(agentCosts.values()).reduce(
-      (sum, data) => sum + data.cost,
-      0,
-    );
-    const top5Cost = top5AgentData.reduce((sum, item) => sum + item.cost, 0);
-    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
-
-    const allAgentData = [...top5AgentData];
-
-    if (otherCost > 0) {
-      allAgentData.push({
-        id: "other",
-        name: "Other",
-        avatar: "",
-        cost: otherCost,
-        color: "#E5E7EB",
-        percentage: 0,
-        type: "agent",
-      });
-    }
-
-    const roundedAgentData = roundCosts(allAgentData);
-    const total = roundedAgentData.reduce((sum, item) => sum + item.cost, 0);
-
-    // Format date for display
-    let dateLabel: string;
-    if (timeRange === "day") {
-      dateLabel = periodStart.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (timeRange === "week") {
-      dateLabel = periodStart.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    } else {
-      const endWeek = new Date(periodStart);
-      endWeek.setDate(endWeek.getDate() + 6);
-      dateLabel = `${
-        periodStart.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
-    }
-
-    periodData.push({
-      date: dateLabel,
-      fullDate: periodStart.toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-      items: roundedAgentData,
-      total,
-    });
+    return chartStackedBars;
   }
 
-  return periodData;
+  if (timeRange === "week") {
+    const allTransactionsByDay = createMap({
+      keys: allWeekDaysKeys,
+      fillWith: allTransactions,
+      getKey: dayId,
+    });
+    const groups = Object.entries(allTransactionsByDay);
+    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  if (timeRange === "month") {
+    const allTransactionsByWeek = createMap({
+      keys: allMonthWeeksKeys,
+      fillWith: allTransactions,
+      getKey: weekId,
+    });
+    const groups = Object.entries(allTransactionsByWeek);
+    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  throw new Error("Unknown time Range");
 }
 
-function createUserChartData(
+interface UserChartTransaction {
+  timestamp: string;
+  amount: number;
+  userId: string;
+  userName: string;
+  member: Member | null;
+}
+
+export function createUserChartData(
   threadUsage: ThreadUsage,
   members: Member[],
   timeRange: string,
-): ChartDayData[] {
+): ChartBarStack[] {
   if (!threadUsage.items || threadUsage.items.length === 0) {
     return [];
   }
 
-  // Collect all transactions from all threads
-  const allTransactions: Array<{
-    timestamp: string;
-    amount: number;
-    userId: string;
-    userName: string;
-    member: Member | null;
-  }> = [];
+  const allTransactions: Array<UserChartTransaction> = [];
 
   threadUsage.items.forEach((thread) => {
     const member = members.find((m) => m.profiles.id === thread.generatedBy);
@@ -223,147 +397,67 @@ function createUserChartData(
     return [];
   }
 
-  // Group transactions by time periods based on timeRange
-  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
-  const now = new Date();
-  const periodData: ChartDayData[] = [];
-
-  for (let i = 0; i < periods; i++) {
-    const periodStart = new Date(now);
-    const periodEnd = new Date(now);
-
-    if (timeRange === "day") {
-      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
-      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
-    } else if (timeRange === "week") {
-      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
-      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
-    } else {
-      const weeksAgo = periods - 1 - i;
-      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
-      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
-    }
-
-    // Filter transactions for this period
-    const periodTransactions = allTransactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.timestamp);
-      return transactionDate >= periodStart && transactionDate < periodEnd;
+  if (timeRange === "day") {
+    const allTransactionsByHour = createMap({
+      keys: allDayHoursKeys,
+      fillWith: allTransactions,
+      getKey: hourId,
     });
-
-    // Group by user and calculate costs
-    const userCosts = new Map<
-      string,
-      { cost: number; name: string; member: Member | null }
-    >();
-
-    periodTransactions.forEach((transaction) => {
-      const existing = userCosts.get(transaction.userId);
-      if (existing) {
-        existing.cost += transaction.amount;
-      } else {
-        userCosts.set(transaction.userId, {
-          cost: transaction.amount,
-          name: transaction.userName,
-          member: transaction.member,
-        });
-      }
-    });
-
-    // Get top 5 users for this period
-    const top5Users = Array.from(userCosts.entries())
-      .sort((a, b) => b[1].cost - a[1].cost)
-      .slice(0, 5);
-
-    const top5UserData = top5Users.map(([userId, data]) => ({
-      id: userId,
-      name: data.name,
-      avatar: "",
-      cost: data.cost,
-      color: color(userId),
-      percentage: 0,
-      type: "user",
-      member: data.member,
+    const groups = Object.entries(allTransactionsByHour);
+    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
+      transactions: transactions ?? [],
+      label,
     }));
-
-    // Calculate "Other" category
-    const totalPeriodCost = Array.from(userCosts.values()).reduce(
-      (sum, data) => sum + data.cost,
-      0,
-    );
-    const top5Cost = top5UserData.reduce((sum, item) => sum + item.cost, 0);
-    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
-
-    const allUserData = [...top5UserData];
-
-    if (otherCost > 0) {
-      allUserData.push({
-        id: "other",
-        name: "Other",
-        avatar: "",
-        cost: otherCost,
-        color: "#E5E7EB",
-        percentage: 0,
-        type: "user",
-        member: null,
-      });
-    }
-
-    const roundedUserData = roundCosts(allUserData);
-    const total = roundedUserData.reduce((sum, item) => sum + item.cost, 0);
-
-    // Format date for display
-    let dateLabel: string;
-    if (timeRange === "day") {
-      dateLabel = periodStart.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (timeRange === "week") {
-      dateLabel = periodStart.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    } else {
-      const endWeek = new Date(periodStart);
-      endWeek.setDate(endWeek.getDate() + 6);
-      dateLabel = `${
-        periodStart.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
-    }
-
-    periodData.push({
-      date: dateLabel,
-      fullDate: periodStart.toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-      items: roundedUserData,
-      total,
-    });
+    return chartStackedBars;
   }
 
-  return periodData;
+  if (timeRange === "week") {
+    const allTransactionsByDay = createMap({
+      keys: allWeekDaysKeys,
+      fillWith: allTransactions,
+      getKey: dayId,
+    });
+    const groups = Object.entries(allTransactionsByDay);
+    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  if (timeRange === "month") {
+    const allTransactionsByWeek = createMap({
+      keys: allMonthWeeksKeys,
+      fillWith: allTransactions,
+      getKey: weekId,
+    });
+    const groups = Object.entries(allTransactionsByWeek);
+    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  throw new Error("Unknown time Range");
 }
 
-function createThreadChartData(
+interface ThreadChartTransaction {
+  timestamp: string;
+  amount: number;
+  threadId: string;
+  threadTitle: string;
+}
+
+export function createThreadChartData(
   threadUsage: ThreadUsage,
-  timeRange: string,
-): ChartDayData[] {
+  timeRange: TimeRange,
+): ChartBarStack[] {
   if (!threadUsage.items || threadUsage.items.length === 0) {
     return [];
   }
 
-  // Collect all transactions from all threads
-  const allTransactions: Array<{
-    timestamp: string;
-    amount: number;
-    threadId: string;
-    threadTitle: string;
-  }> = [];
+  const allTransactions: Array<ThreadChartTransaction> = [];
 
   threadUsage.items.forEach((thread) => {
     if (thread.transactions) {
@@ -382,124 +476,52 @@ function createThreadChartData(
     return [];
   }
 
-  // Group transactions by time periods based on timeRange
-  const periods = timeRange === "day" ? 24 : timeRange === "week" ? 7 : 4;
-  const now = new Date();
-  const periodData: ChartDayData[] = [];
-
-  for (let i = 0; i < periods; i++) {
-    const periodStart = new Date(now);
-    const periodEnd = new Date(now);
-
-    if (timeRange === "day") {
-      periodStart.setHours(periodStart.getHours() - (periods - 1 - i));
-      periodEnd.setHours(periodEnd.getHours() - (periods - 1 - i - 1));
-    } else if (timeRange === "week") {
-      periodStart.setDate(periodStart.getDate() - (periods - 1 - i));
-      periodEnd.setDate(periodEnd.getDate() - (periods - 1 - i - 1));
-    } else {
-      const weeksAgo = periods - 1 - i;
-      periodStart.setDate(periodStart.getDate() - (weeksAgo * 7));
-      periodEnd.setDate(periodEnd.getDate() - ((weeksAgo - 1) * 7));
-    }
-
-    // Filter transactions for this period
-    const periodTransactions = allTransactions.filter((transaction) => {
-      const transactionDate = new Date(transaction.timestamp);
-      return transactionDate >= periodStart && transactionDate < periodEnd;
+  if (timeRange === "day") {
+    const allTransactionsByHour = createMap({
+      keys: allDayHoursKeys,
+      fillWith: allTransactions,
+      getKey: hourId,
     });
+    const groups = Object.entries(allTransactionsByHour);
 
-    // Group by thread and calculate costs
-    const threadCosts = new Map<string, { cost: number; title: string }>();
-
-    periodTransactions.forEach((transaction) => {
-      const existing = threadCosts.get(transaction.threadId);
-      if (existing) {
-        existing.cost += transaction.amount;
-      } else {
-        threadCosts.set(transaction.threadId, {
-          cost: transaction.amount,
-          title: transaction.threadTitle,
-        });
-      }
-    });
-
-    // Get top 5 threads for this period
-    const top5Threads = Array.from(threadCosts.entries())
-      .sort((a, b) => b[1].cost - a[1].cost)
-      .slice(0, 5);
-
-    const top5ThreadData = top5Threads.map(([threadId, data]) => ({
-      id: threadId,
-      name: data.title,
-      avatar: "",
-      cost: data.cost,
-      color: color(threadId),
-      percentage: 0,
-      type: "thread",
+    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
+      transactions: transactions ?? [],
+      label,
     }));
-
-    // Calculate "Other" category
-    const totalPeriodCost = Array.from(threadCosts.values()).reduce(
-      (sum, data) => sum + data.cost,
-      0,
-    );
-    const top5Cost = top5ThreadData.reduce((sum, item) => sum + item.cost, 0);
-    const otherCost = Math.max(0, totalPeriodCost - top5Cost);
-
-    const allThreadData = [...top5ThreadData];
-
-    if (otherCost > 0) {
-      allThreadData.push({
-        id: "other",
-        name: "Other",
-        avatar: "",
-        cost: otherCost,
-        color: "#E5E7EB",
-        percentage: 0,
-        type: "thread",
-      });
-    }
-
-    const roundedThreadData = roundCosts(allThreadData);
-    const total = roundedThreadData.reduce((sum, item) => sum + item.cost, 0);
-
-    // Format date for display
-    let dateLabel: string;
-    if (timeRange === "day") {
-      dateLabel = periodStart.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (timeRange === "week") {
-      dateLabel = periodStart.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-    } else {
-      const endWeek = new Date(periodStart);
-      endWeek.setDate(endWeek.getDate() + 6);
-      dateLabel = `${
-        periodStart.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      }-${endWeek.toLocaleDateString("en-US", { day: "numeric" })}`;
-    }
-
-    periodData.push({
-      date: dateLabel,
-      fullDate: periodStart.toLocaleDateString("en-US", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-      items: roundedThreadData,
-      total,
-    });
+    return chartStackedBars;
   }
 
-  return periodData;
+  if (timeRange === "week") {
+    const allTransactionsByDay = createMap({
+      keys: allWeekDaysKeys,
+      fillWith: allTransactions,
+      getKey: dayId,
+    });
+    const groups = Object.entries(allTransactionsByDay);
+
+    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  if (timeRange === "month") {
+    const allTransactionsByWeek = createMap({
+      keys: allMonthWeeksKeys,
+      fillWith: allTransactions,
+      getKey: weekId,
+    });
+    const groups = Object.entries(allTransactionsByWeek);
+
+    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
+      transactions: transactions ?? [],
+      label,
+    }));
+    return chartStackedBars;
+  }
+
+  throw new Error("Unknown time Range");
 }
 
 export function UsageStackedBarChart({
@@ -514,7 +536,7 @@ export function UsageStackedBarChart({
   agentUsage: AgentUsage;
   threadUsage: ThreadUsage;
   members: Member[];
-  timeRange: string;
+  timeRange: TimeRange;
   usageType: UsageType;
 }) {
   const chartData = useMemo(() => {

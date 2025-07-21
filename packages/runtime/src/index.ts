@@ -77,6 +77,7 @@ interface BindingTypeMap {
 export interface User {
   id: string;
   email: string;
+  workspace: string;
   user_metadata: {
     avatar_url: string;
     full_name: string;
@@ -139,8 +140,11 @@ export class UnauthorizedError extends Error {
 
 const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
 const AUTH_START_ENDPOINT = "/oauth/start";
-const AUTHENTICATED = (user?: unknown) => () => {
-  return user as User;
+const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
+  return {
+    ...(user as User),
+    workspace,
+  } as User;
 };
 export const withBindings = <TEnv>(
   _env: TEnv,
@@ -151,16 +155,18 @@ export const withBindings = <TEnv>(
   let context;
   if (typeof tokenOrContext === "string") {
     const decoded = decodeJwt(tokenOrContext);
+    const workspace = decoded.aud as string;
     context = {
       state: decoded.state as Record<string, unknown>,
       token: tokenOrContext,
-      workspace: decoded.aud as string,
-      ensureAuthenticated: AUTHENTICATED(decoded.user),
+      workspace,
+      ensureAuthenticated: AUTHENTICATED(decoded.user, workspace),
     } as RequestContext<any>;
   } else if (typeof tokenOrContext === "object") {
     context = tokenOrContext;
     const decoded = decodeJwt(tokenOrContext.token);
-    context.ensureAuthenticated = AUTHENTICATED(decoded.user);
+    const workspace = decoded.aud as string;
+    context.ensureAuthenticated = AUTHENTICATED(decoded.user, workspace);
   } else {
     context = {
       state: undefined,

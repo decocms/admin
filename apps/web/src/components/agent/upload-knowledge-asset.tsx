@@ -90,7 +90,7 @@ export function KnowledgeBaseFileList(
       {files.map((file) => (
         <div
           key={file.name ?? file.fileUrl}
-          className="flex items-center gap-3 justify-between p-2 h-14 w-full"
+          className="flex items-center gap-3 justify-between p-2 h-14 w-full  "
         >
           {/* icon */}
           <div className="w-10 h-10 p-2 rounded-xl bg-primary/10 flex-shrink-0">
@@ -100,12 +100,14 @@ export function KnowledgeBaseFileList(
           {/* name */}
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium truncate overflow-hidden whitespace-nowrap block">
-              {(file.status === "processing" || file.status === "failed" || file.uploading) && (
+              {(file.status === "processing" || file.status === "failed" ||
+                file.uploading) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span
                         className={cn(
+                          // deno-lint-ignore ensure-tailwind-design-system-tokens/ensure-tailwind-design-system-tokens
                           "text-xs bg-gray-400 w-2 h-2 rounded-full inline-block mr-2",
                           file.status === "processing" && "bg-yellow-600",
                           file.status === "failed" && "bg-red-600",
@@ -195,7 +197,8 @@ interface AddFileToKnowledgeProps {
 }
 
 export function AddFileToKnowledgeButton(
-  { uploadKnowledgeFiles, uploadKnowledgeUrls, disabled = false }: AddFileToKnowledgeProps,
+  { uploadKnowledgeFiles, uploadKnowledgeUrls, disabled = false }:
+    AddFileToKnowledgeProps,
 ) {
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -261,46 +264,51 @@ export function AddFileToKnowledgeButton(
 
       {uploadKnowledgeUrls && (
         <>
-          {showUrlInput ? (
-            <div className="flex gap-2 items-center">
-              <input
-                type="url"
-                value={urlValue}
-                onChange={e => setUrlValue(e.target.value)}
-                placeholder="Paste URL..."
-                className="border rounded px-2 py-1 text-sm w-48"
-                disabled={isUrlUploading || disabled}
-              />
+          {showUrlInput
+            ? (
+              <div className="flex gap-2 items-center">
+                <input
+                  type="url"
+                  value={urlValue}
+                  onChange={(e) => setUrlValue(e.target.value)}
+                  placeholder="Paste URL..."
+                  className="border rounded px-2 py-1 text-sm w-48"
+                  disabled={isUrlUploading || disabled}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUrlSubmit}
+                  disabled={isUrlUploading || !urlValue.trim() || disabled}
+                >
+                  {isUrlUploading ? "Adding..." : "Confirm"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowUrlInput(false);
+                    setUrlValue("");
+                  }}
+                  disabled={isUrlUploading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )
+            : (
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
-                onClick={handleUrlSubmit}
-                disabled={isUrlUploading || !urlValue.trim() || disabled}
+                onClick={() => setShowUrlInput(true)}
+                disabled={isUrlUploading || disabled}
               >
-                {isUrlUploading ? "Adding..." : "Confirm"}
+                <Icon name="link" size={16} />
+                Add URL
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => { setShowUrlInput(false); setUrlValue(""); }}
-                disabled={isUrlUploading}
-              >
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowUrlInput(true)}
-              disabled={isUrlUploading || disabled}
-            >
-              <Icon name="link" size={16} />
-              Add URL
-            </Button>
-          )}
+            )}
         </>
       )}
     </div>

@@ -9,6 +9,7 @@ import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, MCPBinding } from "./wrangler.ts";
+import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -270,9 +271,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       } catch (e) {
         if (e instanceof UnauthorizedError) {
           const referer = req.headers.get("referer");
-          const isBrowser = typeof referer === "string" &&
-            req.headers.get("user-agent") != null;
-          if (isBrowser) {
+          const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+            req.headers.get("sec-fetch-mode") === "cors";
+          if (!isFetchRequest) {
             const url = new URL(req.url);
             e.redirectTo.searchParams.set(
               "state",

@@ -381,14 +381,16 @@ function AppsOAuth(
               globalThis.location.href = redirectTo;
             }}
           >
-            {createOAuthCode.isPending ? (
-              <div className="flex items-center gap-2">
-                <Spinner size="sm" />
-                Authorizing...
-              </div>
-            ) : (
-              `Continue with ${team.label}`
-            )}
+            {createOAuthCode.isPending
+              ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  Authorizing...
+                </div>
+              )
+              : (
+                `Continue with ${team.label}`
+              )}
           </Button>
         </div>
       </div>

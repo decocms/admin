@@ -9,10 +9,10 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import type { ComponentProps, InputHTMLAttributes, ReactNode } from "react";
 import { ViewModeSwitcher } from "./view-mode-switcher.tsx";
 
-interface Props {
+interface Props<TChiplet extends Chiplet> {
   filter?: {
-    items: Chiplet[];
-    onClick: (item: Chiplet) => void;
+    items: TChiplet[];
+    onClick: (item: TChiplet) => void;
   };
   input?: InputHTMLAttributes<HTMLInputElement>;
   view?: ComponentProps<typeof ViewModeSwitcher>;
@@ -63,7 +63,9 @@ export function Chiplet(props: ChipletProps) {
   );
 }
 
-export function ListPageHeader({ filter, input, view }: Props) {
+export function ListPageHeader<TChiplet extends Chiplet>(
+  { filter, input, view }: Props<TChiplet>,
+) {
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
       <div className="flex items-center gap-2">
@@ -71,7 +73,7 @@ export function ListPageHeader({ filter, input, view }: Props) {
           <Chiplet
             key={chiplet.id}
             item={chiplet}
-            onClick={filter.onClick}
+            onClick={filter.onClick as (item: Chiplet) => void}
           />
         ))}
       </div>

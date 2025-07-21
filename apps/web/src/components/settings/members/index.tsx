@@ -9,18 +9,23 @@ import { MembersTableView } from "./table.tsx";
 import { RolesTableView } from "./roles.tsx";
 
 // Components
-function MembersViewLoading() {
+function MembersViewLoading({ loadingMessage }: { loadingMessage: string }) {
   return (
     <div className="px-6 py-10 flex flex-col gap-6">
       <div className="flex justify-center p-8">
         <Spinner />
-        <span className="ml-2">Loading members...</span>
+        <span className="ml-2">{loadingMessage}</span>
       </div>
     </div>
   );
 }
 
-function MembersViewContent() {
+function MembersViewContent(
+  { tab, onTabChange }: {
+    tab: "members" | "roles";
+    onTabChange: (tab: "members" | "roles") => void;
+  },
+) {
   const { slug } = useCurrentTeam();
   const { data: team } = useTeam(slug);
   const teamId = useMemo(() => team?.id, [team?.id]);
@@ -30,9 +35,6 @@ function MembersViewContent() {
   } = useTeamMembers(teamId ?? null, {
     withActivity: true,
   });
-
-  // State management
-  const [tab, setTab] = useState<"members" | "roles">("members");
 
   const user = useUser();
 
@@ -45,13 +47,13 @@ function MembersViewContent() {
         label: "Members",
         count: members.length,
         active: tab === "members",
-      },
+      } as const,
       {
         id: "roles",
         label: "Roles",
         count: roles.length,
         active: tab === "roles",
-      },
+      } as const,
     ],
     [tab, members.length, roles.length],
   );
@@ -62,7 +64,7 @@ function MembersViewContent() {
         <ListPageHeader
           filter={{
             items: toggleItems,
-            onClick: (item) => setTab(item.id as "members" | "roles"),
+            onClick: (item) => onTabChange(item.id),
           }}
         />
 
@@ -75,10 +77,20 @@ function MembersViewContent() {
 }
 
 export default function MembersSettings() {
+  const [tab, setTab] = useState<"members" | "roles">("members");
+
   return (
     <ScrollArea className="h-full text-foreground">
-      <Suspense fallback={<MembersViewLoading />}>
-        <MembersViewContent />
+      <Suspense
+        fallback={
+          <MembersViewLoading
+            loadingMessage={tab === "members"
+              ? "Loading members..."
+              : "Loading roles..."}
+          />
+        }
+      >
+        <MembersViewContent tab={tab} onTabChange={setTab} />
       </Suspense>
     </ScrollArea>
   );

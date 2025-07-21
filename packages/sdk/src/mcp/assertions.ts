@@ -107,7 +107,7 @@ export const assertWorkspaceResourceAccess = async (
       if (
         assertPoliciesIsStatementArray(data.policies) &&
         !(await c.authorization.canAccess(
-          [{ statements: data.policies ?? [] }],
+          data.policies ?? [],
           slug,
           resource,
         ))

@@ -40,6 +40,7 @@ export interface Role {
   name: string;
   description?: string | null;
   team_id: number | null;
+  statements?: Statement[] | null;
 }
 
 export interface RoleWithPolicies extends Role {
@@ -66,14 +67,14 @@ export interface RoleUpdateParams {
 export class PolicyClient {
   private static instance: PolicyClient | null = null;
   private db: Client | null = null;
-  private userPolicyCache: WebCache<Pick<Policy, "statements">[]>;
+  private userPolicyCache: WebCache<Statement[]>;
   private userRolesCache: WebCache<MemberRole[]>;
   private teamRolesCache: WebCache<Role[]>;
   private teamSlugCache: WebCache<number>;
 
   private constructor() {
     // Initialize caches
-    this.userPolicyCache = new WebCache<Pick<Policy, "statements">[]>(
+    this.userPolicyCache = new WebCache<Statement[]>(
       "user-policies",
       TWO_MIN_TTL,
     );
@@ -119,7 +120,8 @@ export class PolicyClient {
           role_id,
           roles(
             id,
-            name
+            name,
+            statements
           )
         )
       `)
@@ -153,10 +155,10 @@ export class PolicyClient {
    * Get all policies for a user in a specific team
    * Only gets policies from member_roles -> roles -> policies chain
    */
-  public async getUserPolicies(
+  public async getUserStatements(
     userId: string,
     teamIdOrSlug: number | string,
-  ): Promise<Pick<Policy, "statements">[]> {
+  ): Promise<Statement[]> {
     this.assertDb(this.db);
 
     const teamId = typeof teamIdOrSlug === "number"
@@ -170,12 +172,20 @@ export class PolicyClient {
     const cacheKey = this.getUserPoliceCacheKey(userId, teamId);
 
     // Try to get from cache first
-    const cachedPolicies = await this.userPolicyCache.get(cacheKey);
+    const [cachedPolicies, userRoles] = await Promise.all([
+      this.userPolicyCache.get(cacheKey),
+      this.getUserRoles(userId, teamId),
+    ]);
+    const userRolesStatements = userRoles.map((r) => r.role?.statements).filter(
+      (s): s is Statement[] => !!s,
+    ).flat();
+
     if (cachedPolicies) {
-      return cachedPolicies;
+      return [...cachedPolicies, ...userRolesStatements];
     }
 
-    const { data, error: policiesError } = await this.db
+    // Fetch roles for the user and get inline statements from roles
+    const { data, error } = await this.db
       .from("member_roles")
       .select(`
             members!inner(team_id, user_id),
@@ -190,25 +200,22 @@ export class PolicyClient {
       .eq("members.team_id", teamId)
       .eq("members.user_id", userId);
 
-    const policies = data?.map((memberRole) => ({
-      statements: memberRole.roles.role_policies
-        .map((rolePolicies) =>
-          rolePolicies.policies.statements as unknown as Statement[] ?? []
-        )
-        .flat(),
-    }));
-
-    if (policiesError || !policies) {
+    if (error || !data) {
       return [];
     }
 
+    const policiesStatements = this.filterValidStatements(
+      data.map((mr) =>
+        mr.roles.role_policies.map((p) => p.policies.statements).flat()
+      ).flat() as unknown as Statement[],
+    );
     // Cache the result
     await this.userPolicyCache.set(
       cacheKey,
-      this.filterValidPolicies(policies),
+      policiesStatements,
     );
 
-    return policies;
+    return [...policiesStatements, ...userRolesStatements];
   }
 
   public async removeAllMemberPoliciesAtTeam(
@@ -363,67 +370,10 @@ export class PolicyClient {
     return role;
   }
 
-  async createPolicyForTeamResource(
-    teamIdOrSlug: string | number,
-    policy: Partial<Policy> & Pick<Policy, "name">,
-  ) {
-    this.assertDb(this.db);
-    const teamId = await this.getTeamIdByIdOrSlug(teamIdOrSlug);
-
-    const policyData = {
-      ...policy,
-      team_id: teamId,
-      statements: policy.statements as unknown as Json[],
-    };
-
-    const { data, error } = await this.db.from("policies").insert(policyData)
-      .select().single();
-    if (error) {
-      throw error;
-    }
-    return data as unknown as Policy | null;
-  }
-
-  async deletePolicyForTeamResource(
-    teamIdOrSlug: string | number,
-    policyIds: number[],
-  ) {
-    this.assertDb(this.db);
-    const teamId = await this.getTeamIdByIdOrSlug(teamIdOrSlug);
-    const { data } = await this.db.from("policies").delete().in("id", policyIds)
-      .eq("team_id", teamId).select();
-    return data;
-  }
-
-  private async updatePolicyForTeamResource(
-    teamIdOrSlug: string | number,
-    policy: Partial<Policy> & Pick<Policy, "id">,
-  ) {
-    this.assertDb(this.db);
-    const teamId = await this.getTeamIdByIdOrSlug(teamIdOrSlug);
-    const { data, error } = await this.db
-      .from("policies")
-      .update({
-        ...policy,
-        statements: policy.statements as unknown as Json[],
-        team_id: teamId,
-      })
-      .eq("id", policy.id)
-      .eq("team_id", teamId)
-      .select()
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    return data as unknown as Policy | null;
-  }
-
   async createRole(
     teamIdOrSlug: string | number,
     role: Partial<Role> & Pick<Role, "name">,
-    policies?: Partial<Policy> & Pick<Policy, "name">[],
+    statements?: Statement[],
   ) {
     this.assertDb(this.db);
     const teamId = await this.getTeamIdByIdOrSlug(teamIdOrSlug);
@@ -433,6 +383,9 @@ export class PolicyClient {
       .insert({
         ...role,
         team_id: teamId,
+        statements: statements?.length === 0
+          ? null
+          : statements as unknown as Json[],
       })
       .select()
       .single();
@@ -441,40 +394,13 @@ export class PolicyClient {
     }
     await this.teamRolesCache.delete(this.getTeamRolesCacheKey(teamId));
 
-    // TODO: implement rollback if error
-    if (policies) {
-      const policiesData = (await Promise.all(policies.map(async (p) => {
-        return await this.createPolicyForTeamResource(teamId, p);
-      }))).filter((p): p is Policy => p !== null);
-
-      await this.createRolePolicies(policiesData, data.id);
-    }
-
-    return data;
-  }
-
-  private async createRolePolicies(
-    policies: Pick<Policy, "id">[],
-    roleId: number,
-  ) {
-    this.assertDb(this.db);
-    const { data, error } = await this.db.from("role_policies").upsert(
-      policies.map((p) => ({
-        policy_id: p.id,
-        role_id: roleId,
-      }), { onConflict: "role_id, policy_id" }),
-    );
-
-    if (error) {
-      throw error;
-    }
     return data;
   }
 
   async updateRole(
     teamIdOrSlug: string | number,
     role: Partial<Role> & Pick<Role, "id">,
-    policies?: Partial<Policy> & Pick<Policy, "name">[],
+    statements?: Statement[],
   ) {
     this.assertDb(this.db);
     const teamId = await this.getTeamIdByIdOrSlug(teamIdOrSlug);
@@ -485,6 +411,9 @@ export class PolicyClient {
       .update({
         ...role,
         team_id: teamId,
+        statements: statements?.length === 0
+          ? null
+          : statements as unknown as Json[],
       })
       .eq("id", role.id)
       .eq("team_id", teamId)
@@ -496,21 +425,6 @@ export class PolicyClient {
     }
 
     await this.teamRolesCache.delete(this.getTeamRolesCacheKey(teamId));
-
-    // TODO: implement rollback if error
-    if (policies) {
-      const policiesData = (await Promise.all(policies.map(async (p) => {
-        if ("id" in p) {
-          return await this.updatePolicyForTeamResource(
-            teamId,
-            p as Partial<Policy> & Pick<Policy, "id">,
-          );
-        }
-        return await this.createPolicyForTeamResource(teamId, p);
-      }))).filter((p): p is Policy => p !== null);
-
-      await this.createRolePolicies(policiesData, role.id);
-    }
 
     return data;
   }
@@ -537,17 +451,6 @@ export class PolicyClient {
 
     if (role.team_id !== teamId) {
       throw new Error("Role does not belong to this team");
-    }
-
-    // delete all role_policies
-    const { data: policiesIds } = await this.db.from("role_policies").delete()
-      .eq("role_id", role.id).select("policy_id");
-
-    if (policiesIds) {
-      await this.deletePolicyForTeamResource(
-        teamId,
-        policiesIds.map((p) => p.policy_id),
-      );
     }
 
     // delete all member_roles
@@ -595,6 +498,7 @@ export class PolicyClient {
         name,
         description,
         team_id,
+        statements,
         role_policies (
           policies (
             id,
@@ -612,16 +516,30 @@ export class PolicyClient {
       return null;
     }
 
-    const policies: Policy[] = this.filterValidPolicies(
-      data.role_policies.map((rp) => rp.policies as unknown as Policy),
+    const policies: Policy[] = data.role_policies.map((rp) =>
+      ({
+        ...rp.policies,
+        statements: this.filterValidStatements(
+          rp.policies.statements as unknown as Statement[],
+        ),
+      }) as unknown as Policy
     );
+
+    const roleStatementsAsPolicies: Policy | null = data.statements ? {
+      id: data.id,
+      name: data.name,
+      team_id: data.team_id,
+      statements: this.filterValidStatements(
+        data.statements as unknown as Statement[],
+      ),
+    } : null;
 
     return {
       id: data.id,
       name: data.name,
       description: data.description,
       team_id: data.team_id,
-      policies,
+      policies: roleStatementsAsPolicies ? [...policies, roleStatementsAsPolicies] : policies,
     };
   }
 
@@ -645,14 +563,10 @@ export class PolicyClient {
     return teamId;
   }
 
-  private filterValidPolicies<T extends Pick<Policy, "statements">>(
-    policies: T[],
+  private filterValidStatements<T extends Statement>(
+    statements: T[],
   ): T[] {
-    return policies.map((policy) => ({
-      ...policy,
-      // filter admin policies
-      statements: policy.statements.filter((r) => !r.resource.endsWith(".ts")),
-    }));
+    return statements.filter((r) => !r.resource.endsWith(".ts"));
   }
 
   private async deleteUserRolesCache(teamId: number, userIds: string[]) {
@@ -705,39 +619,33 @@ export class AuthorizationClient {
    * Check if a user has access to a specific resource
    */
   public async canAccess(
-    userOrPolicies: string | Pick<Policy, "statements">[],
+    userOrPolicies: string | Statement[],
     teamIdOrSlug: number | string,
     resource: string,
     ctx: Partial<AuthContext> = {},
   ): Promise<boolean> {
-    const policies = typeof userOrPolicies === "string"
-      ? await this.policyClient.getUserPolicies(
+    const statements = typeof userOrPolicies === "string"
+      ? await this.policyClient.getUserStatements(
         userOrPolicies,
         teamIdOrSlug,
       )
       : userOrPolicies;
 
-    if (!policies.length) {
-      return false;
-    }
-
     let hasAllowMatch = false;
 
     // Evaluation algorithm: deny overrides allow
-    for (const policy of policies) {
-      for (const statement of policy.statements) {
-        // Check if statement applies to this resource
-        const resourceMatch = this.matchResource(statement, resource, ctx);
+    for (const statement of statements) {
+      // Check if statement applies to this resource
+      const resourceMatch = this.matchResource(statement, resource, ctx);
 
-        if (resourceMatch) {
-          // Explicit deny always overrides any allows
-          if (statement.effect === "deny") {
-            return false;
-          }
+      if (resourceMatch) {
+        // Explicit deny always overrides any allows
+        if (statement.effect === "deny") {
+          return false;
+        }
 
-          if (statement.effect === "allow") {
-            hasAllowMatch = true;
-          }
+        if (statement.effect === "allow") {
+          hasAllowMatch = true;
         }
       }
     }
@@ -756,8 +664,6 @@ export class AuthorizationClient {
     const matchFn = statement.matchCondition
       ? MatcherFunctions[statement.matchCondition.resource]
       : undefined;
-
-    statement.matchCondition && console.log(statement.matchCondition);
 
     const matched = matchFn?.handler?.(
       // deno-lint-ignore no-explicit-any

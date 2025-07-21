@@ -6,7 +6,7 @@ import {
 } from "../../errors.ts";
 import { assertTeamResourceAccess } from "../assertions.ts";
 import { createTool } from "./api.ts";
-import { Policy, RoleUpdateAction, Statement } from "../../auth/policy.ts";
+import { RoleUpdateAction, Statement } from "../../auth/policy.ts";
 import { type AppContext, resourceGroupMap } from "../context.ts";
 
 const ToolPermissionSchema = z.object({
@@ -41,28 +41,21 @@ const RoleFormDataSchema = z.object({
 export type RoleFormData = z.infer<typeof RoleFormDataSchema>;
 export type ToolPermission = z.infer<typeof ToolPermissionSchema>;
 
-const mapToolsToPolicies = (tools: z.infer<typeof ToolsSchema>) =>
+const mapToolsToStatements = (tools: z.infer<typeof ToolsSchema>) =>
   Object.entries(tools || {}).map(([integrationId, toolPermissions]) => {
     if (toolPermissions.length === 0) return null;
 
-    const statements = toolPermissions.map((tool) => ({
+    const statements = toolPermissions.map((tool): Statement => ({
       effect: tool.effect,
       resource: tool.toolName,
       matchCondition: {
-        resource: "is_integration" as const,
+        resource: "is_integration",
         integrationId,
-      } as const,
+      },
     }));
 
-    const policyName = `policy for i:${integrationId}`;
-
-    const policy = {
-      name: policyName,
-      statements,
-    };
-
-    return policy;
-  }).filter((p) => p !== null) as Omit<Policy, "id" | "team_id">[];
+    return statements;
+  }).filter((p): p is Statement[] => p !== null).flat();
 
 /**
  * Helper function to assign roles to members
@@ -85,15 +78,20 @@ async function assignRoleToMembers(
     .eq("team_id", teamId)
     .in("user_id", members.map((m) => m.user_id));
 
-  const memberRolePromises = dbMembers?.map(async (member: { profiles: { email: string } | null; user_id: string | null }) => {
-    const action = members.find((m) => m.user_id === member.user_id)?.action;
-    if (!member.profiles?.email || !action) return;
+  const memberRolePromises = dbMembers?.map(
+    async (
+      member: { profiles: { email: string } | null; user_id: string | null },
+    ) => {
+      const action = members.find((m) => m.user_id === member.user_id)
+        ?.action;
+      if (!member.profiles?.email || !action) return;
 
-    return await c.policy.updateUserRole(teamId, member.profiles.email, {
-      roleId,
-      action,
-    });
-  }) ?? [];
+      return await c.policy.updateUserRole(teamId, member.profiles.email, {
+        roleId,
+        action,
+      });
+    },
+  ) ?? [];
 
   await Promise.all(memberRolePromises);
 }
@@ -109,13 +107,12 @@ export const createTeamRole = createTool({
   handler: async (props, c) => {
     const { teamId, roleData } = props;
 
-    // c.resourceAccess.grant();
     await assertTeamResourceAccess(c.tool.name, teamId, c);
 
     const { name, description, tools, agents, members } = roleData;
 
     try {
-      const policies = mapToolsToPolicies(tools);
+      const inlineStatements = mapToolsToStatements(tools);
 
       const newRole = {
         name,
@@ -124,7 +121,7 @@ export const createTeamRole = createTool({
       const role = await c.policy.createRole(
         teamId,
         newRole,
-        policies,
+        inlineStatements,
       );
 
       if (members && members.length > 0) {
@@ -211,14 +208,14 @@ export const updateTeamRole = createTool({
     const { name, description, tools, agents, members } = roleData;
 
     try {
-      const policies = mapToolsToPolicies(tools);
+      const inlineStatements = mapToolsToStatements(tools);
 
       // Update the role using PolicyClient
       const updatedRole = await c.policy.updateRole(teamId, {
         id: roleId,
         name,
         description: description || null,
-      }, policies);
+      }, inlineStatements);
 
       if (!updatedRole) {
         throw new InternalServerError("Failed to update role");

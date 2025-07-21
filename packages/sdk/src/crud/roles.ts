@@ -3,7 +3,7 @@ import type {
   MemberRoleAction,
   RoleFormData,
   ToolPermission,
-} from "../mcp/members/roles-api.ts";
+} from "../mcp/teams/api.ts";
 export type { MemberRoleAction };
 
 export interface TeamRole {

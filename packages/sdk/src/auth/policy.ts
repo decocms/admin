@@ -525,21 +525,25 @@ export class PolicyClient {
       }) as unknown as Policy
     );
 
-    const roleStatementsAsPolicies: Policy | null = data.statements ? {
-      id: data.id,
-      name: data.name,
-      team_id: data.team_id,
-      statements: this.filterValidStatements(
-        data.statements as unknown as Statement[],
-      ),
-    } : null;
+    const roleStatementsAsPolicies: Policy | null = data.statements
+      ? {
+        id: data.id,
+        name: data.name,
+        team_id: data.team_id,
+        statements: this.filterValidStatements(
+          data.statements as unknown as Statement[],
+        ),
+      }
+      : null;
 
     return {
       id: data.id,
       name: data.name,
       description: data.description,
       team_id: data.team_id,
-      policies: roleStatementsAsPolicies ? [...policies, roleStatementsAsPolicies] : policies,
+      policies: roleStatementsAsPolicies
+        ? [...policies, roleStatementsAsPolicies]
+        : policies,
     };
   }
 

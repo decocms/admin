@@ -23,6 +23,9 @@ import { AuditFilters } from "./audit-filters.tsx";
 import { AuditTable } from "./audit-table.tsx";
 
 const CURSOR_PAGINATION_SEARCH_PARAM = "after";
+const AGENT_FILTER_SEARCH_PARAM = "agent";
+const USER_FILTER_SEARCH_PARAM = "user";
+const SORT_SEARCH_PARAM = "sort";
 
 type AuditOrderBy =
   | "createdAt_desc"
@@ -61,13 +64,19 @@ export function AuditListContent({
   columnsDenyList,
   filters,
 }: AuditListContentProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
-    undefined,
+    filters?.agentId ?? searchParams.get(AGENT_FILTER_SEARCH_PARAM) ??
+      undefined,
   );
   const [selectedUser, setSelectedUser] = useState<string | undefined>(
-    undefined,
+    filters?.resourceId ?? searchParams.get(USER_FILTER_SEARCH_PARAM) ??
+      undefined,
   );
-  const [sort, setSort] = useState<AuditOrderBy>(SORT_OPTIONS[0].value);
+  const [sort, setSort] = useState<AuditOrderBy>(
+    (filters?.orderBy ?? searchParams.get(SORT_SEARCH_PARAM) ??
+      SORT_OPTIONS[0].value) as AuditOrderBy,
+  );
   // Cursor-based pagination state
   const navigate = useNavigateWorkspace();
 
@@ -76,7 +85,6 @@ export function AuditListContent({
 
   // Get teamId from teams and params
   const params = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
   const getSafeCursor = (cursor: string | null) => {
     if (!cursor) return;
     try {
@@ -108,30 +116,62 @@ export function AuditListContent({
 
   // Handlers
   function handleAgentChange(value: string) {
-    setSelectedAgent(value === "all" ? undefined : value);
-    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
-  }
-  function handleUserChange(value: string) {
-    setSelectedUser(value === "all" ? undefined : value);
+    const newAgentValue = value === "all" ? undefined : value;
+    setSelectedAgent(newAgentValue);
 
-    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
+    // Update URL params
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newAgentValue) {
+      newSearchParams.set(AGENT_FILTER_SEARCH_PARAM, newAgentValue);
+    } else {
+      newSearchParams.delete(AGENT_FILTER_SEARCH_PARAM);
+    }
+    newSearchParams.delete(CURSOR_PAGINATION_SEARCH_PARAM); // Reset pagination
+    setSearchParams(newSearchParams);
   }
+
+  function handleUserChange(value: string) {
+    const newUserValue = value === "all" ? undefined : value;
+    setSelectedUser(newUserValue);
+
+    // Update URL params
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newUserValue) {
+      newSearchParams.set(USER_FILTER_SEARCH_PARAM, newUserValue);
+    } else {
+      newSearchParams.delete(USER_FILTER_SEARCH_PARAM);
+    }
+    newSearchParams.delete(CURSOR_PAGINATION_SEARCH_PARAM); // Reset pagination
+    setSearchParams(newSearchParams);
+  }
+
   function handleSortChange(newSort: string) {
     setSort(newSort as AuditOrderBy);
-    setSearchParams({ [CURSOR_PAGINATION_SEARCH_PARAM]: "" });
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set(SORT_SEARCH_PARAM, newSort);
+    newSearchParams.delete(CURSOR_PAGINATION_SEARCH_PARAM); // Reset pagination
+    setSearchParams(newSearchParams);
   }
+
   function handleNextPage() {
     if (pagination?.hasMore && pagination?.nextCursor) {
-      setSearchParams({
-        [CURSOR_PAGINATION_SEARCH_PARAM]: pagination.nextCursor,
-      });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set(
+        CURSOR_PAGINATION_SEARCH_PARAM,
+        pagination.nextCursor,
+      );
+      setSearchParams(newSearchParams);
     }
   }
+
   function handlePrevPage() {
     if (pagination?.prevCursor) {
-      setSearchParams({
-        [CURSOR_PAGINATION_SEARCH_PARAM]: pagination?.prevCursor,
-      });
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set(
+        CURSOR_PAGINATION_SEARCH_PARAM,
+        pagination?.prevCursor,
+      );
+      setSearchParams(newSearchParams);
     }
   }
 

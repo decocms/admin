@@ -142,7 +142,7 @@ const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
 const AUTH_START_ENDPOINT = "/oauth/start";
 const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
   return {
-    ...(user as User),
+    ...((user as User) ?? {}),
     workspace,
   } as User;
 };

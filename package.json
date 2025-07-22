@@ -43,7 +43,8 @@
     ".github/",
     "**/.wrangler",
     "apps/web/public/**",
-    "packages/runtime/src/cf-imports.ts"
+    "packages/runtime/src/cf-imports.ts",
+    "docs/server/**"
   ],
   "lock": false,
   "unstable": [

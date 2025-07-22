@@ -1,11 +1,21 @@
 import { Extension } from "@tiptap/react";
 
-export const NoNewLine = Extension.create({
+export interface NoNewLineOptions {
+  shouldPreventNewLine: () => boolean;
+}
+
+export const NoNewLine = Extension.create<NoNewLineOptions>({
   name: "noNewLine",
+
+  addOptions() {
+    return {
+      shouldPreventNewLine: () => true,
+    };
+  },
 
   addKeyboardShortcuts() {
     return {
-      Enter: () => true,
+      Enter: () => this.options.shouldPreventNewLine(),
     };
   },
 });

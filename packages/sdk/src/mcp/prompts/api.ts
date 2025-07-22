@@ -249,6 +249,26 @@ export const getPrompt = createTool({
   description: "Get a prompt by id",
   inputSchema: z.object({
     id: z.string(),
+  }).describe("The id of the prompt to get"),
+  outputSchema: z.object({
+    id: z.string().describe("The id of the prompt"),
+    name: z.string().describe("The name of the prompt"),
+    description: z.string().nullable().describe(
+      "The description of the prompt",
+    ),
+    content: z.string().describe("The content of the prompt"),
+    created_at: z.string().describe(
+      "The date and time the prompt was created",
+    ),
+    updated_at: z.string().nullable().optional().describe(
+      "The date and time the prompt was last updated",
+    ),
+    workspace: z.string().optional().describe(
+      "The workspace the prompt belongs to",
+    ),
+    readonly: z.boolean().optional().describe(
+      "Whether the prompt is readonly",
+    ),
   }),
   handler: async (props, c) => {
     assertHasWorkspace(c);

@@ -140,6 +140,9 @@ export const readFile = createTool({
       "Seconds until URL expires (default: 60)",
     ),
   }),
+  outputSchema: z.object({
+    url: z.string().describe("The URL to read the file from"),
+  }),
   handler: async ({ path, expiresIn = 180 }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
@@ -204,6 +207,9 @@ export const writeFile = createTool({
     metadata: z.record(z.string(), z.any()).optional().describe(
       "Metadata to be added to the file",
     ),
+  }),
+  outputSchema: z.object({
+    url: z.string().describe("The URL to upload the file to"),
   }),
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);

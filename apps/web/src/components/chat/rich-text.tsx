@@ -28,6 +28,7 @@ interface RichTextAreaProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  allowNewLine?: boolean;
 }
 
 export function RichTextArea({
@@ -39,6 +40,7 @@ export function RichTextArea({
   disabled = false,
   placeholder,
   className,
+  allowNewLine = false,
 }: RichTextAreaProps) {
   const editor = useEditor({
     extensions: [
@@ -46,7 +48,9 @@ export function RichTextArea({
       Markdown.configure({
         html: true,
       }),
-      NoNewLine,
+      NoNewLine.configure({
+        shouldPreventNewLine: () => !allowNewLine,
+      }),
       Placeholder.configure({
         placeholder: placeholder ?? "Type a message...",
       }),

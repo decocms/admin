@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { useState } from "react";
 import {
   useCreateAPIKey,
@@ -50,24 +49,7 @@ export function useIntegrationInstallWithModal() {
 
       // If we get a stateSchema, show the modal
       if (result.stateSchema) {
-        let scopes = result.scopes || [];
-
-        // If no scopes were returned, try to get them from the registry app
-        if (!scopes || scopes.length === 0) {
-          try {
-            const registryApp = await getRegistryApp.mutateAsync({
-              name: params.appName,
-            });
-
-            // Check if the registry app has scope information
-            // Note: This might not exist in the current schema, but we can check
-            if (registryApp && "scopes" in registryApp) {
-              scopes = (registryApp as any).scopes || [];
-            }
-          } catch (error) {
-            console.warn("Failed to get registry app info:", error);
-          }
-        }
+        const scopes = result.scopes || [];
 
         setInstallState({
           isModalOpen: true,

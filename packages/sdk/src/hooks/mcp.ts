@@ -89,6 +89,8 @@ export const useUpdateIntegration = ({
             : old.map((mcp) => mcp.id === result.id ? processedResult : mcp),
       );
 
+      client.invalidateQueries({ queryKey: ["tools"] });
+
       onSuccess?.(result);
     },
     onError,

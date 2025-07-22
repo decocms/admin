@@ -7,6 +7,7 @@ import {
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Spinner } from "@deco/ui/components/spinner.tsx";
 import {
   Select,
   SelectContent,
@@ -94,7 +95,7 @@ function ShowInstalls({
         <div className="text-center space-y-6">
           <h1 className="text-2xl font-bold">Select an integration</h1>
           <p className="text-muted-foreground">
-            Choose which integration to install
+            Choose which integration to authorize
           </p>
 
           <div className="w-full max-w-sm">
@@ -236,7 +237,7 @@ function AppsOAuth(
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">No teams available</h1>
           <p className="text-muted-foreground">
-            You need to be part of a team to install this app.
+            You need to be part of a team to authorize this app.
           </p>
         </div>
       </div>
@@ -249,7 +250,7 @@ function AppsOAuth(
         <div className="text-center space-y-6">
           <h1 className="text-2xl font-bold">Select a team</h1>
           <p className="text-muted-foreground">
-            Choose which team to install this app into
+            Choose which team to authorize this app for
           </p>
 
           <div className="w-full max-w-sm">
@@ -287,9 +288,9 @@ function AppsOAuth(
   return (
     <div className="flex flex-col items-center justify-center h-screen">
       <div className="text-center space-y-6 max-w-md">
-        <h1 className="text-2xl font-bold">Install app to team</h1>
+        <h1 className="text-2xl font-bold">Authorize app for team</h1>
         <p className="text-muted-foreground">
-          This app will be installed into the selected team
+          This app will be authorized for the selected team
         </p>
 
         <div className="flex flex-col items-center space-y-4">
@@ -318,7 +319,7 @@ function AppsOAuth(
         </div>
 
         {showTeamSelector && (
-          <div className="w-full max-w-sm space-y-3">
+          <div className="w-full space-y-3 flex flex-col items-center">
             <p className="text-sm text-muted-foreground">
               Select a different team:
             </p>
@@ -364,6 +365,7 @@ function AppsOAuth(
         <div className="pt-4">
           <Button
             className="w-full"
+            disabled={!selectedIntegration || createOAuthCode.isPending}
             onClick={async () => {
               if (!selectedIntegration) {
                 return;
@@ -379,7 +381,16 @@ function AppsOAuth(
               globalThis.location.href = redirectTo;
             }}
           >
-            Continue with {team.label}
+            {createOAuthCode.isPending
+              ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  Authorizing...
+                </div>
+              )
+              : (
+                `Continue with ${team.label}`
+              )}
           </Button>
         </div>
       </div>

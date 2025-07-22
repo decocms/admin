@@ -48,7 +48,7 @@ export function ConfirmMarketplaceInstallDialog({
   const open = !!integration;
   const { install, modalState, isLoading } = useIntegrationInstallWithModal();
   const buildWorkspaceUrl = useWorkspaceLink();
-
+  const navigateWorkspace = useNavigateWorkspace();
   const handleConnect = async () => {
     if (!integration) return;
 
@@ -86,6 +86,10 @@ export function ConfirmMarketplaceInstallDialog({
           authorizeOauthUrl: result.redirectUrl,
         });
         setIntegration(null);
+      } else if (!result.stateSchema) {
+        navigateWorkspace(
+          `/connection/${integration.provider}:::${integration.name}`,
+        );
       }
     } catch (error) {
       trackEvent("integration_install", {

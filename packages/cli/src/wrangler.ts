@@ -9,18 +9,30 @@ import { readSession } from "./session.ts";
 
 const envFile = ".dev.vars";
 
-export async function getCurrentEnvVars(projectRoot: string) {
-  const devVarsFile = await Deno.readTextFile(
-    join(projectRoot, envFile),
-  ).catch(() => "");
-  return devVarsFile.split("\n").reduce((acc, line) => {
-    if (!line) {
+export async function getCurrentEnvVars(projectRoot: string): Promise<{
+  envVars: Record<string, string>;
+  envFilepath: string;
+}> {
+  const envFilepath = join(projectRoot, envFile);
+  const devVarsFile = await Deno.readTextFile(envFilepath).catch(() => "");
+  const envVars = devVarsFile.split("\n").reduce((acc, line) => {
+    if (!line || line.startsWith("#")) {
       return acc;
     }
-    const [key, value] = line.split("=");
+    const firstEqualIndex = line.indexOf("=");
+    if (firstEqualIndex === -1) {
+      return acc;
+    }
+    const key = line.substring(0, firstEqualIndex);
+    const value = line.substring(firstEqualIndex + 1);
     acc[key] = value;
     return acc;
   }, {} as Record<string, string>);
+
+  return {
+    envVars,
+    envFilepath,
+  };
 }
 
 export async function writeEnvVars(
@@ -44,7 +56,7 @@ export async function getEnvVars(projectRoot?: string) {
     projectRoot = getProjectRoot();
   }
   const [currentEnvVars, session, config, wrangler] = await Promise.all([
-    getCurrentEnvVars(projectRoot),
+    getCurrentEnvVars(projectRoot).then(({ envVars }) => envVars),
     readSession(),
     getConfig({}),
     readWranglerConfig(projectRoot),

@@ -27,7 +27,7 @@ import {
   useToolCall,
   useTools,
 } from "@deco/sdk";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   RemoveConnectionAlert,
@@ -892,10 +892,18 @@ function ToolsInspector({ data, selectedConnectionId }: {
   selectedConnectionId?: string;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedIntegration, setSelectedIntegration] = useState<
-    Integration | null
-  >(data.instances[0] ?? null);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<
+    string | null
+  >(
+    data.instances[0]?.id ?? null,
+  );
   const toolsRef = useRef<HTMLDivElement>(null);
+
+  const selectedIntegration = useMemo(() => {
+    return data.instances.find((i) => i.id === selectedIntegrationId) ??
+      data.instances[0] ?? null;
+  }, [data.instances, selectedIntegrationId]);
+
   const connection = selectedIntegration?.connection;
   const tools = useTools(connection as MCPConnection);
 
@@ -917,21 +925,16 @@ function ToolsInspector({ data, selectedConnectionId }: {
   // Update selected integration when selectedConnectionId changes
   useEffect(() => {
     if (selectedConnectionId) {
-      const instance = data.instances.find((i) =>
-        i.id === selectedConnectionId
-      );
-      if (instance) {
-        setSelectedIntegration(instance);
-        // Scroll to tools section
-        setTimeout(() => {
-          toolsRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }, 100);
-      }
+      setSelectedIntegrationId(selectedConnectionId);
+      // Scroll to tools section
+      setTimeout(() => {
+        toolsRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     }
-  }, [selectedConnectionId, data.instances]);
+  }, [selectedConnectionId]);
 
   const filteredTools = tools.data.tools.filter((tool) =>
     tool.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -948,10 +951,7 @@ function ToolsInspector({ data, selectedConnectionId }: {
         <Select
           value={selectedIntegration?.id}
           onValueChange={(value) => {
-            const instance = data.instances.find((i) =>
-              i.id === value
-            );
-            setSelectedIntegration(instance ?? null);
+            setSelectedIntegrationId(value);
           }}
         >
           <SelectTrigger className="max-w-[300px] w-full">
@@ -967,7 +967,8 @@ function ToolsInspector({ data, selectedConnectionId }: {
         <Input
           placeholder="Search tools..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) =>
+            setSearch(e.target.value)}
           className="max-w-xs"
         />
       </div>
@@ -979,26 +980,50 @@ function ToolsInspector({ data, selectedConnectionId }: {
             ))
           )
           : tools.isError
-          ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <img
-                src="/img/error-state-connection-tools.svg"
-                className="h-64 mb-4"
-              />
-              <h3 className="text-2xl font-semibold text-foreground mb-2">
-                Unable to list connection tools
-              </h3>
-              <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
-                <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
-                  Error: {tools.error?.message || 'Unknown error occurred'}
-                </pre>
+          ? ("url" in connection && connection.url.includes("example.com"))
+            ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                  <Icon
+                    name="tune"
+                    size={24}
+                    className="text-muted-foreground"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-foreground">
+                    Configuration Required
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    This connection needs to be configured before tools can be
+                    tested. Please update the connection details above.
+                  </p>
+                </div>
               </div>
-              <Button onClick={() => tools.refetch()}>
-                <Icon name="refresh" size={16} />
-                Refresh
-              </Button>
-            </div>
-          )
+            )
+            : (
+              <div className="flex flex-col items-center justify-center p-8 text-center">
+                <img
+                  src="/img/error-state-connection-tools.svg"
+                  className="h-64 mb-4"
+                />
+                <h3 className="text-2xl font-semibold text-foreground mb-2">
+                  Unable to list connection tools
+                </h3>
+                <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-left mb-4">
+                  <pre className="text-xs text-destructive whitespace-pre-wrap break-words">
+                  Error: {tools.error?.message || 'Unknown error occurred'}
+                  </pre>
+                </div>
+                <Button
+                  onClick={() =>
+                    tools.refetch()}
+                >
+                  <Icon name="refresh" size={16} />
+                  Refresh
+                </Button>
+              </div>
+            )
           : (
             filteredTools.map((tool) =>
               connection

@@ -81,7 +81,7 @@ function WalletBalanceCard() {
       <div className="px-6 py-3 flex items-center gap-2">
         <Icon name="info" size={16} className="text-muted-foreground opacity-50" />
         <span className="text-sm font-medium text-muted-foreground">
-          AI credits include plan-specific takerate
+          Credits include plan-specific deposit fee
         </span>
       </div>
     </div>
@@ -152,7 +152,7 @@ function PlanInfoCard() {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">AI Takerate</span>
+            <span className="text-muted-foreground">Deposit fee</span>
             <span className="font-medium">
               {plan.markup}%
             </span>

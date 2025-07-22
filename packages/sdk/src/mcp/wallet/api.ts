@@ -249,6 +249,7 @@ export const getBillingHistory = createTool({
     })),
   }),
   handler: async ({ range }, c) => {
+    c.resourceAccess.grant();
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);

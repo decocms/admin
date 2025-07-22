@@ -141,13 +141,24 @@ export const deploy = async (
   }
 
   // 3. Load envVars from .dev.vars
-  const envVars = await getCurrentEnvVars(cwd);
+  const { envVars, envFilepath } = await getCurrentEnvVars(Deno.cwd());
+  const envVarsStatus = `Loaded ${
+    Object.keys(envVars).length
+  } env vars from ${envFilepath}`;
 
-  const manifest = { appSlug, files, envVars, bundle: hasTsFile, unlisted };
+  const manifest = {
+    appSlug,
+    files,
+    envVars,
+    envFilepath,
+    bundle: hasTsFile,
+    unlisted,
+  };
 
   console.log("🚚 Deployment summary:");
   console.log(`  App: ${appSlug}`);
   console.log(`  Files: ${files.length}`);
+  console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
 
   const confirmed = skipConfirmation ||

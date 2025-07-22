@@ -39,7 +39,8 @@ const AVAILABLE_TEMPLATES: Template[] = [
   },
   {
     name: "astro-docs-view",
-    description: "MCP Server with Tools, Workflows and views Astro for a documentation website.",
+    description:
+      "MCP Server with Tools, Workflows and views Astro for a documentation website.",
     repo: "deco-cx/astro-docs-view",
     branch: "main",
     wranglerRoot: "server",

@@ -1,8 +1,10 @@
+// deno-lint-ignore-file no-explicit-any
 import { type DefaultEnv, type RequestContext, withBindings } from "./index.ts";
 import {
   type AppContext,
   type CreateMCPServerOptions,
   isWorkflow,
+  MCPServer,
 } from "./mastra.ts";
 
 import { D1Store } from "@mastra/cloudflare-d1";
@@ -42,7 +44,10 @@ export interface WorkflowDO extends Rpc.DurableObjectBranded {
   resume: (args: ResumeWorkflowArgs) => Promise<{ resumed: boolean }>;
 }
 
-export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
+export const Workflow = (
+  server: MCPServer<any, any>,
+  workflows?: CreateMCPServerOptions["workflows"],
+) => {
   return class Workflow extends DurableObject<DefaultEnv>
     implements WorkflowDO {
     constructor(
@@ -55,6 +60,7 @@ export const Workflow = (workflows?: CreateMCPServerOptions["workflows"]) => {
     bindings(ctx: RequestContext) {
       return withBindings<DefaultEnv>(
         this.env,
+        server,
         ctx,
       );
     }

@@ -16,10 +16,10 @@ import {
   type Step as MastraStep,
 } from "@mastra/core/workflows";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { AsyncLocalStorage } from "node:async_hooks";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { DefaultEnv } from "./index.ts";
+import { State } from "./state.ts";
 export { createWorkflow };
 
 export { cloneStep, cloneWorkflow } from "@mastra/core/workflows";
@@ -238,19 +238,6 @@ export interface AppContext<TEnv = any> {
   req: Request;
 }
 
-const asyncLocalStorage = new AsyncLocalStorage<AppContext | undefined>();
-
-const State = {
-  getStore: () => {
-    return asyncLocalStorage.getStore();
-  },
-  run: <TEnv, R, TArgs extends unknown[]>(
-    ctx: AppContext<TEnv>,
-    f: (...args: TArgs) => R,
-    ...args: TArgs
-  ): R => asyncLocalStorage.run(ctx, f, ...args),
-};
-
 const decoChatOAuthToolFor = <TSchema extends z.ZodTypeAny = never>(
   { state: schema, scopes }: CreateMCPServerOptions<any, TSchema>["oauth"] = {},
 ) => {
@@ -358,17 +345,14 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
   return [startTool, cancelTool, resumeTool];
 };
 
-type CallTool<TEnv = any, TSchema extends z.ZodTypeAny = never> = (opts: {
-  env: TEnv & DefaultEnv<TSchema>;
-  ctx: ExecutionContext;
-  req: Request;
+type CallTool = (opts: {
   toolCallId: string;
   toolCallInput: any;
 }) => Promise<any>;
 
-type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
+export type MCPServer<TEnv = any, TSchema extends z.ZodTypeAny = never> = {
   fetch: Fetch<TEnv & DefaultEnv<TSchema>>;
-  callTool: CallTool<TEnv, TSchema>;
+  callTool: CallTool;
 };
 
 export const isWorkflow = (value: any): value is Workflow => {
@@ -449,29 +433,25 @@ export const createMCPServer = <
   const fetch = async (
     req: Request,
     env: TEnv & DefaultEnv<TSchema>,
-    ctx: ExecutionContext,
+    _ctx: ExecutionContext,
   ) => {
     const { server } = await createServer(env);
     const transport = new HttpServerTransport();
 
     await server.connect(transport);
 
-    const res = await State.run(
-      { env, ctx, req },
-      transport.handleMessage.bind(transport),
-      req,
-    );
-
-    return res;
+    return await transport.handleMessage(req);
   };
 
-  const callTool: CallTool<TEnv, TSchema> = async ({
-    env,
-    ctx,
-    req,
+  const callTool: CallTool = async ({
     toolCallId,
     toolCallInput,
   }) => {
+    const currentState = State.getStore();
+    if (!currentState) {
+      throw new Error("Missing state, did you forget to call State.bind?");
+    }
+    const env = currentState?.env;
     const { tools } = await createServer(env);
     const tool = tools.find((t) => t.id === toolCallId);
     const execute = tool?.execute;
@@ -481,15 +461,11 @@ export const createMCPServer = <
       );
     }
 
-    return State.run(
-      { env, ctx, req },
-      () =>
-        execute({
-          context: toolCallInput,
-          runId: crypto.randomUUID(),
-          runtimeContext: createRuntimeContext(),
-        }),
-    );
+    return execute({
+      context: toolCallInput,
+      runId: crypto.randomUUID(),
+      runtimeContext: createRuntimeContext(),
+    });
   };
 
   return {

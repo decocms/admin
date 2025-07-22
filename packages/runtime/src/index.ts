@@ -4,12 +4,17 @@ import { decodeJwt } from "jose";
 import type { z } from "zod";
 import { getReqToken, handleAuthCallback, StateParser } from "./auth.ts";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
-import { createMCPServer, type CreateMCPServerOptions } from "./mastra.ts";
+import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import {
+  createMCPServer,
+  type CreateMCPServerOptions,
+  MCPServer,
+} from "./mastra.ts";
 import { MCPClient, type QueryResult } from "./mcp.ts";
 import type { WorkflowDO } from "./workflow.ts";
 import { Workflow } from "./workflow.ts";
 import type { Binding, MCPBinding } from "./wrangler.ts";
-import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
+import { State } from "./state.ts";
 export {
   createMCPFetchStub,
   type CreateStubAPIOptions,
@@ -110,7 +115,11 @@ const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
 };
 
-const withDefaultBindings = (env: DefaultEnv, ctx: RequestContext) => {
+const withDefaultBindings = (
+  env: DefaultEnv,
+  server: MCPServer<any, any>,
+  ctx: RequestContext,
+) => {
   const client = workspaceClient(ctx);
   const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
     const client = workspaceClient(ctx);
@@ -123,6 +132,16 @@ const withDefaultBindings = (env: DefaultEnv, ctx: RequestContext) => {
       },
     };
   };
+  env["SELF"] = new Proxy({}, {
+    get: (_, prop) => {
+      return async (args: unknown) => {
+        return await server.callTool({
+          toolCallId: prop as string,
+          toolCallInput: args,
+        });
+      };
+    },
+  });
   env["DECO_CHAT_API"] = MCPClient;
   env["DECO_CHAT_WORKSPACE_API"] = client;
   env["DECO_CHAT_WORKSPACE_DB"] = {
@@ -146,8 +165,10 @@ const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
     workspace,
   } as User;
 };
+
 export const withBindings = <TEnv>(
   _env: TEnv,
+  server: MCPServer<TEnv, any>,
   tokenOrContext?: string | RequestContext,
 ): TEnv => {
   const env = _env as DefaultEnv<any>;
@@ -200,7 +221,7 @@ export const withBindings = <TEnv>(
     );
   }
 
-  withDefaultBindings(env, env.DECO_CHAT_REQUEST_CONTEXT);
+  withDefaultBindings(env, server, env.DECO_CHAT_REQUEST_CONTEXT);
 
   return env as TEnv;
 };
@@ -233,7 +254,11 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       return Response.redirect(next ?? redirectTo, 302);
     }
     if (url.pathname === "/mcp") {
-      return server.fetch(req, withBindings(env, getReqToken(req)), ctx);
+      return server.fetch(
+        req,
+        env,
+        ctx,
+      );
     }
 
     if (url.pathname.startsWith("/mcp/call-tool")) {
@@ -243,11 +268,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       }
       const toolCallInput = await req.json();
       const result = await server.callTool({
-        env: withBindings(env, getReqToken(req)) as
-          & TEnv
-          & DefaultEnv<TSchema>,
-        ctx,
-        req,
         toolCallId,
         toolCallInput,
       });
@@ -260,38 +280,42 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     }
     return userFns.fetch?.(
       req,
-      withBindings(env, getReqToken(req)) as any,
+      env,
       ctx,
     ) ||
       new Response("Not found", { status: 404 });
   };
   return {
-    Workflow: Workflow(userFns.workflows),
+    Workflow: Workflow(server, userFns.workflows),
     fetch: async (
       req: Request,
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
       try {
-        return await fetcher(req, env, ctx);
-      } catch (e) {
-        if (e instanceof UnauthorizedError) {
+        const bindings = withBindings(env, server, getReqToken(req));
+        return await State.run(
+          { req, env: bindings, ctx },
+          async () => await fetcher(req, bindings, ctx),
+        );
+      } catch (error) {
+        if (error instanceof UnauthorizedError) {
           const referer = req.headers.get("referer");
           const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
             req.headers.get("sec-fetch-mode") === "cors";
           if (!isFetchRequest) {
             const url = new URL(req.url);
-            e.redirectTo.searchParams.set(
+            error.redirectTo.searchParams.set(
               "state",
               StateParser.stringify({
                 next: url.searchParams.get("next") ?? referer ?? req.url,
               }),
             );
-            return Response.redirect(e.redirectTo, 302);
+            return Response.redirect(error.redirectTo, 302);
           }
           return new Response(null, { status: 401 });
         }
-        throw e;
+        throw error;
       }
     },
   };

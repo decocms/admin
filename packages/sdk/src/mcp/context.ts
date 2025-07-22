@@ -203,7 +203,9 @@ async (props: TInput) => {
   }
 };
 
-export const resourceGroupMap = new Map<string, string | undefined>();
+type ToolName = string;
+type GroupName = string;
+export const resourceGroupMap = new Map<ToolName, GroupName | undefined>();
 
 export const createToolFactory = <
   TAppContext extends AppContext = AppContext,

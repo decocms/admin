@@ -30,6 +30,7 @@ import { WebCache } from "../../cache/index.ts";
 import { TeamWithViews } from "../../crud/teams.ts";
 import { type View } from "../../views.ts";
 import { RoleUpdateAction, Statement } from "../../auth/policy.ts";
+import { isRequired } from "../../utils/fns.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -142,11 +143,12 @@ const enhancedThemeSchema = z.object({
 const ToolPermissionSchema = z.object({
   toolName: z.string(),
   effect: z.enum(["allow", "deny"]),
+  policyId: z.string().optional(),
 });
 
 const ToolsSchema = z.record(
   z.string(),
-  z.array(ToolPermissionSchema.extend({ policyId: z.string().optional() })),
+  z.array(ToolPermissionSchema),
 );
 
 const MemberRoleActionSchema = z.object({
@@ -279,6 +281,29 @@ const ensureMonthlyPlanCreditsReward = async ({
   await cache.set(cacheKey, transactionId, { ttl: TWELVE_HOURS_IN_SECONDS });
 };
 
+const getIntegrationIdForGroup = (wellKnownGroup?: string) => {
+  return wellKnownGroup ? `i:${wellKnownGroup}` : "";
+};
+
+const getMatchConditionForTool = (
+  tool: ToolPermission,
+  integrationId: string,
+): Pick<Statement, "matchCondition"> => {
+  const resourceGroup = resourceGroupMap.get(tool.toolName);
+
+  // if tool is well known, doesn't add the integrationId to the matchCondition
+  if (
+    resourceGroup && integrationId === getIntegrationIdForGroup(resourceGroup)
+  ) return {};
+
+  return {
+    matchCondition: {
+      resource: "is_integration",
+      integrationId,
+    },
+  };
+};
+
 const mapToolsToStatements = (tools: ToolsMap) =>
   Object.entries(tools || {}).map(([integrationId, toolPermissions]) => {
     if (toolPermissions.length === 0) return null;
@@ -286,19 +311,11 @@ const mapToolsToStatements = (tools: ToolsMap) =>
     const statements = toolPermissions.map((tool): Statement => ({
       effect: tool.effect,
       resource: tool.toolName,
-      // if tool is well known, doesn't add the integrationId to the matchCondition
-      ...(!resourceGroupMap.has(tool.toolName)
-        ? {
-          matchCondition: {
-            resource: "is_integration",
-            integrationId,
-          },
-        }
-        : {}),
+      ...getMatchConditionForTool(tool, integrationId),
     }));
 
     return statements;
-  }).filter((p): p is Statement[] => p !== null).flat();
+  }).filter(isRequired).flat();
 
 /**
  * Helper function to assign roles to members
@@ -877,8 +894,8 @@ export const getTeamRole = createTool({
         if (statement.matchCondition?.resource === "is_integration") {
           return statement.matchCondition.integrationId;
         }
-        const wellKnownTool = resourceGroupMap.get(statement.resource);
-        return wellKnownTool ? `i:${wellKnownTool}` : "deco-chat";
+        const wellKnownGroup = resourceGroupMap.get(statement.resource);
+        return getIntegrationIdForGroup(wellKnownGroup);
       };
 
       // Parse tools from policies

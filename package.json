@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
     "docs:dev": "cd docs && npm run dev",
+    "docs:deploy": "cd docs && npm run deploy",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "PWD=$PWD/apps/web deno run build",

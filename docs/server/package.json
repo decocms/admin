@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "mkdir -p view-build && deco dev",
-    "deploy": "wrangler build && deco deploy ./dist",
+    "deploy": "wrangler build && deco deploy ./dist -y -t $DECO_DEPLOY_TOKEN",
     "gen": "deco gen > deco.gen.ts",
     "gen:self": "deco gen --self=$DECO_SELF_URL > deco.gen.ts",
     "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts"

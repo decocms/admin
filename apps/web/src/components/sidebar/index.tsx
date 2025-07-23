@@ -457,6 +457,16 @@ function WorkspaceViews() {
   });
 }
 
+WorkspaceViews.Skeleton = () => (
+  <div className="flex flex-col gap-4">
+    {Array.from({ length: 20 }).map((_, index) => (
+      <div key={index} className="w-full h-10 px-2">
+        <Skeleton className="h-full bg-sidebar-accent rounded-sm" />
+      </div>
+    ))}
+  </div>
+);
+
 export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -493,7 +503,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  <Suspense fallback={<></>}>
+                  <Suspense fallback={<WorkspaceViews.Skeleton />}>
                     <WorkspaceViews />
                   </Suspense>
                 </SidebarMenu>

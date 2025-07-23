@@ -2,6 +2,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { Theme } from "../theme.ts";
 import { View } from "../views.ts";
 import type { MCPConnection } from "../models/mcp.ts";
+import { WellKnownBindings } from "../mcp/bindings/index.ts";
 
 export interface Team {
   id: number;
@@ -93,21 +94,12 @@ export const removeView = (
   MCPClient.forWorkspace(workspace).TEAMS_REMOVE_VIEW(input, init) as Promise<{ success: boolean }>;
 
 export const listAvailableViewsForConnection = async (
-  workspace: string,
   connection: MCPConnection,
-  init?: RequestInit,
-): Promise<{ views: Array<{ id: string; title: string; icon: string; url: string }> }> => {
+) => {
   try {
-    const client = MCPClient.forWorkspace(workspace);
-    const result = await client.INTEGRATIONS_CALL_TOOL({
-      connection,
-      params: {
-        name: "DECO_CHAT_VIEWS_LIST",
-        arguments: {},
-      },
-    }, init);
-    
-    return result as { views: Array<{ id: string; title: string; icon: string; url: string }> };
+    const client = MCPClient.forConnection<typeof WellKnownBindings["View"]>(connection);
+    const result = await client.DECO_CHAT_VIEWS_LIST({});
+    return result;
   } catch (error) {
     console.error("Error listing available views for connection:", error);
     return { views: [] };

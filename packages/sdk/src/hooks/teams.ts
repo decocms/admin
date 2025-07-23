@@ -133,7 +133,6 @@ export function useConnectionViews(integration: { id: string; connection: MCPCon
     queryFn: async () => {
       if (!integration) return { views: [] };
       const result = await listAvailableViewsForConnection(
-        workspace,
         integration.connection,
       ).catch((error) => {
         console.error(error);

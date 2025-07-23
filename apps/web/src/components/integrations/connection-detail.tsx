@@ -1117,7 +1117,7 @@ function ViewsList({ integration }: {
     try {
       await addViewMutation.mutateAsync({
         view: {
-          id: view.id,
+          id: crypto.randomUUID(),
           title: view.title,
           icon: view.icon,
           type: "custom" as const,
@@ -1196,15 +1196,15 @@ function ViewsList({ integration }: {
             <div className="space-y-2">
               {viewsWithStatus.map((view) => (
                 <div
-                  key={view.id}
+                  key={view.url}
                   className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {view.icon && (
-                      <img
-                        src={view.icon}
-                        alt={view.title}
-                        className="w-6 h-6 rounded flex-shrink-0"
+                      <Icon
+                        name={view.icon}
+                        size={24}
+                        className="flex-shrink-0"
                       />
                     )}
                     <div className="min-w-0 flex-1">

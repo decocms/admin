@@ -219,8 +219,8 @@ export interface CreateMCPServerOptions<
 > {
   oauth?: { state?: TSchema; scopes?: string[] };
   views?: (
-      env: Env & DefaultEnv<TSchema>,
-    ) => Promise<ViewExport[]> | ViewExport[];
+    env: Env & DefaultEnv<TSchema>,
+  ) => Promise<ViewExport[]> | ViewExport[];
   tools?: Array<
     (
       env: Env & DefaultEnv<TSchema>,

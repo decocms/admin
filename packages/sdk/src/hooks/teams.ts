@@ -5,19 +5,19 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import {
+  addView,
+  type AddViewInput,
   createTeam,
   type CreateTeamInput,
   deleteTeam,
   getTeam,
   getWorkspaceTheme,
+  listAvailableViewsForConnection,
   listTeams,
-  updateTeam,
-  type UpdateTeamInput,
-  addView,
-  type AddViewInput,
   removeView,
   type RemoveViewInput,
-  listAvailableViewsForConnection,
+  updateTeam,
+  type UpdateTeamInput,
 } from "../crud/teams.ts";
 import { KEYS } from "./api.ts";
 import { InternalServerError } from "../errors.ts";
@@ -101,7 +101,7 @@ export function useAddView() {
   const client = useQueryClient();
   const { workspace } = useSDK();
   const slug = workspace.split("/")[1] ?? "";
-  
+
   return useMutation({
     mutationFn: (input: AddViewInput) => addView(workspace, input),
     onSuccess: () => {
@@ -115,7 +115,7 @@ export function useRemoveView() {
   const client = useQueryClient();
   const { workspace } = useSDK();
   const slug = workspace.split("/")[1] ?? "";
-  
+
   return useMutation({
     mutationFn: (input: RemoveViewInput) => removeView(workspace, input),
     onSuccess: () => {
@@ -125,7 +125,9 @@ export function useRemoveView() {
   });
 }
 
-export function useConnectionViews(integration: { id: string; connection: MCPConnection } | null) {
+export function useConnectionViews(
+  integration: { id: string; connection: MCPConnection } | null,
+) {
   const { workspace } = useSDK();
 
   const data = useQuery({

@@ -53,7 +53,6 @@ import { AgentAvatar } from "../common/avatar/agent.tsx";
 import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
-import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { useCurrentTeam } from "./team-selector.tsx";
 
 const editTitleSchema = z.object({

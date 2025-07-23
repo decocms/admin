@@ -93,13 +93,14 @@ export default function ViewDetail() {
           </Button>
         }
       />
-      
+
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete View</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the view "{view.title}"? This action cannot be undone.
+              Are you sure you want to delete the view "{view.title}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

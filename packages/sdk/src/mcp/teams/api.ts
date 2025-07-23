@@ -23,7 +23,7 @@ import {
 } from "../wallet/well-known.ts";
 import { MicroDollar, type Transaction } from "../wallet/index.ts";
 import { WebCache } from "../../cache/index.ts";
-import { Team, TeamWithViews } from "../../crud/teams.ts";
+import { TeamWithViews } from "../../crud/teams.ts";
 import { type View } from "../../views.ts";
 
 const OWNER_ROLE_ID = 1;
@@ -614,7 +614,7 @@ export const addView = createTool({
 
     assertHasWorkspace(c);
     const slug = c.workspace.slug;
-    
+
     const { data: team, error: teamError } = await c
       .db
       .from("teams")
@@ -639,7 +639,9 @@ export const addView = createTool({
 
     if (checkError) throw checkError;
     if (existingView) {
-      throw new UserInputError("A view with this ID already exists for this team.");
+      throw new UserInputError(
+        "A view with this ID already exists for this team.",
+      );
     }
 
     const { data: newView, error: insertError } = await c
@@ -675,7 +677,7 @@ export const removeView = createTool({
 
     assertHasWorkspace(c);
     const slug = c.workspace.slug;
-    
+
     // Get team by slug to get the team ID
     const { data: team, error: teamError } = await c
       .db

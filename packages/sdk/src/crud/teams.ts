@@ -80,7 +80,10 @@ export const addView = (
   workspace: string,
   input: AddViewInput,
   init?: RequestInit,
-): Promise<View> => MCPClient.forWorkspace(workspace).TEAMS_ADD_VIEW(input, init) as Promise<View>;
+): Promise<View> =>
+  MCPClient.forWorkspace(workspace).TEAMS_ADD_VIEW(input, init) as Promise<
+    View
+  >;
 
 export interface RemoveViewInput {
   viewId: string;
@@ -91,13 +94,17 @@ export const removeView = (
   input: RemoveViewInput,
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>
-  MCPClient.forWorkspace(workspace).TEAMS_REMOVE_VIEW(input, init) as Promise<{ success: boolean }>;
+  MCPClient.forWorkspace(workspace).TEAMS_REMOVE_VIEW(input, init) as Promise<
+    { success: boolean }
+  >;
 
 export const listAvailableViewsForConnection = async (
   connection: MCPConnection,
 ) => {
   try {
-    const client = MCPClient.forConnection<typeof WellKnownBindings["View"]>(connection);
+    const client = MCPClient.forConnection<typeof WellKnownBindings["View"]>(
+      connection,
+    );
     const result = await client.DECO_CHAT_VIEWS_LIST({});
     return result;
   } catch (error) {

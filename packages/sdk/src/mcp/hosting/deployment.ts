@@ -208,6 +208,8 @@ const uploadWranglerAssets = async ({
   return jwt;
 };
 
+const CF_ASSET_HEADERS_FILE_PATH = "/_headers";
+
 const DEFAULT_HEADERS_FILE = () => `# Default headers for static assets
 /*
   Content-Security-Policy: frame-ancestors 'self' https://deco.chat/
@@ -218,7 +220,8 @@ function withDefaultAssets(assets: Record<string, string>) {
   const defaultHeadersBase64 = Buffer.from(defaultHeaders).toString("base64");
   return {
     ...assets,
-    "/_headers": assets["/_headers"] ?? defaultHeadersBase64,
+    [CF_ASSET_HEADERS_FILE_PATH]: assets[CF_ASSET_HEADERS_FILE_PATH] ??
+      defaultHeadersBase64,
   };
 }
 

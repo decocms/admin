@@ -14,7 +14,11 @@ export const BASE_ROLES_ID = {
   ADMIN: 4,
 };
 
-const BLOCKED_ROLES = new Set([BASE_ROLES_ID.PUBLISHER]);
+// Roles that should not be displayed in the UI
+// - PUBLISHER (id 2): System role for publishing capabilities
+// - Public (id 115): System role for public access
+// - Private (id 116): System role for private access
+const BLOCKED_ROLES = new Set([BASE_ROLES_ID.PUBLISHER, 115, 116]);
 
 type MatchFunctionsManifest = typeof MatcherFunctions;
 type MatchCondition<

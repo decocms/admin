@@ -11,6 +11,7 @@ import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { WranglerConfig } from "./wrangler.ts";
+import { Buffer } from "node:buffer";
 
 const METADATA_FILE_NAME = "metadata.json";
 // Common types and utilities
@@ -207,6 +208,20 @@ const uploadWranglerAssets = async ({
   return jwt;
 };
 
+const DEFAULT_HEADERS_FILE = () => `# Default headers for static assets
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/
+`;
+
+function withDefaultAssets(assets: Record<string, string>) {
+  const defaultHeaders = DEFAULT_HEADERS_FILE();
+  const defaultHeadersBase64 = Buffer.from(defaultHeaders).toString("base64");
+  return {
+    ...assets,
+    "/_headers": assets["/_headers"] ?? defaultHeadersBase64,
+  };
+}
+
 export async function deployToCloudflare({
   c,
   mainModule,
@@ -356,7 +371,7 @@ export async function deployToCloudflare({
   if (hasAssets) {
     const jwt = await uploadWranglerAssets({
       c,
-      assets,
+      assets: withDefaultAssets(assets),
       scriptSlug,
     });
 

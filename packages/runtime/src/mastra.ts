@@ -207,11 +207,20 @@ export function createStep<
   });
 }
 
+interface ViewExport {
+  title: string;
+  icon: string;
+  url: string;
+}
+
 export interface CreateMCPServerOptions<
   Env = any,
   TSchema extends z.ZodTypeAny = never,
 > {
   oauth?: { state?: TSchema; scopes?: string[] };
+  views?: (
+      env: Env & DefaultEnv<TSchema>,
+    ) => Promise<ViewExport[]> | ViewExport[];
   tools?: Array<
     (
       env: Env & DefaultEnv<TSchema>,
@@ -399,6 +408,20 @@ export const createMCPServer = <
 
     tools.push(...workflowTools);
     tools.push(decoChatOAuthToolFor<TSchema>(options.oauth));
+
+    tools.push(createTool({
+      id: `DECO_CHAT_VIEWS_LIST`,
+      description: "List views exposed by this MCP",
+      inputSchema: z.any(),
+      outputSchema: z.object({
+        views: z.array(z.object({
+          title: z.string(),
+          icon: z.string(),
+          url: z.string(),
+        })),
+      }),
+      execute: async () => ({ views: await options.views?.(bindings) ?? [] }),
+    }));
 
     for (const tool of tools) {
       server.registerTool(

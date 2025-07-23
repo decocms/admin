@@ -3,6 +3,7 @@ import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Json } from "../../storage/index.ts";
 import type { Theme } from "../../theme.ts";
 import {
+  assertHasWorkspace,
   assertPrincipalIsUser,
   assertTeamResourceAccess,
 } from "../assertions.ts";
@@ -22,6 +23,8 @@ import {
 } from "../wallet/well-known.ts";
 import { MicroDollar, type Transaction } from "../wallet/index.ts";
 import { WebCache } from "../../cache/index.ts";
+import { Team, TeamWithViews } from "../../crud/teams.ts";
+import { type View } from "../../views.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -253,7 +256,16 @@ export const getTeam = createTool({
     const { data: teamData, error } = await c
       .db
       .from("teams")
-      .select("*")
+      .select(`
+        *,
+        deco_chat_views (
+          id,
+          title,
+          icon,
+          type,
+          metadata
+        )
+      `)
       .eq("slug", slug)
       .single();
 
@@ -268,6 +280,15 @@ export const getTeam = createTool({
       context: c,
     });
 
+    const teamWithoutAvatar: Omit<TeamWithViews, "avatar_url"> = {
+      id: teamData.id,
+      name: teamData.name,
+      slug,
+      theme: teamData.theme as Theme,
+      created_at: teamData.created_at as string,
+      views: teamData.deco_chat_views as View[] || [],
+    };
+
     try {
       const workspace = `/shared/${slug}`;
       const signedUrlCreator = buildSignedUrlCreator({
@@ -275,13 +296,13 @@ export const getTeam = createTool({
         existingBucketName: getWorkspaceBucketName(workspace),
       });
       return {
-        ...teamData,
+        ...teamWithoutAvatar,
         avatar_url: await getAvatarFromTheme(teamData.theme, signedUrlCreator),
       };
     } catch (error) {
       console.error("Error getting signed url creator", error);
       return {
-        ...teamData,
+        ...teamWithoutAvatar,
         avatar_url: null,
       };
     }
@@ -573,5 +594,127 @@ export const getWorkspaceTheme = createTool({
         : undefined,
     };
     return { theme };
+  },
+});
+
+export const addView = createTool({
+  name: "TEAMS_ADD_VIEW",
+  description: "Add a custom view to a team",
+  inputSchema: z.object({
+    view: z.object({
+      id: z.string().describe("Unique identifier for the view"),
+      title: z.string().describe("Display title for the view"),
+      icon: z.string().describe("Icon identifier for the view"),
+      type: z.literal("custom").describe("Type of view (must be 'custom')"),
+      url: z.string().describe("URL for the custom view"),
+    }).describe("View configuration to add"),
+  }),
+  handler: async (props, c) => {
+    const { view } = props;
+
+    assertHasWorkspace(c);
+    const slug = c.workspace.slug;
+    
+    const { data: team, error: teamError } = await c
+      .db
+      .from("teams")
+      .select("id")
+      .eq("slug", slug)
+      .single();
+
+    if (teamError) throw teamError;
+    if (!team) {
+      throw new NotFoundError("Team not found.");
+    }
+
+    await assertTeamResourceAccess(c.tool.name, team.id, c);
+
+    const { data: existingView, error: checkError } = await c
+      .db
+      .from("deco_chat_views")
+      .select("id")
+      .eq("id", view.id)
+      .eq("team_id", team.id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (existingView) {
+      throw new UserInputError("A view with this ID already exists for this team.");
+    }
+
+    const { data: newView, error: insertError } = await c
+      .db
+      .from("deco_chat_views")
+      .insert([{
+        id: view.id,
+        title: view.title,
+        icon: view.icon,
+        type: view.type,
+        metadata: {
+          url: view.url,
+        },
+        team_id: team.id,
+      }])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    return newView;
+  },
+});
+
+export const removeView = createTool({
+  name: "TEAMS_REMOVE_VIEW",
+  description: "Remove a custom view from a team",
+  inputSchema: z.object({
+    viewId: z.string().describe("The ID of the view to remove"),
+  }),
+  handler: async (props, c) => {
+    const { viewId } = props;
+
+    assertHasWorkspace(c);
+    const slug = c.workspace.slug;
+    
+    // Get team by slug to get the team ID
+    const { data: team, error: teamError } = await c
+      .db
+      .from("teams")
+      .select("id")
+      .eq("slug", slug)
+      .single();
+
+    if (teamError) throw teamError;
+    if (!team) {
+      throw new NotFoundError("Team not found.");
+    }
+
+    await assertTeamResourceAccess(c.tool.name, team.id, c);
+
+    // Check if view exists
+    const { data: existingView, error: checkError } = await c
+      .db
+      .from("deco_chat_views")
+      .select("id")
+      .eq("id", viewId)
+      .eq("team_id", team.id)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (!existingView) {
+      throw new NotFoundError("View not found for this team.");
+    }
+
+    // Remove the view
+    const { error: deleteError } = await c
+      .db
+      .from("deco_chat_views")
+      .delete()
+      .eq("id", viewId)
+      .eq("team_id", team.id);
+
+    if (deleteError) throw deleteError;
+
+    return { success: true };
   },
 });

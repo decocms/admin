@@ -6,7 +6,6 @@ export interface UserPreferences {
   smoothStream: boolean;
   sendReasoning: boolean;
   defaultModel: string;
-  displayWorkflow: boolean;
 }
 
 const USER_PREFERENCES_KEY = "user-preferences";
@@ -22,7 +21,6 @@ export function useUserPreferences() {
       useOpenRouter: true,
       smoothStream: true,
       sendReasoning: true,
-      displayWorkflow: false,
     },
   });
 

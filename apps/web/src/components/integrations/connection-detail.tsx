@@ -26,8 +26,15 @@ import {
   type MCPTool,
   useToolCall,
   useTools,
+  listTools,
+  useAddView,
+  useRemoveView,
+  useConnectionViews,
 } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
+import { useCurrentTeam } from "../sidebar/team-selector.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 
 import {
   RemoveConnectionAlert,
@@ -967,6 +974,7 @@ function ToolsInspector({ data, selectedConnectionId }: {
           className="max-w-xs"
         />
       </div>
+      
       <div className="flex flex-col gap-4 w-full min-h-[80vh]">
         {tools.isLoading
           ? (
@@ -1031,6 +1039,249 @@ function ToolsInspector({ data, selectedConnectionId }: {
   );
 }
 
+function ViewBindingDetector({ integration }: {
+  integration: Integration;
+}) {
+  const [isViewBinding, setIsViewBinding] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+
+  const checkViewBinding = async () => {
+    if (!integration) return;
+    
+    setIsChecking(true);
+    try {
+      const toolsData = await listTools(integration.connection);
+      const isViewBindingResult = Binding(WellKnownBindings.View)
+        .isImplementedBy(toolsData.tools);
+      setIsViewBinding(isViewBindingResult);
+    } catch (error) {
+      console.error("Error checking view binding:", error);
+      setIsViewBinding(false);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    checkViewBinding();
+  }, [integration?.id]);
+
+  if (!integration || isChecking) {
+    return (
+      <div className="w-full p-4 flex flex-col items-center gap-4">
+        <div className="w-full flex items-center justify-center p-4">
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isViewBinding === null || isViewBinding === false) {
+    return null;
+  }
+
+  return <ViewsList integration={integration} />;
+}
+
+function ViewsList({ integration }: {
+  integration: Integration;
+}) {
+  const currentTeam = useCurrentTeam();
+  const addViewMutation = useAddView();
+  const removeViewMutation = useRemoveView();
+
+  const { data: viewsData, isLoading: isLoadingViews } = useConnectionViews(
+    integration
+  );
+  const views = viewsData?.views || [];
+
+  // Check which views are already added to the team
+  const viewsWithStatus = useMemo(() => {
+    if (!views || views.length === 0 || !currentTeam.views) return [];
+    
+    return views.map(view => {
+      const existingView = currentTeam.views.find(teamView => {
+        const metadata = teamView.metadata as { url?: string };
+        return metadata?.url === view.url;
+      });
+      
+      return {
+        ...view,
+        isAdded: !!existingView,
+        teamViewId: existingView?.id,
+      };
+    });
+  }, [views, currentTeam.views]);
+
+  const handleAddView = async (view: typeof views[0]) => {
+    try {
+      await addViewMutation.mutateAsync({
+        view: {
+          id: view.id,
+          title: view.title,
+          icon: view.icon,
+          type: "custom" as const,
+          url: view.url,
+        },
+      });
+
+      toast.success(`View "${view.title}" added successfully`);
+    } catch (error) {
+      console.error("Error adding view:", error);
+      toast.error(`Failed to add view "${view.title}"`);
+    }
+  };
+
+  const handleRemoveView = async (viewWithStatus: typeof viewsWithStatus[0]) => {
+    if (!viewWithStatus.teamViewId) {
+      toast.error("No view to remove");
+      return;
+    }
+
+    try {
+      await removeViewMutation.mutateAsync({
+        viewId: viewWithStatus.teamViewId,
+      });
+
+      toast.success(`View "${viewWithStatus.title}" removed successfully`);
+    } catch (error) {
+      console.error("Error removing view:", error);
+      toast.error(`Failed to remove view "${viewWithStatus.title}"`);
+    }
+  };
+
+  if (isLoadingViews) {
+    return (
+      <div className="w-full p-4 flex flex-col items-center gap-4">
+        <div className="w-full flex items-center justify-center p-4">
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full p-4 flex flex-col items-center gap-4">
+      <h6 className="text-sm text-muted-foreground font-medium w-full">
+        Views available from this integration
+      </h6>
+      <div className="w-full p-4 border border-border rounded-xl bg-muted/30">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <Icon name="layers" size={20} className="text-green-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-foreground">
+              {integration.name}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              This integration provides custom views that can be added to your workspace.
+            </p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Icon name="info" size={16} className="text-muted-foreground" />
+            <span className="text-muted-foreground">
+              Available views: {views.length}
+            </span>
+          </div>
+          
+          {viewsWithStatus.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No views available from this integration
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {viewsWithStatus.map((view) => (
+                <div
+                  key={view.id}
+                  className="flex items-center justify-between p-3 border border-border rounded-lg bg-background"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {view.icon && (
+                      <img
+                        src={view.icon}
+                        alt={view.title}
+                        className="w-6 h-6 rounded flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-medium truncate">
+                        {view.title}
+                      </h4>
+                      {view.url && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {view.url}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {view.isAdded && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <Icon name="check_circle" size={14} />
+                        <span>Added</span>
+                      </div>
+                    )}
+                    
+                    {view.isAdded ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveView(view)}
+                        disabled={removeViewMutation.isPending}
+                      >
+                        {removeViewMutation.isPending ? (
+                          <Icon name="hourglass_empty" size={14} />
+                        ) : (
+                          <Icon name="remove" size={14} />
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddView(view)}
+                        disabled={addViewMutation.isPending}
+                      >
+                        {addViewMutation.isPending ? (
+                          <Icon name="hourglass_empty" size={14} />
+                        ) : (
+                          <Icon name="add" size={14} />
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ViewBindingSection({ data, selectedConnectionId }: {
+  data: ReturnType<typeof useGroupedApp>;
+  selectedConnectionId?: string;
+}) {
+  const selectedIntegration = useMemo(() => {
+    return data.instances.find((i) => i.id === selectedConnectionId) ??
+      data.instances[0] ?? null;
+  }, [data.instances, selectedConnectionId]);
+
+  if (!selectedIntegration) {
+    return null;
+  }
+
+  return <ViewBindingDetector integration={selectedIntegration} />;
+}
+
 function AppDetail({ appKey }: {
   appKey: string;
 }) {
@@ -1055,6 +1306,10 @@ function AppDetail({ appKey }: {
           data={app}
           onTestTools={(connectionId) =>
             setSelectedToolInspectorConnectionId(connectionId)}
+        />
+        <ViewBindingSection
+          data={app}
+          selectedConnectionId={selectedToolInspectorConnectionId}
         />
         <ToolsInspector
           data={app}

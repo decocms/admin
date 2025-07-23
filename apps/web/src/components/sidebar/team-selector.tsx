@@ -18,7 +18,7 @@ import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 import { Avatar } from "../common/avatar/index.tsx";
 import { CreateTeamDialog } from "./create-team-dialog.tsx";
 import { InviteTeamMembersDialog } from "../common/invite-team-members-dialog.tsx";
-import type { Theme } from "@deco/sdk";
+import { type Theme, type View, withDefaultViews } from "@deco/sdk";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
 export interface CurrentTeam {
@@ -29,7 +29,7 @@ export interface CurrentTeam {
   theme: Theme | undefined;
 }
 
-function useUserTeam(): CurrentTeam {
+function useUserTeam(): CurrentTeam & { views: View[] } {
   const user = useUser();
   const avatarUrl = user?.metadata?.avatar_url ?? undefined;
   const name = user?.metadata?.full_name || user?.email;
@@ -40,10 +40,11 @@ function useUserTeam(): CurrentTeam {
     id: user?.id ?? "",
     slug: "",
     theme: undefined,
+    views: withDefaultViews([]),
   };
 }
 
-export function useCurrentTeam(): CurrentTeam {
+export function useCurrentTeam(): CurrentTeam & { views: View[] } {
   const { teamSlug } = useParams();
   const userTeam = useUserTeam();
   const { data: teamData } = useTeam(teamSlug);
@@ -56,6 +57,7 @@ export function useCurrentTeam(): CurrentTeam {
     id: teamData?.id ?? "",
     slug: teamData?.slug ?? teamSlug ?? "",
     theme: teamData?.theme,
+    views: withDefaultViews(teamData?.views ?? []),
   };
 }
 

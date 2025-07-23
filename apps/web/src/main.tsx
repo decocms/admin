@@ -137,6 +137,10 @@ const AppAuth = lazy(() =>
   wrapWithUILoadingFallback(import("./components/apps/auth.tsx"))
 );
 
+const ViewDetail = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/detail.tsx"))
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -305,6 +309,7 @@ const router = createBrowserRouter([
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
+          { path: "views/:id", Component: ViewDetail },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },
           { path: "workflows", Component: WorkflowListPage },

@@ -1,5 +1,6 @@
 import {
   type Agent,
+  parseViewMetadata,
   type Thread,
   useAgents,
   useDeleteThread,
@@ -53,44 +54,7 @@ import { groupThreadsByDate } from "../threads/index.tsx";
 import { SidebarFooter } from "./footer.tsx";
 import { Header as SidebarHeader } from "./header.tsx";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
-
-const STATIC_ITEMS = [
-  {
-    url: "/agents",
-    title: "Agents",
-    icon: "robot_2",
-  },
-  {
-    url: "/connections",
-    title: "Integrations",
-    icon: "linked_services",
-  },
-  {
-    url: "/workflows",
-    title: "Workflows",
-    icon: "flowchart",
-  },
-  {
-    url: "/triggers",
-    title: "Triggers",
-    icon: "cable",
-  },
-  {
-    url: "/prompts",
-    title: "Prompts",
-    icon: "local_library",
-  },
-  {
-    url: "/audits",
-    title: "Activity",
-    icon: "forum",
-  },
-  {
-    url: "/settings",
-    title: "Monitor",
-    icon: "monitoring",
-  },
-];
+import { useCurrentTeam } from "./team-selector.tsx";
 
 const editTitleSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -447,12 +411,56 @@ SidebarThreads.Skeleton = () => (
   </div>
 );
 
+function WorkspaceViews() {
+  const workspaceLink = useWorkspaceLink();
+  const { isMobile, toggleSidebar } = useSidebar();
+  const team = useCurrentTeam();
+  return team.views.map((item) => {
+    const meta = parseViewMetadata(item);
+    if (!meta) {
+      return null;
+    }
+    const href = workspaceLink(
+      meta.type === "custom" ? `/views/${item.id}` : meta.path,
+    );
+
+    return (
+      <SidebarMenuItem key={item.title}>
+        <WithActive to={href}>
+          {({ isActive }) => (
+            <SidebarMenuButton
+              asChild
+              isActive={isActive}
+              tooltip={item.title}
+            >
+              <Link
+                to={href}
+                onClick={() => {
+                  trackEvent("sidebar_navigation_click", {
+                    item: item.title,
+                  });
+                  isMobile && toggleSidebar();
+                }}
+              >
+                <Icon
+                  name={item.icon}
+                  filled={isActive}
+                  className="text-muted-foreground"
+                />
+                <span className="truncate">{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          )}
+        </WithActive>
+      </SidebarMenuItem>
+    );
+  });
+}
+
 export function AppSidebar() {
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const workspaceLink = useWorkspaceLink();
   const focusChat = useFocusChat();
-  const { preferences } = useUserPreferences();
 
   return (
     <Sidebar variant="sidebar">
@@ -485,42 +493,9 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {STATIC_ITEMS.filter((item) =>
-                    item.title !== "Workflows" || preferences.displayWorkflow
-                  ).map((item) => {
-                    const href = workspaceLink(item.url);
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <WithActive to={href}>
-                          {({ isActive }) => (
-                            <SidebarMenuButton
-                              asChild
-                              isActive={isActive}
-                              tooltip={item.title}
-                            >
-                              <Link
-                                to={href}
-                                onClick={() => {
-                                  trackEvent("sidebar_navigation_click", {
-                                    item: item.title,
-                                  });
-                                  isMobile && toggleSidebar();
-                                }}
-                              >
-                                <Icon
-                                  name={item.icon}
-                                  filled={isActive}
-                                  className="text-muted-foreground"
-                                />
-                                <span className="truncate">{item.title}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          )}
-                        </WithActive>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  <Suspense fallback={<></>}>
+                    <WorkspaceViews />
+                  </Suspense>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

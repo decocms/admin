@@ -1,5 +1,7 @@
 import { MCPClient } from "../fetcher.ts";
 import type { Theme } from "../theme.ts";
+import { View } from "../views.ts";
+import type { MCPConnection } from "../models/mcp.ts";
 
 export interface Team {
   id: number;
@@ -10,6 +12,10 @@ export interface Team {
   created_at: string;
 }
 
+export interface TeamWithViews extends Team {
+  views: View[];
+}
+
 export const listTeams = (
   init?: RequestInit,
 ): Promise<Team[]> => MCPClient.TEAMS_LIST({}, init) as Promise<Team[]>;
@@ -17,7 +23,8 @@ export const listTeams = (
 export const getTeam = (
   slug: string,
   init?: RequestInit,
-): Promise<Team> => MCPClient.TEAMS_GET({ slug }, init) as Promise<Team>;
+): Promise<TeamWithViews> =>
+  MCPClient.TEAMS_GET({ slug }, init) as Promise<TeamWithViews>;
 
 export interface CreateTeamInput {
   name: string;
@@ -57,3 +64,52 @@ export const deleteTeam = (
   init?: RequestInit,
 ): Promise<{ success: boolean }> =>
   MCPClient.TEAMS_DELETE({ teamId }, init) as Promise<{ success: boolean }>;
+
+export interface AddViewInput {
+  view: {
+    id: string;
+    title: string;
+    icon: string;
+    type: "custom";
+    url: string;
+  };
+}
+
+export const addView = (
+  workspace: string,
+  input: AddViewInput,
+  init?: RequestInit,
+): Promise<View> => MCPClient.forWorkspace(workspace).TEAMS_ADD_VIEW(input, init) as Promise<View>;
+
+export interface RemoveViewInput {
+  viewId: string;
+}
+
+export const removeView = (
+  workspace: string,
+  input: RemoveViewInput,
+  init?: RequestInit,
+): Promise<{ success: boolean }> =>
+  MCPClient.forWorkspace(workspace).TEAMS_REMOVE_VIEW(input, init) as Promise<{ success: boolean }>;
+
+export const listAvailableViewsForConnection = async (
+  workspace: string,
+  connection: MCPConnection,
+  init?: RequestInit,
+): Promise<{ views: Array<{ id: string; title: string; icon: string; url: string }> }> => {
+  try {
+    const client = MCPClient.forWorkspace(workspace);
+    const result = await client.INTEGRATIONS_CALL_TOOL({
+      connection,
+      params: {
+        name: "DECO_CHAT_VIEWS_LIST",
+        arguments: {},
+      },
+    }, init);
+    
+    return result as { views: Array<{ id: string; title: string; icon: string; url: string }> };
+  } catch (error) {
+    console.error("Error listing available views for connection:", error);
+    return { views: [] };
+  }
+};

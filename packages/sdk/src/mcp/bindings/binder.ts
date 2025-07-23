@@ -104,6 +104,10 @@ export const ChannelBinding = bindingClient(
   WellKnownBindings.Channel,
 );
 
+export const ViewBinding = bindingClient(
+  WellKnownBindings.View,
+);
+
 export type { Callbacks } from "./channels.ts";
 export * from "./index.ts";
 

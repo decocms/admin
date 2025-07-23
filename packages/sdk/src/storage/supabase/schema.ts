@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)";
+  };
   public: {
     Tables: {
       admin_ai_usage: {
@@ -990,6 +995,44 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      deco_chat_views: {
+        Row: {
+          created_at: string | null;
+          icon: string;
+          id: string;
+          metadata: Json | null;
+          team_id: number;
+          title: string;
+          type: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          icon: string;
+          id?: string;
+          metadata?: Json | null;
+          team_id: number;
+          title: string;
+          type: string;
+        };
+        Update: {
+          created_at?: string | null;
+          icon?: string;
+          id?: string;
+          metadata?: Json | null;
+          team_id?: number;
+          title?: string;
+          type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deco_chat_views_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2370,6 +2413,7 @@ export type Database = {
           description: string | null;
           id: number;
           name: string;
+          statements: Json[] | null;
           team_id: number | null;
         };
         Insert: {
@@ -2377,6 +2421,7 @@ export type Database = {
           description?: string | null;
           id?: number;
           name: string;
+          statements?: Json[] | null;
           team_id?: number | null;
         };
         Update: {
@@ -2384,6 +2429,7 @@ export type Database = {
           description?: string | null;
           id?: number;
           name?: string;
+          statements?: Json[] | null;
           team_id?: number | null;
         };
         Relationships: [
@@ -2785,7 +2831,7 @@ export type Database = {
           {
             foreignKeyName: "team_blocks_team_id_fkey";
             columns: ["team_id"];
-            isOneToOne: false;
+            isOneToOne: true;
             referencedRelation: "teams";
             referencedColumns: ["id"];
           },

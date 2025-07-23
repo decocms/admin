@@ -3,11 +3,11 @@ import {
   cloneElement,
   type MouseEventHandler,
   type ReactElement,
+  useCallback,
   useEffect,
   useMemo,
-  useState,
   useRef,
-  useCallback,
+  useState,
 } from "react";
 import { toast } from "@deco/ui/components/sonner.tsx";
 import { useInviteTeamMember, useTeamRoles } from "@deco/sdk";
@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@deco/ui/components/dialog.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
-import { Input } from "@deco/ui/components/input.tsx";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,7 +28,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@deco/ui/components/form.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -42,29 +40,28 @@ import { useUser } from "../../hooks/use-user.ts";
 
 // Form validation schema - simplified for email tags approach
 const inviteMemberSchema = z.object({
-  emails: z.array(z.string().email("Invalid email address")).min(1, "At least one email is required"),
+  emails: z.array(z.string().email("Invalid email address")).min(
+    1,
+    "At least one email is required",
+  ),
   roleId: z.array(z.string()).min(1, { message: "Please select a role" }),
 });
 
 export type InviteMemberFormData = z.infer<typeof inviteMemberSchema>;
 
 // Email validation regex (same as before)
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+// const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const emailSchema = z.string().email("Invalid email address");
 
 // Email validation types
-type EmailValidationState = 'valid' | 'invalid' | 'self';
-
-interface EmailState {
-  email: string;
-  state: EmailValidationState;
-}
+type EmailValidationState = "valid" | "invalid" | "self";
 
 // Custom Badge component with specific styling
-function CustomBadge({ 
-  children, 
-  variant, 
-  className, 
-  ...props 
+function CustomBadge({
+  children,
+  variant,
+  className,
+  ...props
 }: React.ComponentProps<typeof Badge>) {
   const customClasses = cn(
     // Base styles with reduced padding
@@ -77,7 +74,7 @@ function CustomBadge({
       : variant === "secondary"
       ? "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
       : "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
-    className
+    className,
   );
 
   return (
@@ -96,23 +93,28 @@ interface EmailTagsInputProps {
   currentUserEmail?: string;
 }
 
-function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, currentUserEmail }: EmailTagsInputProps) {
+function EmailTagsInput(
+  { emails, onEmailsChange, disabled, placeholder, currentUserEmail }:
+    EmailTagsInputProps,
+) {
   const [inputValue, setInputValue] = useState("");
-  const [emailStates, setEmailStates] = useState<Map<string, EmailValidationState>>(new Map());
+  const [emailStates, setEmailStates] = useState<
+    Map<string, EmailValidationState>
+  >(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const validateEmail = (email: string): EmailValidationState => {
     const trimmedEmail = email.trim().toLowerCase();
-    
+
     if (currentUserEmail && trimmedEmail === currentUserEmail.toLowerCase()) {
-      return 'self';
+      return "self";
     }
-    
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      return 'invalid';
+
+    if (!emailSchema.safeParse(trimmedEmail).success) {
+      return "invalid";
     }
-    
-    return 'valid';
+
+    return "valid";
   };
 
   const addEmail = useCallback((email: string) => {
@@ -126,27 +128,27 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
 
     // Validate email
     const state = validateEmail(trimmedEmail);
-    
+
     // Add email regardless of validation state (so user can see error)
     const newEmails = [...emails, trimmedEmail];
     onEmailsChange(newEmails);
-    
+
     // Update validation state
-    setEmailStates(prev => {
+    setEmailStates((prev) => {
       const next = new Map(prev);
       next.set(trimmedEmail, state);
       return next;
     });
-    
+
     return true;
   }, [emails, onEmailsChange, currentUserEmail]);
 
   const removeEmail = useCallback((emailToRemove: string) => {
-    const newEmails = emails.filter(email => email !== emailToRemove);
+    const newEmails = emails.filter((email) => email !== emailToRemove);
     onEmailsChange(newEmails);
-    
+
     // Remove from validation states
-    setEmailStates(prev => {
+    setEmailStates((prev) => {
       const next = new Map(prev);
       next.delete(emailToRemove);
       return next;
@@ -157,39 +159,41 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
     // Split by various delimiters, clean up and filter empty strings
     const potentialEmails = text
       .split(/[,;\n\r\t|]/)
-      .map(email => email.trim())
-      .filter(email => email.length > 0);
-    
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0);
+
     let addedCount = 0;
     let totalEmails = 0;
     const newEmailsToAdd: string[] = [];
     const newEmailStates = new Map<string, EmailValidationState>();
-    
-    potentialEmails.forEach(email => {
+
+    potentialEmails.forEach((email) => {
       totalEmails++;
       const trimmedEmail = email.trim().toLowerCase();
-      
+
       // Skip if email already exists in current list or in new emails to add
-      if (emails.includes(trimmedEmail) || newEmailsToAdd.includes(trimmedEmail)) {
+      if (
+        emails.includes(trimmedEmail) || newEmailsToAdd.includes(trimmedEmail)
+      ) {
         return;
       }
-      
+
       // Validate email
       const state = validateEmail(trimmedEmail);
-      
+
       // Add to our list regardless of validation state (so user can see errors)
       newEmailsToAdd.push(trimmedEmail);
       newEmailStates.set(trimmedEmail, state);
       addedCount++;
     });
-    
+
     // Update all emails at once to avoid race conditions
     if (newEmailsToAdd.length > 0) {
       const allEmails = [...emails, ...newEmailsToAdd];
       onEmailsChange(allEmails);
-      
+
       // Update validation states
-      setEmailStates(prev => {
+      setEmailStates((prev) => {
         const next = new Map(prev);
         newEmailStates.forEach((state, email) => {
           next.set(email, state);
@@ -197,28 +201,32 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
         return next;
       });
     }
-    
+
     // Only clear input if we actually processed emails from it
     if (totalEmails > 0) {
-      setInputValue('');
-      
+      setInputValue("");
+
       if (addedCount > 0) {
-        toast.success(`Added ${addedCount} email${addedCount > 1 ? 's' : ''}`);
+        toast.success(`Added ${addedCount} email${addedCount > 1 ? "s" : ""}`);
       } else if (totalEmails > addedCount) {
         // Some emails were not added (duplicates or invalid)
-        toast.info(`${totalEmails - addedCount} email${totalEmails - addedCount > 1 ? 's were' : ' was'} already added or invalid`);
+        toast.info(
+          `${totalEmails - addedCount} email${
+            totalEmails - addedCount > 1 ? "s were" : " was"
+          } already added or invalid`,
+        );
       }
     }
-    
+
     return addedCount;
   }, [emails, onEmailsChange, validateEmail]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
-    
+
     // Check if there are delimiters in the current input
     const hasDelimiters = /[,;\n\r\t|]/.test(value);
-    
+
     if (hasDelimiters) {
       // Process the emails
       processEmailList(value);
@@ -229,26 +237,26 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (inputValue.trim()) {
         if (addEmail(inputValue)) {
-          setInputValue('');
+          setInputValue("");
         }
       }
-    } else if (e.key === 'Backspace' && !inputValue && emails.length > 0) {
+    } else if (e.key === "Backspace" && !inputValue && emails.length > 0) {
       // Remove last email when backspace is pressed on empty input
       removeEmail(emails[emails.length - 1]);
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const pastedText = e.clipboardData.getData('text');
-    
+    const pastedText = e.clipboardData.getData("text");
+
     // Always process pasted content for emails
     if (pastedText.trim()) {
       e.preventDefault();
-      
+
       // If pasted text contains delimiters, process as email list
       if (/[,;\n\r\t|]/.test(pastedText)) {
         processEmailList(pastedText);
@@ -268,8 +276,9 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = Math.max(96, Math.min(200, textarea.scrollHeight)) + 'px'; // Min 4 lines (24px * 4 = 96px)
+      textarea.style.height = "auto";
+      textarea.style.height =
+        Math.max(96, Math.min(200, textarea.scrollHeight)) + "px"; // Min 4 lines (24px * 4 = 96px)
     }
   }, []);
 
@@ -278,27 +287,31 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
   }, [inputValue, adjustTextareaHeight]);
 
   // Get error messages for display
-  const invalidEmails = emails.filter(email => emailStates.get(email) === 'invalid');
-  const selfEmails = emails.filter(email => emailStates.get(email) === 'self');
+  const invalidEmails = emails.filter((email) =>
+    emailStates.get(email) === "invalid"
+  );
+  const selfEmails = emails.filter((email) =>
+    emailStates.get(email) === "self"
+  );
 
   const getBadgeVariant = (email: string) => {
     const state = emailStates.get(email);
     switch (state) {
-      case 'invalid':
-      case 'self':
-        return 'destructive';
+      case "invalid":
+      case "self":
+        return "destructive";
       default:
-        return 'secondary';
+        return "secondary";
     }
   };
 
   return (
     <div className="space-y-2">
-      <div 
+      <div
         className={cn(
           "min-h-[96px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm transition-[color,box-shadow]",
           "focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]",
-          disabled && "opacity-50 cursor-not-allowed"
+          disabled && "opacity-50 cursor-not-allowed",
         )}
         onClick={() => textareaRef.current?.focus()}
       >
@@ -316,9 +329,9 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
                 size="icon"
                 className={cn(
                   "h-4 w-4 rounded-full transition-colors",
-                  getBadgeVariant(email) === 'destructive' 
-                    ? "text-destructive hover:text-foreground" 
-                    : "text-muted-foreground hover:text-foreground"
+                  getBadgeVariant(email) === "destructive"
+                    ? "text-destructive hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -337,24 +350,26 @@ function EmailTagsInput({ emails, onEmailsChange, disabled, placeholder, current
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className="flex-1 min-w-[120px] bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground overflow-hidden"
-            placeholder={emails.length === 0 ? placeholder : "Add more emails..."}
+            placeholder={emails.length === 0
+              ? placeholder
+              : "Add more emails..."}
             disabled={disabled}
             rows={4}
             style={{
-              minHeight: '96px', // 4 lines minimum
-              maxHeight: '200px',
+              minHeight: "96px", // 4 lines minimum
+              maxHeight: "200px",
             }}
           />
         </div>
       </div>
-      
+
       {/* Show validation errors */}
       {selfEmails.length > 0 && (
         <div className="text-sm text-destructive">
           You're not able to send an invite to yourself: {selfEmails.join(", ")}
         </div>
       )}
-      
+
       {invalidEmails.length > 0 && (
         <div className="text-sm text-destructive">
           Invalid email format: {invalidEmails.join(", ")}
@@ -442,10 +457,12 @@ export function InviteTeamMembersDialog({
 
   const inviteMemberMutation = useInviteTeamMember();
   const { data: roles = [] } = useTeamRoles(teamId ?? null);
-  
+
   // Find collaborator role as default (instead of owner)
   const collaboratorRoleId = useMemo(() => {
-    const collaboratorRole = roles.find((role) => role.name.toLowerCase() === "collaborator");
+    const collaboratorRole = roles.find((role) =>
+      role.name.toLowerCase() === "collaborator"
+    );
     return collaboratorRole?.id.toString() || "";
   }, [roles]);
 
@@ -455,7 +472,7 @@ export function InviteTeamMembersDialog({
     roleId: z.array(z.string()).min(1, { message: "Please select a role" }),
   });
 
-  const form = useForm<{emails: string[], roleId: string[]}>({
+  const form = useForm<{ emails: string[]; roleId: string[] }>({
     resolver: zodResolver(customInviteMemberSchema),
     mode: "onChange", // Changed to onChange for better validation feedback
     defaultValues: {
@@ -476,23 +493,27 @@ export function InviteTeamMembersDialog({
 
   // Filter valid emails for submission
   const validEmails = useMemo(() => {
-    return emails.filter(email => {
+    return emails.filter((email) => {
       const trimmedEmail = email.trim().toLowerCase();
-      const isValidFormat = EMAIL_REGEX.test(trimmedEmail);
-      const isNotSelf = !user?.email || trimmedEmail !== user.email.toLowerCase();
+
+      const isValidFormat = emailSchema.safeParse(trimmedEmail).success;
+      const isNotSelf = !user?.email ||
+        trimmedEmail !== user.email.toLowerCase();
       return isValidFormat && isNotSelf;
     });
   }, [emails, user?.email]);
 
   // Invite team members
-  const handleInviteMembers = async (data: {emails: string[], roleId: string[]}) => {
+  const handleInviteMembers = async (
+    data: { emails: string[]; roleId: string[] },
+  ) => {
     if (!teamId) return;
-    
+
     if (validEmails.length === 0) {
       toast.error("Please add at least one valid email address");
       return;
     }
-    
+
     try {
       // Transform data for API call - only use valid emails
       const invitees = validEmails.map((email) => ({
@@ -542,12 +563,11 @@ export function InviteTeamMembersDialog({
     : null;
 
   // Role options for MultiSelect
-  const roleOptions = useMemo(() => 
+  const roleOptions = useMemo(() =>
     roles.map((role) => ({
       label: role.name,
       value: role.id.toString(),
-    }))
-  , [roles]);
+    })), [roles]);
 
   // Check if form is valid for submit button - use valid emails count
   const isFormValid = validEmails.length > 0 && roleIds.length > 0;
@@ -636,7 +656,9 @@ export function InviteTeamMembersDialog({
                   >
                     {inviteMemberMutation.isPending
                       ? "Inviting..."
-                      : `Invite ${validEmails.length || 0} Member${validEmails.length !== 1 ? 's' : ''}`}
+                      : `Invite ${validEmails.length || 0} Member${
+                        validEmails.length !== 1 ? "s" : ""
+                      }`}
                   </Button>
                 </DialogFooter>
               </form>

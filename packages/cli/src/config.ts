@@ -200,7 +200,15 @@ export const getConfig = async (
   } = {},
 ) => {
   const config = await readConfigFile(cwd);
-  const merged = { ...config, ...inlineOptions };
+  const merged = {
+    ...config,
+    ...Object.fromEntries(
+      Object.entries(inlineOptions).filter(([_key, value]) =>
+        value !== undefined
+      ),
+    ),
+  };
+
   if (!merged.workspace) {
     const session = await readSession();
     merged.workspace = session?.workspace;

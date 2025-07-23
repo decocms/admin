@@ -8,6 +8,10 @@ import { CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import {
+  AppContext,
+  DECO_CHAT_API as DECO_CHAT_API_BACKEND,
+} from "../context.ts";
+import {
   type Agent,
   AgentSchema,
   BindingsSchema,
@@ -56,8 +60,27 @@ const SELECT_INTEGRATION_QUERY = `
             )
           )
         ` as const;
+
+const mapConnection = (
+  connection: MCPConnection,
+  integrationId: string,
+  ctx: AppContext,
+) => ({
+  ...connection as MCPConnection,
+  token: undefined,
+  url: new URL(
+    `${ctx.workspace!.value}/${integrationId}/mcp`,
+    DECO_CHAT_API_BACKEND(ctx),
+  ).href,
+});
+
+type MapConnection = (
+  connection: MCPConnection,
+  integrationId: string,
+) => MCPConnection;
 // Tool factories for each group
-const mapIntegration = (
+export const mapIntegration = (mapConnection: MapConnection) =>
+(
   integration: QueryResult<
     "deco_chat_integrations",
     typeof SELECT_INTEGRATION_QUERY
@@ -70,10 +93,15 @@ const mapIntegration = (
   if (registryName && appScope) {
     appName = `@${appScope}/${registryName}`;
   }
+  const parsedIntegrationId = formatId("i", integration.id);
   return {
     ...integration,
+    connection: mapConnection(
+      integration.connection as MCPConnection,
+      parsedIntegrationId,
+    ),
     appName,
-    id: formatId("i", integration.id),
+    id: parsedIntegrationId,
   };
 };
 export const parseId = (id: string) => {
@@ -352,10 +380,16 @@ export const listIntegrations = createIntegrationManagementTool({
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    // Build the result with all integrations
-    const baseResult = [
-      ...virtualIntegrationsFor(workspace, knowledgeBases.names ?? [], c.token),
-      ...filteredIntegrations.map(mapIntegration),
+    const mapIntegrationForContext = mapIntegration((
+      connection,
+      integrationId,
+    ) => mapConnection(connection, integrationId, c));
+      ...virtualIntegrationsFor(
+        workspace,
+        knowledgeBases.names ?? [],
+        c.token,
+      ),
+      ...filteredIntegrations.map(mapIntegrationForContext),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
         .filter((a) => !!a)
@@ -399,95 +433,97 @@ export const convertFromDatabase = (
   });
 };
 
-export const getIntegration = createIntegrationManagementTool({
-  name: "INTEGRATIONS_GET",
+const integrationsGetSchema = z.object({
   description: "Get an integration by id with tools",
-  inputSchema: z.object({
-    id: z.string(),
-  }),
-  handler: async ({ id }, c) => {
-    // preserve the logic of the old canAccess
-    const isInnate =
-      INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
+  id: z.string(),
+});
 
-    const canAccess =
-      isInnate ||
-      (await assertWorkspaceResourceAccess(c.tool.name, c)
-        .then(() => true)
-        .catch(() => false));
+export const createIntegrationsGet = (
+  { mapConnectionForContext }: {
+    mapConnectionForContext?: MapConnection;
+  } = {},
+) =>
+async ({ id }: z.infer<typeof integrationsGetSchema>, c: AppContext) => {
+  // preserve the logic of the old canAccess
+  const isInnate = INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
 
-    if (canAccess) {
-      c.resourceAccess.grant();
-    }
+  const canAccess = isInnate ||
+    await assertWorkspaceResourceAccess(c.tool?.name ?? "", c)
+      .then(() => true)
+      .catch(() => false);
 
-    const { uuid, type } = parseId(id);
-    if (uuid in INNATE_INTEGRATIONS) {
-      const data =
-        INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
+  if (canAccess) {
+    c.resourceAccess.grant();
+  }
+
+  const { uuid, type } = parseId(id);
+  if (uuid in INNATE_INTEGRATIONS) {
+    const data = INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
       const baseIntegration = IntegrationSchema.parse({
-        ...data,
-        id: formatId(type, data.id),
-      });
+      ...data,
+      id: formatId(type, data.id),
+    });
       return { ...baseIntegration, tools: null }; // Innate integrations don't have tools for now
-    }
-    assertHasWorkspace(c);
+  }
+  assertHasWorkspace(c);
 
-    const selectPromise =
-      type === "i"
-        ? c.db
-            .from("deco_chat_integrations")
-            .select(SELECT_INTEGRATION_QUERY)
-            .eq("id", uuid)
-            .eq("workspace", c.workspace.value)
-            .single()
-            .then((r) => r)
-        : c.db
-            .from("deco_chat_agents")
-            .select("*")
-            .eq("id", uuid)
-            .eq("workspace", c.workspace.value)
-            .single()
-            .then((r) => r);
+  const selectPromise = type === "i"
+    ? c.db
+      .from("deco_chat_integrations")
+      .select(SELECT_INTEGRATION_QUERY)
+      .eq("id", uuid)
+      .eq("workspace", c.workspace.value)
+      .single().then((r) => r)
+    : c.db
+      .from("deco_chat_agents")
+      .select("*")
+      .eq("id", uuid)
+      .eq("workspace", c.workspace.value)
+      .single().then((r) => r);
 
-    const knowledgeBases = await listKnowledgeBases.handler({});
+  const knowledgeBases = await listKnowledgeBases.handler({});
 
-    const virtualIntegrations = virtualIntegrationsFor(
-      c.workspace.value,
-      knowledgeBases.names ?? [],
+  const virtualIntegrations = virtualIntegrationsFor(
+    c.workspace.value,
+    knowledgeBases.names ?? [],
+    c.token,
+  );
+
+  if (virtualIntegrations.some((i) => i.id === id)) {
+      const baseIntegration = IntegrationSchema.parse({
+      ...virtualIntegrations.find((i) => i.id === id),
+      id: formatId(type, id),
+    });
+      return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
+  }
+
+  const { data, error } = await selectPromise;
+
+  if (!data) {
+    throw new NotFoundError("Integration not found");
+  }
+
+  if (error) {
+    throw new InternalServerError((error as Error).message);
+  }
+
+  if (type === "a") {
+    const mapAgentToIntegration = agentAsIntegrationFor(
+      c.workspace.value as Workspace,
       c.token,
     );
-
-    if (virtualIntegrations.some((i) => i.id === id)) {
       const baseIntegration = IntegrationSchema.parse({
-        ...virtualIntegrations.find((i) => i.id === id),
-        id: formatId(type, id),
-      });
-      return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
-    }
-
-    const { data, error } = await selectPromise;
-
-    if (!data) {
-      throw new NotFoundError("Integration not found");
-    }
-
-    if (error) {
-      throw new InternalServerError((error as Error).message);
-    }
-
-    if (type === "a") {
-      const mapAgentToIntegration = agentAsIntegrationFor(
-        c.workspace.value as Workspace,
-        c.token,
-      );
-      const baseIntegration = IntegrationSchema.parse({
-        ...mapAgentToIntegration(data as unknown as Agent),
-        id: formatId(type, data.id),
-      });
+      ...mapAgentToIntegration(data as unknown as Agent),
+      id: formatId(type, data.id),
+    });
       return { ...baseIntegration, tools: null }; // Agents don't have tools for now
-    }
+  }
 
     const integrationData = data as unknown as QueryResult<
+    mapConnectionForContext ??
+      ((connection: MCPConnection, integrationId: string) =>
+        mapConnection(connection, integrationId, c)),
+  );
       "deco_chat_integrations",
       typeof SELECT_INTEGRATION_QUERY
     >;
@@ -495,11 +531,15 @@ export const getIntegration = createIntegrationManagementTool({
     const tools = extractToolsFromRegistry(integrationData);
     const baseIntegration = IntegrationSchema.parse({
       ...mapIntegration(integrationData),
-      id: formatId(type, data.id),
-    });
+    id: formatId(type, data.id),
+  });
 
     return { ...baseIntegration, tools };
-  },
+export const getIntegration = createIntegrationManagementTool({
+  name: "INTEGRATIONS_GET",
+  description: "Get an integration by id",
+  inputSchema: integrationsGetSchema,
+  handler: createIntegrationsGet(),
 });
 
 export const createIntegration = createIntegrationManagementTool({

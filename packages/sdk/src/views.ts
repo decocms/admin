@@ -47,21 +47,12 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
-    id: "audits",
-    title: "Activity",
-    icon: "forum",
-    type: "default",
-    metadata: {
-      path: "/audits",
-    },
-  },
-  {
-    id: "settings",
+    id: "monitor",
     title: "Monitor",
     icon: "monitoring",
     type: "default",
     metadata: {
-      path: "/settings",
+      path: "/monitor",
     },
   },
 ];

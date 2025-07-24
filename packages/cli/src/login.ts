@@ -28,7 +28,7 @@ export const loginCommand = async () => {
         const command = Deno.build.os === "windows" && browser === "start"
           ? new Deno.Command("cmd", { args: ["/c", "start", DECO_CHAT_LOGIN] })
           : new Deno.Command(browser, { args: [DECO_CHAT_LOGIN] });
-        
+
         command.spawn();
       },
     },

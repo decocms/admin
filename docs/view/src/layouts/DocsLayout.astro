@@ -1,0 +1,32 @@
+---
+import BaseHead from "../components/BaseHead.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import Sidebar from "../components/Sidebar.astro";
+import TableOfContents from "../components/TableOfContents.astro";
+import "../styles/global.css";
+const { title } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <BaseHead title={title}/>
+  </head>
+  <body>
+    <Header />
+
+    <div class="flex">
+      <div class="w-1/5">
+        <Sidebar />
+      </div>
+      <article class="w-3/5">
+        <slot />
+      </article>
+      <div class="w-1/5">
+        <TableOfContents />
+      </div>
+    </div>
+    <Footer />
+  </body>
+</html>

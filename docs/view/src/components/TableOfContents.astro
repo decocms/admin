@@ -1,0 +1,98 @@
+---
+// TableOfContents component for documentation pages
+// This component extracts headings from the current page and displays them as a navigation menu
+---
+
+<div id="table-of-contents" class="toc sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+  <div class="mb-4">
+    <h3 class="text-sm font-semibold text-slate-900 mb-2">On this page</h3>
+  </div>
+  <div id="toc-content">
+    <p class="text-sm text-slate-500">Loading...</p>
+  </div>
+</div>
+
+<script>
+  function extractHeadings() {
+    const renderedContent = document.getElementById('rendered-content');
+    if (!renderedContent) {
+      document.getElementById('toc-content').innerHTML = '<p class="text-sm text-slate-500">No content found</p>';
+      return;
+    }
+
+    const headings = renderedContent.querySelectorAll('h2, h3, h4');
+    const tocItems: Array<{id: string, text: string, level: number}> = [];
+
+    headings.forEach((heading) => {
+      const level = parseInt(heading.tagName.charAt(1));
+      const text = heading.textContent || '';
+      const id = heading.id || heading.textContent?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || '';
+
+      // Ensure the heading has an id for linking
+      if (!heading.id) {
+        heading.id = id;
+      }
+
+      tocItems.push({ id, text, level });
+    });
+
+    if (tocItems.length === 0) {
+      document.getElementById('toc-content').innerHTML = '<p class="text-sm text-slate-500">No headings found</p>';
+      return;
+    }
+
+    const tocList = document.createElement('ul');
+    tocList.className = 'space-y-1';
+
+    tocItems.forEach((item) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      
+      a.href = `#${item.id}`;
+      a.textContent = item.text;
+      a.className = `block text-sm transition-colors hover:text-slate-900 ${
+        item.level === 2 
+          ? 'text-slate-700 font-medium' 
+          : item.level === 3 
+          ? 'text-slate-600 ml-3' 
+          : 'text-slate-500 ml-6'
+      }`;
+
+      li.appendChild(a);
+      tocList.appendChild(li);
+    });
+
+    document.getElementById('toc-content').innerHTML = '';
+    document.getElementById('toc-content').appendChild(tocList);
+  }
+
+  // Extract headings when the page loads
+  document.addEventListener('DOMContentLoaded', extractHeadings);
+
+  // Also extract headings after a short delay to ensure content is rendered
+  setTimeout(extractHeadings, 100);
+</script>
+
+<style>
+  .toc {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+  
+  .toc::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .toc::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .toc::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 2px;
+  }
+  
+  .toc::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184);
+  }
+</style> 

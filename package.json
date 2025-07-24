@@ -12,7 +12,7 @@
     "build": "PWD=$PWD/apps/web deno run build",
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",
-    "check": "tsc --noEmit",
+    "check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules && deno install",
     "db:repair": "supabase migration repair --status reverted",

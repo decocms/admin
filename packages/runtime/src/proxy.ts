@@ -85,6 +85,7 @@ async function makeApiCall(
           JSON.stringify(config.payload)
         } ${config.toolName} ${message} ${traceDebugId}`,
       );
+
     throw err;
   }
 

@@ -20,23 +20,37 @@ interface ToolCallFormProps {
   rawMode: boolean;
 }
 
+// Helper function to properly serialize Error objects
+function serializeForDisplay(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    // Handle Error objects specifically
+    if (value instanceof Error) {
+      return {
+        name: value.name,
+        message: value.message,
+        stack: value.stack,
+      };
+    }
+    return value;
+  }, 2);
+}
+
 export function RawJsonView({ json }: { json: unknown }) {
   const { copied, handleCopy } = useCopy();
+  const serializedJson = serializeForDisplay(json);
+
   return (
     <div className="relative w-full">
       <Button
         className="absolute top-2 right-2"
         size="icon"
-        onClick={() =>
-          handleCopy(
-            JSON.stringify(json, null, 2),
-          )}
+        onClick={() => handleCopy(serializedJson)}
         variant="outline"
       >
         <Icon name={copied ? "check" : "content_copy"} size={16} />
       </Button>
       <pre className="p-2 rounded-xl max-h-[200px] border border-border bg-muted text-xs overflow-auto">
-        {JSON.stringify(json, null, 2)}
+        {serializedJson}
       </pre>
     </div>
   );

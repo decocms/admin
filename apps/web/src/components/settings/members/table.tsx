@@ -271,36 +271,27 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                 options={roleOptions}
                 defaultValue={selectedRoleIds}
                 onValueChange={async (newValues) => {
-                  // Find roles to add and remove
+                  const addedNewRole = newValues.length > row.roles.length;
                   const currentRoleIds = row.roles.map((r) => r.id.toString());
-                  const rolesToAdd = newValues.filter(
-                    (id) => !currentRoleIds.includes(id),
-                  );
-                  const rolesToRemove = currentRoleIds.filter(
-                    (id) => !newValues.includes(id),
-                  );
+                  // TODO: improve algorigthm is performance
+                  const roleIdString = addedNewRole
+                    ? newValues.find((roleId) =>
+                      !currentRoleIds.includes(roleId)
+                    )
+                    : currentRoleIds.find((roleId) =>
+                      !newValues.includes(roleId)
+                    );
 
-                  // Process role changes
-                  for (const roleId of rolesToAdd) {
-                    const role = roles.find((r) => r.id.toString() === roleId);
-                    if (role) {
-                      await handleUpdateMemberRole(
-                        row.member!.user_id,
-                        role,
-                        true,
-                      );
-                    }
-                  }
+                  const roleId = Number(roleIdString);
 
-                  for (const roleId of rolesToRemove) {
-                    const role = roles.find((r) => r.id.toString() === roleId);
-                    if (role) {
-                      await handleUpdateMemberRole(
-                        row.member!.user_id,
-                        role,
-                        false,
-                      );
-                    }
+                  const role = roles.find((role) => role.id === roleId);
+
+                  if (role) {
+                    await handleUpdateMemberRole(
+                      row.member!.user_id,
+                      role,
+                      addedNewRole,
+                    );
                   }
                 }}
                 placeholder="Select roles"

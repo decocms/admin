@@ -1,9 +1,4 @@
-import type {
-  Agent,
-  AgentUsage,
-  Member,
-  ThreadUsage,
-} from "@deco/sdk";
+import type { Agent, AgentUsage, Member, ThreadUsage } from "@deco/sdk";
 import { useMemo } from "react";
 import { ChartBarStack, StackedBarChart } from "./stacked-bar-chart.tsx";
 import { TimeRange, UsageType } from "./usage.tsx";

@@ -16,22 +16,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
         with:
-          bun-version: latest
+          deno-version: v2.x
 
       - name: Install dependencies
-        run: bun install
+        run: deno install
 
       - name: Run lint
-        run: bun run lint
+        run: deno run lint
 
       - name: Run format
-        run: bun run fmt --check
+        run: deno run fmt --check
 
       - name: Run check
-        run: bun run check
+        env:
+          DENO_V8_FLAGS: --max-old-space-size=16384
+        run: deno run check
 
       - name: Run test
-        run: bun run test
+        run: deno run test

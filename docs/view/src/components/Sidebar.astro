@@ -1,17 +1,16 @@
 ---
 import { getCollection } from "astro:content";
-import { ui } from '../i18n/ui';
-import SidebarComponent from './Sidebar.tsx';
+import { ui } from "../i18n/ui";
+import SidebarComponent from "./Sidebar.tsx";
 
 const locale = Astro.params.locale;
 
 const allDocs = await getCollection("docs");
-const docs = allDocs
-  .filter((doc) => doc.id.split("/")[0] === locale);
+const docs = allDocs.filter((doc) => doc.id.split("/")[0] === locale);
 
 interface TreeNode {
   name: string;
-  type: 'file' | 'folder';
+  type: "file" | "folder";
   children: TreeNode[];
   doc?: any;
   path: string[];
@@ -20,15 +19,15 @@ interface TreeNode {
 
 function buildTree(docs: any[]): TreeNode[] {
   const root: TreeNode[] = [];
-  
+
   docs.forEach((doc) => {
     const pathParts = doc.id.split("/").slice(1);
     let currentLevel = root;
-    
+
     pathParts.forEach((part: string, index: number) => {
       const isFile = index === pathParts.length - 1;
-      const existing = currentLevel.find(node => node.name === part);
-      
+      const existing = currentLevel.find((node) => node.name === part);
+
       if (existing) {
         if (isFile) {
           existing.doc = doc;
@@ -37,26 +36,43 @@ function buildTree(docs: any[]): TreeNode[] {
       } else {
         const newNode: TreeNode = {
           name: part,
-          type: isFile ? 'file' : 'folder',
+          type: isFile ? "file" : "folder",
           children: [],
           path: pathParts.slice(0, index + 1),
-          id: pathParts.slice(0, index + 1).join('/'),
-          ...(isFile && { doc })
+          id: pathParts.slice(0, index + 1).join("/"),
+          ...(isFile && { doc }),
         };
         currentLevel.push(newNode);
         currentLevel = newNode.children;
       }
     });
   });
-  
-  return root;
+
+  // Sort the tree for consistent ordering
+  const sortTree = (nodes: TreeNode[]): TreeNode[] => {
+    return nodes
+      .sort((a, b) => {
+        // First sort by type: files before folders
+        if (a.type !== b.type) {
+          return a.type === "file" ? -1 : 1;
+        }
+        // Then sort alphabetically by name
+        return a.name.localeCompare(b.name);
+      })
+      .map((node) => ({
+        ...node,
+        children: sortTree(node.children),
+      }));
+  };
+
+  return sortTree(root);
 }
 
 const tree = buildTree(docs);
 
 interface FlatNode {
   name: string;
-  type: 'file' | 'folder';
+  type: "file" | "folder";
   doc?: any;
   path: string[];
   depth: number;
@@ -66,7 +82,7 @@ interface FlatNode {
 
 function flattenTree(nodes: TreeNode[], depth = 0): FlatNode[] {
   const result: FlatNode[] = [];
-  
+
   nodes.forEach((node) => {
     result.push({
       name: node.name,
@@ -75,18 +91,23 @@ function flattenTree(nodes: TreeNode[], depth = 0): FlatNode[] {
       path: node.path,
       depth,
       id: node.id,
-      hasChildren: node.children.length > 0
+      hasChildren: node.children.length > 0,
     });
-    
+
     if (node.children.length > 0) {
       result.push(...flattenTree(node.children, depth + 1));
     }
   });
-  
+
   return result;
 }
 
 const flatTree = flattenTree(tree);
 ---
 
-<SidebarComponent client:load tree={flatTree} locale={locale || 'en'} translations={ui[locale as keyof typeof ui] || ui.en} />
+<SidebarComponent
+  client:load
+  tree={flatTree}
+  locale={locale || "en"}
+  translations={ui[locale as keyof typeof ui] || ui.en}
+/>

@@ -1,0 +1,74 @@
+---
+title: Integrations
+description: Learn how to connect external services and APIs in deco.chat
+icon: Link
+---
+
+One of the most powerful aspects of deco.chat is how easily you can connect to external services – this could be anything from a SaaS API to a database or file storage. Integrations allow your agent to do things like: send emails, query your company database, fetch documents from Google Drive, or incorporate knowledge from PDFs and websites.
+
+## Connecting External APIs
+
+Many common integrations are available out-of-the-box in deco.chat's integration library (for example, Slack, Gmail, Notion, Stripe, etc.). These can be added via the deco.chat UI (under the "Tools" or "Integrations" section). When you "Add Integration" and configure it (often OAuth or API keys), those integration's tools become available in your environment object `Env`. For instance, after adding Gmail and granting access, your Cloudflare Worker can call `env.GMAIL.sendEmail` as we saw earlier. The `deco.gen.ts` will have the types for `GMAIL.sendEmail` (and any other Gmail tools provided).
+
+If there isn't a built-in integration for what you need, you have two options:
+
+- **Use HTTP directly in a custom tool**: Because Cloudflare Workers can fetch external URLs, you can write a tool that calls any REST API using `fetch`. You'd manually handle auth (store an API key as an environment variable or secret in `wrangler.toml`) and parse the response. This is straightforward for simple APIs.
+
+- **Build a custom integration (advanced)**: The deco platform likely allows registering custom integrations that can be reused across tools, but this typically involves deeper integration. For most cases, writing a bespoke tool is enough.
+
+## Databases and Storage
+
+If your agent needs to read/write data, you can integrate with databases:
+
+- **Cloudflare D1 (SQL)** or **Workers KV/DO**: Since the backend is a CF Worker, you can use Cloudflare's storage solutions. For example, if you have a D1 database, you'd configure it in `wrangler.toml` and use the D1 binding in your tools. Durable Objects (DO) can hold state or be used for synchronization patterns.
+
+- **External DBs**: You can call external database APIs or services (if accessible via HTTP). Or use something like Supabase or Firebase by calling their APIs/SDKs (ensuring any secrets are kept safe).
+
+- Deco might also provide some built-in workspace storage (the "Knowledge Base" likely uses Workers KV or Durable Objects under the hood to store uploaded content).
+
+## Knowledge Base Integration
+
+The Knowledge Base is a special integration for unstructured data. In the deco.chat UI, you can upload documents (PDFs, text, etc.) to your workspace's knowledge base. The platform will index these (e.g., split into chunks, vectorize them) so that agents can retrieve information from them when responding. From a developer perspective, once a document is uploaded:
+
+- The agent's context will automatically include relevant snippets from these docs when the agent is asked about something related. (You might not need to write code for this – it's handled by the platform's retrieval-augmented generation system.)
+
+- If there are specific Knowledge Base tools (for example, `env.DECO_CHAT_WORKSPACE_API.queryKnowledgeBase` or similar), those would appear in `Env`. You could then explicitly call or workflow around them if needed.
+
+In short, the Knowledge Base is a convenient way to give your agents domain-specific knowledge without hardcoding it in the prompt. Use it for FAQs, policy documents, manuals, or any text that the agent should refer to. Just be mindful of size limits and ensure you only upload non-sensitive content (or content you have rights to), as those might be processed by AI models.
+
+## File Systems
+
+Because Workers are serverless, you can't directly access a local file system. If you need to handle files, you'll likely either use the Knowledge Base (for large text files), or integrate with cloud storage (S3, Cloudflare R2, etc.) by writing tools that fetch or put files there via API.
+
+## Custom Integrations Example
+
+Let's say you have an internal REST API for your inventory. You could:
+
+- Add an integration via deco that wraps that API (if supported), or
+- Store an API key/URL as environment variables in `wrangler.toml`, then create a tool `GET_INVENTORY` that does:
+
+```ts
+const resp = await fetch(`${env.INVENTORY_API_URL}/items?id=${inputData.id}`, {
+  headers: { Authorization: `Bearer ${env.INVENTORY_API_KEY}` },
+});
+```
+
+and returns the JSON data. Now your agent can call `GET_INVENTORY` to retrieve inventory info.
+
+## Security & Permissions
+
+Integrations often require API keys or OAuth tokens. The deco CLI or UI will usually help store these securely (for example, tokens might be stored in your workspace settings and not exposed in code). When you deploy to Cloudflare, ensure any required secrets are present in `wrangler.toml` (using secret environment variables or KV). Cloudflare's Secrets Manager can hold things like API keys which you refer to in your Worker code via `env`.
+
+## Using External Services in Workflows
+
+Note that you might chain multiple different integrations in one workflow. For instance, a workflow could:
+
+- Use a **database integration** to fetch some data in step 1,
+- Use an **LLM tool** (like OpenAI integration) to summarize that data in step 2,
+- Use an **email integration** to send the summary to a user in step 3.
+
+This is a multi-service orchestration. The platform encourages such usage – it's the reason we have workflows! Just be careful to handle failures at each step (perhaps via branching) and not exceed any rate limits of those services.
+
+Finally, always test your integrations. For any integration you configure, try calling it directly (maybe via a simple tool or the provided integration test buttons in the UI) to ensure credentials are correct. Integration issues are a common source of runtime errors, so if something isn't working, double-check that the integration is connected and authorized (e.g., did the OAuth token expire? Is the API key correct?).
+
+We'll provide detailed how-tos for popular integrations in dedicated sections, but the above gives you a general idea of how to connect just about anything to your deco agents.

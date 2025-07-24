@@ -1,9 +1,77 @@
 ---
 import { render } from "astro:content";
+import { PageTitle } from "./PageTitle";
+
 const { doc } = Astro.props;
 const { Content } = await render(doc);
+
+// Extract breadcrumb from the path
+const pathParts = doc.id.split("/").slice(1);
+const breadcrumb =
+  pathParts.length > 1
+    ? pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1)
+    : undefined;
+
+// Generate markdown path for viewing raw file
+const markdownPath = `/src/content/${doc.id}.mdx`;
 ---
 
-<div class="prose" id="rendered-content">
+<div
+  class="flex flex-col box-border w-full relative grow mx-auto max-w-xl 2xl:max-w-xl xl:w-[calc(100%-20rem)]"
+>
+  <PageTitle
+    client:load
+    breadcrumb={breadcrumb}
+    title={doc.data.title}
+    description={doc.data.description}
+    markdownPath={markdownPath}
+  />
+
+  <div class="prose max-w-none" id="rendered-content">
     <Content />
+  </div>
 </div>
+
+<script>
+  function addHeadingLinks() {
+    const content = document.getElementById("rendered-content");
+    if (!content) return;
+
+    const headings = content.querySelectorAll("h2, h3, h4, h5, h6");
+
+    headings.forEach((heading) => {
+      // Make heading relative positioned and add group class
+      const headingElement = heading as HTMLElement;
+      headingElement.style.position = "relative";
+      headingElement.style.cursor = "pointer";
+      headingElement.classList.add("group");
+
+      // Create the link icon using the same SVG as the Icon component for "Link"
+      const linkIcon = document.createElement("div");
+      linkIcon.className =
+        "absolute left-[-30px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity";
+      linkIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7F9300" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.71"></path></svg>`;
+
+      // Add click handler to the whole heading
+      heading.addEventListener("click", () => {
+        const id =
+          heading.id ||
+          heading.textContent?.toLowerCase().replace(/[^a-z0-9]+/g, "-") ||
+          "";
+        if (!heading.id) {
+          heading.id = id;
+        }
+
+        // Navigate to the anchor (updates URL and scrolls to position)
+        window.location.hash = id;
+      });
+
+      headingElement.appendChild(linkIcon);
+    });
+  }
+
+  // Run when the page loads
+  document.addEventListener("DOMContentLoaded", addHeadingLinks);
+  // Also run after a short delay to ensure content is rendered
+  setTimeout(addHeadingLinks, 100);
+</script>

@@ -7,26 +7,34 @@ import TableOfContents from "../components/TableOfContents.astro";
 import "../styles/global.css";
 const { title } = Astro.props;
 ---
+
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <BaseHead title={title}/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      rel="stylesheet"
+    />
+    <BaseHead title={title} />
   </head>
-  <body>
-    <Header />
-
-    <div class="flex">
-      <div class="w-1/5">
+  <body class="bg-app-background text-foreground">
+    <div class="flex h-screen overflow-hidden">
+      <div class="shrink-0">
         <Sidebar />
       </div>
-      <article class="w-3/5">
-        <slot />
-      </article>
-      <div class="w-1/5">
-        <TableOfContents />
+      <div class="flex-1 overflow-y-auto scrollbar-hide">
+        <div class="flex">
+          <article class="flex-1 px-8 py-6">
+            <slot />
+          </article>
+          <div class="w-64 shrink-0">
+            <TableOfContents />
+          </div>
+        </div>
       </div>
     </div>
-    <Footer />
   </body>
 </html>

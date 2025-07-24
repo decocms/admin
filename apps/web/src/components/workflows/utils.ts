@@ -1,4 +1,4 @@
-import type { UniqueWorkflow, WorkflowRun, WorkflowStats } from "./types.ts";
+import type { Workflow, WorkflowRun, WorkflowStats } from "./types.ts";
 
 /**
  * Determines if a status is considered successful
@@ -57,150 +57,7 @@ function isRunningStatus(status: string): boolean {
   return runningStatuses.includes(status.toLowerCase());
 }
 
-/**
- * Transform array of workflow runs into unique workflows with aggregated stats
- */
-export function transformToUniqueWorkflows(
-  runs: WorkflowRun[],
-): UniqueWorkflow[] {
-  if (!runs || !Array.isArray(runs)) {
-    console.warn("⚠️ Invalid runs input:", runs);
-    return [];
-  }
 
-  if (runs.length === 0) {
-    return [];
-  }
-
-  const workflowMap = new Map<string, WorkflowRun[]>();
-
-  // Group runs by workflow name
-  runs.forEach((run) => {
-    if (!run || typeof run.workflowName !== "string") {
-      console.warn("⚠️ Invalid run object:", run);
-      return;
-    }
-
-    const existing = workflowMap.get(run.workflowName) || [];
-    existing.push(run);
-    workflowMap.set(run.workflowName, existing);
-  });
-
-  // Transform each group into a unique workflow
-  const result = Array.from(workflowMap.entries()).map(
-    ([workflowName, workflowRuns]) => {
-      // Sort runs by updatedAt (most recent first)
-      const sortedRuns = workflowRuns.sort((a, b) =>
-        (b.updatedAt || 0) - (a.updatedAt || 0)
-      );
-      const lastRun = sortedRuns[0];
-
-      // Calculate statistics - debug the status counting
-      const successCount =
-        workflowRuns.filter((run) => isSuccessStatus(run.status)).length;
-      const errorCount =
-        workflowRuns.filter((run) => isErrorStatus(run.status)).length;
-      const runningCount =
-        workflowRuns.filter((run) => isRunningStatus(run.status)).length;
-      const pendingCount =
-        workflowRuns.filter((run) => isPendingStatus(run.status)).length;
-
-      // Debug status breakdown - remove this after testing
-      console.log(`🔢 Status breakdown for ${workflowName}:`, {
-        total: workflowRuns.length,
-        success: successCount,
-        error: errorCount,
-        running: runningCount,
-        pending: pendingCount,
-        statusCounts: workflowRuns.reduce((acc, run) => {
-          acc[run.status] = (acc[run.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-      });
-
-      // Find first and last dates
-      const firstCreated = Math.min(
-        ...workflowRuns.map((run) => run.createdAt),
-      );
-      const lastUpdated = Math.max(
-        ...workflowRuns.map((run) => run.updatedAt || 0),
-      );
-
-      const uniqueWorkflow = {
-        name: workflowName,
-        totalRuns: workflowRuns.length,
-        lastRun: {
-          date: lastRun.updatedAt || lastRun.createdAt,
-          status: lastRun.status,
-          runId: lastRun.runId,
-        },
-        successCount,
-        errorCount,
-        firstCreated,
-        lastUpdated,
-      };
-
-      return uniqueWorkflow;
-    },
-  );
-
-  return result;
-}
-
-/**
- * Calculate detailed statistics for a specific workflow
- */
-export function calculateWorkflowStats(runs: WorkflowRun[]): WorkflowStats {
-  if (runs.length === 0) {
-    return {
-      totalRuns: 0,
-      successCount: 0,
-      errorCount: 0,
-      pendingCount: 0,
-      runningCount: 0,
-      successRate: 0,
-    };
-  }
-
-  const successCount = runs.filter((run) => isSuccessStatus(run.status)).length;
-  const errorCount = runs.filter((run) => isErrorStatus(run.status)).length;
-  const pendingCount = runs.filter((run) => isPendingStatus(run.status)).length;
-  const runningCount = runs.filter((run) => isRunningStatus(run.status)).length;
-
-  const successRate = runs.length > 0 ? (successCount / runs.length) * 100 : 0;
-
-  // Sort runs by updatedAt (most recent first)
-  const sortedByUpdated = [...runs].sort((a, b) =>
-    (b.updatedAt || 0) - (a.updatedAt || 0)
-  );
-  const lastRun = sortedByUpdated[0];
-
-  // Sort runs by createdAt (earliest first)
-  const sortedByCreated = [...runs].sort((a, b) => a.createdAt - b.createdAt);
-  const firstRun = sortedByCreated[0];
-
-  return {
-    totalRuns: runs.length,
-    successCount,
-    errorCount,
-    pendingCount,
-    runningCount,
-    successRate: Math.round(successRate * 100) / 100, // Round to 2 decimal places
-    lastRun: lastRun
-      ? {
-        date: lastRun.updatedAt || lastRun.createdAt,
-        status: lastRun.status,
-        runId: lastRun.runId,
-      }
-      : undefined,
-    firstRun: firstRun
-      ? {
-        date: firstRun.createdAt,
-        runId: firstRun.runId,
-      }
-      : undefined,
-  };
-}
 
 /**
  * Get status badge variant for consistent styling
@@ -231,39 +88,35 @@ export function formatStatus(status: string): string {
 /**
  * Sort unique workflows by various criteria
  */
-export function sortUniqueWorkflows(
-  workflows: UniqueWorkflow[],
+export function sortWorkflows(
+  workflows: Workflow[],
   sortKey: string,
   direction: "asc" | "desc",
-): UniqueWorkflow[] {
+): Workflow[] {
   return [...workflows].sort((a, b) => {
     let aVal: string | number;
     let bVal: string | number;
 
     switch (sortKey) {
-      case "name":
-        aVal = a.name.toLowerCase();
-        bVal = b.name.toLowerCase();
+      case "workflowName":
+        aVal = a.workflowName.toLowerCase();
+        bVal = b.workflowName.toLowerCase();
         break;
-      case "totalRuns":
-        aVal = a.totalRuns;
-        bVal = b.totalRuns;
-        break;
-      case "successRate":
-        aVal = a.totalRuns > 0 ? (a.successCount / a.totalRuns) : 0;
-        bVal = b.totalRuns > 0 ? (b.successCount / b.totalRuns) : 0;
+      case "runCount":
+        aVal = a.runCount;
+        bVal = b.runCount;
         break;
       case "lastRun":
-        aVal = a.lastRun.date || 0;
-        bVal = b.lastRun.date || 0;
+        aVal = a.lastRunTimestamp || 0;
+        bVal = b.lastRunTimestamp || 0;
         break;
       case "lastStatus":
-        aVal = a.lastRun.status;
-        bVal = b.lastRun.status;
+        aVal = a.lastRunStatus;
+        bVal = b.lastRunStatus;
         break;
       default:
-        aVal = a.name.toLowerCase();
-        bVal = b.name.toLowerCase();
+        aVal = a.workflowName.toLowerCase();
+        bVal = b.workflowName.toLowerCase();
     }
 
     if (typeof aVal === "string" && typeof bVal === "string") {

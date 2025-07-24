@@ -1,4 +1,4 @@
-import { useAllWorkflowRuns, useWorkflowInstances } from "@deco/sdk";
+import { useWorkflowRuns } from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 
@@ -18,10 +18,10 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import type { WorkflowRun, WorkflowStats } from "./types.ts";
 import {
-  calculateWorkflowStats,
   formatStatus,
   getStatusBadgeVariant,
 } from "./utils.ts";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 
 const DONUT_COLORS = ["#22c55e", "#ef4444", "#fbbf24", "#a3a3a3"];
 
@@ -269,25 +269,18 @@ function WorkflowOverviewTab() {
   const { workflowName = "" } = useParams();
   const [searchParams] = useSearchParams();
   const page = Number(searchParams.get("page") || 1);
-  const per_page = Number(searchParams.get("per_page") || 10);
+  const per_page = Number(searchParams.get("per_page") || 15);
 
   const {
-    data: allRunsData,
-    refetch: refetchAllRuns,
-    isRefetching: isRefetchingAllRuns,
-  } = useAllWorkflowRuns(workflowName);
-  const {
-    data: instancesData,
-    refetch: refetchInstances,
-    isRefetching: isRefetchingInstances,
-  } = useWorkflowInstances(workflowName, page, per_page);
+    data: workflowData,
+    refetch,
+    isRefetching,
+  } = useWorkflowRuns(workflowName, page, per_page);
 
   const navigateWorkspace = useNavigateWorkspace();
 
-  const allRuns = allRunsData.workflows as WorkflowRun[];
-  const paginatedRuns = instancesData.workflows as WorkflowRun[];
-
-  const stats = useMemo(() => calculateWorkflowStats(allRuns), [allRuns]);
+  const runs = workflowData.runs;
+  const stats = workflowData.stats;
 
   function handleRunClick(run: WorkflowRun) {
     navigateWorkspace(
@@ -296,8 +289,7 @@ function WorkflowOverviewTab() {
   }
 
   function handleRefresh() {
-    refetchAllRuns();
-    refetchInstances();
+    refetch();
   }
 
   return (
@@ -305,22 +297,20 @@ function WorkflowOverviewTab() {
       <div className="flex flex-col gap-8 h-full py-6">
         {/* Header with refresh button */}
         <div className="flex items-center justify-between px-6">
-          <h1 className="text-3xl font-bold truncate">{workflowName}</h1>
+          <h1 className="text-3xl font-bold truncate">{formatToolName(workflowName)}</h1>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={handleRefresh}
-                disabled={isRefetchingAllRuns || isRefetchingInstances}
+                disabled={isRefetching}
                 className="h-10 w-10 shrink-0"
               >
                 <Icon
                   name="refresh"
                   size={16}
-                  className={(isRefetchingAllRuns || isRefetchingInstances)
-                    ? "animate-spin"
-                    : ""}
+                  className={isRefetching ? "animate-spin" : ""}
                 />
               </Button>
             </TooltipTrigger>
@@ -330,10 +320,14 @@ function WorkflowOverviewTab() {
           </Tooltip>
         </div>
 
-        {/* Statistics Card */}
-        <div className="px-6">
+        {/* Statistics Card 
+          TODO: Add statistics card back in
+          Commented out because it was causing memory issues 
+          with the SQLite database for workflows with a lot of runs.
+        */}
+        {/* <div className="px-6">
           <WorkflowStatsCard stats={stats} />
-        </div>
+        </div> */}
 
         {/* Recent Runs Section */}
         <div className="flex-1 min-h-0 px-6 flex flex-col space-y-6">
@@ -345,7 +339,7 @@ function WorkflowOverviewTab() {
 
           {/* Content */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            {paginatedRuns.length === 0
+            {runs.length === 0
               ? (
                 <div className="flex items-center justify-center h-full text-center text-muted-foreground">
                   <div className="space-y-4">
@@ -366,7 +360,7 @@ function WorkflowOverviewTab() {
               : (
                 <div className="h-full overflow-auto">
                   <WorkflowRunsTable
-                    runs={paginatedRuns}
+                    runs={runs}
                     onRunClick={handleRunClick}
                   />
                 </div>
@@ -399,7 +393,7 @@ function WorkflowOverviewPage() {
           items={[
             { label: "Workflows", link: "/workflows" },
             {
-              label: String(workflowName ?? ""),
+              label: formatToolName(String(workflowName) ?? ""),
             },
           ]}
         />

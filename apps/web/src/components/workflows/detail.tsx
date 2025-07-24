@@ -11,6 +11,7 @@ import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { WorkflowFlowVisualization } from "./workflow-flow-visualization.tsx";
 import WorkflowOverviewPage from "./workflow-overview.tsx";
+import { formatToolName } from "../chat/utils/format-tool-name.ts";
 
 function tryParseJson(str: unknown): unknown {
   if (typeof str !== "string") {
@@ -625,7 +626,7 @@ function WorkflowDetailPage() {
           items={[
             { label: "Workflows", link: "/workflows" },
             {
-              label: String(workflowName ?? ""),
+              label: formatToolName(String(workflowName) ?? ""),
               link: `/workflows/${encodeURIComponent(workflowName)}`,
             },
             {

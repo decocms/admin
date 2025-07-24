@@ -174,7 +174,9 @@ async function updateDatabase(
 
   // 2. Build sets for diffing
   const currentRouteMap = new Map(
-    (currentRoutes ?? []).map((r) => [routeKey(r), r]),
+    (currentRoutes ?? []).map((
+      r: { route_pattern: string; custom_domain?: boolean },
+    ) => [routeKey(r), r]),
   );
 
   const newRouteMap = new Map(
@@ -188,7 +190,8 @@ async function updateDatabase(
 
   // 3. Find routes to delete (in current, not in new)
   const toDelete = (currentRoutes ?? []).filter(
-    (r) => !newRouteMap.has(routeKey(r)),
+    (r: { route_pattern: string; custom_domain?: boolean }) =>
+      !newRouteMap.has(routeKey(r)),
   );
   // 4. Find routes to insert (in new, not in current)
   const toInsert = mappedRoutes.filter(
@@ -206,7 +209,7 @@ async function updateDatabase(
         .delete()
         .in(
           "id",
-          toDelete.map((r) => r.id),
+          toDelete.map((r: { id: string }) => r.id),
         )
       : Promise.resolve(),
     toInsert.length > 0
@@ -775,23 +778,147 @@ const getStore = async (c: WithTool<AppContext>) => {
   });
 };
 
+// Helper function to extract status from workflow snapshots
+const extractStatusFromSnapshot = (snapshot: unknown): string => {
+  if (typeof snapshot === "string") {
+    return snapshot;
+  } else if (snapshot && typeof snapshot === "object" && "status" in snapshot) {
+    return (snapshot as { status: string }).status;
+  }
+  return "unknown";
+};
+
 export const listWorkflows = createTool({
-  name: "HOSTING_APP_WORKFLOWS_LIST_RUNS",
+  name: "HOSTING_APP_WORKFLOWS_LIST",
   description: "List all workflows on the workspace",
   inputSchema: InputPaginationListSchema.extend({
-    workflowName: z.string().optional(),
     fromDate: z.string().optional(),
     toDate: z.string().optional(),
   }),
   outputSchema: z.object({
     workflows: z.array(z.object({
       workflowName: z.string(),
+      runCount: z.number(),
+      lastRunStatus: z.string(),
+      lastRunTimestamp: z.string(),
+    })).describe("The workflow list names"),
+    pagination: OutputPaginationListSchema,
+  }),
+  handler: async (
+    { page = 1, per_page = 10, fromDate, toDate },
+    c,
+  ) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+    const dbId = await getWorkspaceD1Database(c);
+
+    // Build dynamic SQL query with optional filters
+    const conditions: string[] = [];
+    const params: string[] = [];
+
+    if (fromDate) {
+      conditions.push(`createdAt >= ?`);
+      params.push(fromDate);
+    }
+
+    if (toDate) {
+      conditions.push(`createdAt <= ?`);
+      params.push(toDate);
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
+    const offset = (page - 1) * per_page;
+
+    const sql = `
+      SELECT 
+        workflow_name, 
+        COUNT(*) as run_count, 
+        MAX(createdAt) as last_run_timestamp,
+        (
+          SELECT snapshot 
+          FROM mastra_workflow_snapshot 
+          WHERE workflow_name = outer_table.workflow_name 
+          ORDER BY createdAt DESC 
+          LIMIT 1
+        ) as last_snapshot
+      FROM mastra_workflow_snapshot outer_table
+      ${whereClause} 
+      GROUP BY workflow_name 
+      LIMIT ? OFFSET ?
+    `;
+    params.push(per_page.toString(), offset.toString());
+
+    const { result } = await c.cf.d1.database.query(dbId, {
+      account_id: c.envVars.CF_ACCOUNT_ID,
+      sql,
+      params,
+    });
+
+    const transformed = result[0].results?.map((row: unknown) => {
+      const rowData = row as {
+        workflow_name: string;
+        run_count: number;
+        last_run_timestamp: string;
+        last_snapshot: string;
+      };
+
+      let lastSnapshot: unknown;
+      try {
+        lastSnapshot = JSON.parse(rowData.last_snapshot);
+      } catch {
+        lastSnapshot = null;
+      }
+
+      return {
+        workflowName: rowData.workflow_name,
+        runCount: rowData.run_count,
+        lastRunTimestamp: rowData.last_run_timestamp,
+        lastRunStatus: extractStatusFromSnapshot(lastSnapshot),
+      };
+    }) ?? [];
+
+    return {
+      workflows: transformed,
+      pagination: { page, per_page },
+    };
+  },
+});
+
+export const listWorkflowRuns = createTool({
+  name: "HOSTING_APP_WORKFLOWS_LIST_RUNS",
+  description: "List all runs for a specific workflow",
+  inputSchema: InputPaginationListSchema.extend({
+    workflowName: z.string().describe(
+      "The name of the workflow to list runs for",
+    ),
+    fromDate: z.string().optional(),
+    toDate: z.string().optional(),
+  }),
+  outputSchema: z.object({
+    runs: z.array(z.object({
+      workflowName: z.string(),
       runId: z.string(),
       createdAt: z.number(),
       updatedAt: z.number().nullable().optional(),
-      resourceId: z.string().nullable().optional(),
       status: z.string(),
-    })).describe("The workflow list names"),
+    })).describe("The workflow runs"),
+    stats: z.object({
+      totalRuns: z.number(),
+      successCount: z.number(),
+      errorCount: z.number(),
+      runningCount: z.number(),
+      pendingCount: z.number(),
+      successRate: z.number(),
+      firstRun: z.object({
+        date: z.number(),
+        status: z.string(),
+      }).nullable(),
+      lastRun: z.object({
+        date: z.number(),
+        status: z.string(),
+      }).nullable(),
+    }).describe("Workflow statistics"),
     pagination: OutputPaginationListSchema,
   }),
   handler: async (
@@ -799,31 +926,182 @@ export const listWorkflows = createTool({
     c,
   ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const storageWorkers = await getStore(c);
+    const dbId = await getWorkspaceD1Database(c);
 
-    const { runs } = await storageWorkers.getWorkflowRuns({
-      workflowName,
-      fromDate: fromDate ? new Date(fromDate) : undefined,
-      toDate: toDate ? new Date(toDate) : undefined,
-      limit: per_page,
-      offset: (page - 1) * per_page,
-      resourceId: undefined,
-    }).catch((err) => {
-      console.error(err);
-      return { runs: [] };
+    // Build dynamic SQL query with optional filters
+    const conditions: string[] = ["workflow_name = ?"];
+    const params: string[] = [workflowName];
+
+    if (fromDate) {
+      conditions.push(`createdAt >= ?`);
+      params.push(fromDate);
+    }
+
+    if (toDate) {
+      conditions.push(`createdAt <= ?`);
+      params.push(toDate);
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
+    const offset = (page - 1) * per_page;
+
+    const sql = `
+      SELECT 
+        workflow_name,
+        run_id,
+        createdAt,
+        updatedAt,
+        snapshot
+      FROM mastra_workflow_snapshot 
+      ${whereClause} 
+      ORDER BY createdAt DESC 
+      LIMIT ? OFFSET ?
+    `;
+    params.push(per_page.toString(), offset.toString());
+
+    const { result } = await c.cf.d1.database.query(dbId, {
+      account_id: c.envVars.CF_ACCOUNT_ID,
+      sql,
+      params,
     });
 
-    const transformed = runs.map(({ snapshot, ...run }) => ({
-      ...run,
-      createdAt: run.createdAt?.getTime() ?? 0,
-      updatedAt: run.updatedAt?.getTime(),
-      status: typeof snapshot === "string"
-        ? snapshot
-        : snapshot?.status ?? "unknown",
-    }));
+    const transformed = result[0].results?.map((row: unknown) => {
+      const rowData = row as {
+        workflow_name: string;
+        run_id: string;
+        createdAt: string;
+        updatedAt: string | null;
+        snapshot: string;
+      };
+
+      let snapshot: unknown;
+      try {
+        snapshot = JSON.parse(rowData.snapshot);
+      } catch {
+        snapshot = null;
+      }
+
+      return {
+        workflowName: rowData.workflow_name,
+        runId: rowData.run_id,
+        createdAt: new Date(rowData.createdAt).getTime(),
+        updatedAt: rowData.updatedAt ? new Date(rowData.updatedAt).getTime() : null,
+        status: extractStatusFromSnapshot(snapshot),
+      };
+    }) ?? [];
+
+    // TODO: Stats calculation commented out due to SQLite memory issues
+    // // Calculate stats using SQL aggregation to avoid memory issues
+    // const statsSql = `
+    //   WITH status_counts AS (
+    //     SELECT 
+    //       COUNT(*) as total_runs,
+    //       SUM(CASE 
+    //         WHEN JSON_EXTRACT(snapshot, '$.status') = 'success' OR 
+    //              (typeof(snapshot) = 'text' AND snapshot = 'success')
+    //         THEN 1 ELSE 0 END) as success_count,
+    //       SUM(CASE 
+    //         WHEN JSON_EXTRACT(snapshot, '$.status') IN ('error', 'failed') OR 
+    //              (typeof(snapshot) = 'text' AND snapshot IN ('error', 'failed'))
+    //         THEN 1 ELSE 0 END) as error_count,
+    //       SUM(CASE 
+    //         WHEN JSON_EXTRACT(snapshot, '$.status') = 'running' OR 
+    //              (typeof(snapshot) = 'text' AND snapshot = 'running')
+    //         THEN 1 ELSE 0 END) as running_count
+    //     FROM mastra_workflow_snapshot 
+    //     WHERE workflow_name = ?
+    //   ),
+    //   first_run AS (
+    //     SELECT createdAt, snapshot
+    //     FROM mastra_workflow_snapshot 
+    //     WHERE workflow_name = ?
+    //     ORDER BY createdAt ASC 
+    //     LIMIT 1
+    //   ),
+    //   last_run AS (
+    //     SELECT createdAt, snapshot
+    //     FROM mastra_workflow_snapshot 
+    //     WHERE workflow_name = ?
+    //     ORDER BY createdAt DESC 
+    //     LIMIT 1
+    //   )
+    //   SELECT 
+    //     sc.total_runs,
+    //     sc.success_count,
+    //     sc.error_count,
+    //     sc.running_count,
+    //     (sc.total_runs - sc.success_count - sc.error_count - sc.running_count) as pending_count,
+    //     CASE WHEN sc.total_runs > 0 THEN (sc.success_count * 100.0 / sc.total_runs) ELSE 0 END as success_rate,
+    //     fr.createdAt as first_run_date,
+    //     fr.snapshot as first_run_snapshot,
+    //     lr.createdAt as last_run_date,
+    //     lr.snapshot as last_run_snapshot
+    //   FROM status_counts sc
+    //   LEFT JOIN first_run fr ON 1=1
+    //   LEFT JOIN last_run lr ON 1=1
+    // `;
+
+    // const { result: statsResult } = await c.cf.d1.database.query(dbId, {
+    //   account_id: c.envVars.CF_ACCOUNT_ID,
+    //   sql: statsSql,
+    //   params: [workflowName, workflowName, workflowName],
+    // });
+
+    // const statsRow = statsResult[0].results?.[0] as any;
+    
+    // const extractStatusFromSnapshotString = (snapshot: string): string => {
+    //   if (!snapshot) return "unknown";
+    //   try {
+    //     const parsed = JSON.parse(snapshot);
+    //     return extractStatusFromSnapshot(parsed);
+    //   } catch {
+    //     return snapshot; // If it's already a string status
+    //   }
+    // };
+
+    // const stats = statsRow ? {
+    //   totalRuns: statsRow.total_runs || 0,
+    //   successCount: statsRow.success_count || 0,
+    //   errorCount: statsRow.error_count || 0,
+    //   runningCount: statsRow.running_count || 0,
+    //   pendingCount: statsRow.pending_count || 0,
+    //   successRate: statsRow.success_rate || 0,
+    //   firstRun: statsRow.first_run_date ? {
+    //     date: new Date(statsRow.first_run_date).getTime(),
+    //     status: extractStatusFromSnapshotString(statsRow.first_run_snapshot),
+    //   } : null,
+    //   lastRun: statsRow.last_run_date ? {
+    //     date: new Date(statsRow.last_run_date).getTime(),
+    //     status: extractStatusFromSnapshotString(statsRow.last_run_snapshot),
+    //   } : null,
+    // } : {
+    //   totalRuns: 0,
+    //   successCount: 0,
+    //   errorCount: 0,
+    //   runningCount: 0,
+    //   pendingCount: 0,
+    //   successRate: 0,
+    //   firstRun: null,
+    //   lastRun: null,
+    // };
+
+    // Provide default empty stats to avoid breaking the API contract
+    const stats = {
+      totalRuns: 0,
+      successCount: 0,
+      errorCount: 0,
+      runningCount: 0,
+      pendingCount: 0,
+      successRate: 0,
+      firstRun: null,
+      lastRun: null,
+    };
 
     return {
-      workflows: transformed,
+      runs: transformed,
+      stats,
       pagination: { page, per_page },
     };
   },

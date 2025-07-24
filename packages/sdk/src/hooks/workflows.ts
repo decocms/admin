@@ -1,22 +1,22 @@
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { getWorkflowStatus, listWorkflows } from "../crud/workflows.ts";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { getWorkflowStatus, listWorkflowRuns, listWorkflows } from "../crud/workflows.ts";
 import { InternalServerError } from "../errors.ts";
 import { useSDK } from "./store.tsx";
 
-export const useWorkflows = (page = 1, per_page = 10) => {
+/**
+ * Hook to get paginated runs for a specific workflow with statistics
+ */
+export const useWorkflowRuns = (
+  workflowName: string,
+  page = 1,
+  per_page = 10,
+) => {
   const { workspace } = useSDK();
-  const client = useQueryClient();
 
   const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["workflows", workspace, page, per_page],
+    queryKey: ["workflow-runs", workspace, workflowName, page, per_page],
     queryFn: async ({ signal }) => {
-      const result = await listWorkflows(workspace, page, per_page, signal);
-      // Optionally cache each workflow by name
-      for (const workflow of result.workflows) {
-        const itemKey = ["workflow", workspace, workflow.workflowName];
-        client.cancelQueries({ queryKey: itemKey });
-        client.setQueryData(itemKey, workflow);
-      }
+      const result = await listWorkflowRuns(workspace, workflowName, page, per_page, signal);
       return result;
     },
     retry: (failureCount, error) =>
@@ -30,87 +30,12 @@ export const useWorkflows = (page = 1, per_page = 10) => {
   };
 };
 
-/**
- * Hook to get all workflow instances for a specific workflow name
- */
-export const useWorkflowInstances = (
-  workflowName: string,
-  page = 1,
-  per_page = 10,
-) => {
+export const useWorkspaceWorkflows = () => {
   const { workspace } = useSDK();
 
   const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["workflow-instances", workspace, workflowName, page, per_page],
+    queryKey: ["workspace-workflows", workspace],
     queryFn: async ({ signal }) => {
-      const result = await listWorkflows(workspace, page, per_page, signal);
-      // Filter to only include runs for this specific workflow
-      const filteredWorkflows = result.workflows.filter(
-        (workflow) => workflow.workflowName === workflowName,
-      );
-
-      return {
-        ...result,
-        workflows: filteredWorkflows,
-      };
-    },
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-  });
-
-  return {
-    data,
-    refetch,
-    isRefetching,
-  };
-};
-
-/**
- * Hook to get all runs for a specific workflow (without pagination)
- * Useful for calculating statistics
- */
-export const useAllWorkflowRuns = (workflowName: string) => {
-  const { workspace } = useSDK();
-
-  const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["all-workflow-runs", workspace, workflowName],
-    queryFn: async ({ signal }) => {
-      // Fetch a large number to get all runs for this workflow
-      // In the future, we might want to implement a "get all" API endpoint
-      const result = await listWorkflows(workspace, 1, 20, signal);
-
-      // Filter to only include runs for this specific workflow
-      const filteredWorkflows = result.workflows.filter(
-        (workflow) => workflow.workflowName === workflowName,
-      );
-
-      return {
-        ...result,
-        workflows: filteredWorkflows,
-      };
-    },
-    retry: (failureCount, error) =>
-      error instanceof InternalServerError && failureCount < 2,
-  });
-
-  return {
-    data,
-    refetch,
-    isRefetching,
-  };
-};
-
-/**
- * Hook to get unique workflow names by fetching the first page of workflow runs
- * Simplified to avoid infinite loop issues - fetches only the first 100 records
- */
-export const useAllUniqueWorkflows = () => {
-  const { workspace } = useSDK();
-
-  const { data, refetch, isRefetching } = useSuspenseQuery({
-    queryKey: ["all-unique-workflows", workspace],
-    queryFn: async ({ signal }) => {
-      // Fetch only the first page with 50 records to avoid infinite loop
       const per_page = 20;
       const result = await listWorkflows(workspace, 1, per_page, signal);
 

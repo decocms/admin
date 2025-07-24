@@ -1,31 +1,20 @@
 // Types for workflow data structures
 
-// Original workflow run data from API
 export interface WorkflowRun {
   workflowName: string;
   runId: string;
   createdAt: number;
   updatedAt?: number | null;
-  resourceId: string | null;
   status: string;
 }
 
-// Unique workflow with aggregated statistics
-export interface UniqueWorkflow {
-  name: string;
-  totalRuns: number;
-  lastRun: {
-    date: number;
-    status: string;
-    runId: string;
-  };
-  successCount: number;
-  errorCount: number;
-  firstCreated: number;
-  lastUpdated?: number | null;
+export interface Workflow {
+  workflowName: string;
+  runCount: number;
+  lastRunTimestamp: string;
+  lastRunStatus: string;
 }
 
-// Workflow statistics for the detail page
 export interface WorkflowStats {
   totalRuns: number;
   successCount: number;
@@ -33,15 +22,14 @@ export interface WorkflowStats {
   pendingCount: number;
   runningCount: number;
   successRate: number;
-  lastRun?: {
+  lastRun: {
     date: number;
     status: string;
-    runId: string;
-  };
-  firstRun?: {
-    date?: number | null;
-    runId: string;
-  };
+  } | null;
+  firstRun: {
+    date: number;
+    status: string;
+  } | null;
 }
 
 // Status types for better type safety
@@ -57,7 +45,16 @@ export type WorkflowStatus =
 
 // API response structure
 export interface WorkflowsListResponse {
-  workflows: WorkflowRun[];
+  workflows: Workflow[];
+  pagination: {
+    page?: number;
+    per_page?: number;
+  };
+}
+
+export interface WorkflowRunsResponse {
+  runs: WorkflowRun[];
+  stats: WorkflowStats;
   pagination: {
     page?: number;
     per_page?: number;

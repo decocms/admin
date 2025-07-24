@@ -19,10 +19,17 @@ export default defineConfig({
       prefixDefaultLocale: true,
     },
   },
-  integrations: [mdx(), react()],
+  integrations: [
+    mdx({
+      rehypePlugins: [
+        // rehype-mdx-code-props must run last according to docs
+      ],
+    }),
+    react(),
+  ],
   vite: {
     plugins: [
-      // @ts-ignore
+      // @ts-ignore: tailwindcss plugin type issue
       tailwindcss(),
     ],
   },

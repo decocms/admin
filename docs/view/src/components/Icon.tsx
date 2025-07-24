@@ -31,17 +31,24 @@ export function Icon(
   const LucideIcon = LucideIcons[name as keyof typeof LucideIcons];
 
   if (!LucideIcon) {
-    console.warn(`Icon "${name}" not found in Lucide React. Available icons:`, Object.keys(LucideIcons).slice(0, 10));
+    console.warn(
+      `Icon "${name}" not found in Lucide React. Available icons:`,
+      Object.keys(LucideIcons).slice(0, 10),
+    );
     return null;
   }
 
-  // Use type assertion to fix TypeScript issues
-  const IconComponent = LucideIcon as React.ComponentType<any>;
-  
+  // Use proper typing for the Lucide component
+  const IconComponent = LucideIcon as React.ComponentType<{
+    size?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
+
   return React.createElement(IconComponent, {
     size,
     className,
     style,
-    ...props
+    ...props,
   });
-} 
+}

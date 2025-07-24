@@ -28,4 +28,4 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
       />
     </div>
   );
-} 
+}

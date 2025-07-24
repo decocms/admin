@@ -1,0 +1,81 @@
+---
+title: Estrutura do Projeto
+description: Entendendo o layout do projeto deco.chat e organização de arquivos
+icon: Folder
+---
+
+Entender o layout do projeto ajudará você a localizar onde escrever código para ferramentas, fluxos de trabalho e a UI. Um projeto deco.chat típico (especialmente um criado com o template React+Tailwind) é organizado da seguinte forma:
+
+```
+my-deco-app/
+├── package.json          # Pacote raiz (scripts para dev, gen, deploy)
+├── server/               # Código Cloudflare Workers (servidor MCP)
+│   ├── main.ts           # Ponto de entrada principal do servidor (define ferramentas & fluxos de trabalho)
+│   ├── deco.gen.ts       # Tipos gerados para integrações (atualizado automaticamente)
+│   ├── wrangler.toml     # Configuração Cloudflare Workers (env, conta, etc.)
+│   └── package.json      # Dependências específicas do servidor (runtime Cloudflare, etc.)
+└── view/                 # Código frontend (React + Tailwind via Vite)
+    ├── src/
+    │   ├── main.tsx      # Entrada frontend (inicializa app React e router)
+    │   ├── lib/rpc.ts    # Cliente RPC para chamar ferramentas/fluxos de trabalho do servidor
+    │   ├── routes/       # React Router (TanStack) componentes de rota
+    │   └── components/   # Componentes UI reutilizáveis
+    ├── index.html        # Template HTML para o app
+    ├── package.json      # Dependências frontend
+    └── vite.config.ts    # Configuração Vite (para construir a visualização)
+```
+
+## Diretório do Servidor (`/server`)
+
+Este é o backend Cloudflare Worker que executa sua lógica de agente.
+
+### `main.ts`
+
+O módulo de entrada para seu Cloudflare Worker. Aqui você importará o runtime da plataforma deco e registrará suas Ferramentas e Fluxos de Trabalho. Pense nisso como o "cérebro" do seu backend de agente. Por exemplo, você pode usar `withRuntime` de `@deco/workers-runtime` para criar um Worker que conhece suas ferramentas/fluxos de trabalho e também serve os assets frontend.
+
+### `deco.gen.ts`
+
+Este arquivo é gerado automaticamente pelo CLI (comando `deco gen` ou `npm run gen`). Ele contém tipos TypeScript para todas as integrações (APIs externas) que você conectou em seu workspace deco, bem como tipos para suas próprias ferramentas/fluxos de trabalho se você executar `gen:self`. Em resumo, fornece uma interface fortemente tipada para chamar qualquer integração do seu código. **Não edite este arquivo manualmente.** Regenera-o sempre que adicionar novas integrações ou alterar suas ferramentas.
+
+### `wrangler.toml`
+
+Configuração para implantação Cloudflare Workers. É onde seu nome de script, ID da conta, vinculações de namespace KV, vinculações de objeto durável, etc., são definidos. Por exemplo, se seu aplicativo precisa de segredos de ambiente ou usa o armazenamento KV para a Base de Conhecimento, esses seriam referenciados aqui. O `wrangler.toml` em um projeto deco tipicamente é pré-configurado para servir os assets frontend construídos (via configuração `[site]` ou `[assets]`) e usar as flags de compatibilidade apropriadas.
+
+### Outros arquivos
+
+ex: um `package.json` para dependências do servidor (como o runtime deco, Mastra, etc.), ou módulos utilitários que você adiciona.
+
+## Diretório View (`/view`)
+
+Este contém o frontend web (se seu aplicativo tem uma UI personalizada). É uma aplicação React padrão estruturada com Vite e Tailwind CSS.
+
+### `src/main.tsx`
+
+O ponto de entrada React. Ele configura o router do lado do cliente (usando TanStack Router no template) e renderiza o App. Provavelmente importa todas as definições de rota e estabelece o contexto `<Router>`.
+
+### `src/lib/rpc.ts`
+
+**Importante** – este arquivo cria um cliente RPC que permite que seu frontend chame Ferramentas e Fluxos de Trabalho do backend facilmente. Ele usa os tipos de `deco.gen.ts` para garantir que você chame coisas com os parâmetros corretos. Por exemplo, você pode ver:
+
+```ts
+import { createClient } from "@deco/workers-runtime/client";
+import type { Env } from "../../server/deco.gen.ts";
+type SelfMCP = Env["SELF"];
+export const client = createClient<SelfMCP>();
+```
+
+Isso configura um objeto cliente onde, se você tem uma ferramenta `HELLO_TOOL` como definido anteriormente, você pode fazer `await client.tools.HELLO_TOOL({ name: "Alice" })` do seu código React, e ele chamará a ferramenta do Worker e retornará o resultado. Não há necessidade de escrever chamadas fetch ou endpoints de API – o runtime deco lida com isso via chamadas RPC para o Worker.
+
+### `src/routes/` e `src/components/`
+
+As páginas UI do seu aplicativo e blocos de construção. O template usa uma abordagem de router baseada em arquivos – cada arquivo em `routes/` exporta uma definição de rota. Por exemplo, você pode ter uma rota `agents.tsx` que mostra uma lista de agentes ou uma interface de chat. A biblioteca de roteamento (TanStack Router) permite definir rotas filhas e layouts. A estilização UI é feita com classes Tailwind CSS em JSX.
+
+### Assets estáticos
+
+O `index.html` e quaisquer assets públicos são usados pelo Vite para construir seu aplicativo. Em última análise, os arquivos construídos serão servidos pelo Cloudflare Worker (o Worker é configurado para fazer fallback para servir a visualização quando nenhuma rota de API corresponde). O servidor de desenvolvimento serve estes separadamente, mas em produção é unificado.
+
+## Arquitetura Unificada
+
+Um aspecto poderoso: **o servidor serve tanto endpoints de API quanto o frontend.** Durante o desenvolvimento, `npm run dev` executa o Worker em localhost:8787 que serve API (no caminho `/mcp`, etc.) e também faz proxy do servidor de desenvolvimento Vite para a UI. Em produção, após implantar, seu Cloudflare Worker em si serve os arquivos estáticos. Isso é habilitado pelo `fallbackToView("/")` do runtime deco em `main.ts`, que captura requisições para arquivos HTML e assets estáticos. Praticamente, isso significa que todo seu aplicativo (frontend + backend) está contido em uma única implantação Cloudflare Worker – tornando muito fácil implantar e hospedar.
+
+**Para resumir:** **Escreva sua lógica de servidor em `server/main.ts` (defina ferramentas, fluxos de trabalho, integre com APIs externas), e construa sua UI no diretório view (componentes React chamando essas ferramentas).** O CLI e runtime irão conectá-los e fazer tudo funcionar para você.

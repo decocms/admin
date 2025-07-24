@@ -1,6 +1,5 @@
-import React from 'react';
-import { Icon } from './Icon';
-import { MarkdownCopySelect } from './MarkdownCopySelect';
+import React from "react";
+import { MarkdownCopySelect } from "./MarkdownCopySelect";
 
 export interface PageTitleProps {
   breadcrumb?: string;
@@ -9,36 +8,34 @@ export interface PageTitleProps {
   markdownPath?: string;
 }
 
-export function PageTitle({ breadcrumb, title, description, markdownPath }: PageTitleProps) {
+export function PageTitle(
+  { breadcrumb, title, description, markdownPath }: PageTitleProps,
+) {
   return (
-    <div className="flex flex-col gap-1 mb-6">
-      {/* Breadcrumb and Copy Section */}
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          {breadcrumb && (
-            <div className="text-sm text-[#7f9300] font-normal leading-5">
-              {breadcrumb}
-            </div>
-          )}
+    <div className="flex flex-col mb-6">
+      {/* Breadcrumb Section */}
+      {breadcrumb && (
+        <div className="text-sm text-primary font-normal">
+          {breadcrumb}
         </div>
-        <MarkdownCopySelect markdownPath={markdownPath} />
-      </div>
-      
-      {/* Title Section */}
-      <div className="flex items-center gap-2.5 pb-2 pt-2">
-        <h1 className="text-[30px] font-bold leading-[1.25] text-stone-800">
+      )}
+
+      {/* Title Section with Copy Button */}
+      <div className="flex items-center justify-between pb-2 pt-2">
+        <h1 className="text-3xl font-bold leading-[1.25] text-foreground">
           {title}
         </h1>
+        <MarkdownCopySelect markdownPath={markdownPath} />
       </div>
 
       {/* Description Section */}
       {description && (
         <div className="pb-6 pt-0">
-          <p className="text-[16px] font-normal leading-[1.625] text-stone-800">
+          <p className="text-lg font-normal leading-[1.625] text-foreground0">
             {description}
           </p>
         </div>
       )}
     </div>
   );
-} 
+}

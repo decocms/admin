@@ -1,0 +1,68 @@
+---
+title: Criando Ferramentas
+description: Aprenda como criar ferramentas no deco.chat
+icon: Wrench
+---
+
+Ferramentas são as ações básicas que um agente pode executar. No deco.chat, você criará ferramentas para interfacear com serviços externos ou executar computações. Cada ferramenta é essencialmente uma função com uma entrada e saída definidas.
+
+## Definindo uma Ferramenta
+
+Você tipicamente usa o helper `createTool` para definir uma ferramenta. Você fornece:
+
+- Um `id` (nome único para a ferramenta).
+- Uma `description` (o que a ferramenta faz, útil para documentação e para a IA decidir quando usá-la).
+- Um `inputSchema` e `outputSchema` definidos com Zod – estes esquemas garantem que os dados que entram e saem são validados e tipados.
+- Uma função `execute` que contém a lógica real (executa quando a ferramenta é chamada por um agente ou fluxo de trabalho). Esta função pode usar o `context` que fornece acesso ao ambiente e outros dados de etapa, ou mais simples usar `inputData` (a entrada analisada).
+
+Por exemplo, a ferramenta "Hello" que mostramos anteriormente é muito simples. Uma ferramenta mais realista pode chamar uma API externa. Suponha que queremos uma ferramenta que envia um email via integração Gmail – pode parecer:
+
+```ts
+const createSendEmailTool = (env: Env) =>
+  createTool({
+    id: "SEND_EMAIL",
+    description: "Enviar um email via Gmail",
+    inputSchema: z.object({
+      to: z.string().email(),
+      subject: z.string(),
+      body: z.string(),
+    }),
+    outputSchema: z.object({ success: z.boolean() }),
+    execute: async ({ inputData }) => {
+      const response = await env.GMAIL.sendEmail({
+        to: inputData.to,
+        subject: inputData.subject,
+        body: inputData.body,
+      });
+      return { success: response.sent }; // assume que a integração retorna uma flag 'sent'
+    },
+  });
+```
+
+Aqui `env.GMAIL.sendEmail` é um exemplo de usar uma ferramenta de integração fornecida pelo namespace de integração GMAIL (assumimos que você conectou Gmail na plataforma, então apareceu em `Env`). Note que validamos entradas (formato de email, etc.) usando Zod.
+
+## Melhores Práticas para Ferramentas
+
+Mantenha estas diretrizes em mente:
+
+### Responsabilidade Única
+
+Cada ferramenta deve fazer uma coisa e fazer bem (uma chamada de API, uma consulta de banco de dados, um email). Isso torna ferramentas fáceis de reutilizar e testar.
+
+### Validação
+
+Sempre valide entradas com esquemas Zod. Isso previne dados ruins de causar erros de runtime e fornece mensagens de erro claras. Similarmente, garanta que seu esquema de saída reflita acuradamente o que você retorna.
+
+### Tratamento de Erros
+
+Não deixe exceções escaparem da ferramenta – trate erros dentro de `execute`. Por exemplo, capture erros de fetch ou erros de API e talvez retorne uma saída de erro estruturada (ou use `.catch` do Zod no esquema). Desta forma, o agente pode tratar falhas de ferramentas graciosamente. (Você pode até definir seu outputSchema para incluir uma união de erro.)
+
+### Segurança de Tipos
+
+Aproveite TypeScript. Os tipos `deco.gen.ts` significam que você tem autocompletar para chamadas de integração `env`. Use esses tipos para que se, digamos, você mudar a API de uma integração, seu código mostrará erros de tipo até você atualizá-lo. Isso evita chamar ferramentas com parâmetros errados.
+
+### Teste
+
+Pode ser útil testar ferramentas em isolamento. Como ferramentas são apenas funções, você pode chamar `await createMyTool(env).execute({ inputData: {...}, context })` em um script de desenvolvimento para ver se se comporta como esperado (fornecendo um env dummy se necessário).
+
+Forneceremos mais exemplos de implementações de ferramentas na documentação detalhada (ex: escrevendo para um banco de dados, chamando uma API de terceiros, executando cálculos). Por enquanto, lembre-se que ferramentas são a ponte entre seu agente e o mundo externo.

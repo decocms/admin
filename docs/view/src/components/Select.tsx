@@ -1,4 +1,4 @@
-import type { ReactNode, SelectHTMLAttributes } from "react";
+import type { SelectHTMLAttributes } from "react";
 import { Icon } from "./Icon.tsx";
 
 interface SelectOption {
@@ -7,7 +7,8 @@ interface SelectOption {
   icon?: string;
 }
 
-interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
+interface SelectProps
+  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {
   options: SelectOption[];
   placeholder?: string;
   icon?: string;
@@ -39,7 +40,7 @@ export function Select({
             appearance-none cursor-pointer
             focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring
             disabled:cursor-not-allowed disabled:opacity-50
-            ${icon ? 'pl-10' : ''}
+            ${icon ? "pl-10" : ""}
             pr-10
             ${selectClassName}
           `}
@@ -57,9 +58,13 @@ export function Select({
           ))}
         </select>
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none flex items-center">
-          <Icon name="ChevronDown" size={16} className="text-muted-foreground" />
+          <Icon
+            name="ChevronDown"
+            size={16}
+            className="text-muted-foreground"
+          />
         </div>
       </div>
     </div>
   );
-} 
+}

@@ -214,6 +214,7 @@ const DEFAULT_HEADERS_FILE = () =>
   `# Default headers for static assets
 /*
   Content-Security-Policy: frame-ancestors 'self' https://deco.chat/
+  X-Deco-Worker-Cdn: 1
 `;
 
 function withDefaultAssets(assets: Record<string, string>) {

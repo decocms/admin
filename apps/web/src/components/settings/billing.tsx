@@ -85,17 +85,6 @@ function WalletBalanceCard() {
           </div>
         </CardContent>
       </Card>
-
-      <div className="px-6 py-3 flex items-center gap-2">
-        <Icon
-          name="info"
-          size={16}
-          className="text-muted-foreground opacity-50"
-        />
-        <span className="text-sm font-medium text-muted-foreground">
-          Credits include plan-specific deposit fee
-        </span>
-      </div>
     </div>
   );
 }

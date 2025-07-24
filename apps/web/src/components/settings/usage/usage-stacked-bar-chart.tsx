@@ -1,10 +1,15 @@
 import type { Agent, AgentUsage, Member, ThreadUsage } from "@deco/sdk";
-import { useMemo } from "react";
-import { ChartBarStack, StackedBarChart } from "./stacked-bar-chart.tsx";
-import { TimeRange, UsageType } from "./usage.tsx";
+import { ChartBarStack } from "./stacked-bar-chart.tsx";
+import { TimeRange } from "./usage.tsx";
 import { color } from "./util.ts";
 
-function hourId(transaction: { timestamp: string }): string {
+export interface UsageChartData {
+  chartData: ChartBarStack[];
+  totalCost: number;
+  itemCount: number;
+}
+
+export function hourId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
   const hour = date.getHours();
   const isAM = hour < 12;
@@ -13,7 +18,7 @@ function hourId(transaction: { timestamp: string }): string {
   return `${hour12}${period}`;
 }
 
-function dayId(transaction: { timestamp: string }): string {
+export function dayId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
   const options = { month: "short", day: "numeric" } as const;
   return date.toLocaleDateString("en-US", options);
@@ -25,7 +30,7 @@ function dayId(transaction: { timestamp: string }): string {
  * @param {{ timestamp: string }} transaction - The transaction object.
  * @returns {string} The week range string.
  */
-function weekId(transaction: { timestamp: string }): string {
+export function weekId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
 
   // Find the start of the week (Sunday)
@@ -46,7 +51,7 @@ function weekId(transaction: { timestamp: string }): string {
   return `${startDateString} - ${endDateString}`;
 }
 
-function allDayHoursKeys(): string[] {
+export function allDayHoursKeys(): string[] {
   return Array.from(
     { length: 24 },
     (_, i) =>
@@ -56,7 +61,7 @@ function allDayHoursKeys(): string[] {
   );
 }
 
-function allWeekDaysKeys(): string[] {
+export function allWeekDaysKeys(): string[] {
   return Array.from(
     { length: 7 },
     (_, i) =>
@@ -67,7 +72,7 @@ function allWeekDaysKeys(): string[] {
   ).reverse();
 }
 
-function allMonthWeeksKeys(): string[] {
+export function allMonthWeeksKeys(): string[] {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed
@@ -102,7 +107,7 @@ function allMonthWeeksKeys(): string[] {
   return weekIds;
 }
 
-function createMap<T extends BaseTransaction>({
+export function createMap<T extends BaseTransaction>({
   keys,
   fillWith,
   getKey,
@@ -278,9 +283,13 @@ export function createAgentChartData(
   agents: Agent[],
   agentUsage: AgentUsage,
   timeRange: TimeRange,
-): ChartBarStack[] {
+): UsageChartData {
   if (!agentUsage.items || agentUsage.items.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
 
   const allTransactions: Array<AgentChartTransaction> = [];
@@ -301,8 +310,14 @@ export function createAgentChartData(
   });
 
   if (allTransactions.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
+
+  let chartStackedBars: ChartBarStack[] = [];
 
   if (timeRange === "day") {
     const allTransactionsByDay = createMap({
@@ -314,16 +329,12 @@ export function createAgentChartData(
       ([key]) => key === dayId({ timestamp: new Date().toISOString() }),
     )?.[1] || [];
 
-    if (!todayTransactions.length) {
-      throw new Error("Could not calculate agent chart data for today");
-    }
-
     const allTransactionsByHour = createMap<AgentChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: todayTransactions,
       getKey: hourId,
     });
-    const chartStackedBars = allTransactionsByHour.map((
+    chartStackedBars = allTransactionsByHour.map((
       [label, transactions],
     ) =>
       buildAgentStack({
@@ -331,31 +342,25 @@ export function createAgentChartData(
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "week") {
+  } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<AgentChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+    chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
       buildAgentStack({
         transactions: transactions,
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "month") {
+  } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<AgentChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
-    const chartStackedBars = allTransactionsByWeek.map((
+    chartStackedBars = allTransactionsByWeek.map((
       [label, transactions],
     ) =>
       buildAgentStack({
@@ -363,10 +368,32 @@ export function createAgentChartData(
         label,
       })
     );
-    return chartStackedBars;
+  } else {
+    throw new Error("Unknown time Range");
   }
 
-  throw new Error("Unknown time Range");
+  // Calculate totals from the filtered transactions used in the chart
+  const totalCost = chartStackedBars.reduce(
+    (sum, stack) => sum + stack.total,
+    0,
+  );
+
+  // Calculate item count from filtered transactions
+  const filteredAgentIds = new Set<string>();
+  chartStackedBars.forEach((stack) => {
+    stack.items.forEach((item) => {
+      if (item.type === "agent" && item.id !== "other") {
+        filteredAgentIds.add(item.id);
+      }
+    });
+  });
+  const itemCount = filteredAgentIds.size;
+
+  return {
+    chartData: chartStackedBars,
+    totalCost,
+    itemCount,
+  };
 }
 
 interface UserChartTransaction {
@@ -380,10 +407,14 @@ interface UserChartTransaction {
 export function createUserChartData(
   threadUsage: ThreadUsage,
   members: Member[],
-  timeRange: string,
-): ChartBarStack[] {
+  timeRange: TimeRange,
+): UsageChartData {
   if (!threadUsage.items || threadUsage.items.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
 
   const allTransactions: Array<UserChartTransaction> = [];
@@ -404,8 +435,14 @@ export function createUserChartData(
   });
 
   if (allTransactions.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
+
+  let chartStackedBars: ChartBarStack[] = [];
 
   if (timeRange === "day") {
     const allTransactionsByHour = createMap<UserChartTransaction>({
@@ -413,7 +450,7 @@ export function createUserChartData(
       fillWith: allTransactions,
       getKey: hourId,
     });
-    const chartStackedBars = allTransactionsByHour.map((
+    chartStackedBars = allTransactionsByHour.map((
       [label, transactions],
     ) =>
       buildUserStack({
@@ -421,31 +458,25 @@ export function createUserChartData(
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "week") {
+  } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<UserChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+    chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
       buildUserStack({
         transactions: transactions,
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "month") {
+  } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<UserChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
-    const chartStackedBars = allTransactionsByWeek.map((
+    chartStackedBars = allTransactionsByWeek.map((
       [label, transactions],
     ) =>
       buildUserStack({
@@ -453,10 +484,32 @@ export function createUserChartData(
         label,
       })
     );
-    return chartStackedBars;
+  } else {
+    throw new Error("Unknown time Range");
   }
 
-  throw new Error("Unknown time Range");
+  // Calculate totals from the filtered transactions used in the chart
+  const totalCost = chartStackedBars.reduce(
+    (sum, stack) => sum + stack.total,
+    0,
+  );
+
+  // Calculate item count from filtered transactions
+  const filteredUserIds = new Set<string>();
+  chartStackedBars.forEach((stack) => {
+    stack.items.forEach((item) => {
+      if (item.type === "user" && item.id !== "other") {
+        filteredUserIds.add(item.id);
+      }
+    });
+  });
+  const itemCount = filteredUserIds.size;
+
+  return {
+    chartData: chartStackedBars,
+    totalCost,
+    itemCount,
+  };
 }
 
 interface ThreadChartTransaction {
@@ -469,9 +522,13 @@ interface ThreadChartTransaction {
 export function createThreadChartData(
   threadUsage: ThreadUsage,
   timeRange: TimeRange,
-): ChartBarStack[] {
+): UsageChartData {
   if (!threadUsage.items || threadUsage.items.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
 
   const allTransactions: Array<ThreadChartTransaction> = [];
@@ -490,8 +547,14 @@ export function createThreadChartData(
   });
 
   if (allTransactions.length === 0) {
-    return [];
+    return {
+      chartData: [],
+      totalCost: 0,
+      itemCount: 0,
+    };
   }
+
+  let chartStackedBars: ChartBarStack[] = [];
 
   if (timeRange === "day") {
     const allTransactionsByHour = createMap<ThreadChartTransaction>({
@@ -500,7 +563,7 @@ export function createThreadChartData(
       getKey: hourId,
     });
 
-    const chartStackedBars = allTransactionsByHour.map((
+    chartStackedBars = allTransactionsByHour.map((
       [label, transactions],
     ) =>
       buildThreadStack({
@@ -508,33 +571,27 @@ export function createThreadChartData(
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "week") {
+  } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<ThreadChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
 
-    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+    chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
       buildThreadStack({
         transactions: transactions,
         label,
       })
     );
-    return chartStackedBars;
-  }
-
-  if (timeRange === "month") {
+  } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<ThreadChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
 
-    const chartStackedBars = allTransactionsByWeek.map((
+    chartStackedBars = allTransactionsByWeek.map((
       [label, transactions],
     ) =>
       buildThreadStack({
@@ -542,39 +599,30 @@ export function createThreadChartData(
         label,
       })
     );
-    return chartStackedBars;
+  } else {
+    throw new Error("Unknown time Range");
   }
 
-  throw new Error("Unknown time Range");
-}
+  // Calculate totals from the filtered transactions used in the chart
+  const totalCost = chartStackedBars.reduce(
+    (sum, stack) => sum + stack.total,
+    0,
+  );
 
-export function UsageStackedBarChart({
-  agents,
-  agentUsage,
-  threadUsage,
-  members,
-  timeRange,
-  usageType,
-}: {
-  agents: Agent[];
-  agentUsage: AgentUsage;
-  threadUsage: ThreadUsage;
-  members: Member[];
-  timeRange: TimeRange;
-  usageType: UsageType;
-}) {
-  const chartData = useMemo(() => {
-    switch (usageType) {
-      case "agent":
-        return createAgentChartData(agents, agentUsage, timeRange);
-      case "user":
-        return createUserChartData(threadUsage, members, timeRange);
-      case "thread":
-        return createThreadChartData(threadUsage, timeRange);
-      default:
-        return [];
-    }
-  }, [agents, agentUsage, threadUsage, members, timeRange, usageType]);
+  // Calculate item count from filtered transactions
+  const filteredThreadIds = new Set<string>();
+  chartStackedBars.forEach((stack) => {
+    stack.items.forEach((item) => {
+      if (item.type === "thread" && item.id !== "other") {
+        filteredThreadIds.add(item.id);
+      }
+    });
+  });
+  const itemCount = filteredThreadIds.size;
 
-  return <StackedBarChart chartData={chartData} />;
+  return {
+    chartData: chartStackedBars,
+    totalCost,
+    itemCount,
+  };
 }

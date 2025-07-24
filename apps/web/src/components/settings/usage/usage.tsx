@@ -15,8 +15,13 @@ import { UsageFilters } from "./filters.tsx";
 import { UsageTable } from "./agents-table.tsx";
 import { ThreadsTable } from "./threads-table.tsx";
 import { UsersTable } from "./users-table.tsx";
-import { UsageStackedBarChart } from "./usage-stacked-bar-chart.tsx";
-import { parseCurrencyString } from "./util.ts";
+import {
+  createAgentChartData,
+  createThreadChartData,
+  createUserChartData,
+  UsageChartData,
+} from "./usage-stacked-bar-chart.tsx";
+import { StackedBarChart } from "./stacked-bar-chart.tsx";
 
 const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
@@ -67,47 +72,27 @@ export function Usage() {
     limit: 100,
   });
 
-  const totals = useMemo(() => {
-    if (usageType === "agent") {
-      const count = agentUsage.items?.length || 0;
-      const cost = parseCurrencyString(agentUsage.total || "0.00");
-      const formattedCost = cost.toFixed(2);
-      return {
-        count,
-        cost: formattedCost,
-      };
+  const chartData = useMemo((): UsageChartData => {
+    switch (usageType) {
+      case "agent":
+        return createAgentChartData(agents.data || [], agentUsage, timeRange);
+      case "user":
+        return createUserChartData(threadUsage, teamMembers || [], timeRange);
+      case "thread":
+        return createThreadChartData(threadUsage, timeRange);
+      default:
+        return {
+          chartData: [],
+          totalCost: 0,
+          itemCount: 0,
+        };
     }
+  }, [usageType, agents.data, agentUsage, threadUsage, teamMembers, timeRange]);
 
-    if (usageType === "thread") {
-      const count = threadUsage.items?.length || 0;
-      const cost = threadUsage.items?.reduce((sum, thread) => {
-        return sum + parseCurrencyString(thread.total);
-      }, 0) || 0;
-      const formattedCost = cost.toFixed(2);
-      return {
-        count,
-        cost: formattedCost,
-      };
-    }
-
-    if (usageType === "user") {
-      // Calculate unique users from threadUsage
-      const uniqueUsers = new Set(
-        threadUsage.items?.map((thread) => thread.generatedBy) || [],
-      );
-      const totalUserCost = threadUsage.items?.reduce((sum, thread) => {
-        return sum + parseCurrencyString(thread.total);
-      }, 0) || 0;
-      const formattedCost = totalUserCost.toFixed(2);
-
-      return {
-        count: uniqueUsers.size,
-        cost: formattedCost,
-      };
-    }
-
-    throw new Error(`Unknown usage type selected: ${usageType}`);
-  }, [usageType, agentUsage, threadUsage]);
+  const totals = {
+    count: chartData.itemCount,
+    cost: chartData.totalCost.toFixed(2),
+  };
 
   const labels = useMemo(() => labelsByUsageType[usageType], [usageType]);
 
@@ -144,14 +129,7 @@ export function Usage() {
           </Card>
         </div>
 
-        <UsageStackedBarChart
-          agents={agents.data || []}
-          agentUsage={agentUsage}
-          threadUsage={threadUsage}
-          members={teamMembers || []}
-          timeRange={timeRange}
-          usageType={usageType}
-        />
+        <StackedBarChart chartData={chartData.chartData} />
 
         {usageType === "agent" && (
           <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>

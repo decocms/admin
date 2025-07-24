@@ -16,6 +16,7 @@ import { UsageTable } from "./agents-table.tsx";
 import { ThreadsTable } from "./threads-table.tsx";
 import { UsersTable } from "./users-table.tsx";
 import { UsageStackedBarChart } from "./usage-stacked-bar-chart.tsx";
+import { parseCurrencyString } from "./util.ts";
 
 const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
@@ -69,12 +70,7 @@ export function Usage() {
   const totals = useMemo(() => {
     if (usageType === "agent") {
       const count = agentUsage.items?.length || 0;
-      const rawCost = agentUsage.total || "0.00";
-      // Parse the cost to remove any existing dollar sign and format consistently
-      const parsedCost = typeof rawCost === "string"
-        ? parseFloat(rawCost.replace("$", ""))
-        : (typeof rawCost === "number" ? rawCost : 0);
-      const cost = isNaN(parsedCost) ? 0 : parsedCost;
+      const cost = parseCurrencyString(agentUsage.total || "0.00");
       const formattedCost = cost.toFixed(2);
       return {
         count,
@@ -85,11 +81,7 @@ export function Usage() {
     if (usageType === "thread") {
       const count = threadUsage.items?.length || 0;
       const cost = threadUsage.items?.reduce((sum, thread) => {
-        const parsedCost = typeof thread.total === "string"
-          ? parseFloat(thread.total.replace("$", ""))
-          : (typeof thread.total === "number" ? thread.total : 0);
-        const validCost = isNaN(parsedCost) ? 0 : parsedCost;
-        return sum + validCost;
+        return sum + parseCurrencyString(thread.total);
       }, 0) || 0;
       const formattedCost = cost.toFixed(2);
       return {
@@ -104,11 +96,7 @@ export function Usage() {
         threadUsage.items?.map((thread) => thread.generatedBy) || [],
       );
       const totalUserCost = threadUsage.items?.reduce((sum, thread) => {
-        const parsedCost = typeof thread.total === "string"
-          ? parseFloat(thread.total.replace("$", ""))
-          : (typeof thread.total === "number" ? thread.total : 0);
-        const validCost = isNaN(parsedCost) ? 0 : parsedCost;
-        return sum + validCost;
+        return sum + parseCurrencyString(thread.total);
       }, 0) || 0;
       const formattedCost = totalUserCost.toFixed(2);
 

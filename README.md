@@ -1,4 +1,4 @@
-# deco.chat
+<img width="2400" height="750" alt="image" src="https://github.com/user-attachments/assets/c30c8243-d5d1-4867-91a3-e4c4eb915cd1" />
 
 **deco.chat** is an open-source foundation for building AI-native software.  
 We equip developers, engineers, and AI enthusiasts with robust tools to rapidly prototype, develop, and deploy AI-powered applications.

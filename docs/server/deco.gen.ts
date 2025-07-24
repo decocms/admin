@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-empty-interface
+// deno-lint-ignore-file
 
 /* eslint-disable */
 /**

@@ -44,7 +44,8 @@
     "**/.wrangler",
     "apps/web/public/**",
     "packages/runtime/src/cf-imports.ts",
-    "docs/server/**"
+    "docs/server/**",
+    "docs/view/**"
   ],
   "lock": false,
   "unstable": [

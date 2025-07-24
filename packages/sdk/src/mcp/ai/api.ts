@@ -28,6 +28,7 @@ const createLLMUsageTransaction = (opts: {
   model: string;
   modelId: string;
   plan: PlanWithTeamMetadata;
+  hasCustomKey: boolean;
   userId: string;
   workspace: string;
 }): Transaction => {
@@ -46,6 +47,14 @@ const createLLMUsageTransaction = (opts: {
       type: "vendor",
       id: opts.modelId,
     },
+    payer: opts.hasCustomKey
+      ? {
+        type: "wallet",
+        id: WellKnownWallets.build(
+          ...WellKnownWallets.llmVaultCredits(opts.workspace, opts.modelId),
+        ),
+      }
+      : undefined,
     usage,
     metadata: opts,
     timestamp: new Date(),
@@ -114,7 +123,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
     },
   });
 
-  return llm;
+  return { llm, llmConfig };
 };
 
 const prepareMessages = async (
@@ -146,20 +155,31 @@ const processTransaction = async (
   wallet: ReturnType<typeof getWalletClient>,
   usage: LanguageModelUsage,
   modelId: string,
+  hasCustomKey: boolean,
   c: AppContext,
 ) => {
   assertHasWorkspace(c);
   const plan = await getPlan(c);
   const transaction = createLLMUsageTransaction({
-    usage,
+    usage: hasCustomKey
+      ? {
+        ...usage,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      }
+      : usage,
     model: modelId,
     modelId,
     plan,
+    hasCustomKey,
     userId: typeof c.user.id === "string"
       ? c.user.id
       : `apikey-${c.workspace.value}`,
     workspace: c.workspace.value,
   });
+
+  console.log({ transaction });
 
   const response = await wallet["POST /transactions"]({}, {
     body: transaction,
@@ -271,7 +291,7 @@ export const aiGenerate = createTool({
 
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
-    const llm = await setupLLMInstance(modelId, c);
+    const { llm, llmConfig } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
     const result = await generateText({
@@ -281,10 +301,14 @@ export const aiGenerate = createTool({
       temperature: input.temperature,
     });
 
+    const hasCustomKey = !!c.envVars.LLMS_ENCRYPTION_KEY &&
+      !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
+
     const transactionId = await processTransaction(
       wallet,
       result.usage,
-      modelId,
+      hasCustomKey ? llmConfig.model : modelId,
+      hasCustomKey,
       c,
     );
 
@@ -313,8 +337,11 @@ export const aiGenerateObject = createTool({
 
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
-    const llm = await setupLLMInstance(modelId, c);
+    const { llm, llmConfig } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
+
+    const hasCustomKey = !!c.envVars.LLMS_ENCRYPTION_KEY &&
+      !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
     const result = await generateObject({
       model: llm,
@@ -327,7 +354,8 @@ export const aiGenerateObject = createTool({
     const transactionId = await processTransaction(
       wallet,
       result.usage,
-      modelId,
+      hasCustomKey ? llmConfig.model : modelId,
+      hasCustomKey,
       c,
     );
 

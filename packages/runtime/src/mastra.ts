@@ -244,7 +244,7 @@ export type Fetch<TEnv = any> = (
 export interface AppContext<TEnv = any> {
   env: TEnv;
   ctx: { waitUntil: (promise: Promise<any>) => void };
-  req: Request;
+  req?: Request;
 }
 
 const decoChatOAuthToolFor = <TSchema extends z.ZodTypeAny = never>(
@@ -287,7 +287,7 @@ const createWorkflowTools = <TEnv = any, TSchema extends z.ZodTypeAny = never>(
     }),
     execute: async (args) => {
       const store = State.getStore();
-      const runId = store?.req.headers.get("x-deco-chat-run-id") ??
+      const runId = store?.req?.headers.get("x-deco-chat-run-id") ??
         crypto.randomUUID();
       const workflowDO = bindings.DECO_CHAT_WORKFLOW_DO.get(
         bindings.DECO_CHAT_WORKFLOW_DO.idFromName(runId),

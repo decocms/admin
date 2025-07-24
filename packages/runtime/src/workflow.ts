@@ -11,6 +11,7 @@ import { D1Store } from "@mastra/cloudflare-d1";
 import { Mastra, type Workflow as MastraWorkflow } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
 import { DurableObject } from "./cf-imports.ts";
+import { State } from "./state.ts";
 
 const createRuntimeContext = (env: DefaultEnv, ctx: DurableObjectState) => {
   const runtimeContext = new RuntimeContext<AppContext>();
@@ -65,7 +66,20 @@ export const Workflow = (
       );
     }
 
-    async getWorkflow(
+    runWithContext<T>(
+      ctx: RequestContext,
+      f: (ctx: DefaultEnv) => Promise<T>,
+    ): Promise<T> {
+      const bindings = this.bindings(ctx);
+      return State.run({
+        ctx: {
+          waitUntil: this.ctx.waitUntil.bind(this.ctx),
+        },
+        env: this.bindings(ctx),
+      }, () => f(bindings));
+    }
+
+    async #getWorkflow(
       workflowId: string,
       bindings: DefaultEnv,
     ): Promise<{ workflow: MastraWorkflow }> {
@@ -100,65 +114,69 @@ export const Workflow = (
       return { workflow: mastra.getWorkflow(workflowId) };
     }
 
-    async start({ workflowId, runId, args, ctx }: StartWorkflowArgs) {
-      const bindings = this.bindings(ctx);
-      const { workflow } = await this.getWorkflow(workflowId, bindings);
+    start({ workflowId, runId, args, ctx }: StartWorkflowArgs) {
+      return this.runWithContext(ctx, async (bindings) => {
+        const { workflow } = await this.#getWorkflow(workflowId, bindings);
 
-      const run = await workflow.createRunAsync({
-        runId: this.ctx.id.name ?? runId,
-      });
-
-      this.ctx.waitUntil(
-        run.start({
-          inputData: args,
-          runtimeContext: createRuntimeContext(bindings, this.ctx),
-        }),
-      );
-      return {
-        runId: run.runId,
-      };
-    }
-
-    async cancel({ workflowId, runId, ctx }: CancelWorkflowArgs) {
-      const { workflow } = await this.getWorkflow(
-        workflowId,
-        this.bindings(ctx),
-      );
-      const run = await workflow
-        .createRunAsync({
+        const run = await workflow.createRunAsync({
           runId: this.ctx.id.name ?? runId,
         });
 
-      this.ctx.waitUntil(run.cancel());
-
-      return {
-        cancelled: true,
-      };
+        this.ctx.waitUntil(
+          run.start({
+            inputData: args,
+            runtimeContext: createRuntimeContext(bindings, this.ctx),
+          }),
+        );
+        return {
+          runId: run.runId,
+        };
+      });
     }
-    async resume({
+
+    cancel({ workflowId, runId, ctx }: CancelWorkflowArgs) {
+      return this.runWithContext(ctx, async () => {
+        const { workflow } = await this.#getWorkflow(
+          workflowId,
+          this.bindings(ctx),
+        );
+        const run = await workflow
+          .createRunAsync({
+            runId: this.ctx.id.name ?? runId,
+          });
+
+        this.ctx.waitUntil(run.cancel());
+
+        return {
+          cancelled: true,
+        };
+      });
+    }
+    resume({
       workflowId,
       runId,
       resumeData,
       stepId,
       ctx,
     }: ResumeWorkflowArgs) {
-      const bindings = this.bindings(ctx);
-      const { workflow } = await this.getWorkflow(workflowId, bindings);
-      const run = await workflow.createRunAsync({
-        runId: this.ctx.id.name ?? runId,
+      return this.runWithContext(ctx, async (bindings) => {
+        const { workflow } = await this.#getWorkflow(workflowId, bindings);
+        const run = await workflow.createRunAsync({
+          runId: this.ctx.id.name ?? runId,
+        });
+
+        this.ctx.waitUntil(
+          run.resume({
+            resumeData,
+            step: stepId,
+            runtimeContext: createRuntimeContext(bindings, this.ctx),
+          }),
+        );
+
+        return {
+          resumed: true,
+        };
       });
-
-      this.ctx.waitUntil(
-        run.resume({
-          resumeData,
-          step: stepId,
-          runtimeContext: createRuntimeContext(bindings, this.ctx),
-        }),
-      );
-
-      return {
-        resumed: true,
-      };
     }
   };
 };

@@ -62,7 +62,7 @@ Don’t have an account? Sign up first.
 ```
 deco create              # create new project, select workspace and choose a template
 cd my-project
-npm install              # or pnpm install (for view dependencies)
+npm install              # or bun, deno, pnpm
 ```
 
 4. Start the dev server

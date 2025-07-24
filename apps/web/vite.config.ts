@@ -11,7 +11,7 @@ export default defineConfig({
     inspect(),
     react() as PluginOption[],
     tailwindcss() as PluginOption[],
-    reactScan(),
+    reactScan() as unknown as PluginOption[],
     VitePWA({
       registerType: "autoUpdate",
       workbox: {

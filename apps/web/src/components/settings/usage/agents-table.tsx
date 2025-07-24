@@ -176,8 +176,13 @@ export function UsageTable({
       )).size;
 
       const metrics = {
-        agentUsage: agentUsageData,
-        totalCost: agentUsageData ? agentUsageData.total : "0",
+        agentUsage: agentUsageData ?? {
+          id: agent.id,
+          label: agent.name,
+          total: 0,
+          transactions: [],
+        },
+        totalCost: agentUsageData ? agentUsageData.total : 0,
         totalTokens,
         promptTokens,
         completionTokens,

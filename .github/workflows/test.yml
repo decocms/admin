@@ -30,6 +30,9 @@ jobs:
       - name: Run format
         run: deno run fmt --check
 
+      - name: Print TSC version
+        run: deno run version
+
       - name: Run check
         env:
           DENO_V8_FLAGS: --max-old-space-size=16384

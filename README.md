@@ -1,145 +1,203 @@
 # deco.chat
 
-The code for <https://deco.chat>
+**deco.chat** is an open-source foundation for building AI-native software.  
+We equip developers, engineers, and AI enthusiasts with robust tools to rapidly prototype, develop, and deploy AI-powered applications.
 
-_An extensible, self-hosted AI workspace for building intelligent, UI-rich AI
-Agents that integrate seamlessly with your internal tools and data._
+**Official docs:** https://docs.deco.chat
 
-## Requirements
 
-- Deno
-- Node/NPM
+## Who is it for?
 
-## How to run
+- **Vibecoders** prototyping ideas  
+- **Agentic engineers** deploying scalable, secure, and sustainable production systems  
 
-By default, this project is set to use the production backend.
 
-To use the local backend, create a `.env` file in the `apps/web` folder and add:
+## Why deco.chat?
+
+Our goal is simple: empower teams to embrace Generative AI by giving builders the tools to create sustainable, governed AI-native applications — from prototype to production, and from one user to thousands.
+
+
+## Core capabilities
+
+- **Open-source Runtime** – Easily compose tools, workflows, and views within a single codebase  
+- **MCP Mesh (Model Context Protocol)** – Securely integrate models, data sources, and APIs, with observability and cost control  
+- **Unified TypeScript Stack** – Combine backend logic and custom React/Tailwind frontends seamlessly using typed RPC  
+- **Global, Modular Infrastructure** – Built on Cloudflare for low-latency, infinitely scalable deployments. Self-host with your Cloudflare API Key  
+- **Visual Workspace** – Build agents, connect tools, manage permissions, and orchestrate everything built in code  
+
+---
+
+
+## Creating a new Deco project
+
+A Deco project extends a standard Cloudflare Worker with our building blocks and defaults for MCP servers.  
+It runs a type-safe API out of the box and can also serve views — front-end apps deployed alongside the server.
+
+Currently, views can be any Vite app that outputs a static build. Soon, they’ll support components declared as tools, callable by app logic or LLMs.  
+Views can call server-side tools via typed RPC.
+
+
+### Requirements
+
+- [Deno](https://docs.deno.com/runtime/) 2.x.x *(temporary — will be optional after CLI migration)*  
+- Your preferred JavaScript runtime:  
+  - Recommended: [Bun](https://bun.sh)  
+  - Supported: [Node.js](https://nodejs.org), [Deno](https://deno.land)
+
+
+
+### Quick Start
+
+1. Install the CLI
 
 ```
-VITE_USE_LOCAL_BACKEND=true
-```
-
-You can copy the `.env.example` file as a starting point:
-
-```
-cp apps/web/.env.example apps/web/.env
-```
-
-1. Run `deno install` to install dependencies
-2. Run `npm start`
-
----
-
-## 🎯 What is deco.chat Agent Workspace?
-
-**deco.chat Agent Workspace** is an open-source platform designed to empower
-anyone to quickly create AI agents that don't just communicate through text—but
-**through rich, interactive UI**. Text is not everything. Your agents should
-visually express data, actions, and insights, leveraging an extensible chat
-interface that brings powerful UI elements directly into conversations.
-
-Agents built with deco.chat dynamically assemble themselves, connecting
-automatically to thousands of high-quality, strongly-typed MCPs (**Model Context
-Protocols**) available for popular databases, services, and APIs. This means
-your agents seamlessly understand how to interact with your existing tools and
-immediately provide value, saving you hours of setup and configuration.
-
----
-
-## 🧩 Key Features
-
-- **Interactive Chat Interface:** Deliver real-time visual interactions directly
-  within the chat.
-- **Golden Layout UI:** Open multiple tabs within the chat workspace for
-  multitasking across forms, dashboards, maps, and live coding environments.
-- **Extensive MCP Catalog:** Access thousands of high-quality MCPs for immediate
-  integrations to databases, CRM, Slack, Salesforce, GitHub, and more.
-- **Collaborative Agent Library:** Rapidly remix, customize, and deploy agents
-  internally or within the community.
-
----
-
-## 🔗 Join Our Community
-
-- [GitHub Repository](https://github.com/deco-cx/chat)
-- [Official Documentation](https://docs.deco.chat)
-- [Community Discord](https://deco.cx/discord) — share ideas, seek support, and
-  showcase your agents.
-
----
-
-## 📚 Roadmap & Contributions
-
-We welcome your contributions:
-
-- [ ] Advanced memory management
-- [ ] Enhanced workflow visualizations
-- [ ] Rich analytics dashboards
-- [ ] Expanded MCP integrations (Zapier, Notion, Airtable, etc.)
-
-Help shape the future of UI-rich, self-building AI agents!
-
----
-
-## 🛠️ Supabase Migrations
-
-To run database migrations with Supabase:
-
-1. Install the Supabase CLI (npm or brew, generally brew is better):
-   ```sh
-   npm install -g supabase
-   ```
-2. Log in:
-   ```sh
-   supabase login
-   ```
-3. Link the project:
-   ```sh
-   supabase link --project-ref $projectId
-   ```
-   Use `ozksgdmyrqcxcwhnbepg` for deco.cx
-4. Get the database password from
-   [1Password](https://decocx.1password.com/app#/v254wmdcgkot7sbjm2rrzsqgzu/Search/v254wmdcgkot7sbjm2rrzsqgzu63fbqw56r7ee5okdfbbk3s2q5a?itemListId=supabase).
-5. You can create a new migration by running
-   `supabase migration new $YOUR_MIGRATION_NAME`
-6. Write your .sql file
-7. Now you can run `deno run db:migration`
-8. Remember to run `deno run db:types` to update schemas.ts
-
-**Made with ❤️ by deco.chat**
-
-Empowering businesses to scale AI safely, visually, and efficiently. Explore our
-enterprise-grade managed solution at [deco.chat](https://deco.chat).
-
-**Build more than just conversations—build experiences.** 🌐✨
-
----
-
-## 🖥️ Using the CLI
-
-The deco.chat CLI allows you to interact with your workspace and manage
-deployments directly from your terminal.
-
-### Installation & Login
-
-To install the CLI, simply run:
-
-```sh
 deno install -Ar -g -n deco jsr:@deco/cli
 ```
 
-Then, to use it
+2. Log in to [deco.chat](https://deco.chat).
+Don’t have an account? Sign up first.
 
-```sh
-deco login
+3. Create a new project
+
+```
+deco create              # create new project, select workspace and choose a template
+cd my-project
+npm install              # or pnpm install (for view dependencies)
 ```
 
-This will prompt you to log in and set up your session.
+4. Start the dev server
 
-### All Commands
+```
+npm run dev               # → http://localhost:8787 (hot reload)
+```
 
-For a complete reference of all available commands, see the
-[CLI Documentation](./packages/cli/README.md).
+> Need pre‑built MCP integrations? Explore [deco-cx/apps](https://github.com/deco-cx/apps).
+
+
+
+## Project Layout
+
+```
+my-project/
+├── server/         # MCP tools & workflows (Cloudflare Workers)
+│   ├── main.ts
+│   ├── deco.gen.ts  # Typed bindings (auto-generated)
+│   └── wrangler.toml
+├── view/           # React + Tailwind UI (optional)
+│   └── src/
+├── package.json    # Root workspace scripts
+└── README.md
+```
+
+> Skip `view/` if you don’t need a frontend.
+
+
+
+## CLI Essentials
+
+| Command         | Purpose                                  |
+| --------------- | ---------------------------------------- |
+| `deco dev`      | Run server & UI with hot reload          |
+| `deco deploy`   | Deploy to Cloudflare Workers             |
+| `deco gen`      | Generate types for external integrations |
+| `deco gen:self` | Generate types for your own tools        |
+
+> For full command list: `deco --help` or see the [CLI README](packages/cli/README.md)
+
+
+
+## Building Blocks
+
+A Deco project is built using **tools** and **workflows** — the core primitives for connecting integrations, APIs, models, and business logic.
+
+
+
+### Tools
+
+Atomic functions that call external APIs, databases, or AI models.
+All templates include the necessary imports from the Deco Workers runtime.
+
+```ts
+import { createTool, z, Env } from "deco/mod.ts";
+
+const createMyTool = (env: Env) =>
+  createTool({
+    id: "MY_TOOL",
+    description: "Describe what it does",
+    inputSchema: z.object({ query: z.string() }),
+    outputSchema: z.object({ answer: z.string() }),
+    execute: async ({ context }) => {
+      const res = await env.OPENAI.CHAT_COMPLETIONS({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: context.query }],
+      });
+      return { answer: res.choices[0].message.content };
+    },
+  });
+```
+
+> Tools can be used independently or within workflows.
+> **Golden rule:** one tool call per step — keep logic in the workflow.
 
 ---
+
+### Workflows
+
+Orchestrate tools using **Mastra** operators like `.then`, `.parallel`, `.branch`, and `.dountil`.
+
+> Tip: Add [Mastra docs](https://github.com/deco-cx/mastra) to your AI code assistant for autocomplete and examples.
+
+```ts
+import { createWorkflow, createStepFromTool } from "deco/mod.ts";
+
+return createWorkflow({
+  id: "HELLO_WORLD",
+  inputSchema: z.object({ name: z.string() }),
+  outputSchema: z.object({ greeting: z.string() }),
+})
+  .then(createStepFromTool(createMyTool(env)))
+  .map(({ inputData }) => ({ greeting: `Hello, ${inputData.answer}!` }))
+  .commit();
+```
+
+---
+
+### Views
+
+Build **React + Tailwind** frontends served by the same Cloudflare Worker.
+
+* Routing with [TanStack Router](https://tanstack.com/router)
+* Typed RPC via `@deco/workers-runtime/client`
+* Preconfigured with `shadcn/ui` and `lucide-react`
+
+---
+
+## Development Flow
+
+1. Add an integration via the [deco.chat dashboard](https://deco.chat) *(improved UX coming soon)*
+2. Run `npm run gen` → updates `deco.gen.ts` with typed clients
+3. Write tools in `server/main.ts`
+4. Compose workflows using `.map`, `.branch`, `.parallel`, etc.
+5. *(Optional)* Run `npm run gen:self` → typed RPC clients for your tools
+6. Build views in `/view` and call workflows via the typed client
+7. Run locally
+
+   ```bash
+   npm run dev   # → http://localhost:8787
+   ```
+8. Deploy to Cloudflare
+
+   ```bash
+   npm run deploy
+   ```
+
+---
+
+## How to Contribute
+
+We welcome contributions!
+Check out [`CONTRIBUTING.md`](./CONTRIBUTING.md) for guidelines and tips.
+
+---
+
+Made with ❤️ by the Deco community — helping teams build AI-native systems that scale.

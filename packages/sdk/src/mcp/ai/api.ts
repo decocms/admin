@@ -161,14 +161,7 @@ const processTransaction = async (
   assertHasWorkspace(c);
   const plan = await getPlan(c);
   const transaction = createLLMUsageTransaction({
-    usage: hasCustomKey
-      ? {
-        ...usage,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-      }
-      : usage,
+    usage,
     model: modelId,
     modelId,
     plan,
@@ -178,8 +171,6 @@ const processTransaction = async (
       : `apikey-${c.workspace.value}`,
     workspace: c.workspace.value,
   });
-
-  console.log({ transaction });
 
   const response = await wallet["POST /transactions"]({}, {
     body: transaction,

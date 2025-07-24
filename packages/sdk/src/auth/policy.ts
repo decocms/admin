@@ -12,13 +12,16 @@ export const BASE_ROLES_ID = {
   PUBLISHER: 2,
   COLLABORATOR: 3,
   ADMIN: 4,
+  PUBLIC: 115,
+  PRIVATE: 116,
 };
 
 // Roles that should not be displayed in the UI
-// - PUBLISHER (id 2): System role for publishing capabilities
-// - Public (id 115): System role for public access
-// - Private (id 116): System role for private access
-const BLOCKED_ROLES = new Set([BASE_ROLES_ID.PUBLISHER, 115, 116]);
+const BLOCKED_ROLES = new Set([
+  BASE_ROLES_ID.PUBLISHER,
+  BASE_ROLES_ID.PUBLIC,
+  BASE_ROLES_ID.PRIVATE,
+]);
 
 type MatchFunctionsManifest = typeof MatcherFunctions;
 type MatchCondition<
@@ -445,16 +448,8 @@ export class PolicyClient {
       .eq("team_id", teamId)
       .single();
 
-    if (!role) {
+    if (!role || role.team_id === null || role.team_id !== teamId) {
       throw new Error("Role not found");
-    }
-
-    if (role.team_id === null) {
-      throw new Error("Cannot delete system roles");
-    }
-
-    if (role.team_id !== teamId) {
-      throw new Error("Role does not belong to this team");
     }
 
     // delete all member_roles
@@ -520,14 +515,12 @@ export class PolicyClient {
       return null;
     }
 
-    const policies: Policy[] = data.role_policies.map((rp) =>
-      ({
-        ...rp.policies,
-        statements: this.filterValidStatements(
-          rp.policies.statements as unknown as Statement[],
-        ),
-      }) as unknown as Policy
-    );
+    const policies: Policy[] = data.role_policies.map((rp) => ({
+      ...rp.policies,
+      statements: this.filterValidStatements(
+        rp.policies.statements as unknown as Statement[],
+      ),
+    }));
 
     const roleStatementsAsPolicies: Policy | null = data.statements
       ? {

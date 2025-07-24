@@ -210,7 +210,8 @@ const uploadWranglerAssets = async ({
 
 const CF_ASSET_HEADERS_FILE_PATH = "/_headers";
 
-const DEFAULT_HEADERS_FILE = () => `# Default headers for static assets
+const DEFAULT_HEADERS_FILE = () =>
+  `# Default headers for static assets
 /*
   Content-Security-Policy: frame-ancestors 'self' https://deco.chat/
 `;

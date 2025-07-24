@@ -1,4 +1,9 @@
-import { DECO_CHAT_API, UnauthorizedError, useInvites } from "@deco/sdk";
+import {
+  DECO_CHAT_API,
+  UnauthorizedError,
+  useInvites,
+  useWorkspaceWalletBalance,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -45,6 +50,7 @@ import { useUser } from "../../hooks/use-user.ts";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { UserAvatar } from "../common/avatar/user.tsx";
 import { ProfileSettings } from "../settings/profile.tsx";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
 
 /** Wrapped component to be suspended */
 function NotificationDot({ className }: { className?: string }) {
@@ -390,6 +396,46 @@ function LoggedUser() {
   );
 }
 
+/**
+ * Very small team balance label to be shown above the user menu in the sidebar footer.
+ */
+function TeamBalanceLabel() {
+  const account = useWorkspaceWalletBalance();
+  const withWorkspaceLink = useWorkspaceLink();
+
+  if (!account?.balance) return null;
+
+  return (
+    <span className="text-[11px] text-muted-foreground pl-2 flex items-center gap-1">
+      <Link
+        to={withWorkspaceLink("/settings/wallet")}
+        className="hover:underline transition-colors truncate"
+      >
+        Team balance: {account.balance}
+      </Link>
+      <Link to={withWorkspaceLink("/settings/wallet")} className="shrink-0">
+        <Button
+          variant="special"
+          size="sm"
+          className="h-4 px-1 py-0 leading-none vertical-align-middle"
+        >
+          <Icon name="add" size={12} />
+        </Button>
+      </Link>
+    </span>
+  );
+}
+
+function TeamBalance() {
+  return (
+    <Suspense fallback={null}>
+      <ErrorBoundary fallback={null}>
+        <TeamBalanceLabel />
+      </ErrorBoundary>
+    </Suspense>
+  );
+}
+
 function AnonymouseUser() {
   const to = `/login?next=${globalThis?.location?.href}`;
 
@@ -420,8 +466,11 @@ export function SidebarFooter() {
         shouldCatch={(error) => error instanceof UnauthorizedError}
         fallback={<AnonymouseUser />}
       >
-        <SidebarFooterInner>
+        <SidebarFooterInner className="border-t border-border">
           <SidebarMenu>
+            <SidebarMenuItem>
+              <TeamBalance />
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <LoggedUser />
             </SidebarMenuItem>

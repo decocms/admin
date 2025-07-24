@@ -117,7 +117,7 @@ export function PageLayout({
       <div
         className={cn(
           "bg-sidebar",
-          "grid grid-cols-3 md:grid-cols-2 px-2",
+          "grid grid-cols-3 md:grid-cols-2 px-0",
         )}
       >
         <div className="p-2 md:p-0 md:hidden">
@@ -166,7 +166,7 @@ export function PageLayout({
           </div>
         )}
       </div>
-      <div className="h-full p-0 md:p-1">
+      <div className="h-full p-0 md:px-0">
         <Docked tabs={tabs} hideViewsButton={hideViewsButton} />
       </div>
     </Docked.Provider>

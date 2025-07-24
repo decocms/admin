@@ -41,7 +41,7 @@
     --dv-background-color: var(--background);
 
     .dv-view.visible:not(:has(.dv-view.visible)) {
-      @apply p-0 md:p-1;
+      @apply p-0 md:py-1;
     }
 
     .dv-view.visible {

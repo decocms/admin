@@ -306,6 +306,7 @@ const router = createBrowserRouter([
           { path: "connections/success", Component: ConnectionInstallSuccess },
           { path: "triggers", Component: TriggerList },
           { path: "trigger/:id", Component: TriggerDetails },
+          { path: "settings/:tab", Component: Settings },
           { path: "settings", Component: Settings },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },

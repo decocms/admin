@@ -1,7 +1,6 @@
 import type {
   Agent,
   AgentUsage,
-  AgentUsageItem,
   Member,
   ThreadUsage,
 } from "@deco/sdk";
@@ -12,7 +11,7 @@ import { color } from "./util.ts";
 
 function hourId(transaction: { timestamp: string }): string {
   const date = new Date(transaction.timestamp);
-  let hour = date.getHours();
+  const hour = date.getHours();
   const isAM = hour < 12;
   const hour12 = hour % 12 === 0 ? 12 : hour % 12;
   const period = isAM ? "AM" : "PM";
@@ -53,18 +52,31 @@ function weekId(transaction: { timestamp: string }): string {
 }
 
 function allDayHoursKeys(): string[] {
-  return Array.from({ length: 24 }, (_, i) => hourId({ timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString() }));
+  return Array.from(
+    { length: 24 },
+    (_, i) =>
+      hourId({
+        timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString(),
+      }),
+  );
 }
 
 function allWeekDaysKeys(): string[] {
-  return Array.from({ length: 7 }, (_, i) => dayId({ timestamp: new Date(new Date().setDate(new Date().getDate() - i)).toISOString() })).reverse();
+  return Array.from(
+    { length: 7 },
+    (_, i) =>
+      dayId({
+        timestamp: new Date(new Date().setDate(new Date().getDate() - i))
+          .toISOString(),
+      }),
+  ).reverse();
 }
 
 function allMonthWeeksKeys(): string[] {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth(); // 0-indexed
-  
+
   // Find the first day of the month
   const firstOfMonth = new Date(year, month, 1);
   // Find the last day of the month
@@ -81,13 +93,13 @@ function allMonthWeeksKeys(): string[] {
   lastWeekEnd.setHours(23, 59, 59, 999);
 
   const weekIds: string[] = [];
-  let current = new Date(firstWeekStart);
+  const current = new Date(firstWeekStart);
 
   while (current <= lastWeekEnd) {
     // Generate week ID using the same logic as weekId function
     const weekIdStr = weekId({ timestamp: current.toISOString() });
     weekIds.push(weekIdStr);
-    
+
     // Move to next week (add 7 days)
     current.setDate(current.getDate() + 7);
   }
@@ -99,19 +111,20 @@ function createMap<T extends BaseTransaction>({
   keys,
   fillWith,
   getKey,
-}:{
-  keys: () => string[],
-  fillWith: T[],
-  getKey: (transaction: T) => string,
-}): Record<string, T[]> {
+}: {
+  keys: () => string[];
+  fillWith: T[];
+  getKey: (transaction: T) => string;
+}): Array<[string, T[]]> {
+  const orderedKeys = keys();
   const map: Record<string, T[]> = {};
 
-  keys().forEach((key) => {
-    if (!map[key]) {
-      map[key] = [];
-    }
+  // Initialize all keys with empty arrays to ensure order
+  orderedKeys.forEach((key) => {
+    map[key] = [];
   });
 
+  // Fill with transactions
   fillWith.forEach((transaction) => {
     const key = getKey(transaction);
     if (!map[key]) {
@@ -121,7 +134,8 @@ function createMap<T extends BaseTransaction>({
     map[key].push(transaction);
   });
 
-  return map;
+  // Return ordered array of entries based on the original keys order
+  return orderedKeys.map((key) => [key, map[key] as T[]]);
 }
 
 interface AgentChartTransaction {
@@ -138,8 +152,8 @@ interface BaseTransaction {
 }
 
 type StackBuilder<T extends BaseTransaction> = (opts: {
-  transactions: T[],
-  label: string,
+  transactions: T[];
+  label: string;
 }) => ChartBarStack;
 
 /**
@@ -241,32 +255,29 @@ const createStackBuilder = <T extends BaseTransaction>({
   return buildStack;
 };
 
-const buildAgentStack = 
-  createStackBuilder<AgentChartTransaction>({
-    getKey: (transaction) => transaction.agentId,
-    getName: (transaction) => transaction.agentName,
-    getAvatar: (transaction) => transaction.agentAvatar,
-    getAdditionalData: () => ({}),
-    getType: () => "agent",
-  });
+const buildAgentStack = createStackBuilder<AgentChartTransaction>({
+  getKey: (transaction) => transaction.agentId,
+  getName: (transaction) => transaction.agentName,
+  getAvatar: (transaction) => transaction.agentAvatar,
+  getAdditionalData: () => ({}),
+  getType: () => "agent",
+});
 
-const buildUserStack = 
-  createStackBuilder<UserChartTransaction>({
-    getKey: (transaction) => transaction.userId,
-    getName: (transaction) => transaction.userName,
-    getAvatar: () => "",
-    getType: () => "user",
-    getAdditionalData: (transaction) => ({ member: transaction.member }),
-  });
+const buildUserStack = createStackBuilder<UserChartTransaction>({
+  getKey: (transaction) => transaction.userId,
+  getName: (transaction) => transaction.userName,
+  getAvatar: () => "",
+  getType: () => "user",
+  getAdditionalData: (transaction) => ({ member: transaction.member }),
+});
 
-const buildThreadStack = 
-  createStackBuilder<ThreadChartTransaction>({
-    getKey: (transaction) => transaction.threadId,
-    getName: (transaction) => transaction.threadTitle,
-    getAvatar: () => "",
-    getType: () => "thread",
-    getAdditionalData: () => ({}),
-  });
+const buildThreadStack = createStackBuilder<ThreadChartTransaction>({
+  getKey: (transaction) => transaction.threadId,
+  getName: (transaction) => transaction.threadTitle,
+  getAvatar: () => "",
+  getType: () => "thread",
+  getAdditionalData: () => ({}),
+});
 
 export function createAgentChartData(
   agents: Agent[],
@@ -299,60 +310,64 @@ export function createAgentChartData(
   }
 
   if (timeRange === "day") {
-    const keys = allDayHoursKeys();
-    const allTransactionsByDay = createMap({
-      keys: allDayHoursKeys,
-      fillWith: allTransactions,
-      getKey: dayId,
-    });
-    console.log("keys", keys);
-    console.log("allTransactionsByDay", Object.keys(allTransactionsByDay));
-    console.log("today", dayId({ timestamp: new Date().toISOString() }));
-    const todayTransactions =
-      allTransactionsByDay[dayId({ timestamp: new Date().toISOString() })];
-
-    if (!todayTransactions) {
-      throw new Error("Could not calculate agent chart data for today");
-    }
-
-    const allTransactionsByHour = createMap({
-      keys: allDayHoursKeys,
-      fillWith: todayTransactions,
-      getKey: hourId,
-    });
-    const groups = Object.entries(allTransactionsByHour);
-    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
-      transactions: transactions ?? [],
-      label,
-    }));
-    return chartStackedBars;
-  }
-
-  if (timeRange === "week") {
     const allTransactionsByDay = createMap({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const groups = Object.entries(allTransactionsByDay);
-    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const todayTransactions = allTransactionsByDay.find(
+      ([key]) => key === dayId({ timestamp: new Date().toISOString() }),
+    )?.[1] || [];
+
+    if (!todayTransactions.length) {
+      throw new Error("Could not calculate agent chart data for today");
+    }
+
+    const allTransactionsByHour = createMap<AgentChartTransaction>({
+      keys: allDayHoursKeys,
+      fillWith: todayTransactions,
+      getKey: hourId,
+    });
+    const chartStackedBars = allTransactionsByHour.map((
+      [label, transactions],
+    ) =>
+      buildAgentStack({
+        transactions: transactions,
+        label,
+      })
+    );
+    return chartStackedBars;
+  }
+
+  if (timeRange === "week") {
+    const allTransactionsByDay = createMap<AgentChartTransaction>({
+      keys: allWeekDaysKeys,
+      fillWith: allTransactions,
+      getKey: dayId,
+    });
+    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+      buildAgentStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
   if (timeRange === "month") {
-    const allTransactionsByWeek = createMap({
+    const allTransactionsByWeek = createMap<AgentChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
-    const groups = Object.entries(allTransactionsByWeek);
-    const chartStackedBars = groups.map(([label, transactions]) => buildAgentStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByWeek.map((
+      [label, transactions],
+    ) =>
+      buildAgentStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
@@ -398,44 +413,51 @@ export function createUserChartData(
   }
 
   if (timeRange === "day") {
-    const allTransactionsByHour = createMap({
+    const allTransactionsByHour = createMap<UserChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: allTransactions,
       getKey: hourId,
     });
-    const groups = Object.entries(allTransactionsByHour);
-    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByHour.map((
+      [label, transactions],
+    ) =>
+      buildUserStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
   if (timeRange === "week") {
-    const allTransactionsByDay = createMap({
+    const allTransactionsByDay = createMap<UserChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const groups = Object.entries(allTransactionsByDay);
-    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+      buildUserStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
   if (timeRange === "month") {
-    const allTransactionsByWeek = createMap({
+    const allTransactionsByWeek = createMap<UserChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
-    const groups = Object.entries(allTransactionsByWeek);
-    const chartStackedBars = groups.map(([label, transactions]) => buildUserStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByWeek.map((
+      [label, transactions],
+    ) =>
+      buildUserStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
@@ -477,47 +499,54 @@ export function createThreadChartData(
   }
 
   if (timeRange === "day") {
-    const allTransactionsByHour = createMap({
+    const allTransactionsByHour = createMap<ThreadChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: allTransactions,
       getKey: hourId,
     });
-    const groups = Object.entries(allTransactionsByHour);
 
-    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByHour.map((
+      [label, transactions],
+    ) =>
+      buildThreadStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
   if (timeRange === "week") {
-    const allTransactionsByDay = createMap({
+    const allTransactionsByDay = createMap<ThreadChartTransaction>({
       keys: allWeekDaysKeys,
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const groups = Object.entries(allTransactionsByDay);
 
-    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByDay.map(([label, transactions]) =>
+      buildThreadStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 
   if (timeRange === "month") {
-    const allTransactionsByWeek = createMap({
+    const allTransactionsByWeek = createMap<ThreadChartTransaction>({
       keys: allMonthWeeksKeys,
       fillWith: allTransactions,
       getKey: weekId,
     });
-    const groups = Object.entries(allTransactionsByWeek);
 
-    const chartStackedBars = groups.map(([label, transactions]) => buildThreadStack({
-      transactions: transactions ?? [],
-      label,
-    }));
+    const chartStackedBars = allTransactionsByWeek.map((
+      [label, transactions],
+    ) =>
+      buildThreadStack({
+        transactions: transactions,
+        label,
+      })
+    );
     return chartStackedBars;
   }
 

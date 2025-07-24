@@ -5,13 +5,17 @@ import {
   useWorkspaceWalletBalance,
 } from "@deco/sdk";
 import { Alert, AlertDescription } from "@deco/ui/components/alert.tsx";
-import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Progress } from "@deco/ui/components/progress.tsx";
 import { Skeleton } from "@deco/ui/components/skeleton.tsx";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@deco/ui/components/tooltip.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@deco/ui/components/tooltip.tsx";
 import { Suspense, useMemo, useState } from "react";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
@@ -47,7 +51,11 @@ function WalletBalanceCard() {
         <CardContent className="p-0 h-full flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Icon name="account_balance_wallet" size={16} className="text-muted-foreground" />
+              <Icon
+                name="account_balance_wallet"
+                size={16}
+                className="text-muted-foreground"
+              />
               <span className="text-sm font-medium text-muted-foreground">
                 Remaining Balance
               </span>
@@ -77,9 +85,13 @@ function WalletBalanceCard() {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="px-6 py-3 flex items-center gap-2">
-        <Icon name="info" size={16} className="text-muted-foreground opacity-50" />
+        <Icon
+          name="info"
+          size={16}
+          className="text-muted-foreground opacity-50"
+        />
         <span className="text-sm font-medium text-muted-foreground">
           Credits include plan-specific deposit fee
         </span>

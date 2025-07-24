@@ -8,8 +8,38 @@ import "../styles/global.css";
 const { title } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
+    <!-- Theme detection script - must be first to prevent flash -->
+    <script is:inline>
+      (function() {
+        // Get saved theme from localStorage or default to auto
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        
+        function applyTheme(theme) {
+          const html = document.documentElement;
+          
+          if (theme === 'auto') {
+            // Use system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+          } else {
+            html.setAttribute('data-theme', theme);
+          }
+        }
+        
+        // Apply theme immediately
+        applyTheme(savedTheme);
+        
+        // Listen for system theme changes if using auto
+        if (savedTheme === 'auto') {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            applyTheme('auto');
+          });
+        }
+      })();
+    </script>
+    
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,6 +49,17 @@ const { title } = Astro.props;
       rel="stylesheet"
     />
     <BaseHead title={title} />
+    
+    <!-- Prevent flash of unstyled content -->
+    <style>
+      /* Prevent flash by setting default theme immediately */
+      html {
+        color-scheme: light;
+      }
+      html[data-theme="dark"] {
+        color-scheme: dark;
+      }
+    </style>
   </head>
   <body class="bg-app-background text-foreground">
     <div class="flex h-screen overflow-hidden">

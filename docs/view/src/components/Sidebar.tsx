@@ -231,7 +231,7 @@ function ThemeToggle() {
     const savedTheme =
       localStorage.getItem("theme") as "light" | "dark" | "auto" || "auto";
     setTheme(savedTheme);
-    applyTheme(savedTheme);
+    // Don't apply theme here since the script in the head already does it
   }, []);
 
   const applyTheme = (newTheme: "light" | "dark" | "auto") => {

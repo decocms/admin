@@ -36,7 +36,11 @@ export function Navigation({ previous, next }: NavigationProps) {
             )
             : (
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
-                <Icon name="ChevronLeft" size={16} className="text-muted-foreground" />
+                <Icon
+                  name="ChevronLeft"
+                  size={16}
+                  className="text-muted-foreground"
+                />
                 <span className="text-sm text-muted-foreground leading-5">
                   Previous
                 </span>
@@ -69,7 +73,9 @@ export function Navigation({ previous, next }: NavigationProps) {
                 </div>
 
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                  <span className="text-sm text-muted-foreground leading-5">Next</span>
+                  <span className="text-sm text-muted-foreground leading-5">
+                    Next
+                  </span>
                   <Icon
                     name="ChevronRight"
                     size={16}
@@ -92,7 +98,9 @@ export function Navigation({ previous, next }: NavigationProps) {
                 </div>
 
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
-                  <span className="text-sm text-muted-foreground leading-5">Next</span>
+                  <span className="text-sm text-muted-foreground leading-5">
+                    Next
+                  </span>
                   <Icon
                     name="ChevronRight"
                     size={16}

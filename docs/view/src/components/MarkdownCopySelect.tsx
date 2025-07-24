@@ -53,7 +53,9 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
           className="flex items-center gap-3 px-3 py-2 rounded-l-lg hover:bg-muted transition-colors"
         >
           <Icon name="Copy" size={16} className="text-muted-foreground" />
-          <span className="text-sm text-muted-foreground leading-none">Copy page</span>
+          <span className="text-sm text-muted-foreground leading-none">
+            Copy page
+          </span>
         </button>
 
         {/* Dropdown trigger */}
@@ -62,7 +64,11 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center justify-center w-8 h-8 border-l border-border rounded-r-lg hover:bg-muted transition-colors"
         >
-          <Icon name="ChevronDown" size={16} className="text-muted-foreground" />
+          <Icon
+            name="ChevronDown"
+            size={16}
+            className="text-muted-foreground"
+          />
         </button>
       </div>
 
@@ -84,8 +90,14 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
               onClick={handleViewMarkdown}
               className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted transition-colors rounded-b-lg border-t border-border"
             >
-              <Icon name="FileText" size={16} className="text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">View as markdown</span>
+              <Icon
+                name="FileText"
+                size={16}
+                className="text-muted-foreground"
+              />
+              <span className="text-sm text-muted-foreground">
+                View as markdown
+              </span>
             </button>
           )}
         </div>

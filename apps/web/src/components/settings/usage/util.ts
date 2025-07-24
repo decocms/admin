@@ -34,12 +34,14 @@ export function color(id: string) {
  * Parses a currency value that can be either a string (with optional $ prefix) or a number.
  * Returns 0 if the value is invalid or NaN.
  */
-export function parseCurrencyString(value: string | number | undefined | null): number {
+export function parseCurrencyString(
+  value: string | number | undefined | null,
+): number {
   if (value === undefined || value === null) return 0;
-  
-  const parsed = typeof value === "string" 
-    ? parseFloat(value.replace("$", "")) 
+
+  const parsed = typeof value === "string"
+    ? parseFloat(value.replace("$", ""))
     : value;
-  
+
   return Number.isNaN(parsed) ? 0 : parsed;
 }

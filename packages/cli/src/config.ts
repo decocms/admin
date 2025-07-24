@@ -124,6 +124,7 @@ export const writeWranglerConfig = async (
   const targetCwd = cwd || Deno.cwd();
   const currentConfig = await readWranglerConfig(targetCwd);
   const mergedConfig = { ...currentConfig, ...config };
+  mergedConfig.scope ??= mergedConfig.scope ?? mergedConfig?.deco?.workspace;
   const configPath = getConfigFilePath(targetCwd) ??
     `${targetCwd}/${CONFIG_FILE}`;
   await Deno.writeTextFile(

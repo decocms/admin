@@ -6,23 +6,37 @@ icon: Rocket
 
 **deco.chat is an open-source foundation for building AI-native software.**
 
-We provide the core components to create tools, workflows, custom views and complete AI-powered systems.
+We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
+prototype, develop, and deploy AI-powered applications.
 
-This repo is for anyone building AI-first software, from vibecoders prototyping ideas to agentic engineers shipping production systems.
+## Who is it for?
 
-Our goal is to help teams adopt GenAI by giving builders the tools to create sustainable, governed AI-native applications that scale beyond the initial demo and into the thousands of users, securely and cost-effectively.
+- **Vibecoders** prototyping ideas
+- **Agentic engineers** deploying scalable, secure, and sustainable production
+  systems
 
-## Core Capabilities
+## Why deco.chat?
 
-- **Open‑source runtime** that lets you compose tools, workflows, and views within a single codebase.
-- **MCP Mesh (Model Context Protocol)**: Connect models, data stores, and APIs with security, observability, and cost control.
-- **Unified TypeScript stack** — backend logic and custom React/Tailwind UIs in the same repo, with typed RPC bindings.
-- **Modular infrastructure** deployed on Cloudflare for global, low-latency execution. Self-host with only your Cloudflare API Key and scale infinitely.
-- **Visual workspace** where anyone can build agents, connect tools, manage permissions, and leverage everything built in code.
+Our goal is simple: empower teams with Generative AI by giving builders
+the tools to create AI applications that scale beyond the initial demo and
+into the thousands of users, securely and cost-effectively.
+
+## Core capabilities
+
+- **Open-source Runtime** – Easily compose tools, workflows, and views within a
+  single codebase
+- **MCP Mesh (Model Context Protocol)** – Securely integrate models, data
+  sources, and APIs, with observability and cost control
+- **Unified TypeScript Stack** – Combine backend logic and custom React/Tailwind
+  frontends seamlessly using typed RPC
+- **Global, Modular Infrastructure** – Built on Cloudflare for low-latency,
+  infinitely scalable deployments. Self-host with your Cloudflare API Key
+- **Visual Workspace** – Build agents, connect tools, manage permissions, and
+  orchestrate everything built in code
 
 ## Core Concepts
 
-Before diving in, let's quickly define a few core ideas in deco.chat:
+Before diving in, let's quickly define a few core concepts:
 
 ### Tools
 
@@ -38,7 +52,7 @@ The protocol underpinning deco.chat that connects AI models (like Claude or GPT)
 
 ### Agents
 
-Autonomous AI actors (backed by LLMs) that you configure with a name, description, and behavior prompt. Agents can converse in natural language and decide when to call Tools to perform actions.
+Autonomous AI actors (backed by LLMs) that you configure with a name, description, and behavior prompt. Agents can chat in natural language and decide when to call Tools to perform actions.
 
 ### Integrations
 
@@ -46,6 +60,8 @@ Pre-built or custom connections to external services and data sources. Integrati
 
 ## Creating a new Deco Project
 
-A **Deco project** extends a standard Cloudflare Worker with our building blocks and defaults designed for MCP servers. It runs an MCP server with a type-safe API by default and can also serve views — front-end apps deployed together with the server.
+## Creating a new Deco project
 
-For now, views can be any Vite app that outputs a static build. Soon, we'll support view components declared as tools, making them callable by your app logic or LLMs. Views can call server-side tools through type-safe RPC.
+A Deco project extends a standard Cloudflare Worker with our building blocks and defaults for MCP servers. It runs a type-safe API out of the box and can also serve views — front-end apps deployed alongside the server.
+
+Currently, views can be any Vite app that outputs a static build. Soon, they’ll support components declared as tools, callable by app logic or LLMs. Views can call server-side tools via typed RPC.

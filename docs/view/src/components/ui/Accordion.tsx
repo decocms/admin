@@ -8,12 +8,15 @@ interface AccordionProps {
   icon?: string;
 }
 
-export function Accordion({ title, children, defaultOpen = false, icon = "Bolt" }: AccordionProps) {
+export function Accordion(
+  { title, children, defaultOpen = false, icon = "Bolt" }: AccordionProps,
+) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div className="accordion my-6 border border-border rounded-xl overflow-hidden">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between cursor-pointer p-4 text-left hover:bg-muted transition-colors h-full"
       >
@@ -21,9 +24,9 @@ export function Accordion({ title, children, defaultOpen = false, icon = "Bolt" 
           <Icon name={icon} size={16} className="text-foreground" />
           <span className="text-foreground font-normal">{title}</span>
         </div>
-        <Icon 
-          name={isOpen ? "ChevronDown" : "ChevronRight"} 
-          size={16} 
+        <Icon
+          name={isOpen ? "ChevronDown" : "ChevronRight"}
+          size={16}
           className="text-foreground transition-transform duration-200"
         />
       </button>
@@ -36,4 +39,4 @@ export function Accordion({ title, children, defaultOpen = false, icon = "Bolt" 
       )}
     </div>
   );
-} 
+}

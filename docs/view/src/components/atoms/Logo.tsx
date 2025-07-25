@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import decoLight from "../../assets/deco-light.svg?url";
 import decoDark from "../../assets/deco-dark.svg?url";
 
@@ -14,20 +14,21 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
 
   useEffect(() => {
     setIsClient(true);
-    
+
     const checkTheme = () => {
-      const html = document.documentElement;
+      const _html = document.documentElement;
       const savedTheme = localStorage.getItem("theme") || "auto";
-      
+
       let isDarkTheme = false;
-      
+
       if (savedTheme === "auto") {
         // Use system preference
-        isDarkTheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        isDarkTheme =
+          globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
       } else {
         isDarkTheme = savedTheme === "dark";
       }
-      
+
       setIsDark(isDarkTheme);
     };
 
@@ -37,7 +38,10 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
     // Watch for theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
+        if (
+          mutation.type === "attributes" &&
+          mutation.attributeName === "data-theme"
+        ) {
           checkTheme();
         }
       });
@@ -49,7 +53,7 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
     });
 
     // Listen for system theme changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const mediaQuery = globalThis.matchMedia("(prefers-color-scheme: dark)");
     mediaQuery.addEventListener("change", checkTheme);
 
     return () => {

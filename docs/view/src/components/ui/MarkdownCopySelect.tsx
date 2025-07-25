@@ -5,7 +5,9 @@ export interface MarkdownCopySelectProps {
   markdownPath?: string;
 }
 
-export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
+export function MarkdownCopySelect(
+  { markdownPath: _markdownPath }: MarkdownCopySelectProps,
+) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,9 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
 
   const handleOpenInChatGPT = () => {
     const currentUrl = globalThis.location.href;
-    const chatGPTUrl = `https://chatgpt.com/?hints=search&q=Read%20from%20${encodeURIComponent(currentUrl)}%20so%20I%20can%20ask%20questions%20about%20it.`;
+    const chatGPTUrl = `https://chatgpt.com/?hints=search&q=Read%20from%20${
+      encodeURIComponent(currentUrl)
+    }%20so%20I%20can%20ask%20questions%20about%20it.`;
     globalThis.open(chatGPTUrl, "_blank");
     setIsOpen(false);
   };
@@ -94,10 +98,18 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
             onClick={handleCopyPage}
             className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors rounded-t-lg"
           >
-            <Icon name="Copy" size={16} className="text-muted-foreground mt-0.5" />
+            <Icon
+              name="Copy"
+              size={16}
+              className="text-muted-foreground mt-0.5"
+            />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">Copy page</div>
-              <div className="text-xs text-muted-foreground">Copy page as Markdown for LLMs</div>
+              <div className="text-sm font-medium text-foreground">
+                Copy page
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Copy page as Markdown for LLMs
+              </div>
             </div>
           </button>
 
@@ -112,8 +124,12 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
               className="text-muted-foreground mt-0.5"
             />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">Copy link</div>
-              <div className="text-xs text-muted-foreground">Copy this page URL</div>
+              <div className="text-sm font-medium text-foreground">
+                Copy link
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Copy this page URL
+              </div>
             </div>
           </button>
 
@@ -128,12 +144,17 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
               className="text-muted-foreground mt-0.5"
             />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground">Open in ChatGPT</div>
-              <div className="text-xs text-muted-foreground">Ask questions about this page</div>
+              <div className="text-sm font-medium text-foreground">
+                Open in ChatGPT
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Ask questions about this page
+              </div>
             </div>
           </button>
 
-          {/* Commented out the "View as Markdown" option
+          {
+            /* Commented out the "View as Markdown" option
           {markdownPath && (
             <button
               type="button"
@@ -151,7 +172,8 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
               </div>
             </button>
           )}
-          */}
+          */
+          }
         </div>
       )}
     </div>

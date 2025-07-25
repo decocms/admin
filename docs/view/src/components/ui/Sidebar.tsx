@@ -223,8 +223,6 @@ function TreeList(
   );
 }
 
-
-
 export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   const [treeState, setTreeState] = useState<Map<string, boolean>>(new Map());
 

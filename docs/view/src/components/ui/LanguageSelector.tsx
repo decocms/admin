@@ -30,4 +30,4 @@ export function LanguageSelector({ locale, className }: LanguageSelectorProps) {
       onChange={handleChange}
     />
   );
-} 
+}

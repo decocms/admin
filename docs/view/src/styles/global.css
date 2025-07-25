@@ -42,7 +42,7 @@
     overflow-x: auto;
     white-space: pre;
   }
-  
+
   /* Better table handling */
   .prose table {
     display: block;
@@ -68,7 +68,7 @@
     width: 100vw;
     max-width: 19rem;
   }
-  
+
   /* Improve mobile overlay */
   #mobile-overlay {
     backdrop-filter: blur(4px);
@@ -264,8 +264,6 @@ pre .astro-code > *:first-child {
   scrollbar-color: var(--border) transparent;
 }
 
-
-
 @theme {
   --font-sans: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -415,52 +413,52 @@ pre .astro-code > *:first-child {
   --tw-prose-td-borders: var(--color-border);
 }
 
-  /* Dark Mode Colors - Using Starlight's [data-theme="dark"] approach */
-  [data-theme="dark"] {
-    --background: oklch(26.8% 0.007 34.298);
-    --app-background: oklch(21.6% 0.006 56.043);
-    --foreground: oklch(98.5% 0.001 106.423);
-    --card: oklch(26.8% 0.007 34.298);
-    --card-foreground: oklch(98.5% 0.001 106.423);
-    --popover: oklch(26.8% 0.007 34.298);
-    --popover-foreground: oklch(98.5% 0.001 106.423);
-    --primary: oklch(0.8916 0.2037 118.17);
-    --primary-foreground: oklch(0.3266 0.0858 149.2);
-    --secondary: oklch(26.8% 0.007 34.298);
-    --secondary-foreground: oklch(98.5% 0.001 106.423);
-    --muted: oklch(37.4% 0.01 67.558);
-    --muted-foreground: oklch(70.9% 0.01 56.259);
-    --accent: oklch(37.4% 0.01 67.558);
-    --accent-foreground: oklch(98.5% 0.001 106.423);
-    --destructive: oklch(0.704 0.191 22.216);
-    --destructive-foreground: oklch(98.5% 0.001 106.423);
-    --success: oklch(0.696 0.17 162.48);
-    --success-foreground: oklch(98.5% 0.001 106.423);
-    --warning: oklch(0.769 0.188 70.08);
-    --warning-foreground: oklch(98.5% 0.001 106.423);
-    --border: oklch(0.444 0.011 73.64 / 40%);
-    --input: oklch(44.4% 0.011 73.639);
-    --ring: oklch(0.553 0.013 58.071);
+/* Dark Mode Colors - Using Starlight's [data-theme="dark"] approach */
+[data-theme="dark"] {
+  --background: oklch(26.8% 0.007 34.298);
+  --app-background: oklch(21.6% 0.006 56.043);
+  --foreground: oklch(98.5% 0.001 106.423);
+  --card: oklch(26.8% 0.007 34.298);
+  --card-foreground: oklch(98.5% 0.001 106.423);
+  --popover: oklch(26.8% 0.007 34.298);
+  --popover-foreground: oklch(98.5% 0.001 106.423);
+  --primary: oklch(0.8916 0.2037 118.17);
+  --primary-foreground: oklch(0.3266 0.0858 149.2);
+  --secondary: oklch(26.8% 0.007 34.298);
+  --secondary-foreground: oklch(98.5% 0.001 106.423);
+  --muted: oklch(37.4% 0.01 67.558);
+  --muted-foreground: oklch(70.9% 0.01 56.259);
+  --accent: oklch(37.4% 0.01 67.558);
+  --accent-foreground: oklch(98.5% 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(98.5% 0.001 106.423);
+  --success: oklch(0.696 0.17 162.48);
+  --success-foreground: oklch(98.5% 0.001 106.423);
+  --warning: oklch(0.769 0.188 70.08);
+  --warning-foreground: oklch(98.5% 0.001 106.423);
+  --border: oklch(0.444 0.011 73.64 / 40%);
+  --input: oklch(44.4% 0.011 73.639);
+  --ring: oklch(0.553 0.013 58.071);
 
-    /* Callout Colors - Dark Mode (from Figma) */
-    --callout-info-bg: oklch(21.6% 0.006 56.043); /* stone-900 */
-    --callout-info-border: oklch(37.4% 0.01 67.558 / 60%); /* stone-700 */
-    --callout-info-text: oklch(97% 0.001 106.424); /* stone-50 */
-    --callout-warning-bg: oklch(76.9% 0.188 70.08 / 10%); /* amber-950 */
-    --callout-warning-border: oklch(76.9% 0.188 70.08 / 50%); /* amber-800 */
-    --callout-warning-text: oklch(96.2% 0.059 95.617); /* amber-100 */
-    --callout-error-bg: oklch(63.7% 0.237 25.331 / 10%); /* red-950 */
-    --callout-error-border: oklch(63.7% 0.237 25.331 / 50%); /* red-800 */
-    --callout-error-text: oklch(88.5% 0.062 18.334); /* red-200 */
-    --callout-success-bg: oklch(76.8% 0.233 130.85 / 10%); /* lime-950 */
-    --callout-success-border: oklch(76.8% 0.233 130.85 / 50%); /* lime-800 */
-    --callout-success-text: oklch(96.7% 0.067 122.328); /* lime-100 */
-    --callout-tip-bg: oklch(76.8% 0.233 130.85 / 10%); /* lime-950 */
-    --callout-tip-border: oklch(76.8% 0.233 130.85 / 50%); /* lime-800 */
-    --callout-tip-text: oklch(96.7% 0.067 122.328); /* lime-100 */
-    --callout-note-bg: oklch(68.5% 0.169 237.323 / 10%); /* sky-900 */
-    --callout-note-border: oklch(68.5% 0.169 237.323 / 50%); /* sky-700 */
-    --callout-note-text: oklch(95.1% 0.026 236.824); /* sky-100 */
+  /* Callout Colors - Dark Mode (from Figma) */
+  --callout-info-bg: oklch(21.6% 0.006 56.043); /* stone-900 */
+  --callout-info-border: oklch(37.4% 0.01 67.558 / 60%); /* stone-700 */
+  --callout-info-text: oklch(97% 0.001 106.424); /* stone-50 */
+  --callout-warning-bg: oklch(76.9% 0.188 70.08 / 10%); /* amber-950 */
+  --callout-warning-border: oklch(76.9% 0.188 70.08 / 50%); /* amber-800 */
+  --callout-warning-text: oklch(96.2% 0.059 95.617); /* amber-100 */
+  --callout-error-bg: oklch(63.7% 0.237 25.331 / 10%); /* red-950 */
+  --callout-error-border: oklch(63.7% 0.237 25.331 / 50%); /* red-800 */
+  --callout-error-text: oklch(88.5% 0.062 18.334); /* red-200 */
+  --callout-success-bg: oklch(76.8% 0.233 130.85 / 10%); /* lime-950 */
+  --callout-success-border: oklch(76.8% 0.233 130.85 / 50%); /* lime-800 */
+  --callout-success-text: oklch(96.7% 0.067 122.328); /* lime-100 */
+  --callout-tip-bg: oklch(76.8% 0.233 130.85 / 10%); /* lime-950 */
+  --callout-tip-border: oklch(76.8% 0.233 130.85 / 50%); /* lime-800 */
+  --callout-tip-text: oklch(96.7% 0.067 122.328); /* lime-100 */
+  --callout-note-bg: oklch(68.5% 0.169 237.323 / 10%); /* sky-900 */
+  --callout-note-border: oklch(68.5% 0.169 237.323 / 50%); /* sky-700 */
+  --callout-note-text: oklch(95.1% 0.026 236.824); /* sky-100 */
 
   /* Dark Chart Colors */
   --chart-1: oklch(0.488 0.243 264.376);

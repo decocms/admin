@@ -10,4 +10,4 @@ export function AccordionGroup({ children }: AccordionGroupProps) {
       {children}
     </div>
   );
-} 
+}

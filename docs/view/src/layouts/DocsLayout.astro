@@ -1,9 +1,9 @@
 ---
-import BaseHead from "../components/BaseHead.astro";
-import Footer from "../components/Footer.astro";
-import Header from "../components/Header.astro";
-import Sidebar from "../components/Sidebar.astro";
-import TableOfContents from "../components/TableOfContents.astro";
+import BaseHead from "../components/ui/BaseHead.astro";
+import Footer from "../components/ui/Footer.astro";
+import Header from "../components/ui/Header.astro";
+import Sidebar from "../components/ui/Sidebar.astro";
+import TableOfContents from "../components/ui/TableOfContents.astro";
 import "../styles/global.css";
 const { title } = Astro.props;
 ---
@@ -12,34 +12,38 @@ const { title } = Astro.props;
   <head>
     <!-- Theme detection script - must be first to prevent flash -->
     <script is:inline>
-      (function() {
+      (function () {
         // Get saved theme from localStorage or default to auto
-        const savedTheme = localStorage.getItem('theme') || 'auto';
-        
+        const savedTheme = localStorage.getItem("theme") || "auto";
+
         function applyTheme(theme) {
           const html = document.documentElement;
-          
-          if (theme === 'auto') {
+
+          if (theme === "auto") {
             // Use system preference
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            const prefersDark = window.matchMedia(
+              "(prefers-color-scheme: dark)"
+            ).matches;
+            html.setAttribute("data-theme", prefersDark ? "dark" : "light");
           } else {
-            html.setAttribute('data-theme', theme);
+            html.setAttribute("data-theme", theme);
           }
         }
-        
+
         // Apply theme immediately
         applyTheme(savedTheme);
-        
+
         // Listen for system theme changes if using auto
-        if (savedTheme === 'auto') {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            applyTheme('auto');
-          });
+        if (savedTheme === "auto") {
+          window
+            .matchMedia("(prefers-color-scheme: dark)")
+            .addEventListener("change", function (e) {
+              applyTheme("auto");
+            });
         }
       })();
     </script>
-    
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -49,7 +53,7 @@ const { title } = Astro.props;
       rel="stylesheet"
     />
     <BaseHead title={title} />
-    
+
     <!-- Prevent flash of unstyled content -->
     <style>
       /* Prevent flash by setting default theme immediately */
@@ -67,11 +71,11 @@ const { title } = Astro.props;
         <Sidebar />
       </div>
       <div class="flex-1 overflow-y-auto scrollbar-hide">
-        <div class="flex">
-          <article class="flex-1 px-8 py-6">
+        <div class="flex min-h-full py-16 px-8 gap-x-8">
+          <article class="flex-1">
             <slot />
           </article>
-          <div class="w-64 shrink-0">
+          <div class="w-80 shrink-0">
             <TableOfContents />
           </div>
         </div>

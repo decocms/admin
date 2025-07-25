@@ -1,5 +1,5 @@
 import React from "react";
-import { Icon } from "./Icon";
+import { Icon } from "../../components/atoms/Icon";
 
 export interface NavigationLink {
   title: string;

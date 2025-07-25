@@ -2,9 +2,8 @@
 import { useTranslations } from "../../i18n/utils";
 import { ui, languages } from "../../i18n/ui";
 import DocsLayout from "../../layouts/DocsLayout.astro";
-import Home from "../../components/Home.astro";
 import { getCollection } from "astro:content";
-import RenderDocument from "../../components/RenderDocument.astro";
+import RenderDocument from "../../components/ui/RenderDocument.astro";
 
 const lang = Astro.params.locale;
 const t = useTranslations(lang as keyof typeof ui);

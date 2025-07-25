@@ -1,7 +1,21 @@
 ---
 import { render } from "astro:content";
 import { PageTitle } from "./PageTitle";
-import Pre from "./markdown/Pre.astro";
+import Pre from "../../components/markdown/Pre.astro";
+import Blockquote from "../../components/markdown/Blockquote.astro";
+import Code from "../../components/markdown/Code.astro";
+import Table from "../../components/markdown/Table.astro";
+import Thead from "../../components/markdown/Thead.astro";
+import Tbody from "../../components/markdown/Tbody.astro";
+import Tr from "../../components/markdown/Tr.astro";
+import Th from "../../components/markdown/Th.astro";
+import Td from "../../components/markdown/Td.astro";
+import Img from "../../components/markdown/Img.astro";
+import { Accordion } from "./Accordion";
+import { AccordionGroup } from "./AccordionGroup";
+import Callout from "./Callout.astro";
+import Card from "./Card.astro";
+import { Properties } from "./Properties";
 
 const { doc } = Astro.props;
 const { Content } = await render(doc);
@@ -19,6 +33,20 @@ const markdownPath = `/src/content/${doc.id}.mdx`;
 // Components mapping for custom markdown rendering
 const components = {
   pre: Pre,
+  blockquote: Blockquote,
+  code: Code,
+  table: Table,
+  thead: Thead,
+  tbody: Tbody,
+  tr: Tr,
+  th: Th,
+  td: Td,
+  img: Img,
+  Accordion,
+  AccordionGroup,
+  Callout,
+  Card,
+  Properties,
 };
 ---
 

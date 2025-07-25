@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Icon } from "./Icon";
+import { Icon } from "../../components/atoms/Icon";
 
 export interface MarkdownCopySelectProps {
   markdownPath?: string;
@@ -50,7 +50,7 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
         <button
           type="button"
           onClick={handleCopyPage}
-          className="flex items-center gap-3 px-3 py-2 rounded-l-lg hover:bg-muted transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-l-lg cursor-pointer hover:bg-muted transition-colors"
         >
           <Icon name="Copy" size={16} className="text-muted-foreground" />
           <span className="text-sm text-muted-foreground leading-none">
@@ -62,7 +62,7 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-center w-8 h-8 border-l border-border rounded-r-lg hover:bg-muted transition-colors"
+          className="flex items-center cursor-pointer justify-center w-8 h-8 border-l border-border rounded-r-lg hover:bg-muted transition-colors"
         >
           <Icon
             name="ChevronDown"
@@ -74,30 +74,34 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-app-background border border-border rounded-lg shadow-lg z-10 min-w-[140px]">
+        <div className="absolute top-full right-0 mt-1 bg-app-background border border-border rounded-lg shadow-lg z-10 min-w-[280px]">
           <button
             type="button"
             onClick={handleCopyPage}
-            className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted transition-colors rounded-t-lg"
+            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors rounded-t-lg"
           >
-            <Icon name="Copy" size={16} className="text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Copy page</span>
+            <Icon name="Copy" size={16} className="text-muted-foreground mt-0.5" />
+            <div className="flex-1">
+              <div className="text-sm font-medium text-foreground">Copy page</div>
+              <div className="text-xs text-muted-foreground">Copy page as Markdown for LLMs</div>
+            </div>
           </button>
 
           {markdownPath && (
             <button
               type="button"
               onClick={handleViewMarkdown}
-              className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-muted transition-colors rounded-b-lg border-t border-border"
+              className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border rounded-b-lg"
             >
               <Icon
                 name="FileText"
                 size={16}
-                className="text-muted-foreground"
+                className="text-muted-foreground mt-0.5"
               />
-              <span className="text-sm text-muted-foreground">
-                View as markdown
-              </span>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground">View as Markdown</div>
+                <div className="text-xs text-muted-foreground">View this page as plain text</div>
+              </div>
             </button>
           )}
         </div>

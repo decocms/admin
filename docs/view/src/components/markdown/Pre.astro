@@ -3,8 +3,4 @@ const props = Astro.props;
 console.log(props);
 ---
 
-<pre
-  {...props}
-  class="bg-blue-50 !pl-0">
-  <slot /> <!-- Be sure to add a `<slot/>` for child content! -->
-</pre>
+<pre {...props}><slot /></pre>

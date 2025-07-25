@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Logo } from "./Logo.tsx";
-import { Button } from "./Button.tsx";
-import { Select } from "./Select.tsx";
-import { Icon } from "./Icon.tsx";
+import { Logo } from "../../components/atoms/Logo.tsx";
+import { Button } from "../../components/atoms/Button.tsx";
+import { Select } from "../../components/atoms/Select.tsx";
+import { Icon } from "../../components/atoms/Icon.tsx";
 
 interface DocData {
   title?: string;
@@ -193,12 +193,12 @@ function TreeList(
         return (
           <React.Fragment key={node.id}>
             {needsSeparator && (
-              <li className="my-6">
-                <div className="h-px bg-sidebar-border" />
+              <li className="my-3">
+                <div className="h-px bg-border/50" />
               </li>
             )}
             {needsSectionTitle && (
-              <li className="mt-6 first:mt-0">
+              <li className="mt-3 first:mt-0">
                 <div className="px-3 py-2">
                   <h3 className="text-sm font-medium text-foreground">
                     {translations[`sidebar.section.${node.name}`] || node.name}
@@ -384,7 +384,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
           >
             <span className="flex-1 ">Discord community</span>
             <Icon
-              name="MoveUpRight"
+              name="ArrowUpRight"
               size={16}
               className="text-muted-foreground"
             />
@@ -395,7 +395,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
           >
             <span className="flex-1">Get started</span>
             <Icon
-              name="MoveUpRight"
+              name="ArrowUpRight"
               size={16}
               className="text-muted-foreground"
             />

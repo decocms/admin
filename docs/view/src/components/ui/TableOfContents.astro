@@ -1,11 +1,11 @@
 ---
-import { Icon } from "./Icon.tsx";
+import { Icon } from "../../components/atoms/Icon.tsx";
 ---
 
-<div class="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto w-64">
-  <div class="flex items-center gap-3 p-6">
-    <Icon name="List" size={16} />
-    <p class="text-sm">On this page</p>
+<div class="sticky max-h-[calc(100vh-2rem)] overflow-y-auto w-80">
+  <div class="flex items-center gap-3 p-6 text-muted-foreground">
+    <Icon name="BookOpenText" size={16} />
+    <p class="text-sm text-foreground">On this page</p>
   </div>
 
   <div id="toc" class="px-6 pb-6">
@@ -14,19 +14,15 @@ import { Icon } from "./Icon.tsx";
 </div>
 
 <script is:inline>
-  console.log("TOC: Script loaded");
-
   function buildToc() {
     const content = document.getElementById("rendered-content");
     const toc = document.getElementById("toc");
 
     if (!content || !toc) {
-      console.log("TOC: Missing elements");
       return;
     }
 
     const headings = content.querySelectorAll("h2, h3, h4");
-    console.log("TOC: Found", headings.length, "headings");
 
     if (headings.length === 0) {
       toc.innerHTML =
@@ -53,14 +49,12 @@ import { Icon } from "./Icon.tsx";
     });
 
     toc.innerHTML = html;
-    console.log("TOC: Built successfully");
 
     // Add click handlers
     const links = toc.querySelectorAll("a");
     links.forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
-        console.log("TOC: Clicked", link.textContent);
 
         // Remove all active classes and inline styles
         document.querySelectorAll(".toc-item").forEach((item) => {
@@ -74,37 +68,19 @@ import { Icon } from "./Icon.tsx";
         const tocItem = link.closest(".toc-item");
         if (tocItem) {
           tocItem.classList.add("active");
-          tocItem.style.borderLeftColor = "#10b981";
-          link.style.color = "#10b981";
-          console.log("TOC: Set active class and inline styles");
+          tocItem.style.borderLeftColor = "var(--color-primary)";
+          link.style.color = "var(--color-primary)";
         }
 
         // Scroll to target - fixed selector issue
         const href = link.getAttribute("href");
-        console.log("TOC: Target href:", href);
 
         if (href) {
           const id = href.substring(1); // Remove the # from href
           const target = document.getElementById(id); // Use getElementById instead
-          console.log("TOC: Found target:", target);
 
           if (target) {
-            console.log(
-              "TOC: Target position before scroll:",
-              target.getBoundingClientRect()
-            );
             target.scrollIntoView({ behavior: "smooth" });
-            console.log("TOC: Scrolled to", href);
-
-            // Check position after scroll
-            setTimeout(() => {
-              console.log(
-                "TOC: Target position after scroll:",
-                target.getBoundingClientRect()
-              );
-            }, 500);
-          } else {
-            console.log("TOC: Target not found for", href);
           }
         }
       });
@@ -156,10 +132,9 @@ import { Icon } from "./Icon.tsx";
       const activeItem = document.querySelector(`[data-id="${activeId}"]`);
       if (activeItem) {
         activeItem.classList.add("active");
-        activeItem.style.borderLeftColor = "#10b981";
+        activeItem.style.borderLeftColor = "var(--color-primary)";
         const link = activeItem.querySelector("a");
-        if (link) link.style.color = "#10b981";
-        console.log("TOC: Scroll active:", activeId);
+        if (link) link.style.color = "var(--color-primary)";
       }
     }
   }
@@ -178,9 +153,9 @@ import { Icon } from "./Icon.tsx";
 
 <style>
   .toc-item.active {
-    border-left-color: #10b981 !important;
+    border-left-color: var(--color-primary) !important;
   }
   .toc-item.active a {
-    color: #10b981 !important;
+    color: var(--color-primary) !important;
   }
 </style>

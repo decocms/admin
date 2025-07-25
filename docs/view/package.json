@@ -20,11 +20,11 @@
     "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "rehype-mdx-code-props": "^3.0.1",
     "sharp": "^0.34.2",
     "shiki": "^3.8.1",
     "tailwindcss": "^4.0.7",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16"

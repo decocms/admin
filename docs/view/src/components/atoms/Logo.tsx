@@ -1,5 +1,5 @@
-import decoLight from "../assets/deco-light.svg?url";
-import decoDark from "../assets/deco-dark.svg?url";
+import decoLight from "../../assets/deco-light.svg?url";
+import decoDark from "../../assets/deco-dark.svg?url";
 
 interface LogoProps {
   className?: string;

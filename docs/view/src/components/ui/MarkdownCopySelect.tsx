@@ -27,6 +27,21 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
 
   const handleCopyPage = async () => {
     try {
+      // Copy the whole markdown page content
+      const content = document.getElementById("rendered-content");
+      if (content) {
+        const markdownText = content.textContent || "";
+        await navigator.clipboard.writeText(markdownText);
+      }
+      setIsOpen(false);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error("Failed to copy page content:", err);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
       await navigator.clipboard.writeText(globalThis.location.href);
       setIsOpen(false);
       // You could add a toast notification here
@@ -35,11 +50,10 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
     }
   };
 
-  const handleViewMarkdown = () => {
-    if (markdownPath) {
-      // Open the markdown file in a new tab
-      globalThis.open(markdownPath, "_blank");
-    }
+  const handleOpenInChatGPT = () => {
+    const currentUrl = globalThis.location.href;
+    const chatGPTUrl = `https://chatgpt.com/?hints=search&q=Read%20from%20${encodeURIComponent(currentUrl)}%20so%20I%20can%20ask%20questions%20about%20it.`;
+    globalThis.open(chatGPTUrl, "_blank");
     setIsOpen(false);
   };
 
@@ -87,6 +101,39 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
             </div>
           </button>
 
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border"
+          >
+            <Icon
+              name="Link"
+              size={16}
+              className="text-muted-foreground mt-0.5"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-medium text-foreground">Copy link</div>
+              <div className="text-xs text-muted-foreground">Copy this page URL</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenInChatGPT}
+            className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-muted transition-colors border-t border-border rounded-b-lg"
+          >
+            <Icon
+              name="ArrowUpRight"
+              size={16}
+              className="text-muted-foreground mt-0.5"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-medium text-foreground">Open in ChatGPT</div>
+              <div className="text-xs text-muted-foreground">Ask questions about this page</div>
+            </div>
+          </button>
+
+          {/* Commented out the "View as Markdown" option
           {markdownPath && (
             <button
               type="button"
@@ -104,6 +151,7 @@ export function MarkdownCopySelect({ markdownPath }: MarkdownCopySelectProps) {
               </div>
             </button>
           )}
+          */}
         </div>
       )}
     </div>

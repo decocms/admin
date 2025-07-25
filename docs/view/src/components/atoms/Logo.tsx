@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import decoLight from "../../assets/deco-light.svg?url";
 import decoDark from "../../assets/deco-dark.svg?url";
 
@@ -8,23 +9,41 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkTheme = () => {
+      const theme = document.documentElement.getAttribute("data-theme");
+      setIsDark(theme === "dark");
+    };
+
+    // Check initial theme
+    checkTheme();
+
+    // Watch for theme changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "attributes" && mutation.attributeName === "data-theme") {
+          checkTheme();
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className={`relative ${className}`}>
-      {/* Light theme logo */}
       <img
-        src={decoLight}
+        src={isDark ? decoDark : decoLight}
         alt="Deco"
         width={width}
         height={height}
-        className="block dark:hidden"
-      />
-      {/* Dark theme logo */}
-      <img
-        src={decoDark}
-        alt="Deco"
-        width={width}
-        height={height}
-        className="hidden dark:block"
       />
     </div>
   );

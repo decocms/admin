@@ -76,7 +76,9 @@ const { title } = Astro.props;
             <slot />
           </article>
           <div class="w-80 shrink-0">
-            <TableOfContents />
+            <div class="sticky top-16">
+              <TableOfContents />
+            </div>
           </div>
         </div>
       </div>

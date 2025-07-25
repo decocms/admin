@@ -169,6 +169,17 @@ pre .astro-code > *:first-child {
   margin-bottom: 0 !important;
 }
 
+/* Remove margins from images in prose */
+.prose img {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Preserve whitespace between paragraphs in prose */
+.prose p + p {
+  margin-top: 1rem !important;
+}
+
 /* Fix accordion spacing when multiple */
 .prose .accordion + .accordion {
   margin-top: 0.5rem !important;
@@ -310,6 +321,7 @@ pre .astro-code > *:first-child {
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-star: var(--star);
 
   /* Light Mode Colors */
   --background: oklch(1 0 0);
@@ -336,6 +348,7 @@ pre .astro-code > *:first-child {
   --border: oklch(92.3% 0.003 48.717);
   --input: oklch(92.3% 0.003 48.717);
   --ring: oklch(0.709 0.01 56.259);
+  --star: oklch(68.1% 0.162 75.834);
 
   /* Callout Colors - Light Mode (from Figma) */
   --callout-info-bg: #f5f5f4; /* stone-100 */
@@ -439,6 +452,7 @@ pre .astro-code > *:first-child {
   --border: oklch(0.444 0.011 73.64 / 40%);
   --input: oklch(44.4% 0.011 73.639);
   --ring: oklch(0.553 0.013 58.071);
+  --star: oklch(0.9 0.15 85.0);
 
   /* Callout Colors - Dark Mode (from Figma) */
   --callout-info-bg: oklch(21.6% 0.006 56.043); /* stone-900 */

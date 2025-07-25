@@ -4,6 +4,52 @@ import { Icon } from "../../components/atoms/Icon.tsx";
 import { LanguageSelector } from "./LanguageSelector.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
 
+// GitHub Stars Component
+function GitHubStars() {
+  const [stars, setStars] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStars = async () => {
+      try {
+        const response = await fetch(
+          "https://api.github.com/repos/deco-cx/chat",
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setStars(data.stargazers_count);
+        }
+      } catch (error) {
+        console.error("Failed to fetch GitHub stars:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStars();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1 text-star">
+        <Icon name="Star" size={14} />
+        <span className="text-xs">...</span>
+      </div>
+    );
+  }
+
+  if (stars === null) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-1 text-star">
+      <Icon name="Star" size={14} />
+      <span className="text-xs">{stars.toLocaleString()}</span>
+    </div>
+  );
+}
+
 interface DocData {
   title?: string;
   icon?: string;
@@ -292,21 +338,29 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       <div className="px-4 lg:px-8 py-4 border-t border-border shrink-0">
         <div className="space-y-2">
           <a
-            href="/discord"
+            href="https://github.com/deco-cx/chat"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <span className="flex-1 ">Discord community</span>
             <Icon
-              name="ArrowUpRight"
+              name="Github"
               size={16}
               className="text-muted-foreground"
             />
+            <span className="flex-1">GitHub</span>
+            <GitHubStars />
           </a>
           <a
-            href="/get-started"
+            href="https://discord.gg/deco-cx"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <span className="flex-1">Get started</span>
+            <Icon
+              name="MessageCircle"
+              size={16}
+              className="text-muted-foreground"
+            />
+            <span className="flex-1">Discord community</span>
             <Icon
               name="ArrowUpRight"
               size={16}

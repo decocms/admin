@@ -3,6 +3,7 @@ import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
+import { Input } from "@deco/ui/components/input.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import {
   Tooltip,
@@ -269,13 +270,15 @@ function WorkflowsTab() {
           {sortedAndFilteredWorkflows.length === 0
             ? (
               <div className="flex flex-1 min-h-[700px] items-center justify-center">
-                <EmptyState
-                  icon="work"
-                  title="No workflows found"
-                  description={filter
-                    ? "No workflows match your search criteria."
-                    : "No workflows have been created yet."}
-                />
+                {filter
+                  ? (
+                    <EmptyState
+                      icon="flowchart"
+                      title="No workflows found"
+                      description="No workflows match your search criteria."
+                    />
+                  )
+                  : <WorkflowEmptyState />}
               </div>
             )
             : (
@@ -296,6 +299,59 @@ function WorkflowsTab() {
         </div>
       </div>
     </ScrollArea>
+  );
+}
+
+function WorkflowEmptyState() {
+  const [copied, setCopied] = useState(false);
+  const cliCommand = "deno install -Ar -g -n deco jsr:@deco/cli";
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(cliCommand);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <EmptyState
+      icon="flowchart"
+      title="No workflows found"
+      description={
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-muted-foreground text-center flex flex-col gap-1">
+            <p>No workflows have been created yet.</p>
+            <p>
+              Install the CLI to create workflows.{" "}
+              <a
+                href="https://docs.deco.chat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Learn more in our docs
+              </a>
+              .
+            </p>
+          </div>
+          <div className="relative w-full max-w-md">
+            <Input
+              value={cliCommand}
+              readOnly
+              className="pr-12 bg-secondary/50 text-muted-foreground font-mono"
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute right-1 top-1 h-8 w-8"
+              onClick={handleCopy}
+              title={copied ? "Copied!" : "Copy to clipboard"}
+            >
+              <Icon name={copied ? "check" : "content_copy"} size={16} />
+            </Button>
+          </div>
+        </div>
+      }
+    />
   );
 }
 

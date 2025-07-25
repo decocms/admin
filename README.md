@@ -6,7 +6,7 @@
 We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
 prototype, develop, and deploy AI-powered applications.
 
-**Official docs:** https://docs.deco.chat
+**Official docs:** https://docs.deco.page
 
 ## Who is it for?
 
@@ -16,9 +16,9 @@ prototype, develop, and deploy AI-powered applications.
 
 ## Why deco.chat?
 
-Our goal is simple: empower teams to embrace Generative AI by giving builders
-the tools to create sustainable, governed AI-native applications — from
-prototype to production, and from one user to thousands.
+Our goal is simple: empower teams with Generative AI by giving builders
+the tools to create AI applications that scale beyond the initial demo and
+into the thousands of users, securely and cost-effectively.
 
 ## Core capabilities
 
@@ -65,10 +65,14 @@ deno install -Ar -g -n deco jsr:@deco/cli
 2. Log in to [deco.chat](https://deco.chat). Don’t have an account? Sign up
    first.
 
-3. Create a new project
+```
+deco login
+```
+
+4. Create a new project
 
 ```
-deco create              # create new project, select workspace and choose a template
+deco create              # create new project, select workspace and choose template
 cd my-project
 npm install              # or bun, deno, pnpm
 ```

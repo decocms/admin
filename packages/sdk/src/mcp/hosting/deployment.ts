@@ -1,11 +1,11 @@
 import { WorkersMCPBindings } from "@deco/workers-runtime";
+import crypto from "node:crypto";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
+import { getMimeType } from "./api.ts";
 import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
-import crypto from "node:crypto";
-import { getMimeType } from "./api.ts";
 import type { WranglerConfig } from "./wrangler.ts";
 
 const METADATA_FILE_NAME = "metadata.json";
@@ -320,6 +320,14 @@ export async function deployToCloudflare({
       id: hd.id,
       localConnectionString: hd.localConnectionString,
     })) ?? [],
+    ...wranglerAssetsConfig?.binding
+      ? [
+        {
+          type: "assets" as const,
+          name: wranglerAssetsConfig.binding,
+        },
+      ]
+      : [],
   ];
 
   let assetsMetadata: Pick<WranglerConfig, "assets" | "keep_assets"> = {

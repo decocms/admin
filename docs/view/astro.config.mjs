@@ -1,39 +1,44 @@
 // @ts-check
 import { defineConfig } from "astro/config";
-import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
+
+import mdx from "@astrojs/mdx";
+
+import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
+  redirects: {
+    "/": "/en/introduction",
+  },
   server: {
     port: 4000,
   },
   outDir: "../server/view-build/",
+  i18n: {
+    locales: ["en", "pt-br"],
+    defaultLocale: "en",
+    routing: {
+      prefixDefaultLocale: true,
+    },
+  },
   integrations: [
-    starlight({
-      title: "Deco",
-      social: [{
-        icon: "github",
-        label: "GitHub",
-        href: "https://github.com/deco-cx/chat",
-      }],
-      sidebar: [
-        {
-          label: "Guides",
-          items: [
-            // Each item here is one entry in the navigation menu.
-            { label: "Example Guide", slug: "guides/example" },
-          ],
-        },
-        {
-          label: "Reference",
-          autogenerate: { directory: "reference" },
-        },
-      ],
-      customCss: ["./src/styles/global.css"],
-    }),
+    mdx(),
+    react(),
   ],
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      // @ts-ignore: tailwindcss plugin type issue
+      tailwindcss(),
+    ],
+  },
+  markdown: {
+    shikiConfig: {
+      themes: {
+        light: "github-light",
+        dark: "github-dark",
+      },
+      defaultColor: "light",
+    },
   },
 });

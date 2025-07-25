@@ -175,6 +175,8 @@ export const deploy = async (
   });
 
   if (response.isError && Array.isArray(response.content)) {
+    console.error("Error deploying: ", response);
+
     const errorText = response.content[0]?.text;
     const errorTextJson = tryParseJson(errorText ?? "");
     throw new Error(errorTextJson ?? errorText ?? "Unknown error");

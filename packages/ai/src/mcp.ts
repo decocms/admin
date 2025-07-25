@@ -295,12 +295,13 @@ const handleMCPResponse = async (client: Client) => {
 };
 export const swrMCPMetadata = (
   mcpServer: Pick<Integration, "connection" | "name">,
+  ignoreCache = false,
 ) => {
   const fetch = async () => {
     const client = await createServerClient(mcpServer);
     return handleMCPResponse(client).finally(() => client.close());
   };
-  if ("url" in mcpServer.connection) {
+  if ("url" in mcpServer.connection && !ignoreCache) {
     return swr.cache(fetch, mcpServer.connection.url);
   }
   return fetch();
@@ -309,6 +310,7 @@ export const swrMCPMetadata = (
 export async function listToolsByConnectionType(
   connection: MCPConnection,
   ctx: AppContext,
+  ignoreCache = false,
 ) {
   switch (connection.type) {
     case "INNATE": {
@@ -347,7 +349,7 @@ export async function listToolsByConnectionType(
       return await swrMCPMetadata({
         name: connection.type,
         connection,
-      });
+      }, ignoreCache);
     }
     default: {
       return { error: "Invalid connection type" };

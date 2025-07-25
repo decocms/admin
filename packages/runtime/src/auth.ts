@@ -102,7 +102,7 @@ export const handleAuthCallback = async (
       headers: {
         Location: next,
         "Set-Cookie":
-          `deco_page_auth=${access_token}; HttpOnly; Secure; SameSite=Lax; Path=/`,
+          `deco_page_auth=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
       },
     });
   } catch (err) {

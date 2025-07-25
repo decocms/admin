@@ -48,7 +48,12 @@ export async function writeEnvVars(
 }
 
 const getProjectRoot = () => {
-  const configPath = getConfigFilePath(Deno.cwd()) ?? Deno.cwd();
+  const configPath = getConfigFilePath(Deno.cwd());
+  if (!configPath) {
+    throw new Error(
+      "No project root found, please run `deco create` to create a new project.",
+    );
+  }
   return configPath.replace("/wrangler.toml", "");
 };
 export async function getEnvVars(projectRoot?: string) {

@@ -1,90 +1,87 @@
-# Deco CLI
+# Deco CLI Reference
 
-A command-line interface for managing deco.chat applications and workspaces.
+The Deco CLI is your interface for managing AI-native projects built with
+[deco.chat](https://deco.chat).
 
-## Installation
+Official docs: https://docs.deco.page/
 
-```bash
-deno install -Ar -g -n deco jsr:@deco/cli
-```
+---
 
-## Commands
+## Authentication
 
-### Authentication
+| Command       | Description                                                  |
+| ------------- | ------------------------------------------------------------ |
+| `deco login`  | Authenticate and store an API token for subsequent commands. |
+| `deco logout` | Remove local credentials and end the session.                |
+| `deco whoami` | Show the currently authenticated user and workspace.         |
 
-#### `deco login`
+---
 
-Log in to deco.chat and retrieve tokens for CLI usage.
+## Project Management
 
-#### `deco logout`
+| Command          | Description                                                                 |
+| ---------------- | --------------------------------------------------------------------------- |
+| `deco init`      | Scaffold a new deco project from an official template.                      |
+| `deco configure` | Re-run setup for the current directory to change workspace or app settings. |
 
-Log out of deco.chat and remove local session data.
+---
 
-#### `deco whoami`
+## Development
 
-Print information about the current session.
+| Command                     | Description                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `npm run dev`               | Preferred way to run local Worker and React frontend in watch mode.                                  |
+| `deco dev`                  | (Experimental) Future unified development command.                                                   |
+| `deco link [build-command]` | Link your local dev server to a public domain. Supports `-p <port>`. Example: deco link npm run dev. |
 
-### Configuration
+---
 
-#### `deco configure`
+## Type Generation
 
-Save configuration options for the current directory. This command will prompt
-you for:
+| Command         | Description                                                                |
+| --------------- | -------------------------------------------------------------------------- |
+| `deco gen`      | Generate types for external integrations (`deco.gen.ts`).                  |
+| `deco gen:self` | Generate types for your own tools and workflows via local `/mcp` endpoint. |
 
-- Workspace name
-- App name
+---
 
-### Hosting
+## Hosting & Deployment
 
-#### `deco deploy`
+| Command                       | Description                                                                |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `npm run deploy`              | Builds frontend and invokes `deco deploy`. Recommended for most use cases. |
+| `deco deploy`                 | Bundle and deploy to Cloudflare Workers. Supports `-w`, `-a`, and `-l`.    |
+| `deco hosting list -w <name>` | List deployed apps in a specific workspace.                                |
 
-Deploy the current directory into the current workspace.
+---
 
-Options:
+## Maintenance
 
-- `-w, --workspace <workspace>`: Workspace name (optional)
-- `-a, --app <app>`: App name (optional)
-- `-l, --local`: Deploy the app locally (requires deco.chat running at local API
-  endpoint)
+| Command       | Description                                      |
+| ------------- | ------------------------------------------------ |
+| `deco update` | Upgrade the CLI to the latest published version. |
 
-#### `deco hosting list -w <workspace>`
+---
 
-List all apps in the specified workspace.
+## Getting Help
 
-### Development
+| Command       | Description                                      |
+| ------------- | ------------------------------------------------ |
+| `deco --help` | Display the full list of CLI commands and usage. |
 
-#### `deco link`
-
-Link the project to be accessed through a remote domain.
-
-Options:
-
-- `-p, --port <port>`: Port to link (optional)
-
-Usage:
-
-```bash
-deco link [build-command]
-```
-
-Example:
-
-```bash
-deco link npm run dev
-```
-
-### Maintenance
-
-#### `deco update`
-
-Update the deco CLI to the latest version.
-
-## Environment Variables
-
-- `DECO_CHAT_API_TOKEN`: Authentication token for API access
-- `DECO_CHAT_API_LOCAL`: Local API endpoint for development
+---
 
 ## Configuration File
 
-The CLI uses a configuration file to store workspace and app settings. You can
-set these values using the `deco configure` command.
+The CLI uses a local config file to store your workspace and app context.\
+Set or update this configuration anytime using: `deco configure`
+
+---
+
+## Environment Variables
+
+| Variable              | Purpose                                                               |
+| --------------------- | --------------------------------------------------------------------- |
+| `DECO_CHAT_API_TOKEN` | API token for authentication (set by `deco login`).                   |
+| `DECO_CHAT_API_LOCAL` | Overrides API base URL for local development.                         |
+| `DECO_SELF_URL`       | Local MCP endpoint for `deco gen:self` to introspect workflows/tools. |

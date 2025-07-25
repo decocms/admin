@@ -1,0 +1,69 @@
+---
+title: Introduction
+description: Learn about deco.chat - the open-source foundation for building AI-native software
+icon: Rocket
+---
+
+![deco.chat](https://assets.decocache.com/decochatweb/d547b59f-c80b-4a76-8fa8-524d829baed1/capyreadme.png)
+
+**deco.chat is an open-source foundation for building AI-native software.**
+
+We equip developers, engineers, and AI enthusiasts with robust tools to rapidly
+prototype, develop, and deploy AI-powered applications.
+
+## Who is it for?
+
+- **Vibecoders** prototyping ideas
+- **Agentic engineers** deploying scalable, secure, and sustainable production
+  systems
+
+## Why deco.chat?
+
+Our goal is simple: empower teams with Generative AI by giving builders
+the tools to create AI applications that scale beyond the initial demo and
+into the thousands of users, securely and cost-effectively.
+
+## Core capabilities
+
+- **Open-source Runtime** – Easily compose tools, workflows, and views within a
+  single codebase
+- **MCP Mesh (Model Context Protocol)** – Securely integrate models, data
+  sources, and APIs, with observability and cost control
+- **Unified TypeScript Stack** – Combine backend logic and custom React/Tailwind
+  frontends seamlessly using typed RPC
+- **Global, Modular Infrastructure** – Built on Cloudflare for low-latency,
+  infinitely scalable deployments. Self-host with your Cloudflare API Key
+- **Visual Workspace** – Build agents, connect tools, manage permissions, and
+  orchestrate everything built in code
+
+## Core Concepts
+
+Before diving in, let's quickly define a few core concepts:
+
+### Tools
+
+Discrete functions that perform specific tasks (e.g., calling an API, querying a database, sending an email). Tools are defined by developers with input/output schemas and executed via the platform's runtime.
+
+### Workflows
+
+Multi-step sequences that orchestrate Tools and logic. Workflows let you chain tool calls, apply conditions, loops, and parallelism to implement complex behaviors. They are defined using Mastra's workflow engine.
+
+### MCP (Model Context Protocol)
+
+The protocol underpinning deco.chat that connects AI models (like Claude or GPT) with your Tools/Workflows. An MCP "server" is essentially your Cloudflare Worker that exposes Tools and Workflows to the agent. This allows an agent to invoke functions in a structured way.
+
+### Agents
+
+Autonomous AI actors (backed by LLMs) that you configure with a name, description, and behavior prompt. Agents can chat in natural language and decide when to call Tools to perform actions.
+
+### Integrations
+
+Pre-built or custom connections to external services and data sources. Integrations might include third-party APIs (like Gmail, Slack), databases, or a **Knowledge Base** of documents. They provide the building blocks (as Tools) that your agents and workflows can leverage without starting from scratch.
+
+## Creating a new Deco Project
+
+## Creating a new Deco project
+
+A Deco project extends a standard Cloudflare Worker with our building blocks and defaults for MCP servers. It runs a type-safe API out of the box and can also serve views — front-end apps deployed alongside the server.
+
+Currently, views can be any Vite app that outputs a static build. Soon, they’ll support components declared as tools, callable by app logic or LLMs. Views can call server-side tools via typed RPC.

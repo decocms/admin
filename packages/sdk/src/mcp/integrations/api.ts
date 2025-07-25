@@ -159,13 +159,18 @@ export const listTools = createIntegrationManagementTool({
   description: "List tools of a given integration",
   inputSchema: IntegrationSchema.pick({
     connection: true,
+  }).extend({
+    ignoreCache: z.boolean().optional().describe(
+      "Whether to ignore the cache when listing tools",
+    ),
   }),
-  handler: async ({ connection }, c) => {
+  handler: async ({ connection, ignoreCache }, c) => {
     c.resourceAccess.grant();
 
     const result = await listToolsByConnectionType(
       connection,
       c,
+      ignoreCache,
     );
 
     // Sort tools by name for consistent UI

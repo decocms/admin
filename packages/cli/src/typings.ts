@@ -172,7 +172,12 @@ export const genEnv = async (
       ...bindings,
       ...DEFAULT_BINDINGS,
       ...selfUrl
-        ? [{ name: "SELF", type: "mcp", integration_url: selfUrl }]
+        ? [{
+          name: "SELF",
+          type: "mcp",
+          integration_url: selfUrl,
+          ignoreCache: true,
+        }]
         : [],
     ].map(async (binding) => {
       let connection: unknown;
@@ -207,6 +212,9 @@ export const genEnv = async (
         name: "INTEGRATIONS_LIST_TOOLS",
         arguments: {
           connection,
+          ignoreCache: "ignoreCache" in binding
+            ? binding.ignoreCache
+            : undefined,
         },
       }) as {
         structuredContent: {

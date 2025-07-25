@@ -7,7 +7,10 @@ import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import type { ScriptUpdateParams, ScriptUpdateResponse } from "cloudflare/resources/workers/scripts/scripts.mjs";
+import type {
+  ScriptUpdateParams,
+  ScriptUpdateResponse,
+} from "cloudflare/resources/workers/scripts/scripts.mjs";
 
 const METADATA_FILE_NAME = "metadata.json";
 // Common types and utilities
@@ -220,7 +223,8 @@ export async function deployToCloudflare({
     queues,
     workflows,
     routes,
-    triggers,
+    // todo: make triggers work
+    triggers: _triggers,
     d1_databases,
     migrations,
     assets: wranglerAssetsConfig,
@@ -383,19 +387,19 @@ export async function deployToCloudflare({
 
   let result: ScriptUpdateResponse;
   try {
-   result = await c.cf.workersForPlatforms.dispatch.namespaces
-    .scripts.update(
-      env.CF_DISPATCH_NAMESPACE,
-      scriptSlug,
-      {
-        account_id: env.CF_ACCOUNT_ID,
-        metadata,
-      },
-      {
-        method: "put",
-        body,
-      },
-    );
+    result = await c.cf.workersForPlatforms.dispatch.namespaces
+      .scripts.update(
+        env.CF_DISPATCH_NAMESPACE,
+        scriptSlug,
+        {
+          account_id: env.CF_ACCOUNT_ID,
+          metadata,
+        },
+        {
+          method: "put",
+          body,
+        },
+      );
   } catch (error) {
     console.log("Error updating script", {
       error,

@@ -1,4 +1,8 @@
 import { WorkersMCPBindings } from "@deco/workers-runtime";
+import type {
+  ScriptUpdateParams,
+  ScriptUpdateResponse,
+} from "cloudflare/resources/workers/scripts/scripts.mjs";
 import crypto from "node:crypto";
 import { assertHasWorkspace } from "../assertions.ts";
 import { type AppContext, getEnv } from "../context.ts";
@@ -7,10 +11,6 @@ import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import type {
-  ScriptUpdateParams,
-  ScriptUpdateResponse,
-} from "cloudflare/resources/workers/scripts/scripts.mjs";
 
 const METADATA_FILE_NAME = "metadata.json";
 // Common types and utilities
@@ -44,7 +44,7 @@ export interface Polyfill {
 
 const addPolyfills = (
   files: Record<string, File>,
-  metadata: Record<string, unknown>,
+  metadata: ScriptUpdateParams.Metadata & { alias?: Record<string, string> },
   polyfills: Polyfill[],
 ) => {
   const aliases: Record<string, string> = {};
@@ -376,7 +376,7 @@ export async function deployToCloudflare({
     ...assetsMetadata,
   };
 
-  addPolyfills(bundledCode, metadata as Record<string, unknown>, [polyfill]);
+  addPolyfills(bundledCode, metadata, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {

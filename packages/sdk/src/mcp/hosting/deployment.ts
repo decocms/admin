@@ -1,6 +1,6 @@
 import { WorkersMCPBindings } from "@deco/workers-runtime";
 import type {
-  ScriptUpdateParams
+  ScriptUpdateParams,
 } from "cloudflare/resources/workers/scripts/scripts.mjs";
 import crypto from "node:crypto";
 import { assertHasWorkspace } from "../assertions.ts";
@@ -287,6 +287,7 @@ export async function deployToCloudflare({
     migrations ?? [],
     (bindings ?? []).filter(isDoBinding),
   );
+  const hasAssets = Object.keys(assets).length > 0;
 
   const wranglerBindings = [
     ...durable_objects?.bindings?.map((binding) => ({
@@ -324,7 +325,7 @@ export async function deployToCloudflare({
       id: hd.id,
       localConnectionString: hd.localConnectionString,
     })) ?? [],
-    ...wranglerAssetsConfig?.binding
+    ...wranglerAssetsConfig?.binding && hasAssets
       ? [
         {
           type: "assets" as const,
@@ -337,11 +338,12 @@ export async function deployToCloudflare({
   let assetsMetadata: {
     assets: ScriptUpdateParams.Metadata["assets"];
     keep_assets?: boolean;
+    keep_bindings?: string[];
   } = {
     assets: {},
   };
 
-  if (Object.keys(assets).length > 0) {
+  if (hasAssets) {
     const jwt = await uploadWranglerAssets({
       c,
       assets,
@@ -352,6 +354,9 @@ export async function deployToCloudflare({
       assetsMetadata = {
         assets: {},
         keep_assets: true,
+        keep_bindings: wranglerAssetsConfig?.binding
+          ? [wranglerAssetsConfig.binding]
+          : [],
       };
     } else {
       assetsMetadata = {

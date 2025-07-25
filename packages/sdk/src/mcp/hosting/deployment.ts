@@ -401,7 +401,7 @@ export async function deployToCloudflare({
         },
       );
   } catch (error) {
-    console.log("Error updating script", {
+    console.error("Error updating script", {
       error,
       metadata,
     });

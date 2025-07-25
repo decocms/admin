@@ -1,6 +1,7 @@
 import { WorkersMCPBindings } from "@deco/workers-runtime";
 import type {
   ScriptUpdateParams,
+  ScriptUpdateResponse,
 } from "cloudflare/resources/workers/scripts/scripts.mjs";
 import crypto from "node:crypto";
 import { assertHasWorkspace } from "../assertions.ts";
@@ -81,11 +82,15 @@ function calculateFileHash(base64Content: string): FileMetadata {
 
 function createAssetsManifest(
   assets: Record<string, string>,
+  // This is used to ensure that the assets are unique to the script.
+  // If the assets are not unique, cloudflare can skip uploading some user assets,
+  // which will fail the ASSETS binding setup.
+  salt = "",
 ): Record<string, FileMetadata> {
   return Object.fromEntries(
     Object.entries(assets).map(([path, content]) => [
       path,
-      calculateFileHash(content),
+      calculateFileHash(`deco-salt-[${salt}]-${content}`),
     ]),
   );
 }
@@ -171,7 +176,7 @@ const uploadWranglerAssets = async ({
   assets: Record<string, string>;
   scriptSlug: string;
 }) => {
-  const assetsManifest = createAssetsManifest(assets);
+  const assetsManifest = createAssetsManifest(assets, scriptSlug);
 
   const assetUploadSession = await c.cf.workersForPlatforms.dispatch.namespaces
     .scripts.assetUpload.create(
@@ -335,11 +340,16 @@ export async function deployToCloudflare({
       : [],
   ];
 
-  let assetsMetadata: {
-    assets: ScriptUpdateParams.Metadata["assets"];
-    keep_assets?: boolean;
-    keep_bindings?: string[];
-  } = {
+  const metadata: ScriptUpdateParams.Metadata = {
+    main_module: mainModule,
+    compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
+    compatibility_date: compatibility_date ?? "2024-11-27",
+    tags: [c.workspace.value],
+    bindings: wranglerBindings,
+    observability: {
+      enabled: true,
+    },
+    migrations: doMigrations,
     assets: {},
   };
 
@@ -351,34 +361,14 @@ export async function deployToCloudflare({
     });
 
     if (!jwt) {
-      assetsMetadata = {
-        assets: {},
-        keep_assets: true,
-        keep_bindings: wranglerAssetsConfig?.binding
-          ? [wranglerAssetsConfig.binding]
-          : [],
-      };
+      metadata.keep_assets = true;
+      metadata.keep_bindings = wranglerAssetsConfig?.binding ? ["assets"] : [];
     } else {
-      assetsMetadata = {
-        assets: {
-          jwt,
-        },
+      metadata.assets = {
+        jwt,
       };
     }
   }
-
-  const metadata: ScriptUpdateParams.Metadata = {
-    main_module: mainModule,
-    compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
-    compatibility_date: compatibility_date ?? "2024-11-27",
-    tags: [c.workspace.value],
-    bindings: wranglerBindings,
-    observability: {
-      enabled: true,
-    },
-    migrations: doMigrations,
-    ...assetsMetadata,
-  };
 
   addPolyfills(bundledCode, metadata, [polyfill]);
 
@@ -389,19 +379,28 @@ export async function deployToCloudflare({
     ...bundledCode,
   };
 
-  const result = await c.cf.workersForPlatforms.dispatch.namespaces
-    .scripts.update(
-      env.CF_DISPATCH_NAMESPACE,
-      scriptSlug,
-      {
-        account_id: env.CF_ACCOUNT_ID,
-        metadata,
-      },
-      {
-        method: "put",
-        body,
-      },
-    );
+  let result: ScriptUpdateResponse;
+  try {
+    result = await c.cf.workersForPlatforms.dispatch.namespaces
+      .scripts.update(
+        env.CF_DISPATCH_NAMESPACE,
+        scriptSlug,
+        {
+          account_id: env.CF_ACCOUNT_ID,
+          metadata,
+        },
+        {
+          method: "put",
+          body,
+        },
+      );
+  } catch (error) {
+    console.error("Error updating script", {
+      error,
+      metadata: JSON.stringify(metadata, null, 2),
+    });
+    throw error;
+  }
 
   if (envVars) {
     const promises = [];

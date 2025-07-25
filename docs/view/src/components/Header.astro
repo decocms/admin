@@ -1,0 +1,17 @@
+---
+import LanguagePicker from "./LanguagePicker.astro";
+import { ui } from '../i18n/ui';
+import { useTranslations } from "../i18n/utils";
+
+const locale = Astro.params.locale;
+const t = useTranslations(locale as keyof typeof ui);
+---
+
+<nav class="flex justify-between items-center gap-4 p-4 bg-gray-100 border-b">
+      <div class="flex gap-4">
+      <a href={`/${locale}`}>{t("head.title")}</a>
+      <a href="#">Posts</a>
+      <a href="#">Contact</a>
+      </div>
+      <LanguagePicker />
+    </nav>

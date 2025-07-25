@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import type { ToolExecutionContext } from "@mastra/core";
 import type { CreateStubAPIOptions } from "./mcp.ts";
 
 const getWorkspace = (workspace?: string) => {
@@ -201,7 +202,9 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
               ? options?.jsonSchemaToZod?.(tool.outputSchema) ??
                 tool.outputSchema
               : undefined,
-            execute: callToolFn,
+            execute: ({ context }: ToolExecutionContext<any>) => {
+              return callToolFn(context);
+            },
           };
         };
         return callToolFn;

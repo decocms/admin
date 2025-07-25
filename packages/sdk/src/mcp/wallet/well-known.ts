@@ -30,6 +30,15 @@ export const WellKnownWallets = {
         "liability" as const,
       ] as const,
   },
+  llmVaultCredits: (
+    workspace: string,
+    llmId: string,
+  ) =>
+    [
+      "user" as const,
+      `workspace-llm-vault-credits-${workspace}-${llmId}`,
+      "expense" as const,
+    ] as const,
 } as const;
 
 const validMonth = [

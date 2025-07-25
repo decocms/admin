@@ -1,0 +1,51 @@
+---
+title: Introduction
+description: Learn about deco.chat - the open-source foundation for building AI-native software
+icon: Rocket
+---
+
+**deco.chat is an open-source foundation for building AI-native software.**
+
+We provide the core components to create tools, workflows, custom views and complete AI-powered systems.
+
+This repo is for anyone building AI-first software, from vibecoders prototyping ideas to agentic engineers shipping production systems.
+
+Our goal is to help teams adopt GenAI by giving builders the tools to create sustainable, governed AI-native applications that scale beyond the initial demo and into the thousands of users, securely and cost-effectively.
+
+## Core Capabilities
+
+- **Open‑source runtime** that lets you compose tools, workflows, and views within a single codebase.
+- **MCP Mesh (Model Context Protocol)**: Connect models, data stores, and APIs with security, observability, and cost control.
+- **Unified TypeScript stack** — backend logic and custom React/Tailwind UIs in the same repo, with typed RPC bindings.
+- **Modular infrastructure** deployed on Cloudflare for global, low-latency execution. Self-host with only your Cloudflare API Key and scale infinitely.
+- **Visual workspace** where anyone can build agents, connect tools, manage permissions, and leverage everything built in code.
+
+## Core Concepts
+
+Before diving in, let's quickly define a few core ideas in deco.chat:
+
+### Tools
+
+Discrete functions that perform specific tasks (e.g., calling an API, querying a database, sending an email). Tools are defined by developers with input/output schemas and executed via the platform's runtime.
+
+### Workflows
+
+Multi-step sequences that orchestrate Tools and logic. Workflows let you chain tool calls, apply conditions, loops, and parallelism to implement complex behaviors. They are defined using Mastra's workflow engine.
+
+### MCP (Model Context Protocol)
+
+The protocol underpinning deco.chat that connects AI models (like Claude or GPT) with your Tools/Workflows. An MCP "server" is essentially your Cloudflare Worker that exposes Tools and Workflows to the agent. This allows an agent to invoke functions in a structured way.
+
+### Agents
+
+Autonomous AI actors (backed by LLMs) that you configure with a name, description, and behavior prompt. Agents can converse in natural language and decide when to call Tools to perform actions.
+
+### Integrations
+
+Pre-built or custom connections to external services and data sources. Integrations might include third-party APIs (like Gmail, Slack), databases, or a **Knowledge Base** of documents. They provide the building blocks (as Tools) that your agents and workflows can leverage without starting from scratch.
+
+## Creating a new Deco Project
+
+A **Deco project** extends a standard Cloudflare Worker with our building blocks and defaults designed for MCP servers. It runs an MCP server with a type-safe API by default and can also serve views — front-end apps deployed together with the server.
+
+For now, views can be any Vite app that outputs a static build. Soon, we'll support view components declared as tools, making them callable by your app logic or LLMs. Views can call server-side tools through type-safe RPC.

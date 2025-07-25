@@ -1,9 +1,20 @@
-import { useWorkspaceWorkflows } from "@deco/sdk";
+import {
+  useRecentWorkflowRuns,
+  useWorkflowNames,
+  useWorkflowRuns,
+} from "@deco/sdk";
 import { Badge } from "@deco/ui/components/badge.tsx";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@deco/ui/components/select.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -18,50 +29,51 @@ import { ListPageHeader } from "../common/list-page-header.tsx";
 import { Table, type TableColumn } from "../common/table/index.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import type { Workflow } from "./types.ts";
-import { formatStatus, getStatusBadgeVariant, sortWorkflows } from "./utils.ts";
+import type { WorkflowRun } from "./types.ts";
+import {
+  formatStatus,
+  getStatusBadgeVariant,
+  sortWorkflowRuns,
+} from "./utils.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 
-function WorkflowsCardView(
-  { workflows, onClick }: {
-    workflows: Workflow[];
-    onClick: (workflow: Workflow) => void;
+function WorkflowRunsCardView(
+  { runs, onClick }: {
+    runs: WorkflowRun[];
+    onClick: (run: WorkflowRun) => void;
   },
 ) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
-      {workflows.map((workflow) => (
+      {runs.map((run) => (
         <Card
-          key={workflow.workflowName}
+          key={run.runId}
           className="group cursor-pointer hover:shadow-md transition-shadow rounded-xl relative border-border"
-          onClick={() => onClick(workflow)}
+          onClick={() => onClick(run)}
         >
           <CardContent className="p-0">
             <div className="grid grid-cols-[1fr_min-content] gap-4 items-start p-4">
               <div className="flex flex-col gap-2 min-w-0">
                 <div className="text-sm font-semibold truncate">
-                  {workflow.workflowName}
+                  {formatToolName(run.workflowName)}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Icon name="play_circle" size={12} />
-                  <span>{workflow.runCount} runs</span>
+                  <Icon name="schedule" size={12} />
+                  <span>{run.runId}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge
-                    variant={getStatusBadgeVariant(workflow.lastRunStatus)}
+                    variant={getStatusBadgeVariant(run.status)}
                     className="text-xs"
                   >
-                    {formatStatus(workflow.lastRunStatus)}
+                    {formatStatus(run.status)}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    Last run
-                  </span>
                 </div>
               </div>
             </div>
             <div className="px-4 py-3 border-t border-border">
               <span className="text-xs text-muted-foreground">
-                Last run: {new Date(workflow.lastRunTimestamp).toLocaleString()}
+                Started: {new Date(run.createdAt).toLocaleString()}
               </span>
             </div>
           </CardContent>
@@ -71,61 +83,71 @@ function WorkflowsCardView(
   );
 }
 
-function WorkflowsTableView(
-  { workflows, onClick }: {
-    workflows: Workflow[];
-    onClick: (workflow: Workflow) => void;
+function WorkflowRunsTableView(
+  { runs, onClick }: {
+    runs: WorkflowRun[];
+    onClick: (run: WorkflowRun) => void;
   },
 ) {
-  const [sortKey, setSortKey] = useState<string>("lastRun");
+  const [sortKey, setSortKey] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const sortedWorkflows = useMemo(() => {
-    return sortWorkflows(workflows, sortKey, sortDirection);
-  }, [workflows, sortKey, sortDirection]);
+  const sortedRuns = useMemo(() => {
+    return sortWorkflowRuns(runs, sortKey, sortDirection);
+  }, [runs, sortKey, sortDirection]);
 
-  const columns: TableColumn<Workflow>[] = [
+  const columns: TableColumn<WorkflowRun>[] = [
     {
-      id: "name",
+      id: "workflowName",
       header: "Workflow Name",
-      render: (workflow) => (
+      render: (run) => (
         <span className="font-semibold">
-          {formatToolName(workflow.workflowName)}
+          {formatToolName(run.workflowName)}
         </span>
       ),
       sortable: true,
     },
     {
-      id: "totalRuns",
-      header: "Total Runs",
-      render: (workflow) => (
+      id: "runId",
+      header: "Run ID",
+      render: (run) => (
         <div className="flex items-center gap-2">
           <Icon
-            name="play_circle"
+            name="schedule"
             size={14}
             className="text-muted-foreground"
           />
-          <span className="text-sm">{workflow.runCount}</span>
+          <span className="text-sm font-mono text-xs">{run.runId}</span>
         </div>
       ),
       sortable: true,
     },
     {
-      id: "lastStatus",
-      header: "Last Status",
-      render: (workflow) => (
-        <Badge variant={getStatusBadgeVariant(workflow.lastRunStatus)}>
-          {formatStatus(workflow.lastRunStatus)}
+      id: "status",
+      header: "Status",
+      render: (run) => (
+        <Badge variant={getStatusBadgeVariant(run.status)}>
+          {formatStatus(run.status)}
         </Badge>
       ),
       sortable: true,
     },
     {
-      id: "lastRun",
-      header: "Last Run",
-      render: (workflow) => (
+      id: "createdAt",
+      header: "Started",
+      render: (run) => (
         <span className="text-xs">
-          {new Date(workflow.lastRunTimestamp).toLocaleString()}
+          {new Date(run.createdAt).toLocaleString()}
+        </span>
+      ),
+      sortable: true,
+    },
+    {
+      id: "updatedAt",
+      header: "Updated",
+      render: (run) => (
+        <span className="text-xs">
+          {run.updatedAt ? new Date(run.updatedAt).toLocaleString() : "-"}
         </span>
       ),
       sortable: true,
@@ -146,7 +168,7 @@ function WorkflowsTableView(
   return (
     <Table
       columns={columns}
-      data={sortedWorkflows}
+      data={sortedRuns}
       sortKey={sortKey}
       sortDirection={sortDirection}
       onSort={handleSort}
@@ -155,30 +177,42 @@ function WorkflowsTableView(
   );
 }
 
-function WorkflowsTab() {
+function WorkflowRunsTab() {
   const [_searchParams, _setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useViewMode("workflows-list");
   const [filter, setFilter] = useState("");
-  const { data, refetch, isRefetching } = useWorkspaceWorkflows();
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string>("all");
   const navigateWorkspace = useNavigateWorkspace();
 
-  const workflows = data.workflows;
+  // Get all workflow names for the select dropdown
+  const { data: workflowNamesData } = useWorkflowNames();
+  const workflowNames = workflowNamesData?.workflowNames || [];
 
-  const filteredWorkflows = useMemo(() => {
-    if (!filter) return workflows;
-    return workflows.filter((w) =>
-      w.workflowName.toLowerCase().includes(filter.toLowerCase())
+  // Get workflow runs - either filtered by workflow name or all recent runs
+  const { data, refetch, isRefetching } = selectedWorkflow !== "all"
+    ? useWorkflowRuns(selectedWorkflow, 1, 25)
+    : useRecentWorkflowRuns(1, 25);
+
+  const runs = data?.runs || [];
+
+  const filteredRuns = useMemo(() => {
+    if (!filter) return runs;
+    return runs.filter((run) =>
+      run.workflowName.toLowerCase().includes(filter.toLowerCase()) ||
+      run.runId.toLowerCase().includes(filter.toLowerCase())
     );
-  }, [workflows, filter]);
+  }, [runs, filter]);
 
-  // Sort workflows by default (Last Run, newest first) for card view consistency
-  const sortedAndFilteredWorkflows = useMemo(() => {
-    return sortWorkflows(filteredWorkflows, "lastRun", "desc");
-  }, [filteredWorkflows]);
+  // Sort runs by default (Created At, newest first) for card view consistency
+  const sortedAndFilteredRuns = useMemo(() => {
+    return sortWorkflowRuns(filteredRuns, "createdAt", "desc");
+  }, [filteredRuns]);
 
-  function handleWorkflowClick(workflow: Workflow) {
+  function handleRunClick(run: WorkflowRun) {
     navigateWorkspace(
-      `/workflows/${encodeURIComponent(workflow.workflowName)}`,
+      `/workflows/${encodeURIComponent(run.workflowName)}/instances/${
+        encodeURIComponent(run.runId)
+      }`,
     );
   }
 
@@ -189,13 +223,29 @@ function WorkflowsTab() {
           <div className="flex items-center gap-2 mb-4">
             <ListPageHeader
               input={{
-                placeholder: "Search workflows",
+                placeholder: "Search workflow runs",
                 value: filter,
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
                   setFilter(e.target.value),
               }}
               view={{ viewMode, onChange: setViewMode }}
             />
+            <Select
+              value={selectedWorkflow}
+              onValueChange={setSelectedWorkflow}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All workflows" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All workflows</SelectItem>
+                {workflowNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {formatToolName(name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -219,30 +269,30 @@ function WorkflowsTab() {
           </div>
         </div>
         <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {sortedAndFilteredWorkflows.length === 0
+          {sortedAndFilteredRuns.length === 0
             ? (
               <div className="flex flex-1 min-h-[700px] items-center justify-center">
                 <EmptyState
                   icon="work"
-                  title="No workflows found"
-                  description={filter
-                    ? "No workflows match your search criteria."
-                    : "No workflows have been created yet."}
+                  title="No workflow runs found"
+                  description={filter || selectedWorkflow !== "all"
+                    ? "No workflow runs match your search criteria."
+                    : "No workflow runs have been executed yet."}
                 />
               </div>
             )
             : (
               viewMode === "cards"
                 ? (
-                  <WorkflowsCardView
-                    workflows={sortedAndFilteredWorkflows}
-                    onClick={handleWorkflowClick}
+                  <WorkflowRunsCardView
+                    runs={sortedAndFilteredRuns}
+                    onClick={handleRunClick}
                   />
                 )
                 : (
-                  <WorkflowsTableView
-                    workflows={sortedAndFilteredWorkflows}
-                    onClick={handleWorkflowClick}
+                  <WorkflowRunsTableView
+                    runs={sortedAndFilteredRuns}
+                    onClick={handleRunClick}
                   />
                 )
             )}
@@ -254,21 +304,21 @@ function WorkflowsTab() {
 
 const tabs: Record<string, Tab> = {
   workflows: {
-    Component: WorkflowsTab,
-    title: "Workflows",
+    Component: WorkflowRunsTab,
+    title: "Workflow Runs",
     active: true,
     initialOpen: true,
   },
 };
 
-function WorkflowListPage() {
+function WorkflowRunsListPage() {
   return (
     <PageLayout
       hideViewsButton
       tabs={tabs}
-      breadcrumb={<DefaultBreadcrumb items={[{ label: "Workflows" }]} />}
+      breadcrumb={<DefaultBreadcrumb items={[{ label: "Workflow Runs" }]} />}
     />
   );
 }
 
-export default WorkflowListPage;
+export default WorkflowRunsListPage;

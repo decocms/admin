@@ -1,4 +1,4 @@
-import type { Workflow, WorkflowRun, WorkflowStats } from "./types.ts";
+import type { Workflow, WorkflowRun } from "./types.ts";
 
 /**
  * Determines if a status is considered successful
@@ -31,19 +31,6 @@ function isErrorStatus(status: string): boolean {
 }
 
 /**
- * Determines if a status is considered pending
- */
-function isPendingStatus(status: string): boolean {
-  const pendingStatuses = [
-    "pending",
-    "queued",
-    "waiting",
-    "scheduled",
-  ];
-  return pendingStatuses.includes(status.toLowerCase());
-}
-
-/**
  * Determines if a status is considered running
  */
 function isRunningStatus(status: string): boolean {
@@ -56,8 +43,6 @@ function isRunningStatus(status: string): boolean {
   ];
   return runningStatuses.includes(status.toLowerCase());
 }
-
-
 
 /**
  * Get status badge variant for consistent styling
@@ -83,6 +68,56 @@ export function formatStatus(status: string): string {
     default:
       return status.charAt(0).toUpperCase() + status.slice(1);
   }
+}
+
+/**
+ * Sort workflow runs by various criteria
+ */
+export function sortWorkflowRuns(
+  runs: WorkflowRun[],
+  sortKey: string,
+  direction: "asc" | "desc",
+): WorkflowRun[] {
+  return [...runs].sort((a, b) => {
+    let aVal: string | number;
+    let bVal: string | number;
+
+    switch (sortKey) {
+      case "workflowName":
+        aVal = a.workflowName.toLowerCase();
+        bVal = b.workflowName.toLowerCase();
+        break;
+      case "runId":
+        aVal = a.runId.toLowerCase();
+        bVal = b.runId.toLowerCase();
+        break;
+      case "status":
+        aVal = a.status.toLowerCase();
+        bVal = b.status.toLowerCase();
+        break;
+      case "createdAt":
+        aVal = a.createdAt;
+        bVal = b.createdAt;
+        break;
+      case "updatedAt":
+        aVal = a.updatedAt || 0;
+        bVal = b.updatedAt || 0;
+        break;
+      default:
+        aVal = a.createdAt;
+        bVal = b.createdAt;
+    }
+
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return direction === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+
+    if (aVal < bVal) return direction === "asc" ? -1 : 1;
+    if (aVal > bVal) return direction === "asc" ? 1 : -1;
+    return 0;
+  });
 }
 
 /**

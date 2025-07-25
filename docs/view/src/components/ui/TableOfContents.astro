@@ -2,13 +2,13 @@
 import { Icon } from "../../components/atoms/Icon.tsx";
 ---
 
-<div class="max-h-[calc(100vh-2rem)] overflow-y-auto w-80">
-  <div class="flex items-center gap-3 p-6 text-muted-foreground">
+<div class="max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-80">
+  <div class="flex items-center gap-3 p-4 lg:p-6 text-muted-foreground">
     <Icon name="BookOpenText" size={16} />
     <p class="text-sm text-foreground">On this page</p>
   </div>
 
-  <div id="toc" class="px-6 pb-6">
+  <div id="toc" class="px-4 lg:px-6 pb-4 lg:pb-6">
     <p class="text-sm">Loading...</p>
   </div>
 </div>

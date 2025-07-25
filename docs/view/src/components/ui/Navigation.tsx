@@ -15,7 +15,7 @@ export interface NavigationProps {
 export function Navigation({ previous, next }: NavigationProps) {
   return (
     <div className="bg-muted rounded-xl p-1 w-full">
-      <div className="flex items-center">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
         {/* Previous button */}
         <div className="flex-none">
           {previous
@@ -49,14 +49,14 @@ export function Navigation({ previous, next }: NavigationProps) {
         </div>
 
         {/* Next button */}
-        <div className="flex-1 bg-card rounded-lg ml-1">
+        <div className="flex-1 bg-card rounded-lg sm:ml-1">
           {next
             ? (
               <a
                 href={next.href}
                 className="flex items-center justify-end gap-2 px-3 py-4 rounded-lg hover:bg-muted transition-colors"
               >
-                <div className="text-right">
+                <div className="text-right flex-1">
                   <div className="text-sm font-semibold text-muted-foreground leading-5">
                     {next.title}
                   </div>
@@ -67,7 +67,7 @@ export function Navigation({ previous, next }: NavigationProps) {
                   )}
                 </div>
 
-                <div className="flex items-center justify-center h-8 w-0">
+                <div className="hidden sm:flex items-center justify-center h-8 w-0">
                   <div className="w-8 h-0 border-t border-border rotate-90">
                   </div>
                 </div>
@@ -86,13 +86,13 @@ export function Navigation({ previous, next }: NavigationProps) {
             )
             : (
               <div className="flex items-center justify-end gap-2 px-3 py-4 rounded-lg">
-                <div className="text-right">
+                <div className="text-right flex-1">
                   <div className="text-sm font-semibold text-muted-foreground leading-5 opacity-50">
                     No next page
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center h-8 w-0">
+                <div className="hidden sm:flex items-center justify-center h-8 w-0">
                   <div className="w-8 h-0 border-t border-border rotate-90">
                   </div>
                 </div>

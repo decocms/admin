@@ -26,6 +26,55 @@
   scroll-margin-top: 2rem; /* 32px offset from top */
 }
 
+/* Fix cramped middle section */
+@media (min-width: 1024px) and (max-width: 1280px) {
+  /* Ensure content doesn't get too cramped */
+  article {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+/* Better content wrapping on mobile */
+@media (max-width: 1024px) {
+  /* Ensure code blocks don't overflow */
+  pre {
+    overflow-x: auto;
+    white-space: pre;
+  }
+  
+  /* Better table handling */
+  .prose table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Tablet-specific adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .prose {
+    font-size: 0.9375rem; /* 15px */
+  }
+}
+
+/* Mobile navigation improvements */
+@media (max-width: 1024px) {
+  /* Ensure mobile menu is properly positioned */
+  #sidebar {
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    max-width: 19rem;
+  }
+  
+  /* Improve mobile overlay */
+  #mobile-overlay {
+    backdrop-filter: blur(4px);
+  }
+}
+
 /* Shiki dual theme support for data-theme attribute - Fixed selector */
 [data-theme="dark"] .astro-code,
 [data-theme="dark"] .astro-code span {

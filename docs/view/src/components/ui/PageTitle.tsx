@@ -21,8 +21,8 @@ export function PageTitle(
       )}
 
       {/* Title Section with Copy Button */}
-      <div className="flex items-center justify-between pb-2 pt-2">
-        <h1 className="text-3xl font-bold leading-[1.25] text-foreground">
+      <div className="flex items-start justify-between pb-2 pt-2 gap-4">
+        <h1 className="text-3xl font-bold leading-[1.25] text-foreground flex-1 min-w-0">
           {title}
         </h1>
         <MarkdownCopySelect markdownPath={markdownPath} />

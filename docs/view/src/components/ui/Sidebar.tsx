@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Logo } from "../../components/atoms/Logo.tsx";
-import { Button } from "../../components/atoms/Button.tsx";
-import { Select } from "../../components/atoms/Select.tsx";
 import { Icon } from "../../components/atoms/Icon.tsx";
+import { LanguageSelector } from "./LanguageSelector.tsx";
+import { ThemeToggle } from "./ThemeToggle.tsx";
 
 interface DocData {
   title?: string;
@@ -223,92 +223,7 @@ function TreeList(
   );
 }
 
-function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto");
 
-  useEffect(() => {
-    // Get saved theme from localStorage or default to auto
-    const savedTheme =
-      localStorage.getItem("theme") as "light" | "dark" | "auto" || "auto";
-    setTheme(savedTheme);
-    // Don't apply theme here since the script in the head already does it
-  }, []);
-
-  const applyTheme = (newTheme: "light" | "dark" | "auto") => {
-    const html = document.documentElement;
-
-    if (newTheme === "auto") {
-      // Use system preference
-      const prefersDark =
-        globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
-      html.setAttribute("data-theme", prefersDark ? "dark" : "light");
-    } else {
-      html.setAttribute("data-theme", newTheme);
-    }
-
-    localStorage.setItem("theme", newTheme);
-  };
-
-  const cycleTheme = () => {
-    const nextTheme = theme === "light"
-      ? "dark"
-      : theme === "dark"
-      ? "auto"
-      : "light";
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-  };
-
-  const getThemeIcon = () => {
-    switch (theme) {
-      case "light":
-        return "Sun";
-      case "dark":
-        return "Moon";
-      case "auto":
-        return "Monitor";
-      default:
-        return "Monitor";
-    }
-  };
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={cycleTheme}
-      className="h-8 w-8"
-    >
-      <Icon name={getThemeIcon()} size={16} />
-    </Button>
-  );
-}
-
-function LanguageSelect({ locale }: { locale: string }) {
-  const languageOptions = [
-    { value: "en", label: "English" },
-    { value: "pt-br", label: "Português" },
-  ];
-
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newLocale = event.target.value;
-    // Navigate to the new locale URL
-    const currentPath = globalThis.location.pathname;
-    const pathWithoutLocale = currentPath.replace(/^\/[^\/]+/, "");
-    globalThis.location.href = `/${newLocale}${pathWithoutLocale}`;
-  };
-
-  return (
-    <Select
-      options={languageOptions}
-      value={locale}
-      icon="Languages"
-      className="w-full"
-      selectClassName="text-muted-foreground"
-      onChange={handleChange}
-    />
-  );
-}
 
 export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   const [treeState, setTreeState] = useState<Map<string, boolean>>(new Map());
@@ -352,20 +267,20 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-app-background border-r border-border w-[19rem]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 py-4 shrink-0">
+    <div className="flex flex-col h-screen bg-app-background border-r border-border w-[19rem] lg:w-[19rem] w-full max-w-[19rem]">
+      {/* Header - hidden on mobile */}
+      <div className="hidden lg:flex items-center justify-between px-4 lg:px-8 py-4 shrink-0">
         <Logo width={67} height={28} />
         <ThemeToggle />
       </div>
 
-      {/* Language Select */}
-      <div className="px-8 py-4 shrink-0">
-        <LanguageSelect locale={locale} />
+      {/* Language Select - hidden on mobile */}
+      <div className="hidden lg:block px-4 lg:px-8 py-4 shrink-0">
+        <LanguageSelector locale={locale} />
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-8 py-4 min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4 min-h-0">
         <TreeList
           tree={tree}
           treeState={treeState}
@@ -376,7 +291,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
       </div>
 
       {/* Footer */}
-      <div className="px-8 py-4 border-t border-border shrink-0">
+      <div className="px-4 lg:px-8 py-4 border-t border-border shrink-0">
         <div className="space-y-2">
           <a
             href="/discord"

@@ -10,11 +10,25 @@ interface LogoProps {
 
 export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
   const [isDark, setIsDark] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+    
     const checkTheme = () => {
-      const theme = document.documentElement.getAttribute("data-theme");
-      setIsDark(theme === "dark");
+      const html = document.documentElement;
+      const savedTheme = localStorage.getItem("theme") || "auto";
+      
+      let isDarkTheme = false;
+      
+      if (savedTheme === "auto") {
+        // Use system preference
+        isDarkTheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      } else {
+        isDarkTheme = savedTheme === "dark";
+      }
+      
+      setIsDark(isDarkTheme);
     };
 
     // Check initial theme
@@ -34,8 +48,29 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
       attributeFilter: ["data-theme"],
     });
 
-    return () => observer.disconnect();
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", checkTheme);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeEventListener("change", checkTheme);
+    };
   }, []);
+
+  // Show light logo by default during SSR
+  if (!isClient) {
+    return (
+      <div className={`relative ${className}`}>
+        <img
+          src={decoLight}
+          alt="Deco"
+          width={width}
+          height={height}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${className}`}>

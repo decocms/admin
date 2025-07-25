@@ -1,7 +1,6 @@
 import { WorkersMCPBindings } from "@deco/workers-runtime";
 import type {
-  ScriptUpdateParams,
-  ScriptUpdateResponse,
+  ScriptUpdateParams
 } from "cloudflare/resources/workers/scripts/scripts.mjs";
 import crypto from "node:crypto";
 import { assertHasWorkspace } from "../assertions.ts";
@@ -385,28 +384,19 @@ export async function deployToCloudflare({
     ...bundledCode,
   };
 
-  let result: ScriptUpdateResponse;
-  try {
-    result = await c.cf.workersForPlatforms.dispatch.namespaces
-      .scripts.update(
-        env.CF_DISPATCH_NAMESPACE,
-        scriptSlug,
-        {
-          account_id: env.CF_ACCOUNT_ID,
-          metadata,
-        },
-        {
-          method: "put",
-          body,
-        },
-      );
-  } catch (error) {
-    console.error("Error updating script", {
-      error,
-      metadata,
-    });
-    throw error;
-  }
+  const result = await c.cf.workersForPlatforms.dispatch.namespaces
+    .scripts.update(
+      env.CF_DISPATCH_NAMESPACE,
+      scriptSlug,
+      {
+        account_id: env.CF_ACCOUNT_ID,
+        metadata,
+      },
+      {
+        method: "put",
+        body,
+      },
+    );
 
   if (envVars) {
     const promises = [];

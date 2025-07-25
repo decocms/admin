@@ -7,6 +7,7 @@ import { assertsDomainOwnership } from "./custom-domains.ts";
 import { polyfill } from "./fs-polyfill.ts";
 import { isDoBinding, migrationDiff } from "./migrations.ts";
 import type { WranglerConfig } from "./wrangler.ts";
+import type { ScriptUpdateParams, ScriptUpdateResponse } from "cloudflare/resources/workers/scripts/scripts.mjs";
 
 const METADATA_FILE_NAME = "metadata.json";
 // Common types and utilities
@@ -330,8 +331,11 @@ export async function deployToCloudflare({
       : [],
   ];
 
-  let assetsMetadata: Pick<WranglerConfig, "assets" | "keep_assets"> = {
-    assets: wranglerAssetsConfig,
+  let assetsMetadata: {
+    assets: ScriptUpdateParams.Metadata["assets"];
+    keep_assets?: boolean;
+  } = {
+    assets: {},
   };
 
   if (Object.keys(assets).length > 0) {
@@ -343,26 +347,24 @@ export async function deployToCloudflare({
 
     if (!jwt) {
       assetsMetadata = {
-        assets: wranglerAssetsConfig,
+        assets: {},
         keep_assets: true,
       };
     } else {
       assetsMetadata = {
         assets: {
-          ...wranglerAssetsConfig,
           jwt,
         },
       };
     }
   }
 
-  const metadata = {
+  const metadata: ScriptUpdateParams.Metadata = {
     main_module: mainModule,
     compatibility_flags: compatibility_flags ?? ["nodejs_compat"],
     compatibility_date: compatibility_date ?? "2024-11-27",
     tags: [c.workspace.value],
     bindings: wranglerBindings,
-    triggers,
     observability: {
       enabled: true,
     },
@@ -370,7 +372,7 @@ export async function deployToCloudflare({
     ...assetsMetadata,
   };
 
-  addPolyfills(bundledCode, metadata, [polyfill]);
+  addPolyfills(bundledCode, metadata as Record<string, unknown>, [polyfill]);
 
   const body = {
     metadata: new File([JSON.stringify(metadata)], METADATA_FILE_NAME, {
@@ -379,7 +381,9 @@ export async function deployToCloudflare({
     ...bundledCode,
   };
 
-  const result = await c.cf.workersForPlatforms.dispatch.namespaces
+  let result: ScriptUpdateResponse;
+  try {
+   result = await c.cf.workersForPlatforms.dispatch.namespaces
     .scripts.update(
       env.CF_DISPATCH_NAMESPACE,
       scriptSlug,
@@ -392,6 +396,13 @@ export async function deployToCloudflare({
         body,
       },
     );
+  } catch (error) {
+    console.log("Error updating script", {
+      error,
+      metadata,
+    });
+    throw error;
+  }
 
   if (envVars) {
     const promises = [];

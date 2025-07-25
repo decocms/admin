@@ -268,7 +268,7 @@ function LoggedUser() {
   return (
     <ResponsiveDropdown>
       <ResponsiveDropdownTrigger asChild>
-        <SidebarMenuButton className="ml-1 cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
+        <SidebarMenuButton className="cursor-pointer gap-3 group-data-[collapsible=icon]:px-1! group-data-[collapsible=icon]:py-2!">
           <UserAvatar
             url={userAvatarURL}
             fallback={userName}
@@ -406,11 +406,12 @@ function TeamBalanceLabel() {
   if (!account?.balance) return null;
 
   return (
-    <span className="text-[11px] text-muted-foreground pl-2 flex items-center gap-1">
+    <span className="text-xs text-muted-foreground p-2 justify-between vertical-align-middle flex items-center gap-1">
       <Link
         to={withWorkspaceLink("/monitor/billing")}
-        className="hover:underline transition-colors truncate"
+        className="flex items-center gap-1 transition-colors truncate"
       >
+        <Icon name="attach_money" size={16} />
         Team balance: {account.balance}
       </Link>
       <Link to={withWorkspaceLink("/monitor/billing")} className="shrink-0">

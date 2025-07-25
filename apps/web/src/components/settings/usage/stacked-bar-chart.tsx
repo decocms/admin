@@ -248,7 +248,7 @@ export function StackedBarChart(
     : 0.1;
 
   return (
-    <Card className="w-full p-6 rounded-xl border bg-primary-foreground">
+    <Card className="w-full p-6 rounded-xl border bg-muted/50">
       <div className="relative h-96">
         <YAxisLabels chartMax={chartMax} />
         <GridLines chartMax={chartMax} />

@@ -23,11 +23,7 @@ export default defineConfig({
     },
   },
   integrations: [
-    mdx({
-      rehypePlugins: [
-        // rehype-mdx-code-props must run last according to docs
-      ],
-    }),
+    mdx(),
     react(),
   ],
   vite: {

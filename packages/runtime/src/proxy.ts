@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { ToolExecutionContext } from "@mastra/core";
+import type { ToolExecutionContext } from "@mastra/core";
 import type { CreateStubAPIOptions } from "./mcp.ts";
 
 const getWorkspace = (workspace?: string) => {

@@ -6,8 +6,9 @@ import TableOfContents from "../components/ui/TableOfContents.astro";
 import { Logo } from "../components/atoms/Logo.tsx";
 import { Icon } from "../components/atoms/Icon.tsx";
 import { getCollection } from "astro:content";
+import { siteConfig } from "../config/site";
 import "../styles/global.css";
-const { title } = Astro.props;
+const { title, doc } = Astro.props;
 
 // Get current path for breadcrumbs
 const currentPath = Astro.url.pathname;
@@ -104,6 +105,11 @@ if (pagePath.length > 0) {
     });
   });
 }
+
+// Generate GitHub edit URL
+const editUrl = doc
+  ? `${siteConfig.githubRepo}/edit/${siteConfig.githubBranch}/docs/view/src/content/${doc.id}.mdx`
+  : null;
 ---
 
 <html lang="en" data-theme="light">
@@ -297,13 +303,35 @@ if (pagePath.length > 0) {
 
         <!-- Content with mobile top padding -->
         <div
-          class="flex min-h-full py-6 lg:py-12 px-4 lg:px-8 gap-x-8 pt-40 lg:pt-6"
+          class="flex min-h-full py-8 lg:py-16 px-4 lg:px-8 gap-x-8 lg:pt-16"
         >
           <article class="flex-1 max-w-none min-w-0">
             <slot />
+
+            {/* Edit button */}
+            {
+              editUrl && (
+                <div class="mt-12 pt-8 border-t border-border">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm text-muted-foreground">
+                      Found an error or want to improve this page?
+                    </p>
+                    <a
+                      href={editUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-border rounded-lg hover:bg-muted hover:border-foreground/20"
+                    >
+                      <Icon name="Pencil" size={16} />
+                      Edit this page
+                    </a>
+                  </div>
+                </div>
+              )
+            }
           </article>
           <div class="hidden xl:block w-80 shrink-0">
-            <div class="sticky top-16">
+            <div class="sticky top-1">
               <TableOfContents />
             </div>
           </div>

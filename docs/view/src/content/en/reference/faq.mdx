@@ -4,100 +4,111 @@ description: Frequently asked questions about deco.chat
 icon: HelpCircle
 ---
 
-## General Questions
+import { AccordionGroup } from "../../components/ui/AccordionGroup";
+import { Accordion } from "../../components/ui/Accordion";
 
-### Can I use OpenAI, Anthropic, or my own model?
+<AccordionGroup>
+  <Accordion title="Can I use OpenAI, Anthropic, or my own model?" icon="Bot">
+    Yes. Add the integration in the dashboard, regenerate types, and call it from a tool.
+  </Accordion>
 
-Yes. Add the integration in the dashboard, regenerate types, and call it from a tool.
+  <Accordion title="Do I need a front-end?" icon="Monitor">
+    No. You can deploy server-only projects for API-first use cases.
+  </Accordion>
 
-### Do I need a front-end?
+  <Accordion title="How do I store secrets?" icon="Lock">
+    Cloudflare environment variables → they surface in `env.INTEGRATION_NAME`.
+  </Accordion>
 
-No. You can deploy server-only projects for API-first use cases.
-
-### How do I store secrets?
-
-Cloudflare environment variables → they surface in `env.INTEGRATION_NAME`.
-
-### Where are logs?
-
-`deco logs` locally, or Cloudflare Dash → Workers → Logs.
+  <Accordion title="Where are logs?" icon="FileText">
+    `deco logs` locally, or Cloudflare Dash → Workers → Logs.
+  </Accordion>
+</AccordionGroup>
 
 ## Development Questions
 
-### How do I add a new tool?
+<AccordionGroup>
+  <Accordion title="How do I add a new tool?" icon="Wrench">
+    1. Define the tool in `server/main.ts` using `createTool`
+    2. Add it to the `withRuntime` tools array
+    3. Run `npm run gen` to update types
+    4. Test it via the deco UI or RPC client
+  </Accordion>
 
-1. Define the tool in `server/main.ts` using `createTool`
-2. Add it to the `withRuntime` tools array
-3. Run `npm run gen` to update types
-4. Test it via the deco UI or RPC client
+  <Accordion title="How do I connect to an external API?" icon="Globe">
+    1. Add the integration via the deco.chat dashboard
+    2. Run `npm run gen` to get typed interfaces
+    3. Use `env.INTEGRATION_NAME.method()` in your tools
+  </Accordion>
 
-### How do I connect to an external API?
+  <Accordion title="How do I deploy my app?" icon="Rocket">
+    Run `deco deploy` to deploy to Cloudflare Workers. The CLI will handle building and publishing.
+  </Accordion>
 
-1. Add the integration via the deco.chat dashboard
-2. Run `npm run gen` to get typed interfaces
-3. Use `env.INTEGRATION_NAME.method()` in your tools
-
-### How do I deploy my app?
-
-Run `deco deploy` to deploy to Cloudflare Workers. The CLI will handle building and publishing.
-
-### How do I debug my workflows?
-
-Use `console.log` in your tools and workflow steps. Check the terminal output during development or use `wrangler tail` for production logs.
+  <Accordion title="How do I debug my workflows?" icon="Bug">
+    Use `console.log` in your tools and workflow steps. Check the terminal output during development or use `wrangler tail` for production logs.
+  </Accordion>
+</AccordionGroup>
 
 ## Technical Questions
 
-### What's the difference between tools and workflows?
+<AccordionGroup>
+  <Accordion title="What's the difference between tools and workflows?" icon="Settings">
+    Tools are single functions that perform specific tasks. Workflows orchestrate multiple tools with logic, conditions, and loops.
+  </Accordion>
 
-Tools are single functions that perform specific tasks. Workflows orchestrate multiple tools with logic, conditions, and loops.
+  <Accordion title="Can I use my own database?" icon="Database">
+    Yes. You can use Cloudflare D1, Workers KV, or connect to external databases via HTTP APIs.
+  </Accordion>
 
-### Can I use my own database?
+  <Accordion title="How do I handle authentication?" icon="Shield">
+    Store API keys as Cloudflare environment variables. They'll be available in your `env` object.
+  </Accordion>
 
-Yes. You can use Cloudflare D1, Workers KV, or connect to external databases via HTTP APIs.
-
-### How do I handle authentication?
-
-Store API keys as Cloudflare environment variables. They'll be available in your `env` object.
-
-### What are the Cloudflare Workers limits?
-
-Free tier: 50ms CPU time per request. Paid tiers: up to 30s with Workers Unbound. Check the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/) for current limits.
+  <Accordion title="What are the Cloudflare Workers limits?" icon="Gauge">
+    Free tier: 50ms CPU time per request. Paid tiers: up to 30s with Workers Unbound. Check the [Cloudflare Workers documentation](https://developers.cloudflare.com/workers/) for current limits.
+  </Accordion>
+</AccordionGroup>
 
 ## Integration Questions
 
-### Which integrations are available?
+<AccordionGroup>
+  <Accordion title="Which integrations are available?" icon="Link">
+    Many common services like Slack, Gmail, Notion, Stripe, and more. Check the deco.chat dashboard for the full list.
+  </Accordion>
 
-Many common services like Slack, Gmail, Notion, Stripe, and more. Check the deco.chat dashboard for the full list.
+  <Accordion title="Can I create custom integrations?" icon="Code">
+    Yes, you can write custom tools that call any HTTP API using `fetch`.
+  </Accordion>
 
-### Can I create custom integrations?
-
-Yes, you can write custom tools that call any HTTP API using `fetch`.
-
-### How do I use the Knowledge Base?
-
-Upload documents via the deco.chat UI. The platform will index them and make them available to your agents automatically.
+  <Accordion title="How do I use the Knowledge Base?" icon="BookOpen">
+    Upload documents via the deco.chat UI. The platform will index them and make them available to your agents automatically.
+  </Accordion>
+</AccordionGroup>
 
 ## Troubleshooting
 
-### My tool isn't working
+<AccordionGroup>
+  <Accordion title="My tool isn't working" icon="AlertCircle">
+    1. Check that it's registered in `withRuntime`
+    2. Verify your Zod schemas
+    3. Check the logs for errors
+    4. Ensure you ran `npm run gen` after changes
+  </Accordion>
 
-1. Check that it's registered in `withRuntime`
-2. Verify your Zod schemas
-3. Check the logs for errors
-4. Ensure you ran `npm run gen` after changes
+  <Accordion title="My workflow isn't executing" icon="AlertTriangle">
+    1. Make sure you called `.commit()` at the end
+    2. Check that all steps are properly chained
+    3. Verify your input/output schemas match
+  </Accordion>
 
-### My workflow isn't executing
+  <Accordion title="The RPC client doesn't have my new tool" icon="RefreshCw">
+    Run `DECO_SELF_URL=<your-dev-url> npm run gen:self` to generate types for your own tools.
+  </Accordion>
 
-1. Make sure you called `.commit()` at the end
-2. Check that all steps are properly chained
-3. Verify your input/output schemas match
-
-### The RPC client doesn't have my new tool
-
-Run `DECO_SELF_URL=<your-dev-url> npm run gen:self` to generate types for your own tools.
-
-### Deployment failed
-
-1. Check your Cloudflare credentials
-2. Ensure the frontend builds without errors
-3. Verify your `wrangler.toml` configuration
+  <Accordion title="Deployment failed" icon="XCircle">
+    1. Check your Cloudflare credentials
+    2. Ensure the frontend builds without errors
+    3. Verify your `wrangler.toml` configuration
+  </Accordion>
+</AccordionGroup>

@@ -428,8 +428,8 @@ pre .astro-code > *:first-child {
 
 /* Dark Mode Colors - Using Starlight's [data-theme="dark"] approach */
 [data-theme="dark"] {
-  --background: oklch(26.8% 0.007 34.298);
-  --app-background: oklch(21.6% 0.006 56.043);
+  --background: oklch(21.6% 0.006 56.043);
+  --app-background: oklch(0.1838 0.0052 67.5);
   --foreground: oklch(98.5% 0.001 106.423);
   --card: oklch(26.8% 0.007 34.298);
   --card-foreground: oklch(98.5% 0.001 106.423);

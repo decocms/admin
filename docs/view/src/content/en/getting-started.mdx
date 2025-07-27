@@ -4,6 +4,9 @@ description: Set up your development environment and create your first deco.chat
 icon: Play
 ---
 
+import { StepGroup } from "../../components/ui/StepGroup";
+import { Step } from "../../components/ui/Step";
+
 ## Prerequisites
 
 Before you begin, make sure you have the following:
@@ -22,47 +25,69 @@ Before you begin, make sure you have the following:
 
 Once your environment is ready, follow these steps to create a new deco.chat project:
 
-### 1. Install the Deco CLI
+<StepGroup>
+  <Step number={1} title="Install the Deco CLI">
+    Open your terminal and run:
+    
+    ```bash
+    deno install -Ar -g -n deco jsr:@deco/cli
+    ```
+    
+    This globally installs the deco command. (The CLI is published as a Deno module on the JSR registry.) After installation, you can run `deco --help` to verify it's working.
+  </Step>
 
-Open your terminal and run:
+  <Step number={2} title="Log in to deco.chat">
+    Use `deco login` to authenticate the CLI with your deco.chat account:
+    
+    ```bash
+    deco login
+    ```
+    
+    A browser window will prompt you to sign in, and the CLI will store an API token for your session. (If you don't have an account, sign up on the deco.chat website first.)
+  </Step>
 
-```shell
-deno install -Ar -g -n deco jsr:@deco/cli
-```
+  <Step number={3} title="Initialize a new project">
+    Navigate to the directory where you want your project and run:
+    
+    ```bash
+    deco create
+    ```
+    
+    You'll be guided to pick a template (for example, a **React + Tailwind View** template or a minimal server-only template). The CLI will scaffold a project with the recommended structure. It will also prompt you to configure your workspace and app name (or you can run `deco configure` manually to set these).
+  </Step>
 
-This globally installs the deco command. (The CLI is published as a Deno module on the JSR registry.) After installation, you can run `deco --help` to verify it's working.
+  <Step number={4} title="Install dependencies">
+    After scaffolding, `cd` into the project folder. If the project includes a frontend, run:
+    
+    ```bash
+    npm install
+    ```
+    
+    (or `pnpm install`) to install Node dependencies for the view.
+  </Step>
 
-### 2. Log in to deco.chat
-
-Use `deco login` to authenticate the CLI with your deco.chat account. A browser window will prompt you to sign in, and the CLI will store an API token for your session. (If you don't have an account, sign up on the deco.chat website first.)
-
-### 3. Initialize a new project
-
-Navigate to the directory where you want your project and run `deco init`. You'll be guided to pick a template (for example, a **React + Tailwind View** template or a minimal server-only template). The CLI will scaffold a project with the recommended structure. It will also prompt you to configure your workspace and app name (or you can run `deco configure` manually to set these).
-
-### 4. Install dependencies
-
-After scaffolding, `cd` into the project folder. If the project includes a frontend, run `npm install` (or `pnpm install`) to install Node dependencies for the view.
-
-### 5. Run the development server
-
-Start your app locally with:
-
-```shell
-npm run dev
-```
-
-This will spin up the development environment – usually it runs the Cloudflare Worker (MCP server) on a local port (8787 by default) and a Vite dev server for the frontend, with hot-reload for both. Check the terminal output for the local URL (often something like `https://localhost-<hash>.deco.host`), and open it in your browser. You should see the default deco.chat app interface loading.
-
-At this point, you have a running deco.chat application on your machine! 🎉
+  <Step number={5} title="Run the development server">
+    Start your app locally with:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    This will spin up the development environment – usually it runs the Cloudflare Worker (MCP server) on a local port (8787 by default) and a Vite dev server for the frontend, with hot-reload for both. Check the terminal output for the local URL (often something like `https://localhost-<hash>.deco.host`), and open it in your browser. You should see the default deco.chat app interface loading.
+    
+    <Callout type="success">
+      At this point, you have a running deco.chat application on your machine! 🎉
+    </Callout>
+  </Step>
+</StepGroup>
 
 ## "Hello World" Example
 
 Let's illustrate how you might add a simple "Hello World" tool to your app:
 
-In your project's server code (e.g., `server/main.ts`), you can define a new Tool that returns a greeting. For instance:
+In your project's server code (e.g., `server/main.ts`), you can define a new Tool that returns a greeting:
 
-```ts
+```typescript
 import { createTool } from "@deco/workers-runtime";
 import { z } from "zod";
 

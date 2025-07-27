@@ -1,6 +1,8 @@
 ---
 import { render } from "astro:content";
 import { PageTitle } from "./PageTitle";
+import { Navigation } from "./Navigation";
+import { getNavigationLinks } from "../../utils/navigation";
 import Pre from "../../components/markdown/Pre.astro";
 import Blockquote from "../../components/markdown/Blockquote.astro";
 import Code from "../../components/markdown/Code.astro";
@@ -29,6 +31,10 @@ const breadcrumb =
 
 // Generate markdown path for viewing raw file
 const markdownPath = `/src/content/${doc.id}.mdx`;
+
+// Get navigation links
+const locale = doc.id.split("/")[0];
+const navigationLinks = await getNavigationLinks(doc.id, locale);
 
 // Components mapping for custom markdown rendering
 const components = {
@@ -63,6 +69,14 @@ const components = {
 
   <div class="prose max-w-none" id="rendered-content">
     <Content components={components} />
+  </div>
+
+  <div class="mt-8">
+    <Navigation
+      client:load
+      previous={navigationLinks.previous}
+      next={navigationLinks.next}
+    />
   </div>
 </div>
 

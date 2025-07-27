@@ -10,4 +10,4 @@ export const siteConfig = {
   githubRepo: "https://github.com/deco-cx/chat",
   // GitHub branch name (usually 'main' or 'master')
   githubBranch: "main",
-} as const; 
+} as const;

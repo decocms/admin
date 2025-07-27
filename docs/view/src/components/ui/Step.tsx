@@ -14,12 +14,14 @@ export function Step({ number, title, children, className = "" }: StepProps) {
       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center relative z-10">
         <span className="text-sm font-medium text-foreground">{number}</span>
       </div>
-      
+
       {/* Content area */}
       <div className="flex-1 min-w-0">
         {/* Title */}
-        <div className="text-lg font-semibold text-foreground mb-3 m-0 not-prose">{title}</div>
-        
+        <div className="text-lg font-semibold text-foreground mb-3 m-0 not-prose">
+          {title}
+        </div>
+
         {/* Content */}
         <div className="text-muted-foreground">
           {children}
@@ -27,4 +29,4 @@ export function Step({ number, title, children, className = "" }: StepProps) {
       </div>
     </div>
   );
-} 
+}

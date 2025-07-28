@@ -29,7 +29,6 @@ export const Entrypoint = {
   script: (domain: string) => {
     if (domain.endsWith(HOSTING_APPS_DOMAIN)) {
       return domain.split(HOSTING_APPS_DOMAIN)[0];
-        slug: Entrypoint.id(slug, deploymentId),
     }
     return null;
   },

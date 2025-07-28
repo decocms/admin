@@ -4,11 +4,15 @@
  * we're a superset of the wrangler config.
  */
 import { parse, stringify } from "smol-toml";
-import { promises as fs } from "fs";
+import { promises as fs, statSync } from "fs";
 import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { z } from "zod";
 import { readSession } from "./session.js";
 import { createHash } from "crypto";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // MD5 hash function using Node.js crypto
 async function md5Hash(input: string): Promise<string> {
@@ -126,6 +130,7 @@ export const writeWranglerConfig = async (
   const targetCwd = cwd || process.cwd();
   const currentConfig = await readWranglerConfig(targetCwd);
   const mergedConfig = { ...currentConfig, ...config };
+  mergedConfig.scope ??= mergedConfig.scope ?? mergedConfig?.deco?.workspace;
   const configPath = getConfigFilePath(targetCwd) ??
     join(targetCwd, CONFIG_FILE);
   
@@ -228,6 +233,19 @@ export const getConfig = async (
  * @returns The path to the config file or null if not found.
  */
 export const getConfigFilePath = (cwd: string): string | null => {
+  // First, try the direct path
+  const directPath = join(cwd, CONFIG_FILE);
+  
+  try {
+    const stat = statSync(directPath);
+    if (stat.isFile()) {
+      return directPath;
+    }
+  } catch {
+    // File doesn't exist, continue searching
+  }
+
+  // If direct path fails, search parent directories
   const dirs = cwd.split(/[/\\]/); // Handle both Unix and Windows path separators
   const maxDepth = dirs.length;
 
@@ -236,7 +254,7 @@ export const getConfigFilePath = (cwd: string): string | null => {
     const configPath = join(path, CONFIG_FILE);
 
     try {
-      const stat = require("fs").statSync(configPath);
+      const stat = statSync(configPath);
       if (stat.isFile()) {
         return configPath;
       }
@@ -315,10 +333,18 @@ export async function getMCPConfig(
 
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
-export const getRulesConfig = async () => {
-  // TODO: Need to implement reading rules from filesystem in Node.js version
-  // For now return empty config
-  return {
-    "deco-chat.mdc": "",
-  };
+export const getRulesConfig = async () => {  
+  const rulesPath = join(__dirname, "../rules/deco-chat.mdc");
+  
+  try {
+    const content = await fs.readFile(rulesPath, "utf-8");
+    return {
+      "deco-chat.mdc": content,
+    };
+  } catch (error) {
+    console.warn("Could not read rules file:", error);
+    return {
+      "deco-chat.mdc": "",
+    };
+  }
 };

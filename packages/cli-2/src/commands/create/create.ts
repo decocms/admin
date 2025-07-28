@@ -10,6 +10,9 @@ import {
   writeWranglerConfig,
 } from "../../lib/config.js";
 import { slugify } from "../../lib/slugify.js";
+import { promptWorkspace } from "../../lib/promptWorkspace.js";
+import { genEnv } from "../gen/gen.js";
+import { promptIDESetup, writeIDEConfig } from "../../lib/promptIDESetup.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -159,30 +162,30 @@ async function customizeTemplate({
       // For now, use empty bindings - we can enhance this later with prompt integrations
       const bindings: any[] = [];
 
-      // Merge with new project name and workspace
+      // Merge with new project name and workspace - preserve all existing config
       const newConfig = {
         ...currentConfig,
+        name: projectName,
         deco: {
           ...currentConfig.deco,
           workspace,
           bindings,
         },
-        name: projectName,
       };
 
       // Write the new config file
       await writeWranglerConfig(newConfig, wranglerRoot || targetDir);
 
-      // TODO: Generate environment variables file when we port typings
-      // const envContent = await genEnv({
-      //   workspace: workspace,
-      //   local: false,
-      //   bindings: newConfig.deco.bindings || [],
-      // });
+      // Generate environment variables file
+      const envContent = await genEnv({
+        workspace: workspace,
+        local: false,
+        bindings: newConfig.deco.bindings || [],
+      });
 
-      // const outputPath = join(wranglerRoot || targetDir, "deco.gen.ts");
-      // await fs.writeFile(outputPath, envContent);
-      // console.log(`✅ Environment types written to: ${outputPath}`);
+      const outputPath = join(wranglerRoot || targetDir, "deco.gen.ts");
+      await fs.writeFile(outputPath, envContent);
+      console.log(`✅ Environment types written to: ${outputPath}`);
     } catch (error) {
       console.warn(
         "⚠️  Could not update config file:",
@@ -237,14 +240,16 @@ export async function createCommand(
       }])).projectName,
     );
 
-    // For now, use the workspace from config - we can enhance this with workspace prompts later
+    // Prompt user to select workspace
     let workspace: string | undefined = config?.workspace;
-    if (workspace) {
+    try {
+      workspace = await promptWorkspace(config?.local, workspace);
       console.log(`📁 Selected workspace: ${workspace}`);
-    } else {
+    } catch {
       console.warn(
-        "⚠️  No workspace configured. Run 'deco configure' to set up workspace for a better experience.",
+        "⚠️  Could not select workspace. Please run 'deco login' to authenticate for a better experience.",
       );
+      // Continue without workspace
     }
 
     const targetDir = join(process.cwd(), finalProjectName);
@@ -294,21 +299,20 @@ export async function createCommand(
       choices: ['No', 'Yes'],
     }]);
 
-    // TODO: Prompt user to install MCP configuration for IDE when we port those utilities
-    // const mcpResult = workspace
-    //   ? await promptIDESetup(
-    //     { workspace, app: finalProjectName },
-    //     targetDir,
-    //   )
-    //   : null;
+    // Prompt user to install MCP configuration for IDE
+    const mcpResult = workspace
+      ? await promptIDESetup(
+        { workspace, app: finalProjectName },
+        targetDir,
+      )
+      : null;
 
     console.log(`📦 Downloading template '${selectedTemplate.name}'...`);
     await downloadTemplate(selectedTemplate, targetDir);
 
-    // TODO: Write IDE config when we port MCP utilities
-    // if (mcpResult) {
-    //   await writeIDEConfig(mcpResult);
-    // }
+    if (mcpResult) {
+      await writeIDEConfig(mcpResult);
+    }
 
     await customizeTemplate({
       targetDir,

@@ -41,13 +41,16 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CHAT_API_LOCAL } from "./lib/constants.js";
+import { getConfig } from "./lib/config.js";
 import { loginCommand } from "./commands/auth/login.js";
 import { whoamiCommand } from "./commands/auth/whoami.js";
 import { configureCommand } from "./commands/config/configure.js";
 import { deploy } from "./commands/hosting/deploy.js";
+import { listApps } from "./commands/hosting/list.js";
 import { createCommand, listTemplates } from "./commands/create/create.js";
 import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
+import { genEnv } from "./commands/gen/gen.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -112,13 +115,24 @@ const configure = new Command("configure")
     }
   });
 
-// Placeholder for hosting list command implementation
 const hostingList = new Command("list")
   .description("List all apps in the current workspace.")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
-    console.log("Hosting list command not yet implemented");
-    console.log("Options:", options);
+    try {
+      const session = await readSession();
+      const workspace = options.workspace || session?.workspace;
+      
+      if (!workspace) {
+        console.error("❌ No workspace specified. Use -w flag or run 'deco configure' first.");
+        process.exit(1);
+      }
+
+      await listApps({ workspace });
+    } catch (error) {
+      console.error("❌ Failed to list apps:", error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 // Hosting deploy command implementation
@@ -246,7 +260,6 @@ const hosting = new Command("hosting")
   .addCommand(hostingList)
   .addCommand(hostingDeploy);
 
-// Placeholder for gen command implementation
 const gen = new Command("gen")
   .description("Generate the environment that will be used to run the app.")
   .option(
@@ -254,8 +267,19 @@ const gen = new Command("gen")
     "Useful to generate a SELF binding for own types based on local mcp server."
   )
   .action(async (options) => {
-    console.log("Gen command not yet implemented");
-    console.log("Options:", options);
+    try {
+      const config = await getConfig({});
+      const env = await genEnv({
+        workspace: config.workspace,
+        local: config.local,
+        bindings: config.bindings,
+        selfUrl: options.self,
+      });
+      console.log(env);
+    } catch (error) {
+      console.error("❌ Failed to generate environment:", error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 // Main CLI program

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { compile } from "json-schema-to-typescript";
 import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import type { DecoBinding } from "../../lib/config.js";
@@ -36,7 +37,7 @@ function slugify(name: string) {
 /**
  * Format content using Prettier instead of deno fmt
  */
-export async function format(content: string): Promise<string> {
+export function format(content: string): Promise<string> {
   try {
     // Try to format using npx prettier if available
     const prettier = spawn("npx", ["prettier", "--parser", "typescript"], {
@@ -69,7 +70,7 @@ export async function format(content: string): Promise<string> {
     });
   } catch {
     // If prettier is not available, return original content
-    return content;
+    return Promise.resolve(content);
   }
 }
 

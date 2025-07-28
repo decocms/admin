@@ -10,12 +10,13 @@ import { fileURLToPath } from "url";
 import { z } from "zod";
 import { readSession } from "./session.js";
 import { createHash } from "crypto";
+import process from "node:process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // MD5 hash function using Node.js crypto
-async function md5Hash(input: string): Promise<string> {
+function md5Hash(input: string): string {
   const hash = createHash("sha1");
   hash.update(input);
   return hash.digest("hex");
@@ -89,7 +90,7 @@ export const readWranglerConfig = async (cwd?: string) => {
   try {
     const config = await fs.readFile(configPath, "utf-8");
     return parse(config) as WranglerConfig;
-  } catch (error) {
+  } catch (_error) {
     return {};
   }
 };
@@ -273,19 +274,19 @@ export const getConfigFilePath = (cwd: string): string | null => {
  * @param app - The app name
  * @returns A unique UUID string based on the workspace and app name.
  */
-export const getAppUUID = async (
+export const getAppUUID = (
   workspace: string = "default",
   app: string = "my-app",
-): Promise<string> => {
+): string => {
   try {
     const combined = `${workspace}-${app}`;
-    const hash = await md5Hash(combined);
+    const hash = md5Hash(combined);
     return hash.slice(0, 8); // Use first 8 characters for shorter, readable UUID
-  } catch (error) {
+  } catch (_error) {
     // Fallback to random UUID if hash generation fails
     console.warn(
       "Could not generate hash for UUID, using random fallback:",
-      error,
+      _error,
     );
     return crypto.randomUUID().slice(0, 8);
   }
@@ -298,11 +299,11 @@ export const getAppUUID = async (
  * @param app - The app name
  * @returns A domain string for the app.
  */
-export const getAppDomain = async (
+export const getAppDomain = (
   workspace: string,
   app: string,
-): Promise<string> => {
-  const appUUID = await getAppUUID(workspace, app);
+): string => {
+  const appUUID = getAppUUID(workspace, app);
   return `localhost-${appUUID}.deco.host`;
 };
 
@@ -315,11 +316,11 @@ export type MCPConfig = {
   };
 };
 
-export async function getMCPConfig(
+export function getMCPConfig(
   workspace: string,
   app: string,
-): Promise<MCPConfig> {
-  const appDomain = await getAppDomain(workspace, app);
+): MCPConfig {
+  const appDomain = getAppDomain(workspace, app);
 
   return {
     mcpServers: {

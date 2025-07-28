@@ -4,6 +4,8 @@ import { relative } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
+import { Buffer } from "node:buffer";
+import process from "node:process";
 
 function tryParseJson(text: string): Record<string, unknown> | null {
   try {

@@ -6,6 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { decodeJwt } from "jose";
 import { z } from "zod";
 import { createClient } from "./supabase.js";
+import process from "node:process";
 
 const SessionSchema = z.object({
   access_token: z.string().optional(),
@@ -81,7 +82,7 @@ export async function readSession(): Promise<SessionData | null> {
     const sessionPath = getSessionPath();
     const content = await fs.readFile(sessionPath, "utf-8");
     return SessionSchema.safeParse(JSON.parse(content)).data ?? null;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -92,7 +93,7 @@ export async function deleteSession() {
 
   try {
     await fs.unlink(sessionPath);
-  } catch (error) {
+  } catch (_error) {
     console.warn("Session file not found");
   }
 

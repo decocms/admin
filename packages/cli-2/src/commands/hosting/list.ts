@@ -1,4 +1,3 @@
-import z from "zod";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import type { FileLike } from "./deploy.js";
 
@@ -21,7 +20,7 @@ export const listApps = async ({ workspace }: Options) => {
   const response = await client.callTool({
     name: "HOSTING_APPS_LIST",
     arguments: {},
-  }, z.any() as any);
+  });
 
   if (response.isError && Array.isArray(response.content)) {
     throw new Error(response.content[0]?.text ?? "Unknown error");

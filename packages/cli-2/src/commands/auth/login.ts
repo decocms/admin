@@ -5,8 +5,9 @@ import type { Provider } from "@supabase/supabase-js";
 import { AUTH_PORT_CLI, DECO_CHAT_LOGIN } from "../../lib/constants.js";
 import { saveSession } from "../../lib/session.js";
 import { createClient } from "../../lib/supabase.js";
+import process from "node:process";
 
-export const loginCommand = async () => {
+export const loginCommand = () => {
   return new Promise<void>((resolve, reject) => {
     const server = createServer(
       async (req: IncomingMessage, res: ServerResponse) => {

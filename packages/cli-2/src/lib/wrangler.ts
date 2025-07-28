@@ -7,6 +7,8 @@ import {
   readWranglerConfig,
 } from "./config.js";
 import { readSession } from "./session.js";
+import process from "node:process";
+import { Buffer } from "node:buffer";
 
 const envFile = ".dev.vars";
 

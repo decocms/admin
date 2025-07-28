@@ -1,3 +1,4 @@
+import process from "node:process";
 const LOCAL_DEBUGGER = process.env.VITE_USE_LOCAL_BACKEND === "true";
 
 export const SUPABASE_URL = "https://auth.deco.cx";

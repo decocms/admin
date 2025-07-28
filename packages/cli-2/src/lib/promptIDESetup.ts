@@ -20,6 +20,7 @@ import {
   getMCPConfigVersion,
   getRulesConfig,
 } from "./config.js";
+import process from "node:process";
 
 type MCPServerConfig = {
   command: string;
@@ -186,7 +187,7 @@ export async function promptIDESetup(
 ): Promise<Array<{ content: string; path: string }> | null> {
   await setMCPPreferences(cfg.workspace, cfg.app);
 
-  const mcpConfig = await getMCPConfig(cfg.workspace, cfg.app);
+  const mcpConfig = getMCPConfig(cfg.workspace, cfg.app);
 
   // Ask if user wants to make IDE sentient
   const { wantsSentientIDE } = await inquirer.prompt([{

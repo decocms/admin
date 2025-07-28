@@ -7,13 +7,14 @@ import {
   readWranglerConfig,
 } from "../../lib/config.js";
 import { createServer } from "net";
+import process from "node:process";
 
 interface LinkOptions {
   port?: number;
   onBeforeRegister?: () => void | ChildProcess;
 }
 
-async function copyToClipboard(text: string): Promise<boolean> {
+function copyToClipboard(text: string): Promise<boolean> {
   try {
     let command: string;
     let args: string[] = [];
@@ -30,7 +31,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
         args = ["-selection", "clipboard"];
         break;
       default:
-        return false;
+        return Promise.resolve(false);
     }
 
     return new Promise((resolve) => {
@@ -48,7 +49,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
       });
     });
   } catch {
-    return false;
+    return Promise.resolve(false);
   }
 }
 
@@ -162,7 +163,7 @@ export const link = async ({
     : "my-app";
 
   // Generate app domain based on workspace and app name
-  const appDomain = await getAppDomain(config.workspace, app);
+  const appDomain = getAppDomain(config.workspace, app);
 
   await register(port, appDomain, onBeforeRegister);
 };

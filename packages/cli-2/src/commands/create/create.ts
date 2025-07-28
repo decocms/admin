@@ -13,6 +13,7 @@ import { slugify } from "../../lib/slugify.js";
 import { promptWorkspace } from "../../lib/promptWorkspace.js";
 import { genEnv } from "../gen/gen.js";
 import { promptIDESetup, writeIDEConfig } from "../../lib/promptIDESetup.js";
+import process from "node:process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,7 +53,7 @@ const AVAILABLE_TEMPLATES: Template[] = [
   },
 ];
 
-async function runCommand(
+function runCommand(
   command: string,
   args: string[],
   cwd?: string,
@@ -164,7 +165,10 @@ async function customizeTemplate({
       const currentConfig = await readWranglerConfig(wranglerRoot || targetDir);
 
       // For now, use empty bindings - we can enhance this later with prompt integrations
-      const bindings: any[] = [];
+      const bindings: Array<
+        | { type: string; name: string; integration_id: string }
+        | { type: string; name: string; integration_name: string }
+      > = [];
 
       // Merge with new project name and workspace - preserve all existing config
       const newConfig = {

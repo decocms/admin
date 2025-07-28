@@ -135,7 +135,7 @@ export async function* walk(
     let entries: Dirent[];
     try {
       entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch (error) {
+    } catch (_error) {
       // Skip directories we can't read
       return;
     }

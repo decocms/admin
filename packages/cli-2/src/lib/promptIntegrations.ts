@@ -14,7 +14,7 @@
  * @throws Error if no session is found or no integrations are available
  */
 import inquirer from "inquirer";
-// @ts-ignore
+// @ts-ignore - does not have types
 import inquirerSearchCheckbox from "inquirer-search-checkbox";
 import { createWorkspaceClient } from "./mcp.js";
 import { readSession } from "./session.js";
@@ -22,7 +22,6 @@ import { sanitizeConstantName } from "./slugify.js";
 import { z } from "zod";
 
 // Register the search checkbox plugin
-// @ts-ignore
 inquirer.registerPrompt("search-checkbox", inquirerSearchCheckbox);
 
 interface Integration {

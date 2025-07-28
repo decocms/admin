@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import * as semver from "semver";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import process from "node:process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,7 +46,7 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
   }
 };
 
-export const upgrade = async (packageName: string): Promise<void> => {
+export const upgrade = (packageName: string): Promise<void> => {
   console.log(chalk.yellow("🔄 Upgrading to the latest version..."));
 
   return new Promise((resolve, reject) => {

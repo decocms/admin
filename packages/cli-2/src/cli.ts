@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 // Check Node.js version requirement
+import process from "node:process";
 const MIN_NODE_VERSION = "18.0.0";
 const currentNodeVersion = process.version.slice(1); // Remove 'v' prefix
 

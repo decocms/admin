@@ -1,12 +1,17 @@
 import inquirer from "inquirer";
-import { join } from "path";
-import { promises as fs } from "fs";
 import {
   type Config,
   getConfig,
   readWranglerConfig,
   writeWranglerConfig,
 } from "../../lib/config.js";
+import { promptWorkspace } from "../../lib/promptWorkspace.js";
+import { promptIntegrations } from "../../lib/promptIntegrations.js";
+import { promptIDESetup, writeIDEConfig } from "../../lib/promptIDESetup.js";
+import { genEnv } from "../gen/gen.js";
+import { promises as fs } from "fs";
+import { join } from "path";
+import process from "node:process";
 
 export async function configureCommand(local?: boolean) {
   const currentConfig = await getConfig({ inlineOptions: { local } })
@@ -24,28 +29,22 @@ export async function configureCommand(local?: boolean) {
     default: defaultApp,
   }]);
 
-  // For now, use a simple workspace prompt - we'll enhance this later
-  const workspace = currentConfig.workspace || (await inquirer.prompt([{
-    type: "input",
-    name: "workspace",
-    message: "Enter workspace name:",
-    default: "default",
-  }])).workspace;
+  // Use the proper workspace prompt
+  const workspace = await promptWorkspace(local, currentConfig.workspace);
 
-  // TODO: Add MCP configuration when we port those utilities
-  // const mcpConfig = await promptIDESetup(config);
+  // Add MCP configuration
+  const mcpConfig = await promptIDESetup({ workspace, app });
 
-  // TODO: Add integrations when we port those utilities
-  // const bindings = await promptIntegrations(local, workspace);
-  const bindings: any[] = [];
+  // Add integrations
+  const bindings = await promptIntegrations(local, workspace);
 
-  // TODO: Generate environment variables file when we port typings
-  // const envContent = await genEnv({ workspace, local, bindings });
+  // Generate environment variables file
+  const envContent = await genEnv({ workspace, local, bindings });
 
-  // TODO: Write IDE config when we port MCP utilities
-  // if (mcpConfig) {
-  //   await writeIDEConfig(mcpConfig);
-  // }
+  // Write IDE config
+  if (mcpConfig) {
+    await writeIDEConfig(mcpConfig);
+  }
 
   // Write both app name (top-level) and deco config in one go
   await writeWranglerConfig({
@@ -57,10 +56,10 @@ export async function configureCommand(local?: boolean) {
     },
   });
 
-  // TODO: Write environment types file when we port typings
-  // const outputPath = join(process.cwd(), "deco.gen.ts");
-  // await fs.writeFile(outputPath, envContent);
-  // console.log(`✅ Environment types written to: ${outputPath}`);
+  // Write environment types file
+  const outputPath = join(process.cwd(), "deco.gen.ts");
+  await fs.writeFile(outputPath, envContent);
+  console.log(`✅ Environment types written to: ${outputPath}`);
 
   console.log(`✅ Configuration saved:`);
   console.log(`   App: ${app}`);

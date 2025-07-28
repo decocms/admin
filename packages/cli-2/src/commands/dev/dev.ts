@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import { getConfig, readWranglerConfig } from "../../lib/config.js";
 import { ensureDevEnvironment } from "../../lib/wrangler.js";
 import { link } from "./link.js";
+import process from "node:process";
 
 export async function devCommand(): Promise<void> {
   try {
@@ -10,7 +11,7 @@ export async function devCommand(): Promise<void> {
     await ensureDevEnvironment();
 
     // 2. Get configuration
-    const config = await getConfig().catch(() => ({
+    const _config = await getConfig().catch(() => ({
       workspace: "default",
       bindings: [],
       local: false,

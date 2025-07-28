@@ -7,6 +7,7 @@ import {
 } from "../../lib/config.js";
 import { promptIntegrations } from "../../lib/promptIntegrations.js";
 import { readSession } from "../../lib/session.js";
+import process from "node:process";
 
 interface AddCommandOptions {
   workspace?: string;

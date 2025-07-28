@@ -14,7 +14,6 @@
  * @throws Error if no session is found or no teams are available
  */
 import inquirer from "inquirer";
-import z from "zod";
 import { createWorkspaceClient } from "./mcp.js";
 import { readSession } from "./session.js";
 
@@ -39,7 +38,7 @@ export async function promptWorkspace(
     // @ts-ignore - inquirer-search-list has no type definitions
     const searchList = (await import("inquirer-search-list")).default;
     inquirer.registerPrompt("search-list", searchList);
-  } catch (error) {
+  } catch {
     console.warn(
       "Could not load search functionality, falling back to basic list",
     );
@@ -59,7 +58,7 @@ export async function promptWorkspace(
     const response = await client.callTool({
       name: "TEAMS_LIST",
       arguments: {},
-    }, z.any() as any);
+    });
 
     if (response.isError) {
       throw new Error("Failed to fetch teams");
@@ -83,7 +82,7 @@ export async function promptWorkspace(
     try {
       // Try using search-list first
       const result = await inquirer.prompt([{
-        type: "search-list" as any,
+        type: "search-list",
         name: "selectedSlug",
         message: "Select a workspace:",
         choices,

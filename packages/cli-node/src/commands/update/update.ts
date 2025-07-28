@@ -35,7 +35,7 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
       throw new Error(`Failed to fetch latest version: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { version: string };
     return data.version;
   } catch (error) {
     clearTimeout(timeoutId);

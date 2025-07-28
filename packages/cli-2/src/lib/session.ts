@@ -48,7 +48,7 @@ export async function saveSession(
       2,
     ),
   );
-  
+
   // Set file permissions to 600 (read/write for user only)
   // Skip chmod on Windows as it doesn't support Unix-style file permissions
   if (process.platform !== "win32") {
@@ -76,10 +76,10 @@ export async function readSession(): Promise<SessionData | null> {
       api_token: token,
     };
   }
-  
+
   try {
     const sessionPath = getSessionPath();
-    const content = await fs.readFile(sessionPath, 'utf-8');
+    const content = await fs.readFile(sessionPath, "utf-8");
     return SessionSchema.safeParse(JSON.parse(content)).data ?? null;
   } catch (error) {
     return null;

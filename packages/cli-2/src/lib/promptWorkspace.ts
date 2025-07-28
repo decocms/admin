@@ -34,6 +34,17 @@ export async function promptWorkspace(
   local = false,
   current = "",
 ): Promise<string> {
+  // Register the search-list plugin
+  try {
+    // @ts-ignore - inquirer-search-list has no type definitions
+    const searchList = (await import("inquirer-search-list")).default;
+    inquirer.registerPrompt("search-list", searchList);
+  } catch (error) {
+    console.warn(
+      "Could not load search functionality, falling back to basic list",
+    );
+  }
+
   // Check if user has a session
   const session = await readSession();
   if (!session) {
@@ -66,14 +77,30 @@ export async function promptWorkspace(
       value: team.slug,
     }));
 
-    // Prompt user to select a team
-    const { selectedSlug } = await inquirer.prompt([{
-      type: 'list',
-      name: 'selectedSlug',
-      message: 'Select a workspace:',
-      choices,
-      default: current,
-    }]);
+    // Prompt user to select a team with search functionality
+    let selectedSlug: string;
+
+    try {
+      // Try using search-list first
+      const result = await inquirer.prompt([{
+        type: "search-list" as any,
+        name: "selectedSlug",
+        message: "Select a workspace:",
+        choices,
+        default: current,
+      }]);
+      selectedSlug = result.selectedSlug;
+    } catch {
+      // Fallback to basic list if search-list fails
+      const result = await inquirer.prompt([{
+        type: "list",
+        name: "selectedSlug",
+        message: "Select a workspace:",
+        choices,
+        default: current,
+      }]);
+      selectedSlug = result.selectedSlug;
+    }
 
     // Return the selected team slug as the workspace
     return selectedSlug;

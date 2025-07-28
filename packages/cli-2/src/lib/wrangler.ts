@@ -63,7 +63,9 @@ export async function getEnvVars(projectRoot?: string) {
     getConfig({}),
     readWranglerConfig(projectRoot),
   ]);
-  const encodedBindings = Buffer.from(JSON.stringify(config.bindings)).toString('base64');
+  const encodedBindings = Buffer.from(JSON.stringify(config.bindings)).toString(
+    "base64",
+  );
 
   const workspace = config.workspace ?? session?.workspace;
   const env: Record<string, string> = {

@@ -18,24 +18,24 @@ export async function configureCommand(local?: boolean) {
     : "my-app";
 
   const { app } = await inquirer.prompt([{
-    type: 'input',
-    name: 'app',
-    message: 'Enter app name:',
+    type: "input",
+    name: "app",
+    message: "Enter app name:",
     default: defaultApp,
   }]);
 
   // For now, use a simple workspace prompt - we'll enhance this later
   const workspace = currentConfig.workspace || (await inquirer.prompt([{
-    type: 'input', 
-    name: 'workspace',
-    message: 'Enter workspace name:',
-    default: 'default',
+    type: "input",
+    name: "workspace",
+    message: "Enter workspace name:",
+    default: "default",
   }])).workspace;
 
   // TODO: Add MCP configuration when we port those utilities
   // const mcpConfig = await promptIDESetup(config);
 
-  // TODO: Add integrations when we port those utilities  
+  // TODO: Add integrations when we port those utilities
   // const bindings = await promptIntegrations(local, workspace);
   const bindings: any[] = [];
 

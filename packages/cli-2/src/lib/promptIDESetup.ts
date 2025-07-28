@@ -56,7 +56,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
       const configs = [];
 
       const configPath = join(outDir, "mcp.json");
-      const existingConfig: MCPConfig = await fs.readFile(configPath, 'utf-8')
+      const existingConfig: MCPConfig = await fs.readFile(configPath, "utf-8")
         .then(JSON.parse).catch(() => ({ mcpServers: {} }));
 
       const config = {
@@ -88,7 +88,7 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
       const configs = [];
 
       const configPath = join(outDir, "mcp.json");
-      const existingConfig: MCPConfig = await fs.readFile(configPath, 'utf-8')
+      const existingConfig: MCPConfig = await fs.readFile(configPath, "utf-8")
         .then(JSON.parse).catch(() => ({ mcpServers: {} }));
 
       const config = {
@@ -138,10 +138,13 @@ export const hasMCPPreferences = async (
   ]);
 
   // Use a simple file-based storage instead of localStorage for Node.js
-  const prefsPath = join(process.cwd(), '.deco', 'preferences.json');
-  
+  const prefsPath = join(process.cwd(), ".deco", "preferences.json");
+
   try {
-    const prefs = JSON.parse(await fs.readFile(prefsPath, 'utf-8')) as Record<string, string>;
+    const prefs = JSON.parse(await fs.readFile(prefsPath, "utf-8")) as Record<
+      string,
+      string
+    >;
     const storedVersion = prefs[`mcp-install-version-${appUUID}`];
     return storedVersion === currentVersion;
   } catch {
@@ -155,22 +158,25 @@ export const setMCPPreferences = async (workspace: string, app: string) => {
     getMCPConfigVersion(),
   ]);
 
-  const prefsPath = join(process.cwd(), '.deco', 'preferences.json');
-  
+  const prefsPath = join(process.cwd(), ".deco", "preferences.json");
+
   try {
     await ensureDir(dirname(prefsPath));
     let prefs: Record<string, string> = {};
-    
+
     try {
-      prefs = JSON.parse(await fs.readFile(prefsPath, 'utf-8')) as Record<string, string>;
+      prefs = JSON.parse(await fs.readFile(prefsPath, "utf-8")) as Record<
+        string,
+        string
+      >;
     } catch {
       // File doesn't exist, start with empty prefs
     }
-    
+
     prefs[`mcp-install-version-${appUUID}`] = currentVersion;
     await fs.writeFile(prefsPath, JSON.stringify(prefs, null, 2));
   } catch (error) {
-    console.warn('Failed to save MCP preferences:', error);
+    console.warn("Failed to save MCP preferences:", error);
   }
 };
 
@@ -184,9 +190,9 @@ export async function promptIDESetup(
 
   // Ask if user wants to make IDE sentient
   const { wantsSentientIDE } = await inquirer.prompt([{
-    type: 'confirm',
-    name: 'wantsSentientIDE',
-    message: 'Would you like to configure your IDE to use this project?',
+    type: "confirm",
+    name: "wantsSentientIDE",
+    message: "Would you like to configure your IDE to use this project?",
     default: true,
   }]);
 
@@ -196,13 +202,13 @@ export async function promptIDESetup(
 
   // Prompt user to select their IDE
   const { selectedIDE } = await inquirer.prompt([{
-    type: 'list',
-    name: 'selectedIDE',
-    message: 'Select your preferred IDE:',
+    type: "list",
+    name: "selectedIDE",
+    message: "Select your preferred IDE:",
     choices: [
-      { name: 'Cursor', value: 'cursor' },
-      { name: 'VS Code', value: 'vscode' },
-      { name: 'None', value: 'none' },
+      { name: "Cursor", value: "cursor" },
+      { name: "VS Code", value: "vscode" },
+      { name: "None", value: "none" },
     ],
   }]);
 

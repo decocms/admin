@@ -1,7 +1,11 @@
-import { spawn, ChildProcess } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import { connect } from "@deco-cx/warp-node";
 import chalk from "chalk";
-import { getAppDomain, getConfig, readWranglerConfig } from "../../lib/config.js";
+import {
+  getAppDomain,
+  getConfig,
+  readWranglerConfig,
+} from "../../lib/config.js";
 import { createServer } from "net";
 
 interface LinkOptions {
@@ -13,7 +17,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   try {
     let command: string;
     let args: string[] = [];
-    
+
     switch (process.platform) {
       case "darwin":
         command = "pbcopy";
@@ -30,16 +34,16 @@ async function copyToClipboard(text: string): Promise<boolean> {
     }
 
     return new Promise((resolve) => {
-      const clipProcess = spawn(command, args, { stdio: 'pipe' });
-      
+      const clipProcess = spawn(command, args, { stdio: "pipe" });
+
       clipProcess.stdin.write(text);
       clipProcess.stdin.end();
-      
-      clipProcess.on('close', (code) => {
+
+      clipProcess.on("close", (code) => {
         resolve(code === 0);
       });
-      
-      clipProcess.on('error', () => {
+
+      clipProcess.on("error", () => {
         resolve(false);
       });
     });
@@ -50,26 +54,26 @@ async function copyToClipboard(text: string): Promise<boolean> {
 
 async function isPortRunning(port: number): Promise<boolean> {
   const LOCALHOST_ENDPOINTS = ["localhost", "127.0.0.1", "0.0.0.0"];
-  
+
   for (const endpoint of LOCALHOST_ENDPOINTS) {
     try {
       const server = createServer();
-      
+
       await new Promise<void>((resolve, reject) => {
         server.listen(port, endpoint, () => {
           server.close();
           resolve();
         });
-        
-        server.on('error', reject);
+
+        server.on("error", reject);
       });
-      
+
       return false; // Port is available
     } catch {
       return true; // Port is in use
     }
   }
-  
+
   return false;
 }
 

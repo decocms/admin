@@ -8,73 +8,77 @@ import { createClient } from "../../lib/supabase.js";
 
 export const loginCommand = async () => {
   return new Promise<void>((resolve, reject) => {
-    const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      const url = new URL(req.url!, `http://localhost:${AUTH_PORT_CLI}`);
-      
-      // Convert IncomingMessage headers to Headers object
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (value) {
-          headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+    const server = createServer(
+      async (req: IncomingMessage, res: ServerResponse) => {
+        const url = new URL(req.url!, `http://localhost:${AUTH_PORT_CLI}`);
+
+        // Convert IncomingMessage headers to Headers object
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(req.headers)) {
+          if (value) {
+            headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+          }
         }
-      }
 
-      const { client, responseHeaders } = createClient(headers);
+        const { client, responseHeaders } = createClient(headers);
 
-      if (url.pathname === "/login/oauth") {
-        const credentials = {
-          provider: (url.searchParams.get("provider") ?? "google") as Provider,
-          options: { redirectTo: new URL("/auth/callback/oauth", url).href },
-        };
+        if (url.pathname === "/login/oauth") {
+          const credentials = {
+            provider:
+              (url.searchParams.get("provider") ?? "google") as Provider,
+            options: { redirectTo: new URL("/auth/callback/oauth", url).href },
+          };
 
-        const { data } = await client.auth.signInWithOAuth(credentials);
+          const { data } = await client.auth.signInWithOAuth(credentials);
 
-        if (data.url) {
-          // Convert Headers to plain object
-          const responseHeadersObj: Record<string, string> = {};
-          responseHeaders.forEach((value, key) => {
-            responseHeadersObj[key] = value;
-          });
-          
-          res.writeHead(302, { 
-            Location: data.url,
-            ...responseHeadersObj
-          });
-          res.end();
+          if (data.url) {
+            // Convert Headers to plain object
+            const responseHeadersObj: Record<string, string> = {};
+            responseHeaders.forEach((value, key) => {
+              responseHeadersObj[key] = value;
+            });
+
+            res.writeHead(302, {
+              Location: data.url,
+              ...responseHeadersObj,
+            });
+            res.end();
+            return;
+          }
+
+          res.writeHead(500);
+          res.end("Error redirecting to OAuth provider");
           return;
         }
 
-        res.writeHead(500);
-        res.end("Error redirecting to OAuth provider");
-        return;
-      }
+        if (url.pathname === "/auth/callback/oauth") {
+          const code = url.searchParams.get("code");
 
-      if (url.pathname === "/auth/callback/oauth") {
-        const code = url.searchParams.get("code");
+          if (!code) {
+            res.writeHead(400);
+            res.end("No code found");
+            return;
+          }
 
-        if (!code) {
-          res.writeHead(400);
-          res.end("No code found");
-          return;
-        }
+          const { data, error } = await client.auth.exchangeCodeForSession(
+            code,
+          );
 
-        const { data, error } = await client.auth.exchangeCodeForSession(code);
+          if (error || !data?.session) {
+            res.writeHead(400);
+            res.end(error?.message ?? "Unknown error");
+            return;
+          }
 
-        if (error || !data?.session) {
-          res.writeHead(400);
-          res.end(error?.message ?? "Unknown error");
-          return;
-        }
+          // Save session data securely
+          try {
+            await saveSession(data);
+          } catch (e) {
+            console.error("Failed to save session data:", e);
+          }
 
-        // Save session data securely
-        try {
-          await saveSession(data);
-        } catch (e) {
-          console.error("Failed to save session data:", e);
-        }
-
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(`<!DOCTYPE html>
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.end(`<!DOCTYPE html>
         <html>
           <head>
             <title>Authentication Complete</title>
@@ -88,28 +92,30 @@ export const loginCommand = async () => {
           </body>
         </html>`);
 
-        // Close server after successful authentication
-        server.close(() => resolve());
-        return;
-      }
+          // Close server after successful authentication
+          server.close(() => resolve());
+          return;
+        }
 
-      res.writeHead(404);
-      res.end("Not found");
-    });
+        res.writeHead(404);
+        res.end("Not found");
+      },
+    );
 
     server.listen(AUTH_PORT_CLI, () => {
       // Open browser with OS-appropriate command
       const browserCommands: Record<string, string> = {
         linux: "xdg-open",
-        darwin: "open", 
+        darwin: "open",
         win32: "start",
         freebsd: "xdg-open",
         openbsd: "xdg-open",
         sunos: "xdg-open",
         aix: "open",
       };
-      
-      const browser = process.env.BROWSER ?? browserCommands[process.platform] ?? "open";
+
+      const browser = process.env.BROWSER ??
+        browserCommands[process.platform] ?? "open";
 
       // Windows requires using cmd.exe because 'start' is a built-in command
       const command = process.platform === "win32" && browser === "start"

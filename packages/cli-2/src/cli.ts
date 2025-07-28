@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 // Check Node.js version requirement
-const MIN_NODE_VERSION = '18.0.0';
+const MIN_NODE_VERSION = "18.0.0";
 const currentNodeVersion = process.version.slice(1); // Remove 'v' prefix
 
 function compareVersions(version1: string, version2: string): number {
-  const v1parts = version1.split('.').map(Number);
-  const v2parts = version2.split('.').map(Number);
-  
+  const v1parts = version1.split(".").map(Number);
+  const v2parts = version2.split(".").map(Number);
+
   for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
     const v1part = v1parts[i] || 0;
     const v2part = v2parts[i] || 0;
-    
+
     if (v1part < v2part) return -1;
     if (v1part > v2part) return 1;
   }
@@ -26,9 +26,12 @@ if (compareVersions(currentNodeVersion, MIN_NODE_VERSION) < 0) {
 }
 
 // Suppress punycode deprecation warning from dependencies
-process.removeAllListeners('warning');
-process.on('warning', (warning) => {
-  if (warning.name === 'DeprecationWarning' && warning.message.includes('punycode')) {
+process.removeAllListeners("warning");
+process.on("warning", (warning) => {
+  if (
+    warning.name === "DeprecationWarning" &&
+    warning.message.includes("punycode")
+  ) {
     return; // Ignore punycode deprecation warnings
   }
   console.warn(warning.message);
@@ -36,7 +39,7 @@ process.on('warning', (warning) => {
 
 import { Command } from "commander";
 import { readFile } from "fs/promises";
-import { join, dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
@@ -76,7 +79,10 @@ const login = new Command("login")
       await loginCommand();
       console.log("✅ Successfully logged in to deco.chat");
     } catch (error) {
-      console.error("❌ Login failed:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Login failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -102,7 +108,7 @@ const whoami = new Command("whoami")
   .description("Print info about the current session.")
   .action(whoamiCommand);
 
-// Configure command implementation  
+// Configure command implementation
 const configure = new Command("configure")
   .alias("config")
   .description("Save configuration options for the current directory.")
@@ -110,7 +116,10 @@ const configure = new Command("configure")
     try {
       await configureCommand(getLocal());
     } catch (error) {
-      console.error("❌ Configuration failed:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Configuration failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -122,15 +131,20 @@ const hostingList = new Command("list")
     try {
       const session = await readSession();
       const workspace = options.workspace || session?.workspace;
-      
+
       if (!workspace) {
-        console.error("❌ No workspace specified. Use -w flag or run 'deco configure' first.");
+        console.error(
+          "❌ No workspace specified. Use -w flag or run 'deco configure' first.",
+        );
         process.exit(1);
       }
 
       await listApps({ workspace });
     } catch (error) {
-      console.error("❌ Failed to list apps:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Failed to list apps:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -146,7 +160,7 @@ const hostingDeploy = new Command("deploy")
   .action(async (cwd, options) => {
     try {
       const { getConfig, readWranglerConfig } = await import("./lib/config.js");
-      
+
       const config = await getConfig({
         inlineOptions: options,
       });
@@ -156,7 +170,7 @@ const hostingDeploy = new Command("deploy")
         (typeof wranglerConfig.name === "string"
           ? wranglerConfig.name
           : "my-app");
-      
+
       await deploy({
         ...config,
         app,
@@ -166,7 +180,10 @@ const hostingDeploy = new Command("deploy")
         assetsDirectory,
       });
     } catch (error) {
-      console.error("❌ Deployment failed:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Deployment failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -179,24 +196,26 @@ const linkCmd = new Command("link")
   .action(async (options, cmd) => {
     try {
       const runCommand = cmd.args;
-      
+
       await link({
         port: options.port,
         onBeforeRegister: () => {
           if (runCommand.length === 0) {
-            console.log("⚠️  No command provided. Tunnel will connect to existing service on port.");
+            console.log(
+              "⚠️  No command provided. Tunnel will connect to existing service on port.",
+            );
             return;
           }
 
           const [command, ...args] = runCommand;
-          console.log(`🔗 Starting command: ${command} ${args.join(' ')}`);
-          
+          console.log(`🔗 Starting command: ${command} ${args.join(" ")}`);
+
           const childProcess = spawn(command, args, {
             stdio: "inherit",
             shell: true,
           });
 
-          childProcess.on('error', (error: Error) => {
+          childProcess.on("error", (error: Error) => {
             console.error("❌ Failed to start command:", error.message);
             process.exit(1);
           });
@@ -205,7 +224,10 @@ const linkCmd = new Command("link")
         },
       });
     } catch (error) {
-      console.error("❌ Link failed:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Link failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -233,7 +255,10 @@ const create = new Command("create")
       const config = await getConfig().catch(() => ({}));
       await createCommand(projectName, options.template, config);
     } catch (error) {
-      console.error("❌ Project creation failed:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Project creation failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -264,7 +289,7 @@ const gen = new Command("gen")
   .description("Generate the environment that will be used to run the app.")
   .option(
     "-s, --self <url>",
-    "Useful to generate a SELF binding for own types based on local mcp server."
+    "Useful to generate a SELF binding for own types based on local mcp server.",
   )
   .action(async (options) => {
     try {
@@ -277,7 +302,10 @@ const gen = new Command("gen")
       });
       console.log(env);
     } catch (error) {
-      console.error("❌ Failed to generate environment:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "❌ Failed to generate environment:",
+        error instanceof Error ? error.message : String(error),
+      );
       process.exit(1);
     }
   });
@@ -292,14 +320,14 @@ const program = new Command()
     "Authentication token to use for API requests",
     (token) => {
       setToken(token);
-    }
+    },
   )
   .option(
     "-l, --local",
     `Deploy the app locally (Needs deco.chat running at ${DECO_CHAT_API_LOCAL})`,
     () => {
       setLocal(true);
-    }
+    },
   )
   .addCommand(login)
   .addCommand(logout)

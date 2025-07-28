@@ -1,4 +1,4 @@
-import { promises as fs, Dirent } from "fs";
+import { Dirent, promises as fs } from "fs";
 import { dirname, join, relative } from "path";
 import { createReadStream, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
@@ -12,7 +12,7 @@ export async function ensureDir(dirPath: string): Promise<void> {
     await fs.mkdir(dirPath, { recursive: true });
   } catch (error) {
     // If directory already exists, that's fine
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
       throw error;
     }
   }
@@ -29,15 +29,19 @@ async function copyFile(src: string, dest: string): Promise<void> {
 /**
  * Copy a directory recursively from source to destination
  */
-async function copyDir(src: string, dest: string, options: CopyOptions = {}): Promise<void> {
+async function copyDir(
+  src: string,
+  dest: string,
+  options: CopyOptions = {},
+): Promise<void> {
   await ensureDir(dest);
-  
+
   const entries = await fs.readdir(src, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const srcPath = join(src, entry.name);
     const destPath = join(dest, entry.name);
-    
+
     if (entry.isDirectory()) {
       await copyDir(srcPath, destPath, options);
     } else if (entry.isFile()) {
@@ -62,9 +66,13 @@ export interface CopyOptions {
  * Copy a file or directory from source to destination
  * Node.js equivalent of Deno's copy
  */
-export async function copy(src: string, dest: string, options: CopyOptions = {}): Promise<void> {
+export async function copy(
+  src: string,
+  dest: string,
+  options: CopyOptions = {},
+): Promise<void> {
   const srcStat = await fs.stat(src);
-  
+
   if (srcStat.isDirectory()) {
     await copyDir(src, dest, options);
   } else if (srcStat.isFile()) {
@@ -106,7 +114,7 @@ export interface WalkOptions {
  */
 export async function* walk(
   root: string,
-  options: WalkOptions = {}
+  options: WalkOptions = {},
 ): AsyncGenerator<WalkEntry, void, unknown> {
   const {
     maxDepth = Infinity,
@@ -118,7 +126,10 @@ export async function* walk(
     skip,
   } = options;
 
-  async function* walkRecursive(dir: string, depth: number): AsyncGenerator<WalkEntry, void, unknown> {
+  async function* walkRecursive(
+    dir: string,
+    depth: number,
+  ): AsyncGenerator<WalkEntry, void, unknown> {
     if (depth > maxDepth) return;
 
     let entries: Dirent[];
@@ -132,7 +143,7 @@ export async function* walk(
     for (const entry of entries) {
       const entryPath = join(dir, entry.name);
       const relativePath = relative(root, entryPath);
-      
+
       let isFile = entry.isFile();
       let isDirectory = entry.isDirectory();
       const isSymlink = entry.isSymbolicLink();
@@ -159,16 +170,16 @@ export async function* walk(
       };
 
       // Apply filters
-      if (skip && skip.some(pattern => pattern.test(relativePath))) {
+      if (skip && skip.some((pattern) => pattern.test(relativePath))) {
         continue;
       }
 
-      if (match && !match.some(pattern => pattern.test(relativePath))) {
+      if (match && !match.some((pattern) => pattern.test(relativePath))) {
         continue;
       }
 
       if (exts && isFile) {
-        const ext = entryPath.substring(entryPath.lastIndexOf('.') + 1);
+        const ext = entryPath.substring(entryPath.lastIndexOf(".") + 1);
         if (!exts.includes(ext)) {
           continue;
         }
@@ -198,7 +209,10 @@ export async function* walk(
  * Collect all walk entries into an array
  * Convenience function for when you need all entries at once
  */
-export async function walkArray(root: string, options: WalkOptions = {}): Promise<WalkEntry[]> {
+export async function walkArray(
+  root: string,
+  options: WalkOptions = {},
+): Promise<WalkEntry[]> {
   const entries: WalkEntry[] = [];
   for await (const entry of walk(root, options)) {
     entries.push(entry);

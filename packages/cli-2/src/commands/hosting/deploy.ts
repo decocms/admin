@@ -165,9 +165,9 @@ export const deploy = async (
 
   const confirmed = skipConfirmation ||
     (await inquirer.prompt([{
-      type: 'confirm',
-      name: 'proceed',
-      message: 'Proceed with deployment?',
+      type: "confirm",
+      name: "proceed",
+      message: "Proceed with deployment?",
       default: true,
     }])).proceed;
 

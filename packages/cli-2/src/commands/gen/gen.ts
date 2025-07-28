@@ -40,17 +40,17 @@ export async function format(content: string): Promise<string> {
   try {
     // Try to format using npx prettier if available
     const prettier = spawn("npx", ["prettier", "--parser", "typescript"], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
     let formatted = "";
     let error = "";
 
-    prettier.stdout.on('data', (data) => {
+    prettier.stdout.on("data", (data) => {
       formatted += data.toString();
     });
 
-    prettier.stderr.on('data', (data) => {
+    prettier.stderr.on("data", (data) => {
       error += data.toString();
     });
 
@@ -58,7 +58,7 @@ export async function format(content: string): Promise<string> {
     prettier.stdin.end();
 
     return new Promise((resolve) => {
-      prettier.on('close', (code) => {
+      prettier.on("close", (code) => {
         if (code === 0 && formatted) {
           resolve(formatted);
         } else {
@@ -75,15 +75,71 @@ export async function format(content: string): Promise<string> {
 
 // Shared list of reserved JavaScript keywords
 const RESERVED_KEYWORDS = [
-  "break", "case", "catch", "class", "const", "continue", "debugger", "default",
-  "delete", "do", "else", "export", "extends", "finally", "for", "function",
-  "if", "import", "in", "instanceof", "let", "new", "return", "super",
-  "switch", "this", "throw", "try", "typeof", "var", "void", "while",
-  "with", "yield", "enum", "await", "implements", "interface", "package",
-  "private", "protected", "public", "static", "abstract", "boolean", "byte",
-  "char", "double", "final", "float", "goto", "int", "long", "native",
-  "short", "synchronized", "throws", "transient", "volatile", "null",
-  "true", "false", "undefined", "NaN", "Infinity",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "export",
+  "extends",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "import",
+  "in",
+  "instanceof",
+  "let",
+  "new",
+  "return",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+  "enum",
+  "await",
+  "implements",
+  "interface",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "static",
+  "abstract",
+  "boolean",
+  "byte",
+  "char",
+  "double",
+  "final",
+  "float",
+  "goto",
+  "int",
+  "long",
+  "native",
+  "short",
+  "synchronized",
+  "throws",
+  "transient",
+  "volatile",
+  "null",
+  "true",
+  "false",
+  "undefined",
+  "NaN",
+  "Infinity",
 ];
 
 function isValidJavaScriptPropertyName(name: string): boolean {
@@ -116,140 +172,141 @@ export const genEnv = async (
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
 
-  const types = new Map<string, number>();
-  types.set("Env", 1); // set the default env type
-  let tsTypes = "";
-  const props = await Promise.all(
-    [
-      ...bindings,
-      ...DEFAULT_BINDINGS,
-      ...selfUrl
-        ? [{
-          name: "SELF",
-          type: "mcp" as const,
-          integration_url: selfUrl,
-          ignoreCache: true,
-        }]
-        : [],
-    ].map(async (binding) => {
-      let connection: unknown;
-      let stateKey: KeyInfo | undefined;
-      if ("integration_id" in binding) {
-        const integration = await client.callTool({
-          name: "INTEGRATIONS_GET",
+  try {
+    const types = new Map<string, number>();
+    types.set("Env", 1); // set the default env type
+    let tsTypes = "";
+    const props = await Promise.all(
+      [
+        ...bindings,
+        ...DEFAULT_BINDINGS,
+        ...selfUrl
+          ? [{
+            name: "SELF",
+            type: "mcp" as const,
+            integration_url: selfUrl,
+            ignoreCache: true,
+          }]
+          : [],
+      ].map(async (binding) => {
+        let connection: unknown;
+        let stateKey: KeyInfo | undefined;
+        if ("integration_id" in binding) {
+          const integration = await client.callTool({
+            name: "INTEGRATIONS_GET",
+            arguments: {
+              id: binding.integration_id,
+            },
+          }) as { structuredContent: { connection: unknown } };
+          connection = integration.structuredContent.connection;
+        } else if ("integration_name" in binding) {
+          stateKey = { type: binding.integration_name, key: binding.name };
+          const app = await client.callTool({
+            name: "REGISTRY_GET_APP",
+            arguments: {
+              name: binding.integration_name,
+            },
+          }) as { structuredContent: { connection: unknown } };
+          connection = app.structuredContent.connection;
+        } else if ("integration_url" in binding) {
+          connection = {
+            type: "HTTP",
+            url: binding.integration_url,
+          };
+        } else {
+          throw new Error(`Unknown binding type: ${binding}`);
+        }
+
+        const tools = await apiClient.callTool({
+          name: "INTEGRATIONS_LIST_TOOLS",
           arguments: {
-            id: binding.integration_id,
+            connection,
+            ignoreCache: "ignoreCache" in binding
+              ? binding.ignoreCache
+              : undefined,
           },
-        }) as { structuredContent: { connection: unknown } };
-        connection = integration.structuredContent.connection;
-      } else if ("integration_name" in binding) {
-        stateKey = { type: binding.integration_name, key: binding.name };
-        const app = await client.callTool({
-          name: "REGISTRY_GET_APP",
-          arguments: {
-            name: binding.integration_name,
-          },
-        }) as { structuredContent: { connection: unknown } };
-        connection = app.structuredContent.connection;
-      } else if ("integration_url" in binding) {
-        connection = {
-          type: "HTTP",
-          url: binding.integration_url,
+        }) as {
+          structuredContent: {
+            tools: {
+              name: string;
+              inputSchema: any;
+              outputSchema?: any;
+              description?: string;
+            }[];
+          };
         };
-      } else {
-        throw new Error(`Unknown binding type: ${binding}`);
-      }
 
-      const tools = await apiClient.callTool({
-        name: "INTEGRATIONS_LIST_TOOLS",
-        arguments: {
-          connection,
-          ignoreCache: "ignoreCache" in binding
-            ? binding.ignoreCache
-            : undefined,
-        },
-      }) as {
-        structuredContent: {
-          tools: {
-            name: string;
-            inputSchema: any;
-            outputSchema?: any;
-            description?: string;
-          }[];
-        };
-      };
+        if (!Array.isArray(tools.structuredContent?.tools)) {
+          console.warn(
+            `⚠️ No tools found for integration ${binding.name}. Skipping...`,
+          );
+          return null;
+        }
 
-      if (!Array.isArray(tools.structuredContent?.tools)) {
-        console.warn(
-          `⚠️ No tools found for integration ${binding.name}. Skipping...`,
-        );
-        return null;
-      }
+        const compiledTools = await Promise.all(
+          tools.structuredContent.tools
+            .map(async (t) => {
+              const jsName = generateName(t.name, new Set());
+              const inputName = `${jsName}Input`;
+              const outputName = `${jsName}Output`;
+              const customName = (schema: any) => {
+                let typeName = schema.title ?? schema.type;
+                if (Array.isArray(typeName)) {
+                  typeName = typeName.join(",");
+                }
 
-      const compiledTools = await Promise.all(
-        tools.structuredContent.tools
-          .map(async (t) => {
-            const jsName = generateName(t.name, new Set());
-            const inputName = `${jsName}Input`;
-            const outputName = `${jsName}Output`;
-            const customName = (schema: any) => {
-              let typeName = schema.title ?? schema.type;
-              if (Array.isArray(typeName)) {
-                typeName = typeName.join(",");
-              }
-
-              if (typeof typeName !== "string") {
-                return undefined;
-              }
-              const key = slugify(typeName);
-              const count = types.get(key) ?? 0;
-              types.set(key, count + 1);
-              return count ? `${typeName}_${count}` : typeName;
-            };
-            const [inputTs, outputTs] = await Promise.all([
-              compile({ ...t.inputSchema, title: inputName }, inputName, {
-                additionalProperties: false,
-                customName,
-                format: false,
-              }),
-              t.outputSchema
-                ? await compile(
-                  { ...t.outputSchema, title: outputName },
-                  outputName,
-                  {
-                    customName,
-                    additionalProperties: false,
-                    format: false,
-                  },
-                )
-                : undefined,
-            ]);
-            tsTypes += `
+                if (typeof typeName !== "string") {
+                  return undefined;
+                }
+                const key = slugify(typeName);
+                const count = types.get(key) ?? 0;
+                types.set(key, count + 1);
+                return count ? `${typeName}_${count}` : typeName;
+              };
+              const [inputTs, outputTs] = await Promise.all([
+                compile({ ...t.inputSchema, title: inputName }, inputName, {
+                  additionalProperties: false,
+                  customName,
+                  format: false,
+                }),
+                t.outputSchema
+                  ? await compile(
+                    { ...t.outputSchema, title: outputName },
+                    outputName,
+                    {
+                      customName,
+                      additionalProperties: false,
+                      format: false,
+                    },
+                  )
+                  : undefined,
+              ]);
+              tsTypes += `
         ${inputTs}
         ${outputTs ?? ""}
           `;
-            return [
-              t.name,
-              inputName,
-              outputTs ? outputName : undefined,
-              t.description,
-            ];
-          }),
-      );
+              return [
+                t.name,
+                inputName,
+                outputTs ? outputName : undefined,
+                t.description,
+              ];
+            }),
+        );
 
-      return [
-        binding.name,
-        compiledTools,
-        stateKey,
-      ] as [
-        string,
-        [string, string, string | undefined, string | undefined][],
-        KeyInfo | undefined,
-      ];
-    }),
-  );
+        return [
+          binding.name,
+          compiledTools,
+          stateKey,
+        ] as [
+          string,
+          [string, string, string | undefined, string | undefined][],
+          KeyInfo | undefined,
+        ];
+      }),
+    );
 
-  return await format(`
+    return await format(`
     // Generated types - do not edit manually
 ${tsTypes}
    
@@ -269,44 +326,49 @@ ${tsTypes}
 
   export const StateSchema = z.object({
     ${
-    props.filter((p) => p !== null && p[2] !== undefined).map((prop) => {
-      const [_, __, stateKey] = prop as [
-        string,
-        [string, string, string | undefined, string | undefined][],
-        KeyInfo | undefined,
-      ];
-      return `${stateKey!.key}: z.object({
+      props.filter((p) => p !== null && p[2] !== undefined).map((prop) => {
+        const [_, __, stateKey] = prop as [
+          string,
+          [string, string, string | undefined, string | undefined][],
+          KeyInfo | undefined,
+        ];
+        return `${stateKey!.key}: z.object({
         value: z.string(),
         __type: z.literal("${stateKey!.type}").default("${stateKey!.type}"),
       })`;
-    }).join(",\n")
-  }
+      }).join(",\n")
+    }
   })
 
   export interface Env {
     DECO_CHAT_WORKSPACE: string;
     DECO_CHAT_API_JWT_PUBLIC_KEY: string;
     ${
-    props.filter((p) => p !== null).map(([propName, tools]) => {
-      return `${propName}: Mcp<{
+      props.filter((p) => p !== null).map(([propName, tools]) => {
+        return `${propName}: Mcp<{
         ${
-        tools.map(([toolName, inputName, outputName, description]) => {
-          const docComment = description
-            ? `/**\n${formatDescription(description)}\n */`
-            : "";
+          tools.map(([toolName, inputName, outputName, description]) => {
+            const docComment = description
+              ? `/**\n${formatDescription(description)}\n */`
+              : "";
 
-          return `${docComment}
+            return `${docComment}
           ${
-            isValidJavaScriptPropertyName(toolName)
-              ? toolName
-              : [`"${toolName}"`]
-          }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
+              isValidJavaScriptPropertyName(toolName)
+                ? toolName
+                : [`"${toolName}"`]
+            }: (input: ${inputName}) => Promise<${outputName ?? "any"}>;
           `;
-        }).join("")
-      }
+          }).join("")
+        }
       }>;`;
-    }).join("")
-  }
+      }).join("")
+    }
   }
   `);
+  } finally {
+    // Clean up the client connections
+    await client.close();
+    await apiClient.close();
+  }
 };

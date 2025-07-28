@@ -85,7 +85,7 @@ export const readWranglerConfig = async (cwd?: string) => {
   if (!configPath) {
     return {};
   }
-  
+
   try {
     const config = await fs.readFile(configPath, "utf-8");
     return parse(config) as WranglerConfig;
@@ -133,7 +133,7 @@ export const writeWranglerConfig = async (
   mergedConfig.scope ??= mergedConfig.scope ?? mergedConfig?.deco?.workspace;
   const configPath = getConfigFilePath(targetCwd) ??
     join(targetCwd, CONFIG_FILE);
-  
+
   await fs.writeFile(
     configPath,
     addSchemaNotation(stringify(mergedConfig)),
@@ -184,7 +184,7 @@ export const writeConfigFile = async (
 
   const configPath = getConfigFilePath(targetCwd) ??
     join(targetCwd, CONFIG_FILE);
-  
+
   await fs.writeFile(
     configPath,
     addSchemaNotation(stringify({
@@ -235,7 +235,7 @@ export const getConfig = async (
 export const getConfigFilePath = (cwd: string): string | null => {
   // First, try the direct path
   const directPath = join(cwd, CONFIG_FILE);
-  
+
   try {
     const stat = statSync(directPath);
     if (stat.isFile()) {
@@ -333,9 +333,9 @@ export async function getMCPConfig(
 
 export const getMCPConfigVersion = () => md5Hash(getMCPConfig.toString());
 
-export const getRulesConfig = async () => {  
+export const getRulesConfig = async () => {
   const rulesPath = join(__dirname, "../rules/deco-chat.mdc");
-  
+
   try {
     const content = await fs.readFile(rulesPath, "utf-8");
     return {

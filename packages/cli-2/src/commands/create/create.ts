@@ -1,9 +1,9 @@
 import inquirer from "inquirer";
 import { promises as fs } from "fs";
 import { spawn } from "child_process";
-import { join, dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { ensureDir, copy } from "../../lib/fs.js";
+import { copy, ensureDir } from "../../lib/fs.js";
 import {
   type Config,
   readWranglerConfig,
@@ -52,18 +52,22 @@ const AVAILABLE_TEMPLATES: Template[] = [
   },
 ];
 
-async function runCommand(command: string, args: string[], cwd?: string): Promise<boolean> {
+async function runCommand(
+  command: string,
+  args: string[],
+  cwd?: string,
+): Promise<boolean> {
   return new Promise((resolve) => {
     const process = spawn(command, args, {
       cwd,
-      stdio: 'pipe',
+      stdio: "pipe",
     });
 
-    process.on('close', (code) => {
+    process.on("close", (code) => {
       resolve(code === 0);
     });
 
-    process.on('error', () => {
+    process.on("error", () => {
       resolve(false);
     });
   });
@@ -158,7 +162,7 @@ async function customizeTemplate({
     try {
       // Read current config from target directory
       const currentConfig = await readWranglerConfig(wranglerRoot || targetDir);
-      
+
       // For now, use empty bindings - we can enhance this later with prompt integrations
       const bindings: any[] = [];
 
@@ -225,9 +229,9 @@ export async function createCommand(
 
     const finalProjectName = slugify(
       projectName || (await inquirer.prompt([{
-        type: 'input',
-        name: 'projectName',
-        message: 'Enter project name:',
+        type: "input",
+        name: "projectName",
+        message: "Enter project name:",
         validate: (value: string) => {
           if (!value.trim()) {
             return "Project name cannot be empty";
@@ -255,12 +259,12 @@ export async function createCommand(
     const targetDir = join(process.cwd(), finalProjectName);
     try {
       await fs.access(targetDir);
-      
+
       const { overwrite } = await inquirer.prompt([{
-        type: 'list',
-        name: 'overwrite',
+        type: "list",
+        name: "overwrite",
         message: `Directory '${finalProjectName}' already exists. Overwrite?`,
-        choices: ['No', 'Yes'],
+        choices: ["No", "Yes"],
       }]);
 
       if (overwrite === "No") {
@@ -274,9 +278,9 @@ export async function createCommand(
     }
 
     const finalTemplateName = templateName || (await inquirer.prompt([{
-      type: 'list',
-      name: 'template',
-      message: 'Select a template:',
+      type: "list",
+      name: "template",
+      message: "Select a template:",
       choices: AVAILABLE_TEMPLATES.map((t) => ({
         name: `${t.name} - ${t.description}`,
         value: t.name,
@@ -293,10 +297,10 @@ export async function createCommand(
     const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || "");
 
     const { initGit } = await inquirer.prompt([{
-      type: 'list',
-      name: 'initGit',
-      message: 'Initialize a git repository?',
-      choices: ['No', 'Yes'],
+      type: "list",
+      name: "initGit",
+      message: "Initialize a git repository?",
+      choices: ["No", "Yes"],
     }]);
 
     // Prompt user to install MCP configuration for IDE

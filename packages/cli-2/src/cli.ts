@@ -54,6 +54,8 @@ import { createCommand, listTemplates } from "./commands/create/create.js";
 import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
 import { genEnv } from "./commands/gen/gen.js";
+import { updateCommand } from "./commands/update/update.js";
+import { addCommand } from "./commands/add/add.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -232,12 +234,10 @@ const linkCmd = new Command("link")
     }
   });
 
-// Placeholder for update command implementation
+// Update command implementation
 const update = new Command("update")
   .description("Update the deco CLI to the latest version.")
-  .action(async () => {
-    console.log("Update command not yet implemented");
-  });
+  .action(updateCommand);
 
 // Dev command implementation
 const dev = new Command("dev")
@@ -270,13 +270,23 @@ const listTemplatesCommand = new Command("templates")
     listTemplates();
   });
 
-// Placeholder for add command implementation
+// Add command implementation
 const add = new Command("add")
   .description("Add integrations to the current project.")
   .option("-w, --workspace <workspace>", "Workspace name")
   .action(async (options) => {
-    console.log("Add command not yet implemented");
-    console.log("Options:", options);
+    try {
+      await addCommand({
+        workspace: options.workspace,
+        local: getLocal(),
+      });
+    } catch (error) {
+      console.error(
+        "❌ Failed to add integrations:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
   });
 
 // Hosting parent command

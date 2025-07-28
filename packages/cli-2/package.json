@@ -27,6 +27,7 @@
     "commander": "^12.0.0",
     "glob": "^10.3.10",
     "inquirer": "^9.2.15",
+    "inquirer-search-checkbox": "^1.0.0",
     "inquirer-search-list": "^1.2.6",
     "jose": "^6.0.11",
     "json-schema-to-typescript": "^15.0.4",

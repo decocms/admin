@@ -1,7 +1,7 @@
 import { resolveCname } from "node:dns";
 import { UserInputError } from "../../errors.ts";
 import type { AppContext } from "../context.ts";
-import { Entrypoint } from "./api.ts";
+import { HOSTING_APPS_DOMAIN } from "./api.ts";
 
 export const assertsDomainOwnership = async (
   domain: string,
@@ -16,9 +16,9 @@ export const assertsDomainOwnership = async (
     }
   });
   const addresses = await resolvePromise.promise;
-  const targetAddress = Entrypoint.host(scriptSlug);
+  const targetAddress = `${scriptSlug}${HOSTING_APPS_DOMAIN}`;
   if (
-    !addresses.some((addr: string) =>
+    !addresses.some((addr) =>
       addr === targetAddress || addr === `${targetAddress}.`
     )
   ) {
@@ -37,10 +37,7 @@ export const assertsDomainUniqueness = async (
     .from("deco_chat_hosting_routes")
     .select(`
       *,
-      deco_chat_hosting_apps_deployments!deployment_id(
-        id,
-        deco_chat_hosting_apps!hosting_app_id(slug, workspace)
-      )
+      deco_chat_hosting_apps!inner(slug, workspace)
     `)
     .eq("route_pattern", domain)
     .maybeSingle();
@@ -51,8 +48,7 @@ export const assertsDomainUniqueness = async (
 
   if (data) {
     // Check if the domain belongs to the same app slug and workspace
-    const deployment = data.deco_chat_hosting_apps_deployments;
-    const hostingApp = deployment?.deco_chat_hosting_apps;
+    const hostingApp = data.deco_chat_hosting_apps;
     if (
       hostingApp && hostingApp.slug === slug &&
       hostingApp.workspace === c.workspace?.value

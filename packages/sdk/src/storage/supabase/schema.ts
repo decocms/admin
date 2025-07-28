@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)";
+  };
   public: {
     Tables: {
       admin_ai_usage: {
@@ -310,19 +315,19 @@ export type Database = {
       connections_admin: {
         Row: {
           id: string;
-          site: string | null;
+          site: string;
           user_id: string | null;
           workspace: string | null;
         };
         Insert: {
           id?: string;
-          site?: string | null;
+          site: string;
           user_id?: string | null;
           workspace?: string | null;
         };
         Update: {
           id?: string;
-          site?: string | null;
+          site?: string;
           user_id?: string | null;
           workspace?: string | null;
         };
@@ -503,50 +508,6 @@ export type Database = {
           },
         ];
       };
-      deco_chat_apps_registry_tools: {
-        Row: {
-          app_id: string;
-          created_at: string;
-          description: string | null;
-          id: string;
-          input_schema: Json | null;
-          metadata: Json | null;
-          name: string;
-          output_schema: Json | null;
-          updated_at: string;
-        };
-        Insert: {
-          app_id: string;
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          input_schema?: Json | null;
-          metadata?: Json | null;
-          name: string;
-          output_schema?: Json | null;
-          updated_at?: string;
-        };
-        Update: {
-          app_id?: string;
-          created_at?: string;
-          description?: string | null;
-          id?: string;
-          input_schema?: Json | null;
-          metadata?: Json | null;
-          name?: string;
-          output_schema?: Json | null;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "deco_chat_apps_registry_tools_app_id_fkey";
-            columns: ["app_id"];
-            isOneToOne: false;
-            referencedRelation: "deco_chat_apps_registry";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       deco_chat_assets: {
         Row: {
           created_at: string;
@@ -714,51 +675,12 @@ export type Database = {
         };
         Relationships: [];
       };
-      deco_chat_hosting_apps_deployments: {
-        Row: {
-          cloudflare_deployment_id: string | null;
-          created_at: string;
-          deleted_at: string | null;
-          files: Json | null;
-          hosting_app_id: string;
-          id: string;
-          updated_at: string;
-        };
-        Insert: {
-          cloudflare_deployment_id?: string | null;
-          created_at?: string;
-          deleted_at?: string | null;
-          files?: Json | null;
-          hosting_app_id: string;
-          id: string;
-          updated_at?: string;
-        };
-        Update: {
-          cloudflare_deployment_id?: string | null;
-          created_at?: string;
-          deleted_at?: string | null;
-          files?: Json | null;
-          hosting_app_id?: string;
-          id?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "fk_hosting_app_deployment";
-            columns: ["hosting_app_id"];
-            isOneToOne: false;
-            referencedRelation: "deco_chat_hosting_apps";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       deco_chat_hosting_routes: {
         Row: {
           created_at: string;
           custom_domain: boolean;
           deleted_at: string | null;
-          deployment_id: string;
-          hosting_app_id: string | null;
+          hosting_app_id: string;
           id: string;
           route_pattern: string;
           updated_at: string;
@@ -767,8 +689,7 @@ export type Database = {
           created_at?: string;
           custom_domain?: boolean;
           deleted_at?: string | null;
-          deployment_id: string;
-          hosting_app_id?: string | null;
+          hosting_app_id: string;
           id?: string;
           route_pattern: string;
           updated_at?: string;
@@ -777,18 +698,17 @@ export type Database = {
           created_at?: string;
           custom_domain?: boolean;
           deleted_at?: string | null;
-          deployment_id?: string;
-          hosting_app_id?: string | null;
+          hosting_app_id?: string;
           id?: string;
           route_pattern?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "fk_hosting_deployment";
-            columns: ["deployment_id"];
+            foreignKeyName: "fk_hosting_app";
+            columns: ["hosting_app_id"];
             isOneToOne: false;
-            referencedRelation: "deco_chat_hosting_apps_deployments";
+            referencedRelation: "deco_chat_hosting_apps";
             referencedColumns: ["id"];
           },
         ];

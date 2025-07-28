@@ -1,15 +1,12 @@
 import { SWRCache } from "@deco/sdk/cache/swr";
-import { Entrypoint } from "@deco/sdk/mcp";
+import { Entrypoint, HOSTING_APPS_DOMAIN } from "@deco/sdk/mcp";
 import { type Context, Hono } from "hono";
 import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import type { AppEnv } from "./utils/context.ts";
 
 const ONE_HOUR_SECONDS = 60 * 60;
-const domainSWRCache = new SWRCache<string | null>(
-  "domain-swr",
-  ONE_HOUR_SECONDS,
-);
+const domainSWRCache = new SWRCache<string>("domain-swr", ONE_HOUR_SECONDS);
 export type DispatcherFetch = typeof fetch;
 export const app = new Hono<AppEnv>();
 
@@ -56,46 +53,32 @@ app.all("/*", async (c: Context<AppEnv>) => {
   if (!host) {
     return new Response("No host", { status: 400 });
   }
-  const locator = Entrypoint.script(host);
-  // if it has a deployment ID, we can use the script ID directly
-  let script = locator?.isCanonical ? locator.slug : null;
+  let script = Entrypoint.script(host);
   if (!script) {
     script = await domainSWRCache.cache(
-      async (): Promise<string | null> => {
+      async () => {
         const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
-          .select(`
-              *,
-              deco_chat_hosting_apps_deployments!deployment_id(
-                id,
-                deco_chat_hosting_apps!hosting_app_id(slug)
-              )
-            `).eq(
+          .select("*, deco_chat_hosting_apps(slug)").eq(
             "route_pattern",
             host,
           ).maybeSingle();
         if (error) {
           throw error;
         }
-        if (!data && locator) {
-          return locator.slug;
+        const slug = data?.deco_chat_hosting_apps?.slug;
+        if (!slug) {
+          throw new Error("No slug found");
         }
-        const deployment = data?.deco_chat_hosting_apps_deployments;
-        const slug = deployment?.deco_chat_hosting_apps?.slug;
-        const deploymentId = deployment?.id;
-        if (!slug || !deploymentId) {
-          throw new Error("No slug or deployment ID found");
-        }
-        return Entrypoint.id(slug, deploymentId);
+        return slug;
       },
       host,
       false,
     ).catch(() => null);
+    host = `${script}${HOSTING_APPS_DOMAIN}`;
   }
-
   if (!script) {
     return new Response("Not found", { status: 404 });
   }
-  host = Entrypoint.host(script);
   if (url.host !== host) {
     url.host = host;
     url.protocol = "https";

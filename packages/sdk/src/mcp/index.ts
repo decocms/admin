@@ -94,7 +94,6 @@ export const WORKSPACE_TOOLS = [
   hostingAPI.deployFiles,
   hostingAPI.deleteApp,
   hostingAPI.getAppInfo,
-  hostingAPI.listAppDeployments,
   hostingAPI.listWorkflowNames,
   hostingAPI.listWorkflowRuns,
   hostingAPI.getWorkflowStatus,

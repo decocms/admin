@@ -57,9 +57,9 @@ Official docs: https://docs.deco.page/
 
 ## Integrations
 
-| Command    | Description                                   |
-| ---------- | --------------------------------------------- |
-| `deco add` | Add and configure workspace integrations.     |
+| Command    | Description                               |
+| ---------- | ----------------------------------------- |
+| `deco add` | Add and configure workspace integrations. |
 
 ---
 
@@ -81,8 +81,8 @@ Official docs: https://docs.deco.page/
 
 ## Configuration File
 
-The CLI uses a local config file to store your workspace and app context.
-Set or update this configuration anytime using: `deco configure`
+The CLI uses a local config file to store your workspace and app context. Set or
+update this configuration anytime using: `deco configure`
 
 ---
 

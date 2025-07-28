@@ -5,9 +5,9 @@ import {
   readWranglerConfig,
   writeWranglerConfig,
 } from "../../lib/config.js";
-import { promptWorkspace } from "../../lib/promptWorkspace.js";
-import { promptIntegrations } from "../../lib/promptIntegrations.js";
-import { promptIDESetup, writeIDEConfig } from "../../lib/promptIDESetup.js";
+import { promptWorkspace } from "../../lib/prompt-workspace.js";
+import { promptIntegrations } from "../../lib/prompt-integrations.js";
+import { promptIDESetup, writeIDEConfig } from "../../lib/prompt-ide-setup.js";
 import { genEnv } from "../gen/gen.js";
 import { promises as fs } from "fs";
 import { join } from "path";

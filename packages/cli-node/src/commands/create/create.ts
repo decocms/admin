@@ -10,9 +10,9 @@ import {
   writeWranglerConfig,
 } from "../../lib/config.js";
 import { slugify } from "../../lib/slugify.js";
-import { promptWorkspace } from "../../lib/promptWorkspace.js";
+import { promptWorkspace } from "../../lib/prompt-workspace.js";
 import { genEnv } from "../gen/gen.js";
-import { promptIDESetup, writeIDEConfig } from "../../lib/promptIDESetup.js";
+import { promptIDESetup, writeIDEConfig } from "../../lib/prompt-ide-setup.js";
 import process from "node:process";
 
 const __filename = fileURLToPath(import.meta.url);

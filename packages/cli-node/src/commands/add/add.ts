@@ -5,7 +5,7 @@ import {
   readWranglerConfig,
   writeConfigFile,
 } from "../../lib/config.js";
-import { promptIntegrations } from "../../lib/promptIntegrations.js";
+import { promptIntegrations } from "../../lib/prompt-integrations.js";
 import { readSession } from "../../lib/session.js";
 import process from "node:process";
 

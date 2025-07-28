@@ -253,7 +253,8 @@ export async function createCommand(
     try {
       workspace = await promptWorkspace(config?.local, workspace);
       console.log(`📁 Selected workspace: ${workspace}`);
-    } catch {
+    } catch (error) {
+      console.error(error);
       console.warn(
         "⚠️  Could not select workspace. Please run 'deco login' to authenticate for a better experience.",
       );

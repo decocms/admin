@@ -16,6 +16,9 @@
 import inquirer from "inquirer";
 import { createWorkspaceClient } from "./mcp.js";
 import { readSession } from "./session.js";
+// @ts-ignore - does not have types
+import inquirerSearchList from "inquirer-search-list";
+import { z } from "zod";
 
 interface Team {
   id: number;
@@ -35,9 +38,7 @@ export async function promptWorkspace(
 ): Promise<string> {
   // Register the search-list plugin
   try {
-    // @ts-ignore - inquirer-search-list has no type definitions
-    const searchList = (await import("inquirer-search-list")).default;
-    inquirer.registerPrompt("search-list", searchList);
+    inquirer.registerPrompt("search-list", inquirerSearchList);
   } catch {
     console.warn(
       "Could not load search functionality, falling back to basic list",
@@ -58,7 +59,8 @@ export async function promptWorkspace(
     const response = await client.callTool({
       name: "TEAMS_LIST",
       arguments: {},
-    });
+      // @ts-expect-error We need to refactor TEAMS_LIST to stop returning array and use a proper object
+    }, z.any());
 
     if (response.isError) {
       throw new Error("Failed to fetch teams");

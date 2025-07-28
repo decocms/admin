@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2024",
     "module": "ESNext",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": false,
     "noEmitOnError": true,
-    "lib": ["ES2022", "DOM"]
+    "lib": ["ES2024", "DOM"]
   },
   "include": [
     "src/**/*"

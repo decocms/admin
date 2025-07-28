@@ -1,4 +1,5 @@
 import { D1Store } from "@mastra/cloudflare-d1";
+import { default as ShortUniqueId } from "short-unique-id";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { JwtIssuer } from "../../auth/jwt.ts";
@@ -16,7 +17,6 @@ import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import { default as ShortUniqueId } from "short-unique-id";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,
@@ -220,9 +220,9 @@ async function updateDatabase(
     mappedRoutes.map((
       r,
     ) => [
-        routeKey(r),
-        r,
-      ]),
+      routeKey(r),
+      r,
+    ]),
   );
 
   // 3. Find routes to delete (in current, not in new)
@@ -319,7 +319,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => { });
+  }).catch(() => {});
 };
 
 // main.ts or main.mjs or main.js or main.cjs
@@ -580,6 +580,7 @@ Important Notes:
   }),
   outputSchema: z.object({
     entrypoint: z.string().describe("The entrypoint of the app"),
+    hosts: z.array(z.string()).describe("The hosts of the app"),
     id: z.string().describe("The id of the app"),
     workspace: z.string().describe("The workspace of the app"),
     deploymentId: z.string().describe("The deployment id of the app"),
@@ -613,7 +614,8 @@ Important Notes:
     );
     if (!entrypoint) {
       throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${[...new Set(entrypoints)].join(", ")
+        `Entrypoint not found in files. Entrypoint must be one of: ${
+          [...new Set(entrypoints)].join(", ")
         }`,
       );
     }
@@ -663,7 +665,7 @@ Important Notes:
     }
 
     const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
         public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
         private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
@@ -671,8 +673,9 @@ Important Notes:
       : undefined;
 
     const issuer = await JwtIssuer.forKeyPair(keyPair);
-    const appName = `@${wranglerConfig?.scope ?? c.workspace.slug
-      }/${scriptSlug}`;
+    const appName = `@${
+      wranglerConfig?.scope ?? c.workspace.slug
+    }/${scriptSlug}`;
 
     const token = await issuer.issue({
       sub: `app:${appName}`,
@@ -738,6 +741,7 @@ Important Notes:
     });
     return {
       entrypoint: data.entrypoint,
+      hosts: [data.entrypoint, Entrypoint.build(data.slug!, deploymentId)],
       id: data.id,
       workspace: data.workspace,
       deploymentId,

@@ -182,6 +182,8 @@ export const deploy = async (
     throw new Error(errorTextJson ?? errorText ?? "Unknown error");
   }
 
-  const { entrypoint } = response.structuredContent as { entrypoint: string };
-  console.log(`\n🎉 Deployed! Available at: ${entrypoint}\n`);
+  const { hosts } = response.structuredContent as { hosts: string[] };
+  console.log(`\n🎉 Deployed! Available at:`);
+  hosts.forEach((host) => console.log(`  ${host}`));
+  console.log();
 };

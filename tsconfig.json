@@ -11,7 +11,7 @@
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
     // Module system
-    "target": "ES2022",
+    "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
@@ -44,7 +44,7 @@
     "keyofStringsOnly": false,
     // Library files (adapted for Node.js instead of Deno)
     "lib": [
-      "ES2022",
+      "ESNext",
       "DOM",
       "DOM.Iterable"
     ],
@@ -71,9 +71,6 @@
     "plugins/**/*"
   ],
   "exclude": [
-    // Independent build
-    "packages/cli-node/**",
-    // Excludes
     "node_modules",
     "apps/*/node_modules",
     "packages/*/node_modules",

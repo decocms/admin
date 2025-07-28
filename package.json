@@ -13,7 +13,7 @@
     "lint": "deno lint --config ./package.json .",
     "fmt": "deno fmt --config ./package.json .",
     "version": "tsc --version",
-    "check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit && npm run type-check --workspace=packages/cli-node",
+    "check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "db:repair": "supabase migration repair --status reverted",

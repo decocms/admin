@@ -1,4 +1,4 @@
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const ONE_SEC = 60;
 const ONE_MIN = ONE_SEC * 60;
 const ONE_HOUR = ONE_MIN * 60;

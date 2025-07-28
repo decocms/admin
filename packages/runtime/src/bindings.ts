@@ -16,23 +16,16 @@ export const workspaceClient = (
   );
 };
 
-const integrationsCache = new Map<
-  string,
-  Promise<{ connection: MCPConnection }>
->();
-
 const mcpClientForIntegrationId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
 ) => {
   const client = workspaceClient(ctx);
-  let integration: Promise<{ connection: MCPConnection }> | undefined =
-    integrationsCache.get(integrationId);
+  let integration: Promise<{ connection: MCPConnection }> | null = null;
   return MCPClient.forConnection(async () => {
     integration ??= client.INTEGRATIONS_GET({
       id: integrationId,
     }) as Promise<{ connection: MCPConnection }>;
-    integrationsCache.set(integrationId, integration);
     return (await integration).connection;
   });
 };

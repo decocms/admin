@@ -11,6 +11,7 @@ import { DECO_CHAT_API_LOCAL } from "./src/constants.ts";
 import { createCommand, listTemplates } from "./src/create.ts";
 import { deploy } from "./src/hosting/deploy.ts";
 import { listApps } from "./src/hosting/list.ts";
+import { promoteApp } from "./src/hosting/promote.ts";
 import { link } from "./src/link.ts";
 import { loginCommand } from "./src/login.ts";
 import { deleteSession, readSession, setToken } from "./src/session.ts";
@@ -66,8 +67,11 @@ const hostingList = new Command()
     required: false,
   })
   .action(async (args) => {
+    const workspace = Array.isArray(args.workspace)
+      ? args.workspace[0]
+      : args.workspace;
     return listApps({
-      workspace: args.workspace ??
+      workspace: workspace ??
         await readSession().then((session) => session?.workspace!),
     });
   });
@@ -86,22 +90,82 @@ const hostingDeploy = new Command()
   .arguments("[cwd:string]")
   .action(async (args, folder) => {
     const cwd = folder ?? Deno.cwd();
+
+    // Normalize CLI arguments
+    const workspace = Array.isArray(args.workspace)
+      ? args.workspace[0]
+      : args.workspace;
+    const appArg = Array.isArray(args.app) ? args.app[0] : args.app;
+    const yes = Array.isArray(args.yes) ? args.yes.includes(true) : args.yes;
+    const isPublic = Array.isArray(args.public)
+      ? args.public.includes(true)
+      : args.public;
+
     const config = await getConfig({
-      inlineOptions: args,
+      inlineOptions: { workspace },
     });
     const wranglerConfig = await readWranglerConfig();
     const assetsDirectory = wranglerConfig.assets?.directory;
-    const app = args.app ??
+    const app = appArg ??
       (typeof wranglerConfig.name === "string"
         ? wranglerConfig.name
         : "my-app");
     return deploy({
-      ...config,
+      workspace: config.workspace,
+      local: config.local || false,
       app,
-      skipConfirmation: args.yes,
+      skipConfirmation: yes,
       cwd,
-      unlisted: !args.public,
+      unlisted: !isPublic,
       assetsDirectory,
+    });
+  });
+
+// Placeholder for hosting promote command implementation
+const hostingPromote = new Command()
+  .description("Promote a deployment to an existing route pattern.")
+  .option("-w, --workspace <workspace:string>", "Workspace name", {
+    required: false,
+  })
+  .option("-a, --app <app:string>", "App name", { required: false })
+  .option("-d, --deployment <deployment:string>", "Deployment ID", {
+    required: false,
+  })
+  .option(
+    "-r, --route <route:string>",
+    "Route pattern (defaults to appName.deco.page)",
+    {
+      required: false,
+    },
+  )
+  .option("-y, --yes", "Skip confirmation", { required: false })
+  .action(async (args) => {
+    // Normalize CLI arguments
+    const workspace = Array.isArray(args.workspace)
+      ? args.workspace[0]
+      : args.workspace;
+    const appArg = Array.isArray(args.app) ? args.app[0] : args.app;
+    const deploymentArg = Array.isArray(args.deployment)
+      ? args.deployment[0]
+      : args.deployment;
+    const routeArg = Array.isArray(args.route) ? args.route[0] : args.route;
+    const yes = Array.isArray(args.yes) ? args.yes.includes(true) : args.yes;
+
+    const config = await getConfig({
+      inlineOptions: { workspace },
+    });
+    const wranglerConfig = await readWranglerConfig();
+    const app = appArg ??
+      (typeof wranglerConfig.name === "string"
+        ? wranglerConfig.name
+        : "my-app");
+
+    return promoteApp({
+      workspace: config.workspace,
+      appSlug: app,
+      deploymentId: deploymentArg,
+      routePattern: routeArg,
+      skipConfirmation: yes,
     });
   });
 
@@ -113,10 +177,11 @@ const linkCmd = new Command()
   .arguments("[...build-cmd]")
   .action(async function ({ port }) {
     const runCommand = this.getLiteralArgs();
+    const normalizedPort = Array.isArray(port) ? port[0] : port;
 
     const env = await getEnvVars();
     await link({
-      port,
+      port: normalizedPort,
       onBeforeRegister: () => {
         const [cmd, ...args] = runCommand;
 
@@ -188,7 +253,10 @@ const create = new Command()
   .arguments("[project-name]")
   .action(async (options, projectName?: string) => {
     const config = await getConfig().catch(() => ({}));
-    await createCommand(projectName, options.template, config);
+    const template = Array.isArray(options.template)
+      ? options.template[0]
+      : options.template;
+    await createCommand(projectName, template, config);
   });
 
 const listTemplatesCommand = new Command()
@@ -204,8 +272,11 @@ const add = new Command()
   })
   .action(async (args) => {
     const local = getLocal();
+    const workspace = Array.isArray(args.workspace)
+      ? args.workspace[0]
+      : args.workspace;
     await addCommand({
-      workspace: args.workspace,
+      workspace,
       local,
     });
   });
@@ -214,7 +285,8 @@ const add = new Command()
 const hosting = new Command()
   .description("Manage hosting apps in a workspace.")
   .command("list", hostingList)
-  .command("deploy", hostingDeploy);
+  .command("deploy", hostingDeploy)
+  .command("promote", hostingPromote);
 
 const gen = new Command()
   .description("Generate the environment that will be used to run the app.")
@@ -227,11 +299,14 @@ const gen = new Command()
   )
   .action(async (options) => {
     const config = await getConfig({});
+    const selfUrl = Array.isArray(options.self)
+      ? options.self[0]
+      : options.self;
     const env = await genEnv({
       workspace: config.workspace,
       local: config.local,
       bindings: config.bindings,
-      selfUrl: options.self,
+      selfUrl,
     });
     console.log(env);
   });

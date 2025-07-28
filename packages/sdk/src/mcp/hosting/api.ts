@@ -17,6 +17,7 @@ import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
+import { purge } from "../../cache/routing.ts";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,
@@ -257,52 +258,27 @@ async function updateDatabase(
     const customDomainRoutes = toInsert.filter((r) => r.custom_domain);
     const regularRoutes = toInsert.filter((r) => !r.custom_domain);
 
-    // For custom domains, handle conflicts manually due to partial index
-    if (customDomainRoutes.length > 0) {
-      // First, get all existing custom domain routes that might conflict
-      const routePatterns = customDomainRoutes.map((r) => r.route_pattern);
-      const { data: existingRoutes, error: fetchError } = await c.db
-        .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
-        .select("id, route_pattern")
-        .eq("custom_domain", true)
-        .in("route_pattern", routePatterns);
-
-      if (fetchError) throw fetchError;
-
-      // Create a map of existing routes
-      const existingRouteMap = new Map(
-        (existingRoutes ?? []).map((r) => [r.route_pattern, r.id]),
-      );
-
-      // Separate into updates and inserts
-      const toUpdate = customDomainRoutes.filter((r) =>
-        existingRouteMap.has(r.route_pattern)
-      );
-      const toInsertNew = customDomainRoutes.filter((r) =>
-        !existingRouteMap.has(r.route_pattern)
-      );
-
-      // Batch update existing routes
-      if (toUpdate.length > 0) {
-        const updatePromises = toUpdate.map((route) =>
-          c.db
+    // For custom domains, use the promote functionality (update existing routes only)
+    for (const route of customDomainRoutes) {
+      try {
+        await promoteDeployment(c, {
+          deploymentId: deployment.id,
+          routePattern: route.route_pattern,
+        });
+      } catch (error) {
+        // If route doesn't exist, create it (only during initial deployment)
+        if (error instanceof NotFoundError) {
+          const { error: insertError } = await c.db
             .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
-            .update({ deployment_id: deployment.id })
-            .eq("id", existingRouteMap.get(route.route_pattern)!)
-        );
-        await Promise.all(updatePromises);
-      }
-
-      // Batch insert new routes
-      if (toInsertNew.length > 0) {
-        const { error: insertError } = await c.db
-          .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
-          .insert(toInsertNew.map((r) => ({
-            deployment_id: deployment.id,
-            route_pattern: r.route_pattern,
-            custom_domain: true,
-          })));
-        if (insertError) throw insertError;
+            .insert({
+              deployment_id: deployment.id,
+              route_pattern: route.route_pattern,
+              custom_domain: true,
+            });
+          if (insertError) throw insertError;
+        } else {
+          throw error;
+        }
       }
     }
 
@@ -321,6 +297,33 @@ async function updateDatabase(
 
   return Mappers.toApp(app);
 }
+
+// Promote a deployment to a route pattern
+export const promoteApp = createTool({
+  name: "HOSTING_APPS_PROMOTE",
+  description:
+    "Promote a specific deployment to an existing route pattern and update routing cache",
+  inputSchema: z.object({
+    deploymentId: z.string().describe("The deployment ID to promote"),
+    routePattern: z.string().describe(
+      "Route pattern to promote the deployment to (can be custom domain or .deco.page)",
+    ),
+  }),
+  outputSchema: z.object({
+    success: z.boolean().describe("Whether the promotion was successful"),
+    promotedRoute: z.string().describe("The route pattern that was promoted"),
+  }),
+  handler: async ({ deploymentId, routePattern }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+
+    await promoteDeployment(c, { deploymentId, routePattern });
+
+    return {
+      success: true,
+      promotedRoute: routePattern,
+    };
+  },
+});
 
 const MIME_TYPES: Record<string, string> = {
   "js": "application/javascript+module",
@@ -1304,4 +1307,59 @@ function addDefaultCustomDomain(wranglerConfig: WranglerConfig) {
     },
     ...routes.filter((r) => r.pattern !== latest),
   ];
+}
+
+/**
+ * Promote a specific deployment to an existing custom domain route pattern
+ */
+export async function promoteDeployment(
+  c: AppContext,
+  {
+    deploymentId,
+    routePattern,
+  }: {
+    deploymentId: string;
+    routePattern: string;
+  },
+): Promise<void> {
+  assertHasWorkspace(c);
+  const workspace = c.workspace.value;
+
+  // Verify the deployment exists and belongs to this workspace
+  const { data: deployment, error: deploymentError } = await c.db
+    .from("deco_chat_hosting_apps_deployments")
+    .select(`
+      id,
+      hosting_app_id,
+      deco_chat_hosting_apps!inner(
+        id,
+        slug,
+        workspace
+      )
+    `)
+    .eq("id", deploymentId)
+    .eq("deco_chat_hosting_apps.workspace", workspace)
+    .single();
+
+  if (deploymentError || !deployment) {
+    throw new NotFoundError("Deployment not found or access denied");
+  }
+
+  // Update the existing route to point to the new deployment
+  const { data: updatedRoute, error: updateError } = await c.db
+    .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
+    .update({ deployment_id: deploymentId })
+    .eq("route_pattern", routePattern)
+    .eq("custom_domain", true)
+    .select("id")
+    .single();
+
+  if (updateError || !updatedRoute) {
+    throw new NotFoundError(
+      `Route pattern '${routePattern}' not found. Routes can only be promoted, not created.`,
+    );
+  }
+
+  // Purge cache for the promoted route
+  await purge(routePattern);
 }

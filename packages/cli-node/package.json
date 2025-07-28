@@ -1,8 +1,18 @@
 {
-  "name": "@deco/cli",
+  "name": "deco-cli",
   "version": "1.0.0",
   "description": "A Node.js CLI for interacting with deco.chat.",
   "license": "MIT",
+  "author": "Deco team",
+  "homepage": "https://github.com/deco-cx/deco",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deco-cx/deco.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/deco-cx/deco/issues"
+  },
   "type": "module",
   "main": "./dist/cli.js",
   "bin": {
@@ -16,7 +26,9 @@
     "build": "tsc && cp -r src/rules dist/",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "postpublish": "echo 'Published deco-cli to npm registry!'"
   },
   "dependencies": {
     "@deco-cx/warp-node": "0.3.9",
@@ -52,6 +64,13 @@
     "deco",
     "chat",
     "deployment",
-    "development"
-  ]
+    "development",
+    "mcp",
+    "model-context-protocol",
+    "hosting",
+    "tunnel"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

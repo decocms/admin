@@ -25,18 +25,28 @@ const uid = new ShortUniqueId({
 const SCRIPT_FILE_NAME = "script.mjs";
 export const HOSTING_APPS_DOMAIN = ".deco.page";
 const DOUBLE_DASH = "--";
+export interface ScriptLocator {
+  slug: string;
+  isCanonical: boolean;
+}
 export const Entrypoint = {
+  id: (appSlug: string, deploymentId?: string) => {
+    return `${appSlug}${deploymentId ? `${DOUBLE_DASH}${deploymentId}` : ""}`;
+  },
   host: (appSlug: string, deploymentId?: string) => {
-    return `${appSlug}${
-      deploymentId ? `${DOUBLE_DASH}${deploymentId}` : ""
-    }${HOSTING_APPS_DOMAIN}`;
+    return `${Entrypoint.id(appSlug, deploymentId)}${HOSTING_APPS_DOMAIN}`;
   },
   build: (appSlug: string, deploymentId?: string) => {
     return `https://${Entrypoint.host(appSlug, deploymentId)}`;
   },
-  script: (domain: string) => {
-    if (domain.endsWith(HOSTING_APPS_DOMAIN) && domain.includes(DOUBLE_DASH)) {
-      return domain.split(HOSTING_APPS_DOMAIN)[0];
+  script: (domain: string): ScriptLocator | null => {
+    if (domain.endsWith(HOSTING_APPS_DOMAIN)) {
+      const slugWithDeploymentId = domain.split(HOSTING_APPS_DOMAIN)[0];
+      const [slug, deploymentId] = slugWithDeploymentId.split(DOUBLE_DASH);
+      return {
+        slug: Entrypoint.host(slug, deploymentId),
+        isCanonical: deploymentId !== undefined,
+      };
     }
     return null;
   },
@@ -803,6 +813,74 @@ export const getAppInfo = createTool({
     }
 
     return Mappers.toApp(data);
+  },
+});
+
+// List app deployments
+export const listAppDeployments = createTool({
+  name: "HOSTING_APP_DEPLOYMENTS_LIST",
+  description: "List all deployments for a specific app",
+  inputSchema: AppInputSchema,
+  outputSchema: z.object({
+    deployments: z.array(z.object({
+      id: z.string().describe("The deployment ID"),
+      cloudflare_deployment_id: z.string().nullable().describe(
+        "The Cloudflare worker ID",
+      ),
+      entrypoint: z.string().describe("The deployment entrypoint URL"),
+      created_at: z.string().describe("When the deployment was created"),
+      updated_at: z.string().describe("When the deployment was last updated"),
+    })),
+    app: z.object({
+      id: z.string(),
+      slug: z.string(),
+      workspace: z.string(),
+    }),
+  }),
+  handler: async ({ appSlug }, c) => {
+    await assertWorkspaceResourceAccess(c.tool.name, c);
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
+    const scriptSlug = appSlug;
+
+    // 1. First verify the app exists and get app info
+    const { data: app, error: appError } = await c.db
+      .from(DECO_CHAT_HOSTING_APPS_TABLE)
+      .select("id, slug, workspace")
+      .eq("workspace", workspace)
+      .eq("slug", scriptSlug)
+      .single();
+
+    if (appError || !app) {
+      throw new NotFoundError("App not found");
+    }
+
+    // 2. Fetch all deployments for this app
+    const { data: deployments, error: deploymentsError } = await c.db
+      .from("deco_chat_hosting_apps_deployments")
+      .select("id, cloudflare_deployment_id, created_at, updated_at")
+      .eq("hosting_app_id", app.id)
+      .order("created_at", { ascending: false });
+
+    if (deploymentsError) throw deploymentsError;
+
+    // 3. Map deployments to include entrypoint URLs
+    const mappedDeployments = (deployments ?? []).map((deployment) => ({
+      id: deployment.id,
+      cloudflare_deployment_id: deployment.cloudflare_deployment_id,
+      entrypoint: Entrypoint.build(scriptSlug, deployment.id),
+      created_at: deployment.created_at,
+      updated_at: deployment.updated_at,
+    }));
+
+    return {
+      deployments: mappedDeployments,
+      app: {
+        id: app.id,
+        slug: app.slug,
+        workspace: app.workspace,
+      },
+    };
   },
 });
 

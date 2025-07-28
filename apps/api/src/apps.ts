@@ -1,5 +1,5 @@
 import { SWRCache } from "@deco/sdk/cache/swr";
-import { Entrypoint, HOSTING_APPS_DOMAIN } from "@deco/sdk/mcp";
+import { Entrypoint } from "@deco/sdk/mcp";
 import { type Context, Hono } from "hono";
 import { APPS_DOMAIN_QS, appsDomainOf } from "./app.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
@@ -56,7 +56,9 @@ app.all("/*", async (c: Context<AppEnv>) => {
   if (!host) {
     return new Response("No host", { status: 400 });
   }
-  let script = Entrypoint.script(host);
+  const locator = Entrypoint.script(host);
+  // if it has a deployment ID, we can use the script ID directly
+  let script = locator?.isCanonical ? locator.slug : null;
   if (!script) {
     script = await domainSWRCache.cache(
       async (): Promise<string | null> => {
@@ -74,13 +76,16 @@ app.all("/*", async (c: Context<AppEnv>) => {
         if (error) {
           throw error;
         }
+        if (!data && locator) {
+          return locator.slug;
+        }
         const deployment = data?.deco_chat_hosting_apps_deployments;
         const slug = deployment?.deco_chat_hosting_apps?.slug;
         const deploymentId = deployment?.id;
         if (!slug || !deploymentId) {
           throw new Error("No slug or deployment ID found");
         }
-        return `${slug}--${deploymentId}`;
+        return Entrypoint.id(slug, deploymentId);
       },
       host,
       false,
@@ -90,7 +95,7 @@ app.all("/*", async (c: Context<AppEnv>) => {
   if (!script) {
     return new Response("Not found", { status: 404 });
   }
-  host = `${script}${HOSTING_APPS_DOMAIN}`;
+  host = Entrypoint.host(script);
   if (url.host !== host) {
     url.host = host;
     url.protocol = "https";

@@ -1,10 +1,11 @@
 CREATE TABLE IF NOT EXISTS deco_chat_hosting_routes(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  deployment_id uuid NOT NULL,
+  deployment_id text NOT NULL,
   route_pattern text NOT NULL,
   custom_domain boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  hosting_app_id uuid,
   deleted_at timestamptz, -- for soft deletes
   CONSTRAINT fk_hosting_deployment FOREIGN KEY (deployment_id) REFERENCES deco_chat_hosting_apps_deployments (id) ON DELETE CASCADE
 );

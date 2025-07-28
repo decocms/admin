@@ -12,13 +12,15 @@
     "@mastra/cloudflare-d1": "0.12.1",
     "jose": "^6.0.11",
     "zod-to-json-schema": "^3.24.4",
-    "zod-from-json-schema": "^0.4.2"
+    "zod-from-json-schema": "^0.4.2",
+    "drizzle-orm": "^0.44.3"
   },
   "exports": {
     ".": "./src/index.ts",
     "./proxy": "./src/proxy.ts",
     "./client": "./src/client.ts",
-    "./mastra": "./src/mastra.ts"
+    "./mastra": "./src/mastra.ts",
+    "./drizzle": "./src/drizzle.ts"
   },
   "devDependencies": {
     "ts-json-schema-generator": "^2.4.0",

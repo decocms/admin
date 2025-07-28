@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from "child_process";
-import { connect } from "@deco/warp";
+import { connect } from "@deco-cx/warp-node";
 import chalk from "chalk";
 import { getAppDomain, getConfig, readWranglerConfig } from "../../lib/config.js";
 import { createServer } from "net";

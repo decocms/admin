@@ -19,7 +19,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@deco/warp": "npm:@jsr/deco__warp@^0.3.8-alpha.1",
+    "@deco-cx/warp-node": "0.3.9",
     "@modelcontextprotocol/sdk": "^1.11.4",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",

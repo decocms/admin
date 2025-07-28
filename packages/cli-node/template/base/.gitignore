@@ -1,7 +1,0 @@
-# Local storage directory for development
-storage/
-
-
-# Environment files
-.env
-.dev.vars

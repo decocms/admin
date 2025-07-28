@@ -63,10 +63,11 @@ of the original Deno-based CLI to Node.js for npm distribution.
 ### ✅ COMPLETED COMMANDS (11/13)
 
 - ✅ `deco login` - OAuth authentication flow
-- ✅ `deco logout` - Session cleanup  
+- ✅ `deco logout` - Session cleanup
 - ✅ `deco whoami` - User info display
 - ✅ `deco configure` - Project configuration
-- ✅ `deco create [name] --template [template]` - Project scaffolding with workspace selection + search
+- ✅ `deco create [name] --template [template]` - Project scaffolding with
+  workspace selection + search
 - ✅ `deco templates` - List available templates
 - ✅ `deco deploy` - Full deployment with file upload
 - ✅ `deco dev` - Development server with tunnel
@@ -90,10 +91,14 @@ of the original Deno-based CLI to Node.js for npm distribution.
 
 ### 🔧 RECENT IMPROVEMENTS (This Session)
 
-- ✅ **Fixed workspace selection search** - Added `inquirer-search-list` plugin support
-- ✅ **Fixed wrangler.toml merging** - Proper config preservation during project creation
-- ✅ **Fixed process hanging** - Added proper MCP client cleanup in `genEnv` function
-- ✅ **Enhanced create command** - Now includes automatic TypeScript generation and IDE setup
+- ✅ **Fixed workspace selection search** - Added `inquirer-search-list` plugin
+  support
+- ✅ **Fixed wrangler.toml merging** - Proper config preservation during project
+  creation
+- ✅ **Fixed process hanging** - Added proper MCP client cleanup in `genEnv`
+  function
+- ✅ **Enhanced create command** - Now includes automatic TypeScript generation
+  and IDE setup
 
 ### Project Structure:
 
@@ -126,9 +131,11 @@ cli-2/
 ### Priority Implementation Tasks:
 
 1. **HIGH PRIORITY: Implement `deco add` command**
-   - **Missing file**: `/src/lib/promptIntegrations.js` - Integration selection utilities
+   - **Missing file**: `/src/lib/promptIntegrations.js` - Integration selection
+     utilities
    - **Source reference**: `/Users/viktor/repos/chat/packages/cli/src/add.ts`
-   - **Source utils**: `/Users/viktor/repos/chat/packages/cli/src/utils/prompt-integrations.ts`
+   - **Source utils**:
+     `/Users/viktor/repos/chat/packages/cli/src/utils/prompt-integrations.ts`
    - **Functionality needed**:
      - Fetch integrations from workspace using MCP client
      - Multi-select interface with search (using `inquirer-search-checkbox`)
@@ -137,7 +144,8 @@ cli-2/
 
 2. **MEDIUM PRIORITY: Implement `deco update` command**
    - **Missing file**: Update mechanism for Node.js CLI
-   - **Source reference**: `/Users/viktor/repos/chat/packages/cli/src/upgrade.ts`
+   - **Source reference**:
+     `/Users/viktor/repos/chat/packages/cli/src/upgrade.ts`
    - **Functionality needed**:
      - Version checking against npm registry (instead of JSR)
      - Interactive upgrade prompts
@@ -148,7 +156,8 @@ cli-2/
 - ✅ **@deco/warp Integration**: Working correctly (fixed in this session)
 - ✅ **MCP IDE setup prompts**: Implemented in `/src/lib/promptIDESetup.js`
 - ✅ **Environment type generation**: Implemented in `/src/commands/gen/gen.js`
-- ✅ **Workspace prompts**: Implemented in `/src/lib/promptWorkspace.js` with search
+- ✅ **Workspace prompts**: Implemented in `/src/lib/promptWorkspace.js` with
+  search
 
 ### Dependencies Successfully Mapped:
 
@@ -169,7 +178,10 @@ npm run start      # Run compiled CLI
 npm run type-check # TypeScript validation
 ```
 
-**🎯 PRODUCTION READY WITH LIMITATIONS** - The CLI has 11/13 commands fully working and ready for production use. The 2 missing commands (`add` and `update`) are non-critical for basic usage but important for advanced integration management.
+**🎯 PRODUCTION READY WITH LIMITATIONS** - The CLI has 11/13 commands fully
+working and ready for production use. The 2 missing commands (`add` and
+`update`) are non-critical for basic usage but important for advanced
+integration management.
 
 ## Key Migration Challenges
 
@@ -249,21 +261,21 @@ npm run type-check
 
 ## Implementation Progress (11/13 Complete)
 
-| Command | Status | Implementation File | Notes |
-|---------|--------|-------------------|-------|
-| `deco login` | ✅ Complete | `/src/commands/auth/login.ts` | OAuth flow working |
-| `deco logout` | ✅ Complete | `/src/commands/auth/logout.ts` | Session cleanup |
-| `deco whoami` | ✅ Complete | `/src/commands/auth/whoami.ts` | User info display |
-| `deco configure` | ✅ Complete | `/src/commands/config/configure.ts` | Project setup |
-| `deco create [name]` | ✅ Complete | `/src/commands/create/create.ts` | Enhanced with search + IDE setup |
-| `deco templates` | ✅ Complete | `/src/commands/create/create.ts` | Template listing |
-| `deco dev` | ✅ Complete | `/src/commands/dev/dev.ts` | Development server |
-| `deco deploy` | ✅ Complete | `/src/commands/hosting/deploy.ts` | File upload working |
-| `deco hosting list` | ✅ Complete | `/src/commands/hosting/list.ts` | App listing |
-| `deco link [cmd]` | ✅ Complete | `/src/commands/dev/link.ts` | Remote access tunneling |
-| `deco gen` | ✅ Complete | `/src/commands/gen/gen.ts` | TypeScript generation |
-| `deco add` | ❌ **Missing** | Placeholder only | **HIGH PRIORITY** |
-| `deco update` | ❌ **Missing** | Placeholder only | **MEDIUM PRIORITY** |
+| Command              | Status         | Implementation File                 | Notes                            |
+| -------------------- | -------------- | ----------------------------------- | -------------------------------- |
+| `deco login`         | ✅ Complete    | `/src/commands/auth/login.ts`       | OAuth flow working               |
+| `deco logout`        | ✅ Complete    | `/src/commands/auth/logout.ts`      | Session cleanup                  |
+| `deco whoami`        | ✅ Complete    | `/src/commands/auth/whoami.ts`      | User info display                |
+| `deco configure`     | ✅ Complete    | `/src/commands/config/configure.ts` | Project setup                    |
+| `deco create [name]` | ✅ Complete    | `/src/commands/create/create.ts`    | Enhanced with search + IDE setup |
+| `deco templates`     | ✅ Complete    | `/src/commands/create/create.ts`    | Template listing                 |
+| `deco dev`           | ✅ Complete    | `/src/commands/dev/dev.ts`          | Development server               |
+| `deco deploy`        | ✅ Complete    | `/src/commands/hosting/deploy.ts`   | File upload working              |
+| `deco hosting list`  | ✅ Complete    | `/src/commands/hosting/list.ts`     | App listing                      |
+| `deco link [cmd]`    | ✅ Complete    | `/src/commands/dev/link.ts`         | Remote access tunneling          |
+| `deco gen`           | ✅ Complete    | `/src/commands/gen/gen.ts`          | TypeScript generation            |
+| `deco add`           | ❌ **Missing** | Placeholder only                    | **HIGH PRIORITY**                |
+| `deco update`        | ❌ **Missing** | Placeholder only                    | **MEDIUM PRIORITY**              |
 
 The goal is feature parity with the Deno version while leveraging the Node.js
 ecosystem for better npm distribution and broader compatibility.

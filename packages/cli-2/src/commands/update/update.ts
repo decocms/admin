@@ -21,22 +21,25 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const response = await fetch(`https://registry.npmjs.org/${packageName}/latest`, {
-      signal: controller.signal,
-    });
-    
+    const response = await fetch(
+      `https://registry.npmjs.org/${packageName}/latest`,
+      {
+        signal: controller.signal,
+      },
+    );
+
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch latest version: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     return data.version;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timed out while checking for updates');
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timed out while checking for updates");
     }
     throw error;
   }
@@ -44,7 +47,7 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
 
 export const upgrade = async (packageName: string): Promise<void> => {
   console.log(chalk.yellow("🔄 Upgrading to the latest version..."));
-  
+
   return new Promise((resolve, reject) => {
     const child = spawn("npm", ["install", "-g", packageName], {
       stdio: "inherit",
@@ -53,7 +56,11 @@ export const upgrade = async (packageName: string): Promise<void> => {
     child.on("close", (code) => {
       if (code === 0) {
         console.log(chalk.green("🎉 CLI updated successfully!"));
-        console.log(chalk.blue("Please restart your terminal or run 'deco --version' to verify."));
+        console.log(
+          chalk.blue(
+            "Please restart your terminal or run 'deco --version' to verify.",
+          ),
+        );
         resolve();
       } else {
         console.error(chalk.red("❌ Failed to update the CLI."));
@@ -71,7 +78,7 @@ export const upgrade = async (packageName: string): Promise<void> => {
 export async function checkForUpdates(): Promise<void> {
   // Skip if we've already checked in this session or if running update command
   if (
-    process.env.DECO_CLI_UPDATE_CHECKED || 
+    process.env.DECO_CLI_UPDATE_CHECKED ||
     process.argv.includes("update")
   ) {
     return;
@@ -87,11 +94,13 @@ export async function checkForUpdates(): Promise<void> {
       console.log();
       console.log(
         chalk.green(
-          `A new version of deco is available: ${chalk.bold(`v${latestVersion}`)}`
-        )
+          `A new version of deco is available: ${
+            chalk.bold(`v${latestVersion}`)
+          }`,
+        ),
       );
       console.log(
-        chalk.yellow(`You are on version: v${currentVersion}`)
+        chalk.yellow(`You are on version: v${currentVersion}`),
       );
       console.log();
 
@@ -121,19 +130,19 @@ export async function updateCommand(): Promise<void> {
   try {
     const packageJson = await getPackageJson();
     const currentVersion = packageJson.version;
-    
+
     console.log(chalk.blue(`Current version: v${currentVersion}`));
     console.log(chalk.blue("Checking for updates..."));
-    
+
     const latestVersion = await getLatestVersion(packageJson.name);
-    
+
     if (semver.gt(latestVersion, currentVersion)) {
       console.log(
         chalk.green(
-          `📦 New version available: ${chalk.bold(`v${latestVersion}`)}`
-        )
+          `📦 New version available: ${chalk.bold(`v${latestVersion}`)}`,
+        ),
       );
-      
+
       const { confirmed } = await inquirer.prompt([
         {
           type: "confirm",
@@ -142,21 +151,23 @@ export async function updateCommand(): Promise<void> {
           default: true,
         },
       ]);
-      
+
       if (confirmed) {
         await upgrade(packageJson.name);
       } else {
         console.log(chalk.gray("Update cancelled."));
       }
     } else if (semver.eq(latestVersion, currentVersion)) {
-      console.log(chalk.green("✅ You are already running the latest version!"));
+      console.log(
+        chalk.green("✅ You are already running the latest version!"),
+      );
     } else {
       console.log(chalk.blue("ℹ️  You are running a development version."));
     }
   } catch (error) {
     console.error(
       chalk.red("❌ Failed to check for updates:"),
-      error instanceof Error ? error.message : String(error)
+      error instanceof Error ? error.message : String(error),
     );
     process.exit(1);
   }

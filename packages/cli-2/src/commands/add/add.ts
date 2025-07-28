@@ -62,7 +62,8 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
         {
           type: "input",
           name: "bindingName",
-          message: `Enter binding name for integration "${integrationBinding.integration_id}":`,
+          message:
+            `Enter binding name for integration "${integrationBinding.integration_id}":`,
           default: integrationBinding.name,
           validate: (value: string) => {
             if (!value.trim()) {
@@ -104,7 +105,7 @@ export async function addCommand({ workspace, local }: AddCommandOptions) {
     newBindings.forEach((binding) => {
       const id = "integration_id" in binding
         ? binding.integration_id
-        : "integration_name" in binding 
+        : "integration_name" in binding
         ? binding.integration_name
         : "unknown";
       console.log(`  - ${binding.name} (${id})`);

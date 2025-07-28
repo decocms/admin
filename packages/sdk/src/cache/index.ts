@@ -3,6 +3,13 @@ const ONE_SEC = 60;
 const ONE_MIN = ONE_SEC * 60;
 const ONE_HOUR = ONE_MIN * 60;
 
+export interface CacheMetadata<T> {
+  value: T;
+  timestamp: number;
+  isStale: boolean;
+  isExpired: boolean;
+}
+
 export class WebCache<TCachedValue> {
   private cache: Promise<Cache>;
   private ttl: number;
@@ -61,6 +68,45 @@ export class WebCache<TCachedValue> {
     }
   }
 
+  private async deserializeValueWithMetadata(
+    cacheKey: URL,
+    response: Response,
+    staleTtlSeconds?: number,
+  ): Promise<CacheMetadata<TCachedValue> | null> {
+    try {
+      const txt = await response.text();
+      const parsed = JsonSerializer.deserialize(txt) as {
+        value: TCachedValue;
+        timestamp: number;
+      };
+
+      const now = Date.now();
+      const ageMs = now - parsed.timestamp;
+      const cacheExpiredMs = this.ttl * 1000;
+      const staleExpiredMs = (staleTtlSeconds ?? this.ttl) * 1000;
+
+      const isExpired = ageMs > cacheExpiredMs;
+      const isStale = ageMs > staleExpiredMs;
+
+      if (isExpired) {
+        // Delete expired item
+        const cache = await this.cache;
+        await cache.delete(cacheKey);
+        return null;
+      }
+
+      return {
+        value: parsed.value,
+        timestamp: parsed.timestamp,
+        isStale,
+        isExpired,
+      };
+    } catch (error) {
+      console.error("Error deserializing cached value:", error);
+      return null;
+    }
+  }
+
   async get(key: string): Promise<TCachedValue | null> {
     const cache = await this.cache;
     const cacheKey = this.createCacheKey(key);
@@ -71,6 +117,25 @@ export class WebCache<TCachedValue> {
     }
 
     return this.deserializeValue(cacheKey, response);
+  }
+
+  async getWithMetadata(
+    key: string,
+    staleTtlSeconds?: number,
+  ): Promise<CacheMetadata<TCachedValue> | null> {
+    const cache = await this.cache;
+    const cacheKey = this.createCacheKey(key);
+    const response = await cache.match(cacheKey);
+
+    if (!response) {
+      return null;
+    }
+
+    return this.deserializeValueWithMetadata(
+      cacheKey,
+      response,
+      staleTtlSeconds,
+    );
   }
 
   async set(

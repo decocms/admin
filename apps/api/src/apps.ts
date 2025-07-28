@@ -84,7 +84,6 @@ app.all("/*", async (c: Context<AppEnv>) => {
         return Entrypoint.id(slug, deploymentId);
       },
       host,
-      false,
     ).catch(() => null);
   }
 

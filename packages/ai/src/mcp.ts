@@ -52,7 +52,9 @@ export const patchApiDecoChatTokenHTTPConnection = (
 
 const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
   `list-tools`,
-  WebCache.MAX_SAFE_TTL,
+  {
+    cacheTtlSeconds: WebCache.MAX_SAFE_TTL,
+  },
 );
 export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
   return swr.cache(async () => {

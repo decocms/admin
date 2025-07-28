@@ -1,10 +1,12 @@
 import { SWRCache } from "./swr.ts";
 
-const ONE_HOUR_SECONDS = 60 * 60;
+const FIVE_SECONDS = 5;
 
 export const domainSWRCache = new SWRCache<string | null>(
   "domain-swr",
-  ONE_HOUR_SECONDS,
+  {
+    staleTtlSeconds: FIVE_SECONDS,
+  },
 );
 
 export const purge = async (...domains: string[]): Promise<void> => {

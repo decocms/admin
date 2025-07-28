@@ -220,9 +220,9 @@ async function updateDatabase(
     mappedRoutes.map((
       r,
     ) => [
-      routeKey(r),
-      r,
-    ]),
+        routeKey(r),
+        r,
+      ]),
   );
 
   // 3. Find routes to delete (in current, not in new)
@@ -259,7 +259,7 @@ async function updateDatabase(
             custom_domain: route.custom_domain ?? false,
           })),
           {
-            onConflict: "deployment_id,route_pattern,custom_domain",
+            onConflict: "route_pattern,custom_domain",
           },
         )
       : Promise.resolve(),
@@ -319,7 +319,7 @@ const createNamespaceOnce = async (c: AppContext) => {
   await cf.workersForPlatforms.dispatch.namespaces.create({
     name: env.CF_DISPATCH_NAMESPACE,
     account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => {});
+  }).catch(() => { });
 };
 
 // main.ts or main.mjs or main.js or main.cjs
@@ -613,8 +613,7 @@ Important Notes:
     );
     if (!entrypoint) {
       throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${
-          [...new Set(entrypoints)].join(", ")
+        `Entrypoint not found in files. Entrypoint must be one of: ${[...new Set(entrypoints)].join(", ")
         }`,
       );
     }
@@ -664,7 +663,7 @@ Important Notes:
     }
 
     const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
         public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
         private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
@@ -672,9 +671,8 @@ Important Notes:
       : undefined;
 
     const issuer = await JwtIssuer.forKeyPair(keyPair);
-    const appName = `@${
-      wranglerConfig?.scope ?? c.workspace.slug
-    }/${scriptSlug}`;
+    const appName = `@${wranglerConfig?.scope ?? c.workspace.slug
+      }/${scriptSlug}`;
 
     const token = await issuer.issue({
       sub: `app:${appName}`,

@@ -13,10 +13,6 @@ Before you begin, make sure you have the following:
 
 - **Node.js** (v18+ recommended) – required for running the frontend development server and bundling assets.
 
-- **Deno** – used to install and run the deco CLI. Deco's tooling is distributed as a Deno module.
-
-- **deco.chat CLI** – the command-line interface for deco.chat, which you can install via Deno.
-
 - **Cloudflare Account** – needed to deploy your app (Cloudflare Workers is the runtime).
 
 - **Basic TypeScript knowledge** – The project is TypeScript-heavy, so familiarity with TS is important (if you're new, see the official TypeScript docs for a primer).
@@ -30,10 +26,10 @@ Once your environment is ready, follow these steps to create a new deco.chat pro
     Open your terminal and run:
     
     ```bash
-    deno install -Ar -g -n deco jsr:@deco/cli
+    npm i -g deco-cli
     ```
     
-    This globally installs the deco command. (The CLI is published as a Deno module on the JSR registry.) After installation, you can run `deco --help` to verify it's working.
+    This globally installs the deco command. After installation, you can run `deco --help` to verify it's working.
   </Step>
 
   <Step number={2} title="Log in to deco.chat">

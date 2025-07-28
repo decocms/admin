@@ -299,7 +299,7 @@ function WorkflowRunsTab() {
 
 function WorkflowEmptyState() {
   const [copied, setCopied] = useState(false);
-  const cliCommand = "deno install -Ar -g -n deco jsr:@deco/cli";
+  const cliCommand = "npm i -g deco-cli";
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(cliCommand);

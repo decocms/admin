@@ -5493,7 +5493,7 @@ export interface Env {
      * "scripts": {
      * "dev": "deco dev",
      * "gen": "deco gen > env.gen.ts",
-     * "setup": "deno install -Ar -g -n deco jsr:@deco/cli -f",
+     * "setup": "npm i -g deco-cli",
      * "deploy": "wrangler deploy --dry-run --outdir ./dist && deco deploy ./dist"
      * },
      * "dependencies": {

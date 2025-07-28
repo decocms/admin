@@ -21,7 +21,7 @@ Official docs: https://docs.deco.page/
 
 | Command          | Description                                                                 |
 | ---------------- | --------------------------------------------------------------------------- |
-| `deco init`      | Scaffold a new deco project from an official template.                      |
+| `deco create`    | Scaffold a new deco project from an official template.                      |
 | `deco configure` | Re-run setup for the current directory to change workspace or app settings. |
 
 ---
@@ -55,6 +55,14 @@ Official docs: https://docs.deco.page/
 
 ---
 
+## Integrations
+
+| Command    | Description                               |
+| ---------- | ----------------------------------------- |
+| `deco add` | Add and configure workspace integrations. |
+
+---
+
 ## Maintenance
 
 | Command       | Description                                      |
@@ -73,8 +81,8 @@ Official docs: https://docs.deco.page/
 
 ## Configuration File
 
-The CLI uses a local config file to store your workspace and app context.\
-Set or update this configuration anytime using: `deco configure`
+The CLI uses a local config file to store your workspace and app context. Set or
+update this configuration anytime using: `deco configure`
 
 ---
 

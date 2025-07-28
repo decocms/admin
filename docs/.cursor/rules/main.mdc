@@ -200,8 +200,7 @@ npm install my-package
 ### Prerequisites:
 - Node.js >=18.0.0
 - npm >=8.0.0
-- Deno >=2.0.0
-- Deco CLI installed: `deno install -Ar -g -n deco jsr:@deco/cli`
+- Deco CLI installed: `npm i -g deco-cli`
 
 ### Initial Setup:
 1. `deco login` - Authenticate with deco.chat

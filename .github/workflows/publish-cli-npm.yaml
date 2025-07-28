@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "packages/cli-node/**"
+      - "packages/cli/**"
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
 
       - name: Build package
         run: npm run build
-        working-directory: packages/cli-node
+        working-directory: packages/cli
 
       - name: Check if version changed
         id: version-check
@@ -50,12 +50,12 @@ jobs:
             echo "version-changed=false" >> $GITHUB_OUTPUT
             echo "⏭️ Version unchanged ($CURRENT_VERSION), skipping publish"
           fi
-        working-directory: packages/cli-node
+        working-directory: packages/cli
 
       - name: Publish to NPM
         if: steps.version-check.outputs.version-changed == 'true'
         run: npm publish
-        working-directory: packages/cli-node
+        working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -74,7 +74,7 @@ jobs:
 
             ### Installation
             ```bash
-            npm install -g deco-cli
+            npm i -g deco-cli
             ```
 
             ### Usage

@@ -71,6 +71,9 @@
     "plugins/**/*"
   ],
   "exclude": [
+    // Independent build
+    "packages/cli-node/**",
+    // Excludes
     "node_modules",
     "apps/*/node_modules",
     "packages/*/node_modules",

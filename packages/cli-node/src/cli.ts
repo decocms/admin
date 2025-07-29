@@ -51,6 +51,7 @@ import { whoamiCommand } from "./commands/auth/whoami.js";
 import { configureCommand } from "./commands/config/configure.js";
 import { deploy } from "./commands/hosting/deploy.js";
 import { listApps } from "./commands/hosting/list.js";
+import { promoteApp } from "./commands/hosting/promote.js";
 import { createCommand, listTemplates } from "./commands/create/create.js";
 import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
@@ -191,6 +192,54 @@ const hostingDeploy = new Command("deploy")
     }
   });
 
+// Hosting promote command implementation
+const hostingPromote = new Command("promote")
+  .description("Promote a deployment to an existing route pattern.")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .option("-a, --app <app>", "App name")
+  .option("-d, --deployment <deployment>", "Deployment ID")
+  .option(
+    "-r, --route <route>",
+    "Route pattern (defaults to appName.deco.page)",
+  )
+  .option("-y, --yes", "Skip confirmation")
+  .action(async (options) => {
+    try {
+      const { getConfig, readWranglerConfig } = await import("./lib/config.js");
+
+      const config = await getConfig({
+        inlineOptions: options,
+      });
+
+      let app = options.app;
+      if (!app) {
+        try {
+          const wranglerConfig = await readWranglerConfig();
+          app = typeof wranglerConfig.name === "string"
+            ? wranglerConfig.name
+            : undefined;
+        } catch {
+          // No wrangler config found, app will remain undefined
+        }
+      }
+
+      await promoteApp({
+        workspace: config.workspace,
+        local: config.local,
+        appSlug: app,
+        deploymentId: options.deployment,
+        routePattern: options.route,
+        skipConfirmation: options.yes,
+      });
+    } catch (error) {
+      console.error(
+        "❌ Promotion failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
 // Link command implementation
 const linkCmd = new Command("link")
   .description("Link the project to be accessed through a remote domain.")
@@ -294,7 +343,8 @@ const add = new Command("add")
 const hosting = new Command("hosting")
   .description("Manage hosting apps in a workspace.")
   .addCommand(hostingList)
-  .addCommand(hostingDeploy);
+  .addCommand(hostingDeploy)
+  .addCommand(hostingPromote);
 
 const gen = new Command("gen")
   .description("Generate the environment that will be used to run the app.")
@@ -345,6 +395,7 @@ const program = new Command()
   .addCommand(whoami)
   .addCommand(hosting)
   .addCommand(hostingDeploy)
+  .addCommand(hostingPromote)
   .addCommand(dev)
   .addCommand(configure)
   .addCommand(add)

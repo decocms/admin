@@ -84,6 +84,13 @@ const hostingDeploy = new Command()
   })
   .option("-a, --app <app:string>", "App name", { required: false })
   .option("-y, --yes", "Skip confirmation", { required: false })
+  .option(
+    "-f, --force",
+    "Force the deployment even if there are breaking changes",
+    {
+      required: false,
+    },
+  )
   .option("-p, --public", "Make the app public in the registry", {
     required: false,
   })
@@ -91,6 +98,9 @@ const hostingDeploy = new Command()
   .action(async (args, folder) => {
     const cwd = folder ?? Deno.cwd();
 
+    const force = Array.isArray(args.force)
+      ? args.force.includes(true)
+      : args.force;
     // Normalize CLI arguments
     const workspace = Array.isArray(args.workspace)
       ? args.workspace[0]
@@ -111,6 +121,7 @@ const hostingDeploy = new Command()
         ? wranglerConfig.name
         : "my-app");
     return deploy({
+      force,
       workspace: config.workspace,
       local: config.local || false,
       app,

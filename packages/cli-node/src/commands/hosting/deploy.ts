@@ -29,6 +29,7 @@ interface Options {
   skipConfirmation?: boolean;
   unlisted?: boolean;
   assetsDirectory?: string;
+  force?: boolean;
 }
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
@@ -41,6 +42,7 @@ export const deploy = async (
     local,
     assetsDirectory,
     skipConfirmation,
+    force,
     unlisted = true,
   }: Options,
 ) => {
@@ -157,6 +159,7 @@ export const deploy = async (
     envFilepath,
     bundle: hasTsFile,
     unlisted,
+    force,
   };
 
   console.log("🚚 Deployment summary:");
@@ -179,19 +182,37 @@ export const deploy = async (
   }
 
   const client = await createWorkspaceClient({ workspace, local });
-  const response = await client.callTool({
-    name: "HOSTING_APP_DEPLOY",
-    arguments: manifest,
-  });
+  const deploy = async (options: typeof manifest) => {
+    const response = await client.callTool({
+      name: "HOSTING_APP_DEPLOY",
+      arguments: manifest,
+    });
 
-  if (response.isError && Array.isArray(response.content)) {
-    console.error("Error deploying: ", response);
+    if (response.isError && Array.isArray(response.content)) {
+      console.error("Error deploying: ", response);
 
-    const errorText = response.content[0]?.text;
-    const errorTextJson = tryParseJson(errorText ?? "");
-    throw new Error(errorTextJson ?? errorText ?? "Unknown error");
-  }
+      const errorText = response.content[0]?.text;
+      const errorTextJson = tryParseJson(errorText ?? "");
+      if (errorTextJson?.name === "MCPBreakingChangeError" && !force) {
+        console.log("Looks like you have breaking changes in your app.");
+        console.log(errorTextJson.message);
+        const confirmed = await inquirer.prompt([{
+          type: "confirm",
+          name: "proceed",
+          message: "Would you like to retry with the --force flag?",
+          default: true,
+        }]);
+        if (!confirmed) {
+          process.exit(1);
+        }
+        return deploy({ ...options, force: true });
+      }
+      throw new Error(errorTextJson ?? errorText ?? "Unknown error");
+    }
+    return response;
+  };
 
+  const response = await deploy(manifest);
   const { entrypoint } = response.structuredContent as { entrypoint: string };
   console.log(`\n🎉 Deployed! Available at: ${entrypoint}\n`);
 };

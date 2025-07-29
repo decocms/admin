@@ -74,7 +74,15 @@ export const serializeError = (error: unknown): string => {
   }
 
   if (isHttpError(error) || isErrorLike(error)) {
-    return error.message;
+    return JSON.stringify(
+      {
+        message: error.message, // message and code era not enumerable
+        code: "code" in error ? error.code : undefined,
+        name: "name" in error ? error.name : undefined,
+      },
+      null,
+      2,
+    );
   }
 
   try {

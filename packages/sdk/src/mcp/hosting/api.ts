@@ -3,6 +3,7 @@ import { default as ShortUniqueId } from "short-unique-id";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 import { JwtIssuer } from "../../auth/jwt.ts";
+import { purge } from "../../cache/routing.ts";
 import { NotFoundError, UserInputError } from "../../errors.ts";
 import type { Database } from "../../storage/index.ts";
 import {
@@ -13,11 +14,12 @@ import {
 import { type AppContext, createToolGroup, getEnv } from "../context.ts";
 import { getWorkspaceD1Database } from "../databases/api.ts";
 import { MCPClient } from "../index.ts";
+import { assertsNoMCPBreakingChanges } from "./assertions.ts";
 import { bundler } from "./bundler.ts";
 import { assertsDomainUniqueness } from "./custom-domains.ts";
 import { type DeployResult, deployToCloudflare } from "./deployment.ts";
 import type { WranglerConfig } from "./wrangler.ts";
-import { purge } from "../../cache/routing.ts";
+import { MCPConnection } from "../../models/index.ts";
 const uid = new ShortUniqueId({
   dictionary: "alphanum_lower",
   length: 10,
@@ -39,6 +41,12 @@ export const Entrypoint = {
   },
   build: (appSlug: string, deploymentId?: string) => {
     return `https://${Entrypoint.host(appSlug, deploymentId)}`;
+  },
+  mcp: (url: string): MCPConnection => {
+    return {
+      type: "HTTP",
+      url: `${url}/mcp`,
+    };
   },
   script: (domain: string): ScriptLocator | null => {
     if (domain.endsWith(HOSTING_APPS_DOMAIN)) {
@@ -137,11 +145,12 @@ interface UpdateDatabaseArgs {
   deploymentId: string;
   result: DeployResult;
   wranglerConfig: WranglerConfig;
+  force?: boolean;
   files?: Record<string, string>;
 }
 
 async function updateDatabase(
-  { c, workspace, scriptSlug, deploymentId, result, wranglerConfig }:
+  { c, workspace, scriptSlug, deploymentId, result, wranglerConfig, force }:
     UpdateDatabaseArgs,
 ) {
   // First, ensure the app exists (without deployment-specific data)
@@ -259,11 +268,13 @@ async function updateDatabase(
     const regularRoutes = toInsert.filter((r) => !r.custom_domain);
 
     // For custom domains, use the promote functionality (update existing routes only)
-    for (const route of customDomainRoutes) {
+
+    await Promise.all(customDomainRoutes.map(async (route) => {
       try {
         await promoteDeployment(c, {
           deploymentId: deployment.id,
           routePattern: route.route_pattern,
+          force,
         });
       } catch (error) {
         // If route doesn't exist, create it (only during initial deployment)
@@ -280,8 +291,7 @@ async function updateDatabase(
           throw error;
         }
       }
-    }
-
+    }));
     // For regular routes (non-custom domains), just insert them in batch
     if (regularRoutes.length > 0) {
       const { error: insertError } = await c.db
@@ -619,6 +629,9 @@ Important Notes:
 - Dependencies are managed through npm packages in package.json, not npm: or jsr: specifiers
 - Wrangler will handle the bundling process using the dependencies defined in package.json`,
   inputSchema: z.object({
+    force: z.boolean().describe(
+      "If true, force the deployment even if there are breaking changes",
+    ).optional(),
     appSlug: z.string().optional().describe(
       "The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).",
     ),
@@ -643,7 +656,14 @@ Important Notes:
     deploymentId: z.string().describe("The deployment id of the app"),
   }),
   handler: async (
-    { appSlug: _appSlug, files, envVars, bundle = true, unlisted = true },
+    {
+      force,
+      appSlug: _appSlug,
+      files,
+      envVars,
+      bundle = true,
+      unlisted = true,
+    },
     c,
   ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -771,6 +791,7 @@ Important Notes:
     const data = await updateDatabase(
       {
         c,
+        force,
         workspace,
         scriptSlug,
         result,
@@ -790,10 +811,7 @@ Important Notes:
         "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
       ...wranglerConfig.deco?.integration,
       unlisted: unlisted ?? true,
-      connection: {
-        type: "HTTP",
-        url: `${data.entrypoint}/mcp`,
-      },
+      connection: Entrypoint.mcp(data.entrypoint),
     }).catch((err) => {
       console.error(err);
     });
@@ -1372,9 +1390,11 @@ export async function promoteDeployment(
   {
     deploymentId,
     routePattern,
+    force,
   }: {
     deploymentId: string;
     routePattern: string;
+    force?: boolean;
   },
 ): Promise<void> {
   assertHasWorkspace(c);
@@ -1398,6 +1418,16 @@ export async function promoteDeployment(
 
   if (deploymentError || !deployment) {
     throw new NotFoundError("Deployment not found or access denied");
+  }
+
+  if (!force) {
+    console.log("asserting");
+    await assertsNoMCPBreakingChanges(c, {
+      from: Entrypoint.mcp(`https://${routePattern}`),
+      to: Entrypoint.mcp(
+        Entrypoint.build(deployment.deco_chat_hosting_apps.slug, deploymentId),
+      ),
+    });
   }
 
   // Update the existing route to point to the new deployment

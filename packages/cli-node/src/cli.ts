@@ -160,6 +160,10 @@ const hostingDeploy = new Command("deploy")
   .option("-a, --app <app>", "App name")
   .option("-y, --yes", "Skip confirmation")
   .option("-p, --public", "Make the app public in the registry")
+  .option(
+    "-f, --force",
+    "Force the deployment even if there are breaking changes",
+  )
   .argument("[cwd]", "Working directory")
   .action(async (cwd, options) => {
     try {
@@ -182,6 +186,7 @@ const hostingDeploy = new Command("deploy")
         cwd: cwd ?? process.cwd(),
         unlisted: !options.public,
         assetsDirectory,
+        force: options.force,
       });
     } catch (error) {
       console.error(

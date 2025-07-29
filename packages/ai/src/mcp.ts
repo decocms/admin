@@ -306,7 +306,7 @@ export const swrMCPMetadata = (
     const client = await createServerClient(
       mcpServer,
       undefined,
-      ignoreCache ? { "cache-control": "no-cache" } : undefined,
+      ignoreCache ? { "x-domain-swr-ignore-cache": "true" } : undefined,
     );
     return handleMCPResponse(client).finally(() => client.close());
   };

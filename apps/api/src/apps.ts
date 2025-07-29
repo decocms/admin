@@ -81,7 +81,7 @@ app.all("/*", async (c: Context<AppEnv>) => {
     }
     return Entrypoint.id(slug, deploymentId);
   };
-  const isNoCache = c.req.header("cache-control")?.includes("no-cache");
+  const isNoCache = c.req.header("x-domain-swr-ignore-cache") === "true";
   if (!script) {
     script = isNoCache ? await getScriptFn() : await domainSWRCache.cache(
       getScriptFn,

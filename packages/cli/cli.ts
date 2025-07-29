@@ -154,14 +154,21 @@ const hostingPromote = new Command()
     const config = await getConfig({
       inlineOptions: { workspace },
     });
-    const wranglerConfig = await readWranglerConfig();
-    const app = appArg ??
-      (typeof wranglerConfig.name === "string"
-        ? wranglerConfig.name
-        : "my-app");
+    let app: string | undefined = appArg;
+    if (!app) {
+      try {
+        const wranglerConfig = await readWranglerConfig();
+        app = typeof wranglerConfig.name === "string"
+          ? wranglerConfig.name
+          : undefined;
+      } catch {
+        // No wrangler config found, app will remain undefined
+      }
+    }
 
     return promoteApp({
       workspace: config.workspace,
+      local: config.local,
       appSlug: app,
       deploymentId: deploymentArg,
       routePattern: routeArg,

@@ -3,7 +3,8 @@ import { createWorkspaceClient } from "../mcp.ts";
 
 interface Options {
   workspace: string;
-  appSlug: string;
+  appSlug?: string;
+  local?: boolean;
   deploymentId?: string;
   routePattern?: string;
   skipConfirmation?: boolean;
@@ -28,21 +29,76 @@ interface AppDeploymentsResponse {
 
 export const promoteApp = async ({
   workspace,
+  local,
   appSlug,
   deploymentId,
   routePattern,
   skipConfirmation = false,
 }: Options) => {
-  console.log(
-    `🚀 Promoting deployment for app '${appSlug}' in workspace '${workspace}'...`,
-  );
+  const client = await createWorkspaceClient({ workspace, local });
 
-  const client = await createWorkspaceClient({ workspace });
+  // If appSlug is not provided, list published apps and let user select
+  let selectedAppSlug = appSlug;
+  if (!selectedAppSlug) {
+    console.log(`🔍 Fetching published apps in workspace '${workspace}'...`);
+
+    const publishedAppsResponse = await client.callTool({
+      name: "REGISTRY_LIST_PUBLISHED_APPS",
+      arguments: {},
+    });
+
+    if (
+      publishedAppsResponse.isError &&
+      Array.isArray(publishedAppsResponse.content)
+    ) {
+      throw new Error(
+        publishedAppsResponse.content[0]?.text ??
+          "Failed to list published apps",
+      );
+    }
+
+    const { apps } = publishedAppsResponse.structuredContent as {
+      apps: Array<
+        { name: string; friendlyName?: string; description?: string }
+      >;
+    };
+
+    if (apps.length === 0) {
+      console.log("📭 No published apps found in this workspace.");
+      return;
+    }
+
+    if (apps.length === 1) {
+      selectedAppSlug = apps[0].name;
+      console.log(
+        `📦 Using app: ${selectedAppSlug} (${
+          apps[0].friendlyName || apps[0].name
+        })`,
+      );
+    } else {
+      // Show apps for selection
+      const appOptions = apps.map((app) => ({
+        name: `${app.name}${app.friendlyName ? ` (${app.friendlyName})` : ""}${
+          app.description ? ` - ${app.description}` : ""
+        }`,
+        value: app.name,
+      }));
+
+      selectedAppSlug = await Select.prompt({
+        message: "Select app to promote:",
+        options: appOptions,
+      });
+    }
+  }
+
+  console.log(
+    `🚀 Promoting deployment for app '${selectedAppSlug}' in workspace '${workspace}'...`,
+  );
 
   // First, get the list of deployments for the app
   const deploymentsResponse = await client.callTool({
     name: "HOSTING_APP_DEPLOYMENTS_LIST",
-    arguments: { appSlug },
+    arguments: { appSlug: selectedAppSlug },
   });
 
   if (
@@ -101,7 +157,7 @@ export const promoteApp = async ({
   if (!selectedRoutePattern) {
     selectedRoutePattern = await Input.prompt({
       message: "Enter route pattern to promote to:",
-      default: `${appSlug}.deco.page`,
+      default: `${selectedAppSlug}.deco.page`,
       validate: (input: string) => {
         const trimmed = input.trim();
         if (!trimmed) return "Route pattern is required";

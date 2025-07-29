@@ -305,6 +305,40 @@ export const listRegistryApps = createTool({
   },
 });
 
+export const listPublishedApps = createTool({
+  name: "REGISTRY_LIST_PUBLISHED_APPS",
+  description: "List published apps by the current workspace",
+  inputSchema: z.object({
+    search: z.string().optional().describe(
+      "Search term to filter apps by name or description",
+    ),
+  }),
+  outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
+  handler: async ({ search }, c) => {
+    c.resourceAccess.grant(); // Public tool, no policies needed
+
+    assertHasWorkspace(c);
+    const workspace = c.workspace.value;
+
+    let query = c.db
+      .from(DECO_CHAT_APPS_REGISTRY_TABLE)
+      .select(SELECT_REGISTRY_APP_WITH_SCOPE_QUERY)
+      .eq("workspace", workspace);
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
+
+    if (error) throw error;
+
+    return { apps: data.map(Mappers.toRegistryApp) };
+  },
+});
+
 export const publishApp = createTool({
   name: "REGISTRY_PUBLISH_APP",
   description:

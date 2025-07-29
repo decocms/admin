@@ -1,3 +1,4 @@
+import { listToolsByConnectionType } from "@deco/ai/mcp";
 import { z } from "zod";
 import { UserInputError } from "../../errors.ts";
 import type { MCPConnection } from "../../models/mcp.ts";
@@ -17,6 +18,8 @@ import { type AppContext, createToolGroup } from "../context.ts";
 
 const DECO_CHAT_APPS_REGISTRY_TABLE = "deco_chat_apps_registry" as const;
 const DECO_CHAT_REGISTRY_SCOPES_TABLE = "deco_chat_registry_scopes" as const;
+const DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE =
+  "deco_chat_apps_registry_tools" as const;
 
 const SELECT_REGISTRY_SCOPE_QUERY = `
   id,
@@ -405,6 +408,27 @@ export const publishApp = createTool({
       .single();
 
     if (error) throw error;
+
+    const { tools = [] } = await listToolsByConnectionType(connection, c, true)
+      .catch(
+        () => ({ tools: [] }),
+      );
+
+    await Promise.all(tools.map((tool) =>
+      c.db
+        .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
+        .upsert({
+          app_id: data.id,
+          name: tool.name,
+          description: tool.description || null,
+          input_schema: tool.inputSchema || null,
+          output_schema: tool.outputSchema || null,
+          metadata: null,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "app_id,name",
+        })
+    ));
 
     return Mappers.toRegistryApp(data);
   },

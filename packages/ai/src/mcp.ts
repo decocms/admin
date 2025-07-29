@@ -221,8 +221,9 @@ export const mcpServerTools = async (
 export const createServerClient = async (
   mcpServer: Pick<Integration, "connection" | "name">,
   signal?: AbortSignal,
+  extraHeaders?: Record<string, string>,
 ): Promise<Client> => {
-  const transport = createTransport(mcpServer.connection, signal);
+  const transport = createTransport(mcpServer.connection, signal, extraHeaders);
 
   if (!transport) {
     throw new Error("Unknown MCP connection type");
@@ -242,6 +243,7 @@ export const createServerClient = async (
 export const createTransport = (
   connection: MCPConnection,
   signal?: AbortSignal,
+  extraHeaders?: Record<string, string>,
 ) => {
   if (connection.type === "Websocket") {
     return new WebSocketClientTransport(new URL(connection.url));
@@ -257,6 +259,7 @@ export const createTransport = (
 
   const headers: Record<string, string> = {
     ...authHeaders,
+    ...extraHeaders ?? {},
     ..."headers" in connection ? (connection.headers || {}) : {},
   };
 
@@ -300,7 +303,11 @@ export const swrMCPMetadata = (
   ignoreCache = false,
 ) => {
   const fetch = async () => {
-    const client = await createServerClient(mcpServer);
+    const client = await createServerClient(
+      mcpServer,
+      undefined,
+      ignoreCache ? { "cache-control": "no-cache" } : undefined,
+    );
     return handleMCPResponse(client).finally(() => client.close());
   };
   if ("url" in mcpServer.connection && !ignoreCache) {

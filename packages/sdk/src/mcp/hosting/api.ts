@@ -1421,7 +1421,6 @@ export async function promoteDeployment(
   }
 
   if (!force) {
-    console.log("asserting");
     await assertsNoMCPBreakingChanges(c, {
       from: Entrypoint.mcp(`https://${routePattern}`),
       to: Entrypoint.mcp(

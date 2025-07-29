@@ -54,35 +54,37 @@ app.all("/*", async (c: Context<AppEnv>) => {
   const locator = Entrypoint.script(host);
   // if it has a deployment ID, we can use the script ID directly
   let script = locator?.isCanonical ? locator.slug : null;
-  if (!script) {
-    script = await domainSWRCache.cache(
-      async (): Promise<string | null> => {
-        const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
-          .select(`
-              *,
-              deco_chat_hosting_apps_deployments!deployment_id(
-                id,
-                deco_chat_hosting_apps!hosting_app_id(slug)
-              )
-            `).eq(
-            "route_pattern",
-            host,
-          ).maybeSingle();
+  const getScriptFn = async (): Promise<string | null> => {
+    const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
+      .select(`
+            *,
+            deco_chat_hosting_apps_deployments!deployment_id(
+              id,
+              deco_chat_hosting_apps!hosting_app_id(slug)
+            )
+          `).eq(
+        "route_pattern",
+        host,
+      ).maybeSingle();
 
-        if ((error || !data) && locator) {
-          return locator.slug;
-        }
-        if (error) {
-          throw error;
-        }
-        const deployment = data?.deco_chat_hosting_apps_deployments;
-        const slug = deployment?.deco_chat_hosting_apps?.slug;
-        const deploymentId = deployment?.id;
-        if (!slug || !deploymentId) {
-          throw new Error("No slug or deployment ID found");
-        }
-        return Entrypoint.id(slug, deploymentId);
-      },
+    if ((error || !data) && locator) {
+      return locator.slug;
+    }
+    if (error) {
+      throw error;
+    }
+    const deployment = data?.deco_chat_hosting_apps_deployments;
+    const slug = deployment?.deco_chat_hosting_apps?.slug;
+    const deploymentId = deployment?.id;
+    if (!slug || !deploymentId) {
+      throw new Error("No slug or deployment ID found");
+    }
+    return Entrypoint.id(slug, deploymentId);
+  };
+  const isNoCache = c.req.header("cache-control")?.includes("no-cache");
+  if (!script) {
+    script = isNoCache ? await getScriptFn() : await domainSWRCache.cache(
+      getScriptFn,
       host,
     ).catch(() => null);
   }

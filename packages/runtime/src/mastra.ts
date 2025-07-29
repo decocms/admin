@@ -214,7 +214,7 @@ interface ViewExport {
   url: string;
 }
 
-type AgentExport = z.infer<typeof AgentSchema>
+type AgentExport = z.infer<typeof AgentSchema>;
 
 export interface CreateMCPServerOptions<
   Env = any,

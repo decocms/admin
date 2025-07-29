@@ -29,12 +29,11 @@ import {
   useAgents,
   useConnectionAgents,
   useConnectionViews,
+  useCreateAgent,
+  useRemoveAgent,
   useRemoveView,
   useToolCall,
   useTools,
-  useUpdateAgentCache,
-  useCreateAgent,
-  useRemoveAgent,
 } from "@deco/sdk";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
@@ -1059,7 +1058,7 @@ function BindingDetector({ integration, binding }: {
       const toolsData = await listTools(integration.connection);
       const isBindingResult = Binding(WellKnownBindings[binding])
         .isImplementedBy(toolsData.tools);
-      setIsBinding(isBindingResult);  
+      setIsBinding(isBindingResult);
     } catch (error) {
       console.error(`Error checking ${binding} binding:`, error);
       setIsBinding(false);
@@ -1281,7 +1280,6 @@ function AgentsList({ integration }: {
   integration: Integration;
 }) {
   const currentAgents = useAgents();
-  const updateAgentCache = useUpdateAgentCache();
   const createAgent = useCreateAgent();
   const removeAgent = useRemoveAgent();
 
@@ -1309,7 +1307,6 @@ function AgentsList({ integration }: {
 
   const handleAddAgent = async (agent: typeof agents[0]) => {
     await createAgent.mutateAsync(agent);
-    updateAgentCache(agent);
   };
 
   const handleRemoveAgent = async (
@@ -1464,7 +1461,12 @@ function BindingSection({
     return null;
   }
 
-  return <BindingDetector integration={selectedIntegration} binding={binding} />;
+  return (
+    <BindingDetector
+      integration={selectedIntegration}
+      binding={binding}
+    />
+  );
 }
 
 function AppDetail({ appKey }: {

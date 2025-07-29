@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { Binder } from "../index.ts";
 import { AgentSchema } from "../../models/agent.ts";
 
-
 const listAgentsSchema = z.object({
   agents: z.array(AgentSchema),
 });

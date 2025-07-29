@@ -65,6 +65,7 @@ export default function ViewDetail() {
   return (
     <>
       <PageLayout
+        key={view.id}
         hideViewsButton
         tabs={tabs}
         breadcrumb={

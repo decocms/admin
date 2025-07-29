@@ -1455,8 +1455,6 @@ function BindingSection({
       data.instances[0] ?? null;
   }, [data.instances, selectedConnectionId]);
 
-  console.log("selectedIntegration", binding, selectedIntegration);
-
   if (!selectedIntegration) {
     return null;
   }

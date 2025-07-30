@@ -1,5 +1,6 @@
 import z from "zod";
 import { WebCache } from "../../cache/index.ts";
+import { workspaceDB } from "../context.ts";
 import {
   type AppContext,
   assertHasWorkspace,
@@ -92,7 +93,7 @@ const QueryResult = z.object({
   results: z.array(z.unknown()).optional(),
   success: z.boolean().optional(),
 });
-
+export type QueryResult = z.infer<typeof QueryResult>;
 export const DatatabasesRunSqlInputSchema = z.object({
   sql: z.string().describe("The SQL query to run"),
   params: z.array(z.any()).describe(
@@ -107,14 +108,18 @@ export type DatatabasesRunSqlInput = z.infer<
 export const runSql = createTool({
   name: "DATABASES_RUN_SQL",
   description: "Run a SQL query against the workspace database",
-  inputSchema: DatatabasesRunSqlInputSchema,
+  inputSchema: DatatabasesRunSqlInputSchema.extend({
+    _legacy: z.boolean().optional().describe(
+      "If true, the query will be run against the legacy database",
+    ),
+  }),
   outputSchema: z.object({
     result: z.array(QueryResult),
   }),
-  handler: async ({ sql, params }, c) => {
+  handler: async ({ sql, params, _legacy }, c) => {
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const db = c.workspaceDB(c.workspace.value);
+    const db = await workspaceDB(c, _legacy);
 
     using responseDO = await db.exec({
       sql,

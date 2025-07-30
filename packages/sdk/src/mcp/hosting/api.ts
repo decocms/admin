@@ -12,7 +12,12 @@ import {
   assertWorkspaceResourceAccess,
   type WithTool,
 } from "../assertions.ts";
-import { type AppContext, createToolGroup, getEnv } from "../context.ts";
+import {
+  type AppContext,
+  createToolGroup,
+  getEnv,
+  workspaceDB,
+} from "../context.ts";
 import { MCPClient } from "../index.ts";
 import { assertsNoMCPBreakingChanges } from "./assertions.ts";
 import { bundler } from "./bundler.ts";
@@ -971,13 +976,15 @@ const OutputPaginationListSchema = z.object({
   per_page: z.number().optional(),
 });
 
-const getStore = (c: WithTool<AppContext>) => {
-  assertHasWorkspace(c);
-  const db = c.workspaceDB(c.workspace.value);
+const getStore = async (c: WithTool<AppContext>) => {
+  const db = await workspaceDB(c);
 
   return new D1Store({
     client: {
-      query: (args) => db.exec(args),
+      query: async (args) => {
+        using response = await db.exec(args);
+        return response;
+      },
     },
   });
 };
@@ -1034,8 +1041,7 @@ export const listWorkflowRuns = createTool({
     c,
   ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    assertHasWorkspace(c);
-    const db = c.workspaceDB(c.workspace.value);
+    const db = await workspaceDB(c);
 
     // Build dynamic SQL query with optional filters
     const conditions: string[] = [];
@@ -1268,8 +1274,7 @@ export const listWorkflowNames = createTool({
   }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    assertHasWorkspace(c);
-    const db = c.workspaceDB(c.workspace.value);
+    const db = await workspaceDB(c);
 
     const sql = `
       SELECT DISTINCT workflow_name
@@ -1355,7 +1360,7 @@ export const getWorkflowStatus = createTool({
   }),
   handler: async ({ instanceId, workflowName }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const store = getStore(c);
+    const store = await getStore(c);
 
     const workflow = await store.getWorkflowRunById({
       runId: instanceId,

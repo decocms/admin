@@ -15,10 +15,14 @@ import type {
 } from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
-import type { WithTool } from "./assertions.ts";
+import { assertHasWorkspace, type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
+import type {
+  DatatabasesRunSqlInput,
+  getWorkspaceD1Database,
+  QueryResult,
+} from "./databases/api.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
-import { WorkspaceDatabase } from "apps/api/src/durable-objects/workspace-database.ts";
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
 export interface JWTPrincipal extends JWTPayload {
@@ -29,14 +33,34 @@ export type Principal =
   | UserPrincipal
   | JWTPrincipal;
 
-export const workspaceDBFromDO = (
-  workspaceDO: DurableObjectNamespace<WorkspaceDatabase>,
-) => {
-  return (workspace: string) => {
-    const dbId = workspaceDO.idFromName(workspace);
-    return workspaceDO.get(dbId);
-  };
+export const workspaceDB = async (
+  c: AppContext,
+  d1 = false,
+): Promise<IWorkspaceDB> => {
+  assertHasWorkspace(c);
+  if (d1) {
+    const dbId = await getWorkspaceD1Database(c);
+    return {
+      exec: async (args) => {
+        const { result } = await c.cf.d1.database.query(dbId, {
+          ...args,
+          account_id: c.envVars.CF_ACCOUNT_ID,
+        });
+        return { result, [Symbol.dispose]: () => {} };
+      },
+    };
+  }
+  const dbId = c.workspaceDO.idFromName(c.workspace.value);
+  return c.workspaceDO.get(dbId);
 };
+
+export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
+export interface IWorkspaceDB {
+  exec: (
+    args: DatatabasesRunSqlInput,
+  ) => Promise<IWorkspaceDBExecResult> | IWorkspaceDBExecResult;
+}
+
 export interface Vars {
   params: Record<string, string>;
   workspace?: {
@@ -58,7 +82,7 @@ export interface Vars {
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
-  workspaceDB: (workspace: string) => DurableObjectStub<WorkspaceDatabase>;
+  workspaceDO: DurableObjectNamespace<IWorkspaceDB & Rpc.DurableObjectBranded>;
   stub: <
     Constructor extends
       | ActorConstructor<Trigger>

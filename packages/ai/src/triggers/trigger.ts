@@ -24,7 +24,6 @@ import {
   MCPClient,
   type MCPClientStub,
   PolicyClient,
-  workspaceDBFromDO,
   type WorkspaceTools,
 } from "@deco/sdk/mcp";
 import type { Callbacks } from "@deco/sdk/mcp/binder";
@@ -180,7 +179,7 @@ export class Trigger {
       // can be ignored for now.
       user: null as unknown as AppContext["user"],
       isLocal: true,
-      workspaceDB: workspaceDBFromDO(this.actorEnv.WORKSPACE_DB),
+      workspaceDO: this.actorEnv.WORKSPACE_DB,
       stub: this.state.stub as AppContext["stub"],
       workspace: fromWorkspaceString(this.workspace),
       resourceAccess: createResourceAccess(),

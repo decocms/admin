@@ -29,12 +29,7 @@ import { withActorsMiddleware } from "./middlewares/actors.ts";
 import { withContextMiddleware } from "./middlewares/context.ts";
 import { setUserMiddleware } from "./middlewares/user.ts";
 import { handleCodeExchange } from "./oauth/code.ts";
-import {
-  type AppContext,
-  type AppEnv,
-  State,
-  workspaceDBFromDO,
-} from "./utils/context.ts";
+import { type AppContext, type AppEnv, State } from "./utils/context.ts";
 import { handleStripeWebhook } from "./webhooks/stripe.ts";
 import { handleTrigger } from "./webhooks/trigger.ts";
 
@@ -57,7 +52,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     authorization: authorizationClient,
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
-    workspaceDB: workspaceDBFromDO(c.env.WORKSPACE_DB),
+    workspaceDO: c.env.WORKSPACE_DB,
     workspace: slug && root
       ? {
         root,

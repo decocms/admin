@@ -5,8 +5,8 @@ export type GroupIntegration = Omit<Integration, "id" | "connection"> & {
 };
 const groups: Record<string, GroupIntegration> = {};
 
-export const addGroup = (group: string, integration: GroupIntegration) => {
+export function addGroup(group: string, integration: GroupIntegration) {
   groups[group] = integration;
-};
+}
 
 export const getGroups = () => groups;

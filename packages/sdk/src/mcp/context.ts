@@ -17,11 +17,8 @@ import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
 import { assertHasWorkspace, type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
-import type {
-  DatatabasesRunSqlInput,
-  getWorkspaceD1Database,
-  QueryResult,
-} from "./databases/api.ts";
+import { getWorkspaceD1Database } from "./databases/d1.ts";
+import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -29,6 +26,9 @@ export interface JWTPrincipal extends JWTPayload {
   policies?: Pick<Policy, "statements">[];
 }
 
+const usesD1FeatureFlag: Record<string, boolean> = {
+  "/shared/livemode": true,
+};
 export type Principal =
   | UserPrincipal
   | JWTPrincipal;
@@ -38,6 +38,7 @@ export const workspaceDB = async (
   d1 = false,
 ): Promise<IWorkspaceDB> => {
   assertHasWorkspace(c);
+  d1 = usesD1FeatureFlag[c.workspace.value] || d1;
   if (d1) {
     const dbId = await getWorkspaceD1Database(c);
     return {
@@ -216,15 +217,16 @@ export interface Tool<
   ) => Promise<TReturn> | TReturn;
 }
 
-export const createToolGroup = (
+export function createToolGroup(
   group: WellKnownMcpGroup,
   integration: GroupIntegration,
-) =>
-  createToolFactory<WithTool<AppContext>>(
+) {
+  return createToolFactory<WithTool<AppContext>>(
     (c) => c as unknown as WithTool<AppContext>,
     WellKnownMcpGroups[group],
     integration,
   );
+}
 
 export const withMCPErrorHandling = <
   TInput = any,
@@ -250,44 +252,45 @@ type ToolName = string;
 type GroupName = string;
 export const resourceGroupMap = new Map<ToolName, GroupName | undefined>();
 
-export const createToolFactory = <
+export function createToolFactory<
   TAppContext extends AppContext = AppContext,
 >(
   contextFactory: (c: AppContext) => TAppContext,
   group?: string,
   integration?: GroupIntegration,
-) =>
-<
-  TName extends string = string,
-  TInput = any,
-  TReturn extends object | null | boolean = object,
->(
-  def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
-): Tool<TName, TInput, TReturn> => {
-  group && integration && addGroup(group, integration);
-  resourceGroupMap.set(def.name, group);
-  return {
-    group,
-    ...def,
-    handler: async (props: TInput): Promise<TReturn> => {
-      const context = contextFactory(State.getStore());
-      context.tool = { name: def.name };
+) {
+  return <
+    TName extends string = string,
+    TInput = any,
+    TReturn extends object | null | boolean = object,
+  >(
+    def: ToolDefinition<TAppContext, TName, TInput, TReturn>,
+  ): Tool<TName, TInput, TReturn> => {
+    group && integration && addGroup(group, integration);
+    resourceGroupMap.set(def.name, group);
+    return {
+      group,
+      ...def,
+      handler: async (props: TInput): Promise<TReturn> => {
+        const context = contextFactory(State.getStore());
+        context.tool = { name: def.name };
 
-      const result = await def.handler(props, context);
+        const result = await def.handler(props, context);
 
-      if (!context.resourceAccess.granted()) {
-        console.warn(
-          `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
-        );
-        throw new ForbiddenError(
-          `User cannot access this tool ${def.name}.`,
-        );
-      }
+        if (!context.resourceAccess.granted()) {
+          console.warn(
+            `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
+          );
+          throw new ForbiddenError(
+            `User cannot access this tool ${def.name}.`,
+          );
+        }
 
-      return result;
-    },
+        return result;
+      },
+    };
   };
-};
+}
 
 export const createTool = createToolFactory<WithTool<AppContext>>(
   (c) => c as unknown as WithTool<AppContext>,

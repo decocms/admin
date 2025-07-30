@@ -28,7 +28,7 @@ jobs:
         run: deno run lint
 
       - name: Run format
-        run: deno run fmt --check
+        run: deno run fmt:check
 
       - name: Print TSC version
         run: deno run version

@@ -18,13 +18,8 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Install Deco CLI
-        run: deno install -Ar -g -n deco jsr:@deco/cli -f
+        run: bun install -g deco-cli
 
       - name: Install dependencies
         run: |

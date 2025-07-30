@@ -45,7 +45,7 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CHAT_API_LOCAL } from "./lib/constants.js";
-import { getConfig } from "./lib/config.js";
+import { getConfig, readWranglerConfig } from "./lib/config.js";
 import { loginCommand } from "./commands/auth/login.js";
 import { whoamiCommand } from "./commands/auth/whoami.js";
 import { configureCommand } from "./commands/config/configure.js";
@@ -167,8 +167,6 @@ const hostingDeploy = new Command("deploy")
   .argument("[cwd]", "Working directory")
   .action(async (cwd, options) => {
     try {
-      const { getConfig, readWranglerConfig } = await import("./lib/config.js");
-
       const config = await getConfig({
         inlineOptions: options,
       });
@@ -210,8 +208,6 @@ const hostingPromote = new Command("promote")
   .option("-y, --yes", "Skip confirmation")
   .action(async (options) => {
     try {
-      const { getConfig, readWranglerConfig } = await import("./lib/config.js");
-
       const config = await getConfig({
         inlineOptions: options,
       });
@@ -306,7 +302,6 @@ const create = new Command("create")
   .argument("[project-name]", "Name of the project")
   .action(async (projectName, options) => {
     try {
-      const { getConfig } = await import("./lib/config.js");
       const config = await getConfig().catch(() => ({}));
       await createCommand(projectName, options.template, config);
     } catch (error) {

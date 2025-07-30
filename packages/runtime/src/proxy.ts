@@ -24,6 +24,7 @@ const serializeData = (data: any) => {
 
 interface ApiCallConfig {
   toolName: string;
+  fetcher?: { fetch: typeof fetch };
   payload: unknown;
   includeWorkspaceInPath?: boolean;
   mapper?: (data: unknown) => unknown;
@@ -37,6 +38,7 @@ async function makeApiCall(
   config: ApiCallConfig,
   options?: CreateStubAPIOptions,
 ) {
+  const fetcher = config.fetcher ?? { fetch };
   const traceDebugId = options?.debugId?.() ?? crypto.randomUUID();
   const workspace = getWorkspace(options?.workspace);
 
@@ -44,7 +46,7 @@ async function makeApiCall(
     ? `${workspace}/tools/call/${config.toolName}`
     : `/tools/call/${config.toolName}`;
 
-  const response = await fetch(
+  const response = await fetcher.fetch(
     new URL(
       urlPath,
       options?.decoChatApiUrl ?? `https://api.deco.chat`,
@@ -129,6 +131,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
           }
 
           return makeApiCall({
+            fetcher: options?.fetcher,
             toolName,
             payload,
             includeWorkspaceInPath: true,

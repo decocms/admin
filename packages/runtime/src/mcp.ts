@@ -79,6 +79,7 @@ export const MCPClient = new Proxy(
             workspace,
             token,
             decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
+            fetcher: (env as DefaultEnv).DECO_CHAT_API_SVC,
           });
       }
       if (name === "forConnection") {
@@ -88,6 +89,7 @@ export const MCPClient = new Proxy(
           createMCPFetchStub<TDefinition>({
             connection,
             decoChatApiUrl: (env as DefaultEnv).DECO_CHAT_API_URL,
+            fetcher: (env as DefaultEnv).DECO_CHAT_API_SVC,
           });
       }
       return global[name as keyof typeof global];
@@ -130,6 +132,7 @@ export type MCPConnectionProvider =
 export type JSONSchemaToZodConverter = (jsonSchema: any) => zv4.ZodTypeAny;
 export interface CreateStubAPIOptions {
   decoChatApiUrl?: string;
+  fetcher?: { fetch: typeof fetch };
   workspace?: string;
   token?: string;
   connection?: MCPConnectionProvider;

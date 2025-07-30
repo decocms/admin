@@ -305,6 +305,12 @@ export async function deployToCloudflare({
   const hasAssets = Object.keys(assets).length > 0;
 
   const wranglerBindings = [
+    {
+      type: "service" as const,
+      name: "DECO_CHAT_API_SVC",
+      service: "deco-chat-api",
+      environment: undefined! as string, // typings bug of the cloudflare client
+    },
     ...durable_objects?.bindings?.map((binding) => ({
       type: "durable_object_namespace" as const,
       name: binding.name,

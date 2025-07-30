@@ -48,8 +48,6 @@ Views can call server-side tools via typed RPC.
 
 ### Requirements
 
-- [Deno](https://docs.deno.com/runtime/) 2.x.x _(temporary — will be optional
-  after CLI migration)_
 - Your preferred JavaScript runtime:
   - Recommended: [Bun](https://bun.sh)
   - Supported: [Node.js](https://nodejs.org), [Deno](https://deno.land)
@@ -59,7 +57,13 @@ Views can call server-side tools via typed RPC.
 1. Install the CLI
 
 ```
-deno install -Ar -g -n deco jsr:@deco/cli
+npm i -g deco-cli
+```
+
+or
+
+```
+bun i -g deco-cli
 ```
 
 2. Log in to [deco.chat](https://deco.chat). Don’t have an account? Sign up

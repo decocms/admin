@@ -169,6 +169,7 @@ export const WORKSPACE_TOOLS = [
   apiKeysAPI.disableApiKey,
   apiKeysAPI.validateApiKey,
   databasesAPI.runSql,
+  databasesAPI.migrate,
   aiAPI.aiGenerate,
   aiAPI.aiGenerateObject,
   oauthAPI.oauthCodeCreate,

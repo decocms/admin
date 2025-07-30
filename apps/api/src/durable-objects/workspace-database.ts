@@ -14,12 +14,17 @@ export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
   }
 
   exec({ sql, params }: DatatabasesRunSqlInput) {
-    return {
-      result: [{
-        results: this.sql.exec(sql, ...(params ?? [])).toArray(),
-        success: true,
-      }],
-      [Symbol.dispose]: () => {},
-    };
+    try {
+      return {
+        result: [{
+          results: this.sql.exec(sql, ...(params ?? [])).toArray(),
+          success: true,
+        }],
+        [Symbol.dispose]: () => { },
+      };
+    } catch (err) {
+      console.log(sql, params?.length);
+      throw err;
+    }
   }
 }

@@ -27,7 +27,6 @@ export interface JWTPrincipal extends JWTPayload {
 }
 
 const usesD1FeatureFlag: Record<string, boolean> = {
-  "/shared/livemode": true,
   "/shared/superfrete": true,
   "/shared/libertas": true,
 };

@@ -20,7 +20,7 @@ export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
           results: this.sql.exec(sql, ...(params ?? [])).toArray(),
           success: true,
         }],
-        [Symbol.dispose]: () => { },
+        [Symbol.dispose]: () => {},
       };
     } catch (err) {
       console.log(sql, params?.length);

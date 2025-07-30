@@ -54,7 +54,19 @@ export const agentGenerateObject = createAgentTool(
     name: "AGENT_GENERATE_OBJECT",
     description: "Generate an object using an agent",
     inputSchema: z.object({
-      message: z.string().describe("The message to send to the agent"),
+      message: z.union([
+        z.string(),
+        z.array(
+          z.object({
+            id: z.string().optional(),
+            role: z.enum(["user", "assistant", "system"]),
+            content: z.string(),
+            parts: z.array(z.any()).optional(),
+          }),
+        ),
+      ]).describe(
+        "The message to send to the agent",
+      ),
       schema: z.any().describe(
         "The JSON schema to use for a structured response. If provided, the response will be an object.",
       ),
@@ -69,11 +81,16 @@ export const agentGenerateObject = createAgentTool(
       const agentStub = stub<AIAgent>("AIAgent")
         .new(`${c.workspace.value}/Agents/${c.agent}`);
 
-      const response = await agentStub.generateObject([{
-        id: crypto.randomUUID(),
-        role: "user" as const,
-        content: message,
-      }], schema);
+      const asMessageArray = Array.isArray(message)
+        ? message
+        : [{ role: "user" as const, content: message }];
+
+      const asMessage = asMessageArray.map((m) => ({
+        ...m,
+        id: m.id ?? crypto.randomUUID(),
+      }));
+
+      const response = await agentStub.generateObject(asMessage, schema);
 
       return response;
     },

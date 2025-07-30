@@ -93,27 +93,33 @@ const QueryResult = z.object({
   success: z.boolean().optional(),
 });
 
+export const DatatabasesRunSqlInputSchema = z.object({
+  sql: z.string().describe("The SQL query to run"),
+  params: z.array(z.any()).describe(
+    "The parameters to pass to the SQL query",
+  ).optional(),
+});
+
+export type DatatabasesRunSqlInput = z.infer<
+  typeof DatatabasesRunSqlInputSchema
+>;
+
 export const runSql = createTool({
   name: "DATABASES_RUN_SQL",
   description: "Run a SQL query against the workspace database",
-  inputSchema: z.object({
-    sql: z.string().describe("The SQL query to run"),
-    params: z.array(z.any()).describe(
-      "The parameters to pass to the SQL query",
-    ),
-  }),
+  inputSchema: DatatabasesRunSqlInputSchema,
   outputSchema: z.object({
     result: z.array(QueryResult),
   }),
   handler: async ({ sql, params }, c) => {
+    assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const db = await getWorkspaceD1Database(c);
+    const db = c.workspaceDB(c.workspace.value);
 
-    const response = await c.cf.d1.database.query(db, {
-      account_id: c.envVars.CF_ACCOUNT_ID,
+    using responseDO = await db.exec({
       sql,
       params,
     });
-    return { result: response.result };
+    return { result: responseDO.result };
   },
 });

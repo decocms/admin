@@ -18,6 +18,7 @@ import { ForbiddenError, type HttpError } from "../errors.ts";
 import type { WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
+import { WorkspaceDatabase } from "apps/api/src/durable-objects/workspace-database.ts";
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
 export interface JWTPrincipal extends JWTPayload {
@@ -27,6 +28,15 @@ export interface JWTPrincipal extends JWTPayload {
 export type Principal =
   | UserPrincipal
   | JWTPrincipal;
+
+export const workspaceDBFromDO = (
+  workspaceDO: DurableObjectNamespace<WorkspaceDatabase>,
+) => {
+  return (workspace: string) => {
+    const dbId = workspaceDO.idFromName(workspace);
+    return workspaceDO.get(dbId);
+  };
+};
 export interface Vars {
   params: Record<string, string>;
   workspace?: {
@@ -48,6 +58,7 @@ export interface Vars {
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
+  workspaceDB: (workspace: string) => DurableObjectStub<WorkspaceDatabase>;
   stub: <
     Constructor extends
       | ActorConstructor<Trigger>

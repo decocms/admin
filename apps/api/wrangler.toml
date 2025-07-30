@@ -32,6 +32,10 @@ class_name = "AIAgent"
 name = "TRIGGER"
 class_name = "Trigger"
 
+[[durable_objects.bindings]]
+name = "WORKSPACE_DB"
+class_name = "WorkspaceDatabase"
+
 # Durable Object migrations.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#migrations
 [[migrations]]
@@ -54,3 +58,7 @@ deleted_classes = ["TestDO"]
 name = "kb-file-processor"
 binding = "KB_FILE_PROCESSOR"
 class_name = "KbFileProcessorWorkflow"
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["WorkspaceDatabase"] # Array of new classes

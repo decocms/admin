@@ -8,6 +8,7 @@ import { default as app } from "./src/app.ts";
 import { email } from "./src/email.ts";
 import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
 import { env } from "cloudflare:workers";
+export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);

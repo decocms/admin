@@ -524,11 +524,20 @@ export const updateIntegration = createIntegrationManagementTool({
       throw new UserInputError("Cannot update an agent integration");
     }
 
-    const { appName: _appName, appId: _appId, ...rest } = integration;
+    const { name, description, icon, connection, access, appId } = integration;
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")
-      .update({ ...rest, id: uuid, workspace: c.workspace.value })
+      .update({
+        name,
+        description,
+        icon,
+        connection,
+        access,
+        app_id: appId,
+        id: uuid,
+        workspace: c.workspace.value,
+      })
       .eq("id", uuid)
       .eq("workspace", c.workspace.value)
       .select()

@@ -58,6 +58,7 @@ import { link } from "./commands/dev/link.js";
 import { genEnv } from "./commands/gen/gen.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
+import { publishCommand, publishFromFile } from "./commands/publish/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -339,6 +340,47 @@ const add = new Command("add")
     }
   });
 
+// Publish command implementation
+const publish = new Command("publish")
+  .description("Publish an app to the registry.")
+  .option("-f, --file <file>", "JSON file with app data")
+  .option("-fn, --friendly-name <name>", "Friendly name for the app")
+  .option("-n, --name <name>", "App name in format @scope/appName")
+  .option("-d, --description <description>", "App description")
+  .option("-i, --icon <icon>", "Icon URL")
+  .option(
+    "-ct, --connection-type <type>",
+    "Connection type (HTTP, SSE, Websocket, Deco, INNATE)",
+  )
+  .option("-curl, --connection-url <url>", "Connection URL")
+  .option("-u, --unlisted", "Make the app unlisted")
+  .option("-w, --workspace <workspace>", "Workspace name")
+  .action(async (options) => {
+    try {
+      if (options.file) {
+        await publishFromFile(options.file, options.workspace, getLocal());
+      } else {
+        await publishCommand({
+          friendlyName: options.friendlyName,
+          name: options.name,
+          description: options.description,
+          icon: options.icon,
+          connectionType: options.connectionType,
+          connectionUrl: options.connectionUrl,
+          unlisted: options.unlisted,
+          workspace: options.workspace,
+          local: getLocal(),
+        });
+      }
+    } catch (error) {
+      console.error(
+        "❌ Failed to publish app:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
 // Hosting parent command
 const hosting = new Command("hosting")
   .description("Manage hosting apps in a workspace.")
@@ -403,6 +445,7 @@ const program = new Command()
   .addCommand(linkCmd)
   .addCommand(gen)
   .addCommand(create)
-  .addCommand(listTemplatesCommand);
+  .addCommand(listTemplatesCommand)
+  .addCommand(publish);
 
 program.parse();

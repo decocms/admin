@@ -39,6 +39,7 @@ export const writeFile = async ({
 
   const response = await fetch(uploadUrl!, {
     method: "PUT",
+    // @ts-ignore todo: cloudflare types should not be affecting this
     body: content,
     headers: {
       "Content-Type": contentType,

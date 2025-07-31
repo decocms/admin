@@ -525,7 +525,7 @@ export const updateIntegration = createIntegrationManagementTool({
     }
 
     // should we add appName and appId to the table?
-    const { appName, appId, ...rest } = integration;
+    const { appName: _appName, appId: _appId, ...rest } = integration;
 
     const { data, error } = await c.db
       .from("deco_chat_integrations")

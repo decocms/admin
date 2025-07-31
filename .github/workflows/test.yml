@@ -28,11 +28,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Run lint
-        run: bun run lint
-
       - name: Run format
         run: bun run fmt:check
+
+      - name: Run lint
+        run: bun run lint
 
       - name: Run check
         run: bun run check

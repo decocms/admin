@@ -20,7 +20,7 @@ Our goal is simple: empower teams with Generative AI by giving builders the
 tools to create AI applications that scale beyond the initial demo and into the
 thousands of users, securely and cost-effectively.
 
-<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/c79904c9-6ba7-4edb-88b4-64462ffecdc4/Workflow.png" />
+<img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/3c37a237-0c33-4db5-9cfd-a11ff084752a/decocx1.png" />
 
 ## Core capabilities
 
@@ -34,7 +34,6 @@ thousands of users, securely and cost-effectively.
   infinitely scalable deployments. Self-host with your Cloudflare API Key
 - **Visual Workspace** – Build agents, connect tools, manage permissions, and
   orchestrate everything built in code
-
 
 <img width="1440" height="900" alt="image" src="https://assets.decocache.com/decochatweb/2e6980db-296b-4972-b2d4-9f5265b6e74a/Usage-by-agent.png" />
 
@@ -204,6 +203,7 @@ Build **React + Tailwind** frontends served by the same Cloudflare Worker.
    ```bash
    npm run dev   # → http://localhost:8787
    ```
+
 8. Deploy to Cloudflare
 
    ```bash

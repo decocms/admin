@@ -604,6 +604,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
           // @ts-ignore: Mastra requires a logger, but we don't use it
           getLogger: () => undefined,
           getTelemetry: () => this.telemetry,
+          generateId: () => this._memory.generateId(),
         },
       });
     }
@@ -1048,176 +1049,182 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     payload: AIMessage[],
     options?: StreamOptions,
   ): Promise<Response> {
-    const tracer = this.telemetry?.tracer;
-    const timings = this.metadata?.timings ?? createServerTimings();
+    try {
+      const tracer = this.telemetry?.tracer;
+      const timings = this.metadata?.timings ?? createServerTimings();
 
-    const thread = {
-      threadId: options?.threadId ?? this._thread.threadId,
-      resourceId: options?.resourceId ?? this._thread.resourceId,
-    };
+      const thread = {
+        threadId: options?.threadId ?? this._thread.threadId,
+        resourceId: options?.resourceId ?? this._thread.resourceId,
+      };
 
-    const isClaude = this._configuration?.model.includes("claude");
-    const hasPdf = payload.some((message) =>
-      message.experimental_attachments?.some(
-        (attachment) => attachment.contentType === "application/pdf",
-      ),
-    );
-    const bypassOpenRouter = isClaude && hasPdf;
-
-    /*
-     * Additional context from the payload, through annotations (converting to a CoreMessage-like object)
-     * TODO (@0xHericles) We should find a way to extend the Message Object
-     * See https://github.com/vercel/ai/discussions/3284
-     */
-    const context = payload.flatMap((message) =>
-      Array.isArray(message.annotations)
-        ? message.annotations.map((annotation) => ({
-            role: "user" as const,
-            content:
-              typeof annotation === "string"
-                ? annotation
-                : [
-                    {
-                      type: "text",
-                      text: JSON.stringify(annotation),
-                    } as TextPart,
-                  ],
-          }))
-        : [],
-    );
-
-    const toolsets = await this._withToolOverrides(
-      options?.tools,
-      timings,
-      thread,
-      options?.toolsets,
-    );
-
-    const agentOverridesTiming = timings.start("agent-overrides");
-    const agent = await this._withAgentOverrides({
-      ...options,
-      bypassOpenRouter: bypassOpenRouter ?? options?.bypassOpenRouter ?? false,
-    });
-    agentOverridesTiming.end();
-
-    const wallet = this.wallet;
-    const walletTiming = timings.start("init-wallet");
-    const hasBalance = await wallet.canProceed();
-    walletTiming.end();
-
-    if (!hasBalance) {
-      throw new Error("Insufficient funds");
-    }
-
-    const ttfbSpan = tracer?.startSpan("stream-ttfb", {
-      attributes: {
-        "agent.id": this.state.id,
-        model: options?.model ?? this._configuration?.model,
-        "thread.id": thread.threadId,
-        "openrouter.bypass": `${
-          bypassOpenRouter ?? options?.bypassOpenRouter ?? false
-        }`,
-      },
-    });
-    let ended = false;
-    const endTtfbSpan = () => {
-      if (ended) {
-        return;
-      }
-      ended = true;
-      ttfbSpan?.end();
-    };
-    const streamTiming = timings.start("stream");
-
-    const experimentalTransform = options?.smoothStream
-      ? smoothStream({
-          delayInMs: options.smoothStream.delayInMs,
-          // The default chunking breaks cloudflare due to using too much CPU.
-          // This is a simpler function that does the job.
-          chunking: (buffer) => buffer.slice(0, 5) || null,
-        })
-      : undefined;
-
-    const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
-    const budgetTokens = Math.min(
-      DEFAULT_MAX_THINKING_TOKENS,
-      maxLimit - this._maxTokens(),
-    );
-
-    const aiMessages = await Promise.all(
-      payload.map((msg) =>
-        convertToAIMessage({ message: msg, agent: this._agent }),
-      ),
-    );
-
-    // Process instructions if provided in options
-    let processedInstructions = options?.instructions;
-    if (processedInstructions) {
-      processedInstructions = await resolveMentions(
-        processedInstructions,
-        this.workspace,
-        this.metadata?.mcpClient,
+      const isClaude = this._configuration?.model.includes("claude");
+      const hasPdf = payload.some((message) =>
+        message.experimental_attachments?.some(
+          (attachment) => attachment.contentType === "application/pdf",
+        ),
       );
-    }
+      const bypassOpenRouter = isClaude && hasPdf;
 
-    const response = await agent.stream(aiMessages, {
-      ...thread,
-      context,
-      toolsets,
-      instructions: processedInstructions,
-      maxSteps: this._maxSteps(options?.maxSteps),
-      maxTokens: this._maxTokens(),
-      temperature: this._configuration?.temperature ?? undefined,
-      experimental_transform: experimentalTransform,
-      providerOptions:
-        budgetTokens > DEFAULT_MIN_THINKING_TOKENS
-          ? {
-              anthropic: {
-                thinking: {
-                  type: "enabled",
-                  budgetTokens,
+      /*
+       * Additional context from the payload, through annotations (converting to a CoreMessage-like object)
+       * TODO (@0xHericles) We should find a way to extend the Message Object
+       * See https://github.com/vercel/ai/discussions/3284
+       */
+      const context = payload.flatMap((message) =>
+        Array.isArray(message.annotations)
+          ? message.annotations.map((annotation) => ({
+              role: "user" as const,
+              content:
+                typeof annotation === "string"
+                  ? annotation
+                  : [
+                      {
+                        type: "text",
+                        text: JSON.stringify(annotation),
+                      } as TextPart,
+                    ],
+            }))
+          : [],
+      );
+
+      const toolsets = await this._withToolOverrides(
+        options?.tools,
+        timings,
+        thread,
+        options?.toolsets,
+      );
+
+      const agentOverridesTiming = timings.start("agent-overrides");
+      const agent = await this._withAgentOverrides({
+        ...options,
+        bypassOpenRouter:
+          bypassOpenRouter ?? options?.bypassOpenRouter ?? false,
+      });
+      agentOverridesTiming.end();
+
+      const wallet = this.wallet;
+      const walletTiming = timings.start("init-wallet");
+      const hasBalance = await wallet.canProceed();
+      walletTiming.end();
+
+      if (!hasBalance) {
+        throw new Error("Insufficient funds");
+      }
+
+      const ttfbSpan = tracer?.startSpan("stream-ttfb", {
+        attributes: {
+          "agent.id": this.state.id,
+          model: options?.model ?? this._configuration?.model,
+          "thread.id": thread.threadId,
+          "openrouter.bypass": `${
+            bypassOpenRouter ?? options?.bypassOpenRouter ?? false
+          }`,
+        },
+      });
+      let ended = false;
+      const endTtfbSpan = () => {
+        if (ended) {
+          return;
+        }
+        ended = true;
+        ttfbSpan?.end();
+      };
+      const streamTiming = timings.start("stream");
+
+      const experimentalTransform = options?.smoothStream
+        ? smoothStream({
+            delayInMs: options.smoothStream.delayInMs,
+            // The default chunking breaks cloudflare due to using too much CPU.
+            // This is a simpler function that does the job.
+            chunking: (buffer) => buffer.slice(0, 5) || null,
+          })
+        : undefined;
+
+      const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
+      const budgetTokens = Math.min(
+        DEFAULT_MAX_THINKING_TOKENS,
+        maxLimit - this._maxTokens(),
+      );
+
+      const aiMessages = await Promise.all(
+        payload.map((msg) =>
+          convertToAIMessage({ message: msg, agent: this._agent }),
+        ),
+      );
+
+      // Process instructions if provided in options
+      let processedInstructions = options?.instructions;
+      if (processedInstructions) {
+        processedInstructions = await resolveMentions(
+          processedInstructions,
+          this.workspace,
+          this.metadata?.mcpClient,
+        );
+      }
+
+      const response = await agent.stream(aiMessages, {
+        ...thread,
+        context,
+        toolsets,
+        instructions: processedInstructions,
+        maxSteps: this._maxSteps(options?.maxSteps),
+        maxTokens: this._maxTokens(),
+        temperature: this._configuration?.temperature ?? undefined,
+        experimental_transform: experimentalTransform,
+        providerOptions:
+          budgetTokens > DEFAULT_MIN_THINKING_TOKENS
+            ? {
+                anthropic: {
+                  thinking: {
+                    type: "enabled",
+                    budgetTokens,
+                  },
                 },
-              },
-            }
-          : {},
-      onChunk: endTtfbSpan,
-      onError: (err) => {
-        console.error("agent stream error", err);
-        // TODO(@mcandeia): add error tracking with posthog
-      },
-      onFinish: (result) => {
-        assertConfiguration(this._configuration);
-        this._handleGenerationFinish({
-          threadId: thread.threadId,
-          usedModelId: options?.model ?? this._configuration.model,
-          usage: result.usage,
-        });
-      },
-    });
-    streamTiming.end();
+              }
+            : {},
+        onChunk: endTtfbSpan,
+        onError: (err) => {
+          console.error("agent stream error", err);
+          // TODO(@mcandeia): add error tracking with posthog
+        },
+        onFinish: (result) => {
+          assertConfiguration(this._configuration);
+          this._handleGenerationFinish({
+            threadId: thread.threadId,
+            usedModelId: options?.model ?? this._configuration.model,
+            usage: result.usage,
+          });
+        },
+      });
+      streamTiming.end();
 
-    const dataStreamResponseTiming = timings.start("data-stream-response");
-    const dataStreamResponse = response.toDataStreamResponse({
-      sendReasoning: options?.sendReasoning,
-      getErrorMessage: (error) => {
-        if (error == null) {
-          return "unknown error";
-        }
+      const dataStreamResponseTiming = timings.start("data-stream-response");
+      const dataStreamResponse = response.toDataStreamResponse({
+        sendReasoning: options?.sendReasoning,
+        getErrorMessage: (error) => {
+          if (error == null) {
+            return "unknown error";
+          }
 
-        if (typeof error === "string") {
-          return error;
-        }
+          if (typeof error === "string") {
+            return error;
+          }
 
-        if (error instanceof Error) {
-          return error.message;
-        }
+          if (error instanceof Error) {
+            return error.message;
+          }
 
-        return JSON.stringify(error);
-      },
-    });
-    dataStreamResponseTiming.end();
+          return JSON.stringify(error);
+        },
+      });
+      dataStreamResponseTiming.end();
 
-    return dataStreamResponse;
+      return dataStreamResponse;
+    } catch (err) {
+      console.error("Error on stream", err);
+      throw err;
+    }
   }
 
   public getAgentName() {

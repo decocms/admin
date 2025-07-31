@@ -22,9 +22,10 @@ export {
 } from "./mcp.ts";
 
 export interface WorkspaceDB {
-  query: (
-    params: { sql: string; params: string[] },
-  ) => Promise<{ result: QueryResult[] }>;
+  query: (params: {
+    sql: string;
+    params: string[];
+  }) => Promise<{ result: QueryResult[] }>;
 }
 
 export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
@@ -92,15 +93,13 @@ export interface User {
   };
 }
 
-export interface RequestContext<
-  TSchema extends z.ZodTypeAny = any,
-> {
+export interface RequestContext<TSchema extends z.ZodTypeAny = any> {
   state: z.infer<TSchema>;
   token: string;
   workspace: string;
-  ensureAuthenticated: (
-    options?: { workspaceHint?: string },
-  ) => User | undefined;
+  ensureAuthenticated: (options?: {
+    workspaceHint?: string;
+  }) => User | undefined;
 }
 
 // 2. Map binding type to its creator function
@@ -133,16 +132,19 @@ const withDefaultBindings = (
       },
     };
   };
-  env["SELF"] = new Proxy({}, {
-    get: (_, prop) => {
-      return async (args: unknown) => {
-        return await server.callTool({
-          toolCallId: prop as string,
-          toolCallInput: args,
-        });
-      };
+  env["SELF"] = new Proxy(
+    {},
+    {
+      get: (_, prop) => {
+        return async (args: unknown) => {
+          return await server.callTool({
+            toolCallId: prop as string,
+            toolCallInput: args,
+          });
+        };
+      },
     },
-  });
+  );
   env["DECO_CHAT_API"] = MCPClient;
   env["DECO_CHAT_WORKSPACE_API"] = client;
   env["DECO_CHAT_WORKSPACE_DB"] = {
@@ -152,7 +154,10 @@ const withDefaultBindings = (
 };
 
 export class UnauthorizedError extends Error {
-  constructor(message: string, public redirectTo: URL) {
+  constructor(
+    message: string,
+    public redirectTo: URL,
+  ) {
     super(message);
     this.name = "UnauthorizedError";
   }
@@ -216,10 +221,7 @@ export const withBindings = <TEnv>(
   const bindings = WorkersMCPBindings.parse(env.DECO_CHAT_BINDINGS);
 
   for (const binding of bindings) {
-    env[binding.name] = creatorByType[binding.type](
-      binding as any,
-      env,
-    );
+    env[binding.name] = creatorByType[binding.type](binding as any, env);
   }
 
   withDefaultBindings(env, server, env.DECO_CHAT_REQUEST_CONTEXT);
@@ -247,19 +249,12 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
     }
     if (url.pathname === AUTH_START_ENDPOINT) {
       env.DECO_CHAT_REQUEST_CONTEXT.ensureAuthenticated();
-      const redirectTo = new URL(
-        "/",
-        url,
-      );
+      const redirectTo = new URL("/", url);
       const next = url.searchParams.get("next");
       return Response.redirect(next ?? redirectTo, 302);
     }
     if (url.pathname === "/mcp") {
-      return server.fetch(
-        req,
-        env,
-        ctx,
-      );
+      return server.fetch(req, env, ctx);
     }
 
     if (url.pathname.startsWith("/mcp/call-tool")) {
@@ -279,12 +274,10 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         },
       });
     }
-    return userFns.fetch?.(
-      req,
-      env,
-      ctx,
-    ) ||
-      new Response("Not found", { status: 404 });
+    return (
+      userFns.fetch?.(req, env, ctx) ||
+      new Response("Not found", { status: 404 })
+    );
   };
   return {
     Workflow: Workflow(server, userFns.workflows),
@@ -302,7 +295,8 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       } catch (error) {
         if (error instanceof UnauthorizedError) {
           const referer = req.headers.get("referer");
-          const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+          const isFetchRequest =
+            req.headers.has(DECO_MCP_CLIENT_HEADER) ||
             req.headers.get("sec-fetch-mode") === "cors";
           if (!isFetchRequest) {
             const url = new URL(req.url);

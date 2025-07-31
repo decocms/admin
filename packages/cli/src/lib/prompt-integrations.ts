@@ -56,20 +56,23 @@ export async function promptIntegrations(
 
   try {
     // Use INTEGRATIONS_LIST tool to get available integrations
-    const response = await client.callTool({
-      name: "INTEGRATIONS_LIST",
-      arguments: {},
+    const response = await client.callTool(
+      {
+        name: "INTEGRATIONS_LIST",
+        arguments: {},
+      },
       // @ts-expect-error We need to refactor INTEGRATIONS_LIST to stop returning array and use a proper object
-    }, z.any());
+      z.any(),
+    );
 
     if (response.isError) {
       throw new Error("Failed to fetch integrations");
     }
 
     const integrationsResponse = response.structuredContent as Integration[];
-    const integrations = (integrationsResponse || []).filter((c) =>
-      c.connection.type !== "INNATE"
-    ).sort((a, b) => a.name.localeCompare(b.name));
+    const integrations = (integrationsResponse || [])
+      .filter((c) => c.connection.type !== "INNATE")
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     if (!integrations || integrations.length === 0) {
       throw new Error("No integrations found.");
@@ -98,7 +101,7 @@ export async function promptIntegrations(
 
     // Convert selected IDs back to integration objects
     const selectedIntegrations = integrations.filter((integration) =>
-      selectedIntegrationIds.includes(integration.id)
+      selectedIntegrationIds.includes(integration.id),
     );
 
     // Return the selected integration bindings

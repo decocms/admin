@@ -1,39 +1,26 @@
 export const WellKnownWallets = {
-  build: (
-    type: string,
-    discriminator: string,
-    category: string,
-  ) => `${type}::${discriminator}@${category}`,
-  unwind: (
-    wallet: string,
-  ) => {
+  build: (type: string, discriminator: string, category: string) =>
+    `${type}::${discriminator}@${category}`,
+  unwind: (wallet: string) => {
     const [category, discriminatorAndCategory] = wallet.split("::");
     const [discriminator, type] = discriminatorAndCategory.split("@");
     return { type, discriminator, category };
   },
   workspace: {
-    genCredits: (
-      workspace: string,
-    ) =>
+    genCredits: (workspace: string) =>
       [
         "user" as const,
         `workspace-gen-credits-${workspace}`,
         "liability" as const,
       ] as const,
-    voucher: (
-      id: string,
-      amount: string,
-    ) =>
+    voucher: (id: string, amount: string) =>
       [
         "user" as const,
         `deco-chat-voucher-${id}-${amount}`,
         "liability" as const,
       ] as const,
   },
-  llmVaultCredits: (
-    workspace: string,
-    llmId: string,
-  ) =>
+  llmVaultCredits: (workspace: string, llmId: string) =>
     [
       "user" as const,
       `workspace-llm-vault-credits-${workspace}-${llmId}`,
@@ -75,8 +62,8 @@ const validYear = [
   "2040",
 ] as const;
 
-type ValidYear = typeof validYear[number];
-type ValidMonth = typeof validMonth[number];
+type ValidYear = (typeof validYear)[number];
+type ValidMonth = (typeof validMonth)[number];
 
 export const isValidMonth = (month: string): month is ValidMonth => {
   return validMonth.includes(month as ValidMonth);
@@ -87,9 +74,7 @@ export const isValidYear = (year: string): year is ValidYear => {
 };
 
 export const WellKnownTransactions = {
-  freeTwoDollars: (
-    workspaceId: string,
-  ) => `free-two-dollars-${workspaceId}`,
+  freeTwoDollars: (workspaceId: string) => `free-two-dollars-${workspaceId}`,
   monthlyPlanCreditsReward: (
     workspaceId: string,
     month: ValidMonth,

@@ -10,27 +10,35 @@ export const migrate = createDatabaseTool({
   name: "DATABASES_MIGRATE",
   description: "Migrate data from legacy database to new database",
   inputSchema: z.object({
-    migrateWorkflows: z.boolean().optional().describe(
-      "If true, workflows will be migrated",
-    ),
-    dryRun: z.boolean().optional().describe(
-      "If true, only shows what would be migrated without executing",
-    ),
-    tables: z.array(z.string()).optional().describe(
-      "Specific tables to migrate. If not provided, all tables will be migrated",
-    ),
-    batchSize: z.number().default(1000).describe(
-      "Number of rows to migrate per batch",
-    ),
+    migrateWorkflows: z
+      .boolean()
+      .optional()
+      .describe("If true, workflows will be migrated"),
+    dryRun: z
+      .boolean()
+      .optional()
+      .describe("If true, only shows what would be migrated without executing"),
+    tables: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Specific tables to migrate. If not provided, all tables will be migrated",
+      ),
+    batchSize: z
+      .number()
+      .default(1000)
+      .describe("Number of rows to migrate per batch"),
   }),
   outputSchema: z.object({
     success: z.boolean(),
-    migratedTables: z.array(z.object({
-      tableName: z.string(),
-      rowCount: z.number(),
-      status: z.enum(["success", "error", "skipped"]),
-      error: z.string().optional(),
-    })),
+    migratedTables: z.array(
+      z.object({
+        tableName: z.string(),
+        rowCount: z.number(),
+        status: z.enum(["success", "error", "skipped"]),
+        error: z.string().optional(),
+      }),
+    ),
     totalRowsMigrated: z.number(),
     executionTimeMs: z.number(),
   }),
@@ -67,13 +75,12 @@ export const migrate = createDatabaseTool({
     try {
       // Get all tables from legacy database
       using legacyTablesResponse = await legacyDb.exec({
-        sql:
-          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+        sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
         params: [],
       });
 
       const allTables =
-        legacyTablesResponse.result[0]?.results as Array<{ name: string }> ||
+        (legacyTablesResponse.result[0]?.results as Array<{ name: string }>) ||
         [];
 
       // Filter out system tables that shouldn't be migrated
@@ -83,10 +90,11 @@ export const migrate = createDatabaseTool({
         "_litestream_lock",
         ...(!migrateWorkflows ? ["mastra_workflow_snapshot"] : []),
       ];
-      const filteredTables = allTables.filter((table) =>
-        !systemTablesToExclude.includes(table.name) &&
-        !table.name.startsWith("_cf_") &&
-        !table.name.startsWith("sqlite_")
+      const filteredTables = allTables.filter(
+        (table) =>
+          !systemTablesToExclude.includes(table.name) &&
+          !table.name.startsWith("_cf_") &&
+          !table.name.startsWith("sqlite_"),
       );
 
       const tablesToMigrate = tables
@@ -130,13 +138,13 @@ export const migrate = createDatabaseTool({
         try {
           // Get table schema from legacy database
           using schemaResponse = await legacyDb.exec({
-            sql:
-              `SELECT sql FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
+            sql: `SELECT sql FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
             params: [],
           });
 
-          const createTableSql =
-            (schemaResponse.result[0]?.results?.[0] as { sql: string })?.sql;
+          const createTableSql = (
+            schemaResponse.result[0]?.results?.[0] as { sql: string }
+          )?.sql;
 
           if (!createTableSql) {
             migratedTables.push({
@@ -152,8 +160,7 @@ export const migrate = createDatabaseTool({
           let tableExists = false;
           try {
             using checkTableResponse = await newDb.exec({
-              sql:
-                `SELECT name FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
+              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
               params: [],
             });
             tableExists =
@@ -172,14 +179,15 @@ export const migrate = createDatabaseTool({
                 params: [],
               });
 
-              const tableInfo = tableInfoResponse.result[0]?.results as Array<{
-                cid: number;
-                name: string;
-                type: string;
-                notnull: number;
-                dflt_value: string | null;
-                pk: number;
-              }> || [];
+              const tableInfo =
+                (tableInfoResponse.result[0]?.results as Array<{
+                  cid: number;
+                  name: string;
+                  type: string;
+                  notnull: number;
+                  dflt_value: string | null;
+                  pk: number;
+                }>) || [];
 
               if (tableInfo.length === 0) {
                 migratedTables.push({
@@ -204,7 +212,8 @@ export const migrate = createDatabaseTool({
               });
 
               // Add PRIMARY KEY if there are primary key columns
-              const pkColumns = tableInfo.filter((col) => col.pk > 0)
+              const pkColumns = tableInfo
+                .filter((col) => col.pk > 0)
                 .sort((a, b) => a.pk - b.pk)
                 .map((col) => `"${col.name}"`);
 
@@ -212,10 +221,9 @@ export const migrate = createDatabaseTool({
                 columnDefinitions.push(`PRIMARY KEY (${pkColumns.join(", ")})`);
               }
 
-              const cleanCreateSql =
-                `CREATE TABLE IF NOT EXISTS "${table.name}" (${
-                  columnDefinitions.join(", ")
-                })`;
+              const cleanCreateSql = `CREATE TABLE IF NOT EXISTS "${table.name}" (${columnDefinitions.join(
+                ", ",
+              )})`;
 
               using _ = await newDb.exec({
                 sql: cleanCreateSql,
@@ -243,7 +251,8 @@ export const migrate = createDatabaseTool({
           });
 
           const columns =
-            columnsResponse.result[0]?.results as Array<{ name: string }> || [];
+            (columnsResponse.result[0]?.results as Array<{ name: string }>) ||
+            [];
           const columnNames = columns.map((col) => `"${col.name}"`).join(", ");
 
           // Check if table already has data (for idempotency)
@@ -254,9 +263,11 @@ export const migrate = createDatabaseTool({
               params: [],
             });
             existingRowCount =
-              (existingCountResponse.result[0]?.results?.[0] as {
-                count: number;
-              })?.count || 0;
+              (
+                existingCountResponse.result[0]?.results?.[0] as {
+                  count: number;
+                }
+              )?.count || 0;
           } catch {
             // If we can't count existing rows, assume table is empty
             existingRowCount = 0;
@@ -307,8 +318,7 @@ export const migrate = createDatabaseTool({
             let rows: any[] = [];
             try {
               using dataResponse = await legacyDb.exec({
-                sql:
-                  `SELECT ${columnNames} FROM "${table.name}" LIMIT ${batchSize} OFFSET ${offset}`,
+                sql: `SELECT ${columnNames} FROM "${table.name}" LIMIT ${batchSize} OFFSET ${offset}`,
                 params: [],
               });
               rows = dataResponse.result[0]?.results || [];
@@ -344,10 +354,9 @@ export const migrate = createDatabaseTool({
               try {
                 // Prepare bulk insert for this chunk
                 const placeholders = columns.map(() => "?").join(", ");
-                const insertSql =
-                  `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES ${
-                    rowChunk.map(() => `(${placeholders})`).join(", ")
-                  }`;
+                const insertSql = `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES ${rowChunk
+                  .map(() => `(${placeholders})`)
+                  .join(", ")}`;
 
                 // Flatten row data for parameters
                 const params: any[] = [];
@@ -364,8 +373,7 @@ export const migrate = createDatabaseTool({
               } catch {
                 // If bulk insert fails, fall back to single-row inserts
                 const placeholders = columns.map(() => "?").join(", ");
-                const singleInsertSql =
-                  `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES (${placeholders})`;
+                const singleInsertSql = `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES (${placeholders})`;
 
                 for (const row of rowChunk) {
                   const params: any[] = [];

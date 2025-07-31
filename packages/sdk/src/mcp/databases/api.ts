@@ -18,7 +18,8 @@ const Meta = z.object({
   rows_read: z.number().optional(),
   rows_written: z.number().optional(),
   served_by_primary: z.boolean().optional(),
-  served_by_region: z.enum(["WNAM", "ENAM", "WEUR", "EEUR", "APAC", "OC"])
+  served_by_region: z
+    .enum(["WNAM", "ENAM", "WEUR", "EEUR", "APAC", "OC"])
     .optional(),
   size_after: z.number().optional(),
   timings: Timings.optional(),
@@ -32,9 +33,10 @@ const QueryResult = z.object({
 export type QueryResult = z.infer<typeof QueryResult>;
 export const DatatabasesRunSqlInputSchema = z.object({
   sql: z.string().describe("The SQL query to run"),
-  params: z.array(z.any()).describe(
-    "The parameters to pass to the SQL query",
-  ).optional(),
+  params: z
+    .array(z.any())
+    .describe("The parameters to pass to the SQL query")
+    .optional(),
 });
 
 export type DatatabasesRunSqlInput = z.infer<
@@ -45,9 +47,10 @@ export const runSql = createDatabaseTool({
   name: "DATABASES_RUN_SQL",
   description: "Run a SQL query against the workspace database",
   inputSchema: DatatabasesRunSqlInputSchema.extend({
-    _legacy: z.boolean().optional().describe(
-      "If true, the query will be run against the legacy database",
-    ),
+    _legacy: z
+      .boolean()
+      .optional()
+      .describe("If true, the query will be run against the legacy database"),
   }),
   outputSchema: z.object({
     result: z.array(QueryResult),

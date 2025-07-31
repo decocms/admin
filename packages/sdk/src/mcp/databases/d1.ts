@@ -31,9 +31,7 @@ export const getWorkspaceD1Database = async (
   await cache.set(cacheKey, db.uuid);
   return db.uuid;
 };
-const assertsWorkspaceD1Database = async (
-  c: AppContext,
-) => {
+const assertsWorkspaceD1Database = async (c: AppContext) => {
   assertHasWorkspace(c);
   const workspace = c.workspace.value;
 

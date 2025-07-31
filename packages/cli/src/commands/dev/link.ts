@@ -98,9 +98,7 @@ async function monitorPortAvailability(port: number) {
   while (true) {
     const isAvailable = await isPortRunning(port);
     if (!isAvailable) {
-      console.log(
-        chalk.red(`⚠️ Warning: Port ${port} is no longer available!`),
-      );
+      console.log(chalk.red(`⚠️ Warning: Port ${port} is no longer available!`));
     }
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Check every 2 seconds
   }
@@ -129,7 +127,8 @@ async function register(
       domain,
       localAddr,
       server,
-      apiKey: process.env.DECO_TUNNEL_SERVER_TOKEN ??
+      apiKey:
+        process.env.DECO_TUNNEL_SERVER_TOKEN ??
         "c309424a-2dc4-46fe-bfc7-a7c10df59477",
     });
 
@@ -138,9 +137,9 @@ async function register(
     const copied = await copyToClipboard(serverUrl);
 
     console.log(
-      `\nTunnel started \n   -> 🌐 ${chalk.bold("Preview")}: ${
-        chalk.cyan(serverUrl)
-      }${copied ? chalk.dim(" (copied to clipboard)") : ""}`,
+      `\nTunnel started \n   -> 🌐 ${chalk.bold("Preview")}: ${chalk.cyan(
+        serverUrl,
+      )}${copied ? chalk.dim(" (copied to clipboard)") : ""}`,
     );
 
     await tunnel.closed;
@@ -158,9 +157,8 @@ export const link = async ({
   // Get config to extract workspace and app
   const config = await getConfig({});
   const wranglerConfig = await readWranglerConfig();
-  const app = typeof wranglerConfig.name === "string"
-    ? wranglerConfig.name
-    : "my-app";
+  const app =
+    typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
 
   // Generate app domain based on workspace and app name
   const appDomain = getAppDomain(config.workspace, app);

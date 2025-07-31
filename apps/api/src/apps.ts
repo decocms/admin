@@ -27,11 +27,15 @@ export const fetchScript = async (
   }
   const scriptFetcher = dispatcher.get<{
     DECO_CHAT_APP_ORIGIN: string;
-  }>(script, {}, {
-    outbound: {
-      DECO_CHAT_APP_ORIGIN: script,
+  }>(
+    script,
+    {},
+    {
+      outbound: {
+        DECO_CHAT_APP_ORIGIN: script,
+      },
     },
-  });
+  );
   const response = await scriptFetcher.fetch(req).catch((err) => {
     if ("message" in err && err.message.startsWith("Worker not found")) {
       // we tried to get a worker that doesn't exist in our dispatch namespace
@@ -46,8 +50,7 @@ export const fetchScript = async (
 app.use(withContextMiddleware);
 app.all("/*", async (c: Context<AppEnv>) => {
   const url = new URL(c.req.url);
-  let host = appsDomainOf(c.req.raw) ?? c.req.header("host") ??
-    url.host;
+  let host = appsDomainOf(c.req.raw) ?? c.req.header("host") ?? url.host;
   if (!host) {
     return new Response("No host", { status: 400 });
   }
@@ -55,17 +58,17 @@ app.all("/*", async (c: Context<AppEnv>) => {
   // if it has a deployment ID, we can use the script ID directly
   let script = locator?.isCanonical ? locator.slug : null;
   const getScriptFn = async (): Promise<string | null> => {
-    const { data, error } = await c.var.db.from("deco_chat_hosting_routes")
+    const { data, error } = await c.var.db
+      .from("deco_chat_hosting_routes")
       .select(`
             *,
             deco_chat_hosting_apps_deployments!deployment_id(
               id,
               deco_chat_hosting_apps!hosting_app_id(slug)
             )
-          `).eq(
-        "route_pattern",
-        host,
-      ).maybeSingle();
+          `)
+      .eq("route_pattern", host)
+      .maybeSingle();
 
     if ((error || !data) && locator) {
       return locator.slug;
@@ -83,10 +86,9 @@ app.all("/*", async (c: Context<AppEnv>) => {
   };
   const isNoCache = c.req.header("x-domain-swr-ignore-cache") === "true";
   if (!script) {
-    script = isNoCache ? await getScriptFn() : await domainSWRCache.cache(
-      getScriptFn,
-      host,
-    ).catch(() => null);
+    script = isNoCache
+      ? await getScriptFn()
+      : await domainSWRCache.cache(getScriptFn, host).catch(() => null);
   }
 
   if (!script) {

@@ -24,7 +24,11 @@ interface AgentUsageMetrics {
   uniqueUsers: number;
 }
 
-export function AgentUsageDetailsDialog({ agent, metrics, onClose }: {
+export function AgentUsageDetailsDialog({
+  agent,
+  metrics,
+  onClose,
+}: {
   agent: Agent;
   metrics: AgentUsageMetrics;
   onClose: () => void;
@@ -38,11 +42,7 @@ export function AgentUsageDetailsDialog({ agent, metrics, onClose }: {
       </DialogHeader>
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-4">
-          <AgentAvatar
-            url={agent.avatar}
-            fallback={agent.name}
-            size="lg"
-          />
+          <AgentAvatar url={agent.avatar} fallback={agent.name} size="lg" />
           <div className="flex flex-col justify-center">
             <span className="text-base font-semibold text-foreground">
               {agent.name}
@@ -143,65 +143,68 @@ export function UsageTable({
 }) {
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [selectedAgentDetails, setSelectedAgentDetails] = useState<
-    { agent: Agent; metrics: AgentUsageMetrics } | null
-  >(null);
+  const [selectedAgentDetails, setSelectedAgentDetails] = useState<{
+    agent: Agent;
+    metrics: AgentUsageMetrics;
+  } | null>(null);
 
   // Combine usage data to get comprehensive metrics per agent
   const enrichedAgents = useMemo(() => {
-    return agents.map((agent) => {
-      const agentUsageData = agentUsage.items?.find((item) =>
-        item.id === agent.id
-      );
-      const agentThreads = threadUsage.items?.filter((thread) =>
-        thread.agentId === agent.id
-      ) || [];
+    return agents
+      .map((agent) => {
+        const agentUsageData = agentUsage.items?.find(
+          (item) => item.id === agent.id,
+        );
+        const agentThreads =
+          threadUsage.items?.filter((thread) => thread.agentId === agent.id) ||
+          [];
 
-      // Calculate metrics from thread data
-      const totalTokens = agentThreads.reduce(
-        (sum, thread) => sum + (thread.tokens?.totalTokens || 0),
-        0,
-      );
-      const promptTokens = agentThreads.reduce(
-        (sum, thread) => sum + (thread.tokens?.promptTokens || 0),
-        0,
-      );
-      const completionTokens = agentThreads.reduce(
-        (sum, thread) => sum + (thread.tokens?.completionTokens || 0),
-        0,
-      );
-      const threadsCount = agentThreads.length;
-      const uniqueUsers = new Set(agentThreads.map((thread) =>
-        thread.generatedBy
-      )).size;
+        // Calculate metrics from thread data
+        const totalTokens = agentThreads.reduce(
+          (sum, thread) => sum + (thread.tokens?.totalTokens || 0),
+          0,
+        );
+        const promptTokens = agentThreads.reduce(
+          (sum, thread) => sum + (thread.tokens?.promptTokens || 0),
+          0,
+        );
+        const completionTokens = agentThreads.reduce(
+          (sum, thread) => sum + (thread.tokens?.completionTokens || 0),
+          0,
+        );
+        const threadsCount = agentThreads.length;
+        const uniqueUsers = new Set(
+          agentThreads.map((thread) => thread.generatedBy),
+        ).size;
 
-      const metrics = {
-        agentUsage: agentUsageData ?? {
-          id: agent.id,
-          label: agent.name,
-          total: 0,
-          transactions: [],
-        },
-        totalCost: agentUsageData ? agentUsageData.total : 0,
-        totalTokens,
-        promptTokens,
-        completionTokens,
-        threadsCount,
-        uniqueUsers,
-      };
+        const metrics = {
+          agentUsage: agentUsageData ?? {
+            id: agent.id,
+            label: agent.name,
+            total: 0,
+            transactions: [],
+          },
+          totalCost: agentUsageData ? agentUsageData.total : 0,
+          totalTokens,
+          promptTokens,
+          completionTokens,
+          threadsCount,
+          uniqueUsers,
+        };
 
-      return {
-        ...agent,
-        color: color(agent.id),
-        metrics,
-        // For sorting purposes
-        totalCost: metrics.totalCost,
-      };
-    }).filter((agent) => agent.metrics.agentUsage); // Only show agents that have usage data
+        return {
+          ...agent,
+          color: color(agent.id),
+          metrics,
+          // For sorting purposes
+          totalCost: metrics.totalCost,
+        };
+      })
+      .filter((agent) => agent.metrics.agentUsage); // Only show agents that have usage data
   }, [agents, agentUsage.items, threadUsage.items]);
 
   // Define table columns
-  const columns: TableColumn<typeof enrichedAgents[0]>[] = [
+  const columns: TableColumn<(typeof enrichedAgents)[0]>[] = [
     {
       id: "color",
       header: "",
@@ -217,11 +220,7 @@ export function UsageTable({
       header: "Agent",
       render: (agent) => (
         <div className="flex items-center gap-3">
-          <AgentAvatar
-            url={agent.avatar}
-            fallback={agent.name}
-            size="sm"
-          />
+          <AgentAvatar url={agent.avatar} fallback={agent.name} size="sm" />
           <span className="font-medium">{agent.name}</span>
         </div>
       ),
@@ -231,9 +230,7 @@ export function UsageTable({
       id: "users",
       header: "Users",
       render: (agent) => (
-        <span className="text-sm">
-          {agent.metrics.uniqueUsers}
-        </span>
+        <span className="text-sm">{agent.metrics.uniqueUsers}</span>
       ),
       sortable: true,
     },
@@ -241,9 +238,7 @@ export function UsageTable({
       id: "threads",
       header: "Threads",
       render: (agent) => (
-        <span className="text-sm">
-          {agent.metrics.threadsCount}
-        </span>
+        <span className="text-sm">{agent.metrics.threadsCount}</span>
       ),
       sortable: true,
     },
@@ -271,7 +266,7 @@ export function UsageTable({
 
   // Sorting logic
   const getSortValue = (
-    agent: typeof enrichedAgents[0],
+    agent: (typeof enrichedAgents)[0],
     key: string,
   ): string | number => {
     switch (key) {
@@ -293,7 +288,7 @@ export function UsageTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);
@@ -329,7 +324,8 @@ export function UsageTable({
         sortDirection={sortDirection}
         onSort={handleSort}
         onRowClick={(agent) =>
-          setSelectedAgentDetails({ agent, metrics: agent.metrics })}
+          setSelectedAgentDetails({ agent, metrics: agent.metrics })
+        }
       />
 
       <Dialog

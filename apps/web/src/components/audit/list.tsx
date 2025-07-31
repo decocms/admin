@@ -66,15 +66,18 @@ export function AuditListContent({
 }: AuditListContentProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(
-    filters?.agentId ?? searchParams.get(AGENT_FILTER_SEARCH_PARAM) ??
+    filters?.agentId ??
+      searchParams.get(AGENT_FILTER_SEARCH_PARAM) ??
       undefined,
   );
   const [selectedUser, setSelectedUser] = useState<string | undefined>(
-    filters?.resourceId ?? searchParams.get(USER_FILTER_SEARCH_PARAM) ??
+    filters?.resourceId ??
+      searchParams.get(USER_FILTER_SEARCH_PARAM) ??
       undefined,
   );
   const [sort, setSort] = useState<AuditOrderBy>(
-    (filters?.orderBy ?? searchParams.get(SORT_SEARCH_PARAM) ??
+    (filters?.orderBy ??
+      searchParams.get(SORT_SEARCH_PARAM) ??
       SORT_OPTIONS[0].value) as AuditOrderBy,
   );
   // Cursor-based pagination state
@@ -96,7 +99,7 @@ export function AuditListContent({
   };
   const currentCursor =
     getSafeCursor(searchParams.get(CURSOR_PAGINATION_SEARCH_PARAM)) ??
-      undefined;
+    undefined;
   const { data: teams } = useTeams();
   const resolvedTeamSlug = params.teamSlug;
   const teamId = teams?.find((t) => t.slug === resolvedTeamSlug)?.id ?? null;
@@ -196,58 +199,60 @@ export function AuditListContent({
         />
       )}
       {/* Empty state */}
-      {!threads.length
-        ? (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <span className="text-lg font-medium">No audit events found</span>
+      {!threads.length ? (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <span className="text-lg font-medium">No audit events found</span>
+        </div>
+      ) : (
+        <>
+          <AuditTable
+            threads={threads}
+            sort={sort}
+            columnsDenyList={columnsDenyList}
+            onSortChange={handleSortChange}
+            onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
+          />
+          {/* Pagination */}
+          <div className="flex justify-center mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePrevPage();
+                    }}
+                    aria-disabled={!pagination?.hasPrev}
+                    tabIndex={!pagination?.hasPrev ? -1 : 0}
+                    className={
+                      !pagination?.hasPrev
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasMore) handleNextPage();
+                    }}
+                    aria-disabled={!pagination?.hasMore}
+                    tabIndex={!pagination?.hasMore ? -1 : 0}
+                    className={
+                      !pagination?.hasMore
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
-        )
-        : (
-          <>
-            <AuditTable
-              threads={threads}
-              sort={sort}
-              columnsDenyList={columnsDenyList}
-              onSortChange={handleSortChange}
-              onRowClick={(threadId) => navigate(`/audit/${threadId}`)}
-            />
-            {/* Pagination */}
-            <div className="flex justify-center mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handlePrevPage();
-                      }}
-                      aria-disabled={!pagination?.hasPrev}
-                      tabIndex={!pagination?.hasPrev ? -1 : 0}
-                      className={!pagination?.hasPrev
-                        ? "opacity-50 pointer-events-none"
-                        : ""}
-                    />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (pagination?.hasMore) handleNextPage();
-                      }}
-                      aria-disabled={!pagination?.hasMore}
-                      tabIndex={!pagination?.hasMore ? -1 : 0}
-                      className={!pagination?.hasMore
-                        ? "opacity-50 pointer-events-none"
-                        : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          </>
-        )}
+        </>
+      )}
     </div>
   );
 }

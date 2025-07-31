@@ -23,9 +23,7 @@ export function Step({ number, title, children, className = "" }: StepProps) {
         </div>
 
         {/* Content */}
-        <div className="text-muted-foreground">
-          {children}
-        </div>
+        <div className="text-muted-foreground">{children}</div>
       </div>
     </div>
   );

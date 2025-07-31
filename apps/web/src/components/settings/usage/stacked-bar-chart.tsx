@@ -85,11 +85,8 @@ function ChartColumn({
   hoveredColumn: number | null;
   setHoveredColumn: (index: number | null) => void;
 }) {
-  const columnWidth = chartData.length > 12
-    ? "50px"
-    : chartData.length <= 7
-    ? "100px"
-    : "80px";
+  const columnWidth =
+    chartData.length > 12 ? "50px" : chartData.length <= 7 ? "100px" : "80px";
   const minWidth = chartData.length > 12 ? "40px" : "60px";
 
   return (
@@ -110,19 +107,18 @@ function ChartColumn({
           onMouseLeave={() => setHoveredColumn(null)}
         >
           <div className="w-full flex flex-col justify-end gap-0.5 h-full">
-            {day.items.map((
-              item: EnrichedChartBarStackItem,
-              itemIndex: number,
-            ) => (
-              <div
-                key={`${item.id}-${itemIndex}`}
-                className="w-full rounded-md min-h-[4px]"
-                style={{
-                  backgroundColor: item.color,
-                  height: `${Math.max(4, (item.cost / chartMax) * 100)}%`,
-                }}
-              />
-            ))}
+            {day.items.map(
+              (item: EnrichedChartBarStackItem, itemIndex: number) => (
+                <div
+                  key={`${item.id}-${itemIndex}`}
+                  className="w-full rounded-md min-h-[4px]"
+                  style={{
+                    backgroundColor: item.color,
+                    height: `${Math.max(4, (item.cost / chartMax) * 100)}%`,
+                  }}
+                />
+              ),
+            )}
           </div>
         </div>
       </TooltipTrigger>
@@ -134,54 +130,50 @@ function ChartColumn({
         <div className="space-y-2">
           <div className="text-sm font-medium">{day.label}</div>
           <div className="space-y-1">
-            {day.items.map((
-              item: EnrichedChartBarStackItem,
-              itemIndex: number,
-            ) => (
-              <div
-                key={itemIndex}
-                className="flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div
-                    className="w-2 h-2 rounded flex-shrink-0"
-                    style={{
-                      backgroundColor: item.id === "other"
-                        ? "#E5E7EB"
-                        : item.color,
-                    }}
-                  />
-                  {item.id !== "other" && (
-                    <>
-                      {item.type === "user" && item.member
-                        ? (
+            {day.items.map(
+              (item: EnrichedChartBarStackItem, itemIndex: number) => (
+                <div
+                  key={itemIndex}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div
+                      className="w-2 h-2 rounded flex-shrink-0"
+                      style={{
+                        backgroundColor:
+                          item.id === "other" ? "#E5E7EB" : item.color,
+                      }}
+                    />
+                    {item.id !== "other" && (
+                      <>
+                        {item.type === "user" && item.member ? (
                           <UserAvatar
                             url={item.member.profiles?.metadata?.avatar_url}
                             fallback={item.member.profiles?.email || "Unknown"}
                             size="sm"
                           />
-                        )
-                        : (
+                        ) : (
                           <AgentAvatar
                             url={item.avatar}
                             fallback={item.name}
                             size="sm"
                           />
                         )}
-                    </>
-                  )}
-                  <span className="text-xs truncate">{item.name}</span>
+                      </>
+                    )}
+                    <span className="text-xs truncate">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      ${item.cost.toFixed(2)}
+                    </span>
+                    <span className="text-xs font-medium">
+                      {item.percentage.toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    ${item.cost.toFixed(2)}
-                  </span>
-                  <span className="text-xs font-medium">
-                    {item.percentage.toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-            ))}
+              ),
+            )}
           </div>
         </div>
       </TooltipContent>
@@ -190,11 +182,8 @@ function ChartColumn({
 }
 
 function XAxisLabels({ chartData }: { chartData: EnrichedChartBarStack[] }) {
-  const columnWidth = chartData.length > 12
-    ? "50px"
-    : chartData.length <= 7
-    ? "100px"
-    : "80px";
+  const columnWidth =
+    chartData.length > 12 ? "50px" : chartData.length <= 7 ? "100px" : "80px";
   const minWidth = chartData.length > 12 ? "40px" : "60px";
 
   return (
@@ -230,9 +219,11 @@ function withDistributedPercentage(
   }));
 }
 
-export function StackedBarChart(
-  { chartData: _data }: { chartData: ChartBarStack[] },
-) {
+export function StackedBarChart({
+  chartData: _data,
+}: {
+  chartData: ChartBarStack[];
+}) {
   const [hoveredColumn, setHoveredColumn] = useState<number | null>(null);
 
   const chartData = _data.map((day) => ({
@@ -243,9 +234,8 @@ export function StackedBarChart(
   const maxValue = Math.max(
     ...chartData.map((d: EnrichedChartBarStack) => d.total),
   );
-  const chartMax = maxValue > 0
-    ? Math.max(0.1, Math.ceil(maxValue * 1.1 * 100) / 100)
-    : 0.1;
+  const chartMax =
+    maxValue > 0 ? Math.max(0.1, Math.ceil(maxValue * 1.1 * 100) / 100) : 0.1;
 
   return (
     <Card className="w-full p-6 rounded-xl border bg-muted/50">

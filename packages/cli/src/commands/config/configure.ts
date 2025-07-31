@@ -14,20 +14,22 @@ import { join } from "path";
 import process from "node:process";
 
 export async function configureCommand(local?: boolean) {
-  const currentConfig = await getConfig({ inlineOptions: { local } })
-    .catch((): Partial<Config> => ({}));
+  const currentConfig = await getConfig({ inlineOptions: { local } }).catch(
+    (): Partial<Config> => ({}),
+  );
 
   const wranglerConfig = await readWranglerConfig();
-  const defaultApp = typeof wranglerConfig.name === "string"
-    ? wranglerConfig.name
-    : "my-app";
+  const defaultApp =
+    typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
 
-  const { app } = await inquirer.prompt([{
-    type: "input",
-    name: "app",
-    message: "Enter app name:",
-    default: defaultApp,
-  }]);
+  const { app } = await inquirer.prompt([
+    {
+      type: "input",
+      name: "app",
+      message: "Enter app name:",
+      default: defaultApp,
+    },
+  ]);
 
   // Use the proper workspace prompt
   const workspace = await promptWorkspace(local, currentConfig.workspace);
@@ -52,7 +54,7 @@ export async function configureCommand(local?: boolean) {
     deco: {
       ...wranglerConfig.deco,
       workspace,
-      bindings: [...bindings, ...wranglerConfig.deco?.bindings ?? []],
+      bindings: [...bindings, ...(wranglerConfig.deco?.bindings ?? [])],
     },
   });
 

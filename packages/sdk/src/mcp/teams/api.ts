@@ -36,92 +36,128 @@ const OWNER_ROLE_ID = 1;
 
 // Enhanced theme schema with detailed context for AI tools
 const themeVariablesSchema = z.object({
-  "--background": z.string().optional().describe(
-    "Main background color of the application (OKLCH/hex format)",
-  ),
-  "--foreground": z.string().optional().describe(
-    "Main text color on background (OKLCH/hex format)",
-  ),
-  "--card": z.string().optional().describe(
-    "Background color for cards and panels (OKLCH/hex format)",
-  ),
-  "--card-foreground": z.string().optional().describe(
-    "Text color on cards and panels (OKLCH/hex format)",
-  ),
-  "--popover": z.string().optional().describe(
-    "Background color for popovers and dropdowns (OKLCH/hex format)",
-  ),
-  "--popover-foreground": z.string().optional().describe(
-    "Text color in popovers and dropdowns (OKLCH/hex format)",
-  ),
-  "--primary": z.string().optional().describe(
-    "Primary brand color for buttons and highlights (OKLCH/hex format)",
-  ),
-  "--primary-foreground": z.string().optional().describe(
-    "Text color on primary elements (OKLCH/hex format)",
-  ),
-  "--primary-light": z.string().optional().describe(
-    "Lighter variant of primary color (OKLCH/hex format)",
-  ),
-  "--primary-dark": z.string().optional().describe(
-    "Darker variant of primary color (OKLCH/hex format)",
-  ),
-  "--secondary": z.string().optional().describe(
-    "Secondary color for less prominent elements (OKLCH/hex format)",
-  ),
-  "--secondary-foreground": z.string().optional().describe(
-    "Text color on secondary elements (OKLCH/hex format)",
-  ),
-  "--muted": z.string().optional().describe(
-    "Muted background color for subtle elements (OKLCH/hex format)",
-  ),
-  "--muted-foreground": z.string().optional().describe(
-    "Muted text color for secondary text (OKLCH/hex format)",
-  ),
-  "--accent": z.string().optional().describe(
-    "Accent color for interactive elements (OKLCH/hex format)",
-  ),
-  "--accent-foreground": z.string().optional().describe(
-    "Text color on accent elements (OKLCH/hex format)",
-  ),
-  "--destructive": z.string().optional().describe(
-    "Color for destructive actions and errors (OKLCH/hex format)",
-  ),
-  "--destructive-foreground": z.string().optional().describe(
-    "Text color on destructive elements (OKLCH/hex format)",
-  ),
-  "--success": z.string().optional().describe(
-    "Color for success states and positive actions (OKLCH/hex format)",
-  ),
-  "--success-foreground": z.string().optional().describe(
-    "Text color on success elements (OKLCH/hex format)",
-  ),
-  "--warning": z.string().optional().describe(
-    "Color for warning states and caution indicators (OKLCH/hex format)",
-  ),
-  "--warning-foreground": z.string().optional().describe(
-    "Text color on warning elements (OKLCH/hex format)",
-  ),
-  "--border": z.string().optional().describe(
-    "Border color for elements (OKLCH/hex format)",
-  ),
-  "--input": z.string().optional().describe(
-    "Border color for input fields (OKLCH/hex format)",
-  ),
-  "--sidebar": z.string().optional().describe(
-    "Background color for sidebar navigation (OKLCH/hex format)",
-  ),
-  "--splash": z.string().optional().describe(
-    "Background color for splash screen animation (OKLCH/hex format)",
-  ),
+  "--background": z
+    .string()
+    .optional()
+    .describe("Main background color of the application (OKLCH/hex format)"),
+  "--foreground": z
+    .string()
+    .optional()
+    .describe("Main text color on background (OKLCH/hex format)"),
+  "--card": z
+    .string()
+    .optional()
+    .describe("Background color for cards and panels (OKLCH/hex format)"),
+  "--card-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on cards and panels (OKLCH/hex format)"),
+  "--popover": z
+    .string()
+    .optional()
+    .describe("Background color for popovers and dropdowns (OKLCH/hex format)"),
+  "--popover-foreground": z
+    .string()
+    .optional()
+    .describe("Text color in popovers and dropdowns (OKLCH/hex format)"),
+  "--primary": z
+    .string()
+    .optional()
+    .describe(
+      "Primary brand color for buttons and highlights (OKLCH/hex format)",
+    ),
+  "--primary-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on primary elements (OKLCH/hex format)"),
+  "--primary-light": z
+    .string()
+    .optional()
+    .describe("Lighter variant of primary color (OKLCH/hex format)"),
+  "--primary-dark": z
+    .string()
+    .optional()
+    .describe("Darker variant of primary color (OKLCH/hex format)"),
+  "--secondary": z
+    .string()
+    .optional()
+    .describe("Secondary color for less prominent elements (OKLCH/hex format)"),
+  "--secondary-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on secondary elements (OKLCH/hex format)"),
+  "--muted": z
+    .string()
+    .optional()
+    .describe("Muted background color for subtle elements (OKLCH/hex format)"),
+  "--muted-foreground": z
+    .string()
+    .optional()
+    .describe("Muted text color for secondary text (OKLCH/hex format)"),
+  "--accent": z
+    .string()
+    .optional()
+    .describe("Accent color for interactive elements (OKLCH/hex format)"),
+  "--accent-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on accent elements (OKLCH/hex format)"),
+  "--destructive": z
+    .string()
+    .optional()
+    .describe("Color for destructive actions and errors (OKLCH/hex format)"),
+  "--destructive-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on destructive elements (OKLCH/hex format)"),
+  "--success": z
+    .string()
+    .optional()
+    .describe(
+      "Color for success states and positive actions (OKLCH/hex format)",
+    ),
+  "--success-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on success elements (OKLCH/hex format)"),
+  "--warning": z
+    .string()
+    .optional()
+    .describe(
+      "Color for warning states and caution indicators (OKLCH/hex format)",
+    ),
+  "--warning-foreground": z
+    .string()
+    .optional()
+    .describe("Text color on warning elements (OKLCH/hex format)"),
+  "--border": z
+    .string()
+    .optional()
+    .describe("Border color for elements (OKLCH/hex format)"),
+  "--input": z
+    .string()
+    .optional()
+    .describe("Border color for input fields (OKLCH/hex format)"),
+  "--sidebar": z
+    .string()
+    .optional()
+    .describe("Background color for sidebar navigation (OKLCH/hex format)"),
+  "--splash": z
+    .string()
+    .optional()
+    .describe(
+      "Background color for splash screen animation (OKLCH/hex format)",
+    ),
 });
 
 const fontSchema = z.union([
   z.object({
     type: z.literal("Google Fonts").describe("Use a Google Fonts font"),
-    name: z.string().describe(
-      "Name of the Google Font (e.g., 'Inter', 'Roboto', 'Open Sans')",
-    ),
+    name: z
+      .string()
+      .describe(
+        "Name of the Google Font (e.g., 'Inter', 'Roboto', 'Open Sans')",
+      ),
   }),
   z.object({
     type: z.literal("Custom").describe("Use a custom uploaded font"),
@@ -130,15 +166,21 @@ const fontSchema = z.union([
   }),
 ]);
 
-const enhancedThemeSchema = z.object({
-  variables: themeVariablesSchema.optional().describe(
-    "CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors.",
-  ),
-  picture: z.string().optional().describe("URL to team avatar/logo image"),
-  font: fontSchema.optional().describe("Font configuration for the workspace"),
-}).describe(
-  "Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.",
-);
+const enhancedThemeSchema = z
+  .object({
+    variables: themeVariablesSchema
+      .optional()
+      .describe(
+        "CSS custom properties for theme colors. Use OKLCH format (preferred) or hex colors.",
+      ),
+    picture: z.string().optional().describe("URL to team avatar/logo image"),
+    font: fontSchema
+      .optional()
+      .describe("Font configuration for the workspace"),
+  })
+  .describe(
+    "Theme configuration for the workspace. Only include the properties you want to change - existing values will be preserved.",
+  );
 
 const ToolPermissionSchema = z.object({
   toolName: z.string(),
@@ -146,10 +188,7 @@ const ToolPermissionSchema = z.object({
   policyId: z.string().optional(),
 });
 
-const ToolsSchema = z.record(
-  z.string(),
-  z.array(ToolPermissionSchema),
-);
+const ToolsSchema = z.record(z.string(), z.array(ToolPermissionSchema));
 
 const MemberRoleActionSchema = z.object({
   user_id: z.string(),
@@ -161,11 +200,15 @@ const RoleFormDataSchema = z.object({
   description: z.string().optional(),
   tools: ToolsSchema,
   agents: z.array(z.string()).optional().default([]),
-  members: z.array(MemberRoleActionSchema).optional().default([]).describe(
-    `Only send member actions for changes (diff between original and current state)
+  members: z
+    .array(MemberRoleActionSchema)
+    .optional()
+    .default([])
+    .describe(
+      `Only send member actions for changes (diff between original and current state)
     Members who already have the role and remain selected: no action needed (maintains access)
     Members who don't have the role and remain unselected: no action needed (maintains no access)`,
-  ),
+    ),
 });
 
 export type MemberRoleAction = z.infer<typeof MemberRoleActionSchema>;
@@ -176,10 +219,10 @@ type ToolsMap = z.infer<typeof ToolsSchema>;
 export const sanitizeTeamName = (name: string): string => {
   if (!name) return "";
   const nameWithoutAccents = removeNameAccents(name);
-  return nameWithoutAccents.trim().replace(/\s+/g, " ").replace(
-    /[^\w\s\-.+@]/g,
-    "",
-  );
+  return nameWithoutAccents
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[^\w\s\-.+@]/g, "");
 };
 
 export const getAvatarFromTheme = (
@@ -187,7 +230,9 @@ export const getAvatarFromTheme = (
   createSignedUrl: (path: string) => Promise<string>,
 ): Promise<string | null> => {
   if (
-    theme !== null && typeof theme === "object" && "picture" in theme &&
+    theme !== null &&
+    typeof theme === "object" &&
+    "picture" in theme &&
     typeof theme.picture === "string"
   ) {
     const picture = theme.picture as string;
@@ -264,11 +309,14 @@ const ensureMonthlyPlanCreditsReward = async ({
     timestamp: new Date(),
   };
 
-  const response = await wallet["PUT /transactions/:id"]({
-    id: transactionId,
-  }, {
-    body: transaction,
-  });
+  const response = await wallet["PUT /transactions/:id"](
+    {
+      id: transactionId,
+    },
+    {
+      body: transaction,
+    },
+  );
 
   if (response.status !== 200 && response.status !== 304) {
     return console.error(
@@ -293,8 +341,10 @@ const getMatchConditionForTool = (
 
   // if tool is well known, doesn't add the integrationId to the matchCondition
   if (
-    resourceGroup && integrationId === getIntegrationIdForGroup(resourceGroup)
-  ) return {};
+    resourceGroup &&
+    integrationId === getIntegrationIdForGroup(resourceGroup)
+  )
+    return {};
 
   return {
     matchCondition: {
@@ -305,17 +355,22 @@ const getMatchConditionForTool = (
 };
 
 const mapToolsToStatements = (tools: ToolsMap) =>
-  Object.entries(tools || {}).map(([integrationId, toolPermissions]) => {
-    if (toolPermissions.length === 0) return null;
+  Object.entries(tools || {})
+    .map(([integrationId, toolPermissions]) => {
+      if (toolPermissions.length === 0) return null;
 
-    const statements = toolPermissions.map((tool): Statement => ({
-      effect: tool.effect,
-      resource: tool.toolName,
-      ...getMatchConditionForTool(tool, integrationId),
-    }));
+      const statements = toolPermissions.map(
+        (tool): Statement => ({
+          effect: tool.effect,
+          resource: tool.toolName,
+          ...getMatchConditionForTool(tool, integrationId),
+        }),
+      );
 
-    return statements;
-  }).filter(isRequired).flat();
+      return statements;
+    })
+    .filter(isRequired)
+    .flat();
 
 /**
  * Helper function to assign roles to members
@@ -336,22 +391,28 @@ async function assignRoleToMembers(
     .from("members")
     .select("profiles(email), user_id")
     .eq("team_id", teamId)
-    .in("user_id", members.map((m) => m.user_id));
+    .in(
+      "user_id",
+      members.map((m) => m.user_id),
+    );
 
-  const memberRolePromises = dbMembers?.map(
-    async (
-      member: { profiles: { email: string } | null; user_id: string | null },
-    ) => {
-      const action = members.find((m) => m.user_id === member.user_id)
-        ?.action;
-      if (!member.profiles?.email || !action) return;
+  const memberRolePromises =
+    dbMembers?.map(
+      async (member: {
+        profiles: { email: string } | null;
+        user_id: string | null;
+      }) => {
+        const action = members.find(
+          (m) => m.user_id === member.user_id,
+        )?.action;
+        if (!member.profiles?.email || !action) return;
 
-      return await c.policy.updateUserRole(teamId, member.profiles.email, {
-        roleId,
-        action,
-      });
-    },
-  ) ?? [];
+        return await c.policy.updateUserRole(teamId, member.profiles.email, {
+          roleId,
+          action,
+        });
+      },
+    ) ?? [];
 
   await Promise.all(memberRolePromises);
 }
@@ -367,8 +428,7 @@ export const getTeam = createTool({
 
     await assertTeamResourceAccess(c.tool.name, slug, c);
 
-    const { data: teamData, error } = await c
-      .db
+    const { data: teamData, error } = await c.db
       .from("teams")
       .select(`
         *,
@@ -400,7 +460,7 @@ export const getTeam = createTool({
       slug,
       theme: teamData.theme as Theme,
       created_at: teamData.created_at as string,
-      views: teamData.deco_chat_views as View[] || [],
+      views: (teamData.deco_chat_views as View[]) || [],
     };
 
     try {
@@ -448,8 +508,7 @@ export const createTeam = createTool({
 
     // Enforce unique slug if provided
     if (slug) {
-      const { data: existingTeam, error: slugError } = await c
-        .db
+      const { data: existingTeam, error: slugError } = await c.db
         .from("teams")
         .select("id")
         .eq("slug", slug)
@@ -461,8 +520,7 @@ export const createTeam = createTool({
     }
 
     // Create the team
-    const { data: team, error: createError } = await c
-      .db
+    const { data: team, error: createError } = await c.db
       .from("teams")
       .insert([{ name: sanitizeTeamName(name), slug, stripe_subscription_id }])
       .select()
@@ -471,17 +529,18 @@ export const createTeam = createTool({
     if (createError) throw createError;
 
     // Add the creator as an admin member
-    const { data: member, error: memberError } = await c
-      .db
+    const { data: member, error: memberError } = await c.db
       .from("members")
       .insert([
         {
           team_id: team.id,
           user_id: user.id,
-          activity: [{
-            action: "add_member",
-            timestamp: new Date().toISOString(),
-          }],
+          activity: [
+            {
+              action: "add_member",
+              timestamp: new Date().toISOString(),
+            },
+          ],
         },
       ])
       .select()
@@ -493,15 +552,12 @@ export const createTeam = createTool({
     }
 
     // Set the member's role_id to 1 in member_roles
-    const { error: roleError } = await c
-      .db
-      .from("member_roles")
-      .insert([
-        {
-          member_id: member.id,
-          role_id: OWNER_ROLE_ID,
-        },
-      ]);
+    const { error: roleError } = await c.db.from("member_roles").insert([
+      {
+        member_id: member.id,
+        role_id: OWNER_ROLE_ID,
+      },
+    ]);
 
     if (roleError) throw roleError;
 
@@ -529,8 +585,7 @@ export const updateTeam = createTool({
     // TODO: check if it's required
     // Enforce unique slug if being updated
     if (data.slug) {
-      const { data: existingTeam, error: slugError } = await c
-        .db
+      const { data: existingTeam, error: slugError } = await c.db
         .from("teams")
         .select("id")
         .eq("slug", data.slug)
@@ -543,8 +598,7 @@ export const updateTeam = createTool({
     }
 
     // Get current team data to merge theme
-    const { data: currentTeam, error: getError } = await c
-      .db
+    const { data: currentTeam, error: getError } = await c.db
       .from("teams")
       .select("theme")
       .eq("id", id)
@@ -555,8 +609,7 @@ export const updateTeam = createTool({
     const mergedTheme = mergeThemes(currentTeam.theme, data.theme);
 
     // Update the team
-    const { data: updatedTeam, error: updateError } = await c
-      .db
+    const { data: updatedTeam, error: updateError } = await c.db
       .from("teams")
       .update({
         ...data,
@@ -608,10 +661,10 @@ export const deleteTeam = createTool({
     await c.db.from("member_roles").delete().in("member_id", memberIds);
     await c.db.from("members").delete().eq("team_id", teamId);
 
-    const { error } = await c.db.from("teams").delete().eq(
-      "id",
-      teamId,
-    )
+    const { error } = await c.db
+      .from("teams")
+      .delete()
+      .eq("id", teamId)
       .select("id");
 
     if (error) throw error;
@@ -629,8 +682,7 @@ export const listTeams = createTool({
     assertPrincipalIsUser(c);
     const user = c.user;
 
-    const { data, error } = await c
-      .db
+    const { data, error } = await c.db
       .from("teams")
       .select(`
         id,
@@ -652,8 +704,8 @@ export const listTeams = createTool({
       throw error;
     }
 
-    const teamsWithoutAvatar = data.map(({ members: _members, ...teamData }) =>
-      teamData
+    const teamsWithoutAvatar = data.map(
+      ({ members: _members, ...teamData }) => teamData,
     );
 
     const teamsWithAvatar = await Promise.all(
@@ -683,10 +735,11 @@ export const getWorkspaceTheme = createTool({
     c.resourceAccess.grant();
     const { slug } = props;
 
-    const { data: team, error } = await c.db.from("teams").select("theme").eq(
-      "slug",
-      slug,
-    ).maybeSingle();
+    const { data: team, error } = await c.db
+      .from("teams")
+      .select("theme")
+      .eq("slug", slug)
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -733,11 +786,7 @@ export const createTeamRole = createTool({
         name,
         description: description ?? null,
       };
-      const role = await c.policy.createRole(
-        teamId,
-        newRole,
-        inlineStatements,
-      );
+      const role = await c.policy.createRole(teamId, newRole, inlineStatements);
 
       if (members && members.length > 0) {
         await assignRoleToMembers(c, teamId, role.id, members);
@@ -826,11 +875,15 @@ export const updateTeamRole = createTool({
       const inlineStatements = mapToolsToStatements(tools);
 
       // Update the role using PolicyClient
-      const updatedRole = await c.policy.updateRole(teamId, {
-        id: roleId,
-        name,
-        description: description || null,
-      }, inlineStatements);
+      const updatedRole = await c.policy.updateRole(
+        teamId,
+        {
+          id: roleId,
+          name,
+          description: description || null,
+        },
+        inlineStatements,
+      );
 
       if (!updatedRole) {
         throw new InternalServerError("Failed to update role");
@@ -918,10 +971,11 @@ export const getTeamRole = createTool({
       }
 
       // Extract member user IDs with grant action (existing members have granted access)
-      const members = memberRoles?.map((mr) => ({
-        user_id: mr.members.user_id,
-        action: "grant" as const,
-      })) || [];
+      const members =
+        memberRoles?.map((mr) => ({
+          user_id: mr.members.user_id,
+          action: "grant" as const,
+        })) || [];
 
       return {
         id: roleWithPolicies.id,
@@ -946,13 +1000,15 @@ export const addView = createTool({
   name: "TEAMS_ADD_VIEW",
   description: "Add a custom view to a team",
   inputSchema: z.object({
-    view: z.object({
-      id: z.string().describe("Unique identifier for the view"),
-      title: z.string().describe("Display title for the view"),
-      icon: z.string().describe("Icon identifier for the view"),
-      type: z.literal("custom").describe("Type of view (must be 'custom')"),
-      url: z.string().describe("URL for the custom view"),
-    }).describe("View configuration to add"),
+    view: z
+      .object({
+        id: z.string().describe("Unique identifier for the view"),
+        title: z.string().describe("Display title for the view"),
+        icon: z.string().describe("Icon identifier for the view"),
+        type: z.literal("custom").describe("Type of view (must be 'custom')"),
+        url: z.string().describe("URL for the custom view"),
+      })
+      .describe("View configuration to add"),
   }),
   handler: async (props, c) => {
     const { view } = props;
@@ -960,8 +1016,7 @@ export const addView = createTool({
     assertHasWorkspace(c);
     const slug = c.workspace.slug;
 
-    const { data: team, error: teamError } = await c
-      .db
+    const { data: team, error: teamError } = await c.db
       .from("teams")
       .select("id")
       .eq("slug", slug)
@@ -974,8 +1029,7 @@ export const addView = createTool({
 
     await assertTeamResourceAccess(c.tool.name, team.id, c);
 
-    const { data: existingView, error: checkError } = await c
-      .db
+    const { data: existingView, error: checkError } = await c.db
       .from("deco_chat_views")
       .select("id")
       .eq("id", view.id)
@@ -989,19 +1043,20 @@ export const addView = createTool({
       );
     }
 
-    const { data: newView, error: insertError } = await c
-      .db
+    const { data: newView, error: insertError } = await c.db
       .from("deco_chat_views")
-      .insert([{
-        id: view.id,
-        title: view.title,
-        icon: view.icon,
-        type: view.type,
-        metadata: {
-          url: view.url,
+      .insert([
+        {
+          id: view.id,
+          title: view.title,
+          icon: view.icon,
+          type: view.type,
+          metadata: {
+            url: view.url,
+          },
+          team_id: team.id,
         },
-        team_id: team.id,
-      }])
+      ])
       .select()
       .single();
 
@@ -1024,8 +1079,7 @@ export const removeView = createTool({
     const slug = c.workspace.slug;
 
     // Get team by slug to get the team ID
-    const { data: team, error: teamError } = await c
-      .db
+    const { data: team, error: teamError } = await c.db
       .from("teams")
       .select("id")
       .eq("slug", slug)
@@ -1039,8 +1093,7 @@ export const removeView = createTool({
     await assertTeamResourceAccess(c.tool.name, team.id, c);
 
     // Check if view exists
-    const { data: existingView, error: checkError } = await c
-      .db
+    const { data: existingView, error: checkError } = await c.db
       .from("deco_chat_views")
       .select("id")
       .eq("id", viewId)
@@ -1053,8 +1106,7 @@ export const removeView = createTool({
     }
 
     // Remove the view
-    const { error: deleteError } = await c
-      .db
+    const { error: deleteError } = await c.db
       .from("deco_chat_views")
       .delete()
       .eq("id", viewId)

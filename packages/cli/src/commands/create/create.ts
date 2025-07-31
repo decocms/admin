@@ -147,10 +147,7 @@ async function customizeTemplate({
 
     packageJson.name = projectName;
 
-    await fs.writeFile(
-      packageJsonPath,
-      JSON.stringify(packageJson, null, 2),
-    );
+    await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
   } catch (error) {
     console.warn(
       "⚠️  Could not customize package.json:",
@@ -220,8 +217,8 @@ export async function createCommand(
 ): Promise<void> {
   try {
     if (templateName) {
-      const validTemplate = AVAILABLE_TEMPLATES.find((t) =>
-        t.name === templateName
+      const validTemplate = AVAILABLE_TEMPLATES.find(
+        (t) => t.name === templateName,
       );
       if (!validTemplate) {
         console.error(`❌ Template '${templateName}' not found.`);
@@ -232,20 +229,25 @@ export async function createCommand(
     }
 
     const finalProjectName = slugify(
-      projectName || (await inquirer.prompt([{
-        type: "input",
-        name: "projectName",
-        message: "Enter project name:",
-        validate: (value: string) => {
-          if (!value.trim()) {
-            return "Project name cannot be empty";
-          }
-          if (!/^[a-z0-9-]+$/.test(value)) {
-            return "Project name can only contain lowercase letters, numbers, and hyphens";
-          }
-          return true;
-        },
-      }])).projectName,
+      projectName ||
+        (
+          await inquirer.prompt([
+            {
+              type: "input",
+              name: "projectName",
+              message: "Enter project name:",
+              validate: (value: string) => {
+                if (!value.trim()) {
+                  return "Project name cannot be empty";
+                }
+                if (!/^[a-z0-9-]+$/.test(value)) {
+                  return "Project name can only contain lowercase letters, numbers, and hyphens";
+                }
+                return true;
+              },
+            },
+          ])
+        ).projectName,
     );
 
     // Prompt user to select workspace
@@ -265,12 +267,14 @@ export async function createCommand(
     try {
       await fs.access(targetDir);
 
-      const { overwrite } = await inquirer.prompt([{
-        type: "list",
-        name: "overwrite",
-        message: `Directory '${finalProjectName}' already exists. Overwrite?`,
-        choices: ["No", "Yes"],
-      }]);
+      const { overwrite } = await inquirer.prompt([
+        {
+          type: "list",
+          name: "overwrite",
+          message: `Directory '${finalProjectName}' already exists. Overwrite?`,
+          choices: ["No", "Yes"],
+        },
+      ]);
 
       if (overwrite === "No") {
         console.log("❌ Project creation cancelled.");
@@ -282,18 +286,24 @@ export async function createCommand(
       // Directory doesn't exist, that's fine
     }
 
-    const finalTemplateName = templateName || (await inquirer.prompt([{
-      type: "list",
-      name: "template",
-      message: "Select a template:",
-      choices: AVAILABLE_TEMPLATES.map((t) => ({
-        name: `${t.name} - ${t.description}`,
-        value: t.name,
-      })),
-    }])).template;
+    const finalTemplateName =
+      templateName ||
+      (
+        await inquirer.prompt([
+          {
+            type: "list",
+            name: "template",
+            message: "Select a template:",
+            choices: AVAILABLE_TEMPLATES.map((t) => ({
+              name: `${t.name} - ${t.description}`,
+              value: t.name,
+            })),
+          },
+        ])
+      ).template;
 
-    const selectedTemplate = AVAILABLE_TEMPLATES.find((t) =>
-      t.name === finalTemplateName
+    const selectedTemplate = AVAILABLE_TEMPLATES.find(
+      (t) => t.name === finalTemplateName,
     );
     if (!selectedTemplate) {
       throw new Error(`Template '${finalTemplateName}' not found`);
@@ -301,19 +311,18 @@ export async function createCommand(
 
     const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || "");
 
-    const { initGit } = await inquirer.prompt([{
-      type: "list",
-      name: "initGit",
-      message: "Initialize a git repository?",
-      choices: ["No", "Yes"],
-    }]);
+    const { initGit } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "initGit",
+        message: "Initialize a git repository?",
+        choices: ["No", "Yes"],
+      },
+    ]);
 
     // Prompt user to install MCP configuration for IDE
     const mcpResult = workspace
-      ? await promptIDESetup(
-        { workspace, app: finalProjectName },
-        targetDir,
-      )
+      ? await promptIDESetup({ workspace, app: finalProjectName }, targetDir)
       : null;
 
     console.log(`📦 Downloading template '${selectedTemplate.name}'...`);

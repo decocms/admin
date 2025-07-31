@@ -38,12 +38,13 @@ import {
 } from "./utils.ts";
 import { formatToolName } from "../chat/utils/format-tool-name.ts";
 
-function WorkflowRunsCardView(
-  { runs, onClick }: {
-    runs: WorkflowRun[];
-    onClick: (run: WorkflowRun) => void;
-  },
-) {
+function WorkflowRunsCardView({
+  runs,
+  onClick,
+}: {
+  runs: WorkflowRun[];
+  onClick: (run: WorkflowRun) => void;
+}) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 peer">
       {runs.map((run) => (
@@ -84,12 +85,13 @@ function WorkflowRunsCardView(
   );
 }
 
-function WorkflowRunsTableView(
-  { runs, onClick }: {
-    runs: WorkflowRun[];
-    onClick: (run: WorkflowRun) => void;
-  },
-) {
+function WorkflowRunsTableView({
+  runs,
+  onClick,
+}: {
+  runs: WorkflowRun[];
+  onClick: (run: WorkflowRun) => void;
+}) {
   const [sortKey, setSortKey] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -113,11 +115,7 @@ function WorkflowRunsTableView(
       header: "Run ID",
       render: (run) => (
         <div className="flex items-center gap-2">
-          <Icon
-            name="schedule"
-            size={14}
-            className="text-muted-foreground"
-          />
+          <Icon name="schedule" size={14} className="text-muted-foreground" />
           <span className="text-sm font-mono text-xs">{run.runId}</span>
         </div>
       ),
@@ -157,9 +155,9 @@ function WorkflowRunsTableView(
 
   function handleSort(key: string) {
     if (sortKey === key) {
-      setSortDirection((
-        prev: "asc" | "desc",
-      ) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection((prev: "asc" | "desc") =>
+        prev === "asc" ? "desc" : "asc",
+      );
     } else {
       setSortKey(key);
       setSortDirection("asc");
@@ -190,17 +188,19 @@ function WorkflowRunsTab() {
   const workflowNames = workflowNamesData?.workflowNames || [];
 
   // Get workflow runs - either filtered by workflow name or all recent runs
-  const { data, refetch, isRefetching } = selectedWorkflow !== "all"
-    ? useWorkflowRuns(selectedWorkflow, 1, 25)
-    : useRecentWorkflowRuns(1, 25);
+  const { data, refetch, isRefetching } =
+    selectedWorkflow !== "all"
+      ? useWorkflowRuns(selectedWorkflow, 1, 25)
+      : useRecentWorkflowRuns(1, 25);
 
   const runs = data?.runs || [];
 
   const filteredRuns = useMemo(() => {
     if (!filter) return runs;
-    return runs.filter((run) =>
-      run.workflowName.toLowerCase().includes(filter.toLowerCase()) ||
-      run.runId.toLowerCase().includes(filter.toLowerCase())
+    return runs.filter(
+      (run) =>
+        run.workflowName.toLowerCase().includes(filter.toLowerCase()) ||
+        run.runId.toLowerCase().includes(filter.toLowerCase()),
     );
   }, [runs, filter]);
 
@@ -211,9 +211,9 @@ function WorkflowRunsTab() {
 
   function handleRunClick(run: WorkflowRun) {
     navigateWorkspace(
-      `/workflows/${encodeURIComponent(run.workflowName)}/instances/${
-        encodeURIComponent(run.runId)
-      }`,
+      `/workflows/${encodeURIComponent(run.workflowName)}/instances/${encodeURIComponent(
+        run.runId,
+      )}`,
     );
   }
 
@@ -263,34 +263,26 @@ function WorkflowRunsTab() {
                   />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                Refresh
-              </TooltipContent>
+              <TooltipContent>Refresh</TooltipContent>
             </Tooltip>
           </div>
         </div>
         <div className="flex-1 min-h-0 px-4 overflow-x-auto">
-          {sortedAndFilteredRuns.length === 0
-            ? (
-              <div className="flex flex-1 min-h-[700px] items-center justify-center">
-                <WorkflowEmptyState />
-              </div>
-            )
-            : (
-              viewMode === "cards"
-                ? (
-                  <WorkflowRunsCardView
-                    runs={sortedAndFilteredRuns}
-                    onClick={handleRunClick}
-                  />
-                )
-                : (
-                  <WorkflowRunsTableView
-                    runs={sortedAndFilteredRuns}
-                    onClick={handleRunClick}
-                  />
-                )
-            )}
+          {sortedAndFilteredRuns.length === 0 ? (
+            <div className="flex flex-1 min-h-[700px] items-center justify-center">
+              <WorkflowEmptyState />
+            </div>
+          ) : viewMode === "cards" ? (
+            <WorkflowRunsCardView
+              runs={sortedAndFilteredRuns}
+              onClick={handleRunClick}
+            />
+          ) : (
+            <WorkflowRunsTableView
+              runs={sortedAndFilteredRuns}
+              onClick={handleRunClick}
+            />
+          )}
         </div>
       </div>
     </ScrollArea>

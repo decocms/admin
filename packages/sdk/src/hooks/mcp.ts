@@ -47,9 +47,8 @@ export const useCreateIntegration = () => {
       // update list
       const listKey = KEYS.INTEGRATION(workspace);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(
-        listKey,
-        (old) => !old ? [processedResult] : [processedResult, ...old],
+      client.setQueryData<Integration[]>(listKey, (old) =>
+        !old ? [processedResult] : [processedResult, ...old],
       );
     },
   });
@@ -81,12 +80,10 @@ export const useUpdateIntegration = ({
       // Update the list
       const listKey = KEYS.INTEGRATION(workspace);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(
-        listKey,
-        (old) =>
-          !old
-            ? [processedResult]
-            : old.map((mcp) => mcp.id === result.id ? processedResult : mcp),
+      client.setQueryData<Integration[]>(listKey, (old) =>
+        !old
+          ? [processedResult]
+          : old.map((mcp) => (mcp.id === result.id ? processedResult : mcp)),
       );
 
       client.invalidateQueries({ queryKey: ["tools"] });
@@ -114,9 +111,8 @@ export const useRemoveIntegration = () => {
       // Update the list
       const listKey = KEYS.INTEGRATION(workspace);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(
-        listKey,
-        (old) => !old ? [] : old.filter((mcp) => mcp.id !== id),
+      client.setQueryData<Integration[]>(listKey, (old) =>
+        !old ? [] : old.filter((mcp) => mcp.id !== id),
       );
     },
   });
@@ -143,12 +139,15 @@ export const useBindings = (binder: Binder) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
-  const { data: items, isLoading: isLoadingItems, error: itemsError } =
-    useQuery({
-      queryKey: KEYS.INTEGRATION(workspace),
-      queryFn: ({ signal }) => listIntegrations(workspace, {}, signal),
-      staleTime: 2 * 60 * 1000, // 2 minutes
-    });
+  const {
+    data: items,
+    isLoading: isLoadingItems,
+    error: itemsError,
+  } = useQuery({
+    queryKey: KEYS.INTEGRATION(workspace),
+    queryFn: ({ signal }) => listIntegrations(workspace, {}, signal),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
   const queriesConfig = useMemo(() => {
     return (items || []).map((item) => ({
@@ -180,9 +179,7 @@ export const useBindings = (binder: Binder) => {
         } catch (error) {
           clearTimeout(timeoutId);
           if (error instanceof Error && error.name === "AbortError") {
-            console.warn(
-              `Timeout fetching tools for integration: ${item.id}`,
-            );
+            console.warn(`Timeout fetching tools for integration: ${item.id}`);
             return {
               integration: item,
               tools: [] as MCPTool[],
@@ -218,7 +215,7 @@ export const useBindings = (binder: Binder) => {
       .filter((query) => query.isSuccess && query.data)
       .map((query) => query.data as IntegrationToolsResult)
       .filter((result) =>
-        Binding(WellKnownBindings[binder]).isImplementedBy(result.tools)
+        Binding(WellKnownBindings[binder]).isImplementedBy(result.tools),
       )
       .map((result) => result.integration);
   }, [
@@ -230,8 +227,8 @@ export const useBindings = (binder: Binder) => {
   ]);
 
   // Aggregate loading and error states
-  const isLoading = isLoadingItems ||
-    integrationQueries.some((q) => q.isLoading);
+  const isLoading =
+    isLoadingItems || integrationQueries.some((q) => q.isLoading);
   const hasErrors = !!itemsError || integrationQueries.some((q) => q.error);
   const errors = [
     itemsError,
@@ -245,8 +242,9 @@ export const useBindings = (binder: Binder) => {
     error: hasErrors ? errors[0] : null,
     isSuccess: !isLoading && !hasErrors,
     totalIntegrations: items?.length || 0,
-    processedIntegrations:
-      integrationQueries.filter((q) => q.isSuccess || q.isError).length,
+    processedIntegrations: integrationQueries.filter(
+      (q) => q.isSuccess || q.isError,
+    ).length,
   };
 };
 
@@ -262,7 +260,7 @@ export const useIntegrations = () => {
 
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
       const processedItems = items.map((item) =>
-        applyDisplayNameToIntegration(item, agents)
+        applyDisplayNameToIntegration(item, agents),
       );
 
       for (const item of processedItems) {
@@ -289,9 +287,10 @@ export const useMarketplaceIntegrations = () => {
   return useSuspenseQuery<IntegrationsResult>({
     queryKey: ["integrations", "marketplace"],
     queryFn: () =>
-      MCPClient.forWorkspace(workspace).DECO_INTEGRATIONS_SEARCH({ query: "" })
+      MCPClient.forWorkspace(workspace)
+        .DECO_INTEGRATIONS_SEARCH({ query: "" })
         .then((r: IntegrationsResult | string) =>
-          typeof r === "string" ? { integrations: [] } : r
+          typeof r === "string" ? { integrations: [] } : r,
         ),
   });
 };
@@ -323,17 +322,20 @@ export const useInstallFromMarketplace = () => {
     Error,
     { appName: string; returnUrl: string; provider: string }
   >({
-    mutationFn: async (
-      { appName, provider, returnUrl, appId }: {
-        appName: string;
-        returnUrl: string;
-        provider: string;
-        appId?: string;
-      },
-    ) => {
-      const result: { installationId: string } = await MCPClient
-        .forWorkspace(workspace)
-        .DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
+    mutationFn: async ({
+      appName,
+      provider,
+      returnUrl,
+      appId,
+    }: {
+      appName: string;
+      returnUrl: string;
+      provider: string;
+      appId?: string;
+    }) => {
+      const result: { installationId: string } = await MCPClient.forWorkspace(
+        workspace,
+      ).DECO_INTEGRATION_INSTALL({ id: appName, provider, appId });
 
       const integration = await loadIntegration(
         workspace,
@@ -344,16 +346,17 @@ export const useInstallFromMarketplace = () => {
 
       if (
         (WELL_KNOWN_DECO_OAUTH_INTEGRATIONS.includes(appName.toLowerCase()) &&
-          provider === "deco") || provider === "marketplace"
+          provider === "deco") ||
+        provider === "marketplace"
       ) {
-        const result = await MCPClient
-          .forWorkspace(workspace)
-          .DECO_INTEGRATION_OAUTH_START({
-            appName: appName,
-            returnUrl,
-            installId: integration.id.split(":").pop()!,
-            provider,
-          });
+        const result = await MCPClient.forWorkspace(
+          workspace,
+        ).DECO_INTEGRATION_OAUTH_START({
+          appName: appName,
+          returnUrl,
+          installId: integration.id.split(":").pop()!,
+          provider,
+        });
 
         // Handle both return types: { redirectUrl } or { stateSchema }
         if (result && "redirectUrl" in result) {
@@ -378,11 +381,11 @@ export const useInstallFromMarketplace = () => {
           throw new Error("Composio integration has no url");
         }
 
-        const result = await MCPClient
-          .forWorkspace(workspace)
-          .COMPOSIO_INTEGRATION_OAUTH_START({
-            url: integration.connection.url,
-          });
+        const result = await MCPClient.forWorkspace(
+          workspace,
+        ).COMPOSIO_INTEGRATION_OAUTH_START({
+          url: integration.connection.url,
+        });
 
         redirectUrl = result?.redirectUrl;
         if (!redirectUrl) {
@@ -418,9 +421,8 @@ export const useInstallFromMarketplace = () => {
       // update list
       const listKey = KEYS.INTEGRATION(workspace);
       client.cancelQueries({ queryKey: listKey });
-      client.setQueryData<Integration[]>(
-        listKey,
-        (old) => !old ? [processedIntegration] : [processedIntegration, ...old],
+      client.setQueryData<Integration[]>(listKey, (old) =>
+        !old ? [processedIntegration] : [processedIntegration, ...old],
       );
     },
   });
@@ -438,10 +440,11 @@ export const useCreateOAuthCodeForIntegration = () => {
     }) => {
       const { integrationId, workspace, redirectUri, state } = params;
 
-      const { code } = await MCPClient.forWorkspace(workspace)
-        .OAUTH_CODE_CREATE({
-          integrationId,
-        });
+      const { code } = await MCPClient.forWorkspace(
+        workspace,
+      ).OAUTH_CODE_CREATE({
+        integrationId,
+      });
 
       const url = new URL(redirectUri);
       url.searchParams.set("code", code);

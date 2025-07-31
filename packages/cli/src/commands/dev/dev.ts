@@ -19,9 +19,8 @@ export async function devCommand(): Promise<void> {
     }));
 
     const wranglerConfig = await readWranglerConfig();
-    const app = typeof wranglerConfig.name === "string"
-      ? wranglerConfig.name
-      : "my-app";
+    const app =
+      typeof wranglerConfig.name === "string" ? wranglerConfig.name : "my-app";
 
     console.log(`📦 Starting development server for '${app}'...`);
 

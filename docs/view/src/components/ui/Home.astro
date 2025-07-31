@@ -1,11 +1,14 @@
 ---
-import { useTranslations } from '../i18n/utils';
-import { ui } from '../i18n/ui';
-import { getRelativeLocaleUrl } from 'astro:i18n';
+import { useTranslations } from "../i18n/utils";
+import { ui } from "../i18n/ui";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
-const gettingStartedURL = getRelativeLocaleUrl(Astro.params.locale || "en", "getting-started");
+const gettingStartedURL = getRelativeLocaleUrl(
+  Astro.params.locale || "en",
+  "getting-started",
+);
 
-const lang = Astro.url.pathname.split('/')[1] as keyof typeof ui || 'en';
+const lang = (Astro.url.pathname.split("/")[1] as keyof typeof ui) || "en";
 const t = useTranslations(lang);
 ---
 

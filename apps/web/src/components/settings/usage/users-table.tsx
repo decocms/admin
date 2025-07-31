@@ -20,13 +20,16 @@ export function UsersTable({
       return [];
     }
 
-    const userMap = new Map<string, {
-      userId: string;
-      threads: ThreadUsageItem[];
-      totalCost: number;
-      totalTokens: number;
-      agentIds: Set<string>;
-    }>();
+    const userMap = new Map<
+      string,
+      {
+        userId: string;
+        threads: ThreadUsageItem[];
+        totalCost: number;
+        totalTokens: number;
+        agentIds: Set<string>;
+      }
+    >();
 
     // Group threads by user
     threadUsage.items.forEach((thread) => {
@@ -50,9 +53,12 @@ export function UsersTable({
       userData.threads.push(thread);
 
       // Parse the thread cost more carefully - handle dollar sign
-      const threadCost = typeof thread.total === "string"
-        ? parseFloat(thread.total.replace("$", ""))
-        : (typeof thread.total === "number" ? thread.total : 0);
+      const threadCost =
+        typeof thread.total === "string"
+          ? parseFloat(thread.total.replace("$", ""))
+          : typeof thread.total === "number"
+            ? thread.total
+            : 0;
       const validCost = isNaN(threadCost) ? 0 : threadCost;
 
       userData.totalCost += validCost;
@@ -84,7 +90,7 @@ export function UsersTable({
   }, [threadUsage.items, members]);
 
   // Define table columns
-  const columns: TableColumn<typeof enrichedUsers[0]>[] = [
+  const columns: TableColumn<(typeof enrichedUsers)[0]>[] = [
     {
       id: "color",
       header: "",
@@ -122,30 +128,20 @@ export function UsersTable({
     {
       id: "agentsUsed",
       header: "Agents Used",
-      render: (user) => (
-        <span className="text-sm">
-          {user.agentsUsed}
-        </span>
-      ),
+      render: (user) => <span className="text-sm">{user.agentsUsed}</span>,
       sortable: true,
     },
     {
       id: "threadsCount",
       header: "Threads Created",
-      render: (user) => (
-        <span className="text-sm">
-          {user.threadsCount}
-        </span>
-      ),
+      render: (user) => <span className="text-sm">{user.threadsCount}</span>,
       sortable: true,
     },
     {
       id: "totalTokens",
       header: "Tokens",
       render: (user) => (
-        <span className="text-sm">
-          {user.totalTokens.toLocaleString()}
-        </span>
+        <span className="text-sm">{user.totalTokens.toLocaleString()}</span>
       ),
       sortable: true,
     },
@@ -159,9 +155,7 @@ export function UsersTable({
           typeof user.totalCost,
         );
         return (
-          <span className="font-medium">
-            $ {user.totalCost.toFixed(2)}
-          </span>
+          <span className="font-medium">$ {user.totalCost.toFixed(2)}</span>
         );
       },
       sortable: true,
@@ -170,7 +164,7 @@ export function UsersTable({
 
   // Sorting logic
   const getSortValue = (
-    user: typeof enrichedUsers[0],
+    user: (typeof enrichedUsers)[0],
     key: string,
   ): string | number => {
     switch (key) {
@@ -192,7 +186,7 @@ export function UsersTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);

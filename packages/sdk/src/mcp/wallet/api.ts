@@ -67,24 +67,25 @@ const ThreadsUsage = {
 
     return usageResponse.json();
   },
-  format: (
-    usage: WalletAPI["GET /usage/threads"]["response"],
-  ) => {
+  format: (usage: WalletAPI["GET /usage/threads"]["response"]) => {
     return {
-      items: usage.items.map((thread) => ({
-        ...thread,
-        total: MicroDollar.fromMicrodollarString(thread.total).display({
-          showAllDecimals: true,
-        }),
-        transactions: thread.transactions.map((transaction) => ({
-          id: transaction.id,
-          timestamp: transaction.timestamp,
-          amount: MicroDollar.fromMicrodollarString(transaction.amount)
-            .toDollars(),
-          agentId: transaction.agentId,
-          generatedBy: transaction.generatedBy,
-        })),
-      })).filter(isRequired),
+      items: usage.items
+        .map((thread) => ({
+          ...thread,
+          total: MicroDollar.fromMicrodollarString(thread.total).display({
+            showAllDecimals: true,
+          }),
+          transactions: thread.transactions.map((transaction) => ({
+            id: transaction.id,
+            timestamp: transaction.timestamp,
+            amount: MicroDollar.fromMicrodollarString(
+              transaction.amount,
+            ).toDollars(),
+            agentId: transaction.agentId,
+            generatedBy: transaction.generatedBy,
+          })),
+        }))
+        .filter(isRequired),
     };
   },
 };
@@ -116,8 +117,9 @@ const AgentsUsage = {
         transactions: item.transactions.map((transaction) => ({
           id: transaction.id,
           timestamp: transaction.timestamp,
-          amount: MicroDollar.fromMicrodollarString(transaction.amount)
-            .toDollars(),
+          amount: MicroDollar.fromMicrodollarString(
+            transaction.amount,
+          ).toDollars(),
           agentId: transaction.agentId,
           generatedBy: transaction.generatedBy,
         })),
@@ -156,8 +158,7 @@ const BillingHistory = {
 const createTool = createToolGroup("Wallet", {
   name: "Wallet & Billing",
   description: "Handle payments and subscriptions.",
-  icon:
-    "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
+  icon: "https://assets.decocache.com/mcp/c179a1cd-4933-40ac-a9c1-18f24e19e592/Wallet--Billing.png",
 });
 
 export const getWalletAccount = createTool({
@@ -206,11 +207,7 @@ export const getThreadsUsage = createTool({
 
     const wallet = getWalletClient(c);
 
-    const usage = await ThreadsUsage.fetch(
-      wallet,
-      c.workspace.value,
-      range,
-    );
+    const usage = await ThreadsUsage.fetch(wallet, c.workspace.value, range);
     return ThreadsUsage.format(usage);
   },
 });
@@ -223,18 +220,22 @@ export const getAgentsUsage = createTool({
   }),
   outputSchema: z.object({
     total: z.string(),
-    items: z.array(z.object({
-      id: z.string(),
-      label: z.string(),
-      total: z.number(),
-      transactions: z.array(z.object({
+    items: z.array(
+      z.object({
         id: z.string(),
-        timestamp: z.string(),
-        amount: z.number(),
-        agentId: z.string(),
-        generatedBy: z.string(),
-      })),
-    })),
+        label: z.string(),
+        total: z.number(),
+        transactions: z.array(
+          z.object({
+            id: z.string(),
+            timestamp: z.string(),
+            amount: z.number(),
+            agentId: z.string(),
+            generatedBy: z.string(),
+          }),
+        ),
+      }),
+    ),
   }),
   handler: async ({ range }, c) => {
     assertHasWorkspace(c);
@@ -243,11 +244,7 @@ export const getAgentsUsage = createTool({
 
     const wallet = getWalletClient(c);
 
-    const usage = await AgentsUsage.fetch(
-      wallet,
-      c.workspace.value,
-      range,
-    );
+    const usage = await AgentsUsage.fetch(wallet, c.workspace.value, range);
     return AgentsUsage.format(usage);
   },
 });
@@ -259,12 +256,14 @@ export const getBillingHistory = createTool({
     range: z.enum(["day", "week", "month", "year"]),
   }),
   outputSchema: z.object({
-    items: z.array(z.object({
-      id: z.string(),
-      amount: z.string(),
-      timestamp: z.string(),
-      type: z.string(),
-    })),
+    items: z.array(
+      z.object({
+        id: z.string(),
+        amount: z.string(),
+        timestamp: z.string(),
+        type: z.string(),
+      }),
+    ),
   }),
   handler: async ({ range }, c) => {
     c.resourceAccess.grant();
@@ -328,9 +327,11 @@ export const createWalletVoucher = createTool({
   name: "CREATE_VOUCHER",
   description: "Create a voucher with money from the current tenant's wallet",
   inputSchema: z.object({
-    amount: z.number().describe(
-      "The amount of money to add to the voucher. Specified in USD dollars.",
-    ),
+    amount: z
+      .number()
+      .describe(
+        "The amount of money to add to the voucher. Specified in USD dollars.",
+      ),
   }),
   outputSchema: z.object({
     id: z.string(),
@@ -356,9 +357,12 @@ export const createWalletVoucher = createTool({
       workspace: c.workspace.value,
     } as const;
 
-    const response = await wallet["POST /transactions"]({}, {
-      body: operation,
-    });
+    const response = await wallet["POST /transactions"](
+      {},
+      {
+        body: operation,
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to create voucher");
@@ -409,9 +413,12 @@ export const redeemWalletVoucher = createTool({
       workspace: c.workspace.value,
     } as const;
 
-    const response = await wallet["POST /transactions"]({}, {
-      body: operation,
-    });
+    const response = await wallet["POST /transactions"](
+      {},
+      {
+        body: operation,
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to redeem voucher");

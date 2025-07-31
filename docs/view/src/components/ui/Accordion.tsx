@@ -8,9 +8,12 @@ interface AccordionProps {
   icon?: string;
 }
 
-export function Accordion(
-  { title, children, defaultOpen = false, icon = "Bolt" }: AccordionProps,
-) {
+export function Accordion({
+  title,
+  children,
+  defaultOpen = false,
+  icon = "Bolt",
+}: AccordionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -32,9 +35,7 @@ export function Accordion(
       </button>
       {isOpen && (
         <div className="px-4 py-4">
-          <div className="text-muted-foreground">
-            {children}
-          </div>
+          <div className="text-muted-foreground">{children}</div>
         </div>
       )}
     </div>

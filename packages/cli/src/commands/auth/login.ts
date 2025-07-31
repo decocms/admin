@@ -25,8 +25,8 @@ export const loginCommand = () => {
 
         if (url.pathname === "/login/oauth") {
           const credentials = {
-            provider:
-              (url.searchParams.get("provider") ?? "google") as Provider,
+            provider: (url.searchParams.get("provider") ??
+              "google") as Provider,
             options: { redirectTo: new URL("/auth/callback/oauth", url).href },
           };
 
@@ -61,9 +61,8 @@ export const loginCommand = () => {
             return;
           }
 
-          const { data, error } = await client.auth.exchangeCodeForSession(
-            code,
-          );
+          const { data, error } =
+            await client.auth.exchangeCodeForSession(code);
 
           if (error || !data?.session) {
             res.writeHead(400);
@@ -115,13 +114,14 @@ export const loginCommand = () => {
         aix: "open",
       };
 
-      const browser = process.env.BROWSER ??
-        browserCommands[process.platform] ?? "open";
+      const browser =
+        process.env.BROWSER ?? browserCommands[process.platform] ?? "open";
 
       // Windows requires using cmd.exe because 'start' is a built-in command
-      const command = process.platform === "win32" && browser === "start"
-        ? spawn("cmd", ["/c", "start", DECO_CHAT_LOGIN], { detached: true })
-        : spawn(browser, [DECO_CHAT_LOGIN], { detached: true });
+      const command =
+        process.platform === "win32" && browser === "start"
+          ? spawn("cmd", ["/c", "start", DECO_CHAT_LOGIN], { detached: true })
+          : spawn(browser, [DECO_CHAT_LOGIN], { detached: true });
 
       command.unref(); // Don't keep process alive
     });

@@ -57,16 +57,19 @@ const swr = new SWRCache<Awaited<ReturnType<Client["listTools"]>>>(
   },
 );
 export const swrListTools = (mcpServer: Integration, signal?: AbortSignal) => {
-  return swr.cache(async () => {
-    const client = await createServerClient(mcpServer, signal).catch(
-      console.error,
-    );
-    if (!client) {
-      return { tools: [] };
-    }
+  return swr.cache(
+    async () => {
+      const client = await createServerClient(mcpServer, signal).catch(
+        console.error,
+      );
+      if (!client) {
+        return { tools: [] };
+      }
 
-    return client.listTools().finally(() => client.close());
-  }, "url" in mcpServer.connection ? mcpServer.connection.url : mcpServer.id);
+      return client.listTools().finally(() => client.close());
+    },
+    "url" in mcpServer.connection ? mcpServer.connection.url : mcpServer.id,
+  );
 };
 
 const getMCPServerTools = async (
@@ -76,48 +79,53 @@ const getMCPServerTools = async (
 ): Promise<Record<string, ToolAction<any, any, any>>> => {
   try {
     const { tools } = await swrListTools(mcpServer, signal);
-    const mtools: Record<string, ToolAction<any, any, any>> = Object
-      .fromEntries(
-        tools.map((tool: typeof tools[number]) => {
-          const slug = slugify(tool.name);
-          return [
-            slug,
-            createTool({
-              id: slug,
-              description: tool.description! ?? "",
-              inputSchema: jsonSchemaToModel(tool.inputSchema),
-              outputSchema: jsonSchemaToModel(
-                tool.outputSchema ?? {
-                  type: "object",
-                  additionalProperties: true,
-                },
-              ),
-              execute: async ({ context }) => {
-                const innerClient = await createServerClient(mcpServer).catch(
-                  console.error,
-                );
-                if (!innerClient) {
-                  return { error: "Failed to create inner client" };
-                }
-                try {
-                  const result = await innerClient.callTool({
+    const mtools: Record<
+      string,
+      ToolAction<any, any, any>
+    > = Object.fromEntries(
+      tools.map((tool: (typeof tools)[number]) => {
+        const slug = slugify(tool.name);
+        return [
+          slug,
+          createTool({
+            id: slug,
+            description: tool.description! ?? "",
+            inputSchema: jsonSchemaToModel(tool.inputSchema),
+            outputSchema: jsonSchemaToModel(
+              tool.outputSchema ?? {
+                type: "object",
+                additionalProperties: true,
+              },
+            ),
+            execute: async ({ context }) => {
+              const innerClient = await createServerClient(mcpServer).catch(
+                console.error,
+              );
+              if (!innerClient) {
+                return { error: "Failed to create inner client" };
+              }
+              try {
+                const result = await innerClient.callTool(
+                  {
                     name: tool.name,
                     arguments: context,
-                    // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
-                  }, CallToolResultSchema);
+                  },
+                  // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
+                  CallToolResultSchema,
+                );
 
-                  return result;
-                } catch (error) {
-                  agent._resetCallableToolSet(mcpServer.id);
-                  throw error;
-                } finally {
-                  await innerClient.close();
-                }
-              },
-            }),
-          ];
-        }),
-      );
+                return result;
+              } catch (error) {
+                agent._resetCallableToolSet(mcpServer.id);
+                throw error;
+              } finally {
+                await innerClient.close();
+              }
+            },
+          }),
+        ];
+      }),
+    );
 
     return mtools;
   } catch (err) {
@@ -164,9 +172,8 @@ export const getDecoSiteTools = async (
             new URL(`/live/invoke/${tool.resolveType}`, baseUrl),
             {
               method: "POST",
-              body: typeof context === "string"
-                ? context
-                : JSON.stringify(context),
+              body:
+                typeof context === "string" ? context : JSON.stringify(context),
               headers: {
                 "content-type": "application/json",
                 ...(settings.token && {
@@ -202,18 +209,20 @@ export const mcpServerTools = async (
   if (isApiDecoChatMCPConnection(mcpServer.connection)) {
     mcpServer.connection = patchApiDecoChatTokenHTTPConnection(
       mcpServer.connection,
-      agent.metadata?.userCookie ?? createSessionTokenCookie(
-        await agent._token(),
-        new URL(mcpServer.connection.url).hostname,
-      ),
+      agent.metadata?.userCookie ??
+        createSessionTokenCookie(
+          await agent._token(),
+          new URL(mcpServer.connection.url).hostname,
+        ),
     );
   }
 
-  const response = mcpServer.connection.type === "Deco"
-    ? await getDecoSiteTools(mcpServer.connection)
-    : mcpServer.connection.type === "INNATE"
-    ? getToolsForInnateIntegration(mcpServer, agent, env)
-    : await getMCPServerTools(mcpServer, agent, signal);
+  const response =
+    mcpServer.connection.type === "Deco"
+      ? await getDecoSiteTools(mcpServer.connection)
+      : mcpServer.connection.type === "INNATE"
+        ? getToolsForInnateIntegration(mcpServer, agent, env)
+        : await getMCPServerTools(mcpServer, agent, signal);
 
   return response;
 };
@@ -259,8 +268,8 @@ export const createTransport = (
 
   const headers: Record<string, string> = {
     ...authHeaders,
-    ...extraHeaders ?? {},
-    ..."headers" in connection ? (connection.headers || {}) : {},
+    ...(extraHeaders ?? {}),
+    ...("headers" in connection ? connection.headers || {} : {}),
   };
 
   if (connection.type === "SSE") {
@@ -325,7 +334,8 @@ export async function listToolsByConnectionType(
     case "INNATE": {
       const mcpClient = MCPClient.forContext({
         ...ctx,
-        workspace: ctx.workspace ??
+        workspace:
+          ctx.workspace ??
           (connection.workspace
             ? fromWorkspaceString(connection.workspace)
             : undefined),
@@ -339,10 +349,13 @@ export async function listToolsByConnectionType(
         return { error: `Integration ${connection.name} not found` };
       }
 
-      const tools = await mcpServerTools({
-        ...maybeIntegration,
-        id: connection.name,
-      }, {} as AIAgent);
+      const tools = await mcpServerTools(
+        {
+          ...maybeIntegration,
+          id: connection.name,
+        },
+        {} as AIAgent,
+      );
 
       return { tools: mapToolEntries(tools) };
     }
@@ -355,10 +368,13 @@ export async function listToolsByConnectionType(
     case "Websocket":
     case "SSE":
     case "HTTP": {
-      return await swrMCPMetadata({
-        name: connection.type,
-        connection,
-      }, ignoreCache);
+      return await swrMCPMetadata(
+        {
+          name: connection.type,
+          connection,
+        },
+        ignoreCache,
+      );
     }
     default: {
       return { error: "Invalid connection type" };

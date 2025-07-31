@@ -52,23 +52,20 @@ export function weekId(transaction: { timestamp: string }): string {
 }
 
 export function allDayHoursKeys(): string[] {
-  return Array.from(
-    { length: 24 },
-    (_, i) =>
-      hourId({
-        timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString(),
-      }),
+  return Array.from({ length: 24 }, (_, i) =>
+    hourId({
+      timestamp: new Date(new Date().setHours(i, 0, 0, 0)).toISOString(),
+    }),
   );
 }
 
 export function allWeekDaysKeys(): string[] {
-  return Array.from(
-    { length: 7 },
-    (_, i) =>
-      dayId({
-        timestamp: new Date(new Date().setDate(new Date().getDate() - i))
-          .toISOString(),
-      }),
+  return Array.from({ length: 7 }, (_, i) =>
+    dayId({
+      timestamp: new Date(
+        new Date().setDate(new Date().getDate() - i),
+      ).toISOString(),
+    }),
   ).reverse();
 }
 
@@ -325,22 +322,21 @@ export function createAgentChartData(
       fillWith: allTransactions,
       getKey: dayId,
     });
-    const todayTransactions = allTransactionsByDay.find(
-      ([key]) => key === dayId({ timestamp: new Date().toISOString() }),
-    )?.[1] || [];
+    const todayTransactions =
+      allTransactionsByDay.find(
+        ([key]) => key === dayId({ timestamp: new Date().toISOString() }),
+      )?.[1] || [];
 
     const allTransactionsByHour = createMap<AgentChartTransaction>({
       keys: allDayHoursKeys,
       fillWith: todayTransactions,
       getKey: hourId,
     });
-    chartStackedBars = allTransactionsByHour.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByHour.map(([label, transactions]) =>
       buildAgentStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<AgentChartTransaction>({
@@ -352,7 +348,7 @@ export function createAgentChartData(
       buildAgentStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<AgentChartTransaction>({
@@ -360,13 +356,11 @@ export function createAgentChartData(
       fillWith: allTransactions,
       getKey: weekId,
     });
-    chartStackedBars = allTransactionsByWeek.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByWeek.map(([label, transactions]) =>
       buildAgentStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else {
     throw new Error("Unknown time Range");
@@ -450,13 +444,11 @@ export function createUserChartData(
       fillWith: allTransactions,
       getKey: hourId,
     });
-    chartStackedBars = allTransactionsByHour.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByHour.map(([label, transactions]) =>
       buildUserStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<UserChartTransaction>({
@@ -468,7 +460,7 @@ export function createUserChartData(
       buildUserStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<UserChartTransaction>({
@@ -476,13 +468,11 @@ export function createUserChartData(
       fillWith: allTransactions,
       getKey: weekId,
     });
-    chartStackedBars = allTransactionsByWeek.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByWeek.map(([label, transactions]) =>
       buildUserStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else {
     throw new Error("Unknown time Range");
@@ -563,13 +553,11 @@ export function createThreadChartData(
       getKey: hourId,
     });
 
-    chartStackedBars = allTransactionsByHour.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByHour.map(([label, transactions]) =>
       buildThreadStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "week") {
     const allTransactionsByDay = createMap<ThreadChartTransaction>({
@@ -582,7 +570,7 @@ export function createThreadChartData(
       buildThreadStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else if (timeRange === "month") {
     const allTransactionsByWeek = createMap<ThreadChartTransaction>({
@@ -591,13 +579,11 @@ export function createThreadChartData(
       getKey: weekId,
     });
 
-    chartStackedBars = allTransactionsByWeek.map((
-      [label, transactions],
-    ) =>
+    chartStackedBars = allTransactionsByWeek.map(([label, transactions]) =>
       buildThreadStack({
         transactions: transactions,
         label,
-      })
+      }),
     );
   } else {
     throw new Error("Unknown time Range");

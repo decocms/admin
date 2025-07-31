@@ -95,10 +95,14 @@ interface TreeItemProps {
   translations: Record<string, string>;
 }
 
-function TreeItem(
-  { node, isVisible, isExpanded, onToggle, locale, translations }:
-    TreeItemProps,
-) {
+function TreeItem({
+  node,
+  isVisible,
+  isExpanded,
+  onToggle,
+  locale,
+  translations,
+}: TreeItemProps) {
   if (!isVisible) return null;
 
   // Check if this item is active (current page) - client-side only
@@ -120,66 +124,57 @@ function TreeItem(
           active
             ? "bg-primary/5 text-primary" // Active state
             : node.type === "folder"
-            ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "text-muted-foreground hover:bg-muted hover:text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
       >
         {/* Indentation spacer for nested items */}
         {node.depth > 1 && <div className="w-6 shrink-0" />}
 
         {/* Icon */}
-        {node.type === "folder"
-          ? (
-            <Icon
-              name="Folder"
-              size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
-            />
-          )
-          : node.doc?.data?.icon
-          ? (
-            <Icon
-              name={node.doc.data.icon}
-              size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
-            />
-          )
-          : (
-            <Icon
-              name="FileText"
-              size={16}
-              className={`shrink-0 ${active ? "text-primary" : ""}`}
-            />
-          )}
+        {node.type === "folder" ? (
+          <Icon
+            name="Folder"
+            size={16}
+            className={`shrink-0 ${active ? "text-primary" : ""}`}
+          />
+        ) : node.doc?.data?.icon ? (
+          <Icon
+            name={node.doc.data.icon}
+            size={16}
+            className={`shrink-0 ${active ? "text-primary" : ""}`}
+          />
+        ) : (
+          <Icon
+            name="FileText"
+            size={16}
+            className={`shrink-0 ${active ? "text-primary" : ""}`}
+          />
+        )}
 
         {/* Content */}
-        {node.type === "folder"
-          ? (
-            <button
-              type="button"
-              className="flex items-center justify-between w-full text-left"
-              onClick={() => onToggle(node.id)}
-            >
-              <span className="flex-1">
-                {translations[`sidebar.section.${node.name}`] || node.name}
-              </span>
-              {node.hasChildren && (
-                <Icon
-                  name={isExpanded ? "ChevronDown" : "ChevronRight"}
-                  size={16}
-                  className={`shrink-0 ${active ? "text-primary" : ""}`}
-                />
-              )}
-            </button>
-          )
-          : (
-            <a
-              href={`/${locale}/${node.path.join("/")}`}
-              className="flex-1"
-            >
-              {node.doc?.data?.title || node.name}
-            </a>
-          )}
+        {node.type === "folder" ? (
+          <button
+            type="button"
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => onToggle(node.id)}
+          >
+            <span className="flex-1">
+              {translations[`sidebar.section.${node.name}`] || node.name}
+            </span>
+            {node.hasChildren && (
+              <Icon
+                name={isExpanded ? "ChevronDown" : "ChevronRight"}
+                size={16}
+                className={`shrink-0 ${active ? "text-primary" : ""}`}
+              />
+            )}
+          </button>
+        ) : (
+          <a href={`/${locale}/${node.path.join("/")}`} className="flex-1">
+            {node.doc?.data?.title || node.name}
+          </a>
+        )}
       </div>
     </li>
   );
@@ -193,9 +188,13 @@ interface TreeListProps {
   translations: Record<string, string>;
 }
 
-function TreeList(
-  { tree, treeState, onToggle, locale, translations }: TreeListProps,
-) {
+function TreeList({
+  tree,
+  treeState,
+  onToggle,
+  locale,
+  translations,
+}: TreeListProps) {
   const isNodeVisible = (node: FlatNode): boolean => {
     if (node.depth === 0) return true;
 
@@ -233,8 +232,7 @@ function TreeList(
         }
 
         // Add section title for root folders
-        const needsSectionTitle = node.type === "folder" &&
-          node.depth === 0; // All root folders get section titles
+        const needsSectionTitle = node.type === "folder" && node.depth === 0; // All root folders get section titles
 
         return (
           <React.Fragment key={node.id}>
@@ -343,11 +341,7 @@ export default function Sidebar({ tree, locale, translations }: SidebarProps) {
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
-            <Icon
-              name="Github"
-              size={16}
-              className="text-muted-foreground"
-            />
+            <Icon name="Github" size={16} className="text-muted-foreground" />
             <span className="flex-1">GitHub</span>
             <GitHubStars />
           </a>

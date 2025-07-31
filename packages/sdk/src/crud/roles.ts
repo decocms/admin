@@ -45,7 +45,7 @@ export interface GetTeamRoleParams {
 export async function createTeamRole(
   params: CreateTeamRoleParams,
 ): Promise<TeamRole> {
-  return await MCPClient.TEAM_ROLE_CREATE(params) as TeamRole;
+  return (await MCPClient.TEAM_ROLE_CREATE(params)) as TeamRole;
 }
 
 /**
@@ -54,7 +54,7 @@ export async function createTeamRole(
 export async function updateTeamRole(
   params: UpdateTeamRoleParams,
 ): Promise<TeamRole> {
-  return await MCPClient.TEAM_ROLE_UPDATE(params) as TeamRole;
+  return (await MCPClient.TEAM_ROLE_UPDATE(params)) as TeamRole;
 }
 
 /**
@@ -72,5 +72,5 @@ export async function deleteTeamRole(
 export async function getTeamRole(
   params: GetTeamRoleParams,
 ): Promise<TeamRole> {
-  return await MCPClient.TEAM_ROLE_GET(params) as TeamRole;
+  return (await MCPClient.TEAM_ROLE_GET(params)) as TeamRole;
 }

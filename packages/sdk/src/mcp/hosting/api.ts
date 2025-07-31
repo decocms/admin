@@ -92,10 +92,8 @@ const Mappers = {
     files: z.infer<typeof FileSchema>[];
   } => {
     const files = Object.entries(
-      data.files ?? {} as Record<string, string>,
-    ).map((
-      [path, content],
-    ) => ({
+      data.files ?? ({} as Record<string, string>),
+    ).map(([path, content]) => ({
       path,
       content,
     }));
@@ -112,8 +110,7 @@ const Mappers = {
 const createTool = createToolGroup("Hosting", {
   name: "Hosting & Deployment",
   description: "Deploy serverless apps via Cloudflare Workers.",
-  icon:
-    "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
+  icon: "https://assets.decocache.com/mcp/59297cd7-2ecd-452f-8b5d-0ff0d0985232/Hosting--Deployment.png",
 });
 
 // 1. List apps for a given workspace
@@ -153,10 +150,15 @@ interface UpdateDatabaseArgs {
   files?: Record<string, string>;
 }
 
-async function updateDatabase(
-  { c, workspace, scriptSlug, deploymentId, result, wranglerConfig, force }:
-    UpdateDatabaseArgs,
-) {
+async function updateDatabase({
+  c,
+  workspace,
+  scriptSlug,
+  deploymentId,
+  result,
+  wranglerConfig,
+  force,
+}: UpdateDatabaseArgs) {
   // First, ensure the app exists (without deployment-specific data)
   let { data: app, error: updateError } = await c.db
     .from(DECO_CHAT_HOSTING_APPS_TABLE)
@@ -168,7 +170,8 @@ async function updateDatabase(
     .select("*")
     .single();
 
-  if (updateError && updateError.code !== "PGRST116") { // PGRST116: Results contain 0 rows
+  if (updateError && updateError.code !== "PGRST116") {
+    // PGRST116: Results contain 0 rows
     throw updateError;
   }
 
@@ -225,19 +228,15 @@ async function updateDatabase(
 
   // 2. Build sets for diffing
   const currentRouteMap = new Map(
-    (currentRoutes ?? []).map((
-      r: { route_pattern: string; custom_domain?: boolean },
-    ) => [routeKey(r), r]),
+    (currentRoutes ?? []).map(
+      (r: { route_pattern: string; custom_domain?: boolean }) => [
+        routeKey(r),
+        r,
+      ],
+    ),
   );
 
-  const newRouteMap = new Map(
-    mappedRoutes.map((
-      r,
-    ) => [
-      routeKey(r),
-      r,
-    ]),
-  );
+  const newRouteMap = new Map(mappedRoutes.map((r) => [routeKey(r), r]));
 
   // 3. Find routes to delete (in current, not in new)
   const toDelete = (currentRoutes ?? []).filter(
@@ -247,10 +246,7 @@ async function updateDatabase(
 
   // 4. Find routes to insert (in new, not in current)
   const toInsert = mappedRoutes.filter(
-    (r) =>
-      !currentRouteMap.has(
-        routeKey(r),
-      ),
+    (r) => !currentRouteMap.has(routeKey(r)),
   );
 
   // 5. Perform deletions
@@ -273,38 +269,42 @@ async function updateDatabase(
 
     // For custom domains, use the promote functionality (update existing routes only)
 
-    await Promise.all(customDomainRoutes.map(async (route) => {
-      try {
-        await promoteDeployment(c, {
-          deploymentId: deployment.id,
-          routePattern: route.route_pattern,
-          force,
-        });
-      } catch (error) {
-        // If route doesn't exist, create it (only during initial deployment)
-        if (error instanceof NotFoundError) {
-          const { error: insertError } = await c.db
-            .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
-            .insert({
-              deployment_id: deployment.id,
-              route_pattern: route.route_pattern,
-              custom_domain: true,
-            });
-          if (insertError) throw insertError;
-        } else {
-          throw error;
+    await Promise.all(
+      customDomainRoutes.map(async (route) => {
+        try {
+          await promoteDeployment(c, {
+            deploymentId: deployment.id,
+            routePattern: route.route_pattern,
+            force,
+          });
+        } catch (error) {
+          // If route doesn't exist, create it (only during initial deployment)
+          if (error instanceof NotFoundError) {
+            const { error: insertError } = await c.db
+              .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
+              .insert({
+                deployment_id: deployment.id,
+                route_pattern: route.route_pattern,
+                custom_domain: true,
+              });
+            if (insertError) throw insertError;
+          } else {
+            throw error;
+          }
         }
-      }
-    }));
+      }),
+    );
     // For regular routes (non-custom domains), just insert them in batch
     if (regularRoutes.length > 0) {
       const { error: insertError } = await c.db
         .from(DECO_CHAT_HOSTING_ROUTES_TABLE)
-        .insert(regularRoutes.map((r) => ({
-          deployment_id: deployment.id,
-          route_pattern: r.route_pattern,
-          custom_domain: false,
-        })));
+        .insert(
+          regularRoutes.map((r) => ({
+            deployment_id: deployment.id,
+            route_pattern: r.route_pattern,
+            custom_domain: false,
+          })),
+        );
       if (insertError) throw insertError;
     }
   }
@@ -319,9 +319,11 @@ export const promoteApp = createTool({
     "Promote a specific deployment to an existing route pattern and update routing cache",
   inputSchema: z.object({
     deploymentId: z.string().describe("The deployment ID to promote"),
-    routePattern: z.string().describe(
-      "Route pattern to promote the deployment to (can be custom domain or .deco.page)",
-    ),
+    routePattern: z
+      .string()
+      .describe(
+        "Route pattern to promote the deployment to (can be custom domain or .deco.page)",
+      ),
   }),
   outputSchema: z.object({
     success: z.boolean().describe("Whether the promotion was successful"),
@@ -340,38 +342,38 @@ export const promoteApp = createTool({
 });
 
 const MIME_TYPES: Record<string, string> = {
-  "js": "application/javascript+module",
-  "mjs": "application/javascript+module",
-  "ts": "application/javascript+module",
-  "json": "application/json",
-  "wasm": "application/wasm",
-  "css": "text/css",
-  "html": "text/html",
-  "txt": "text/plain",
-  "toml": "text/plain",
-  "svg": "image/svg+xml",
-  "png": "image/png",
-  "jpg": "image/jpeg",
-  "jpeg": "image/jpeg",
-  "gif": "image/gif",
-  "ico": "image/x-icon",
-  "webp": "image/webp",
-  "avif": "image/avif",
-  "heic": "image/heic",
-  "heif": "image/heif",
+  js: "application/javascript+module",
+  mjs: "application/javascript+module",
+  ts: "application/javascript+module",
+  json: "application/json",
+  wasm: "application/wasm",
+  css: "text/css",
+  html: "text/html",
+  txt: "text/plain",
+  toml: "text/plain",
+  svg: "image/svg+xml",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  ico: "image/x-icon",
+  webp: "image/webp",
+  avif: "image/avif",
+  heic: "image/heic",
+  heif: "image/heif",
   "heif-sequence": "image/heif-sequence",
   "heic-sequence": "image/heic-sequence",
   "avif-sequence": "image/avif-sequence",
-  "mp4": "video/mp4",
-  "webm": "video/webm",
-  "ogg": "video/ogg",
-  "mp3": "audio/mpeg",
-  "wav": "audio/wav",
-  "woff": "font/woff",
-  "woff2": "font/woff2",
-  "ttf": "font/ttf",
-  "eot": "font/eot",
-  "otf": "font/otf",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  ogg: "video/ogg",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  woff: "font/woff",
+  woff2: "font/woff2",
+  ttf: "font/ttf",
+  eot: "font/eot",
+  otf: "font/otf",
   "woff-sequence": "font/woff-sequence",
   "woff2-sequence": "font/woff2-sequence",
 };
@@ -387,10 +389,12 @@ const createNamespaceOnce = async (c: AppContext) => {
   created = true;
   const cf = c.cf;
   const env = getEnv(c);
-  await cf.workersForPlatforms.dispatch.namespaces.create({
-    name: env.CF_DISPATCH_NAMESPACE,
-    account_id: env.CF_ACCOUNT_ID,
-  }).catch(() => {});
+  await cf.workersForPlatforms.dispatch.namespaces
+    .create({
+      name: env.CF_DISPATCH_NAMESPACE,
+      account_id: env.CF_ACCOUNT_ID,
+    })
+    .catch(() => {});
 };
 
 // main.ts or main.mjs or main.js or main.cjs
@@ -433,8 +437,7 @@ const DECO_WORKER_RUNTIME_VERSION = "0.4.0";
 // Update the schema in deployFiles
 export const deployFiles = createTool({
   name: "HOSTING_APP_DEPLOY",
-  description:
-    `Deploy multiple TypeScript files that use Wrangler for bundling and deployment to Cloudflare Workers. You must provide a package.json file with the necessary dependencies and a wrangler.toml file matching the Workers for Platforms format. Use 'main_module' instead of 'main', and define bindings using the [[bindings]] array, where each binding is a table specifying its type and properties. To add custom Deco bindings, set type = "MCP" in a binding entry (these will be filtered and handled automatically).
+  description: `Deploy multiple TypeScript files that use Wrangler for bundling and deployment to Cloudflare Workers. You must provide a package.json file with the necessary dependencies and a wrangler.toml file matching the Workers for Platforms format. Use 'main_module' instead of 'main', and define bindings using the [[bindings]] array, where each binding is a table specifying its type and properties. To add custom Deco bindings, set type = "MCP" in a binding entry (these will be filtered and handled automatically).
 
 Common patterns:
 1. Use a package.json file to manage dependencies:
@@ -633,24 +636,43 @@ Important Notes:
 - Dependencies are managed through npm packages in package.json, not npm: or jsr: specifiers
 - Wrangler will handle the bundling process using the dependencies defined in package.json`,
   inputSchema: z.object({
-    force: z.boolean().describe(
-      "If true, force the deployment even if there are breaking changes",
-    ).optional(),
-    appSlug: z.string().optional().describe(
-      "The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).",
-    ),
-    files: z.array(FileSchema).describe(
-      "An array of files with their paths and contents. Must include main.ts as entrypoint and package.json for dependencies",
-    ),
-    envVars: z.record(z.string(), z.string()).optional().describe(
-      "An optional object of environment variables to be set on the worker",
-    ),
-    bundle: z.boolean().optional().default(true).describe(
-      "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
-    ),
-    unlisted: z.boolean().optional().default(true).describe(
-      "Whether the app should be unlisted in the registry. Default: true (unlisted)",
-    ),
+    force: z
+      .boolean()
+      .describe(
+        "If true, force the deployment even if there are breaking changes",
+      )
+      .optional(),
+    appSlug: z
+      .string()
+      .optional()
+      .describe(
+        "The slug identifier for the app, if not provided, you should use the wrangler.toml file to determine the slug (using the name field).",
+      ),
+    files: z
+      .array(FileSchema)
+      .describe(
+        "An array of files with their paths and contents. Must include main.ts as entrypoint and package.json for dependencies",
+      ),
+    envVars: z
+      .record(z.string(), z.string())
+      .optional()
+      .describe(
+        "An optional object of environment variables to be set on the worker",
+      ),
+    bundle: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        "If false, skip the bundler step and upload the files as-is. Default: true (bundle files)",
+      ),
+    unlisted: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        "Whether the app should be unlisted in the registry. Default: true (unlisted)",
+      ),
   }),
   outputSchema: z.object({
     entrypoint: z.string().describe("The entrypoint of the app"),
@@ -673,16 +695,19 @@ Important Notes:
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     // Convert array to record for bundler or direct upload
-    const filesRecord = files.reduce((acc, file) => {
-      acc[file.path] = { content: file.content, asset: file.asset ?? false };
-      return acc;
-    }, {} as Record<string, { content: string; asset: boolean }>);
+    const filesRecord = files.reduce(
+      (acc, file) => {
+        acc[file.path] = { content: file.content, asset: file.asset ?? false };
+        return acc;
+      },
+      {} as Record<string, { content: string; asset: boolean }>,
+    );
 
     const wranglerFile = CONFIGS.find((file) => file in filesRecord);
     const wranglerConfig: WranglerConfig = wranglerFile
-      // deno-lint-ignore no-explicit-any
-      ? parseToml(filesRecord[wranglerFile]?.content) as any as WranglerConfig
-      : { name: _appSlug } as WranglerConfig;
+      ? // deno-lint-ignore no-explicit-any
+        (parseToml(filesRecord[wranglerFile]?.content) as any as WranglerConfig)
+      : ({ name: _appSlug } as WranglerConfig);
 
     addDefaultCustomDomain(wranglerConfig);
     // check if the entrypoint is in the files
@@ -690,21 +715,19 @@ Important Notes:
       ...ENTRYPOINTS,
       wranglerConfig.main ?? wranglerConfig.main_module ?? "main.ts",
     ];
-    const entrypoint = entrypoints.find((entrypoint) =>
-      entrypoint in filesRecord
+    const entrypoint = entrypoints.find(
+      (entrypoint) => entrypoint in filesRecord,
     );
     if (!entrypoint) {
       throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${
-          [...new Set(entrypoints)].join(", ")
-        }`,
+        `Entrypoint not found in files. Entrypoint must be one of: ${[
+          ...new Set(entrypoints),
+        ].join(", ")}`,
       );
     }
 
     if (!wranglerConfig?.name) {
-      throw new UserInputError(
-        `App slug not found in wrangler.toml`,
-      );
+      throw new UserInputError(`App slug not found in wrangler.toml`);
     }
 
     const appSlug = wranglerConfig.name;
@@ -725,16 +748,11 @@ Important Notes:
 
     if (bundle) {
       // Bundle the files
-      const bundledScript = await bundler(
-        codeFiles,
-        entrypoint,
-      );
+      const bundledScript = await bundler(codeFiles, entrypoint);
       bundledCode = {
-        [SCRIPT_FILE_NAME]: new File(
-          [bundledScript],
-          SCRIPT_FILE_NAME,
-          { type: "application/javascript+module" },
-        ),
+        [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
+          type: "application/javascript+module",
+        }),
       };
     } else {
       bundledCode = Object.fromEntries(
@@ -745,13 +763,14 @@ Important Notes:
       );
     }
 
-    const keyPair = c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-      ? {
-        public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-        private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-      }
-      : undefined;
+    const keyPair =
+      c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+        ? {
+            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+          }
+        : undefined;
 
     const issuer = await JwtIssuer.forKeyPair(keyPair);
     const appName = `@${
@@ -776,9 +795,10 @@ Important Notes:
     };
 
     await Promise.all(
-      (wranglerConfig.routes ?? []).map((route) =>
-        route.custom_domain &&
-        assertsDomainUniqueness(c, route.pattern, scriptSlug)
+      (wranglerConfig.routes ?? []).map(
+        (route) =>
+          route.custom_domain &&
+          assertsDomainUniqueness(c, route.pattern, scriptSlug),
       ),
     );
 
@@ -792,33 +812,31 @@ Important Notes:
       _envVars: { ...envVars, ...appEnvVars },
     });
 
-    const data = await updateDatabase(
-      {
-        c,
-        force,
-        workspace,
-        scriptSlug,
-        result,
-        deploymentId,
-        wranglerConfig,
-        files: codeFiles,
-      },
-    );
+    const data = await updateDatabase({
+      c,
+      force,
+      workspace,
+      scriptSlug,
+      result,
+      deploymentId,
+      wranglerConfig,
+      files: codeFiles,
+    });
 
     const client = MCPClient.forContext(c);
-    await client.REGISTRY_PUBLISH_APP({
-      name: scriptSlug,
-      scopeName: wranglerConfig?.scope ?? c.workspace.slug,
-      description:
-        `App ${scriptSlug} by deco workers for workspace ${workspace}`,
-      icon:
-        "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
-      ...wranglerConfig.deco?.integration,
-      unlisted: unlisted ?? true,
-      connection: Entrypoint.mcp(data.entrypoint),
-    }).catch((err) => {
-      console.error(err);
-    });
+    await client
+      .REGISTRY_PUBLISH_APP({
+        name: scriptSlug,
+        scopeName: wranglerConfig?.scope ?? c.workspace.slug,
+        description: `App ${scriptSlug} by deco workers for workspace ${workspace}`,
+        icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+        ...wranglerConfig.deco?.integration,
+        unlisted: unlisted ?? true,
+        connection: Entrypoint.mcp(data.entrypoint),
+      })
+      .catch((err) => {
+        console.error(err);
+      });
     return {
       entrypoint: data.entrypoint,
       hosts: [data.entrypoint, Entrypoint.build(data.slug!, deploymentId)],
@@ -904,15 +922,18 @@ export const listAppDeployments = createTool({
   description: "List all deployments for a specific app",
   inputSchema: AppInputSchema,
   outputSchema: z.object({
-    deployments: z.array(z.object({
-      id: z.string().describe("The deployment ID"),
-      cloudflare_deployment_id: z.string().nullable().describe(
-        "The Cloudflare worker ID",
-      ),
-      entrypoint: z.string().describe("The deployment entrypoint URL"),
-      created_at: z.string().describe("When the deployment was created"),
-      updated_at: z.string().describe("When the deployment was last updated"),
-    })),
+    deployments: z.array(
+      z.object({
+        id: z.string().describe("The deployment ID"),
+        cloudflare_deployment_id: z
+          .string()
+          .nullable()
+          .describe("The Cloudflare worker ID"),
+        entrypoint: z.string().describe("The deployment entrypoint URL"),
+        created_at: z.string().describe("When the deployment was created"),
+        updated_at: z.string().describe("When the deployment was last updated"),
+      }),
+    ),
     app: z.object({
       id: z.string(),
       slug: z.string(),
@@ -1004,36 +1025,49 @@ export const listWorkflowRuns = createTool({
   description:
     "List workflow runs. If workflowName is provided, shows runs for that specific workflow. If not provided, shows recent runs from any workflow.",
   inputSchema: InputPaginationListSchema.extend({
-    workflowName: z.string().optional().describe(
-      "Optional: The name of the workflow to list runs for. If not provided, shows recent runs from any workflow.",
-    ),
+    workflowName: z
+      .string()
+      .optional()
+      .describe(
+        "Optional: The name of the workflow to list runs for. If not provided, shows recent runs from any workflow.",
+      ),
     fromDate: z.string().optional(),
     toDate: z.string().optional(),
   }),
   outputSchema: z.object({
-    runs: z.array(z.object({
-      workflowName: z.string(),
-      runId: z.string(),
-      createdAt: z.number(),
-      updatedAt: z.number().nullable().optional(),
-      status: z.string(),
-    })).describe("The workflow runs"),
-    stats: z.object({
-      totalRuns: z.number(),
-      successCount: z.number(),
-      errorCount: z.number(),
-      runningCount: z.number(),
-      pendingCount: z.number(),
-      successRate: z.number(),
-      firstRun: z.object({
-        date: z.number(),
-        status: z.string(),
-      }).nullable(),
-      lastRun: z.object({
-        date: z.number(),
-        status: z.string(),
-      }).nullable(),
-    }).describe("Workflow statistics"),
+    runs: z
+      .array(
+        z.object({
+          workflowName: z.string(),
+          runId: z.string(),
+          createdAt: z.number(),
+          updatedAt: z.number().nullable().optional(),
+          status: z.string(),
+        }),
+      )
+      .describe("The workflow runs"),
+    stats: z
+      .object({
+        totalRuns: z.number(),
+        successCount: z.number(),
+        errorCount: z.number(),
+        runningCount: z.number(),
+        pendingCount: z.number(),
+        successRate: z.number(),
+        firstRun: z
+          .object({
+            date: z.number(),
+            status: z.string(),
+          })
+          .nullable(),
+        lastRun: z
+          .object({
+            date: z.number(),
+            status: z.string(),
+          })
+          .nullable(),
+      })
+      .describe("Workflow statistics"),
     pagination: OutputPaginationListSchema,
   }),
   handler: async (
@@ -1062,9 +1096,8 @@ export const listWorkflowRuns = createTool({
       params.push(toDate);
     }
 
-    const whereClause = conditions.length > 0
-      ? `WHERE ${conditions.join(" AND ")}`
-      : "";
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
     const offset = (page - 1) * per_page;
 
     const sql = `
@@ -1087,32 +1120,33 @@ export const listWorkflowRuns = createTool({
         params,
       });
 
-      const transformed = result[0].results?.map((row: unknown) => {
-        const rowData = row as {
-          workflow_name: string;
-          run_id: string;
-          createdAt: string;
-          updatedAt: string | null;
-          snapshot: string;
-        };
+      const transformed =
+        result[0].results?.map((row: unknown) => {
+          const rowData = row as {
+            workflow_name: string;
+            run_id: string;
+            createdAt: string;
+            updatedAt: string | null;
+            snapshot: string;
+          };
 
-        let snapshot: unknown;
-        try {
-          snapshot = JSON.parse(rowData.snapshot);
-        } catch {
-          snapshot = null;
-        }
+          let snapshot: unknown;
+          try {
+            snapshot = JSON.parse(rowData.snapshot);
+          } catch {
+            snapshot = null;
+          }
 
-        return {
-          workflowName: rowData.workflow_name,
-          runId: rowData.run_id,
-          createdAt: new Date(rowData.createdAt).getTime(),
-          updatedAt: rowData.updatedAt
-            ? new Date(rowData.updatedAt).getTime()
-            : null,
-          status: extractStatusFromSnapshot(snapshot),
-        };
-      }) ?? [];
+          return {
+            workflowName: rowData.workflow_name,
+            runId: rowData.run_id,
+            createdAt: new Date(rowData.createdAt).getTime(),
+            updatedAt: rowData.updatedAt
+              ? new Date(rowData.updatedAt).getTime()
+              : null,
+            status: extractStatusFromSnapshot(snapshot),
+          };
+        }) ?? [];
 
       // TODO: Stats calculation commented out due to SQLite memory issues
       // // Calculate stats using SQL aggregation to avoid memory issues
@@ -1230,7 +1264,9 @@ export const listWorkflowRuns = createTool({
       // Handle the case where the mastra_workflow_snapshot table doesn't exist
       // This can happen in new workspaces where workflows haven't been set up yet
       if (
-        error && typeof error === "object" && "message" in error &&
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
         typeof error.message === "string" &&
         error.message.includes("no such table: mastra_workflow_snapshot")
       ) {
@@ -1268,9 +1304,9 @@ export const listWorkflowNames = createTool({
   description: "List all unique workflow names in the workspace",
   inputSchema: z.object({}),
   outputSchema: z.object({
-    workflowNames: z.array(z.string()).describe(
-      "List of unique workflow names",
-    ),
+    workflowNames: z
+      .array(z.string())
+      .describe("List of unique workflow names"),
   }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
@@ -1287,10 +1323,11 @@ export const listWorkflowNames = createTool({
         sql,
       });
 
-      const workflowNames = result[0].results?.map((row: unknown) => {
-        const rowData = row as { workflow_name: string };
-        return rowData.workflow_name;
-      }) ?? [];
+      const workflowNames =
+        result[0].results?.map((row: unknown) => {
+          const rowData = row as { workflow_name: string };
+          return rowData.workflow_name;
+        }) ?? [];
 
       return {
         workflowNames,
@@ -1299,7 +1336,9 @@ export const listWorkflowNames = createTool({
       // Handle the case where the mastra_workflow_snapshot table doesn't exist
       // This can happen in new workspaces where workflows haven't been set up yet
       if (
-        error && typeof error === "object" && "message" in error &&
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
         typeof error.message === "string" &&
         error.message.includes("no such table: mastra_workflow_snapshot")
       ) {
@@ -1328,9 +1367,11 @@ export const getWorkflowStatus = createTool({
   name: "HOSTING_APP_WORKFLOWS_STATUS",
   description: "Get the status of a workflow instance",
   inputSchema: z.object({
-    instanceId: z.string().describe(
-      "The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.",
-    ),
+    instanceId: z
+      .string()
+      .describe(
+        "The instance ID of the workflow. To get this, use the HOSTING_APP_WORKFLOWS_INSTANCES_LIST or HOSTING_APP_WORKFLOWS_START tool.",
+      ),
     workflowName: z.string(),
   }),
   outputSchema: z.object({

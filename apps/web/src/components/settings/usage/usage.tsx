@@ -27,10 +27,11 @@ const useAgentsMergedWithWellKnown = () => {
   const agents = useAgents();
   return {
     ...agents,
-    data: agents.data?.concat([
-      WELL_KNOWN_AGENTS.teamAgent,
-      WELL_KNOWN_AGENTS.setupAgent,
-    ]) || [],
+    data:
+      agents.data?.concat([
+        WELL_KNOWN_AGENTS.teamAgent,
+        WELL_KNOWN_AGENTS.setupAgent,
+      ]) || [],
   };
 };
 
@@ -154,10 +155,7 @@ export function Usage() {
 
         {usageType === "user" && (
           <Suspense fallback={<Skeleton className="w-full h-[400px]" />}>
-            <UsersTable
-              threadUsage={threadUsage}
-              members={teamMembers}
-            />
+            <UsersTable threadUsage={threadUsage} members={teamMembers} />
           </Suspense>
         )}
       </div>

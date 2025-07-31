@@ -40,10 +40,9 @@ import { useUser } from "../../hooks/use-user.ts";
 
 // Form validation schema - simplified for email tags approach
 const inviteMemberSchema = z.object({
-  emails: z.array(z.string().email("Invalid email address")).min(
-    1,
-    "At least one email is required",
-  ),
+  emails: z
+    .array(z.string().email("Invalid email address"))
+    .min(1, "At least one email is required"),
   roleId: z.array(z.string()).min(1, { message: "Please select a role" }),
 });
 
@@ -72,8 +71,8 @@ function CustomBadge({
     variant === "destructive"
       ? "bg-background border-destructive text-destructive [a&]:hover:bg-destructive/5"
       : variant === "secondary"
-      ? "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
-      : "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        ? "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+        : "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
     className,
   );
 
@@ -93,10 +92,13 @@ interface EmailTagsInputProps {
   currentUserEmail?: string;
 }
 
-function EmailTagsInput(
-  { emails, onEmailsChange, disabled, placeholder, currentUserEmail }:
-    EmailTagsInputProps,
-) {
+function EmailTagsInput({
+  emails,
+  onEmailsChange,
+  disabled,
+  placeholder,
+  currentUserEmail,
+}: EmailTagsInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [emailStates, setEmailStates] = useState<
     Map<string, EmailValidationState>
@@ -117,109 +119,121 @@ function EmailTagsInput(
     return "valid";
   };
 
-  const addEmail = useCallback((email: string) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail) return false;
-
-    // Check if email already exists
-    if (emails.includes(trimmedEmail)) {
-      return false;
-    }
-
-    // Validate email
-    const state = validateEmail(trimmedEmail);
-
-    // Add email regardless of validation state (so user can see error)
-    const newEmails = [...emails, trimmedEmail];
-    onEmailsChange(newEmails);
-
-    // Update validation state
-    setEmailStates((prev) => {
-      const next = new Map(prev);
-      next.set(trimmedEmail, state);
-      return next;
-    });
-
-    return true;
-  }, [emails, onEmailsChange, currentUserEmail]);
-
-  const removeEmail = useCallback((emailToRemove: string) => {
-    const newEmails = emails.filter((email) => email !== emailToRemove);
-    onEmailsChange(newEmails);
-
-    // Remove from validation states
-    setEmailStates((prev) => {
-      const next = new Map(prev);
-      next.delete(emailToRemove);
-      return next;
-    });
-  }, [emails, onEmailsChange]);
-
-  const processEmailList = useCallback((text: string) => {
-    // Split by various delimiters, clean up and filter empty strings
-    const potentialEmails = text
-      .split(/[,;\n\r\t|]/)
-      .map((email) => email.trim())
-      .filter((email) => email.length > 0);
-
-    let addedCount = 0;
-    let totalEmails = 0;
-    const newEmailsToAdd: string[] = [];
-    const newEmailStates = new Map<string, EmailValidationState>();
-
-    potentialEmails.forEach((email) => {
-      totalEmails++;
+  const addEmail = useCallback(
+    (email: string) => {
       const trimmedEmail = email.trim().toLowerCase();
+      if (!trimmedEmail) return false;
 
-      // Skip if email already exists in current list or in new emails to add
-      if (
-        emails.includes(trimmedEmail) || newEmailsToAdd.includes(trimmedEmail)
-      ) {
-        return;
+      // Check if email already exists
+      if (emails.includes(trimmedEmail)) {
+        return false;
       }
 
       // Validate email
       const state = validateEmail(trimmedEmail);
 
-      // Add to our list regardless of validation state (so user can see errors)
-      newEmailsToAdd.push(trimmedEmail);
-      newEmailStates.set(trimmedEmail, state);
-      addedCount++;
-    });
+      // Add email regardless of validation state (so user can see error)
+      const newEmails = [...emails, trimmedEmail];
+      onEmailsChange(newEmails);
 
-    // Update all emails at once to avoid race conditions
-    if (newEmailsToAdd.length > 0) {
-      const allEmails = [...emails, ...newEmailsToAdd];
-      onEmailsChange(allEmails);
-
-      // Update validation states
+      // Update validation state
       setEmailStates((prev) => {
         const next = new Map(prev);
-        newEmailStates.forEach((state, email) => {
-          next.set(email, state);
-        });
+        next.set(trimmedEmail, state);
         return next;
       });
-    }
 
-    // Only clear input if we actually processed emails from it
-    if (totalEmails > 0) {
-      setInputValue("");
+      return true;
+    },
+    [emails, onEmailsChange, currentUserEmail],
+  );
 
-      if (addedCount > 0) {
-        toast.success(`Added ${addedCount} email${addedCount > 1 ? "s" : ""}`);
-      } else if (totalEmails > addedCount) {
-        // Some emails were not added (duplicates or invalid)
-        toast.info(
-          `${totalEmails - addedCount} email${
-            totalEmails - addedCount > 1 ? "s were" : " was"
-          } already added or invalid`,
-        );
+  const removeEmail = useCallback(
+    (emailToRemove: string) => {
+      const newEmails = emails.filter((email) => email !== emailToRemove);
+      onEmailsChange(newEmails);
+
+      // Remove from validation states
+      setEmailStates((prev) => {
+        const next = new Map(prev);
+        next.delete(emailToRemove);
+        return next;
+      });
+    },
+    [emails, onEmailsChange],
+  );
+
+  const processEmailList = useCallback(
+    (text: string) => {
+      // Split by various delimiters, clean up and filter empty strings
+      const potentialEmails = text
+        .split(/[,;\n\r\t|]/)
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0);
+
+      let addedCount = 0;
+      let totalEmails = 0;
+      const newEmailsToAdd: string[] = [];
+      const newEmailStates = new Map<string, EmailValidationState>();
+
+      potentialEmails.forEach((email) => {
+        totalEmails++;
+        const trimmedEmail = email.trim().toLowerCase();
+
+        // Skip if email already exists in current list or in new emails to add
+        if (
+          emails.includes(trimmedEmail) ||
+          newEmailsToAdd.includes(trimmedEmail)
+        ) {
+          return;
+        }
+
+        // Validate email
+        const state = validateEmail(trimmedEmail);
+
+        // Add to our list regardless of validation state (so user can see errors)
+        newEmailsToAdd.push(trimmedEmail);
+        newEmailStates.set(trimmedEmail, state);
+        addedCount++;
+      });
+
+      // Update all emails at once to avoid race conditions
+      if (newEmailsToAdd.length > 0) {
+        const allEmails = [...emails, ...newEmailsToAdd];
+        onEmailsChange(allEmails);
+
+        // Update validation states
+        setEmailStates((prev) => {
+          const next = new Map(prev);
+          newEmailStates.forEach((state, email) => {
+            next.set(email, state);
+          });
+          return next;
+        });
       }
-    }
 
-    return addedCount;
-  }, [emails, onEmailsChange, validateEmail]);
+      // Only clear input if we actually processed emails from it
+      if (totalEmails > 0) {
+        setInputValue("");
+
+        if (addedCount > 0) {
+          toast.success(
+            `Added ${addedCount} email${addedCount > 1 ? "s" : ""}`,
+          );
+        } else if (totalEmails > addedCount) {
+          // Some emails were not added (duplicates or invalid)
+          toast.info(
+            `${totalEmails - addedCount} email${
+              totalEmails - addedCount > 1 ? "s were" : " was"
+            } already added or invalid`,
+          );
+        }
+      }
+
+      return addedCount;
+    },
+    [emails, onEmailsChange, validateEmail],
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -287,11 +301,11 @@ function EmailTagsInput(
   }, [inputValue, adjustTextareaHeight]);
 
   // Get error messages for display
-  const invalidEmails = emails.filter((email) =>
-    emailStates.get(email) === "invalid"
+  const invalidEmails = emails.filter(
+    (email) => emailStates.get(email) === "invalid",
   );
-  const selfEmails = emails.filter((email) =>
-    emailStates.get(email) === "self"
+  const selfEmails = emails.filter(
+    (email) => emailStates.get(email) === "self",
   );
 
   const getBadgeVariant = (email: string) => {
@@ -350,9 +364,9 @@ function EmailTagsInput(
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className="flex-1 min-w-[120px] bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground overflow-hidden"
-            placeholder={emails.length === 0
-              ? placeholder
-              : "Add more emails..."}
+            placeholder={
+              emails.length === 0 ? placeholder : "Add more emails..."
+            }
             disabled={disabled}
             rows={4}
             style={{
@@ -402,10 +416,7 @@ function InviteTeamMembersDialogFeatureWall() {
       </div>
       <DialogFooter>
         <DialogClose asChild>
-          <Button
-            variant="outline"
-            type="button"
-          >
+          <Button variant="outline" type="button">
             Close
           </Button>
         </DialogClose>
@@ -460,8 +471,8 @@ export function InviteTeamMembersDialog({
 
   // Find collaborator role as default (instead of owner)
   const collaboratorRoleId = useMemo(() => {
-    const collaboratorRole = roles.find((role) =>
-      role.name.toLowerCase() === "collaborator"
+    const collaboratorRole = roles.find(
+      (role) => role.name.toLowerCase() === "collaborator",
     );
     return collaboratorRole?.id.toString() || "";
   }, [roles]);
@@ -497,16 +508,17 @@ export function InviteTeamMembersDialog({
       const trimmedEmail = email.trim().toLowerCase();
 
       const isValidFormat = emailSchema.safeParse(trimmedEmail).success;
-      const isNotSelf = !user?.email ||
-        trimmedEmail !== user.email.toLowerCase();
+      const isNotSelf =
+        !user?.email || trimmedEmail !== user.email.toLowerCase();
       return isValidFormat && isNotSelf;
     });
   }, [emails, user?.email]);
 
   // Invite team members
-  const handleInviteMembers = async (
-    data: { emails: string[]; roleId: string[] },
-  ) => {
+  const handleInviteMembers = async (data: {
+    emails: string[];
+    roleId: string[];
+  }) => {
     if (!teamId) return;
 
     if (validEmails.length === 0) {
@@ -518,12 +530,10 @@ export function InviteTeamMembersDialog({
       // Transform data for API call - only use valid emails
       const invitees = validEmails.map((email) => ({
         email,
-        roles: data.roleId.map((id) => (
-          {
-            id: Number(id),
-            name: roles.find((r) => r.id === Number(id))?.name || "",
-          }
-        )),
+        roles: data.roleId.map((id) => ({
+          id: Number(id),
+          name: roles.find((r) => r.id === Number(id))?.name || "",
+        })),
       }));
 
       // Call API to invite members
@@ -554,20 +564,20 @@ export function InviteTeamMembersDialog({
 
   // Create a cloned trigger with an onClick handler
   const wrappedTrigger = trigger
-    ? cloneElement(
-      trigger as ReactElement<{ onClick?: MouseEventHandler }>,
-      {
+    ? cloneElement(trigger as ReactElement<{ onClick?: MouseEventHandler }>, {
         onClick: openDialog,
-      },
-    )
+      })
     : null;
 
   // Role options for MultiSelect
-  const roleOptions = useMemo(() =>
-    roles.map((role) => ({
-      label: role.name,
-      value: role.id.toString(),
-    })), [roles]);
+  const roleOptions = useMemo(
+    () =>
+      roles.map((role) => ({
+        label: role.name,
+        value: role.id.toString(),
+      })),
+    [roles],
+  );
 
   // Check if form is valid for submit button - use valid emails count
   const isFormValid = validEmails.length > 0 && roleIds.length > 0;
@@ -657,8 +667,8 @@ export function InviteTeamMembersDialog({
                     {inviteMemberMutation.isPending
                       ? "Inviting..."
                       : `Invite ${validEmails.length || 0} Member${
-                        validEmails.length !== 1 ? "s" : ""
-                      }`}
+                          validEmails.length !== 1 ? "s" : ""
+                        }`}
                   </Button>
                 </DialogFooter>
               </form>

@@ -23,8 +23,9 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
 
       if (savedTheme === "auto") {
         // Use system preference
-        isDarkTheme =
-          globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
+        isDarkTheme = globalThis.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
       } else {
         isDarkTheme = savedTheme === "dark";
       }
@@ -66,12 +67,7 @@ export function Logo({ className = "", width = 68, height = 28 }: LogoProps) {
   if (!isClient) {
     return (
       <div className={`relative ${className}`}>
-        <img
-          src={decoLight}
-          alt="Deco"
-          width={width}
-          height={height}
-        />
+        <img src={decoLight} alt="Deco" width={width} height={height} />
       </div>
     );
   }

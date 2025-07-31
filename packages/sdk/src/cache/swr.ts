@@ -40,11 +40,7 @@ export class SWRCache<T> {
    * @param revalidate - Whether to revalidate (default: true)
    * @returns Promise<T>
    */
-  cache(
-    fn: () => Promise<T>,
-    key: string,
-    revalidate = true,
-  ): Promise<T> {
+  cache(fn: () => Promise<T>, key: string, revalidate = true): Promise<T> {
     return this._sf.do(key, async () => {
       // Use new metadata-aware method if stale TTL is configured
       if (this._staleTtlSeconds !== undefined) {

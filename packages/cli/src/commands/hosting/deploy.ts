@@ -34,18 +34,16 @@ interface Options {
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
 
-export const deploy = async (
-  {
-    cwd,
-    workspace,
-    app: appSlug,
-    local,
-    assetsDirectory,
-    skipConfirmation,
-    force,
-    unlisted = true,
-  }: Options,
-) => {
+export const deploy = async ({
+  cwd,
+  workspace,
+  app: appSlug,
+  local,
+  assetsDirectory,
+  skipConfirmation,
+  force,
+  unlisted = true,
+}: Options) => {
   console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
 
   // Ensure the target directory exists
@@ -62,32 +60,30 @@ export const deploy = async (
   let foundWranglerConfigName = "";
 
   // Recursively walk cwd/ and add all files
-  for await (
-    const entry of walk(cwd, {
-      includeFiles: true,
-      includeDirs: false,
-      skip: [
-        /node_modules/,
-        /\.git/,
-        /\.DS_Store/,
-        /\.env/,
-        /\.env\.local/,
-        /\.dev\.vars/,
-      ],
-      exts: [
-        "ts",
-        "mjs",
-        "js",
-        "cjs",
-        "toml",
-        "json",
-        "css",
-        "html",
-        "txt",
-        "wasm",
-      ],
-    })
-  ) {
+  for await (const entry of walk(cwd, {
+    includeFiles: true,
+    includeDirs: false,
+    skip: [
+      /node_modules/,
+      /\.git/,
+      /\.DS_Store/,
+      /\.env/,
+      /\.env\.local/,
+      /\.dev\.vars/,
+    ],
+    exts: [
+      "ts",
+      "mjs",
+      "js",
+      "cjs",
+      "toml",
+      "json",
+      "css",
+      "html",
+      "txt",
+      "wasm",
+    ],
+  })) {
     const realPath = relative(cwd, entry.path);
     const content = await fs.readFile(entry.path, "utf-8");
     files.push({ path: realPath, content });
@@ -101,20 +97,18 @@ export const deploy = async (
   }
 
   if (assetsDirectory) {
-    for await (
-      const entry of walk(assetsDirectory, {
-        includeFiles: true,
-        includeDirs: false,
-        skip: [
-          /node_modules/,
-          /\.git/,
-          /\.DS_Store/,
-          /\.env/,
-          /\.env\.local/,
-          /\.dev\.vars/,
-        ],
-      })
-    ) {
+    for await (const entry of walk(assetsDirectory, {
+      includeFiles: true,
+      includeDirs: false,
+      skip: [
+        /node_modules/,
+        /\.git/,
+        /\.DS_Store/,
+        /\.env/,
+        /\.env\.local/,
+        /\.dev\.vars/,
+      ],
+    })) {
       const realPath = relative(assetsDirectory, entry.path);
       const content = await fs.readFile(entry.path);
       const base64Content = Buffer.from(content).toString("base64");
@@ -142,8 +136,7 @@ export const deploy = async (
       wranglerConfigStatus = "wrangler.toml/json ❌";
     }
   } else {
-    wranglerConfigStatus =
-      `${foundWranglerConfigName} ✅ (found in project files)`;
+    wranglerConfigStatus = `${foundWranglerConfigName} ✅ (found in project files)`;
   }
 
   // 3. Load envVars from .dev.vars
@@ -168,13 +161,18 @@ export const deploy = async (
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
 
-  const confirmed = skipConfirmation ||
-    (await inquirer.prompt([{
-      type: "confirm",
-      name: "proceed",
-      message: "Proceed with deployment?",
-      default: true,
-    }])).proceed;
+  const confirmed =
+    skipConfirmation ||
+    (
+      await inquirer.prompt([
+        {
+          type: "confirm",
+          name: "proceed",
+          message: "Proceed with deployment?",
+          default: true,
+        },
+      ])
+    ).proceed;
 
   if (!confirmed) {
     console.log("❌ Deployment cancelled");
@@ -196,12 +194,14 @@ export const deploy = async (
       if (errorTextJson?.name === "MCPBreakingChangeError" && !force) {
         console.log("Looks like you have breaking changes in your app.");
         console.log(errorTextJson.message);
-        const confirmed = await inquirer.prompt([{
-          type: "confirm",
-          name: "proceed",
-          message: "Would you like to retry with the --force flag?",
-          default: true,
-        }]);
+        const confirmed = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "proceed",
+            message: "Would you like to retry with the --force flag?",
+            default: true,
+          },
+        ]);
         if (!confirmed) {
           process.exit(1);
         }

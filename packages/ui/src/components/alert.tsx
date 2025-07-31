@@ -56,10 +56,7 @@ function AlertDescription({
   return (
     <div
       data-slot="alert-description"
-      className={cn(
-        "text-muted-foreground leading-relaxed",
-        className,
-      )}
+      className={cn("text-muted-foreground leading-relaxed", className)}
       {...props}
     />
   );

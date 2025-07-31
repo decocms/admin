@@ -130,21 +130,18 @@ function PlanInfoCard() {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-3xl font-medium text-foreground">
-            {plan.title}
-          </h2>
+          <h2 className="text-3xl font-medium text-foreground">{plan.title}</h2>
         </div>
 
         <div className="space-y-4 text-sm flex-1">
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Seats used</span>
-              <span className="font-medium">{usedSeats}/{seatLimit}</span>
+              <span className="font-medium">
+                {usedSeats}/{seatLimit}
+              </span>
             </div>
-            <Progress
-              value={(usedSeats / seatLimit) * 100}
-              className="h-3"
-            />
+            <Progress value={(usedSeats / seatLimit) * 100} className="h-3" />
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Monthly cost</span>
@@ -154,9 +151,7 @@ function PlanInfoCard() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Deposit fee</span>
-            <span className="font-medium">
-              {plan.markup}%
-            </span>
+            <span className="font-medium">{plan.markup}%</span>
           </div>
         </div>
       </CardContent>
@@ -165,8 +160,10 @@ function PlanInfoCard() {
 }
 
 const isFreeReward = (item: BillingHistoryItem) => {
-  return item.type === "WorkspaceGenCreditReward" &&
-    item.id.includes("free-two-dollars-");
+  return (
+    item.type === "WorkspaceGenCreditReward" &&
+    item.id.includes("free-two-dollars-")
+  );
 };
 
 function TransactionsTable() {
@@ -178,13 +175,7 @@ function TransactionsTable() {
     const type = item.type;
 
     if (isFreeReward(item)) {
-      return (
-        <Icon
-          name="redeem"
-          size={16}
-          className="text-muted-foreground"
-        />
-      );
+      return <Icon name="redeem" size={16} className="text-muted-foreground" />;
     }
 
     const icons = {
@@ -249,9 +240,7 @@ function TransactionsTable() {
       header: "Description",
       render: (transaction) => (
         <div className="flex items-start gap-2">
-          <div className="flex-shrink-0 mt-0.5">
-            {getTypeIcon(transaction)}
-          </div>
+          <div className="flex-shrink-0 mt-0.5">{getTypeIcon(transaction)}</div>
           <div className="flex flex-col min-w-0">
             <span className="font-medium">
               {getTypeDescription(transaction).title}
@@ -268,9 +257,7 @@ function TransactionsTable() {
       id: "amount",
       header: "Amount",
       render: (transaction) => (
-        <span
-          className={`font-medium text-foreground`}
-        >
+        <span className={`font-medium text-foreground`}>
           {transaction.amount}
         </span>
       ),
@@ -280,7 +267,7 @@ function TransactionsTable() {
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
-      setSortDirection((prev) => prev === "asc" ? "desc" : "asc");
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDirection("asc");
@@ -289,7 +276,7 @@ function TransactionsTable() {
 
   const sortedTransactions = useMemo(() => {
     const getSortValue = (
-      transaction: typeof history.items[number],
+      transaction: (typeof history.items)[number],
       key: string,
     ): string | number => {
       switch (key) {

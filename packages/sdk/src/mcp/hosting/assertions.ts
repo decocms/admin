@@ -260,24 +260,19 @@ function checkOutputSchemaBreakingChanges(
  * This function tries as a best effort to check for breaking changes.
  * It falls back to empty array if error as this check can be flaky.
  */
-export const assertsNoMCPBreakingChanges = async (c: AppContext, {
-  from,
-  to,
-}: {
-  from: MCPConnection;
-  to: MCPConnection;
-}) => {
+export const assertsNoMCPBreakingChanges = async (
+  c: AppContext,
+  {
+    from,
+    to,
+  }: {
+    from: MCPConnection;
+    to: MCPConnection;
+  },
+) => {
   const [fromResult, toResult] = await Promise.all([
-    listToolsByConnectionType(
-      from,
-      c,
-      true,
-    ).catch(() => ({ tools: [] })), // falling back to empty array if error as this check can be flaky
-    listToolsByConnectionType(
-      to,
-      c,
-      true,
-    ).catch(() => ({ tools: [] })), // falling back to empty array if error as this check can be flaky
+    listToolsByConnectionType(from, c, true).catch(() => ({ tools: [] })), // falling back to empty array if error as this check can be flaky
+    listToolsByConnectionType(to, c, true).catch(() => ({ tools: [] })), // falling back to empty array if error as this check can be flaky
   ]);
 
   // Handle potential errors from tool fetching

@@ -56,11 +56,14 @@ export async function promptWorkspace(
 
   try {
     // Use TEAMS_LIST tool to get available teams
-    const response = await client.callTool({
-      name: "TEAMS_LIST",
-      arguments: {},
+    const response = await client.callTool(
+      {
+        name: "TEAMS_LIST",
+        arguments: {},
+      },
       // @ts-expect-error We need to refactor TEAMS_LIST to stop returning array and use a proper object
-    }, z.any());
+      z.any(),
+    );
 
     if (response.isError) {
       throw new Error("Failed to fetch teams");
@@ -83,23 +86,27 @@ export async function promptWorkspace(
 
     try {
       // Try using search-list first
-      const result = await inquirer.prompt([{
-        type: "search-list",
-        name: "selectedSlug",
-        message: "Select a workspace:",
-        choices,
-        default: current,
-      }]);
+      const result = await inquirer.prompt([
+        {
+          type: "search-list",
+          name: "selectedSlug",
+          message: "Select a workspace:",
+          choices,
+          default: current,
+        },
+      ]);
       selectedSlug = result.selectedSlug;
     } catch {
       // Fallback to basic list if search-list fails
-      const result = await inquirer.prompt([{
-        type: "list",
-        name: "selectedSlug",
-        message: "Select a workspace:",
-        choices,
-        default: current,
-      }]);
+      const result = await inquirer.prompt([
+        {
+          type: "list",
+          name: "selectedSlug",
+          message: "Select a workspace:",
+          choices,
+          default: current,
+        },
+      ]);
       selectedSlug = result.selectedSlug;
     }
 

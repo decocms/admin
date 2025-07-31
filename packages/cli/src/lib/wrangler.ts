@@ -18,19 +18,22 @@ export async function getCurrentEnvVars(projectRoot: string): Promise<{
 }> {
   const envFilepath = join(projectRoot, envFile);
   const devVarsFile = await fs.readFile(envFilepath, "utf-8").catch(() => "");
-  const envVars = devVarsFile.split("\n").reduce((acc, line) => {
-    if (!line || line.startsWith("#")) {
+  const envVars = devVarsFile.split("\n").reduce(
+    (acc, line) => {
+      if (!line || line.startsWith("#")) {
+        return acc;
+      }
+      const firstEqualIndex = line.indexOf("=");
+      if (firstEqualIndex === -1) {
+        return acc;
+      }
+      const key = line.substring(0, firstEqualIndex);
+      const value = line.substring(firstEqualIndex + 1);
+      acc[key] = value;
       return acc;
-    }
-    const firstEqualIndex = line.indexOf("=");
-    if (firstEqualIndex === -1) {
-      return acc;
-    }
-    const key = line.substring(0, firstEqualIndex);
-    const value = line.substring(firstEqualIndex + 1);
-    acc[key] = value;
-    return acc;
-  }, {} as Record<string, string>);
+    },
+    {} as Record<string, string>,
+  );
 
   return {
     envVars,
@@ -93,9 +96,7 @@ export async function getEnvVars(projectRoot?: string) {
   return env;
 }
 
-async function ensureEnvVarsGitIgnore(
-  projectRoot: string,
-) {
+async function ensureEnvVarsGitIgnore(projectRoot: string) {
   const gitignorePath = join(projectRoot, ".gitignore");
 
   try {
@@ -103,8 +104,8 @@ async function ensureEnvVarsGitIgnore(
     const lines = gitignoreContent.split("\n");
 
     // Check if entry already exists (exact match or as part of a line)
-    const entryExists = lines.some((line) =>
-      line.trim() === envFile || line.trim() === `/${envFile}`
+    const entryExists = lines.some(
+      (line) => line.trim() === envFile || line.trim() === `/${envFile}`,
     );
 
     if (!entryExists) {

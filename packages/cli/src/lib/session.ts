@@ -36,9 +36,10 @@ function getSessionPath(): string {
  * Save session data securely to the filesystem.
  * @param data The session data to save (object).
  */
-export async function saveSession(
-  data: { session: SessionData | null; user: User | null },
-) {
+export async function saveSession(data: {
+  session: SessionData | null;
+  user: User | null;
+}) {
   const { session, user } = data;
   const sessionPath = getSessionPath();
   await fs.writeFile(

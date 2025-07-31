@@ -23,9 +23,8 @@ export function color(id: string) {
   ];
 
   const seed = id.split("-")[0];
-  const hash = seed.split("").reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0,
-  );
+  const hash = seed
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
 }

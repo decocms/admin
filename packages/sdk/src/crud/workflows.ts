@@ -14,10 +14,7 @@ export interface WorkflowDeleteParams {
   workflowName: string;
 }
 
-export function listWorkflowNames(
-  workspace: string,
-  signal?: AbortSignal,
-) {
+export function listWorkflowNames(workspace: string, signal?: AbortSignal) {
   const client = MCPClient.forWorkspace(workspace);
   return client.HOSTING_APP_WORKFLOWS_LIST_NAMES({}, { signal });
 }
@@ -30,11 +27,14 @@ export function listWorkflowRuns(
   signal?: AbortSignal,
 ) {
   const client = MCPClient.forWorkspace(workspace);
-  return client.HOSTING_APP_WORKFLOWS_LIST_RUNS({
-    page,
-    per_page,
-    ...(workflowName && { workflowName }),
-  }, { signal });
+  return client.HOSTING_APP_WORKFLOWS_LIST_RUNS(
+    {
+      page,
+      per_page,
+      ...(workflowName && { workflowName }),
+    },
+    { signal },
+  );
 }
 
 export function getWorkflowStatus(

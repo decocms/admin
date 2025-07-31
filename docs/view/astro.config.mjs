@@ -22,10 +22,7 @@ export default defineConfig({
       prefixDefaultLocale: true,
     },
   },
-  integrations: [
-    mdx(),
-    react(),
-  ],
+  integrations: [mdx(), react()],
   vite: {
     plugins: [
       // @ts-ignore: tailwindcss plugin type issue

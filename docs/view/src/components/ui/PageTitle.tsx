@@ -8,16 +8,17 @@ export interface PageTitleProps {
   markdownPath?: string;
 }
 
-export function PageTitle(
-  { breadcrumb, title, description, markdownPath }: PageTitleProps,
-) {
+export function PageTitle({
+  breadcrumb,
+  title,
+  description,
+  markdownPath,
+}: PageTitleProps) {
   return (
     <div className="flex flex-col mb-6">
       {/* Breadcrumb Section */}
       {breadcrumb && (
-        <div className="text-sm text-primary font-normal">
-          {breadcrumb}
-        </div>
+        <div className="text-sm text-primary font-normal">{breadcrumb}</div>
       )}
 
       {/* Title Section with Copy Button */}

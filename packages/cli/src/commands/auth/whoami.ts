@@ -21,9 +21,7 @@ export const whoamiCommand = async () => {
     }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) {
-      console.log(
-        "❌  Could not retrieve user info. Please log in again.\n",
-      );
+      console.log("❌  Could not retrieve user info. Please log in again.\n");
       return;
     }
     const user = data.user;
@@ -32,14 +30,10 @@ export const whoamiCommand = async () => {
     console.log(`   💻  ID:        ${user.id}`);
     console.log(`   📧  Email:     ${user.email ?? "-"}`);
     if (user.user_metadata?.full_name) {
-      console.log(
-        `   📚  Name:      ${user.user_metadata.full_name}`,
-      );
+      console.log(`   📚  Name:      ${user.user_metadata.full_name}`);
     }
     if (user.user_metadata?.avatar_url) {
-      console.log(
-        `   🖼️  Avatar:    ${user.user_metadata.avatar_url}`,
-      );
+      console.log(`   🖼️  Avatar:    ${user.user_metadata.avatar_url}`);
     }
     console.log("");
     if (session.workspace) {
@@ -47,14 +41,13 @@ export const whoamiCommand = async () => {
         `🏢  Current Workspace: \u001b[1m${session.workspace}\u001b[0m\n`,
       );
     } else {
-      console.log(
-        "⚠️  No workspace selected.\n",
-      );
+      console.log("⚠️  No workspace selected.\n");
     }
   } catch (err: unknown) {
-    const message = typeof err === "object" && err && "message" in err
-      ? (err as { message: string }).message
-      : String(err);
+    const message =
+      typeof err === "object" && err && "message" in err
+        ? (err as { message: string }).message
+        : String(err);
     console.error("❌  Error reading session:", message);
   }
 };

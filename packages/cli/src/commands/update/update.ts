@@ -35,7 +35,7 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
       throw new Error(`Failed to fetch latest version: ${response.statusText}`);
     }
 
-    const data = await response.json() as { version: string };
+    const data = (await response.json()) as { version: string };
     return data.version;
   } catch (error) {
     clearTimeout(timeoutId);
@@ -78,10 +78,7 @@ export const upgrade = (packageName: string): Promise<void> => {
 
 export async function checkForUpdates(): Promise<void> {
   // Skip if we've already checked in this session or if running update command
-  if (
-    process.env.DECO_CLI_UPDATE_CHECKED ||
-    process.argv.includes("update")
-  ) {
+  if (process.env.DECO_CLI_UPDATE_CHECKED || process.argv.includes("update")) {
     return;
   }
   process.env.DECO_CLI_UPDATE_CHECKED = "true";
@@ -95,14 +92,12 @@ export async function checkForUpdates(): Promise<void> {
       console.log();
       console.log(
         chalk.green(
-          `A new version of deco is available: ${
-            chalk.bold(`v${latestVersion}`)
-          }`,
+          `A new version of deco is available: ${chalk.bold(
+            `v${latestVersion}`,
+          )}`,
         ),
       );
-      console.log(
-        chalk.yellow(`You are on version: v${currentVersion}`),
-      );
+      console.log(chalk.yellow(`You are on version: v${currentVersion}`));
       console.log();
 
       const { upgradeConfirm } = await inquirer.prompt([

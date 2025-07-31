@@ -81,8 +81,7 @@ export interface Object_8 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_CALL_TOOLOutput {
-}
+export interface INTEGRATIONS_CALL_TOOLOutput {}
 
 /* eslint-disable */
 /**
@@ -148,8 +147,7 @@ export interface Object_14 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_LIST_TOOLSOutput {
-}
+export interface INTEGRATIONS_LIST_TOOLSOutput {}
 
 /* eslint-disable */
 /**
@@ -158,8 +156,7 @@ export interface INTEGRATIONS_LIST_TOOLSOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MY_INVITES_LISTInput {
-}
+export interface MY_INVITES_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -168,8 +165,7 @@ export interface MY_INVITES_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MY_INVITES_LISTOutput {
-}
+export interface MY_INVITES_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -178,8 +174,7 @@ export interface MY_INVITES_LISTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROFILES_GETInput {
-}
+export interface PROFILES_GETInput {}
 
 /* eslint-disable */
 /**
@@ -188,8 +183,7 @@ export interface PROFILES_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROFILES_GETOutput {
-}
+export interface PROFILES_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -227,8 +221,7 @@ export interface PROFILES_UPDATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROFILES_UPDATEOutput {
-}
+export interface PROFILES_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -250,8 +243,7 @@ export interface TEAM_INVITE_ACCEPTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_INVITE_ACCEPTOutput {
-}
+export interface TEAM_INVITE_ACCEPTOutput {}
 
 /* eslint-disable */
 /**
@@ -273,8 +265,7 @@ export interface TEAM_INVITE_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_INVITE_DELETEOutput {
-}
+export interface TEAM_INVITE_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -296,8 +287,7 @@ export interface TEAM_MEMBER_ACTIVITY_REGISTERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBER_ACTIVITY_REGISTEROutput {
-}
+export interface TEAM_MEMBER_ACTIVITY_REGISTEROutput {}
 
 /* eslint-disable */
 /**
@@ -321,8 +311,7 @@ export interface TEAM_MEMBERS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_GETOutput {
-}
+export interface TEAM_MEMBERS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -358,8 +347,7 @@ export interface Object_16 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_INVITEOutput {
-}
+export interface TEAM_MEMBERS_INVITEOutput {}
 
 /* eslint-disable */
 /**
@@ -383,8 +371,7 @@ export interface TEAM_MEMBERS_REMOVEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_REMOVEOutput {
-}
+export interface TEAM_MEMBERS_REMOVEOutput {}
 
 /* eslint-disable */
 /**
@@ -413,8 +400,7 @@ export interface Object_17 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_UPDATEOutput {
-}
+export interface TEAM_MEMBERS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -442,8 +428,7 @@ export interface TEAM_MEMBERS_UPDATE_ROLEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_UPDATE_ROLEOutput {
-}
+export interface TEAM_MEMBERS_UPDATE_ROLEOutput {}
 
 /* eslint-disable */
 /**
@@ -465,8 +450,7 @@ export interface TEAM_ROLES_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_ROLES_LISTOutput {
-}
+export interface TEAM_ROLES_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -492,8 +476,7 @@ export interface TEAMS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_CREATEOutput {
-}
+export interface TEAMS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -515,8 +498,7 @@ export interface TEAMS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_DELETEOutput {
-}
+export interface TEAMS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -538,8 +520,7 @@ export interface TEAMS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_GETOutput {
-}
+export interface TEAMS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -561,8 +542,7 @@ export interface TEAMS_GET_THEMEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_GET_THEMEOutput {
-}
+export interface TEAMS_GET_THEMEOutput {}
 
 /* eslint-disable */
 /**
@@ -571,8 +551,7 @@ export interface TEAMS_GET_THEMEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_LISTInput {
-}
+export interface TEAMS_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -581,8 +560,7 @@ export interface TEAMS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_LISTOutput {
-}
+export interface TEAMS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -802,8 +780,7 @@ export interface Object_22 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAMS_UPDATEOutput {
-}
+export interface TEAMS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -925,17 +902,23 @@ export interface AGENTS_CREATEInput {
    * Access control by role
    */
   access?:
-    | ({
-      [k: string]: unknown;
-    } | String_97)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_97
+      )
     | Null_5;
   /**
    * Temperature of the LLM. Must be between 0 and 1.
    */
   temperature?:
-    | ({
-      [k: string]: unknown;
-    } | Number_16)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | Number_16
+      )
     | Null_6;
 }
 /**
@@ -972,8 +955,7 @@ export interface Object_26 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_CREATEOutput {
-}
+export interface AGENTS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -995,8 +977,7 @@ export interface AGENTS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_DELETEOutput {
-}
+export interface AGENTS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -1018,8 +999,7 @@ export interface AGENTS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_GETOutput {
-}
+export interface AGENTS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -1028,8 +1008,7 @@ export interface AGENTS_GETOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_LISTInput {
-}
+export interface AGENTS_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -1038,8 +1017,7 @@ export interface AGENTS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_LISTOutput {
-}
+export interface AGENTS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -1166,17 +1144,23 @@ export interface Object_27 {
    * Access control by role
    */
   access?:
-    | ({
-      [k: string]: unknown;
-    } | String_114)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_114
+      )
     | Null_8;
   /**
    * Temperature of the LLM. Must be between 0 and 1.
    */
   temperature?:
-    | ({
-      [k: string]: unknown;
-    } | Number_20)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | Number_20
+      )
     | Null_9;
 }
 /**
@@ -1213,8 +1197,7 @@ export interface Object_31 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface AGENTS_UPDATEOutput {
-}
+export interface AGENTS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -1540,8 +1523,7 @@ export interface Object_42 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_CREATEOutput {
-}
+export interface API_KEYS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -1566,8 +1548,7 @@ export interface API_KEYS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_DELETEOutput {
-}
+export interface API_KEYS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -1592,8 +1573,7 @@ export interface API_KEYS_DISABLEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_DISABLEOutput {
-}
+export interface API_KEYS_DISABLEOutput {}
 
 /* eslint-disable */
 /**
@@ -1618,8 +1598,7 @@ export interface API_KEYS_ENABLEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_ENABLEOutput {
-}
+export interface API_KEYS_ENABLEOutput {}
 
 /* eslint-disable */
 /**
@@ -1644,8 +1623,7 @@ export interface API_KEYS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_GETOutput {
-}
+export interface API_KEYS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -1654,8 +1632,7 @@ export interface API_KEYS_GETOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_LISTInput {
-}
+export interface API_KEYS_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -1664,8 +1641,7 @@ export interface API_KEYS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_LISTOutput {
-}
+export interface API_KEYS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -1711,8 +1687,7 @@ export interface Object_43 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_UPDATEOutput {
-}
+export interface API_KEYS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -1737,8 +1712,7 @@ export interface API_KEYS_VALIDATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface API_KEYS_VALIDATEOutput {
-}
+export interface API_KEYS_VALIDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -1778,8 +1752,7 @@ export interface CHANNELS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_CREATEOutput {
-}
+export interface CHANNELS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -1801,8 +1774,7 @@ export interface CHANNELS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_DELETEOutput {
-}
+export interface CHANNELS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -1824,8 +1796,7 @@ export interface CHANNELS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_GETOutput {
-}
+export interface CHANNELS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -1855,8 +1826,7 @@ export interface CHANNELS_JOINInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_JOINOutput {
-}
+export interface CHANNELS_JOINOutput {}
 
 /* eslint-disable */
 /**
@@ -1886,8 +1856,7 @@ export interface CHANNELS_LEAVEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_LEAVEOutput {
-}
+export interface CHANNELS_LEAVEOutput {}
 
 /* eslint-disable */
 /**
@@ -1896,8 +1865,7 @@ export interface CHANNELS_LEAVEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_LISTInput {
-}
+export interface CHANNELS_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -1906,8 +1874,7 @@ export interface CHANNELS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CHANNELS_LISTOutput {
-}
+export interface CHANNELS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -1932,8 +1899,7 @@ export interface COMPOSIO_INTEGRATION_OAUTH_STARTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface COMPOSIO_INTEGRATION_OAUTH_STARTOutput {
-}
+export interface COMPOSIO_INTEGRATION_OAUTH_STARTOutput {}
 
 /* eslint-disable */
 /**
@@ -1959,8 +1925,7 @@ export interface CREATE_CHECKOUT_SESSIONInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CREATE_CHECKOUT_SESSIONOutput {
-}
+export interface CREATE_CHECKOUT_SESSIONOutput {}
 
 /* eslint-disable */
 /**
@@ -1985,8 +1950,7 @@ export interface CREATE_VOUCHERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface CREATE_VOUCHEROutput {
-}
+export interface CREATE_VOUCHEROutput {}
 
 /* eslint-disable */
 /**
@@ -2134,8 +2098,7 @@ export interface DECO_INTEGRATION_OAUTH_STARTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface DECO_INTEGRATION_OAUTH_STARTOutput {
-}
+export interface DECO_INTEGRATION_OAUTH_STARTOutput {}
 
 /* eslint-disable */
 /**
@@ -2186,19 +2149,28 @@ export interface Object_47 {
   description?: String_178;
   icon?: String_179;
   access?:
-    | ({
-      [k: string]: unknown;
-    } | String_180)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_180
+      )
     | Null_10;
   appName?:
-    | ({
-      [k: string]: unknown;
-    } | String_181)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_181
+      )
     | Null_11;
   appId?:
-    | ({
-      [k: string]: unknown;
-    } | String_182)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_182
+      )
     | Null_12;
 }
 export interface Object_48 {
@@ -2226,8 +2198,7 @@ export interface FS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface FS_DELETEOutput {
-}
+export interface FS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -2252,8 +2223,7 @@ export interface FS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface FS_LISTOutput {
-}
+export interface FS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -2309,8 +2279,7 @@ export interface FS_READ_METADATAInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface FS_READ_METADATAOutput {
-}
+export interface FS_READ_METADATAOutput {}
 
 /* eslint-disable */
 /**
@@ -2378,8 +2347,7 @@ export interface GET_AGENTS_USAGEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_AGENTS_USAGEOutput {
-}
+export interface GET_AGENTS_USAGEOutput {}
 
 /* eslint-disable */
 /**
@@ -2401,8 +2369,7 @@ export interface GET_THREADS_USAGEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_THREADS_USAGEOutput {
-}
+export interface GET_THREADS_USAGEOutput {}
 
 /* eslint-disable */
 /**
@@ -2411,8 +2378,7 @@ export interface GET_THREADS_USAGEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_WALLET_ACCOUNTInput {
-}
+export interface GET_WALLET_ACCOUNTInput {}
 
 /* eslint-disable */
 /**
@@ -2421,8 +2387,7 @@ export interface GET_WALLET_ACCOUNTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_WALLET_ACCOUNTOutput {
-}
+export interface GET_WALLET_ACCOUNTOutput {}
 
 /* eslint-disable */
 /**
@@ -2431,8 +2396,7 @@ export interface GET_WALLET_ACCOUNTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_WORKSPACE_PLANInput {
-}
+export interface GET_WORKSPACE_PLANInput {}
 
 /* eslint-disable */
 /**
@@ -2441,8 +2405,7 @@ export interface GET_WORKSPACE_PLANInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface GET_WORKSPACE_PLANOutput {
-}
+export interface GET_WORKSPACE_PLANOutput {}
 
 /* eslint-disable */
 /**
@@ -2464,8 +2427,7 @@ export interface HOSTING_APP_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface HOSTING_APP_DELETEOutput {
-}
+export interface HOSTING_APP_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -2521,8 +2483,7 @@ export interface Object_51 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface HOSTING_APP_DEPLOYOutput {
-}
+export interface HOSTING_APP_DEPLOYOutput {}
 
 /* eslint-disable */
 /**
@@ -2544,8 +2505,7 @@ export interface HOSTING_APP_INFOInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface HOSTING_APP_INFOOutput {
-}
+export interface HOSTING_APP_INFOOutput {}
 
 /* eslint-disable */
 /**
@@ -2678,8 +2638,7 @@ export interface Object_56 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface HOSTING_APPS_LISTInput {
-}
+export interface HOSTING_APPS_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -2688,8 +2647,7 @@ export interface HOSTING_APPS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface HOSTING_APPS_LISTOutput {
-}
+export interface HOSTING_APPS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -2772,8 +2730,7 @@ export interface Object_65 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_CALL_TOOLOutput_1 {
-}
+export interface INTEGRATIONS_CALL_TOOLOutput_1 {}
 
 /* eslint-disable */
 /**
@@ -2813,14 +2770,20 @@ export interface INTEGRATIONS_CREATEInput {
   description?: String_238;
   icon?: String_239;
   access?:
-    | ({
-      [k: string]: unknown;
-    } | String_240)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_240
+      )
     | Null_15;
   appId?:
-    | ({
-      [k: string]: unknown;
-    } | String_241)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_241
+      )
     | Null_16;
   connection?: Object_66 | Object_67 | Object_69 | Object_70 | Object_71;
 }
@@ -2861,8 +2824,7 @@ export interface Object_71 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_CREATEOutput {
-}
+export interface INTEGRATIONS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -2884,8 +2846,7 @@ export interface INTEGRATIONS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_DELETEOutput {
-}
+export interface INTEGRATIONS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -2907,8 +2868,7 @@ export interface INTEGRATIONS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_GETOutput {
-}
+export interface INTEGRATIONS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -2930,8 +2890,7 @@ export interface INTEGRATIONS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_LISTOutput {
-}
+export interface INTEGRATIONS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -2978,19 +2937,28 @@ export interface Object_72 {
   description?: String_264;
   icon?: String_265;
   access?:
-    | ({
-      [k: string]: unknown;
-    } | String_266)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_266
+      )
     | Null_17;
   appName?:
-    | ({
-      [k: string]: unknown;
-    } | String_267)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_267
+      )
     | Null_18;
   appId?:
-    | ({
-      [k: string]: unknown;
-    } | String_268)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_268
+      )
     | Null_19;
   connection: Object_73 | Object_74 | Object_76 | Object_77 | Object_78;
 }
@@ -3031,8 +2999,7 @@ export interface Object_78 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface INTEGRATIONS_UPDATEOutput {
-}
+export interface INTEGRATIONS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3071,8 +3038,7 @@ export interface Object_79 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_ADD_FILEOutput {
-}
+export interface KNOWLEDGE_BASE_ADD_FILEOutput {}
 
 /* eslint-disable */
 /**
@@ -3102,8 +3068,7 @@ export interface KNOWLEDGE_BASE_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_CREATEOutput {
-}
+export interface KNOWLEDGE_BASE_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3128,8 +3093,7 @@ export interface KNOWLEDGE_BASE_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_DELETEOutput {
-}
+export interface KNOWLEDGE_BASE_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -3151,8 +3115,7 @@ export interface KNOWLEDGE_BASE_DELETE_FILEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_DELETE_FILEOutput {
-}
+export interface KNOWLEDGE_BASE_DELETE_FILEOutput {}
 
 /* eslint-disable */
 /**
@@ -3178,8 +3141,7 @@ export interface KNOWLEDGE_BASE_FORGETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_FORGETOutput {
-}
+export interface KNOWLEDGE_BASE_FORGETOutput {}
 
 /* eslint-disable */
 /**
@@ -3188,8 +3150,7 @@ export interface KNOWLEDGE_BASE_FORGETOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_LISTInput {
-}
+export interface KNOWLEDGE_BASE_LISTInput {}
 
 /* eslint-disable */
 /**
@@ -3198,8 +3159,7 @@ export interface KNOWLEDGE_BASE_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_LISTOutput {
-}
+export interface KNOWLEDGE_BASE_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -3208,8 +3168,7 @@ export interface KNOWLEDGE_BASE_LISTOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_LIST_FILESInput {
-}
+export interface KNOWLEDGE_BASE_LIST_FILESInput {}
 
 /* eslint-disable */
 /**
@@ -3218,8 +3177,7 @@ export interface KNOWLEDGE_BASE_LIST_FILESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_LIST_FILESOutput {
-}
+export interface KNOWLEDGE_BASE_LIST_FILESOutput {}
 
 /* eslint-disable */
 /**
@@ -3257,8 +3215,7 @@ export interface Object_80 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_REMEMBEROutput {
-}
+export interface KNOWLEDGE_BASE_REMEMBEROutput {}
 
 /* eslint-disable */
 /**
@@ -3307,8 +3264,7 @@ export interface Object_81 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface KNOWLEDGE_BASE_SEARCHOutput {
-}
+export interface KNOWLEDGE_BASE_SEARCHOutput {}
 
 /* eslint-disable */
 /**
@@ -3340,8 +3296,7 @@ export interface MODELS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MODELS_CREATEOutput {
-}
+export interface MODELS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3363,8 +3318,7 @@ export interface MODELS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MODELS_DELETEOutput {
-}
+export interface MODELS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -3386,8 +3340,7 @@ export interface MODELS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MODELS_GETOutput {
-}
+export interface MODELS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -3411,8 +3364,7 @@ export interface MODELS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MODELS_LISTOutput {
-}
+export interface MODELS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -3451,8 +3403,7 @@ export interface Object_82 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface MODELS_UPDATEOutput {
-}
+export interface MODELS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3510,8 +3461,7 @@ export interface PROMPTS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_CREATEOutput {
-}
+export interface PROMPTS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3533,8 +3483,7 @@ export interface PROMPTS_DELETEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_DELETEOutput {
-}
+export interface PROMPTS_DELETEOutput {}
 
 /* eslint-disable */
 /**
@@ -3628,8 +3577,7 @@ export interface PROMPTS_GET_VERSIONSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_GET_VERSIONSOutput {
-}
+export interface PROMPTS_GET_VERSIONSOutput {}
 
 /* eslint-disable */
 /**
@@ -3666,8 +3614,7 @@ export interface PROMPTS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_LISTOutput {
-}
+export interface PROMPTS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -3691,8 +3638,7 @@ export interface PROMPTS_RENAME_VERSIONInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_RENAME_VERSIONOutput {
-}
+export interface PROMPTS_RENAME_VERSIONOutput {}
 
 /* eslint-disable */
 /**
@@ -3718,8 +3664,7 @@ export interface PROMPTS_SEARCHInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_SEARCHOutput {
-}
+export interface PROMPTS_SEARCHOutput {}
 
 /* eslint-disable */
 /**
@@ -3743,9 +3688,12 @@ export interface PROMPTS_UPDATEInput {
 export interface Object_83 {
   name?: String_329;
   description?:
-    | ({
-      [k: string]: unknown;
-    } | String_330)
+    | (
+        | {
+            [k: string]: unknown;
+          }
+        | String_330
+      )
     | Null_23;
   content?: String_331;
 }
@@ -3757,8 +3705,7 @@ export interface Object_83 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface PROMPTS_UPDATEOutput {
-}
+export interface PROMPTS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -3780,8 +3727,7 @@ export interface REDEEM_VOUCHERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface REDEEM_VOUCHEROutput {
-}
+export interface REDEEM_VOUCHEROutput {}
 
 /* eslint-disable */
 /**
@@ -4237,8 +4183,7 @@ export interface Object_111 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TEAM_MEMBERS_INVITEOutput_1 {
-}
+export interface TEAM_MEMBERS_INVITEOutput_1 {}
 
 /* eslint-disable */
 /**
@@ -4260,8 +4205,7 @@ export interface THREADS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_GETOutput {
-}
+export interface THREADS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -4283,8 +4227,7 @@ export interface THREADS_GET_MESSAGESInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_GET_MESSAGESOutput {
-}
+export interface THREADS_GET_MESSAGESOutput {}
 
 /* eslint-disable */
 /**
@@ -4306,8 +4249,7 @@ export interface THREADS_GET_TOOLSInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_GET_TOOLSOutput {
-}
+export interface THREADS_GET_TOOLSOutput {}
 
 /* eslint-disable */
 /**
@@ -4341,8 +4283,7 @@ export interface THREADS_LISTInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_LISTOutput {
-}
+export interface THREADS_LISTOutput {}
 
 /* eslint-disable */
 /**
@@ -4368,8 +4309,7 @@ export interface Object_112 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_UPDATE_METADATAOutput {
-}
+export interface THREADS_UPDATE_METADATAOutput {}
 
 /* eslint-disable */
 /**
@@ -4393,8 +4333,7 @@ export interface THREADS_UPDATE_TITLEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface THREADS_UPDATE_TITLEOutput {
-}
+export interface THREADS_UPDATE_TITLEOutput {}
 
 /* eslint-disable */
 /**
@@ -4416,8 +4355,7 @@ export interface TRIGGERS_ACTIVATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_ACTIVATEOutput {
-}
+export interface TRIGGERS_ACTIVATEOutput {}
 
 /* eslint-disable */
 /**
@@ -4426,8 +4364,7 @@ export interface TRIGGERS_ACTIVATEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_CREATEInput {
-}
+export interface TRIGGERS_CREATEInput {}
 
 /* eslint-disable */
 /**
@@ -4436,8 +4373,7 @@ export interface TRIGGERS_CREATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_CREATEOutput {
-}
+export interface TRIGGERS_CREATEOutput {}
 
 /* eslint-disable */
 /**
@@ -4446,8 +4382,7 @@ export interface TRIGGERS_CREATEOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_CREATE_CRONInput {
-}
+export interface TRIGGERS_CREATE_CRONInput {}
 
 /* eslint-disable */
 /**
@@ -4456,8 +4391,7 @@ export interface TRIGGERS_CREATE_CRONInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_CREATE_CRONOutput {
-}
+export interface TRIGGERS_CREATE_CRONOutput {}
 
 /* eslint-disable */
 /**
@@ -4466,8 +4400,7 @@ export interface TRIGGERS_CREATE_CRONOutput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_CREATE_WEBHOOKInput {
-}
+export interface TRIGGERS_CREATE_WEBHOOKInput {}
 
 /* eslint-disable */
 /**
@@ -4684,8 +4617,7 @@ export interface TRIGGERS_DEACTIVATEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_DEACTIVATEOutput {
-}
+export interface TRIGGERS_DEACTIVATEOutput {}
 
 /* eslint-disable */
 /**
@@ -4736,8 +4668,7 @@ export interface TRIGGERS_GETInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_GETOutput {
-}
+export interface TRIGGERS_GETOutput {}
 
 /* eslint-disable */
 /**
@@ -5131,8 +5062,7 @@ export interface Object_144 {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface TRIGGERS_UPDATEOutput {
-}
+export interface TRIGGERS_UPDATEOutput {}
 
 /* eslint-disable */
 /**
@@ -5160,8 +5090,7 @@ export interface WHATSAPP_CREATE_INVITEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface WHATSAPP_CREATE_INVITEOutput {
-}
+export interface WHATSAPP_CREATE_INVITEOutput {}
 
 /* eslint-disable */
 /**
@@ -5183,8 +5112,7 @@ export interface WHATSAPP_GET_USERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface WHATSAPP_GET_USEROutput {
-}
+export interface WHATSAPP_GET_USEROutput {}
 
 /* eslint-disable */
 /**
@@ -5216,8 +5144,7 @@ export interface WHATSAPP_SEND_TEMPLATE_MESSAGEInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface WHATSAPP_SEND_TEMPLATE_MESSAGEOutput {
-}
+export interface WHATSAPP_SEND_TEMPLATE_MESSAGEOutput {}
 
 /* eslint-disable */
 /**
@@ -5246,26 +5173,27 @@ export interface WHATSAPP_UPSERT_USERInput {
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export interface WHATSAPP_UPSERT_USEROutput {
-}
+export interface WHATSAPP_UPSERT_USEROutput {}
 
 // this should be added to your package.json
 import { z } from "zod";
 
 export type Mcp<T extends Record<string, (input: any) => Promise<any>>> = {
-  [K in keyof T]:
-    & ((input: Parameters<T[K]>[0]) => Promise<ReturnType<T[K]>>)
-    & {
-      asTool: () => Promise<{
-        inputSchema: z.ZodType<Parameters<T[K]>[0]>;
-        outputSchema?: z.ZodType<ReturnType<T[K]>>;
-        description: string;
-        id: string;
-        execute: (
-          { context }: { context: Parameters<T[K]>[0] },
-        ) => Promise<ReturnType<T[K]>>;
-      }>;
-    };
+  [K in keyof T]: ((
+    input: Parameters<T[K]>[0],
+  ) => Promise<ReturnType<T[K]>>) & {
+    asTool: () => Promise<{
+      inputSchema: z.ZodType<Parameters<T[K]>[0]>;
+      outputSchema?: z.ZodType<ReturnType<T[K]>>;
+      description: string;
+      id: string;
+      execute: ({
+        context,
+      }: {
+        context: Parameters<T[K]>[0];
+      }) => Promise<ReturnType<T[K]>>;
+    }>;
+  };
 };
 
 export const StateSchema = z.object({});

@@ -12,9 +12,10 @@ interface PropertiesProps {
   title?: string;
 }
 
-export function Properties(
-  { properties, title = "Properties" }: PropertiesProps,
-) {
+export function Properties({
+  properties,
+  title = "Properties",
+}: PropertiesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (

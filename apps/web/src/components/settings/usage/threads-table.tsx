@@ -35,27 +35,32 @@ export function ThreadsTable({
       const threadDetail = threadHistory.find((t) => t.id === thread.id);
 
       // Ensure totalCost is always a proper number for sorting - handle dollar sign
-      const parsedCost = typeof thread.total === "string"
-        ? parseFloat(thread.total.replace("$", ""))
-        : (typeof thread.total === "number" ? thread.total : 0);
+      const parsedCost =
+        typeof thread.total === "string"
+          ? parseFloat(thread.total.replace("$", ""))
+          : typeof thread.total === "number"
+            ? thread.total
+            : 0;
       const totalCost = isNaN(parsedCost) ? 0 : parsedCost;
 
       return {
         ...thread,
-        agent: agent ||
-          { id: thread.agentId, name: "Unknown Agent", avatar: "" },
-        user: user ||
-          {
-            profiles: {
-              id: thread.generatedBy,
+        agent: agent || {
+          id: thread.agentId,
+          name: "Unknown Agent",
+          avatar: "",
+        },
+        user: user || {
+          profiles: {
+            id: thread.generatedBy,
+            email: "Unknown User",
+            metadata: {
+              avatar_url: "",
+              username: "unknown",
               email: "Unknown User",
-              metadata: {
-                avatar_url: "",
-                username: "unknown",
-                email: "Unknown User",
-              },
             },
           },
+        },
         color: color(thread.id),
         totalCost,
         // Use actual thread title if available, otherwise use fallback
@@ -66,7 +71,7 @@ export function ThreadsTable({
   }, [threadUsage.items, agents, members, threadHistory]);
 
   // Define table columns
-  const columns: TableColumn<typeof enrichedThreads[0]>[] = [
+  const columns: TableColumn<(typeof enrichedThreads)[0]>[] = [
     {
       id: "color",
       header: "",
@@ -136,9 +141,7 @@ export function ThreadsTable({
       id: "total",
       header: "Total Cost",
       render: (thread) => (
-        <span className="font-medium">
-          ${thread.totalCost.toFixed(2)}
-        </span>
+        <span className="font-medium">${thread.totalCost.toFixed(2)}</span>
       ),
       sortable: true,
     },
@@ -146,7 +149,7 @@ export function ThreadsTable({
 
   // Sorting logic
   const getSortValue = (
-    thread: typeof enrichedThreads[0],
+    thread: (typeof enrichedThreads)[0],
     key: string,
   ): string | number => {
     switch (key) {
@@ -168,7 +171,7 @@ export function ThreadsTable({
   const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDirection((prev: "asc" | "desc") =>
-        prev === "asc" ? "desc" : "asc"
+        prev === "asc" ? "desc" : "asc",
       );
     } else {
       setSortKey(key);

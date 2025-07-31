@@ -54,7 +54,7 @@ export class WebCache<TCachedValue> {
         timestamp: number;
       };
       // Check if the cached item has expired
-      if (Date.now() - parsed.timestamp > (this.ttl * 1000)) {
+      if (Date.now() - parsed.timestamp > this.ttl * 1000) {
         // Delete expired item
         const cache = await this.cache;
         await cache.delete(cacheKey);
@@ -179,9 +179,7 @@ export class JsonSerializer {
     return JSON.stringify(value, (_, value) => {
       if (value instanceof Uint8Array) {
         // Convert Uint8Array to base64 string
-        const base64 = btoa(
-          String.fromCharCode.apply(null, Array.from(value)),
-        );
+        const base64 = btoa(String.fromCharCode.apply(null, Array.from(value)));
         return {
           __type: "Uint8Array",
           data: base64,
@@ -217,7 +215,8 @@ export class JsonSerializer {
       typeof value === "string" ||
       typeof value === "number" ||
       typeof value === "boolean"
-    ) return true;
+    )
+      return true;
     if (value instanceof Uint8Array) return true;
 
     if (Array.isArray(value)) {
@@ -226,7 +225,7 @@ export class JsonSerializer {
 
     if (typeof value === "object") {
       return Object.values(value).every((item) =>
-        JsonSerializer.isSerializable(item)
+        JsonSerializer.isSerializable(item),
       );
     }
 

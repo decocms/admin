@@ -22,7 +22,12 @@
 }
 
 /* Add scroll offset for anchor links */
-.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
   scroll-margin-top: 2rem; /* 32px offset from top */
 }
 
@@ -341,10 +346,10 @@ pre .astro-code > *:first-child {
   --accent-foreground: oklch(26.8% 0.007 34.298);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
-  --success: oklch(0.654 0.184 142.0);
-  --success-foreground: oklch(0.963 0.025 137.0);
-  --warning: oklch(0.877 0.184 99.0);
-  --warning-foreground: oklch(0.293 0.071 70.0);
+  --success: oklch(0.654 0.184 142);
+  --success-foreground: oklch(0.963 0.025 137);
+  --warning: oklch(0.877 0.184 99);
+  --warning-foreground: oklch(0.293 0.071 70);
   --border: oklch(92.3% 0.003 48.717);
   --input: oklch(92.3% 0.003 48.717);
   --ring: oklch(0.709 0.01 56.259);
@@ -452,7 +457,7 @@ pre .astro-code > *:first-child {
   --border: oklch(0.444 0.011 73.64 / 40%);
   --input: oklch(44.4% 0.011 73.639);
   --ring: oklch(0.553 0.013 58.071);
-  --star: oklch(0.9 0.15 85.0);
+  --star: oklch(0.9 0.15 85);
 
   /* Callout Colors - Dark Mode (from Figma) */
   --callout-info-bg: oklch(21.6% 0.006 56.043); /* stone-900 */

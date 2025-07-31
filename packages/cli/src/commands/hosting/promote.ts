@@ -58,9 +58,11 @@ export const promoteApp = async ({
     }
 
     const { apps } = publishedAppsResponse.structuredContent as {
-      apps: Array<
-        { name: string; friendlyName?: string; description?: string }
-      >;
+      apps: Array<{
+        name: string;
+        friendlyName?: string;
+        description?: string;
+      }>;
     };
 
     if (apps.length === 0) {
@@ -107,15 +109,16 @@ export const promoteApp = async ({
   });
 
   if (
-    deploymentsResponse.isError && Array.isArray(deploymentsResponse.content)
+    deploymentsResponse.isError &&
+    Array.isArray(deploymentsResponse.content)
   ) {
     throw new Error(
       deploymentsResponse.content[0]?.text ?? "Failed to list deployments",
     );
   }
 
-  const { deployments, app } = deploymentsResponse
-    .structuredContent as AppDeploymentsResponse;
+  const { deployments, app } =
+    deploymentsResponse.structuredContent as AppDeploymentsResponse;
 
   if (deployments.length === 0) {
     console.log("📭 No deployments found for this app.");
@@ -136,9 +139,9 @@ export const promoteApp = async ({
     } else {
       // Show deployments with creation time
       const deploymentOptions = deployments.map((dep) => ({
-        name: `${dep.id} - ${
-          new Date(dep.created_at).toLocaleString()
-        } (${dep.entrypoint})`,
+        name: `${dep.id} - ${new Date(
+          dep.created_at,
+        ).toLocaleString()} (${dep.entrypoint})`,
         value: dep.id,
       }));
 
@@ -154,8 +157,8 @@ export const promoteApp = async ({
     }
   }
 
-  const selectedDeployment = deployments.find((d) =>
-    d.id === selectedDeploymentId
+  const selectedDeployment = deployments.find(
+    (d) => d.id === selectedDeploymentId,
   );
   if (!selectedDeployment) {
     throw new Error(`Deployment ${selectedDeploymentId} not found`);

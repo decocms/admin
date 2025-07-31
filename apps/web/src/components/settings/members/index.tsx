@@ -20,12 +20,13 @@ function MembersViewLoading({ loadingMessage }: { loadingMessage: string }) {
   );
 }
 
-function MembersViewContent(
-  { tab, onTabChange }: {
-    tab: "members" | "roles";
-    onTabChange: (tab: "members" | "roles") => void;
-  },
-) {
+function MembersViewContent({
+  tab,
+  onTabChange,
+}: {
+  tab: "members" | "roles";
+  onTabChange: (tab: "members" | "roles") => void;
+}) {
   const { slug } = useCurrentTeam();
   const { data: team } = useTeam(slug);
   const teamId = useMemo(() => team?.id, [team?.id]);
@@ -68,9 +69,11 @@ function MembersViewContent(
           }}
         />
 
-        {tab === "members"
-          ? <MembersTableView teamId={teamId} user={user} />
-          : <RolesTableView teamId={teamId} />}
+        {tab === "members" ? (
+          <MembersTableView teamId={teamId} user={user} />
+        ) : (
+          <RolesTableView teamId={teamId} />
+        )}
       </div>
     </div>
   );
@@ -84,9 +87,9 @@ export default function MembersSettings() {
       <Suspense
         fallback={
           <MembersViewLoading
-            loadingMessage={tab === "members"
-              ? "Loading members..."
-              : "Loading roles..."}
+            loadingMessage={
+              tab === "members" ? "Loading members..." : "Loading roles..."
+            }
           />
         }
       >

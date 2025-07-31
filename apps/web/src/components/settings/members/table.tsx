@@ -200,8 +200,10 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
         );
       } catch (error) {
         const errorMessage =
-          (typeof error === "object" && !!error && "message" in error &&
-            error.message as string) ||
+          (typeof error === "object" &&
+            !!error &&
+            "message" in error &&
+            (error.message as string)) ||
           "Failed to update role";
         toast.error(errorMessage);
         console.error("Failed to update member role:", error);
@@ -275,12 +277,12 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                   const currentRoleIds = row.roles.map((r) => r.id.toString());
                   // TODO: improve algorigthm is performance
                   const roleIdString = addedNewRole
-                    ? newValues.find((roleId) =>
-                      !currentRoleIds.includes(roleId)
-                    )
-                    : currentRoleIds.find((roleId) =>
-                      !newValues.includes(roleId)
-                    );
+                    ? newValues.find(
+                        (roleId) => !currentRoleIds.includes(roleId),
+                      )
+                    : currentRoleIds.find(
+                        (roleId) => !newValues.includes(roleId),
+                      );
 
                   const roleId = Number(roleIdString);
 
@@ -303,7 +305,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
             );
           } else if (row.type === "invite" && row.invite) {
             const selectedRoleIds = row.invite.roles.map((r) =>
-              r.id.toString()
+              r.id.toString(),
             );
             const roleOptions = roles.map((role) => ({
               label: role.name,
@@ -374,12 +376,14 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                     setResendingInviteId(null);
                   }
                 }}
-                disabled={resendingInviteId === row.invite.id.toString() ||
-                  inviteTeamMember.isPending}
+                disabled={
+                  resendingInviteId === row.invite.id.toString() ||
+                  inviteTeamMember.isPending
+                }
               >
                 <Icon name="mail" />
                 {resendingInviteId === row.invite.id.toString() ||
-                    inviteTeamMember.isPending
+                inviteTeamMember.isPending
                   ? "Resending..."
                   : "Resend invite"}
               </DropdownMenuItem>
@@ -396,11 +400,13 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                   handleRemoveMember(row.member.id);
                 }
               }}
-              disabled={removeMemberMutation.isPending ||
-                rejectInvite.isPending}
+              disabled={
+                removeMemberMutation.isPending || rejectInvite.isPending
+              }
             >
               {(() => {
-                const isCurrentUser = row.type === "member" &&
+                const isCurrentUser =
+                  row.type === "member" &&
                   row.userId &&
                   user &&
                   row.userId === user.id;
@@ -410,7 +416,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                     <>
                       <Icon name="delete" />
                       {rejectInvite.isPending &&
-                          rejectInvite.variables?.id === row.id
+                      rejectInvite.variables?.id === row.id
                         ? "Removing..."
                         : "Delete invitation"}
                     </>
@@ -420,7 +426,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                     <>
                       <Icon name="waving_hand" />
                       {removeMemberMutation.isPending &&
-                          removeMemberMutation.variables?.memberId === row.id
+                      removeMemberMutation.variables?.memberId === row.id
                         ? "Leaving..."
                         : "Leave team"}
                     </>
@@ -430,7 +436,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
                     <>
                       <Icon name="waving_hand" />
                       {removeMemberMutation.isPending &&
-                          removeMemberMutation.variables?.memberId === row.id
+                      removeMemberMutation.variables?.memberId === row.id
                         ? "Removing..."
                         : "Remove Member"}
                     </>
@@ -489,7 +495,7 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
     (key: string) => {
       if (sortKey === key) {
         setSortDirection((prev: "asc" | "desc") =>
-          prev === "asc" ? "desc" : "asc"
+          prev === "asc" ? "desc" : "asc",
         );
       } else {
         setSortKey(key);
@@ -514,21 +520,19 @@ export function MembersTableView({ teamId, user }: MembersTableViewProps) {
   return (
     <>
       <MemberTableHeader onChange={setQuery} teamId={teamId} />
-      {members.length === 0
-        ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No members found. Add team members to get started.
-          </div>
-        )
-        : (
-          <Table
-            columns={columns}
-            data={sortedData}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-          />
-        )}
+      {members.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No members found. Add team members to get started.
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          data={sortedData}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+      )}
     </>
   );
 }

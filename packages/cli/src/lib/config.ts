@@ -105,7 +105,7 @@ export const readWranglerConfig = async (cwd?: string) => {
  */
 const readConfigFile = async (cwd?: string) => {
   const wranglerConfig = await readWranglerConfig(cwd);
-  const decoConfig = wranglerConfig.deco ?? {} as Partial<Config>;
+  const decoConfig = wranglerConfig.deco ?? ({} as Partial<Config>);
   return decoConfig;
 };
 
@@ -132,13 +132,10 @@ export const writeWranglerConfig = async (
   const currentConfig = await readWranglerConfig(targetCwd);
   const mergedConfig = { ...currentConfig, ...config };
   mergedConfig.scope ??= mergedConfig.scope ?? mergedConfig?.deco?.workspace;
-  const configPath = getConfigFilePath(targetCwd) ??
-    join(targetCwd, CONFIG_FILE);
+  const configPath =
+    getConfigFilePath(targetCwd) ?? join(targetCwd, CONFIG_FILE);
 
-  await fs.writeFile(
-    configPath,
-    addSchemaNotation(stringify(mergedConfig)),
-  );
+  await fs.writeFile(configPath, addSchemaNotation(stringify(mergedConfig)));
   console.log(`✅ Wrangler configuration written to: ${configPath}`);
 };
 
@@ -147,8 +144,8 @@ export const addWorkflowDO = async () => {
   const currentDOs = wranglerConfig.durable_objects?.bindings ?? [];
   const workflowsBindings = {
     migrations: [
-      ...(wranglerConfig.migrations ?? []).filter((m) =>
-        !m.new_classes?.includes(DECO_CHAT_WORKFLOW_BINDING.class_name)
+      ...(wranglerConfig.migrations ?? []).filter(
+        (m) => !m.new_classes?.includes(DECO_CHAT_WORKFLOW_BINDING.class_name),
       ),
       {
         tag: "v1",
@@ -180,18 +177,20 @@ export const writeConfigFile = async (
 ) => {
   const targetCwd = cwd || process.cwd();
   const wranglerConfig = await readWranglerConfig(targetCwd);
-  const current = wranglerConfig.deco ?? {} as Partial<Config>;
+  const current = wranglerConfig.deco ?? ({} as Partial<Config>);
   const mergedConfig = merge ? { ...current, ...config } : config;
 
-  const configPath = getConfigFilePath(targetCwd) ??
-    join(targetCwd, CONFIG_FILE);
+  const configPath =
+    getConfigFilePath(targetCwd) ?? join(targetCwd, CONFIG_FILE);
 
   await fs.writeFile(
     configPath,
-    addSchemaNotation(stringify({
-      ...wranglerConfig,
-      deco: mergedConfig,
-    })),
+    addSchemaNotation(
+      stringify({
+        ...wranglerConfig,
+        deco: mergedConfig,
+      }),
+    ),
   );
   console.log(`✅ Deco configuration written to: ${configPath}`);
 };
@@ -203,18 +202,19 @@ export const writeConfigFile = async (
  * @param cwd - The current working directory to read config from.
  * @returns The config.
  */
-export const getConfig = async (
-  { inlineOptions = {}, cwd }: {
-    inlineOptions?: Partial<Config>;
-    cwd?: string;
-  } = {},
-) => {
+export const getConfig = async ({
+  inlineOptions = {},
+  cwd,
+}: {
+  inlineOptions?: Partial<Config>;
+  cwd?: string;
+} = {}) => {
   const config = await readConfigFile(cwd);
   const merged = {
     ...config,
     ...Object.fromEntries(
-      Object.entries(inlineOptions).filter(([_key, value]) =>
-        value !== undefined
+      Object.entries(inlineOptions).filter(
+        ([_key, value]) => value !== undefined,
       ),
     ),
   };
@@ -299,10 +299,7 @@ export const getAppUUID = (
  * @param app - The app name
  * @returns A domain string for the app.
  */
-export const getAppDomain = (
-  workspace: string,
-  app: string,
-): string => {
+export const getAppDomain = (workspace: string, app: string): string => {
   const appUUID = getAppUUID(workspace, app);
   return `localhost-${appUUID}.deco.host`;
 };
@@ -316,10 +313,7 @@ export type MCPConfig = {
   };
 };
 
-export function getMCPConfig(
-  workspace: string,
-  app: string,
-): MCPConfig {
+export function getMCPConfig(workspace: string, app: string): MCPConfig {
   const appDomain = getAppDomain(workspace, app);
 
   return {

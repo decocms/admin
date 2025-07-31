@@ -18,15 +18,7 @@ export interface Props extends HTMLAttributes<HTMLSpanElement> {
  * For available icons, see: https://lucide.dev/icons
  * Use the exact component name without "Icon" suffix (e.g., "MoveUpRight", "Folder", "FileText")
  */
-export function Icon(
-  {
-    name,
-    size = 16,
-    style,
-    className,
-    ...props
-  }: Props,
-) {
+export function Icon({ name, size = 16, style, className, ...props }: Props) {
   // Use the name directly as the component name
   const LucideIcon = LucideIcons[name as keyof typeof LucideIcons];
 

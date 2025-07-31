@@ -28,14 +28,11 @@ export function Navigation({ previous, next }: NavigationProps) {
                 size={16}
                 className="text-muted-foreground"
               />
-              <span className="text-sm text-muted-foreground">
-                Previous
-              </span>
+              <span className="text-sm text-muted-foreground">Previous</span>
             </div>
 
             <div className="hidden sm:flex items-center justify-center h-8 w-0 flex-shrink-0">
-              <div className="w-8 h-0 border-t border-border rotate-90">
-              </div>
+              <div className="w-8 h-0 border-t border-border rotate-90"></div>
             </div>
 
             <div className="text-left flex-1 min-w-0">
@@ -59,34 +56,32 @@ export function Navigation({ previous, next }: NavigationProps) {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1">
         {/* Previous button */}
         <div className="flex-none">
-          {previous
-            ? (
-              <a
-                href={previous.href}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-foreground transition-colors"
-              >
-                <Icon
-                  name="ChevronLeft"
-                  size={16}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                />
-                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Previous
-                </span>
-              </a>
-            )
-            : (
-              <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
-                <Icon
-                  name="ChevronLeft"
-                  size={16}
-                  className="text-muted-foreground"
-                />
-                <span className="text-sm text-muted-foreground leading-5">
-                  Previous
-                </span>
-              </div>
-            )}
+          {previous ? (
+            <a
+              href={previous.href}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:text-foreground transition-colors"
+            >
+              <Icon
+                name="ChevronLeft"
+                size={16}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              />
+              <span className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Previous
+              </span>
+            </a>
+          ) : (
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-50">
+              <Icon
+                name="ChevronLeft"
+                size={16}
+                className="text-muted-foreground"
+              />
+              <span className="text-sm text-muted-foreground leading-5">
+                Previous
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Next button */}
@@ -108,8 +103,7 @@ export function Navigation({ previous, next }: NavigationProps) {
               </div>
 
               <div className="hidden sm:flex items-center justify-center h-8 w-0 flex-shrink-0">
-                <div className="w-8 h-0 border-t border-border rotate-90">
-                </div>
+                <div className="w-8 h-0 border-t border-border rotate-90"></div>
               </div>
 
               <div className="flex items-center gap-3 px-3 py-2 rounded-lg flex-shrink-0">

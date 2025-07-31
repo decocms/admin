@@ -49,23 +49,21 @@ export function Chiplet(props: ChipletProps) {
           type="button"
         >
           {item.label}
-          <span className="text-xs text-muted-foreground">
-            {item.count}
-          </span>
+          <span className="text-xs text-muted-foreground">{item.count}</span>
         </Button>
       </TooltipTrigger>
       {item.tooltip && (
-        <TooltipContent side="bottom">
-          {item.tooltip}
-        </TooltipContent>
+        <TooltipContent side="bottom">{item.tooltip}</TooltipContent>
       )}
     </Tooltip>
   );
 }
 
-export function ListPageHeader<TChiplet extends Chiplet>(
-  { filter, input, view }: Props<TChiplet>,
-) {
+export function ListPageHeader<TChiplet extends Chiplet>({
+  filter,
+  input,
+  view,
+}: Props<TChiplet>) {
   return (
     <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-2">
       <div className="flex items-center gap-2">

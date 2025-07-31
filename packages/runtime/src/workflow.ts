@@ -49,8 +49,10 @@ export const Workflow = (
   server: MCPServer<any, any>,
   workflows?: CreateMCPServerOptions["workflows"],
 ) => {
-  return class Workflow extends DurableObject<DefaultEnv>
-    implements WorkflowDO {
+  return class Workflow
+    extends DurableObject<DefaultEnv>
+    implements WorkflowDO
+  {
     constructor(
       public override ctx: DurableObjectState,
       public override env: DefaultEnv,
@@ -59,11 +61,7 @@ export const Workflow = (
     }
 
     bindings(ctx: RequestContext) {
-      return withBindings<DefaultEnv>(
-        this.env,
-        server,
-        ctx,
-      );
+      return withBindings<DefaultEnv>(this.env, server, ctx);
     }
 
     runWithContext<T>(
@@ -71,29 +69,31 @@ export const Workflow = (
       f: (ctx: DefaultEnv) => Promise<T>,
     ): Promise<T> {
       const bindings = this.bindings(ctx);
-      return State.run({
-        ctx: {
-          waitUntil: this.ctx.waitUntil.bind(this.ctx),
+      return State.run(
+        {
+          ctx: {
+            waitUntil: this.ctx.waitUntil.bind(this.ctx),
+          },
+          env: this.bindings(ctx),
         },
-        env: this.bindings(ctx),
-      }, () => f(bindings));
+        () => f(bindings),
+      );
     }
 
     async #getWorkflow(
       workflowId: string,
       bindings: DefaultEnv,
     ): Promise<{ workflow: MastraWorkflow }> {
-      const bindedWorkflows = await Promise
-        .all(
-          workflows?.map(async (workflow) => {
-            const workflowResult = workflow(bindings);
-            if (isWorkflow(workflowResult)) {
-              return { workflow: workflowResult };
-            }
+      const bindedWorkflows = await Promise.all(
+        workflows?.map(async (workflow) => {
+          const workflowResult = workflow(bindings);
+          if (isWorkflow(workflowResult)) {
+            return { workflow: workflowResult };
+          }
 
-            return await workflowResult;
-          }) ?? [],
-        );
+          return await workflowResult;
+        }) ?? [],
+      );
       const workflowsMap = Object.fromEntries(
         bindedWorkflows.map((w) => [w.workflow.id, w.workflow]),
       );
@@ -142,10 +142,9 @@ export const Workflow = (
           workflowId,
           this.bindings(ctx),
         );
-        const run = await workflow
-          .createRunAsync({
-            runId: this.ctx.id.name ?? runId,
-          });
+        const run = await workflow.createRunAsync({
+          runId: this.ctx.id.name ?? runId,
+        });
 
         this.ctx.waitUntil(run.cancel());
 
@@ -154,13 +153,7 @@ export const Workflow = (
         };
       });
     }
-    resume({
-      workflowId,
-      runId,
-      resumeData,
-      stepId,
-      ctx,
-    }: ResumeWorkflowArgs) {
+    resume({ workflowId, runId, resumeData, stepId, ctx }: ResumeWorkflowArgs) {
       return this.runWithContext(ctx, async (bindings) => {
         const { workflow } = await this.#getWorkflow(workflowId, bindings);
         const run = await workflow.createRunAsync({

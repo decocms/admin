@@ -29,18 +29,15 @@ export interface JWTPrincipal extends JWTPayload {
 const usesD1FeatureFlag: Record<string, boolean> = {
   "/shared/libertas": true,
 };
-export type Principal =
-  | UserPrincipal
-  | JWTPrincipal;
+export type Principal = UserPrincipal | JWTPrincipal;
 
 export const workspaceDB = async (
   c: AppContext,
   d1?: boolean,
 ): Promise<IWorkspaceDB> => {
   assertHasWorkspace(c);
-  d1 = typeof d1 === "boolean"
-    ? d1
-    : usesD1FeatureFlag[c.workspace.value] || d1;
+  d1 =
+    typeof d1 === "boolean" ? d1 : usesD1FeatureFlag[c.workspace.value] || d1;
   if (d1) {
     const dbId = await getWorkspaceD1Database(c);
     return {
@@ -87,9 +84,7 @@ export interface Vars {
   kbFileProcessor?: Workflow;
   workspaceDO: DurableObjectNamespace<IWorkspaceDB & Rpc.DurableObjectBranded>;
   stub: <
-    Constructor extends
-      | ActorConstructor<Trigger>
-      | ActorConstructor<AIAgent>,
+    Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
   >(
     c: Constructor,
   ) => StubFactory<InstanceType<Constructor>>;
@@ -214,9 +209,7 @@ export interface Tool<
   description: string;
   inputSchema: z.ZodType<TInput>;
   outputSchema?: z.ZodType<TReturn>;
-  handler: (
-    props: TInput,
-  ) => Promise<TReturn> | TReturn;
+  handler: (props: TInput) => Promise<TReturn> | TReturn;
 }
 
 export function createToolGroup(
@@ -230,33 +223,31 @@ export function createToolGroup(
   );
 }
 
-export const withMCPErrorHandling = <
-  TInput = any,
-  TReturn extends object | null | boolean = object,
->(f: (props: TInput) => Promise<TReturn>) =>
-async (props: TInput) => {
-  try {
-    const result = await f(props);
+export const withMCPErrorHandling =
+  <TInput = any, TReturn extends object | null | boolean = object>(
+    f: (props: TInput) => Promise<TReturn>,
+  ) =>
+  async (props: TInput) => {
+    try {
+      const result = await f(props);
 
-    return {
-      isError: false,
-      structuredContent: result,
-    };
-  } catch (error) {
-    return {
-      isError: true,
-      content: [{ type: "text", text: serializeError(error) }],
-    };
-  }
-};
+      return {
+        isError: false,
+        structuredContent: result,
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{ type: "text", text: serializeError(error) }],
+      };
+    }
+  };
 
 type ToolName = string;
 type GroupName = string;
 export const resourceGroupMap = new Map<ToolName, GroupName | undefined>();
 
-export function createToolFactory<
-  TAppContext extends AppContext = AppContext,
->(
+export function createToolFactory<TAppContext extends AppContext = AppContext>(
   contextFactory: (c: AppContext) => TAppContext,
   group?: string,
   integration?: GroupIntegration,
@@ -283,9 +274,7 @@ export function createToolFactory<
           console.warn(
             `User cannot access this tool ${def.name}. Did you forget to call ctx.authTools.setAccess(true)?`,
           );
-          throw new ForbiddenError(
-            `User cannot access this tool ${def.name}.`,
-          );
+          throw new ForbiddenError(`User cannot access this tool ${def.name}.`);
         }
 
         return result;

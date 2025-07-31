@@ -22,14 +22,16 @@ import {
 } from "./config.js";
 import process from "node:process";
 
-type MCPServerConfig = {
-  command: string;
-  args: string[];
-} | {
-  url: string;
-  type: "http" | "sse";
-  headers?: Record<string, string>;
-};
+type MCPServerConfig =
+  | {
+      command: string;
+      args: string[];
+    }
+  | {
+      url: string;
+      type: "http" | "sse";
+      headers?: Record<string, string>;
+    };
 
 export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>;
@@ -57,8 +59,10 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
       const configs = [];
 
       const configPath = join(outDir, "mcp.json");
-      const existingConfig: MCPConfig = await fs.readFile(configPath, "utf-8")
-        .then(JSON.parse).catch(() => ({ mcpServers: {} }));
+      const existingConfig: MCPConfig = await fs
+        .readFile(configPath, "utf-8")
+        .then(JSON.parse)
+        .catch(() => ({ mcpServers: {} }));
 
       const config = {
         mcpServers: {
@@ -89,8 +93,10 @@ const IDE_SUPPORT: Record<string, IDESupport> = {
       const configs = [];
 
       const configPath = join(outDir, "mcp.json");
-      const existingConfig: MCPConfig = await fs.readFile(configPath, "utf-8")
-        .then(JSON.parse).catch(() => ({ mcpServers: {} }));
+      const existingConfig: MCPConfig = await fs
+        .readFile(configPath, "utf-8")
+        .then(JSON.parse)
+        .catch(() => ({ mcpServers: {} }));
 
       const config = {
         mcpServers: {
@@ -129,10 +135,7 @@ export async function writeIDEConfig(configs: IDEConfig[]): Promise<void> {
   console.log(`✅ IDE configuration written to: ${targetDir}`);
 }
 
-export const hasMCPPreferences = async (
-  workspace: string,
-  app: string,
-) => {
+export const hasMCPPreferences = async (workspace: string, app: string) => {
   const [appUUID, currentVersion] = await Promise.all([
     getAppUUID(workspace, app),
     getMCPConfigVersion(),
@@ -190,28 +193,32 @@ export async function promptIDESetup(
   const mcpConfig = getMCPConfig(cfg.workspace, cfg.app);
 
   // Ask if user wants to make IDE sentient
-  const { wantsSentientIDE } = await inquirer.prompt([{
-    type: "confirm",
-    name: "wantsSentientIDE",
-    message: "Would you like to configure your IDE to use this project?",
-    default: true,
-  }]);
+  const { wantsSentientIDE } = await inquirer.prompt([
+    {
+      type: "confirm",
+      name: "wantsSentientIDE",
+      message: "Would you like to configure your IDE to use this project?",
+      default: true,
+    },
+  ]);
 
   if (!wantsSentientIDE) {
     return null;
   }
 
   // Prompt user to select their IDE
-  const { selectedIDE } = await inquirer.prompt([{
-    type: "list",
-    name: "selectedIDE",
-    message: "Select your preferred IDE:",
-    choices: [
-      { name: "Cursor", value: "cursor" },
-      { name: "VS Code", value: "vscode" },
-      { name: "None", value: "none" },
-    ],
-  }]);
+  const { selectedIDE } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "selectedIDE",
+      message: "Select your preferred IDE:",
+      choices: [
+        { name: "Cursor", value: "cursor" },
+        { name: "VS Code", value: "vscode" },
+        { name: "None", value: "none" },
+      ],
+    },
+  ]);
 
   const ideSupport = IDE_SUPPORT[selectedIDE];
 
@@ -220,10 +227,7 @@ export async function promptIDESetup(
   }
 
   // Create the IDE-specific configuration
-  const configs = await ideSupport.createConfig(
-    mcpConfig,
-    projectRoot,
-  );
+  const configs = await ideSupport.createConfig(mcpConfig, projectRoot);
 
   return configs;
 }

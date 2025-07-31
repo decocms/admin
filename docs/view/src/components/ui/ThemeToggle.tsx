@@ -8,7 +8,7 @@ export function ThemeToggle() {
   useEffect(() => {
     // Get saved theme from localStorage or default to auto
     const savedTheme =
-      localStorage.getItem("theme") as "light" | "dark" | "auto" || "auto";
+      (localStorage.getItem("theme") as "light" | "dark" | "auto") || "auto";
     setTheme(savedTheme);
     // Don't apply theme here since the script in the head already does it
   }, []);
@@ -18,8 +18,9 @@ export function ThemeToggle() {
 
     if (newTheme === "auto") {
       // Use system preference
-      const prefersDark =
-        globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = globalThis.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
       html.setAttribute("data-theme", prefersDark ? "dark" : "light");
     } else {
       html.setAttribute("data-theme", newTheme);
@@ -29,11 +30,8 @@ export function ThemeToggle() {
   };
 
   const cycleTheme = () => {
-    const nextTheme = theme === "light"
-      ? "dark"
-      : theme === "dark"
-      ? "auto"
-      : "light";
+    const nextTheme =
+      theme === "light" ? "dark" : theme === "dark" ? "auto" : "light";
     setTheme(nextTheme);
     applyTheme(nextTheme);
   };

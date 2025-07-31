@@ -18,8 +18,8 @@ export const assertsDomainOwnership = async (
   const addresses = await resolvePromise.promise;
   const targetAddress = Entrypoint.host(scriptSlug);
   if (
-    !addresses.some((addr: string) =>
-      addr === targetAddress || addr === `${targetAddress}.`
+    !addresses.some(
+      (addr: string) => addr === targetAddress || addr === `${targetAddress}.`,
     )
   ) {
     throw new UserInputError(
@@ -54,15 +54,14 @@ export const assertsDomainUniqueness = async (
     const deployment = data.deco_chat_hosting_apps_deployments;
     const hostingApp = deployment?.deco_chat_hosting_apps;
     if (
-      hostingApp && hostingApp.slug === slug &&
+      hostingApp &&
+      hostingApp.slug === slug &&
       hostingApp.workspace === c.workspace?.value
     ) {
       // Domain is already allocated to the same script, so skip the check
       return;
     }
 
-    throw new UserInputError(
-      `The domain ${domain} is already in use`,
-    );
+    throw new UserInputError(`The domain ${domain} is already in use`);
   }
 };

@@ -524,7 +524,6 @@ export const updateIntegration = createIntegrationManagementTool({
       throw new UserInputError("Cannot update an agent integration");
     }
 
-    // should we add appName and appId to the table?
     const { appName: _appName, appId: _appId, ...rest } = integration;
 
     const { data, error } = await c.db

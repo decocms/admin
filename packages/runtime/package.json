@@ -6,10 +6,10 @@
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
     "zod": "^3.25.67",
-    "@mastra/core": "0.10.12",
+    "@mastra/core": "0.12.1",
     "@modelcontextprotocol/sdk": "1.11.4",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
-    "@mastra/cloudflare-d1": "0.12.1",
+    "@mastra/cloudflare-d1": "0.12.4",
     "jose": "^6.0.11",
     "zod-to-json-schema": "^3.24.4",
     "@dmitryrechkin/json-schema-to-zod": "1.0.1",

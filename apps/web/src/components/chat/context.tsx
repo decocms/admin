@@ -134,7 +134,7 @@ export function ChatProvider({
             sendReasoning: preferences.sendReasoning ?? true,
             tools: agent?.tools_set,
             maxSteps: agent?.max_steps,
-            pdfPreprocessing: preferences.pdfPreprocessing ?? true,
+            pdfSummarization: preferences.pdfSummarization ?? true,
             toolsets,
             smoothStream:
               preferences.smoothStream !== false

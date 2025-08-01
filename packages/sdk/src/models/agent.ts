@@ -153,7 +153,7 @@ export const AgentGenerateOptions = z.object({
   enableSemanticRecall: z.boolean().optional(),
   maxSteps: z.number().optional(),
   toolsets: z.array(ToolsetSchema).optional(),
-  pdfPreprocessing: z
+  pdfSummarization: z
     .boolean()
     .optional()
     .describe(

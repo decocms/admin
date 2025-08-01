@@ -93,6 +93,7 @@ function UserPreferencesModal({
       useOpenRouter: preferences.useOpenRouter,
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
+      pdfSummarization: preferences.pdfSummarization,
     },
   });
   const {
@@ -105,6 +106,7 @@ function UserPreferencesModal({
     useOpenRouter: boolean;
     sendReasoning: boolean;
     smoothStream: boolean;
+    pdfSummarization: boolean;
   }) {
     setPreferences(data);
     form.reset(data);
@@ -218,6 +220,33 @@ function UserPreferencesModal({
                   </div>
                   <FormDescription>
                     Display AI reasoning tokens in the chat.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="pdfSummarization"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <FormControl>
+                      <Switch
+                        id="pdfSummarization"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="pdfSummarization"
+                      className="cursor-pointer"
+                    >
+                      Summarize PDFs
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Summarize large PDFs to reduce token usage and enable larger
+                    PDF support.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

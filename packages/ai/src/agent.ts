@@ -1070,7 +1070,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
     );
     const bypassOpenRouter = isClaude && hasPdf;
 
-    if (hasPdf && options?.pdfPreprocessing && hasMinimumSizeForSummarization) {
+    if (hasPdf && options?.pdfSummarization && hasMinimumSizeForSummarization) {
       if (!this.metadata?.mcpClient) {
         throw new Error("MCP client not found");
       }

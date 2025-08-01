@@ -161,7 +161,7 @@ export const migrate = createDatabaseTool({
     console.log("📋 Migration parameters:", { dryRun, tables, batchSize });
 
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess("DATABASES_RUN_SQL", c);
+    await assertWorkspaceResourceAccess({ resource: "DATABASES_RUN_SQL" }, c);
 
     const startTime = Date.now();
     const newDb = await workspaceDB(c, false);

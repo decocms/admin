@@ -109,7 +109,7 @@ export const listThreads = createTool({
   handler: async ({ limit, agentId, orderBy, cursor, resourceId }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     orderBy ??= "createdAt_desc";
     // Parse orderBy parameter
@@ -241,7 +241,7 @@ export const getThreadMessages = createTool({
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
@@ -276,7 +276,7 @@ export const getThread = createTool({
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -302,7 +302,7 @@ export const getThreadTools = createTool({
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
@@ -331,7 +331,7 @@ export const updateThreadTitle = createTool({
   handler: async ({ threadId, title }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     const memory = await getWorkspaceMemory(c);
 
@@ -373,7 +373,7 @@ export const updateThreadMetadata = createTool({
   handler: async ({ threadId, metadata }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
 
     const memory = await getWorkspaceMemory(c);
 

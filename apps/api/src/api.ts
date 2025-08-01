@@ -338,7 +338,7 @@ app.post("/:root/:slug/:integrationId/mcp", async (c) => {
   return mcpServerProxy.fetch(c.req.raw);
 });
 
-app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {
+app.post("/:root/:slug/:integrationId/tools/call", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
 
   const callToolParam = {

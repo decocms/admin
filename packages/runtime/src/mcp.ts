@@ -140,6 +140,7 @@ export type JSONSchemaToZodConverter = (jsonSchema: any) => z.ZodTypeAny;
 export interface CreateStubAPIOptions {
   decoChatApiUrl?: string;
   workspace?: string;
+  integrationId?: string;
   token?: string;
   connection?: MCPConnectionProvider;
   debugId?: () => string;

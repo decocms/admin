@@ -1064,29 +1064,37 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         resourceId: options?.resourceId ?? this._thread.resourceId,
       };
 
-    const isClaude = (options?.model ?? this._configuration?.model ?? "").includes("claude");
-    const { hasPdf, hasMinimumSizeForSummarization } = shouldSummarizePDFs(
-      payload as Message[],
-    );
-    const bypassOpenRouter = isClaude && hasPdf;
-
-    if (hasPdf && options?.pdfSummarization && hasMinimumSizeForSummarization) {
-      if (!this.metadata?.mcpClient) {
-        throw new Error("MCP client not found");
-      }
-      const processedMessages = await summarizePDFMessages(
+      const isClaude = (
+        options?.model ??
+        this._configuration?.model ??
+        ""
+      ).includes("claude");
+      const { hasPdf, hasMinimumSizeForSummarization } = shouldSummarizePDFs(
         payload as Message[],
-        this.metadata.mcpClient,
-        {
-          // TODO: fallback to a custom model if this one is disabled.
-          model: "openai:gpt-4.1-mini",
-          maxChunkSize: 8_000,
-          maxSummaryTokens: 2_000,
-          maxTotalTokens: 16_000,
-        },
       );
-      payload = processedMessages as typeof payload;
-    }
+      const bypassOpenRouter = isClaude && hasPdf;
+
+      if (
+        hasPdf &&
+        options?.pdfSummarization &&
+        hasMinimumSizeForSummarization
+      ) {
+        if (!this.metadata?.mcpClient) {
+          throw new Error("MCP client not found");
+        }
+        const processedMessages = await summarizePDFMessages(
+          payload as Message[],
+          this.metadata.mcpClient,
+          {
+            // TODO: fallback to a custom model if this one is disabled.
+            model: "openai:gpt-4.1-mini",
+            maxChunkSize: 8_000,
+            maxSummaryTokens: 2_000,
+            maxTotalTokens: 16_000,
+          },
+        );
+        payload = processedMessages as typeof payload;
+      }
 
       /*
        * Additional context from the payload, through annotations (converting to a CoreMessage-like object)

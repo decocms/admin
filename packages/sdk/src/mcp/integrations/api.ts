@@ -66,7 +66,7 @@ const mapConnection = (
   integrationId: string,
   ctx: AppContext,
 ) => ({
-  ...connection as MCPConnection,
+  ...(connection as MCPConnection),
   token: undefined,
   url: new URL(
     `${ctx.workspace!.value}/${integrationId}/mcp`,
@@ -79,31 +79,33 @@ type MapConnection = (
   integrationId: string,
 ) => MCPConnection;
 // Tool factories for each group
-export const mapIntegration = (mapConnection: MapConnection) =>
-(
-  integration: QueryResult<
-    "deco_chat_integrations",
-    typeof SELECT_INTEGRATION_QUERY
-  >,
-) => {
-  let appName: undefined | string;
-  const registryName = integration.deco_chat_apps_registry?.name;
-  const appScope =
-    integration.deco_chat_apps_registry?.deco_chat_registry_scopes?.scope_name;
-  if (registryName && appScope) {
-    appName = `@${appScope}/${registryName}`;
-  }
-  const parsedIntegrationId = formatId("i", integration.id);
-  return {
-    ...integration,
-    connection: mapConnection(
-      integration.connection as MCPConnection,
-      parsedIntegrationId,
-    ),
-    appName,
-    id: parsedIntegrationId,
+export const mapIntegration =
+  (mapConnection: MapConnection) =>
+  (
+    integration: QueryResult<
+      "deco_chat_integrations",
+      typeof SELECT_INTEGRATION_QUERY
+    >,
+  ) => {
+    let appName: undefined | string;
+    const registryName = integration.deco_chat_apps_registry?.name;
+    const appScope =
+      integration.deco_chat_apps_registry?.deco_chat_registry_scopes
+        ?.scope_name;
+    if (registryName && appScope) {
+      appName = `@${appScope}/${registryName}`;
+    }
+    const parsedIntegrationId = formatId("i", integration.id);
+    return {
+      ...integration,
+      connection: mapConnection(
+        integration.connection as MCPConnection,
+        parsedIntegrationId,
+      ),
+      appName,
+      id: parsedIntegrationId,
+    };
   };
-};
 export const parseId = (id: string) => {
   const [type, uuid] = id.includes(":") ? id.split(":") : ["i", id];
   return {
@@ -201,17 +203,10 @@ export const listTools = createIntegrationManagementTool({
     c.resourceAccess.grant();
 
     const connection = isApiDecoChatMCPConnection(_connection)
-      ? patchApiDecoChatTokenHTTPConnection(
-        _connection,
-        c.cookie,
-      )
+      ? patchApiDecoChatTokenHTTPConnection(_connection, c.cookie)
       : _connection;
 
-    const result = await listToolsByConnectionType(
-      connection,
-      c,
-      ignoreCache,
-    );
+    const result = await listToolsByConnectionType(connection, c, ignoreCache);
 
     // Sort tools by name for consistent UI
     if (Array.isArray(result?.tools)) {
@@ -380,15 +375,11 @@ export const listIntegrations = createIntegrationManagementTool({
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    const mapIntegrationForContext = mapIntegration((
-      connection,
-      integrationId,
-    ) => mapConnection(connection, integrationId, c));
-      ...virtualIntegrationsFor(
-        workspace,
-        knowledgeBases.names ?? [],
-        c.token,
-      ),
+    const mapIntegrationForContext = mapIntegration(
+      (connection, integrationId) =>
+        mapConnection(connection, integrationId, c),
+    );
+      ...virtualIntegrationsFor(workspace, knowledgeBases.names ?? [], c.token),
       ...filteredIntegrations.map(mapIntegrationForContext),
       ...filteredAgents
         .map((item) => AgentSchema.safeParse(item)?.data)
@@ -438,92 +429,98 @@ const integrationsGetSchema = z.object({
   id: z.string(),
 });
 
-export const createIntegrationsGet = (
-  { mapConnectionForContext }: {
+export const createIntegrationsGet =
+  ({
+    mapConnectionForContext,
+  }: {
     mapConnectionForContext?: MapConnection;
-  } = {},
-) =>
-async ({ id }: z.infer<typeof integrationsGetSchema>, c: AppContext) => {
-  // preserve the logic of the old canAccess
-  const isInnate = INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
+  } = {}) =>
+  async ({ id }: z.infer<typeof integrationsGetSchema>, c: AppContext) => {
+    // preserve the logic of the old canAccess
+    const isInnate =
+      INNATE_INTEGRATIONS[id as keyof typeof INNATE_INTEGRATIONS];
 
-  const canAccess = isInnate ||
-    await assertWorkspaceResourceAccess(c.tool?.name ?? "", c)
-      .then(() => true)
-      .catch(() => false);
+    const canAccess =
+      isInnate ||
+      (await assertWorkspaceResourceAccess(c.tool?.name ?? "", c)
+        .then(() => true)
+        .catch(() => false));
 
-  if (canAccess) {
-    c.resourceAccess.grant();
-  }
+    if (canAccess) {
+      c.resourceAccess.grant();
+    }
 
-  const { uuid, type } = parseId(id);
-  if (uuid in INNATE_INTEGRATIONS) {
-    const data = INNATE_INTEGRATIONS[uuid as keyof typeof INNATE_INTEGRATIONS];
+    const { uuid, type } = parseId(id);
+    if (uuid in INNATE_INTEGRATIONS) {
+      const data =
       const baseIntegration = IntegrationSchema.parse({
-      ...data,
-      id: formatId(type, data.id),
-    });
+        ...data,
+        id: formatId(type, data.id),
+      });
       return { ...baseIntegration, tools: null }; // Innate integrations don't have tools for now
-  }
-  assertHasWorkspace(c);
+    }
+    assertHasWorkspace(c);
 
-  const selectPromise = type === "i"
-    ? c.db
-      .from("deco_chat_integrations")
-      .select(SELECT_INTEGRATION_QUERY)
-      .eq("id", uuid)
-      .eq("workspace", c.workspace.value)
-      .single().then((r) => r)
-    : c.db
-      .from("deco_chat_agents")
-      .select("*")
-      .eq("id", uuid)
-      .eq("workspace", c.workspace.value)
-      .single().then((r) => r);
+    const selectPromise =
+      type === "i"
+        ? c.db
+            .from("deco_chat_integrations")
+            .select(SELECT_INTEGRATION_QUERY)
+            .eq("id", uuid)
+            .eq("workspace", c.workspace.value)
+            .single()
+            .then((r) => r)
+        : c.db
+            .from("deco_chat_agents")
+            .select("*")
+            .eq("id", uuid)
+            .eq("workspace", c.workspace.value)
+            .single()
+            .then((r) => r);
 
-  const knowledgeBases = await listKnowledgeBases.handler({});
+    const knowledgeBases = await listKnowledgeBases.handler({});
 
-  const virtualIntegrations = virtualIntegrationsFor(
-    c.workspace.value,
-    knowledgeBases.names ?? [],
-    c.token,
-  );
-
-  if (virtualIntegrations.some((i) => i.id === id)) {
-      const baseIntegration = IntegrationSchema.parse({
-      ...virtualIntegrations.find((i) => i.id === id),
-      id: formatId(type, id),
-    });
-      return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
-  }
-
-  const { data, error } = await selectPromise;
-
-  if (!data) {
-    throw new NotFoundError("Integration not found");
-  }
-
-  if (error) {
-    throw new InternalServerError((error as Error).message);
-  }
-
-  if (type === "a") {
-    const mapAgentToIntegration = agentAsIntegrationFor(
-      c.workspace.value as Workspace,
+    const virtualIntegrations = virtualIntegrationsFor(
+      c.workspace.value,
+      knowledgeBases.names ?? [],
       c.token,
     );
+
+    if (virtualIntegrations.some((i) => i.id === id)) {
       const baseIntegration = IntegrationSchema.parse({
-      ...mapAgentToIntegration(data as unknown as Agent),
-      id: formatId(type, data.id),
-    });
+        ...virtualIntegrations.find((i) => i.id === id),
+        id: formatId(type, id),
+      });
+      return { ...baseIntegration, tools: null }; // Virtual integrations don't have tools for now
+    }
+
+    const { data, error } = await selectPromise;
+
+    if (!data) {
+      throw new NotFoundError("Integration not found");
+    }
+
+    if (error) {
+      throw new InternalServerError((error as Error).message);
+    }
+
+    if (type === "a") {
+      const mapAgentToIntegration = agentAsIntegrationFor(
+        c.workspace.value as Workspace,
+        c.token,
+      );
+      const baseIntegration = IntegrationSchema.parse({
+        ...mapAgentToIntegration(data as unknown as Agent),
+        id: formatId(type, data.id),
+      });
       return { ...baseIntegration, tools: null }; // Agents don't have tools for now
-  }
+    }
 
     const integrationData = data as unknown as QueryResult<
-    mapConnectionForContext ??
-      ((connection: MCPConnection, integrationId: string) =>
-        mapConnection(connection, integrationId, c)),
-  );
+      mapConnectionForContext ??
+        ((connection: MCPConnection, integrationId: string) =>
+          mapConnection(connection, integrationId, c)),
+    );
       "deco_chat_integrations",
       typeof SELECT_INTEGRATION_QUERY
     >;
@@ -531,8 +528,8 @@ async ({ id }: z.infer<typeof integrationsGetSchema>, c: AppContext) => {
     const tools = extractToolsFromRegistry(integrationData);
     const baseIntegration = IntegrationSchema.parse({
       ...mapIntegration(integrationData),
-    id: formatId(type, data.id),
-  });
+      id: formatId(type, data.id),
+    });
 
     return { ...baseIntegration, tools };
 export const getIntegration = createIntegrationManagementTool({

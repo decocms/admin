@@ -28,7 +28,7 @@ interface ApiCallConfig {
 }
 
 // Aligns well with the timeout of the MCP server
-const MAX_TIMEOUT = 60_000;
+const MAX_TIMEOUT = 10 * 60_000;
 
 /**
  * Generic function to make API calls to the deco.chat API

@@ -76,6 +76,10 @@ export const MCPClient = new Proxy(
   },
   {
     get(_, name) {
+      if (name === "toJSON") {
+        return null;
+      }
+
       if (name === "forWorkspace") {
         return (workspace: string, token?: string) =>
           createMCPFetchStub<[]>({

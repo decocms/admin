@@ -136,6 +136,10 @@ const withDefaultBindings = (
     {},
     {
       get: (_, prop) => {
+        if (prop === "toJSON") {
+          return null;
+        }
+
         return async (args: unknown) => {
           return await server.callTool({
             toolCallId: prop as string,
@@ -295,8 +299,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       } catch (error) {
         if (error instanceof UnauthorizedError) {
           const referer = req.headers.get("referer");
-          const isFetchRequest =
-            req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+          const isFetchRequest = req.headers.has(DECO_MCP_CLIENT_HEADER) ||
             req.headers.get("sec-fetch-mode") === "cors";
           if (!isFetchRequest) {
             const url = new URL(req.url);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@deco/ui/components/dialog.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { Input } from "@deco/ui/components/input.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
 import { trackEvent } from "../../hooks/analytics.ts";
 import { useUser } from "../../hooks/use-user.ts";
 import {
@@ -18,6 +19,8 @@ import {
   usePlan,
   useSDK,
 } from "@deco/sdk";
+import { useWorkspaceLink } from "../../hooks/use-navigate-workspace.ts";
+import { useSearchParams } from "react-router";
 
 const MINIMUM_AMOUNT = 200; // $2.00 in cents
 
@@ -35,16 +38,47 @@ function parseCurrency(value: string) {
   return value.replace(/\D/g, "");
 }
 
+function useDepositDialog() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isOpen, setIsOpen] = useState(searchParams.has("add_credits"));
+
+  useEffect(() => {
+    // Handle deposit success/failure toasts
+    const depositSuccess = searchParams.get("deposit_success");
+    if (depositSuccess !== null) {
+      if (depositSuccess === "true") {
+        toast.success(
+          "Deposit successful! Your credits have been added to your wallet.",
+        );
+      } else {
+        toast.error("Deposit was cancelled or failed. Please try again.");
+      }
+
+      // Clean up the URL parameter
+      searchParams.delete("deposit_success");
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
+
+  return {
+    isOpen,
+    setIsOpen,
+  };
+}
+
 export function DepositDialog() {
   const { workspace } = useSDK();
+  const workspaceLink = useWorkspaceLink();
   const plan = usePlan();
+  const { isOpen, setIsOpen } = useDepositDialog();
+
   const createCheckoutSession = useMutation({
     mutationFn: (amountInCents: number) =>
       createWalletCheckoutSession({
         workspace,
         amountUSDCents: amountInCents,
-        successUrl: `${location.origin}/settings/billing?success=true`,
-        cancelUrl: `${location.origin}/settings/billing?success=false`,
+        successUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=true")}`,
+        cancelUrl: `${location.origin}${workspaceLink("/monitor/billing?deposit_success=false")}`,
       }),
   });
 
@@ -73,7 +107,7 @@ export function DepositDialog() {
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           variant="special"

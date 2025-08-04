@@ -94,57 +94,6 @@ export const useDuplicateAgent = (agent: Agent | null) => {
   return { duplicate, duplicating };
 };
 
-function IntegrationMiniature({ toolSetId }: { toolSetId: string }) {
-  const { data: integration } = useIntegration(toolSetId);
-  const navigateWorkspace = useNavigateWorkspace();
-
-  if (!integration) {
-    return null;
-  }
-
-  const icon = integration.icon || "icon://linked_services";
-
-  return (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger
-          onClick={(e) => {
-            e.stopPropagation();
-            const appKey = AppKeys.build(getConnectionAppKey(integration));
-            navigateWorkspace(`/connection/${appKey}?edit=${integration.id}`);
-          }}
-          asChild
-        >
-          <div className="w-8 h-8 flex items-center justify-center">
-            <IntegrationIcon icon={icon} size="xs" name={integration.name} />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{integration.name}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
-function IntegrationBadges({ agent, max }: { agent: Agent; max?: number }) {
-  const integrations = Object.entries(agent.tools_set ?? {})
-    .filter(([_, tools]) => tools.length > 0)
-    .slice(0, max ?? Infinity);
-
-  return (
-    <div className="flex gap-0 flex-wrap">
-      {integrations.map(([toolSetId]) => (
-        <ErrorBoundary key={toolSetId} fallback={null}>
-          <Suspense fallback={null}>
-            <IntegrationMiniature toolSetId={toolSetId} />
-          </Suspense>
-        </ErrorBoundary>
-      ))}
-    </div>
-  );
-}
-
 const useCopyLink = (agentId: string) => {
   const { workspace } = useSDK();
 
@@ -283,7 +232,6 @@ function Card({ agent }: { agent: Agent }) {
               {agent.description || "No description"}
             </div>
           </div>
-          <IntegrationBadges agent={agent} />
         </div>
       </CardContent>
     </UICard>
@@ -348,11 +296,6 @@ function TableView({ agents }: { agents: Agent[] }) {
       accessor: (agent: Agent) => agent.description,
       sortable: true,
       cellClassName: "max-w-xl",
-    },
-    {
-      id: "integrations",
-      header: "Connections",
-      render: (agent: Agent) => <IntegrationBadges agent={agent} max={5} />,
     },
     {
       id: "actions",

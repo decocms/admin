@@ -266,11 +266,6 @@ const virtualIntegrationsFor = (
   ];
 };
 
-// Type for integration with tools
-type IntegrationWithTools = Integration & {
-  tools: MCPTool[];
-};
-
 export const listIntegrations = createIntegrationManagementTool({
   name: "INTEGRATIONS_LIST",
   description: "List all integrations with their tools",

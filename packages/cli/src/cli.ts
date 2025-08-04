@@ -164,6 +164,10 @@ const hostingDeploy = new Command("deploy")
     "-f, --force",
     "Force the deployment even if there are breaking changes",
   )
+  .option(
+    "--dry-run",
+    "Write deploy manifest to local filesystem instead of deploying",
+  )
   .argument("[cwd]", "Working directory")
   .action(async (cwd, options) => {
     try {
@@ -186,6 +190,7 @@ const hostingDeploy = new Command("deploy")
         unlisted: !options.public,
         assetsDirectory,
         force: options.force,
+        dryRun: options.dryRun,
       });
     } catch (error) {
       console.error(

@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import { promises as fs } from "fs";
-import { relative } from "path";
+import { relative, join } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
@@ -30,6 +30,7 @@ interface Options {
   unlisted?: boolean;
   assetsDirectory?: string;
   force?: boolean;
+  dryRun?: boolean;
 }
 
 const WRANGLER_CONFIG_FILES = ["wrangler.toml", "wrangler.json"];
@@ -43,8 +44,9 @@ export const deploy = async ({
   skipConfirmation,
   force,
   unlisted = true,
+  dryRun = false,
 }: Options) => {
-  console.log(`\n🚀 Deploying '${appSlug}' to '${workspace}'...\n`);
+  console.log(`\n🚀 ${dryRun ? 'Preparing' : 'Deploying'} '${appSlug}' to '${workspace}'${dryRun ? ' (dry run)' : ''}...\n`);
 
   // Ensure the target directory exists
   try {
@@ -160,6 +162,15 @@ export const deploy = async ({
   console.log(`  Files: ${files.length}`);
   console.log(`  ${envVarsStatus}`);
   console.log(`  ${wranglerConfigStatus}`);
+
+  if (dryRun) {
+    const manifestPath = join(cwd, "deploy-manifest.json");
+    await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+    console.log(`\n📄 Dry run complete! Deploy manifest written to:`);
+    console.log(`  ${manifestPath}`);
+    console.log();
+    return;
+  }
 
   const confirmed =
     skipConfirmation ||

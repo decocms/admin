@@ -46,7 +46,9 @@ export const deploy = async ({
   unlisted = true,
   dryRun = false,
 }: Options) => {
-  console.log(`\n🚀 ${dryRun ? 'Preparing' : 'Deploying'} '${appSlug}' to '${workspace}'${dryRun ? ' (dry run)' : ''}...\n`);
+  console.log(
+    `\n🚀 ${dryRun ? "Preparing" : "Deploying"} '${appSlug}' to '${workspace}'${dryRun ? " (dry run)" : ""}...\n`,
+  );
 
   // Ensure the target directory exists
   try {

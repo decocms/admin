@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import { promises as fs } from "fs";
-import { relative, join } from "path";
+import { relative, join, posix } from "path";
 import { walk } from "../../lib/fs.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
 import { getCurrentEnvVars } from "../../lib/wrangler.js";
@@ -13,6 +13,11 @@ function tryParseJson(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function normalizePath(path: string): string {
+  // Convert Windows backslashes to Unix forward slashes
+  return posix.normalize(path.replace(/\\/g, "/"));
 }
 
 export type FileLike = {
@@ -88,7 +93,7 @@ export const deploy = async ({
       "wasm",
     ],
   })) {
-    const realPath = relative(cwd, entry.path);
+    const realPath = normalizePath(relative(cwd, entry.path));
     const content = await fs.readFile(entry.path, "utf-8");
     files.push({ path: realPath, content });
     if (realPath.endsWith(".ts")) {
@@ -113,7 +118,7 @@ export const deploy = async ({
         /\.dev\.vars/,
       ],
     })) {
-      const realPath = relative(assetsDirectory, entry.path);
+      const realPath = normalizePath(relative(assetsDirectory, entry.path));
       const content = await fs.readFile(entry.path);
       const base64Content = Buffer.from(content).toString("base64");
       files.push({ path: realPath, content: base64Content, asset: true });

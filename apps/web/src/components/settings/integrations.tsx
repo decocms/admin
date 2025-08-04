@@ -437,7 +437,7 @@ function ToolsAndKnowledgeTab() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Connections />
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
-            <Knowledge />
+            {/* <Knowledge /> */}
             <MultiAgent />
           </form>
         </div>

@@ -24,7 +24,6 @@ import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview from "./preview.tsx";
 import ThreadView from "./thread.tsx";
-import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { isFilePath } from "../../utils/path.ts";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
@@ -82,8 +81,6 @@ function ActionsButtons() {
 
   return (
     <div className="hidden md:flex items-center gap-2">
-      <WhatsAppButton />
-
       {displayNewChat && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -145,9 +142,6 @@ function Breadcrumb({ agentId }: { agentId: string }) {
                     <Icon name="arrow_drop_down" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuItem asChild>
-                      <WhatsAppButton isMobile />
-                    </DropdownMenuItem>
                     {chat.messages.length !== 0 && (
                       <DropdownMenuItem
                         className="flex items-center gap-4"

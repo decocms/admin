@@ -56,9 +56,6 @@ jobs:
             STRIPE_WEBHOOK_SECRET
             CURRENCY_API_KEY
             LLMS_ENCRYPTION_KEY
-            WHATSAPP_ACCESS_TOKEN
-            WHATSAPP_PHONE_NUMBER_ID
-            WHATSAPP_API_VERSION
             DECO_CHAT_API_JWT_PUBLIC_KEY
             DECO_CHAT_API_JWT_PRIVATE_KEY
         env:
@@ -78,9 +75,6 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
-          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-          WHATSAPP_API_VERSION: ${{ secrets.WHATSAPP_API_VERSION }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}

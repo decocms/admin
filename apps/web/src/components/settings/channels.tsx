@@ -606,7 +606,7 @@ function ConnectionChannels({
         ) : (
           <Input
             id="discriminator"
-            placeholder="Enter unique identifier (e.g., phone number for WhatsApp)"
+            placeholder="Enter unique identifier (e.g., phone number ID for WhatsApp)"
             value={discriminator}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setDiscriminator(e.target.value)

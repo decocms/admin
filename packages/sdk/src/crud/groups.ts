@@ -7,7 +7,6 @@ export const WellKnownMcpGroups = {
   Model: "model-management",
   Prompt: "prompt-management",
   Thread: "thread-management",
-  Whatsapp: "whatsapp-management",
   Integration: "integration-management",
   Triggers: "triggers-management",
   Agent: "agent-management",

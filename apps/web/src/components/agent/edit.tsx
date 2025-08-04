@@ -44,7 +44,6 @@ import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview, { useTabsForAgent } from "./preview.tsx";
 import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
-import { WhatsAppButton } from "./whatsapp-button.tsx";
 import { isFilePath } from "../../utils/path.ts";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
 
@@ -226,7 +225,6 @@ function ActionButtons({
           </span>
         )}
       </Button>
-      <WhatsAppButton />
     </div>
   );
 }

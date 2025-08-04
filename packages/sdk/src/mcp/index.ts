@@ -34,7 +34,6 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
-import * as whatsappAPI from "./whatsapp/api.ts";
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [
@@ -140,10 +139,6 @@ export const WORKSPACE_TOOLS = [
   modelsAPI.listModels,
   modelsAPI.updateModel,
   modelsAPI.getModel,
-  whatsappAPI.sendWhatsAppTemplateMessage,
-  whatsappAPI.createWhatsAppInvite,
-  whatsappAPI.upsertWhatsAppUser,
-  whatsappAPI.getWhatsAppUser,
   channelsAPI.channelJoin,
   channelsAPI.channelLeave,
   channelsAPI.getChannel,

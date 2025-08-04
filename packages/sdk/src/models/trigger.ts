@@ -70,10 +70,6 @@ export const WebhookBaseTriggerSchema = z.object({
   type: z.literal("webhook"),
   url: z.string().optional().describe("The URL of the webhook"),
   passphrase: z.string().optional().describe("The passphrase for the webhook"),
-  whatsappEnabled: z
-    .boolean()
-    .optional()
-    .describe("Whether the webhook is enabled for WhatsApp"),
 });
 
 /**

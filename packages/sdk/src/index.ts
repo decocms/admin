@@ -30,7 +30,6 @@ export * from "./hooks/thread.ts";
 export * from "./hooks/tools.ts";
 export * from "./hooks/trigger.ts";
 export * from "./hooks/wallet.ts";
-export * from "./hooks/whatsapp.ts";
 export * from "./hooks/workflows.ts";
 export * from "./hooks/roles.ts";
 

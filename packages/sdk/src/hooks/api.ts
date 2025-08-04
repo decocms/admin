@@ -132,11 +132,6 @@ export const KEYS = {
     workspace,
     id,
   ],
-  WHATSAPP_USER: (workspace: Workspace, phone: string) => [
-    "whatsapp-user",
-    workspace,
-    phone,
-  ],
   WALLET: (workspace: Workspace) => ["wallet", workspace],
   WALLET_USAGE_AGENTS: (
     workspace: Workspace,

@@ -296,12 +296,17 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       env: TEnv & DefaultEnv<TSchema>,
       ctx: ExecutionContext,
     ) => {
+      const referer = req.headers.get("referer");
+      const isFetchRequest =
+        req.headers.has(DECO_MCP_CLIENT_HEADER) ||
+        req.headers.get("sec-fetch-mode") === "cors";
+
       try {
         const bindings = withBindings({
           env,
           server,
           tokenOrContext: getReqToken(req),
-          origin: req.headers.get("origin"),
+          origin: referer ?? req.headers.get("origin"),
         });
         return await State.run(
           { req, env: bindings, ctx },
@@ -309,10 +314,6 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
         );
       } catch (error) {
         if (error instanceof UnauthorizedError) {
-          const referer = req.headers.get("referer");
-          const isFetchRequest =
-            req.headers.has(DECO_MCP_CLIENT_HEADER) ||
-            req.headers.get("sec-fetch-mode") === "cors";
           if (!isFetchRequest) {
             const url = new URL(req.url);
             error.redirectTo.searchParams.set(

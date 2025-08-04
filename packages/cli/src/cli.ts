@@ -57,6 +57,7 @@ import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
 import { genEnv } from "./commands/gen/gen.js";
 import { upgradeCommand } from "./commands/update/upgrade.js";
+import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -296,6 +297,21 @@ const upgrade = new Command("upgrade")
   .description("Upgrade the deco CLI to the latest version.")
   .action(upgradeCommand);
 
+const update = new Command("update")
+  .description("Update Deco dependencies to their latest versions.")
+  .option("-y, --yes", "Skip confirmation prompts")
+  .action(async (options) => {
+    try {
+      await updateCommand({ yes: options.yes });
+    } catch (error) {
+      console.error(
+        "❌ Update failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      process.exit(1);
+    }
+  });
+
 // Dev command implementation
 const dev = new Command("dev")
   .description("Start a development server.")
@@ -406,6 +422,7 @@ const program = new Command()
   .addCommand(configure)
   .addCommand(add)
   .addCommand(upgrade)
+  .addCommand(update)
   .addCommand(linkCmd)
   .addCommand(gen)
   .addCommand(create)

@@ -218,7 +218,10 @@ export const withBindings = <TEnv>({
         authUri.searchParams.set("client_id", env.DECO_CHAT_APP_NAME);
         authUri.searchParams.set(
           "redirect_uri",
-          `${origin ?? env.DECO_CHAT_APP_ENTRYPOINT}${AUTH_CALLBACK_ENDPOINT}`,
+          new URL(
+            AUTH_CALLBACK_ENDPOINT,
+            origin ?? env.DECO_CHAT_APP_ENTRYPOINT,
+          ).href,
         );
         workspaceHint &&
           authUri.searchParams.set("workspace_hint", workspaceHint);

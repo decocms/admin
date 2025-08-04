@@ -147,7 +147,8 @@ async function batchUpsertVectorContent(
 const createTool = createToolGroup("KnowledgeBaseManagement", {
   name: "Knowledge Base Management",
   description: "Delete, create and list knowledge bases.",
-  icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+  icon:
+    "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
 });
 
 export const listKnowledgeBases = createTool({
@@ -236,7 +237,7 @@ export const forget = createKnowledgeBaseTool({
     const vector = await getVector(c);
     await Promise.all(
       docIds.map((docId) =>
-        vector.deleteVector({ indexName: c.name, id: docId }),
+        vector.deleteVector({ indexName: c.name, id: docId })
       ),
     );
     return {
@@ -349,7 +350,10 @@ export const addFile = createKnowledgeBaseTool({
     assertKbFileProcessor(c);
     assertHasWorkspace(c);
 
-    const finalFilename =
+    throw new Error("Feature has been disabled");
+
+    /** TODO: bring this back. It breaks turso db. */
+    /** const finalFilename =
       filename || (path ? basename(path) : undefined) || fileUrl;
     const { data: newFile, error } = await c.db
       .from("deco_chat_assets")
@@ -382,7 +386,8 @@ export const addFile = createKnowledgeBaseTool({
       knowledgeBaseName: c.name,
     });
 
-    return addFileDefaults(newFile);
+    return addFileDefaults(newFile); 
+    */
   },
 });
 

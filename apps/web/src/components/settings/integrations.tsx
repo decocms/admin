@@ -173,7 +173,10 @@ function KnowledgeHeading() {
   );
 }
 
-function Knowledge() {
+/**
+ * TODO bring this back. The flow it buggs is adding a file to kb. It breaks turso db.
+ */
+function _Knowledge() {
   const { agent } = useAgentSettingsForm();
   const { setIntegrationTools } = useAgentSettingsToolsSet();
   const [uploadingFiles, setUploadedFiles] = useState<UploadFile[]>([]);

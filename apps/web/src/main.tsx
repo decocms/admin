@@ -182,7 +182,6 @@ function ErrorFallback() {
       return;
     }
 
-    // Preserve query string in the next parameter
     const next = new URL(`${pathname}${search}`, globalThis.location.origin);
     globalThis.location.href = `/login?next=${encodeURIComponent(next.toString())}`;
   }, [isUnauthorized, pathname, search]);

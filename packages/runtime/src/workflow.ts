@@ -61,7 +61,11 @@ export const Workflow = (
     }
 
     bindings(ctx: RequestContext) {
-      return withBindings<DefaultEnv>(this.env, server, ctx);
+      return withBindings<DefaultEnv>({
+        env: this.env,
+        server,
+        tokenOrContext: ctx,
+      });
     }
 
     runWithContext<T>(

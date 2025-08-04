@@ -164,7 +164,7 @@ function Home() {
 }
 
 function ErrorFallback() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const error = useRouteError();
   const isUnauthorized = error instanceof UnauthorizedError;
 
@@ -182,9 +182,10 @@ function ErrorFallback() {
       return;
     }
 
-    const next = new URL(pathname, globalThis.location.origin);
-    globalThis.location.href = `/login?next=${next}`;
-  }, [isUnauthorized, pathname]);
+    // Preserve query string in the next parameter
+    const next = new URL(`${pathname}${search}`, globalThis.location.origin);
+    globalThis.location.href = `/login?next=${encodeURIComponent(next.toString())}`;
+  }, [isUnauthorized, pathname, search]);
 
   if (isUnauthorized) {
     return (

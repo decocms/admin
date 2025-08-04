@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { embed, embedMany } from "ai";
 import { z } from "zod";
-import { basename } from "@std/path";
+// import { basename } from "@std/path";
 import {
   DEFAULT_KNOWLEDGE_BASE_NAME,
   KNOWLEDGE_BASE_DIMENSION,
@@ -22,7 +22,7 @@ import {
 } from "../context.ts";
 import { FileMetadataSchema } from "../file-processor.ts";
 import type { Json } from "../../storage/index.ts";
-import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
+// import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -147,8 +147,7 @@ async function batchUpsertVectorContent(
 const createTool = createToolGroup("KnowledgeBaseManagement", {
   name: "Knowledge Base Management",
   description: "Delete, create and list knowledge bases.",
-  icon:
-    "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
+  icon: "https://assets.decocache.com/mcp/1b6e79a9-7830-459c-a1a6-ba83e7e58cbe/Knowledge-Base.png",
 });
 
 export const listKnowledgeBases = createTool({
@@ -237,7 +236,7 @@ export const forget = createKnowledgeBaseTool({
     const vector = await getVector(c);
     await Promise.all(
       docIds.map((docId) =>
-        vector.deleteVector({ indexName: c.name, id: docId })
+        vector.deleteVector({ indexName: c.name, id: docId }),
       ),
     );
     return {
@@ -345,7 +344,15 @@ export const addFile = createKnowledgeBaseTool({
       .record(z.string(), z.union([z.string(), z.boolean()]))
       .optional(),
   }),
-  handler: async ({ fileUrl, metadata: _metadata, path, filename }, c) => {
+  handler: async (
+    {
+      fileUrl: _fileUrl,
+      metadata: _metadata,
+      path: _path,
+      filename: _filename,
+    },
+    c,
+  ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
     assertKbFileProcessor(c);
     assertHasWorkspace(c);
@@ -386,7 +393,7 @@ export const addFile = createKnowledgeBaseTool({
       knowledgeBaseName: c.name,
     });
 
-    return addFileDefaults(newFile); 
+    return addFileDefaults(newFile);
     */
   },
 });

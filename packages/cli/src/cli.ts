@@ -56,7 +56,7 @@ import { createCommand, listTemplates } from "./commands/create/create.js";
 import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
 import { genEnv } from "./commands/gen/gen.js";
-import { updateCommand } from "./commands/update/update.js";
+import { upgradeCommand } from "./commands/update/upgrade.js";
 import { addCommand } from "./commands/add/add.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -287,10 +287,9 @@ const linkCmd = new Command("link")
     }
   });
 
-// Update command implementation
-const update = new Command("update")
-  .description("Update the deco CLI to the latest version.")
-  .action(updateCommand);
+const upgrade = new Command("upgrade")
+  .description("Upgrade the deco CLI to the latest version.")
+  .action(upgradeCommand);
 
 // Dev command implementation
 const dev = new Command("dev")
@@ -401,7 +400,7 @@ const program = new Command()
   .addCommand(dev)
   .addCommand(configure)
   .addCommand(add)
-  .addCommand(update)
+  .addCommand(upgrade)
   .addCommand(linkCmd)
   .addCommand(gen)
   .addCommand(create)

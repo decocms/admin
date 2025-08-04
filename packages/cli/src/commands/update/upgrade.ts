@@ -52,6 +52,7 @@ export const upgrade = (packageName: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const child = spawn("npm", ["install", "-g", packageName], {
       stdio: "inherit",
+      shell: true,
     });
 
     child.on("close", (code) => {
@@ -122,7 +123,7 @@ export async function checkForUpdates(): Promise<void> {
   }
 }
 
-export async function updateCommand(): Promise<void> {
+export async function upgradeCommand(): Promise<void> {
   try {
     const packageJson = await getPackageJson();
     const currentVersion = packageJson.version;

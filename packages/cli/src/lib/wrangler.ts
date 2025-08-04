@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, dirname } from "path";
 import { promises as fs } from "fs";
 import {
   addWorkflowDO,
@@ -55,7 +55,7 @@ export async function writeEnvVars(
 
 const getProjectRoot = () => {
   const configPath = getConfigFilePath(process.cwd()) ?? process.cwd();
-  return configPath.replace("/wrangler.toml", "");
+  return dirname(configPath);
 };
 
 export async function getEnvVars(projectRoot?: string) {

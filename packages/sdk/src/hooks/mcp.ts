@@ -373,30 +373,6 @@ export const useInstallFromMarketplace = () => {
         }
       }
 
-      if (provider === "composio") {
-        if (!("url" in integration.connection)) {
-          throw new Error("Composio integration has no url");
-        }
-
-        const result = await MCPClient.forWorkspace(
-          workspace,
-        ).COMPOSIO_INTEGRATION_OAUTH_START({
-          url: integration.connection.url,
-        });
-
-        redirectUrl = result?.redirectUrl;
-        if (!redirectUrl) {
-          const errorInfo = {
-            appName,
-            returnUrl,
-            installId: integration.id.split(":").pop()!,
-            url: integration.connection.url,
-            result,
-          };
-          console.error("[Composio] No redirect URL found", errorInfo);
-        }
-      }
-
       return { integration, redirectUrl };
     },
     onSuccess: ({ integration }) => {

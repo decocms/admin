@@ -125,20 +125,6 @@ export function getConnectionAppKey(connection: Integration): AppKey {
     }
 
     if (connection.connection.type === "SSE") {
-      const url = new URL(connection.connection.url);
-
-      if (url.hostname.includes("mcp.composio.dev")) {
-        // https://mcp.composio.dev/{appName}...
-        const parts = url.pathname.split("/");
-
-        const appName = parts[1] === "partner" ? parts[3] : parts[1];
-
-        return {
-          appId: appName,
-          provider: "composio",
-        };
-      }
-
       return {
         appId: connection.id,
         provider: "unknown",

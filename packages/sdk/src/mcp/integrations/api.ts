@@ -586,27 +586,6 @@ const getDecoRegistryServerClient = () => {
   });
 };
 
-const searchMarketplaceIntegations = async (
-  query?: string,
-): Promise<(Integration & { provider: string })[]> => {
-  const client = await getDecoRegistryServerClient();
-
-  try {
-    const result = await client.callTool(
-      {
-        name: "SEARCH",
-        arguments: { query, provider: "composio" }, // search for composio only since the other integrations are now indexed by registry
-      },
-      // @ts-expect-error should be fixed after this is merged: https://github.com/modelcontextprotocol/typescript-sdk/pull/528
-      CallToolResultSchema,
-    );
-
-    return result.structuredContent as (Integration & { provider: string })[];
-  } finally {
-    client.close();
-  }
-};
-
 const DECO_PROVIDER = "deco";
 const virtualInstallableIntegrations = () => {
   return [
@@ -649,12 +628,9 @@ It's always handy to search for installed integrations with no query, since all 
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const [marketplace, registry] = await Promise.all([
-      searchMarketplaceIntegations(query),
-      listRegistryApps.handler({
-        search: query,
-      }),
-    ]);
+    const registry = await listRegistryApps.handler({
+      search: query,
+    });
 
     const registryList = registry.apps.map((app) => ({
       id: app.id,
@@ -666,17 +642,6 @@ It's always handy to search for installed integrations with no query, since all 
       verified: app.verified,
     }));
 
-    const list = marketplace.map(
-      ({ id, name, description, icon, provider }) => ({
-        id,
-        name,
-        description,
-        icon,
-        provider,
-        verified: provider === DECO_PROVIDER,
-      }),
-    );
-
     const virtualIntegrations = virtualInstallableIntegrations();
     return {
       integrations: [
@@ -684,7 +649,6 @@ It's always handy to search for installed integrations with no query, since all 
           (integration) => !query || integration.name.includes(query),
         ),
         ...registryList,
-        ...list,
       ],
     };
   },

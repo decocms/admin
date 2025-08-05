@@ -22,7 +22,6 @@ import {
   DEFAULT_MAX_THINKING_TOKENS,
   DEFAULT_MAX_TOKENS,
   DEFAULT_MEMORY,
-  DEFAULT_MIN_THINKING_TOKENS,
   DEFAULT_MODEL,
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
@@ -70,7 +69,6 @@ import {
   type GenerateTextResult,
   type LanguageModelUsage,
   type Message,
-  smoothStream,
 } from "ai";
 import { Cloudflare } from "cloudflare";
 import { getRuntimeKey } from "hono/adapter";

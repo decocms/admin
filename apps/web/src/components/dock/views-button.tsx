@@ -123,6 +123,10 @@ ViewsButton.Styles = () => {
   return (
     <style>
       {`
+        .dv-view.visible {
+          padding: 2px;
+        }
+
         .dv-tab {
           border-radius: none !important;
           padding: 0 !important;

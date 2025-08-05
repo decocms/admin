@@ -1164,7 +1164,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
       const streamTiming = timings.start("stream");
 
-      const experimentalTransform = undefined
+      const experimentalTransform = undefined;
       // Disable smooth stream for now
       // ? smoothStream({
       //     delayInMs: options.smoothStream.delayInMs,

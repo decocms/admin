@@ -55,7 +55,6 @@ export interface Model {
   isEnabled: boolean;
   hasCustomKey: boolean;
   apiKeyEncrypted?: string;
-  providerPreference?: string[];
 }
 
 const LOGOS = {
@@ -84,7 +83,6 @@ export const WELL_KNOWN_MODELS: Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
-    // providerPreference: [""],
   },
   {
     id: "openai:gpt-oss-20b",
@@ -95,7 +93,6 @@ export const WELL_KNOWN_MODELS: Model[] = [
     byDeco: true,
     isEnabled: true,
     hasCustomKey: false,
-    // providerPreference: [""],
   },
   {
     id: "openai:gpt-4.1-mini",

@@ -1154,8 +1154,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         },
       });
       let ended = false;
-      const endTtfbSpan = (chunk: any) => {
-        console.log("chunk", chunk);
+      const endTtfbSpan = () => {
         if (ended) {
           return;
         }

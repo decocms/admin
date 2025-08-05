@@ -104,6 +104,7 @@ import {
   summarizePDFMessages,
   shouldSummarizePDFs,
 } from "./agent/summarize-pdf.ts";
+import { getProviderOptions } from "./agent/provider-options.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -1153,7 +1154,8 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         },
       });
       let ended = false;
-      const endTtfbSpan = () => {
+      const endTtfbSpan = (chunk: any) => {
+        console.log("chunk", chunk);
         if (ended) {
           return;
         }
@@ -1162,14 +1164,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
       const streamTiming = timings.start("stream");
 
-      const experimentalTransform = options?.smoothStream
-        ? smoothStream({
-            delayInMs: options.smoothStream.delayInMs,
-            // The default chunking breaks cloudflare due to using too much CPU.
-            // This is a simpler function that does the job.
-            chunking: (buffer) => buffer.slice(0, 5) || null,
-          })
-        : undefined;
+      const experimentalTransform = undefined
+      // Disable smooth stream for now
+      // ? smoothStream({
+      //     delayInMs: options.smoothStream.delayInMs,
+      //     // The default chunking breaks cloudflare due to using too much CPU.
+      //     // This is a simpler function that does the job.
+      //     chunking: (buffer) => buffer.slice(0, 35) || null,
+      //   })
 
       const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
       const budgetTokens = Math.min(
@@ -1202,17 +1204,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
         maxTokens: this._maxTokens(),
         temperature: this._configuration?.temperature ?? undefined,
         experimental_transform: experimentalTransform,
-        providerOptions:
-          budgetTokens > DEFAULT_MIN_THINKING_TOKENS
-            ? {
-                anthropic: {
-                  thinking: {
-                    type: "enabled",
-                    budgetTokens,
-                  },
-                },
-              }
-            : {},
+        providerOptions: getProviderOptions({ budgetTokens }),
         onChunk: endTtfbSpan,
         onError: (err) => {
           console.error("agent stream error", err);

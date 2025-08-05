@@ -55,6 +55,7 @@ export interface Model {
   isEnabled: boolean;
   hasCustomKey: boolean;
   apiKeyEncrypted?: string;
+  providerPreference?: string[];
 }
 
 const LOGOS = {
@@ -74,6 +75,28 @@ type Capability = "reasoning" | "image-upload" | "file-upload" | "web-search";
  * First one is the default model for agents, so choose wisely.
  */
 export const WELL_KNOWN_MODELS: Model[] = [
+  {
+    id: "openai:gpt-oss-120b",
+    model: "openai:gpt-oss-120b",
+    name: "OpenAI GPT OSS 120B",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+    // providerPreference: [""],
+  },
+  {
+    id: "openai:gpt-oss-20b",
+    model: "openai:gpt-oss-20b",
+    name: "OpenAI GPT OSS 20B",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+    // providerPreference: [""],
+  },
   {
     id: "openai:gpt-4.1-mini",
     model: "openai:gpt-4.1-mini",

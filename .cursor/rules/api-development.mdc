@@ -90,7 +90,7 @@ export const listFeatures = createTool({
   }),
   outputSchema: z.object({ features: z.array(FeatureSchema) }),
   handler: async ({ search }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -121,7 +121,7 @@ export const createFeature = createTool({
   }),
   outputSchema: FeatureSchema,
   handler: async ({ name, description }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;

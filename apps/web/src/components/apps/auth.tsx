@@ -54,9 +54,6 @@ const preSelectTeam = (
 const useAppIntegrations = (appName: string) => {
   const { data: allIntegrations } = useIntegrations();
   return allIntegrations?.filter((integration) => {
-    if (integration.id.startsWith("i:")) {
-      console.log(integration);
-    }
     if ("appName" in integration) {
       return integration.appName === appName;
     }

@@ -164,7 +164,7 @@ export const listKnowledgeBases = createTool({
   handler: async (_, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const vector = await getVector(c);
     const names = await vector.listIndexes();
@@ -189,7 +189,7 @@ export const deleteBase = createTool({
   handler: async ({ name }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const vector = await getVector(c);
     await vector.deleteIndex({ indexName: name });
@@ -218,7 +218,7 @@ export const createBase = createTool({
   handler: async ({ name, dimension }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const vector = await getVector(c);
     await vector.createIndex({
@@ -238,7 +238,7 @@ export const forget = createKnowledgeBaseTool({
   handler: async ({ docIds }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const vector = await getVector(c);
     await Promise.all(
@@ -269,7 +269,7 @@ export const remember = createKnowledgeBaseTool({
   handler: async ({ content, metadata, docId }, c) => {
     assertHasWorkspace(c);
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const [resultDocId] = await batchUpsertVectorContent(
       [
@@ -315,7 +315,7 @@ export const search = createKnowledgeBaseTool({
       throw new InternalServerError("Missing OPENAI_API_KEY");
     }
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const vector = await getVector(c);
 
@@ -352,7 +352,7 @@ export const addFile = createKnowledgeBaseTool({
       .optional(),
   }),
   handler: async ({ fileUrl, metadata: _metadata, path, filename }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
     assertKbFileProcessor(c);
     assertHasWorkspace(c);
 
@@ -398,7 +398,7 @@ export const listFiles = createKnowledgeBaseTool({
   description: "List all files in the knowledge base",
   inputSchema: z.object({}),
   handler: async (_, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
 
     const { data: files } = await c.db
@@ -420,7 +420,7 @@ export const deleteFile = createKnowledgeBaseTool({
     fileUrl: z.string(),
   }),
   handler: async ({ fileUrl }, c) => {
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
 
     const { data: file } = await c.db

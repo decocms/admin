@@ -476,7 +476,7 @@ All wallet tools require workspace access:
 ```typescript
 handler: async (input, c) => {
   assertHasWorkspace(c);
-  await assertWorkspaceResourceAccess(c.tool.name, c);
+  await assertWorkspaceResourceAccess(c);
   
   const wallet = getWalletClient(c);
   // ... tool implementation

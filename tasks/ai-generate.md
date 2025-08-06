@@ -122,7 +122,7 @@ export const aiGenerate = createTool({
   outputSchema: AIGenerateOutputSchema,
   handler: async (input, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     // Implementation steps:
     // 1. Get wallet client and check balance

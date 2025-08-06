@@ -1,5 +1,6 @@
-import { useState } from "react";
+import type { Statement } from "@deco/sdk/auth";
 import {
+  AppScope,
   useCreateAPIKey,
   useCreateIntegration,
   useGetRegistryApp,
@@ -8,11 +9,11 @@ import {
 } from "@deco/sdk/hooks";
 import type { Integration } from "@deco/sdk/models";
 import type { JSONSchema7 } from "json-schema";
+import { useState } from "react";
 import { useWorkspaceLink } from "./use-navigate-workspace.ts";
 
 // Default policies required for all integrations
 const DEFAULT_INTEGRATION_POLICIES = [
-  { effect: "allow" as const, resource: "INTEGRATIONS_GET" },
   { effect: "allow" as const, resource: "DATABASES_RUN_SQL" },
 ];
 
@@ -26,6 +27,30 @@ interface InstallState {
   appId?: string;
   provider?: string;
 }
+
+const parseAppScope = (scope: string) => {
+  const [bindingName, toolName] = scope.split("::");
+  return { bindingName, toolName };
+};
+
+export interface BindingObject {
+  __type: string;
+  value: string;
+}
+const getBindingObject = (
+  formData: Record<string, unknown>,
+  prop: string,
+): BindingObject | undefined => {
+  if (
+    formData?.[prop] &&
+    typeof formData[prop] === "object" &&
+    "value" in formData[prop] &&
+    typeof formData[prop].value === "string"
+  ) {
+    return formData[prop] as BindingObject;
+  }
+  return undefined;
+};
 
 export function useIntegrationInstallWithModal() {
   const [installState, setInstallState] = useState<InstallState>({
@@ -89,10 +114,23 @@ export function useIntegrationInstallWithModal() {
         name: keyName,
         policies: [
           ...DEFAULT_INTEGRATION_POLICIES,
-          ...(installState.scopes?.map((scope: string) => ({
-            effect: "allow" as const,
-            resource: scope,
-          })) ?? []),
+          ...(installState.scopes?.map((scope: string): Statement => {
+            const { bindingName, toolName } = parseAppScope(scope);
+            const binding = getBindingObject(formData, bindingName);
+            const integrationId = binding?.value;
+            return {
+              effect: "allow" as const,
+              resource: toolName ?? scope,
+              ...(integrationId
+                ? {
+                    matchCondition: {
+                      resource: "is_integration",
+                      integrationId,
+                    },
+                  }
+                : {}),
+            };
+          }) ?? []),
         ],
       });
 
@@ -138,12 +176,40 @@ export function useIntegrationInstallWithModal() {
     setInstallState((prev: InstallState) => ({ ...prev, isModalOpen: false }));
   };
 
+  const getAppNameFromSchema = (schema: JSONSchema7, bindingName: string) => {
+    const binding = schema.properties?.[bindingName];
+    if (
+      typeof binding === "object" &&
+      binding !== null &&
+      "properties" in binding
+    ) {
+      const typeProperty = binding.properties?.__type;
+      if (
+        typeof typeProperty === "object" &&
+        typeProperty !== null &&
+        "const" in typeProperty
+      ) {
+        return typeProperty.const as string;
+      }
+    }
+    return undefined;
+  };
+
   // Get all scopes (default + integration-specific)
-  const getAllScopes = (scopes?: string[]): string[] => {
+  const getAllScopes = (scopes?: string[]): AppScope[] => {
     return [
       ...DEFAULT_INTEGRATION_POLICIES.map((policy) => policy.resource),
       ...(scopes ?? installState.scopes ?? []),
-    ];
+    ].map((scope) => {
+      const { bindingName, toolName } = parseAppScope(scope);
+      return {
+        name: toolName ?? scope,
+        app:
+          installState.stateSchema && bindingName
+            ? getAppNameFromSchema(installState.stateSchema, bindingName)
+            : undefined,
+      };
+    });
   };
 
   // Get dynamic permission descriptions for all scopes

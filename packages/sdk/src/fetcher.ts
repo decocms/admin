@@ -16,7 +16,10 @@ export interface FetchOptions extends RequestInit {
 const global = createMCPFetchStub<GlobalTools>({});
 export const MCPClient = new Proxy(
   {} as typeof global & {
-    forWorkspace: (workspace: string) => MCPClientFetchStub<WorkspaceTools>;
+    forWorkspace: (
+      workspace: string,
+      integrationId?: string,
+    ) => MCPClientFetchStub<WorkspaceTools>;
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnection,
     ) => MCPClientFetchStub<TDefinition>;

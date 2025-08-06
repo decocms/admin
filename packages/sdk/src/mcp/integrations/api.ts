@@ -302,7 +302,7 @@ export const listIntegrations = createIntegrationManagementTool({
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
 
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const [integrations, agents, knowledgeBases] = await Promise.all([
       c.db
@@ -401,7 +401,7 @@ export const getIntegration = createIntegrationManagementTool({
 
     const canAccess =
       isInnate ||
-      (await assertWorkspaceResourceAccess(c.tool.name, c)
+      (await assertWorkspaceResourceAccess(c)
         .then(() => true)
         .catch(() => false));
 
@@ -497,7 +497,7 @@ export const createIntegration = createIntegrationManagementTool({
   inputSchema: IntegrationSchema.partial().omit({ appName: true }),
   handler: async (_integration, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const { appId, ...integration } = _integration;
 
@@ -543,7 +543,7 @@ export const updateIntegration = createIntegrationManagementTool({
   }),
   handler: async ({ id, integration }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const { uuid, type } = parseId(id);
 
@@ -593,7 +593,7 @@ export const deleteIntegration = createIntegrationManagementTool({
   }),
   handler: async ({ id }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const { uuid, type } = parseId(id);
 
@@ -666,7 +666,7 @@ It's always handy to search for installed integrations with no query, since all 
   }),
   handler: async ({ query }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     const registry = await listRegistryApps.handler({
       search: query,
@@ -727,7 +727,7 @@ export const DECO_INTEGRATION_OAUTH_START = createIntegrationManagementTool({
   ]),
   handler: async ({ appName, returnUrl, installId, provider }, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
     let connection: MCPConnection;
     if (provider === "marketplace") {
       const app = await getRegistryApp.handler({ name: appName });
@@ -811,7 +811,7 @@ export const DECO_INTEGRATION_INSTALL = createIntegrationManagementTool({
   }),
   handler: async (args, c) => {
     assertHasWorkspace(c);
-    await assertWorkspaceResourceAccess(c.tool.name, c);
+    await assertWorkspaceResourceAccess(c);
 
     let integration: Integration;
     const virtual = virtualInstallableIntegrations().find(

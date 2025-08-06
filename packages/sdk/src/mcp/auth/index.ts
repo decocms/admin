@@ -15,6 +15,11 @@ export const createResourceAccess = () => {
      */
     grant: () => {
       canAccess = true;
+      return {
+        [Symbol.dispose]: () => {
+          canAccess = false;
+        },
+      };
     },
     reset: () => {
       canAccess = false;

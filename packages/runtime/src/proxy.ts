@@ -83,6 +83,11 @@ async function makeApiCall(
   clearTimeout(timeout);
 
   if (!response.ok || error || data?.isError) {
+    if (response.status === 403) {
+      console.warn(
+        "You don't have access to this tool, you might be missing a scope, you can import from import { Scopes } from 'deco.gen.ts', then you can export default withRuntime({ oauth: { scopes: ...Object.values(Scopes).flatMap((scope) => Object.values(scope)) } });",
+      );
+    }
     const message = error || serializeData(data) || "Internal Server Error";
     const err =
       options?.getErrorByStatusCode?.(response.status, message, traceDebugId) ??

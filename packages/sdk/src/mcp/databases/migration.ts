@@ -549,7 +549,6 @@ export const migrate = createDatabaseTool({
               ); // Extremely conservative limit
 
               let currentChunk: any[] = [];
-              let currentChunkSize = 0;
 
               for (const row of rows) {
                 // Check if this single row is too large

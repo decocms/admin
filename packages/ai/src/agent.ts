@@ -65,6 +65,7 @@ import { TokenLimiter } from "@mastra/memory/processors";
 import { createServerClient } from "@supabase/ssr";
 import type { TextPart } from "ai";
 import {
+  smoothStream,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModelUsage,
@@ -1161,14 +1162,14 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       };
       const streamTiming = timings.start("stream");
 
-      const experimentalTransform = undefined;
-      // Disable smooth stream for now
-      // ? smoothStream({
-      //     delayInMs: options.smoothStream.delayInMs,
-      //     // The default chunking breaks cloudflare due to using too much CPU.
-      //     // This is a simpler function that does the job.
-      //     chunking: (buffer) => buffer.slice(0, 35) || null,
-      //   })
+      const experimentalTransform = options?.smoothStream
+        ? smoothStream({
+            delayInMs: options.smoothStream.delayInMs,
+            // The default chunking breaks cloudflare due to using too much CPU.
+            // This is a simpler function that does the job.
+            chunking: (buffer) => buffer.slice(0, 15) || null,
+          })
+        : undefined;
 
       const maxLimit = Math.max(MIN_MAX_TOKENS, this._maxTokens());
       const budgetTokens = Math.min(

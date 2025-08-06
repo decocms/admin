@@ -1,18 +1,18 @@
-import { z } from "zod";
 import { createOpenAI } from "@ai-sdk/openai";
-import { embedMany } from "ai";
+import type { MastraVector } from "@mastra/core";
 import { basename } from "@std/path";
+import { embedMany } from "ai";
+import { z } from "zod";
+import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
+import { InternalServerError } from "../../errors.ts";
+import { type AppContext } from "../../mcp/context.ts";
 import {
   FileProcessor,
   type ProcessedDocument,
 } from "../../mcp/file-processor.ts";
-import { KNOWLEDGE_BASE_GROUP } from "../../constants.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
-import { InternalServerError } from "../../errors.ts";
-import type { AppContext } from "../../mcp/context.ts";
-import { getServerClient } from "../../storage/supabase/client.ts";
-import type { MastraVector } from "@mastra/core";
 import type { Workspace } from "../../path.ts";
+import { getServerClient } from "../../storage/supabase/client.ts";
 
 // Workflow message schema for knowledge base file processing
 export const KbFileProcessorMessageSchema = z.object({
@@ -61,6 +61,7 @@ export const WorkflowEnvSchema = z.object({
     .string()
     .min(1, "Turso group database token is required"),
   VECTOR_BATCH_SIZE: z.string().optional(),
+  WORKSPACE_DB: z.any().optional(),
 });
 type WorkflowEnvs = z.infer<typeof WorkflowEnvSchema>;
 
@@ -89,6 +90,7 @@ async function getVectorClient(workspace: string, env: WorkflowEnvs) {
     tursoAdminToken: env.TURSO_ADMIN_TOKEN,
     tursoOrganization: env.TURSO_ORGANIZATION,
     tokenStorage: env.TURSO_GROUP_DATABASE_TOKEN,
+    workspaceDO: env.WORKSPACE_DB,
     openAPIKey: env.OPENAI_API_KEY,
     discriminator: KNOWLEDGE_BASE_GROUP,
     options: { semanticRecall: true },

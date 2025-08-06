@@ -155,7 +155,6 @@ export class LibSQLFactory {
   }
 
   public async create({ memoryId }: LibSQLCreateStorageOpts): Promise<{
-    storage: LibSQLStore;
     vector: LibSQLVector;
   }> {
     const { url, authToken, created } = await this.database(memoryId);
@@ -184,7 +183,7 @@ export class LibSQLFactory {
       await promise;
     }
 
-    return { storage, vector };
+    return { vector };
   }
 
   public async createRawClient(memoryId: string) {

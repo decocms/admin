@@ -2,6 +2,7 @@
 import type { ActorConstructor, StubFactory } from "@deco/actors";
 import type { AIAgent, Trigger } from "@deco/ai/actors";
 import type { Client } from "@deco/sdk/storage";
+import { createClient } from "@libsql/client/web";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.d.ts";
 import type { User as SupaUser } from "@supabase/supabase-js";
 import type Cloudflare from "cloudflare";
@@ -15,43 +16,93 @@ import type {
 } from "../auth/policy.ts";
 import { type WellKnownMcpGroup, WellKnownMcpGroups } from "../crud/groups.ts";
 import { ForbiddenError, type HttpError } from "../errors.ts";
-import { assertHasWorkspace, type WithTool } from "./assertions.ts";
+import { type WithTool } from "./assertions.ts";
 import type { ResourceAccess } from "./auth/index.ts";
-import { getWorkspaceD1Database } from "./databases/d1.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
+import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
+
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
 export interface JWTPrincipal extends JWTPayload {
   policies?: Pick<Policy, "statements">[];
 }
 
-const usesD1FeatureFlag: Record<string, boolean> = {
-  "/shared/libertas": true,
+const usesSQLiteFeatureFlag: Record<string, boolean> = {
+  "/shared/deco-team": true,
+  "/shared/deco.cx": true,
+  "/shared/muri-e-eu": true,
 };
+
 export type Principal = UserPrincipal | JWTPrincipal;
 
+const TURSO_GROUP = "deco-agents-v2";
+
+const createSQLClientFor = async (
+  workspace: string,
+  organization: string,
+  authToken: string,
+) => {
+  const memoryId = toAlphanumericId(`${workspace}/default`);
+  const uniqueDbName = await generateUUIDv5(`${memoryId}-${TURSO_GROUP}`);
+
+  return createClient({
+    url: `libsql://${uniqueDbName}-${organization}.turso.io`,
+    authToken: authToken,
+  });
+};
+
+export interface TursoOptions {
+  type: "turso";
+  TURSO_GROUP_DATABASE_TOKEN: string;
+  TURSO_ORGANIZATION: string;
+  workspace: string;
+}
+
+export interface SQLIteOptions {
+  type: "sqlite";
+  workspaceDO: WorkspaceDO;
+  workspace: string;
+}
+
 export const workspaceDB = async (
-  c: AppContext,
-  d1?: boolean,
+  options: Pick<AppContext, "workspaceDO"> & {
+    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
+    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
+  },
+  turso?: boolean,
 ): Promise<IWorkspaceDB> => {
-  assertHasWorkspace(c);
-  d1 =
-    typeof d1 === "boolean" ? d1 : usesD1FeatureFlag[c.workspace.value] || d1;
-  if (d1) {
-    const dbId = await getWorkspaceD1Database(c);
-    return {
-      exec: async (args) => {
-        const { result } = await c.cf.d1.database.query(dbId, {
-          ...args,
-          account_id: c.envVars.CF_ACCOUNT_ID,
-        });
-        return { result, [Symbol.dispose]: () => {} };
-      },
-    };
+  const {
+    workspace,
+    workspaceDO,
+    envVars: { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION },
+  } = options;
+  const shouldUseSQLite =
+    usesSQLiteFeatureFlag[workspace.value] || turso === false;
+
+  if (shouldUseSQLite) {
+    return workspaceDO.get(workspaceDO.idFromName(workspace.value));
   }
-  const dbId = c.workspaceDO.idFromName(c.workspace.value);
-  return c.workspaceDO.get(dbId);
+
+  const client = await createSQLClientFor(
+    workspace.value,
+    TURSO_ORGANIZATION,
+    TURSO_GROUP_DATABASE_TOKEN,
+  );
+
+  return {
+    exec: async (args) => {
+      const result = await client.execute({
+        sql: args.sql,
+        args: args.params,
+      });
+
+      return {
+        result: [{ results: result.rows }],
+        [Symbol.dispose]: () => {},
+      };
+    },
+  };
 };
 
 export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
@@ -60,6 +111,10 @@ export interface IWorkspaceDB {
     args: DatatabasesRunSqlInput,
   ) => Promise<IWorkspaceDBExecResult> | IWorkspaceDBExecResult;
 }
+
+export type WorkspaceDO = DurableObjectNamespace<
+  IWorkspaceDB & Rpc.DurableObjectBranded
+>;
 
 export interface Vars {
   params: Record<string, string>;
@@ -82,7 +137,7 @@ export interface Vars {
   walletBinding?: { fetch: typeof fetch };
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
-  workspaceDO: DurableObjectNamespace<IWorkspaceDB & Rpc.DurableObjectBranded>;
+  workspaceDO: WorkspaceDO;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
   >(

@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { basename } from "@std/path";
 import { embed, embedMany } from "ai";
 import { z } from "zod";
-// import { basename } from "@std/path";
 import {
   DEFAULT_KNOWLEDGE_BASE_NAME,
   KNOWLEDGE_BASE_DIMENSION,
@@ -9,6 +9,8 @@ import {
 } from "../../constants.ts";
 import { InternalServerError } from "../../errors.ts";
 import { WorkspaceMemory } from "../../memory/memory.ts";
+import type { Json } from "../../storage/index.ts";
+import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 import {
   assertHasWorkspace,
   assertKbFileProcessor,
@@ -21,8 +23,6 @@ import {
   createToolGroup,
 } from "../context.ts";
 import { FileMetadataSchema } from "../file-processor.ts";
-import type { Json } from "../../storage/index.ts";
-// import { startKbFileProcessorWorkflow } from "../../workflows/file-processor/batch-file-processor.ts";
 
 export interface KnowledgeBaseContext extends AppContext {
   name: string;
@@ -83,20 +83,27 @@ const openAIEmbedder = (apiKey: string) => {
 
 async function getVector(c: AppContext) {
   assertHasWorkspace(c);
-  const mem = await WorkspaceMemory.create({
-    workspace: c.workspace.value,
-    tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
-    tursoOrganization: c.envVars.TURSO_ORGANIZATION,
-    tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
-    openAPIKey: c.envVars.OPENAI_API_KEY,
-    discriminator: KNOWLEDGE_BASE_GROUP,
-    options: { semanticRecall: true },
-  });
-  const vector = mem.vector;
-  if (!vector) {
-    throw new InternalServerError("Missing vector");
+
+  try {
+    const mem = await WorkspaceMemory.create({
+      workspace: c.workspace.value,
+      tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN,
+      tursoOrganization: c.envVars.TURSO_ORGANIZATION,
+      tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+      openAPIKey: c.envVars.OPENAI_API_KEY,
+      workspaceDO: c.workspaceDO,
+      discriminator: KNOWLEDGE_BASE_GROUP,
+      options: { semanticRecall: true },
+    });
+    const vector = mem.vector;
+    if (!vector) {
+      throw new InternalServerError("Missing vector");
+    }
+    return vector;
+  } catch (e) {
+    console.error("Error getting vector", e);
+    throw e;
   }
-  return vector;
 }
 
 async function batchUpsertVectorContent(
@@ -344,23 +351,12 @@ export const addFile = createKnowledgeBaseTool({
       .record(z.string(), z.union([z.string(), z.boolean()]))
       .optional(),
   }),
-  handler: async (
-    {
-      fileUrl: _fileUrl,
-      metadata: _metadata,
-      path: _path,
-      filename: _filename,
-    },
-    c,
-  ) => {
+  handler: async ({ fileUrl, metadata: _metadata, path, filename }, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
     assertKbFileProcessor(c);
     assertHasWorkspace(c);
 
-    throw new Error("Feature has been disabled");
-
-    /** TODO: bring this back. It breaks turso db. */
-    /** const finalFilename =
+    const finalFilename =
       filename || (path ? basename(path) : undefined) || fileUrl;
     const { data: newFile, error } = await c.db
       .from("deco_chat_assets")
@@ -394,7 +390,6 @@ export const addFile = createKnowledgeBaseTool({
     });
 
     return addFileDefaults(newFile);
-    */
   },
 });
 

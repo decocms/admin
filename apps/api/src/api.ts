@@ -53,14 +53,7 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     token: c.req.header("Authorization")?.replace("Bearer ", ""),
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
-    workspace:
-      slug && root
-        ? {
-            root,
-            slug,
-            value: workspace,
-          }
-        : undefined,
+    workspace: slug && root ? { root, slug, value: workspace } : undefined,
   };
 };
 

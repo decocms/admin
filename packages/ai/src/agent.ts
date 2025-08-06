@@ -53,11 +53,7 @@ import {
   createServerTimings,
   type ServerTimingsBuilder,
 } from "@deco/sdk/timings";
-import {
-  type StorageThreadType,
-  Telemetry,
-  type WorkingMemory,
-} from "@mastra/core";
+import { Telemetry, type WorkingMemory } from "@mastra/core";
 import type { ToolsetsInput, ToolsInput } from "@mastra/core/agent";
 import { Agent } from "@mastra/core/agent";
 import type { MastraMemory } from "@mastra/core/memory";
@@ -87,6 +83,11 @@ import {
   DEFAULT_ACCOUNT_ID,
   getLLMConfig,
 } from "./agent/llm.ts";
+import { getProviderOptions } from "./agent/provider-options.ts";
+import {
+  shouldSummarizePDFs,
+  summarizePDFMessages,
+} from "./agent/summarize-pdf.ts";
 import { AgentWallet } from "./agent/wallet.ts";
 import { pickCapybaraAvatar } from "./capybaras.ts";
 import { mcpServerTools } from "./mcp.ts";
@@ -99,11 +100,6 @@ import type {
   ThreadQueryOptions,
   Toolset,
 } from "./types.ts";
-import {
-  summarizePDFMessages,
-  shouldSummarizePDFs,
-} from "./agent/summarize-pdf.ts";
-import { getProviderOptions } from "./agent/provider-options.ts";
 
 const TURSO_AUTH_TOKEN_KEY = "turso-auth-token";
 const ANONYMOUS_INSTRUCTIONS =
@@ -311,12 +307,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
               id: connection,
             }),
           ]
-        : [
-            normalizeMCPId(connection),
-            {
-              connection,
-            },
-          ];
+        : [normalizeMCPId(connection), { connection }];
 
     if (!integration) {
       console.log("integration not found", mcpId);
@@ -426,6 +417,7 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       tursoAdminToken: this.env.TURSO_ADMIN_TOKEN,
       tursoOrganization,
       tokenStorage,
+      workspaceDO: this.actorEnv.WORKSPACE_DB,
       processors: [new TokenLimiter({ limit: tokenLimit })],
       openAPIKey: this.env.OPENAI_API_KEY ?? undefined,
       workspace: this.workspace,
@@ -765,10 +757,6 @@ export class AIAgent extends BaseActor<AgentMetadata> implements IIAgent {
       console.error("Error configuring agent", error);
       throw new Error(`Error configuring agent: ${error}`);
     }
-  }
-
-  async listThreads(): Promise<StorageThreadType[]> {
-    return await this._memory.listAgentThreads();
   }
 
   async createThread(thread: Thread): Promise<Thread> {

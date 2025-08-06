@@ -173,10 +173,7 @@ function KnowledgeHeading() {
   );
 }
 
-/**
- * TODO bring this back. The flow it buggs is adding a file to kb. It breaks turso db.
- */
-function _Knowledge() {
+function Knowledge() {
   const { agent } = useAgentSettingsForm();
   const { setIntegrationTools } = useAgentSettingsToolsSet();
   const [uploadingFiles, setUploadedFiles] = useState<UploadFile[]>([]);
@@ -440,7 +437,7 @@ function ToolsAndKnowledgeTab() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Connections />
             {/* TODO: bring this back. The flow it buggs is adding a file to kb <Knowledge /> */}
-            {/* <Knowledge /> */}
+            <Knowledge />
             <MultiAgent />
           </form>
         </div>

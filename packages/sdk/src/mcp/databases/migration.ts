@@ -6,14 +6,128 @@ import { createDatabaseTool } from "./tool.ts";
 
 export { getWorkspaceD1Database } from "./d1.ts";
 
+// Estimate SQL size and parameter count to avoid SQLITE_TOOBIG and SQLITE_ERROR
+const estimateSQLMetrics = (
+  tableName: string,
+  columnNames: string,
+  rows: any[],
+): { size: number; paramCount: number } => {
+  const baseSQL = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES `;
+  const placeholders = columnNames
+    .split(", ")
+    .map(() => "?")
+    .join(", ");
+  const rowSQL = `(${placeholders})`;
+
+  // Calculate parameter count
+  const columnsCount = columnNames.split(", ").length;
+  const paramCount = rows.length * columnsCount;
+
+  // Estimate size of the SQL statement
+  let estimatedSize = baseSQL.length;
+  estimatedSize += rows.length * (rowSQL.length + 2); // +2 for ", " between rows
+
+  // Add some buffer for actual data values - check actual data size
+  for (const row of rows) {
+    for (const columnName of columnNames.split(", ")) {
+      const cleanColumnName = columnName.replace(/"/g, ""); // Remove quotes
+      const value = (row as any)[cleanColumnName];
+      if (value !== null && value !== undefined) {
+        const valueStr = String(value);
+        estimatedSize += valueStr.length;
+      } else {
+        estimatedSize += 4; // "NULL" length
+      }
+    }
+  }
+
+  return { size: estimatedSize, paramCount };
+};
+
+// Insert a chunk of rows with fallback to single-row inserts
+const insertChunk = async (
+  tableName: string,
+  columnNames: string,
+  rows: any[],
+  columns: Array<{ name: string }>,
+  newDb: any,
+): Promise<void> => {
+  if (rows.length === 0) return;
+
+  // Safety check: if chunk would exceed parameter limit, split it
+  const paramCount = rows.length * columns.length;
+  const maxParams = 999;
+
+  if (paramCount > maxParams) {
+    // Split into smaller chunks
+    const maxRowsPerSubChunk = Math.floor(maxParams / columns.length);
+    for (let i = 0; i < rows.length; i += maxRowsPerSubChunk) {
+      const subChunk = rows.slice(i, i + maxRowsPerSubChunk);
+      await insertChunk(tableName, columnNames, subChunk, columns, newDb);
+    }
+    return;
+  }
+
+  try {
+    const placeholders = columns.map(() => "?").join(", ");
+    const insertSql = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES ${rows
+      .map(() => `(${placeholders})`)
+      .join(", ")}`;
+
+    const params: any[] = [];
+    for (const row of rows) {
+      for (const column of columns) {
+        let value = (row as any)[column.name];
+
+        // Handle extremely large string/blob values
+        if (typeof value === "string" && value.length > 1000000) {
+          // 1MB limit
+          value = value.substring(0, 1000000);
+        }
+
+        params.push(value);
+      }
+    }
+
+    using _ = await newDb.exec({
+      sql: insertSql,
+      params,
+    });
+  } catch (insertError) {
+    console.warn(
+      `⚠️ Failed to insert chunk of ${rows.length} rows into ${tableName}, falling back to single-row inserts:`,
+      insertError,
+    );
+    // Fall back to single-row inserts
+    const placeholders = columns.map(() => "?").join(", ");
+    const singleInsertSql = `INSERT OR REPLACE INTO "${tableName}" (${columnNames}) VALUES (${placeholders})`;
+
+    for (const row of rows) {
+      const params: any[] = [];
+      for (const column of columns) {
+        let value = (row as any)[column.name];
+
+        // Handle extremely large string/blob values
+        if (typeof value === "string" && value.length > 1000000) {
+          // 1MB limit
+          value = value.substring(0, 1000000);
+        }
+
+        params.push(value);
+      }
+
+      using _ = await newDb.exec({
+        sql: singleInsertSql,
+        params,
+      });
+    }
+  }
+};
+
 export const migrate = createDatabaseTool({
   name: "DATABASES_MIGRATE",
-  description: "Migrate data from legacy database to new database",
+  description: "Migrate data from Turso database to new database",
   inputSchema: z.object({
-    migrateWorkflows: z
-      .boolean()
-      .optional()
-      .describe("If true, workflows will be migrated"),
     dryRun: z
       .boolean()
       .optional()
@@ -42,25 +156,28 @@ export const migrate = createDatabaseTool({
     totalRowsMigrated: z.number(),
     executionTimeMs: z.number(),
   }),
-  handler: async (
-    { dryRun = false, tables, migrateWorkflows = true, batchSize = 1000 },
-    c,
-  ) => {
+  handler: async ({ dryRun = false, tables, batchSize = 1000 }, c) => {
+    console.log("🚀 Starting Turso database migration...");
+    console.log("📋 Migration parameters:", { dryRun, tables, batchSize });
+
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess("DATABASES_RUN_SQL", c);
 
     const startTime = Date.now();
-    const legacyDb = await workspaceDB(c, true);
     const newDb = await workspaceDB(c, false);
+    const tursoDb = await workspaceDB(c, true);
+    console.log("✅ Connected to databases");
 
     // Disable foreign key constraints during migration to avoid constraint errors
+    console.log("🔒 Disabling foreign key constraints...");
     try {
       using _ = await newDb.exec({
         sql: "PRAGMA foreign_keys = OFF",
         params: [],
       });
-    } catch {
-      // If we can't disable foreign keys, continue anyway
+      console.log("✅ Foreign key constraints disabled");
+    } catch (error) {
+      console.warn("⚠️ Could not disable foreign key constraints:", error);
     }
 
     const migratedTables: Array<{
@@ -73,58 +190,99 @@ export const migrate = createDatabaseTool({
     let totalRowsMigrated = 0;
 
     try {
-      // Get all tables from legacy database
-      using legacyTablesResponse = await legacyDb.exec({
-        sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
-        params: [],
-      });
+      console.log("📊 Starting table discovery...");
+      // Get tables from Turso database
+      const allTables = new Set<string>();
 
-      const allTables =
-        (legacyTablesResponse.result[0]?.results as Array<{ name: string }>) ||
-        [];
+      console.log("🔍 Discovering tables in Turso database...");
+      try {
+        using tursoResult = await tursoDb.exec({
+          sql: "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          params: [],
+        });
+        const tursoTables =
+          (tursoResult.result[0]?.results as Array<{ name: string }>) || [];
+        tursoTables.forEach((table) => allTables.add(table.name));
+        console.log(
+          `📋 Found ${tursoTables.length} tables in Turso database:`,
+          tursoTables.map((t) => t.name),
+        );
+      } catch (error) {
+        console.warn("❌ Failed to get tables from Turso database:", error);
+      }
 
       // Filter out system tables that shouldn't be migrated
       const systemTablesToExclude = [
         "_cf_KV",
         "_litestream_seq",
         "_litestream_lock",
-        ...(!migrateWorkflows ? ["mastra_workflow_snapshot"] : []),
+        "mastra_workflow_snapshot",
       ];
-      const filteredTables = allTables.filter(
-        (table) =>
-          !systemTablesToExclude.includes(table.name) &&
-          !table.name.startsWith("_cf_") &&
-          !table.name.startsWith("sqlite_"),
+      const filteredTables = Array.from(allTables).filter(
+        (tableName) =>
+          !systemTablesToExclude.includes(tableName) &&
+          !tableName.startsWith("_cf_") &&
+          !tableName.startsWith("sqlite_"),
       );
 
       const tablesToMigrate = tables
-        ? filteredTables.filter((table) => tables.includes(table.name))
+        ? filteredTables.filter((tableName) => tables.includes(tableName))
         : filteredTables;
 
+      console.log(`📊 Table discovery complete:`);
+      console.log(`   - Total tables found: ${allTables.size}`);
+      console.log(
+        `   - System tables excluded: ${systemTablesToExclude.length}`,
+      );
+      console.log(`   - Tables to migrate: ${tablesToMigrate.length}`);
+      console.log(`   - Tables to migrate:`, tablesToMigrate);
+
       if (dryRun) {
-        for (const table of tablesToMigrate) {
+        console.log("🔍 DRY RUN: Counting rows in tables...");
+        for (const tableName of tablesToMigrate) {
+          console.log(`📊 Counting rows in table: ${tableName}`);
           try {
-            using countResponse = await legacyDb.exec({
-              sql: `SELECT COUNT(*) as count FROM "${table.name}"`,
-              params: [],
-            });
-            const count =
-              (countResponse.result[0]?.results?.[0] as { count: number })
-                ?.count || 0;
+            let totalCount = 0;
+
+            // Count from Turso database
+            try {
+              using result = await tursoDb.exec({
+                sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+                params: [],
+              });
+              const tursoCount =
+                (result.result[0]?.results?.[0] as { count: number })?.count ||
+                0;
+              totalCount = tursoCount;
+              console.log(`   - Turso: ${tursoCount} rows`);
+            } catch (error) {
+              console.warn(
+                `❌ Failed to count rows in Turso table ${tableName}:`,
+                error,
+              );
+            }
+
+            console.log(`   ✅ Total: ${totalCount} rows`);
             migratedTables.push({
-              tableName: table.name,
-              rowCount: count,
+              tableName,
+              rowCount: totalCount,
               status: "success",
             });
           } catch (error) {
+            console.log(
+              `   ❌ Error: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
             migratedTables.push({
-              tableName: table.name,
+              tableName,
               rowCount: 0,
               status: "error",
               error: error instanceof Error ? error.message : String(error),
             });
           }
         }
+        console.log("✅ DRY RUN completed successfully");
         return {
           success: true,
           migratedTables,
@@ -134,21 +292,75 @@ export const migrate = createDatabaseTool({
       }
 
       // Actual migration
-      for (const table of tablesToMigrate) {
+      console.log("🚀 Starting actual migration...");
+      for (const tableName of tablesToMigrate) {
+        console.log(`\n📋 Migrating table: ${tableName}`);
         try {
-          // Get table schema from legacy database
-          using schemaResponse = await legacyDb.exec({
-            sql: `SELECT sql FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
-            params: [],
-          });
+          // Check if table exists in Turso database and get schema
+          console.log(
+            `   🔍 Checking if table exists in Turso database: ${tableName}`,
+          );
+          let tableExistsInTurso = false;
+          let createTableSql: string | undefined;
 
-          const createTableSql = (
-            schemaResponse.result[0]?.results?.[0] as { sql: string }
-          )?.sql;
+          // Check if table exists in Turso database
+          try {
+            using checkTursoResult = await tursoDb.exec({
+              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+              params: [],
+            });
+            tableExistsInTurso =
+              (checkTursoResult.result[0]?.results?.length || 0) > 0;
+            console.log(
+              `   ${tableExistsInTurso ? "✅" : "❌"} Table ${tableName} ${
+                tableExistsInTurso ? "exists" : "does not exist"
+              } in Turso database`,
+            );
+          } catch (error) {
+            console.log(
+              `   ⚠️ Could not check if table exists in Turso database:`,
+              error,
+            );
+          }
+
+          // Get schema from Turso database
+          if (tableExistsInTurso) {
+            try {
+              using result = await tursoDb.exec({
+                sql: `SELECT sql FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
+                params: [],
+              });
+              const tursoSchemaResult = result.result[0]?.results?.[0] as
+                | { sql: string }
+                | undefined;
+              createTableSql = tursoSchemaResult?.sql;
+              console.log(`   ✅ Got schema from Turso database`);
+              console.log(`   📋 Turso schema result:`, tursoSchemaResult);
+              if (!createTableSql) {
+                console.log(
+                  `   ⚠️ Turso schema query returned null/empty for ${tableName}`,
+                );
+              } else {
+                console.log(
+                  `   📝 Schema length: ${createTableSql.length} characters`,
+                );
+              }
+            } catch (tursoError) {
+              console.warn(
+                `❌ Failed to get schema for table ${tableName} from Turso:`,
+                tursoError,
+              );
+            }
+          } else {
+            console.log(`   ❌ Table ${tableName} not found in Turso database`);
+          }
 
           if (!createTableSql) {
+            console.log(
+              `   ❌ Could not retrieve table schema for ${tableName}`,
+            );
             migratedTables.push({
-              tableName: table.name,
+              tableName: tableName,
               rowCount: 0,
               status: "error",
               error: "Could not retrieve table schema",
@@ -157,81 +369,47 @@ export const migrate = createDatabaseTool({
           }
 
           // Check if table already exists in new database
+          console.log(
+            `   🔍 Checking if table ${tableName} exists in new database...`,
+          );
           let tableExists = false;
           try {
             using checkTableResponse = await newDb.exec({
-              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${table.name}'`,
+              sql: `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`,
               params: [],
             });
             tableExists =
               (checkTableResponse.result[0]?.results?.length || 0) > 0;
-          } catch {
+            console.log(
+              `   ${tableExists ? "✅" : "❌"} Table ${tableName} ${
+                tableExists ? "exists" : "does not exist"
+              } in new database`,
+            );
+          } catch (error) {
+            console.log(
+              `   ⚠️ Could not check if table exists, assuming it doesn't:`,
+              error,
+            );
             // If we can't check, assume table doesn't exist and try to create it
             tableExists = false;
           }
 
           if (!tableExists) {
-            // Create table using PRAGMA table_info for clean column definitions
+            console.log(`   🏗️ Creating table ${tableName} in new database...`);
             try {
-              // Get column information directly from the legacy database
-              using tableInfoResponse = await legacyDb.exec({
-                sql: `PRAGMA table_info("${table.name}")`,
-                params: [],
-              });
-
-              const tableInfo =
-                (tableInfoResponse.result[0]?.results as Array<{
-                  cid: number;
-                  name: string;
-                  type: string;
-                  notnull: number;
-                  dflt_value: string | null;
-                  pk: number;
-                }>) || [];
-
-              if (tableInfo.length === 0) {
-                migratedTables.push({
-                  tableName: table.name,
-                  rowCount: 0,
-                  status: "error",
-                  error: "Cannot get table column information",
-                });
-                continue;
-              }
-
-              // Build clean CREATE TABLE statement from column info
-              const columnDefinitions = tableInfo.map((col) => {
-                let def = `"${col.name}" ${col.type || "TEXT"}`;
-                if (col.notnull && !col.pk) {
-                  def += " NOT NULL";
-                }
-                if (col.dflt_value !== null) {
-                  def += ` DEFAULT ${col.dflt_value}`;
-                }
-                return def;
-              });
-
-              // Add PRIMARY KEY if there are primary key columns
-              const pkColumns = tableInfo
-                .filter((col) => col.pk > 0)
-                .sort((a, b) => a.pk - b.pk)
-                .map((col) => `"${col.name}"`);
-
-              if (pkColumns.length > 0) {
-                columnDefinitions.push(`PRIMARY KEY (${pkColumns.join(", ")})`);
-              }
-
-              const cleanCreateSql = `CREATE TABLE IF NOT EXISTS "${table.name}" (${columnDefinitions.join(
-                ", ",
-              )})`;
-
+              console.log(`   📝 Using schema: ${createTableSql}`);
               using _ = await newDb.exec({
-                sql: cleanCreateSql,
+                sql: createTableSql,
                 params: [],
               });
+              console.log(`   ✅ Table ${tableName} created successfully`);
             } catch (createError) {
+              console.log(
+                `   ❌ Failed to create table ${tableName}:`,
+                createError,
+              );
               migratedTables.push({
-                tableName: table.name,
+                tableName: tableName,
                 rowCount: 0,
                 status: "error",
                 error: `Cannot create table: ${
@@ -242,24 +420,39 @@ export const migrate = createDatabaseTool({
               });
               continue;
             }
+          } else {
+            console.log(
+              `   ✅ Table ${tableName} already exists in new database`,
+            );
           }
 
-          // Get column information for the table
-          using columnsResponse = await legacyDb.exec({
-            sql: `PRAGMA table_info("${table.name}")`,
-            params: [],
-          });
+          // Get column information for the table from Turso database
+          let columns: Array<{ name: string }> = [];
 
-          const columns =
-            (columnsResponse.result[0]?.results as Array<{ name: string }>) ||
-            [];
+          try {
+            using result = await tursoDb.exec({
+              sql: `PRAGMA table_info("${tableName}")`,
+              params: [],
+            });
+            columns =
+              (result.result[0]?.results as Array<{ name: string }>) || [];
+            console.log(
+              `   ✅ Got columns from Turso database (${columns.length} columns)`,
+            );
+          } catch (tursoError) {
+            console.warn(
+              `Failed to get columns for ${tableName} from Turso database:`,
+              tursoError,
+            );
+          }
+
           const columnNames = columns.map((col) => `"${col.name}"`).join(", ");
 
           // Check if table already has data (for idempotency)
           let existingRowCount = 0;
           try {
             using existingCountResponse = await newDb.exec({
-              sql: `SELECT COUNT(*) as count FROM "${table.name}"`,
+              sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
               params: [],
             });
             existingRowCount =
@@ -273,20 +466,29 @@ export const migrate = createDatabaseTool({
             existingRowCount = 0;
           }
 
-          // Count total rows in legacy database
+          // Count total rows from Turso database
           let totalRows = 0;
           try {
-            using countResponse = await legacyDb.exec({
-              sql: `SELECT COUNT(*) as count FROM "${table.name}"`,
-              params: [],
-            });
-            totalRows =
-              (countResponse.result[0]?.results?.[0] as { count: number })
-                ?.count || 0;
+            // Count from Turso database
+            try {
+              using result = await tursoDb.exec({
+                sql: `SELECT COUNT(*) as count FROM "${tableName}"`,
+                params: [],
+              });
+              totalRows =
+                (result.result[0]?.results?.[0] as { count: number })?.count ||
+                0;
+              console.log(`   📊 Found ${totalRows} rows in Turso database`);
+            } catch (error) {
+              console.warn(
+                `Failed to count rows in Turso table ${tableName}:`,
+                error,
+              );
+            }
           } catch (countError) {
             // If we can't count rows, the table might have dependency issues, skip it
             migratedTables.push({
-              tableName: table.name,
+              tableName: tableName,
               rowCount: 0,
               status: "error",
               error: `Cannot access table for counting: ${
@@ -298,114 +500,147 @@ export const migrate = createDatabaseTool({
             continue;
           }
 
-          // Skip migration if target table already has the same or more rows (idempotency)
-          if (existingRowCount >= totalRows && totalRows > 0) {
-            migratedTables.push({
-              tableName: table.name,
-              rowCount: existingRowCount,
-              status: "success",
-            });
-            totalRowsMigrated += existingRowCount;
-            continue;
+          // Always migrate data, even if table already exists
+          if (existingRowCount > 0) {
+            console.log(
+              `   ⚠️ Table ${tableName} already has ${existingRowCount} rows, but will still migrate data`,
+            );
           }
 
+          // Migrate data from Turso database
+          console.log(`   📊 Starting data migration for ${tableName}...`);
           let migratedRows = 0;
-          let offset = 0;
-          let hasError = false;
 
-          // Migrate data in batches
-          while (offset < totalRows && !hasError) {
-            let rows: any[] = [];
-            try {
-              using dataResponse = await legacyDb.exec({
-                sql: `SELECT ${columnNames} FROM "${table.name}" LIMIT ${batchSize} OFFSET ${offset}`,
-                params: [],
-              });
-              rows = dataResponse.result[0]?.results || [];
-            } catch (dataError) {
-              // If we can't read data, log error and set error flag
-              migratedTables.push({
-                tableName: table.name,
-                rowCount: migratedRows,
-                status: "error",
-                error: `Cannot read data from table: ${
-                  dataError instanceof Error
-                    ? dataError.message
-                    : String(dataError)
-                }`,
-              });
-              hasError = true;
-              break;
-            }
-
-            if (rows.length === 0) break;
-
-            // SQLite has a limit of 999 variables per statement
-            // Use a very conservative limit as some implementations have lower limits
-            const maxRowsPerInsert = Math.max(
-              1,
-              Math.min(10, Math.floor(50 / columns.length)),
-            );
-
-            // Process rows in chunks to respect SQLite variable limit
-            for (let i = 0; i < rows.length; i += maxRowsPerInsert) {
-              const rowChunk = rows.slice(i, i + maxRowsPerInsert);
-
+          console.log(
+            `   🔄 Migrating from TURSO database (${totalRows} total rows)...`,
+          );
+          try {
+            let tursoOffset = 0;
+            let tursoBatchCount = 0;
+            while (tursoOffset < totalRows) {
+              let rows: any[] = [];
               try {
-                // Prepare bulk insert for this chunk
-                const placeholders = columns.map(() => "?").join(", ");
-                const insertSql = `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES ${rowChunk
-                  .map(() => `(${placeholders})`)
-                  .join(", ")}`;
+                using result = await tursoDb.exec({
+                  sql: `SELECT ${columnNames} FROM "${tableName}" LIMIT ${batchSize} OFFSET ${tursoOffset}`,
+                  params: [],
+                });
+                rows = result.result[0]?.results || [];
+              } catch (dataError) {
+                console.warn(
+                  `Failed to read data from Turso table ${tableName}:`,
+                  dataError,
+                );
+                break;
+              }
 
-                // Flatten row data for parameters
-                const params: any[] = [];
-                for (const row of rowChunk) {
-                  for (const column of columns) {
-                    params.push((row as any)[column.name]);
-                  }
+              if (rows.length === 0) break;
+
+              tursoBatchCount++;
+              console.log(
+                `   📦 [TURSO] Batch ${tursoBatchCount}: ${rows.length} rows (offset: ${tursoOffset})`,
+              );
+
+              // Process rows and insert into new database with dynamic chunk sizing
+              const maxSQLSize = 100000; // 100KB limit to avoid SQLITE_TOOBIG (very conservative)
+              const maxParams = 999; // SQLite parameter limit
+              const maxRowsPerChunk = Math.max(
+                1,
+                Math.min(5, Math.floor(maxParams / columns.length)),
+              ); // Extremely conservative limit
+
+              let currentChunk: any[] = [];
+              let currentChunkSize = 0;
+
+              for (const row of rows) {
+                // Check if this single row is too large
+                const singleRowMetrics = estimateSQLMetrics(
+                  tableName,
+                  columnNames,
+                  [row],
+                );
+                if (singleRowMetrics.size > maxSQLSize) {
+                  await insertChunk(
+                    tableName,
+                    columnNames,
+                    [row],
+                    columns,
+                    newDb,
+                  );
+                  continue;
                 }
 
-                using _ = await newDb.exec({
-                  sql: insertSql,
-                  params,
-                });
-              } catch {
-                // If bulk insert fails, fall back to single-row inserts
-                const placeholders = columns.map(() => "?").join(", ");
-                const singleInsertSql = `INSERT OR REPLACE INTO "${table.name}" (${columnNames}) VALUES (${placeholders})`;
+                // Estimate size and parameter count if we add this row to current chunk
+                const testChunk = [...currentChunk, row];
+                const metrics = estimateSQLMetrics(
+                  tableName,
+                  columnNames,
+                  testChunk,
+                );
 
-                for (const row of rowChunk) {
-                  const params: any[] = [];
-                  for (const column of columns) {
-                    params.push((row as any)[column.name]);
-                  }
+                // Check both size and parameter count limits
+                const shouldInsert =
+                  (metrics.size > maxSQLSize ||
+                    metrics.paramCount > maxParams ||
+                    currentChunk.length >= maxRowsPerChunk) &&
+                  currentChunk.length > 0;
 
-                  using _ = await newDb.exec({
-                    sql: singleInsertSql,
-                    params,
-                  });
+                if (shouldInsert) {
+                  // Current chunk would be too big or have too many parameters, insert current chunk first
+                  await insertChunk(
+                    tableName,
+                    columnNames,
+                    currentChunk,
+                    columns,
+                    newDb,
+                  );
+                  currentChunk = [row];
+                  currentChunkSize = metrics.size;
+                } else {
+                  // Add row to current chunk
+                  currentChunk.push(row);
+                  currentChunkSize = metrics.size;
                 }
               }
+
+              // Insert any remaining rows in the last chunk
+              if (currentChunk.length > 0) {
+                await insertChunk(
+                  tableName,
+                  columnNames,
+                  currentChunk,
+                  columns,
+                  newDb,
+                );
+              }
+
+              migratedRows += rows.length;
+              tursoOffset += batchSize;
             }
-
-            migratedRows += rows.length;
-            offset += batchSize;
+            console.log(
+              `   ✅ [TURSO] Migration completed: ${migratedRows} rows migrated`,
+            );
+          } catch (error) {
+            console.warn(
+              `❌ Failed to migrate from Turso table ${tableName}:`,
+              error,
+            );
           }
 
-          // Only report success if there was no error
-          if (!hasError) {
-            migratedTables.push({
-              tableName: table.name,
-              rowCount: migratedRows,
-              status: "success",
-            });
-
-            totalRowsMigrated += migratedRows;
-          }
-        } catch (error) {
+          // Report success
+          console.log(
+            `   ✅ Table ${tableName} migration completed: ${migratedRows} rows migrated from TURSO database`,
+          );
           migratedTables.push({
-            tableName: table.name,
+            tableName: tableName,
+            rowCount: migratedRows,
+            status: "success",
+          });
+
+          totalRowsMigrated += migratedRows;
+        } catch (error) {
+          console.log(`   ❌ Table ${tableName} migration failed:`, error);
+          migratedTables.push({
+            tableName: tableName,
             rowCount: 0,
             status: "error",
             error: error instanceof Error ? error.message : String(error),
@@ -413,38 +648,56 @@ export const migrate = createDatabaseTool({
         }
       }
 
+      console.log(`\n🎉 Migration completed successfully!`);
+      console.log(`📊 Total rows migrated: ${totalRowsMigrated}`);
+      console.log(`📋 Tables processed: ${migratedTables.length}`);
+
       // Re-enable foreign key constraints after migration
+      console.log("🔒 Re-enabling foreign key constraints...");
       try {
         using _ = await newDb.exec({
           sql: "PRAGMA foreign_keys = ON",
           params: [],
         });
-      } catch {
-        // If we can't re-enable foreign keys, continue anyway
+        console.log("✅ Foreign key constraints re-enabled");
+      } catch (error) {
+        console.warn("⚠️ Could not re-enable foreign key constraints:", error);
       }
+
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️ Total execution time: ${executionTime}ms`);
+      console.log("🎯 Migration completed successfully!");
 
       return {
         success: true,
         migratedTables,
         totalRowsMigrated,
-        executionTimeMs: Date.now() - startTime,
+        executionTimeMs: executionTime,
       };
-    } catch {
+    } catch (error) {
+      console.error("💥 Migration failed with error:", error);
+
       // Re-enable foreign key constraints even on error
+      console.log("🔒 Re-enabling foreign key constraints after error...");
       try {
         using _ = await newDb.exec({
           sql: "PRAGMA foreign_keys = ON",
           params: [],
         });
-      } catch {
-        // If we can't re-enable foreign keys, continue anyway
+        console.log("✅ Foreign key constraints re-enabled");
+      } catch (fkError) {
+        console.warn("⚠️ Could not re-enable foreign key constraints:", fkError);
       }
+
+      const executionTime = Date.now() - startTime;
+      console.log(`⏱️ Total execution time: ${executionTime}ms`);
+      console.log("💥 Migration failed!");
 
       return {
         success: false,
         migratedTables,
         totalRowsMigrated,
-        executionTimeMs: Date.now() - startTime,
+        executionTimeMs: executionTime,
       };
     }
   },

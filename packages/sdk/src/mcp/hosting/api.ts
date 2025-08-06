@@ -998,7 +998,15 @@ const OutputPaginationListSchema = z.object({
 });
 
 const getStore = async (c: WithTool<AppContext>) => {
-  const db = await workspaceDB(c);
+  assertHasWorkspace(c);
+  const db = await workspaceDB({
+    workspaceDO: c.workspaceDO,
+    workspace: { value: c.workspace.value },
+    envVars: {
+      TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+      TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
+    },
+  });
 
   return new D1Store({
     client: {
@@ -1075,7 +1083,15 @@ export const listWorkflowRuns = createTool({
     c,
   ) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const db = await workspaceDB(c);
+    assertHasWorkspace(c);
+    const db = await workspaceDB({
+      workspaceDO: c.workspaceDO,
+      workspace: { value: c.workspace.value },
+      envVars: {
+        TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+        TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
+      },
+    });
 
     // Build dynamic SQL query with optional filters
     const conditions: string[] = [];
@@ -1310,7 +1326,15 @@ export const listWorkflowNames = createTool({
   }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c.tool.name, c);
-    const db = await workspaceDB(c);
+    assertHasWorkspace(c);
+    const db = await workspaceDB({
+      workspaceDO: c.workspaceDO,
+      workspace: { value: c.workspace.value },
+      envVars: {
+        TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+        TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
+      },
+    });
 
     const sql = `
       SELECT DISTINCT workflow_name

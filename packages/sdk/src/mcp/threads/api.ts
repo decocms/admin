@@ -1,8 +1,3 @@
-import {
-  type Client,
-  createClient,
-  type InStatement,
-} from "@libsql/client/web";
 import { MessageList } from "@mastra/core/agent";
 import type { Message as AIMessage } from "ai";
 import { z } from "zod";
@@ -11,9 +6,17 @@ import {
   assertHasWorkspace,
   assertWorkspaceResourceAccess,
 } from "../assertions.ts";
-import { type AppContext, createToolGroup } from "../context.ts";
-import { InternalServerError, NotFoundError } from "../index.ts";
-import { generateUUIDv5, toAlphanumericId } from "../slugify.ts";
+import {
+  type AppContext,
+  createToolGroup,
+  IWorkspaceDB,
+  workspaceDB,
+} from "../context.ts";
+import {
+  DatatabasesRunSqlInput,
+  InternalServerError,
+  NotFoundError,
+} from "../index.ts";
 
 const createTool = createToolGroup("Thread", {
   name: "Thread Management",
@@ -25,9 +28,22 @@ async function getWorkspaceMemory(c: AppContext) {
   assertHasWorkspace(c);
   return await WorkspaceMemory.create({
     workspace: c.workspace.value,
+    workspaceDO: c.workspaceDO,
     tursoAdminToken: c.envVars.TURSO_ADMIN_TOKEN ?? "",
     tursoOrganization: c.envVars.TURSO_ORGANIZATION,
     tokenStorage: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+  });
+}
+
+async function getWorkspaceDB(c: AppContext) {
+  assertHasWorkspace(c);
+  return await workspaceDB({
+    workspaceDO: c.workspaceDO,
+    workspace: { value: c.workspace.value },
+    envVars: {
+      TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+      TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
+    },
   });
 }
 
@@ -39,9 +55,12 @@ const safeParse = (str: string) => {
   }
 };
 
-const safeExecute = async (client: Client, stmt: InStatement) => {
+const safeExecute = async (
+  client: IWorkspaceDB,
+  stmt: DatatabasesRunSqlInput,
+) => {
   try {
-    return { data: await client.execute(stmt), error: null };
+    return { data: await client.exec(stmt), error: null };
   } catch (e) {
     return { data: null, error: e };
   }
@@ -68,22 +87,6 @@ const MessageSchema = z.object({
 type Thread = z.infer<typeof ThreadSchema>;
 type Message = z.infer<typeof MessageSchema>;
 
-const TURSO_GROUP = "deco-agents-v2";
-
-const createSQLClientFor = async (
-  workspace: string,
-  organization: string,
-  authToken: string,
-) => {
-  const memoryId = toAlphanumericId(`${workspace}/default`);
-  const uniqueDbName = await generateUUIDv5(`${memoryId}-${TURSO_GROUP}`);
-
-  return createClient({
-    url: `libsql://${uniqueDbName}-${organization}.turso.io`,
-    authToken: authToken,
-  });
-};
-
 export const listThreads = createTool({
   name: "THREADS_LIST",
   description:
@@ -107,15 +110,6 @@ export const listThreads = createTool({
     assertHasWorkspace(c);
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
-
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
-    const workspace = c.workspace.value;
-
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
 
     orderBy ??= "createdAt_desc";
     // Parse orderBy parameter
@@ -164,30 +158,40 @@ export const listThreads = createTool({
 
     limit ??= 10;
 
-    const generateQuery = ({ where }: { where: string }) =>
-      safeExecute(client, {
-        sql: `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
-        args: [...args, limit + 1], // Fetch one extra to determine if there are more
+    const generateQuery = async ({ where }: { where: string }) => {
+      const db = await workspaceDB({
+        workspaceDO: c.workspaceDO,
+        workspace: { value: c.workspace.value },
+        envVars: {
+          TURSO_GROUP_DATABASE_TOKEN: c.envVars.TURSO_GROUP_DATABASE_TOKEN,
+          TURSO_ORGANIZATION: c.envVars.TURSO_ORGANIZATION,
+        },
       });
+      return safeExecute(db, {
+        sql: `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+        params: [...args, limit + 1], // Fetch one extra to determine if there are more
+      });
+    };
 
-    const [{ data: result, error }, { data: prevCursorResult }] =
-      await Promise.all([
-        generateQuery({ where: whereClause }),
+    const [{ data: currData, error }, { data: prevData }] = await Promise.all([
+      generateQuery({ where: whereClause }),
+      hasCursor
+        ? generateQuery({ where: prevWhereClause })
+        : ({ data: { result: [{ results: [] }] } } as const),
+    ]);
 
-        hasCursor
-          ? generateQuery({ where: prevWhereClause })
-          : ({ data: { rows: [] } } as const),
-      ]);
+    const [{ results: currRows }] = currData?.result ?? [{ results: [] }];
+    const [{ results: prevRows }] = prevData?.result ?? [{ results: [] }];
 
-    if (!result || error) {
+    if (!currRows || error) {
       return { threads: [], pagination: { hasMore: false, nextCursor: null } };
     }
 
-    const threads = result.rows
+    const threads = currRows
       .map((row: unknown) => ThreadSchema.safeParse(row)?.data)
       .filter((a): a is Thread => !!a);
-    const prevThreads = prevCursorResult?.rows
-      .map((row) => ThreadSchema.safeParse(row)?.data)
+    const prevThreads = prevRows
+      ?.map((row) => ThreadSchema.safeParse(row)?.data)
       .filter((t) => t !== undefined);
 
     // Check if there are more results
@@ -239,25 +243,18 @@ export const getThreadMessages = createTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
-    const workspace = c.workspace.value;
-
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
-
-    const { data: result, error } = await safeExecute(client, {
+    const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
-      args: [id],
+      params: [id],
     });
 
-    if (!result?.rows.length || error) {
+    const rows = result?.result?.[0]?.results;
+
+    if (!rows || error) {
       return [];
     }
 
-    const messages = result.rows
+    const messages = rows
       .map((row: unknown) => MessageSchema.safeParse(row)?.data)
       .filter((a: Message | undefined): a is Message => !!a);
 
@@ -279,25 +276,18 @@ export const getThread = createTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
-    const workspace = c.workspace.value;
-
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
-
-    const { data: result, error } = await safeExecute(client, {
+    const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
-      args: [id],
+      params: [id],
     });
 
-    if (!result?.rows.length || error) {
+    const rows = result?.result?.[0]?.results;
+
+    if (!rows || error) {
       throw new NotFoundError("Thread not found");
     }
 
-    const thread = ThreadSchema.parse(result.rows[0]);
+    const thread = ThreadSchema.parse(rows[0]);
 
     return thread;
   },
@@ -312,21 +302,18 @@ export const getThreadTools = createTool({
 
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
-    const { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION } = c.envVars;
-    const workspace = c.workspace.value;
-
-    const client = await createSQLClientFor(
-      workspace,
-      TURSO_ORGANIZATION,
-      TURSO_GROUP_DATABASE_TOKEN,
-    );
-
-    const { data: result } = await safeExecute(client, {
+    const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
       sql: `SELECT * FROM mastra_threads WHERE id = ? LIMIT 1`,
-      args: [id],
+      params: [id],
     });
 
-    const { data: thread } = ThreadSchema.safeParse(result?.rows[0] ?? {});
+    const rows = result?.result?.[0]?.results;
+
+    if (!rows || error) {
+      throw new NotFoundError("Thread not found");
+    }
+
+    const { data: thread } = ThreadSchema.safeParse(rows[0] ?? {});
 
     return { tools_set: thread?.metadata.tools_set ?? null };
   },

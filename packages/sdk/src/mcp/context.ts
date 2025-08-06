@@ -28,12 +28,6 @@ export interface JWTPrincipal extends JWTPayload {
   policies?: Pick<Policy, "statements">[];
 }
 
-const usesSQLiteFeatureFlag: Record<string, boolean> = {
-  "/shared/deco-team": true,
-  "/shared/deco.cx": true,
-  "/shared/muri-e-eu": true,
-};
-
 export type Principal = UserPrincipal | JWTPrincipal;
 
 const TURSO_GROUP = "deco-agents-v2";
@@ -77,8 +71,7 @@ export const workspaceDB = async (
     workspaceDO,
     envVars: { TURSO_GROUP_DATABASE_TOKEN, TURSO_ORGANIZATION },
   } = options;
-  const shouldUseSQLite =
-    usesSQLiteFeatureFlag[workspace.value] || turso === false;
+  const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
     return workspaceDO.get(workspaceDO.idFromName(workspace.value));

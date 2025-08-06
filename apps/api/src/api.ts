@@ -43,17 +43,8 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
   const policyClient = PolicyClient.getInstance(c.var.db);
   const authorizationClient = new AuthorizationClient(policyClient);
 
-  /**
-   * TODO: Remove after migration is finished
-   * Temporary solution to bypass auth to allow gimenes to migrate dbs
-   */
-  const isLocal =
-    typeof c.var?.user?.email === "string" &&
-    c.var.user.email.includes("@deco.cx");
-
   return {
     ...c.var,
-    isLocal,
     params: { ...c.req.query(), ...c.req.param() },
     envVars: envs,
     cookie: c.req.header("Cookie"),

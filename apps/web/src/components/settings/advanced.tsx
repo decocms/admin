@@ -31,7 +31,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 import { useWatch } from "react-hook-form";
 import { getPublicChatLink } from "../agent/chats.tsx";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
+import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
 

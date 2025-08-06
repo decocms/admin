@@ -1,9 +1,4 @@
-import {
-  type Integration,
-  listTools,
-  useIntegrations,
-  useKnowledgeListFiles,
-} from "@deco/sdk";
+import { type Integration, useKnowledgeListFiles } from "@deco/sdk";
 import {
   getExtensionFromContentType,
   getKnowledgeBaseIntegrationId,
@@ -21,7 +16,8 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
+import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
+import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import {
   AddFileToKnowledgeButton,
   KnowledgeBaseFileList,
@@ -32,11 +28,7 @@ import {
   useAgentKnowledgeIntegration,
   useUploadAgentKnowledgeFiles,
 } from "../agent/hooks/use-agent-knowledge.ts";
-import {
-  AppKeys,
-  getConnectionAppKey,
-  useRefetchIntegrationsOnNotification,
-} from "../integrations/apps.ts";
+import { AppKeys, getConnectionAppKey } from "../integrations/apps.ts";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
 import { IntegrationListItem } from "../toolsets/selector.tsx";
 
@@ -361,70 +353,6 @@ function MultiAgent() {
       )}
     </div>
   );
-}
-
-export function useAgentSettingsToolsSet() {
-  const { form, agent } = useAgentSettingsForm();
-  const { data: _installedIntegrations } = useIntegrations();
-  const installedIntegrations = _installedIntegrations.filter(
-    (i) => !i.id.includes(agent.id),
-  );
-  const toolsSet = form.watch("tools_set");
-
-  useRefetchIntegrationsOnNotification();
-
-  const enableAllTools = (integrationId: string) => {
-    const toolsSet = form.getValues("tools_set");
-    const newToolsSet = { ...toolsSet };
-    // When enabling all tools, first set the tools to an empty array
-    // so the integration is at least enabled even if fetching the tools fails
-    newToolsSet[integrationId] = [];
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-
-    // account for optimistic update post connection creation
-    // TODO: change to on success and track pending integrations to selectall
-    setTimeout(() => {
-      const connection = installedIntegrations.find(
-        (integration) => integration.id === integrationId,
-      )?.connection;
-
-      if (!connection) {
-        console.error("No connection found for integration", integrationId);
-        return;
-      }
-
-      listTools(connection)
-        .then((result) => {
-          // If fetching goes well, update the form again
-          newToolsSet[integrationId] = result.tools.map((tool) => tool.name);
-          form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-        })
-        .catch(console.error);
-    }, 100);
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  const disableAllTools = (integrationId: string) => {
-    const toolsSet = form.getValues("tools_set");
-    const newToolsSet = { ...toolsSet };
-    delete newToolsSet[integrationId];
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  const setIntegrationTools = (integrationId: string, tools: string[]) => {
-    const toolsSet = form.getValues("tools_set");
-    const newToolsSet = { ...toolsSet };
-    newToolsSet[integrationId] = tools;
-    form.setValue("tools_set", newToolsSet, { shouldDirty: true });
-  };
-
-  return {
-    toolsSet,
-    setIntegrationTools,
-    enableAllTools,
-    disableAllTools,
-    installedIntegrations,
-  };
 }
 
 function ToolsAndKnowledgeTab() {

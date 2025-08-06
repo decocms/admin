@@ -20,8 +20,8 @@ import { DockviewReadyEvent } from "dockview-react";
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Link, Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../hooks/use-local-storage.ts";
-import { useUserPreferences } from "../hooks/use-user-preferences.ts";
 import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
+import { useUserPreferences } from "../hooks/use-user-preferences.ts";
 import { useUser } from "../hooks/use-user.ts";
 import RegisterActivity from "./common/register-activity.tsx";
 import {

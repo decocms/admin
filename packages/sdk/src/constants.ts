@@ -314,11 +314,7 @@ When user asks for a prompt, you should use the PROMPTS_GET tool to get the actu
     name: "Decopilot",
     avatar: pickCapybaraAvatar(12),
     description: "Let's Deco!",
-    instructions: `
-You are an assistant that helps users with decopilot.
-
-When user asks for a decopilot, you should use the DECOPILOT_GET tool to get the actual decopilot and then use the DECOPILOT_UPDATE tool to update the decopilot in question.
-    `,
+    instructions: `You are a helpful assistant that helps users to accomplish tasks by using tools from your toolset.`,
   },
 } satisfies Record<string, Agent>;
 

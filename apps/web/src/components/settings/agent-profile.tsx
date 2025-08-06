@@ -13,7 +13,7 @@ import { Skeleton } from "@deco/ui/components/skeleton.tsx";
 import { Textarea } from "@deco/ui/components/textarea.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useRef, useState } from "react";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
+import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
 import { ModelSelector } from "../chat/model-selector.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import PromptInput from "../prompts/rich-text/index.tsx";

@@ -34,7 +34,7 @@ import { toast } from "@deco/ui/components/sonner.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useState } from "react";
-import { useAgentSettingsForm } from "../agent/edit.tsx";
+import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { InstalledConnections } from "../integrations/installed-connections.tsx";
 import { Dialog } from "@deco/ui/components/dialog.tsx";

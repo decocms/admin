@@ -1,10 +1,12 @@
+import { useIntegrations, type Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
 import { NoNewLine } from "./extensions/no-new-line.ts";
+import { toolMentions } from "./extensions/tool-mention.ts";
 
 export interface Mention {
   id: string;
@@ -19,6 +21,23 @@ export interface Mention {
   selectedModel?: string;
 }
 
+// Extend Integration type to include tools
+type IntegrationWithTools = Integration & {
+  tools?: Array<{ name: string; description?: string }>;
+};
+
+// Tool interface for flattened tools
+export interface Tool {
+  id: string;
+  name: string;
+  description?: string;
+  integration: {
+    id: string;
+    name: string;
+    icon?: string;
+  };
+}
+
 interface RichTextAreaProps {
   value: string;
   onChange: (markdown: string) => void;
@@ -29,6 +48,7 @@ interface RichTextAreaProps {
   placeholder?: string;
   className?: string;
   allowNewLine?: boolean;
+  enableToolMentions?: boolean;
 }
 
 export function RichTextArea({
@@ -41,9 +61,37 @@ export function RichTextArea({
   placeholder,
   className,
   allowNewLine = false,
+  enableToolMentions = false,
 }: RichTextAreaProps) {
-  const editor = useEditor({
-    extensions: [
+  const { data: integrations = [] } = useIntegrations();
+
+  // Flatten tools from all integrations
+  const tools: Tool[] = useMemo(() => {
+    return (integrations as IntegrationWithTools[])
+      .filter(
+        (integration) =>
+          integration.tools &&
+          Array.isArray(integration.tools) &&
+          integration.tools.length > 0,
+      )
+      .flatMap((integration) =>
+        integration.tools!.map(
+          (tool: { name: string; description?: string }) => ({
+            id: `${integration.id}-${tool.name}`,
+            name: tool.name,
+            description: tool.description,
+            integration: {
+              id: integration.id,
+              name: integration.name,
+              icon: integration.icon,
+            },
+          }),
+        ),
+      );
+  }, [integrations]);
+
+  const extensions: Extensions = useMemo(() => {
+    const extensions: Extensions = [
       StarterKit,
       Markdown.configure({
         html: true,
@@ -54,7 +102,17 @@ export function RichTextArea({
       Placeholder.configure({
         placeholder: placeholder ?? "Type a message...",
       }),
-    ],
+    ];
+
+    if (enableToolMentions) {
+      extensions.push(toolMentions(tools));
+    }
+
+    return extensions;
+  }, [allowNewLine, placeholder, enableToolMentions, tools]);
+
+  const editor = useEditor({
+    extensions,
     content: value,
     editable: !disabled,
     onUpdate: ({ editor }) => {

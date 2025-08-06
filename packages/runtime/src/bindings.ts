@@ -1,5 +1,4 @@
 import type { MCPConnection } from "./connection.ts";
-import { DECO_CHAT_API_URL } from "./constants.ts";
 import type { DefaultEnv, RequestContext } from "./index.ts";
 import { MCPClient } from "./mcp.ts";
 import type { MCPBinding } from "./wrangler.ts";
@@ -7,18 +6,20 @@ import type { MCPBinding } from "./wrangler.ts";
 interface IntegrationContext {
   integrationId: string;
   workspace: string;
+  decoChatApiUrl?: string;
 }
 
 /**
  * Url: /:workspace.root/:workspace.slug/:integrationId/mcp
  */
-const createIntegrationsUrl = (
-  { integrationId, workspace }: IntegrationContext,
-  { decoChatApiUrl }: { decoChatApiUrl?: string } = {},
-) =>
+const createIntegrationsUrl = ({
+  integrationId,
+  workspace,
+  decoChatApiUrl,
+}: IntegrationContext) =>
   new URL(
     `${workspace}/${integrationId}/mcp`,
-    decoChatApiUrl ?? DECO_CHAT_API_URL,
+    decoChatApiUrl ?? "https://api.deco.chat",
   ).href;
 
 type WorkspaceClientContext = Omit<
@@ -34,10 +35,16 @@ export const workspaceClient = (
 const mcpClientForIntegrationId = (
   integrationId: string,
   ctx: WorkspaceClientContext,
+  decoChatApiUrl?: string,
 ) => {
   const mcpConnection: MCPConnection = {
     type: "HTTP",
-    url: createIntegrationsUrl({ integrationId, workspace: ctx.workspace }),
+    url: createIntegrationsUrl({
+      integrationId,
+      workspace: ctx.workspace,
+      decoChatApiUrl,
+    }),
+    token: ctx.token,
   };
 
   // TODO(@igorbrasileiro): Switch this proxy to be a proxy that call MCP Client.toolCall from @modelcontextprotocol
@@ -62,11 +69,15 @@ export const createIntegrationBinding = (
     if (typeof integrationId !== "string") {
       return null;
     }
-    return mcpClientForIntegrationId(integrationId, ctx);
+    return mcpClientForIntegrationId(integrationId, ctx, env.DECO_CHAT_API_URL);
   }
   // bindings pointed to an specific integration id are binded using the app deployment workspace
-  return mcpClientForIntegrationId(integrationId, {
-    workspace: env.DECO_CHAT_WORKSPACE,
-    token: env.DECO_CHAT_API_TOKEN,
-  });
+  return mcpClientForIntegrationId(
+    integrationId,
+    {
+      workspace: env.DECO_CHAT_WORKSPACE,
+      token: env.DECO_CHAT_API_TOKEN,
+    },
+    env.DECO_CHAT_API_URL,
+  );
 };

@@ -298,7 +298,7 @@ const tool = WORKSPACE_TOOLS.find(t => t.name === "AGENTS_CREATE");
 await tool.handler(agent, context);
 
 // 7. Authorization check
-await assertWorkspaceResourceAccess("AGENTS_CREATE", context);
+await assertWorkspaceResourceAccess(context, "AGENTS_CREATE");
 context.resourceAccess.grant();
 
 // 8. Database operation

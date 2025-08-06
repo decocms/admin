@@ -117,7 +117,7 @@ export const listFiles = createTool({
 
     await Promise.all([
       ensureBucketExists(c, bucketName),
-      assertWorkspaceResourceAccess({ resource: c.tool.name }, c),
+      assertWorkspaceResourceAccess(c),
     ]);
 
     const s3Client = getS3Client(c);
@@ -149,7 +149,7 @@ export const readFile = createTool({
 
     await Promise.all([
       ensureBucketExists(c, bucketName),
-      assertWorkspaceResourceAccess({ resource: c.tool.name }, c),
+      assertWorkspaceResourceAccess(c),
     ]);
 
     const s3Client = getS3Client(c);
@@ -176,7 +176,7 @@ export const readFileMetadata = createTool({
 
     await Promise.all([
       ensureBucketExists(c, bucketName),
-      assertWorkspaceResourceAccess({ resource: c.tool.name }, c),
+      assertWorkspaceResourceAccess(c),
     ]);
 
     const s3Client = getS3Client(c);
@@ -214,13 +214,13 @@ export const writeFile = createTool({
     url: z.string().describe("The URL to upload the file to"),
   }),
   handler: async ({ path, expiresIn = 60, contentType, metadata }, c) => {
-    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
+    await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
 
     await Promise.all([
       ensureBucketExists(c, bucketName),
-      assertWorkspaceResourceAccess({ resource: c.tool.name }, c),
+      assertWorkspaceResourceAccess(c),
     ]);
 
     const s3Client = getS3Client(c);
@@ -250,7 +250,7 @@ export const deleteFile = createTool({
 
     await ensureBucketExists(c, bucketName);
 
-    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
+    await assertWorkspaceResourceAccess(c);
 
     const s3Client = getS3Client(c);
     const deleteCommand = new DeleteObjectCommand({

@@ -1,6 +1,7 @@
 import type { AuthContext, Statement } from "../auth/policy.ts";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors.ts";
 import type { Workspace } from "../path.ts";
+import { QueryResult } from "../storage/index.ts";
 import type { AppContext, UserPrincipal } from "./context.ts";
 
 type WithUser<TAppContext extends AppContext = AppContext> = Omit<
@@ -83,11 +84,21 @@ interface ResourceAccessContext extends Partial<Omit<AuthContext, "user">> {
 }
 
 export const assertWorkspaceResourceAccess = async (
-  { resource, ...authContext }: ResourceAccessContext,
   c: AppContext,
+  ..._resourcesOrContexts: Array<ResourceAccessContext | string>
 ): Promise<void> => {
   if (c.isLocal || c.resourceAccess.granted()) {
     return c.resourceAccess.grant();
+  }
+
+  const resourcesOrContexts =
+    _resourcesOrContexts.length === 0 && c.tool
+      ? [c.tool.name]
+      : _resourcesOrContexts;
+
+  // If no resources provided, throw error
+  if (resourcesOrContexts.length === 0) {
+    throw new ForbiddenError("No resources specified for access check");
   }
 
   assertHasUser(c);
@@ -96,9 +107,15 @@ export const assertWorkspaceResourceAccess = async (
   const user = c.user;
   const { root, slug } = c.workspace;
 
-  // agent tokens
+  // Check each resource - if ANY succeeds, grant access
+  const errors: string[] = [];
+
+  // For API keys, query the database only once
+  let apiKeyData: QueryResult<"deco_chat_api_keys", "*"> | null = null;
+  let apiKeyError: string | null = null;
+
+  // Check if this is an API key request and pre-fetch the data
   if ("aud" in user && user.aud === c.workspace.value) {
-    // API keys
     const [sub, id] = user.sub?.split(":") ?? [];
     if (sub === "api-key") {
       const { data, error } = await c.db
@@ -108,52 +125,94 @@ export const assertWorkspaceResourceAccess = async (
         .eq("enabled", true)
         .eq("workspace", c.workspace.value)
         .maybeSingle();
+
       if (error) {
-        throw new ForbiddenError(error.message);
+        apiKeyError = error.message;
+      } else {
+        apiKeyData = data;
       }
-      if (!data) {
-        throw new ForbiddenError(
-          `Cannot access ${resource} in workspace ${c.workspace.value}`,
-        );
+    }
+  }
+
+  for (const toolOrResourceContext of resourcesOrContexts) {
+    try {
+      const { resource, ...authContext } =
+        typeof toolOrResourceContext === "string"
+          ? { resource: toolOrResourceContext }
+          : toolOrResourceContext;
+
+      // agent tokens
+      if ("aud" in user && user.aud === c.workspace.value) {
+        // API keys
+        const [sub] = user.sub?.split(":") ?? [];
+        if (sub === "api-key") {
+          if (apiKeyError) {
+            errors.push(`API key error for ${resource}: ${apiKeyError}`);
+            continue;
+          }
+          if (!apiKeyData) {
+            errors.push(
+              `API key not found for ${resource} in workspace ${c.workspace.value}`,
+            );
+            continue;
+          }
+
+          // scopes should be a space-separated list of resources
+          if (
+            assertPoliciesIsStatementArray(apiKeyData.policies) &&
+            !(await c.authorization.canAccess(
+              apiKeyData.policies ?? [],
+              slug,
+              resource,
+              authContext,
+            ))
+          ) {
+            errors.push(
+              `Cannot access ${resource} in workspace ${c.workspace.value}`,
+            );
+            continue;
+          }
+        }
+
+        // If we reach here for this resource, access is granted
+        return c.resourceAccess.grant();
       }
 
-      // scopes should be a space-separated list of resourcesAdd commentMore actions
-      if (
-        assertPoliciesIsStatementArray(data.policies) &&
-        !(await c.authorization.canAccess(
-          data.policies ?? [],
+      if (root === "users" && user.id === slug) {
+        // If we reach here for this resource, access is granted
+        return c.resourceAccess.grant();
+      }
+
+      if (root === "shared") {
+        const canAccess = await c.authorization.canAccess(
+          user.id as string,
           slug,
           resource,
-          authContext,
-        ))
-      ) {
-        throw new ForbiddenError(
+        );
+
+        if (canAccess) {
+          // If we reach here for this resource, access is granted
+          return c.resourceAccess.grant();
+        } else {
+          errors.push(
+            `Cannot access ${resource} in shared workspace ${c.workspace.value}`,
+          );
+        }
+      } else {
+        errors.push(
           `Cannot access ${resource} in workspace ${c.workspace.value}`,
         );
       }
-    }
-
-    return c.resourceAccess.grant();
-  }
-
-  if (root === "users" && user.id === slug) {
-    return c.resourceAccess.grant();
-  }
-
-  if (root === "shared") {
-    const canAccess = await c.authorization.canAccess(
-      user.id as string,
-      slug,
-      resource,
-    );
-
-    if (canAccess) {
-      return c.resourceAccess.grant();
+    } catch (error) {
+      errors.push(
+        `Error checking access for resource: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
+  // If we reach here, none of the resources granted access
   throw new ForbiddenError(
-    `Cannot access ${resource} in workspace ${c.workspace.value}`,
+    `Cannot access any of the requested resources in workspace ${c.workspace.value}. Errors: ${errors.join("; ")}`,
   );
 };
 

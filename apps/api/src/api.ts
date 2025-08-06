@@ -40,8 +40,9 @@ import { handleTrigger } from "./webhooks/trigger.ts";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
-import { createIntegrationsGet } from "packages/sdk/src/mcp/integrations/api.ts";
+import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -185,6 +186,7 @@ const createToolCallHandlerFor = <
 };
 
 interface ProxyOptions {
+  tools?: ListToolsResult | null;
   middlewares?: Partial<{
     listTools: ListToolsMiddleware[];
     callTool: CallToolMiddleware[];
@@ -193,7 +195,7 @@ interface ProxyOptions {
 
 const proxy = (
   mcpConnection: MCPConnection,
-  { middlewares }: ProxyOptions = {},
+  { middlewares, tools }: ProxyOptions = {},
 ) => {
   const createMcpClient = async () => {
     const client = await createServerClient({
@@ -203,7 +205,11 @@ const proxy = (
 
     const listTools = compose(
       ...(middlewares?.listTools ?? []),
-      () => client.listTools() as ReturnType<ListToolsMiddleware>,
+      async () =>
+        tools ??
+        ((await client.listTools()) as Awaited<
+          ReturnType<ListToolsMiddleware>
+        >),
     );
 
     const callTool = compose(
@@ -259,14 +265,14 @@ const createMcpServerProxy = async (c: Context) => {
   const ctx = honoCtxToAppCtx(c);
 
   const integrationId = c.req.param("integrationId");
-  const integrationsGet = createIntegrationsGet({
-    mapConnectionForContext: (connection) => connection,
-  });
   const integration = await State.run(ctx, () =>
-    integrationsGet({ id: integrationId }, ctx),
+    getIntegration.handler({ id: integrationId }),
   );
 
   const mcpServerProxy = proxy(integration.connection, {
+    tools: integration.tools
+      ? { tools: integration.tools as ListToolsResult["tools"] }
+      : undefined,
     middlewares: {
       callTool: [withMCPAuthorization(ctx, { integrationId })],
     },
@@ -338,12 +344,26 @@ app.post("/:root/:slug/:integrationId/mcp", async (c) => {
   return mcpServerProxy.fetch(c.req.raw);
 });
 
-app.post("/:root/:slug/:integrationId/tools/call", async (c) => {
+app.post("/:root/:slug/:integrationId/tools/list", async (c) => {
   const mcpServerProxy = await createMcpServerProxy(c);
+
+  return c.json(
+    await mcpServerProxy.listTools({
+      method: "tools/list" as const,
+    }),
+  );
+});
+
+app.post("/:root/:slug/:integrationId/tools/call/:tool", async (c) => {
+  const mcpServerProxy = await createMcpServerProxy(c);
+  const tool = c.req.param("tool");
 
   const callToolParam = {
     method: "tools/call" as const,
-    params: await c.req.json(),
+    params: {
+      name: tool,
+      arguments: await c.req.json(),
+    },
   };
 
   return c.json(await mcpServerProxy.callTool(callToolParam));

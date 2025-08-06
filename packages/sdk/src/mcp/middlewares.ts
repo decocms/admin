@@ -64,8 +64,6 @@ export const withMCPErrorHandling =
     }
   };
 
-const DRY_RUN_AUTH = true;
-
 interface AuthContext {
   integrationId: string;
 }
@@ -76,19 +74,18 @@ export const withMCPAuthorization =
     ctx.resourceAccess.reset();
     try {
       await assertWorkspaceResourceAccess(
-        { integrationId, resource: req.params.name },
         ctx,
+        { integrationId, resource: req.params.name },
+        "INTEGRATIONS_GET", // fallback to INTEGRATIONS_GET to keep compatibility with old MCP Integrations
       );
     } catch (error) {
       console.error(
         `withMCPAuthorization error: user id ${ctx.user?.id} failed to access ${integrationId} resource ${req.params.name} at workspace ${ctx.workspace?.value}`,
       );
-      if (!DRY_RUN_AUTH) {
-        return {
-          isError: true,
-          content: [{ type: "text", text: serializeError(error) }],
-        };
-      }
+      return {
+        isError: true,
+        content: [{ type: "text", text: serializeError(error) }],
+      };
     }
 
     return await next!();

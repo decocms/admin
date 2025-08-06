@@ -31,6 +31,7 @@ import { TeamWithViews } from "../../crud/teams.ts";
 import { type View } from "../../views.ts";
 import { RoleUpdateAction, Statement } from "../../auth/policy.ts";
 import { isRequired } from "../../utils/fns.ts";
+import { parseId } from "../integrations/api.ts";
 
 const OWNER_ROLE_ID = 1;
 
@@ -945,7 +946,10 @@ export const getTeamRole = createTool({
 
       const getIntegrationId = (statement: Statement) => {
         if (statement.matchCondition?.resource === "is_integration") {
-          return statement.matchCondition.integrationId;
+          const { uuid: integrationId } = parseId(
+            statement.matchCondition.integrationId,
+          );
+          return integrationId;
         }
         const wellKnownGroup = resourceGroupMap.get(statement.resource);
         return getIntegrationIdForGroup(wellKnownGroup);

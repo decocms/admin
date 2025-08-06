@@ -4,10 +4,7 @@ import type {
   ToolBinder,
   WorkspaceTools,
 } from "./mcp/index.ts";
-import {
-  createMCPFetchStub,
-  createMCPFetchStubForIntegration,
-} from "./mcp/stub.ts";
+import { createMCPFetchStub } from "./mcp/stub.ts";
 import type { MCPConnection } from "./models/mcp.ts";
 
 export interface FetchOptions extends RequestInit {
@@ -26,21 +23,12 @@ export const MCPClient = new Proxy(
     forConnection: <TDefinition extends readonly ToolBinder[]>(
       connection: MCPConnection,
     ) => MCPClientFetchStub<TDefinition>;
-    forIntegration: (
-      workspace: string,
-      integrationId: string,
-      // deno-lint-ignore no-explicit-any
-    ) => (args: unknown, init?: RequestInit) => Promise<Record<any, any>>;
   },
   {
     get(_, name) {
       if (name === "forWorkspace") {
         return (workspace: string) =>
           createMCPFetchStub<WorkspaceTools>({ workspace });
-      }
-      if (name === "forIntegration") {
-        return (workspace: string, integrationId: string) =>
-          createMCPFetchStubForIntegration({ workspace, integrationId });
       }
       if (name === "forConnection") {
         return <TDefinition extends readonly ToolBinder[]>(
@@ -51,14 +39,3 @@ export const MCPClient = new Proxy(
     },
   },
 );
-
-export interface ForWorkspaceOptions {
-  workspace: string;
-  integrationId: string;
-}
-
-// deno-lint-ignore no-explicit-any
-export const isForWorkspaceOptions = <T extends Record<any, any>>(
-  obj: T,
-): obj is T & ForWorkspaceOptions =>
-  "workspace" in obj && "integrationId" in obj;

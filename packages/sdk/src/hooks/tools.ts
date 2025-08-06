@@ -1,10 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { MCPConnection } from "../models/mcp.ts";
-import {
-  ForWorkspaceOptions,
-  isForWorkspaceOptions,
-  MCPClient,
-} from "../fetcher.ts";
+import { MCPClient } from "../fetcher.ts";
 export interface MCPTool {
   name: string;
   description?: string;
@@ -41,19 +37,14 @@ export const listTools = (
   MCPClient.INTEGRATIONS_LIST_TOOLS({ connection }, init) as Promise<ToolsData>;
 
 export const callTool = (
-  connection: MCPConnection | ForWorkspaceOptions,
+  connection: MCPConnection,
   toolCallArgs: MCPToolCall,
 ) =>
-  isForWorkspaceOptions(connection)
-    ? MCPClient.forIntegration(
-        connection.workspace,
-        connection.integrationId,
-      )(toolCallArgs)
-    : MCPClient.INTEGRATIONS_CALL_TOOL({
-        connection,
-        // deno-lint-ignore no-explicit-any
-        params: toolCallArgs as any,
-      });
+  MCPClient.INTEGRATIONS_CALL_TOOL({
+    connection,
+    // deno-lint-ignore no-explicit-any
+    params: toolCallArgs as any,
+  });
 
 export function useTools(connection: MCPConnection) {
   const response = useQuery({

@@ -383,7 +383,7 @@ ${tsTypes}
       .join("")}
   }
 
-  export const Policies = {
+  export const Scopes = {
     ${Object.entries(mapBindingTools)
       .map(
         ([bindingName, tools]) =>

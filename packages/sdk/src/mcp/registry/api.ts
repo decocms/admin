@@ -46,7 +46,15 @@ const SELECT_REGISTRY_APP_QUERY = `
 
 const SELECT_REGISTRY_APP_WITH_SCOPE_QUERY = `
   ${SELECT_REGISTRY_APP_QUERY},
-  deco_chat_registry_scopes!inner(scope_name)
+  deco_chat_registry_scopes!inner(scope_name),
+  deco_chat_apps_registry_tools(
+    id,
+    name,
+    description,
+    input_schema,
+    output_schema,
+    metadata
+  )
 ` as const;
 
 // MCPConnection schema for validation
@@ -67,11 +75,21 @@ const RegistryScopeSchema = z.object({
   updatedAt: z.string(),
 });
 
+const RegistryToolSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  inputSchema: z.record(z.unknown()).optional(),
+  outputSchema: z.record(z.unknown()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
 const RegistryAppSchema = z.object({
   id: z.string(),
   workspace: z.string(),
   scopeId: z.string(),
   scopeName: z.string(),
+  appName: z.string(),
   name: z.string(),
   description: z.string().optional(),
   icon: z.string().optional(),
@@ -81,6 +99,7 @@ const RegistryAppSchema = z.object({
   unlisted: z.boolean(),
   friendlyName: z.string().optional(),
   verified: z.boolean().optional(),
+  tools: z.array(RegistryToolSchema).optional(),
 });
 
 export type RegistryScope = {
@@ -114,12 +133,26 @@ const Mappers = {
       typeof SELECT_REGISTRY_APP_WITH_SCOPE_QUERY
     >,
   ): RegistryApp => {
+    const tools = Array.isArray(data.deco_chat_apps_registry_tools)
+      ? data.deco_chat_apps_registry_tools.map((tool) => ({
+          id: tool.id,
+          name: tool.name,
+          description: tool.description ?? undefined,
+          inputSchema:
+            (tool.input_schema as Record<string, unknown>) ?? undefined,
+          outputSchema:
+            (tool.output_schema as Record<string, unknown>) ?? undefined,
+          metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
+        }))
+      : [];
+
     return {
       id: data.id,
       workspace: data.workspace,
       scopeId: data.scope_id,
       scopeName: data.deco_chat_registry_scopes.scope_name,
       name: data.name,
+      appName: `${data.deco_chat_registry_scopes.scope_name}/${data.name}`,
       friendlyName: data.friendly_name ?? undefined,
       description: data.description ?? undefined,
       icon: data.icon ?? undefined,
@@ -128,6 +161,7 @@ const Mappers = {
       updatedAt: data.updated_at,
       unlisted: data.unlisted,
       verified: data.verified ?? false,
+      tools,
     };
   },
 };
@@ -149,7 +183,7 @@ export const listRegistryScopes = createTool({
   }),
   outputSchema: z.object({ scopes: z.array(RegistryScopeSchema) }),
   handler: async ({ search }, c) => {
-    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
+    await assertWorkspaceResourceAccess(c);
 
     let query = c.db
       .from(DECO_CHAT_REGISTRY_SCOPES_TABLE)
@@ -279,7 +313,7 @@ export const listRegistryApps = createTool({
   }),
   outputSchema: z.object({ apps: z.array(RegistryAppSchema) }),
   handler: async ({ search, scopeName }, c) => {
-    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
+    await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -377,7 +411,7 @@ export const publishApp = createTool({
     },
     c,
   ) => {
-    await assertWorkspaceResourceAccess({ resource: c.tool.name }, c);
+    await assertWorkspaceResourceAccess(c);
 
     assertHasWorkspace(c);
     const workspace = c.workspace.value;

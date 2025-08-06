@@ -549,7 +549,6 @@ export const migrate = createDatabaseTool({
               ); // Extremely conservative limit
 
               let currentChunk: any[] = [];
-              let currentChunkSize = 0;
 
               for (const row of rows) {
                 // Check if this single row is too large
@@ -594,11 +593,9 @@ export const migrate = createDatabaseTool({
                     newDb,
                   );
                   currentChunk = [row];
-                  currentChunkSize = metrics.size;
                 } else {
                   // Add row to current chunk
                   currentChunk.push(row);
-                  currentChunkSize = metrics.size;
                 }
               }
 

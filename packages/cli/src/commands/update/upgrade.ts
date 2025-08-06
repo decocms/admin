@@ -6,6 +6,7 @@ import * as semver from "semver";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import process from "node:process";
+import { detectRuntime } from "../../lib/runtime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,11 +47,38 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
   }
 };
 
+/**
+ * Gets the install command for a specific runtime
+ */
+const getInstallCommand = (
+  runtime: "node" | "bun" | "deno" | "unknown",
+): [string, string[]] => {
+  switch (runtime) {
+    case "bun":
+      return ["bun", ["install", "-g"]];
+    case "deno":
+      return ["deno", ["install", "-g"]];
+    case "node":
+      return ["npm", ["install", "-g"]];
+    case "unknown":
+    default:
+      // Fallback to npm for unknown runtime
+      console.log(chalk.yellow("⚠️  Unknown runtime, falling back to npm"));
+      return ["npm", ["install", "-g"]];
+  }
+};
+
 export const upgrade = (packageName: string): Promise<void> => {
   console.log(chalk.yellow("🔄 Upgrading to the latest version..."));
 
+  const runtime = detectRuntime();
+  console.log(chalk.gray(`Detected runtime: ${runtime}`));
+
+  const [command, args] = getInstallCommand(runtime);
+  const fullArgs = [...args, packageName];
+
   return new Promise((resolve, reject) => {
-    const child = spawn("npm", ["install", "-g", packageName], {
+    const child = spawn(command, fullArgs, {
       stdio: "inherit",
       shell: true,
     });
@@ -66,7 +94,11 @@ export const upgrade = (packageName: string): Promise<void> => {
         resolve();
       } else {
         console.error(chalk.red("❌ Failed to update the CLI."));
-        reject(new Error(`npm install failed with exit code ${code}`));
+        reject(
+          new Error(
+            `${command} ${fullArgs.join(" ")} failed with exit code ${code}`,
+          ),
+        );
       }
     });
 

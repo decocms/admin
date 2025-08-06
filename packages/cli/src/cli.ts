@@ -59,6 +59,7 @@ import { genEnv } from "./commands/gen/gen.js";
 import { upgradeCommand } from "./commands/update/upgrade.js";
 import { updateCommand } from "./commands/update/update.js";
 import { addCommand } from "./commands/add/add.js";
+import { detectRuntime } from "./lib/runtime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -398,6 +399,21 @@ const program = new Command()
   .name(packageJson.name)
   .version(packageJson.version)
   .description(packageJson.description)
+  .configureOutput({
+    writeOut: (str) => {
+      // Customize version output to include runtime info
+      if (
+        str.includes(packageJson.version) &&
+        str.trim() === packageJson.version
+      ) {
+        const runtime = detectRuntime();
+        process.stdout.write(`${packageJson.version} (${runtime})\n`);
+      } else {
+        process.stdout.write(str);
+      }
+    },
+    writeErr: (str) => process.stderr.write(str),
+  })
   .option(
     "-t, --token <token>",
     "Authentication token to use for API requests",
@@ -412,6 +428,10 @@ const program = new Command()
       setLocal(true);
     },
   )
+  .addHelpText("after", () => {
+    const runtime = detectRuntime();
+    return `\nRuntime: ${runtime}`;
+  })
   .addCommand(login)
   .addCommand(logout)
   .addCommand(whoami)

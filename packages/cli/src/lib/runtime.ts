@@ -8,7 +8,7 @@ export function detectRuntime(): "node" | "bun" | "deno" | "unknown" {
   if (typeof (globalThis as any).Deno !== "undefined") return "deno";
 
   if (process.versions.bun) return "bun";
-  if (process.env.npm_command || process.env.npm_execpath) return "node";
+  if (process.versions.node) return "node";
 
   return "unknown";
 }

@@ -94,7 +94,7 @@ function UserPreferencesModal({
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
-      defaultDecopilotOpen: preferences.defaultDecopilotOpen,
+      enableDecopilot: preferences.enableDecopilot,
     },
   });
   const {
@@ -108,9 +108,12 @@ function UserPreferencesModal({
     sendReasoning: boolean;
     smoothStream: boolean;
     pdfSummarization: boolean;
-    defaultDecopilotOpen: boolean;
+    enableDecopilot: boolean;
   }) {
-    setPreferences(data);
+    setPreferences({
+      ...preferences,
+      ...data,
+    });
     form.reset(data);
     onOpenChange(false);
   }
@@ -255,26 +258,26 @@ function UserPreferencesModal({
               )}
             />
             <FormField
-              name="defaultDecopilotOpen"
+              name="enableDecopilot"
               render={({ field }) => (
                 <FormItem className="flex flex-col justify-center items-start gap-2">
                   <div className="flex items-center gap-2 cursor-pointer">
                     <FormControl>
                       <Switch
-                        id="defaultDecopilotOpen"
+                        id="enableDecopilot"
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel
-                      htmlFor="defaultDecopilotOpen"
+                      htmlFor="enableDecopilot"
                       className="cursor-pointer"
                     >
-                      Open Decopilot by Default
+                      Enable Decopilot
                     </FormLabel>
                   </div>
                   <FormDescription>
-                    Automatically open the Decopilot tab when starting a new chat.
+                    Show the Decopilot toggle button in the chat interface.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

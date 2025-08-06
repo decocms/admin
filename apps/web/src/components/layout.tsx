@@ -125,7 +125,7 @@ const ToggleDecopilotButton = () => {
     // If we're closing the tab, set preference to false
     setPreferences({
       ...preferences,
-      defaultDecopilotOpen: isNowOpen,
+      showDecopilot: isNowOpen,
     });
   };
 
@@ -156,7 +156,7 @@ export function PageLayout({
   );
 
   const onReady = (event: DockviewReadyEvent) => {
-    if (preferences.defaultDecopilotOpen) {
+    if (preferences.showDecopilot) {
       toggleDecopilotTab(event.api);
     }
   };
@@ -196,7 +196,7 @@ export function PageLayout({
           )}
         >
           {actionButtons}
-          <ToggleDecopilotButton />
+          {preferences.enableDecopilot && <ToggleDecopilotButton />}
         </div>
         {!open && (
           <div className="peer-empty:flex items-center justify-center hidden fixed left-0 top-0 z-10 h-14 px-3">

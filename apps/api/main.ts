@@ -9,6 +9,7 @@ import { email } from "./src/email.ts";
 import { KbFileProcessorWorkflow } from "./src/workflows/kb-file-processor-workflow.ts";
 import { env } from "cloudflare:workers";
 export { WorkspaceDatabase } from "./src/durable-objects/workspace-database.ts";
+import * as Sentry from "@sentry/cloudflare";
 
 // Choose instrumented app depending on runtime
 const instrumentedApp = getRuntimeKey() === "deno" ? app : instrument(app);
@@ -69,18 +70,38 @@ globalThis.fetch = async function patchedFetch(
 };
 
 // Default export that wraps app with per-request context initializer
-export default {
-  email,
-  fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
-    return contextStorage.run({ env, ctx }, async () => {
-      return await instrumentedApp.fetch!(
-        request as Request<unknown, IncomingRequestCfProperties<unknown>>,
-        env,
-        ctx,
-      );
-    });
+export default Sentry.withSentry(
+  (_env) => ({
+    dsn: "https://15a2257ed06466face415d9d6faa4740@o4509797555503104.ingest.us.sentry.io/4509797557141504",
+    // Set tracesSampleRate to 1.0 to capture 100% of spans for tracing.
+    // Learn more at
+    // https://docs.sentry.io/platforms/javascript/configuration/options/#traces-sample-rate
+    tracesSampleRate: 1.0,
+
+    // Send structured logs to Sentry
+    enableLogs: true,
+
+    // Setting this option to true will send default PII data to Sentry.
+    // For example, automatic IP address collection on events
+    sendDefaultPii: true,
+  }),
+  {
+    email: email as any,
+    fetch(
+      request: Request,
+      env: any,
+      ctx: ExecutionContext,
+    ): Promise<Response> {
+      return contextStorage.run({ env, ctx }, async () => {
+        return await instrumentedApp.fetch!(
+          request as Request<unknown, IncomingRequestCfProperties<unknown>>,
+          env,
+          ctx,
+        );
+      });
+    },
   },
-};
+);
 
 // Export the workflow
 export { KbFileProcessorWorkflow };

@@ -52,19 +52,20 @@ const getLatestVersion = async (packageName: string): Promise<string> => {
  */
 const getInstallCommand = (
   runtime: "node" | "bun" | "deno" | "unknown",
+  packageName: string,
 ): [string, string[]] => {
   switch (runtime) {
     case "bun":
-      return ["bun", ["install", "-g"]];
+      return ["bun", ["install", "-g", packageName]];
     case "deno":
-      return ["deno", ["install", "-g"]];
+      return ["deno", ["install", "-Ar", "-g", "-f", `npm:${packageName}`]];
     case "node":
-      return ["npm", ["install", "-g"]];
+      return ["npm", ["install", "-g", packageName]];
     case "unknown":
     default:
       // Fallback to npm for unknown runtime
       console.log(chalk.yellow("⚠️  Unknown runtime, falling back to npm"));
-      return ["npm", ["install", "-g"]];
+      return ["npm", ["install", "-g", packageName]];
   }
 };
 
@@ -74,11 +75,10 @@ export const upgrade = (packageName: string): Promise<void> => {
   const runtime = detectRuntime();
   console.log(chalk.gray(`Detected runtime: ${runtime}`));
 
-  const [command, args] = getInstallCommand(runtime);
-  const fullArgs = [...args, packageName];
+  const [command, args] = getInstallCommand(runtime, packageName);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(command, fullArgs, {
+    const child = spawn(command, args, {
       stdio: "inherit",
       shell: true,
     });
@@ -96,7 +96,7 @@ export const upgrade = (packageName: string): Promise<void> => {
         console.error(chalk.red("❌ Failed to update the CLI."));
         reject(
           new Error(
-            `${command} ${fullArgs.join(" ")} failed with exit code ${code}`,
+            `${command} ${args.join(" ")} failed with exit code ${code}`,
           ),
         );
       }

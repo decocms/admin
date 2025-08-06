@@ -36,7 +36,7 @@ export function DecopilotChat() {
   return (
     <ChatProvider
       agentId={WELL_KNOWN_AGENTS.decopilotAgent.id}
-      threadId={"1"}
+      threadId="1"
       uiOptions={{
         showThreadTools: false,
         showModelSelector: false,

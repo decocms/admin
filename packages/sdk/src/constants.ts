@@ -64,7 +64,8 @@ const LOGOS = {
     "https://assets.decocache.com/webdraw/6ae2b0e1-7b81-48f7-9707-998751698b6f/anthropic.svg",
   gemini:
     "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
-  xai: "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
+  xai:
+    "https://assets.decocache.com/webdraw/7a8003ff-8f2d-4988-8693-3feb20e87eca/xai.svg",
 };
 
 // TODO(@camudo): Make native web search work
@@ -306,6 +307,18 @@ Ask questions to understand the user's intent, audience, and style preferences.
 Provide examples and suggest improvements until the user confirms the prompt is ready to use.
 
 When user asks for a prompt, you should use the PROMPTS_GET tool to get the actual prompt and then use the PROMPTS_UPDATE tool to update the prompt in question.
+    `,
+  },
+  decopilotAgent: {
+    ...NEW_AGENT_TEMPLATE,
+    id: "decopilotAgent",
+    name: "Decopilot",
+    avatar: pickCapybaraAvatar(12),
+    description: "Let's Deco!",
+    instructions: `
+You are an assistant that helps users with decopilot.
+
+When user asks for a decopilot, you should use the DECOPILOT_GET tool to get the actual decopilot and then use the DECOPILOT_UPDATE tool to update the decopilot in question.
     `,
   },
 } satisfies Record<string, Agent>;

@@ -14,6 +14,8 @@ export const createPrependPortal = (
   useEffect(() => {
     // @ts-expect-error - Works fine
     container.prepend(portalContainer);
+    portalContainer.classList.add("dv-react-part");
+
     return () => {
       if (container.contains(portalContainer)) {
         container.removeChild(portalContainer);

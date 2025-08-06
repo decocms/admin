@@ -21,7 +21,8 @@ import {
 const createTool = createToolGroup("Thread", {
   name: "Thread Management",
   description: "Track conversation history and usage.",
-  icon: "https://assets.decocache.com/mcp/4306211f-3d5e-4f1b-b55f-b46787ac82fe/Thread-Management.png",
+  icon:
+    "https://assets.decocache.com/mcp/4306211f-3d5e-4f1b-b55f-b46787ac82fe/Thread-Management.png",
 });
 
 async function getWorkspaceMemory(c: AppContext) {
@@ -151,10 +152,12 @@ export const listThreads = createTool({
       prevWhereClauses[cursorWhereClauseIdx] = `${field} ${operator} ?`;
     }
 
-    const whereClause =
-      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-    const prevWhereClause =
-      whereClauses.length > 0 ? `WHERE ${prevWhereClauses.join(" AND ")}` : "";
+    const whereClause = whereClauses.length > 0
+      ? `WHERE ${whereClauses.join(" AND ")}`
+      : "";
+    const prevWhereClause = whereClauses.length > 0
+      ? `WHERE ${prevWhereClauses.join(" AND ")}`
+      : "";
 
     limit ??= 10;
 
@@ -168,7 +171,8 @@ export const listThreads = createTool({
         },
       });
       return safeExecute(db, {
-        sql: `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
+        sql:
+          `SELECT * FROM mastra_threads ${where} ORDER BY ${field} ${direction.toUpperCase()} LIMIT ?`,
         params: [...args, limit + 1], // Fetch one extra to determine if there are more
       });
     };
@@ -201,19 +205,17 @@ export const listThreads = createTool({
     }
 
     // Get the cursor for the next page
-    const nextCursor =
-      threads.length > 0
-        ? field === "createdAt"
-          ? threads[threads.length - 1].createdAt
-          : threads[threads.length - 1].updatedAt
-        : null;
+    const nextCursor = threads.length > 0
+      ? field === "createdAt"
+        ? threads[threads.length - 1].createdAt
+        : threads[threads.length - 1].updatedAt
+      : null;
 
-    const _prevCursor =
-      prevThreads && prevThreads.length > 0
-        ? field === "createdAt"
-          ? prevThreads.at(0)?.createdAt
-          : prevThreads.at(0)?.updatedAt
-        : null;
+    const _prevCursor = prevThreads && prevThreads.length > 0
+      ? field === "createdAt"
+        ? prevThreads.at(0)?.createdAt
+        : prevThreads.at(0)?.updatedAt
+      : null;
 
     const prevCursor = !!_prevCursor && new Date(_prevCursor);
     if (prevCursor) {
@@ -244,7 +246,8 @@ export const getThreadMessages = createTool({
     await assertWorkspaceResourceAccess(c.tool.name, c);
 
     const { data: result, error } = await safeExecute(await getWorkspaceDB(c), {
-      sql: `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
+      sql:
+        `SELECT * FROM mastra_messages WHERE thread_id = ? ORDER BY createdAt ASC`,
       params: [id],
     });
 
@@ -263,7 +266,9 @@ export const getThreadMessages = createTool({
       list.add(message as unknown as AIMessage, "memory");
     }
 
-    return list.get.all.ui();
+    const uiMessages = list.get.all.ui();
+
+    return uiMessages;
   },
 });
 
@@ -349,14 +354,12 @@ export const updateThreadTitle = createTool({
 
     return {
       ...result,
-      createdAt:
-        result.createdAt instanceof Date
-          ? result.createdAt.toISOString()
-          : result.createdAt,
-      updatedAt:
-        result.updatedAt instanceof Date
-          ? result.updatedAt.toISOString()
-          : result.updatedAt,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
     };
   },
 });
@@ -391,14 +394,12 @@ export const updateThreadMetadata = createTool({
 
     return {
       ...result,
-      createdAt:
-        result.createdAt instanceof Date
-          ? result.createdAt.toISOString()
-          : result.createdAt,
-      updatedAt:
-        result.updatedAt instanceof Date
-          ? result.updatedAt.toISOString()
-          : result.updatedAt,
+      createdAt: result.createdAt instanceof Date
+        ? result.createdAt.toISOString()
+        : result.createdAt,
+      updatedAt: result.updatedAt instanceof Date
+        ? result.updatedAt.toISOString()
+        : result.updatedAt,
     };
   },
 });

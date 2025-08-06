@@ -36,7 +36,7 @@ interface Props {
   showThreadMessages?: boolean;
 }
 
-const MainChat = () => {
+export const MainChat = () => {
   return (
     <div className="h-full w-full flex flex-col">
       <ScrollArea className="flex-1 min-h-0">

@@ -19,8 +19,6 @@ export function ThreadsTable({
   const [sortKey, setSortKey] = useState<string>("total");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  console.log(threadHistory);
-
   // Enrich thread data with agent and user information
   const enrichedThreads = useMemo(() => {
     if (!threadUsage.items || threadUsage.items.length === 0) {

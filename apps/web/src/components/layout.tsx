@@ -14,18 +14,25 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@deco/ui/components/sidebar.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
-import { Fragment, type ReactNode, useState } from "react";
-import { Link, Outlet, useParams } from "react-router";
 import { Toaster } from "@deco/ui/components/sonner.tsx";
-import { useUser } from "../hooks/use-user.ts";
-import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
-import RegisterActivity from "./common/register-activity.tsx";
-import Docked, { type Tab } from "./dock/index.tsx";
-import { AppSidebar } from "./sidebar/index.tsx";
+import { cn } from "@deco/ui/lib/utils.ts";
+import { DockviewReadyEvent } from "dockview-react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Link, Outlet, useParams } from "react-router";
 import { useLocalStorage } from "../hooks/use-local-storage.ts";
-import { WithWorkspaceTheme } from "./theme.tsx";
+import { useUserPreferences } from "../hooks/use-user-preferences.ts";
+import { useWorkspaceLink } from "../hooks/use-navigate-workspace.ts";
+import { useUser } from "../hooks/use-user.ts";
+import RegisterActivity from "./common/register-activity.tsx";
+import {
+  DecopilotChat,
+  DecopilotTabs,
+  toggleDecopilotTab,
+} from "./decopilot/index.tsx";
+import Docked, { useDock, type Tab } from "./dock/index.tsx";
 import { ProfileModalProvider, useProfileModal } from "./profile-modal.tsx";
+import { AppSidebar } from "./sidebar/index.tsx";
+import { WithWorkspaceTheme } from "./theme.tsx";
 
 export function BaseRouteLayout({ children }: { children: ReactNode }) {
   const user = useUser();
@@ -102,6 +109,33 @@ export interface PageLayoutProps {
   hideViewsButton?: boolean;
 }
 
+const ToggleDecopilotButton = () => {
+  const { api } = useDock();
+  const { preferences, setPreferences } = useUserPreferences();
+
+  const handleToggle = () => {
+    if (!api) {
+      return;
+    }
+
+    const isNowOpen = toggleDecopilotTab(api);
+
+    // Update user preference based on the action being taken
+    // If we're opening the tab, set preference to true
+    // If we're closing the tab, set preference to false
+    setPreferences({
+      ...preferences,
+      defaultDecopilotOpen: isNowOpen,
+    });
+  };
+
+  return (
+    <Button size="icon" variant="ghost" onClick={handleToggle}>
+      <Icon name="chat" className="text-muted-foreground" />
+    </Button>
+  );
+};
+
 export function PageLayout({
   breadcrumb,
   actionButtons,
@@ -109,9 +143,26 @@ export function PageLayout({
   hideViewsButton,
 }: PageLayoutProps) {
   const { toggleSidebar, open } = useSidebar();
+  const { preferences } = useUserPreferences();
+  const withDecopilot = useMemo(
+    () => ({
+      ...tabs,
+      [DecopilotChat.displayName]: {
+        title: "Decopilot Chat",
+        Component: DecopilotChat,
+      },
+    }),
+    [tabs],
+  );
+
+  const onReady = (event: DockviewReadyEvent) => {
+    if (preferences.defaultDecopilotOpen) {
+      toggleDecopilotTab(event.api);
+    }
+  };
 
   return (
-    <Docked.Provider tabs={tabs}>
+    <Docked.Provider tabs={withDecopilot}>
       <div className={cn("bg-sidebar", "grid grid-cols-3 md:grid-cols-2 px-0")}>
         <div className="p-2 md:p-0 md:hidden">
           <Button
@@ -145,6 +196,7 @@ export function PageLayout({
           )}
         >
           {actionButtons}
+          <ToggleDecopilotButton />
         </div>
         {!open && (
           <div className="peer-empty:flex items-center justify-center hidden fixed left-0 top-0 z-10 h-14 px-3">
@@ -160,7 +212,13 @@ export function PageLayout({
         )}
       </div>
       <div className="h-full p-0 md:px-0">
-        <Docked tabs={tabs} hideViewsButton={hideViewsButton} />
+        <Docked
+          hideViewsButton={hideViewsButton}
+          onReady={onReady}
+          tabComponents={{
+            [DecopilotTabs.displayName]: DecopilotTabs,
+          }}
+        />
       </div>
     </Docked.Provider>
   );

@@ -94,6 +94,7 @@ function UserPreferencesModal({
       smoothStream: preferences.smoothStream,
       sendReasoning: preferences.sendReasoning,
       pdfSummarization: preferences.pdfSummarization,
+      defaultDecopilotOpen: preferences.defaultDecopilotOpen,
     },
   });
   const {
@@ -107,6 +108,7 @@ function UserPreferencesModal({
     sendReasoning: boolean;
     smoothStream: boolean;
     pdfSummarization: boolean;
+    defaultDecopilotOpen: boolean;
   }) {
     setPreferences(data);
     form.reset(data);
@@ -247,6 +249,32 @@ function UserPreferencesModal({
                   <FormDescription>
                     Summarize large PDFs to reduce token usage and enable larger
                     PDF support.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="defaultDecopilotOpen"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center items-start gap-2">
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    <FormControl>
+                      <Switch
+                        id="defaultDecopilotOpen"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="defaultDecopilotOpen"
+                      className="cursor-pointer"
+                    >
+                      Open Decopilot by Default
+                    </FormLabel>
+                  </div>
+                  <FormDescription>
+                    Automatically open the Decopilot tab when starting a new chat.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

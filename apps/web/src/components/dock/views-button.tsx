@@ -142,7 +142,14 @@ ViewsButton.Styles = () => {
           padding-top: 0.25rem;
           padding-left: 0.25rem;
           padding-right: 0.25rem;
+        }
 
+        .dv-tabs-container:has(.dv-react-part:empty):not(:has(.dv-react-part:not(:empty))) {
+          height: 0 !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: hidden !important;
+        }
       `}
     </style>
   );

@@ -7,6 +7,7 @@ export interface UserPreferences {
   sendReasoning: boolean;
   defaultModel: string;
   pdfSummarization: boolean;
+  defaultDecopilotOpen: boolean;
 }
 
 const USER_PREFERENCES_KEY = "user-preferences";
@@ -21,6 +22,7 @@ export function useUserPreferences() {
         smoothStream: true,
         sendReasoning: true,
         pdfSummarization: true,
+        defaultDecopilotOpen: false,
       },
     });
 

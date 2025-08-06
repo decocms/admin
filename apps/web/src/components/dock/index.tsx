@@ -32,9 +32,9 @@ const Context = createContext<{
   totalTabs: number;
   openPanels: Set<string>;
   setOpenPanels: Dispatch<SetStateAction<Set<string>>>;
+  setApi: Dispatch<SetStateAction<DockviewApi | null>>;
+  api: DockviewApi | null;
 } | null>(null);
-
-const NO_DROP_TARGET = "no-drop-target";
 
 export const useDock = () => {
   const ctx = use(Context);
@@ -139,7 +139,6 @@ export interface Tab {
 type Props = Partial<
   Omit<ComponentProps<typeof DockviewReact>, "components">
 > & {
-  tabs: Record<string, Tab>;
   hideViewsButton?: boolean;
 };
 
@@ -148,9 +147,7 @@ const addPanel = (
   api: DockviewApi,
   isMobile: boolean,
 ) => {
-  const targetGroup = api.groups.findLast(
-    (group) => group.locked !== NO_DROP_TARGET,
-  );
+  const targetGroup = api.groups.findLast((group) => !group.locked);
 
   const { position, ...otherOptions } = options;
 
@@ -176,10 +173,9 @@ const equals = (a: Set<string>, b: Set<string>) => {
   return a.isSubsetOf(b) && b.isSubsetOf(a);
 };
 
-function Docked({ tabs, hideViewsButton, ...props }: Props) {
+function Docked({ hideViewsButton, onReady, ...props }: Props) {
   const isMobile = useIsMobile();
-  const [api, setApi] = useState<DockviewApi | null>(null);
-  const { setOpenPanels, totalTabs } = useDock();
+  const { setOpenPanels, totalTabs, tabs, setApi, api } = useDock();
   const wrappedTabs = useMemo(() => {
     const entries = Object.entries(tabs).map(([key, value]) => [
       key,
@@ -234,7 +230,9 @@ function Docked({ tabs, hideViewsButton, ...props }: Props) {
 
       const disposable = event.api.onDidLayoutChange(() => {
         const currentPanels = new Set(
-          event.api.panels.map((panel) => panel.id),
+          event.api.panels
+            .filter((panel) => !panel.group.locked)
+            .map((panel) => panel.id),
         );
 
         setOpenPanels((prev) =>
@@ -242,11 +240,13 @@ function Docked({ tabs, hideViewsButton, ...props }: Props) {
         );
       });
 
+      onReady?.(event);
+
       return () => {
         disposable.dispose();
       };
     },
-    [tabs, isMobile],
+    [tabs, isMobile, onReady],
   );
 
   useEffect(() => {
@@ -293,6 +293,20 @@ function Docked({ tabs, hideViewsButton, ...props }: Props) {
         disableTabsOverflowList
         disableFloatingGroups
         hideBorders
+        onWillDrop={(event) => {
+          // prevent dropping the no-drop-target group into another group
+          const groupId = event.getData()?.groupId;
+
+          if (!groupId) {
+            return;
+          }
+
+          const group = event.api.getGroup(groupId);
+
+          if (group?.locked) {
+            event.preventDefault();
+          }
+        }}
         {...props}
       />
       {api && !hideViewsButton && (
@@ -312,6 +326,7 @@ Docked.Provider = ({
   children: ReactNode;
   tabs: Record<string, Tab>;
 }) => {
+  const [api, setApi] = useState<DockviewApi | null>(null);
   const [openPanels, setOpenPanels] = useState(new Set<string>());
   const totalTabs = Object.values(tabs).filter(
     (tab) => !tab.hideFromViews,
@@ -324,6 +339,8 @@ Docked.Provider = ({
         totalTabs,
         openPanels,
         setOpenPanels,
+        setApi,
+        api,
       }}
     >
       {children}

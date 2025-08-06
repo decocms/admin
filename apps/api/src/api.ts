@@ -95,14 +95,16 @@ const createMCPHandlerFor = (
         {
           annotations: tool.annotations,
           description: tool.description,
-          inputSchema: "shape" in tool.inputSchema
-            ? (tool.inputSchema.shape as z.ZodRawShape)
-            : z.object({}).shape,
-          outputSchema: tool.outputSchema &&
-              typeof tool.outputSchema === "object" &&
-              "shape" in tool.outputSchema
-            ? (tool.outputSchema.shape as z.ZodRawShape)
-            : z.object({}).shape,
+          inputSchema:
+            "shape" in tool.inputSchema
+              ? (tool.inputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
+          outputSchema:
+            tool.outputSchema &&
+            typeof tool.outputSchema === "object" &&
+            "shape" in tool.outputSchema
+              ? (tool.outputSchema.shape as z.ZodRawShape)
+              : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
         withMCPErrorHandling(tool.handler),
@@ -286,8 +288,8 @@ app.get("/files/:root/:slug/:path{.+}", async (c) => {
   }
 
   return c.body(response.body, 200, {
-    "Content-Type": response.headers.get("content-type") ||
-      "application/octet-stream",
+    "Content-Type":
+      response.headers.get("content-type") || "application/octet-stream",
   });
 });
 

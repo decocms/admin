@@ -7,6 +7,7 @@ import {
   AuthorizationClient,
   CallToolMiddleware,
   compose,
+  CONTRACTS_TOOLS,
   createMCPToolsStub,
   EMAIL_TOOLS,
   getPresignedReadUrl_WITHOUT_CHECKING_AUTHORIZATION,
@@ -86,7 +87,8 @@ const createMCPHandlerFor = (
     | typeof GLOBAL_TOOLS
     | typeof WORKSPACE_TOOLS
     | typeof EMAIL_TOOLS
-    | typeof AGENT_TOOLS,
+    | typeof AGENT_TOOLS
+    | typeof CONTRACTS_TOOLS,
 ) => {
   return async (c: Context) => {
     const group = c.req.query("group");
@@ -330,7 +332,8 @@ app.use(async (c, next) => {
 
 app.use(withActorsMiddleware);
 
-// MCP endpoint handlers
+app.post(`/contracts/mcp`, createMCPHandlerFor(CONTRACTS_TOOLS));
+
 app.all("/mcp", createMCPHandlerFor(GLOBAL_TOOLS));
 app.all("/:root/:slug/mcp", createMCPHandlerFor(WORKSPACE_TOOLS));
 app.all("/:root/:slug/agents/:agentId/mcp", createMCPHandlerFor(AGENT_TOOLS));

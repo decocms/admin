@@ -25,6 +25,7 @@ interface InstallState {
   integration?: Integration;
   appName?: string;
   appId?: string;
+  vendor?: string;
   provider?: string;
 }
 
@@ -110,6 +111,9 @@ export function useIntegrationInstallWithModal() {
       const apiKey = await createAPIKey.mutateAsync({
         claims: {
           state: formData,
+          integrationId: installId,
+          appName: installState.appName,
+          appVendor: installState.vendor,
         },
         name: keyName,
         policies: [
@@ -158,6 +162,7 @@ export function useIntegrationInstallWithModal() {
       // Close modal after successful submission
       setInstallState((prev: InstallState) => ({
         ...prev,
+        vendor: marketplaceApp.workspace,
         isModalOpen: false,
       }));
 

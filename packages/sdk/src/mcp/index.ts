@@ -13,6 +13,11 @@ export * from "./models/llm-vault.ts";
 export * from "./wallet/stripe/webhook.ts";
 
 export { EMAIL_TOOLS } from "./email/api.ts";
+import {
+  contractAuthorize,
+  contractSettle,
+  oauthStart,
+} from "./contracts/api.ts";
 import * as agentAPI from "./agent/api.ts";
 import * as agentsAPI from "./agents/api.ts";
 import * as aiAPI from "./ai/api.ts";
@@ -35,6 +40,12 @@ import * as teamsAPI from "./teams/api.ts";
 import * as threadsAPI from "./threads/api.ts";
 import * as triggersAPI from "./triggers/api.ts";
 import * as walletAPI from "./wallet/api.ts";
+
+export const CONTRACTS_TOOLS = [
+  contractAuthorize,
+  contractSettle,
+  oauthStart,
+] as const;
 
 // Register tools for each API handler
 export const GLOBAL_TOOLS = [

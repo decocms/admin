@@ -2,10 +2,12 @@ import {
   DEFAULT_MODEL,
   type Integration,
   type Model,
+  useAgents,
   useIntegrations,
   useModels,
   useSDK,
   useWriteFile,
+  applyDisplayNameToIntegration,
 } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -116,6 +118,7 @@ export function ContextResources() {
   const { agent } = useAgent();
   const { workspace } = useSDK();
   const { data: integrations = [] } = useIntegrations();
+  const { data: agents = [] } = useAgents();
   const { data: models } = useModels({
     excludeDisabled: true,
   });
@@ -149,14 +152,17 @@ export function ContextResources() {
         const integration = integrations.find((i) => i.id === integrationId);
         if (!integration) return null;
 
+        // Apply better display names to the integration
+        const integrationWithBetterName = applyDisplayNameToIntegration(integration, agents);
+
         return {
-          integration,
+          integration: integrationWithBetterName,
           enabledTools: Array.isArray(enabledTools) ? enabledTools : [],
           integrationId,
         };
       })
       .filter((x) => !!x);
-  }, [agent?.tools_set, integrations]);
+  }, [agent?.tools_set, integrations, agents]);
 
   // Get total tools for each integration
   const integrationsWithTotalTools = useMemo(() => {
@@ -301,7 +307,7 @@ export function ContextResources() {
   return (
     <div className="w-full mx-auto">
       <FileDropOverlay display={isDragging} />
-      <div className="flex flex-wrap gap-2 mb-4 max-h-10 overflow-visible">
+      <div className="flex flex-wrap gap-2 mb-4 overflow-visible">
         {/* File Upload Button */}
         <input
           type="file"

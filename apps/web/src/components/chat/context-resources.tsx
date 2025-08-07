@@ -153,7 +153,10 @@ export function ContextResources() {
         if (!integration) return null;
 
         // Apply better display names to the integration
-        const integrationWithBetterName = applyDisplayNameToIntegration(integration, agents);
+        const integrationWithBetterName = applyDisplayNameToIntegration(
+          integration,
+          agents,
+        );
 
         return {
           integration: integrationWithBetterName,

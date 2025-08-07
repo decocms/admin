@@ -21,7 +21,7 @@
     "unpdf": "^1.0.5",
     "@aws-sdk/client-s3": "^3.808.0",
     "@aws-sdk/s3-request-presigner": "^3.808.0",
-    "@modelcontextprotocol/sdk": "1.11.4",
+    "@modelcontextprotocol/sdk": "1.17.1",
     "ai": "^4.1.61",
     "json-schema-to-zod": "^2.6.1",
     "zod-to-json-schema": "^3.24.4",

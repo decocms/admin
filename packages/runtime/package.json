@@ -7,7 +7,7 @@
     "@cloudflare/workers-types": "^4.20250617.0",
     "zod": "^3.25.67",
     "@mastra/core": "0.12.1",
-    "@modelcontextprotocol/sdk": "1.11.4",
+    "@modelcontextprotocol/sdk": "1.17.1",
     "@deco/mcp": "npm:@jsr/deco__mcp@0.5.5",
     "@mastra/cloudflare-d1": "0.12.4",
     "jose": "^6.0.11",

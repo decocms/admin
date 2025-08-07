@@ -15,7 +15,7 @@
     "@mastra/memory": "0.12.0",
     "@mastra/libsql": "0.12.0",
     "@libsql/client": "^0.15.10",
-    "@modelcontextprotocol/sdk": "1.11.4",
+    "@modelcontextprotocol/sdk": "1.17.1",
     "@std/path": "npm:@jsr/std__path@1.1.0",
     "cloudflare": "^4.2.0",
     "@deco/actors": "npm:@jsr/deco__actors@0.33.1",

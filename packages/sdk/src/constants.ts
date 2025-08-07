@@ -41,6 +41,7 @@ export const WELL_KNOWN_AGENT_IDS = {
   teamAgent: "teamAgent",
   setupAgent: "setupAgent",
   promptAgent: "promptAgent",
+  decopilotAgent: "decopilotAgent",
 } as const;
 
 export interface Model {

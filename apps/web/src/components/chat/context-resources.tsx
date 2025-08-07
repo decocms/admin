@@ -2,7 +2,6 @@ import {
   DEFAULT_MODEL,
   type Integration,
   type Model,
-  useAgent,
   useIntegrations,
   useModels,
   useSDK,
@@ -43,7 +42,7 @@ import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { formatFilename } from "../../utils/format.ts";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface IntegrationWithTools extends Integration {
@@ -114,9 +113,8 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
 };
 
 export function ContextResources() {
-  const { agentId } = useChatContext();
+  const { agent } = useAgent();
   const { workspace } = useSDK();
-  const { data: agent } = useAgent(agentId);
   const { data: integrations = [] } = useIntegrations();
   const { data: models } = useModels({
     excludeDisabled: true,

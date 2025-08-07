@@ -1,9 +1,8 @@
 import {
   type Prompt,
   PromptValidationSchema,
-  useAgent,
+  useAgentData,
   usePrompt,
-  useUpdateAgentCache,
   useUpdatePrompt,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
@@ -31,7 +30,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useBlocker, useParams } from "react-router";
 import { trackEvent } from "../../../hooks/analytics.ts";
-import { ChatProvider } from "../../chat/context.tsx";
+import { AgentProvider } from "../../agent/provider.tsx";
 import type { Tab } from "../../dock/index.tsx";
 import { togglePanel } from "../../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../../layout.tsx";
@@ -72,8 +71,7 @@ export default function Page() {
     created_at: new Date().toISOString(),
     updated_at: null,
   };
-  const { data: agent } = useAgent(agentId);
-  const updateAgentCache = useUpdateAgentCache();
+  const { data: _agent } = useAgentData(agentId);
 
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt>(prompt);
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
@@ -143,16 +141,9 @@ export default function Page() {
     setPromptVersion(null);
   };
 
-  useEffect(() => {
-    if (!prompt) {
-      return;
-    }
-
-    updateAgentCache({
-      ...agent,
-      instructions: `${agent.instructions}\n\nThe current prompt Id is "${prompt.id}"`,
-    });
-  }, [prompt]);
+  // Note: Removed useUpdateAgentCache usage - agent instructions are now managed
+  // via AgentProvider in the new architecture. The prompt ID context should be
+  // passed via chat overrides instead of modifying cached agent data.
 
   return (
     <>
@@ -177,7 +168,7 @@ export default function Page() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <ChatProvider
+      <AgentProvider
         agentId={agentId}
         threadId={threadId}
         uiOptions={{ showEditAgent: false }}
@@ -272,7 +263,7 @@ export default function Page() {
             }
           />
         </Context.Provider>
-      </ChatProvider>
+      </AgentProvider>
     </>
   );
 }

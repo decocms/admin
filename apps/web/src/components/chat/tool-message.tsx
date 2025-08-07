@@ -5,7 +5,7 @@ import { Spinner } from "@deco/ui/components/spinner.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { useMemo, useRef, useState } from "react";
 import { Picker } from "./chat-picker.tsx";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { AgentCard } from "./tools/agent-card.tsx";
 import { Preview } from "./tools/render-preview.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
@@ -201,7 +201,7 @@ function CustomToolUI({
   tool: ToolInvocation;
   isLastMessage?: boolean;
 }) {
-  const { select } = useChatContext();
+  const { select } = useAgent();
 
   if (tool.state !== "result" || !tool.result) return null;
 

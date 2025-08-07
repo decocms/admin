@@ -4,10 +4,10 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { type ComponentProps, type ReactNode, Suspense, useMemo } from "react";
 import { useTools } from "../../hooks/use-tools.ts";
 import { togglePanel, useDock } from "../dock/index.tsx";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 
 function ToolsButton() {
-  const { uiOptions } = useChatContext();
+  const { uiOptions } = useAgent();
   const showThreadTools = uiOptions?.showThreadTools;
   if (typeof showThreadTools === "boolean" && !showThreadTools) {
     return null;
@@ -67,7 +67,7 @@ ToolsButton.Skeleton = () => (
 );
 
 ToolsButton.UI = () => {
-  const { agentId } = useChatContext();
+  const { agentId } = useAgent();
   const tools_set = useTools(agentId);
   const numberOfTools = useMemo(
     () => Object.values(tools_set).reduce((acc, tool) => acc + tool.length, 0),

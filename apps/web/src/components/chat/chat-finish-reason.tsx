@@ -1,6 +1,6 @@
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 
 const REPORTS_BY_FINISH_REASON = {
   "tool-calls": {
@@ -16,9 +16,8 @@ const REPORTS_BY_FINISH_REASON = {
 };
 
 export function ChatFinishReason() {
-  const {
-    chat: { append, status, finishReason },
-  } = useChatContext();
+  const { chat } = useAgent();
+  const { append, status, finishReason } = chat;
 
   if (
     status !== "ready" ||

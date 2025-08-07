@@ -16,7 +16,7 @@ import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { LEGACY_INTEGRATIONS } from "../../constants.ts";
 import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import {
   AddFileToKnowledgeButton,
@@ -166,7 +166,7 @@ function KnowledgeHeading() {
 }
 
 function Knowledge() {
-  const { agent } = useAgentSettingsForm();
+  const { agent } = useAgent();
   const { setIntegrationTools } = useAgentSettingsToolsSet();
   const [uploadingFiles, setUploadedFiles] = useState<UploadFile[]>([]);
   const { integration } = useAgentKnowledgeIntegration({ agent });
@@ -356,7 +356,7 @@ function MultiAgent() {
 }
 
 function ToolsAndKnowledgeTab() {
-  const { form, handleSubmit } = useAgentSettingsForm();
+  const { form, handleSubmit } = useAgent();
 
   return (
     <ScrollArea className="h-full w-full">

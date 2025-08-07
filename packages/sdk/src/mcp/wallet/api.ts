@@ -551,8 +551,6 @@ export const commitPreAuthorizedAmount = createTool({
       },
     } as const;
 
-    console.log("operation", operation);
-
     const response = await wallet["POST /transactions/:id/commit"](
       {
         id: identifier,

@@ -27,7 +27,7 @@ const createContractTool = createToolFactory<WithTool<AppContext>>(
   {
     name: "Contracts",
     description: "Manage smart contracts",
-    icon: "https://assets.decocache.com/mcp/390f7756-ec01-47e4-bb31-9e7b18f6f56f/database.png",
+    icon: "https://assets.decocache.com/mcp/5e6930c3-86f6-4913-8de3-0c1fefdf02e3/API-key.png",
   },
 );
 

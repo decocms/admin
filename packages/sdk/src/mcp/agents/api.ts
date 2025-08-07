@@ -75,6 +75,9 @@ export const listAgents = createTool({
   name: "AGENTS_LIST",
   description: "List all agents",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(AgentSchema),
+  }),
   handler: async (_, c: WithTool<AppContext>) => {
     assertHasWorkspace(c);
 
@@ -102,9 +105,11 @@ export const listAgents = createTool({
         userRoles?.some((role) => IMPORTANT_ROLES.includes(role)),
     );
 
-    return filteredAgents
-      .map((item) => AgentSchema.safeParse(item)?.data)
-      .filter((a) => !!a);
+    return {
+      items: filteredAgents
+        .map((item) => AgentSchema.safeParse(item)?.data)
+        .filter((a) => !!a),
+    };
   },
 });
 

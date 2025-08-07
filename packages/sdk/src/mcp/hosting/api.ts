@@ -118,6 +118,9 @@ export const listApps = createTool({
   name: "HOSTING_APPS_LIST",
   description: "List all apps for the current tenant",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(AppSchema),
+  }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
 
@@ -131,7 +134,7 @@ export const listApps = createTool({
 
     if (error) throw error;
 
-    return data.map(Mappers.toApp);
+    return { items: data.map(Mappers.toApp) };
   },
 });
 

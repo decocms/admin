@@ -347,6 +347,9 @@ export const getMyInvites = createTool({
   name: "MY_INVITES_LIST",
   description: "List all team invites for the current logged in user",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (_props, c) => {
     c.resourceAccess.grant();
 
@@ -386,7 +389,7 @@ export const getMyInvites = createTool({
     if (error) throw error;
 
     // Transform data to a nicer format for the frontend
-    return invites.map((invite) => ({
+    const transformedInvites = invites.map((invite) => ({
       id: invite.id,
       teamId: invite.team_id,
       teamName: invite.team_name,
@@ -398,6 +401,8 @@ export const getMyInvites = createTool({
         email: invite.profiles?.email || null,
       },
     }));
+
+    return { items: transformedInvites };
   },
 });
 
@@ -726,12 +731,16 @@ export const teamRolesList = createTool({
   inputSchema: z.object({
     teamId: z.number(),
   }),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     const { teamId } = props;
 
     await assertTeamResourceAccess(c.tool.name, teamId, c);
 
-    return await c.policy.getTeamRoles(teamId);
+    const roles = await c.policy.getTeamRoles(teamId);
+    return { items: roles };
   },
 });
 

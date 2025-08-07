@@ -294,6 +294,9 @@ export const listModels = createTool({
   name: "MODELS_LIST",
   description: "List models for the current user",
   inputSchema: listModelsSchema,
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -307,14 +310,16 @@ export const listModels = createTool({
       .catch(() => false);
 
     if (!canAccess) {
-      return [];
+      return { items: [] };
     }
 
-    return await listModelsForWorkspace({
+    const models = await listModelsForWorkspace({
       workspace,
       db: c.db,
       options: { excludeDisabled },
     });
+
+    return { items: models };
   },
 });
 

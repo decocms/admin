@@ -10,7 +10,7 @@ export const listFiles = async ({ workspace, root }: ListOptions) => {
     prefix: root,
   });
 
-  return data;
+  return data.items;
 };
 
 interface WriteOptions {

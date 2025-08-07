@@ -111,6 +111,9 @@ export const listFiles = createTool({
   inputSchema: z.object({
     prefix: z.string().describe("The root directory to list files from"),
   }),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async ({ prefix }, c) => {
     assertHasWorkspace(c);
     const bucketName = getWorkspaceBucketName(c.workspace.value);
@@ -126,7 +129,8 @@ export const listFiles = createTool({
       Prefix: prefix,
     });
 
-    return s3Client.send(listCommand);
+    const response = await s3Client.send(listCommand);
+    return { items: response.Contents || [] };
   },
 });
 

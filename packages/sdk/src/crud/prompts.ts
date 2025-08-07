@@ -11,10 +11,9 @@ export const listPrompts = (
   init?: RequestInit,
   client?: ReturnType<(typeof MCPClient)["forWorkspace"]>,
 ): Promise<Prompt[]> =>
-  (client ?? MCPClient.forWorkspace(workspace)).PROMPTS_LIST(
-    input || {},
-    init,
-  ) as Promise<Prompt[]>;
+  (client ?? MCPClient.forWorkspace(workspace))
+    .PROMPTS_LIST(input || {}, init)
+    .then((res) => res.items) as Promise<Prompt[]>;
 
 export const getPrompt = (
   workspace: string,

@@ -188,6 +188,9 @@ export const listPrompts = createTool({
       .optional()
       .describe("Exclude prompts by ids"),
   }),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (props, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -201,7 +204,7 @@ export const listPrompts = createTool({
     // If the ids filter list contains some id, and after getting the virtual prompts
     // no ids are left, we can return the virtual prompts
     if (ids.length > 0 && remainingIds.length === 0) {
-      return virtualPrompts;
+      return { items: virtualPrompts };
     }
 
     let query = c.db
@@ -239,7 +242,7 @@ export const listPrompts = createTool({
       }));
     }
 
-    return [...prompts, ...virtualPrompts];
+    return { items: [...prompts, ...virtualPrompts] };
   },
 });
 

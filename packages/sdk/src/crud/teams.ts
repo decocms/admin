@@ -18,7 +18,7 @@ export interface TeamWithViews extends Team {
 }
 
 export const listTeams = (init?: RequestInit): Promise<Team[]> =>
-  MCPClient.TEAMS_LIST({}, init) as Promise<Team[]>;
+  MCPClient.TEAMS_LIST({}, init).then((res) => res.items) as Promise<Team[]>;
 
 export const getTeam = (
   slug: string,

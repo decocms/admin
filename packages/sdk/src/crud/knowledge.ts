@@ -47,7 +47,9 @@ export const knowledgeListFiles = ({
   workspace,
   connection,
 }: KnowledgeListFilesParams) =>
-  getClientFor(workspace, connection).KNOWLEDGE_BASE_LIST_FILES({});
+  getClientFor(workspace, connection)
+    .KNOWLEDGE_BASE_LIST_FILES({})
+    .then((res) => res.items);
 
 interface KnowledgeDeleteFileParams extends FromWorkspace, ForConnection {
   fileUrl: string;

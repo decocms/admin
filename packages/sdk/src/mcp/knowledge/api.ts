@@ -397,6 +397,9 @@ export const listFiles = createKnowledgeBaseTool({
   name: "KNOWLEDGE_BASE_LIST_FILES",
   description: "List all files in the knowledge base",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (_, c) => {
     await assertWorkspaceResourceAccess(c);
     assertHasWorkspace(c);
@@ -409,7 +412,7 @@ export const listFiles = createKnowledgeBaseTool({
       .eq("workspace", c.workspace.value)
       .eq("index_name", c.name);
 
-    return files?.map(addFileDefaults) ?? [];
+    return { items: files?.map(addFileDefaults) ?? [] };
   },
 });
 

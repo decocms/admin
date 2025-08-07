@@ -298,6 +298,9 @@ export const listIntegrations = createIntegrationManagementTool({
   inputSchema: z.object({
     binder: BindingsSchema.optional(),
   }),
+  outputSchema: z.object({
+    items: z.array(IntegrationSchema),
+  }),
   handler: async ({ binder }, c) => {
     assertHasWorkspace(c);
     const workspace = c.workspace.value;
@@ -368,14 +371,15 @@ export const listIntegrations = createIntegrationManagementTool({
 
     if (binder) {
       // Filter by binder capability
-      return result.filter((integration) => {
+      const filteredResult = result.filter((integration) => {
         return Binding(WellKnownBindings[binder]).isImplementedBy(
           integration.tools ?? [],
         );
       });
+      return { items: filteredResult };
     }
 
-    return result;
+    return { items: result };
   },
 });
 

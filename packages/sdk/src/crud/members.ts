@@ -44,7 +44,9 @@ export interface MemberFormData {
  * @returns List of invites
  */
 export const getMyInvites = (signal?: AbortSignal): Promise<Invite[]> =>
-  MCPClient.MY_INVITES_LIST({}, { signal }) as Promise<Invite[]>;
+  MCPClient.MY_INVITES_LIST({}, { signal }).then((res) => res.items) as Promise<
+    Invite[]
+  >;
 
 /**
  * Accept an invite
@@ -91,7 +93,8 @@ export const getTeamMembers = (
 export const getTeamRoles = (
   teamId: number,
   signal?: AbortSignal,
-): Promise<Role[]> => MCPClient.TEAM_ROLES_LIST({ teamId }, { signal });
+): Promise<Role[]> =>
+  MCPClient.TEAM_ROLES_LIST({ teamId }, { signal }).then((res) => res.items);
 
 /**
  * Invite new members to a team

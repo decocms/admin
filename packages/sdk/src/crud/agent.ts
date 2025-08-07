@@ -45,7 +45,9 @@ export const listAgents = (
   workspace: string,
   signal?: AbortSignal,
 ): Promise<Agent[]> =>
-  MCPClient.forWorkspace(workspace).AGENTS_LIST({}, { signal });
+  MCPClient.forWorkspace(workspace)
+    .AGENTS_LIST({}, { signal })
+    .then((res) => res.items) as Promise<Agent[]>;
 
 /**
  * Delete an agent from the file system

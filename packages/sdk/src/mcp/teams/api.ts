@@ -677,6 +677,9 @@ export const listTeams = createTool({
   name: "TEAMS_LIST",
   description: "List teams for the current user",
   inputSchema: z.object({}),
+  outputSchema: z.object({
+    items: z.array(z.any()),
+  }),
   handler: async (_, c) => {
     c.resourceAccess.grant();
 
@@ -722,7 +725,7 @@ export const listTeams = createTool({
       }),
     );
 
-    return teamsWithAvatar;
+    return { items: teamsWithAvatar };
   },
 });
 

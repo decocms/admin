@@ -53,10 +53,9 @@ export const listIntegrations = (
   filter?: ListIntegrationsFilter,
   signal?: AbortSignal,
 ): Promise<Integration[]> =>
-  MCPClient.forWorkspace(workspace).INTEGRATIONS_LIST(
-    { binder: filter?.binder },
-    { signal },
-  );
+  MCPClient.forWorkspace(workspace)
+    .INTEGRATIONS_LIST({ binder: filter?.binder }, { signal })
+    .then((res) => res.items);
 
 /**
  * Delete an MCP from the file system

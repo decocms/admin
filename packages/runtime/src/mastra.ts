@@ -464,6 +464,12 @@ export const createMCPServer = <
           });
           return {
             structuredContent: result,
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result),
+              },
+            ],
           };
         },
       );

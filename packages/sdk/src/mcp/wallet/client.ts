@@ -146,18 +146,17 @@ export interface LLMGeneration extends BaseGeneration {
 export interface PreAuthorization extends TransactionOperation {
   type: "PreAuthorization";
   amount: number | string;
-  userId: string;
+  payer: Payer;
   identifier: string;
   metadata?: Record<string, unknown>;
 }
 
 export interface CommitPreAuthorized extends TransactionOperation {
   type: "CommitPreAuthorized";
-  userId: string;
   identifier: string;
-  mcpId: string;
+  contractId: string;
   amount: number | string;
-  payer?: Payer;
+  payer: Payer;
   vendor: Vendor;
   metadata?: Record<string, unknown>;
 }
@@ -283,9 +282,13 @@ export interface WalletAPI {
   };
   "POST /transactions/:id/commit": {
     body: {
-      mcpId: string;
+      contractId: string;
       vendor: {
         type: "vendor";
+        id: string;
+      };
+      payer: {
+        type: "wallet";
         id: string;
       };
       /**

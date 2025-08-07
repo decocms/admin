@@ -441,3 +441,128 @@ export const getWorkspacePlan = createTool({
     return await getPlan(c);
   },
 });
+
+export const preAuthorizeAmount = createTool({
+  name: "PRE_AUTHORIZE_AMOUNT",
+  description:
+    "Pre-authorize an amount of money for the current tenant's wallet",
+  inputSchema: z.object({
+    amount: z
+      .number()
+      .describe(
+        "The amount of money to pre-authorize. Specified in USD dollars.",
+      ),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  }),
+  outputSchema: z.object({
+    id: z.string(),
+  }),
+  handler: async ({ amount, metadata }, c) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c);
+
+    const wallet = getWalletClient(c);
+    const id = crypto.randomUUID();
+    const amountMicroDollars = MicroDollar.fromDollars(amount);
+
+    if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
+      throw new UserInputError("Amount must be positive");
+    }
+
+    const operation = {
+      type: "PreAuthorization" as const,
+      amount: amountMicroDollars.toMicrodollarString(),
+      identifier: id,
+      workspace: c.workspace.value,
+      metadata,
+    } as const;
+
+    const response = await wallet["POST /transactions"](
+      {},
+      {
+        body: operation,
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to pre-authorize amount");
+    }
+
+    const data = await response.json();
+
+    return {
+      id: data.id,
+    };
+  },
+});
+
+export const commitPreAuthorizedAmount = createTool({
+  name: "COMMIT_PRE_AUTHORIZED_AMOUNT",
+  description:
+    "Commit a pre-authorized amount of money for the current tenant's wallet",
+  inputSchema: z.object({
+    identifier: z.string().optional(),
+    contractId: z.string(),
+    vendorId: z.string(),
+    amount: z
+      .number()
+      .describe("The amount of money to commit. Specified in USD dollars."),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  }),
+  outputSchema: z.object({
+    id: z.string(),
+  }),
+  handler: async (
+    { amount, metadata, contractId, vendorId, identifier },
+    c,
+  ) => {
+    assertHasWorkspace(c);
+
+    await assertWorkspaceResourceAccess(c);
+
+    const wallet = getWalletClient(c);
+    const amountMicroDollars = MicroDollar.fromDollars(amount);
+
+    if (amountMicroDollars.isZero() || amountMicroDollars.isNegative()) {
+      throw new UserInputError("Amount must be positive");
+    }
+
+    identifier ??= crypto.randomUUID();
+
+    const operation = {
+      type: "CommitPreAuthorized" as const,
+      amount: amountMicroDollars.toMicrodollarString(),
+      identifier,
+      contractId,
+      payer: {
+        type: "wallet",
+        id: c.workspace.value,
+      },
+      vendor: {
+        type: "vendor",
+        id: vendorId,
+      },
+      metadata,
+    } as const;
+
+    const response = await wallet["POST /transactions/:id/commit"](
+      {
+        id: identifier,
+      },
+      {
+        body: operation,
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to commit pre-authorized amount");
+    }
+
+    const data = await response.json();
+
+    return {
+      id: data.id,
+    };
+  },
+});

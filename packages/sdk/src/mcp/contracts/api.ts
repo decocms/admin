@@ -70,8 +70,7 @@ const totalAmount = (
 
 export const oauthStart = createContractTool({
   name: "DECO_CHAT_OAUTH_START",
-  description:
-    "Start the OAuth flow for the contract app.",
+  description: "Start the OAuth flow for the contract app.",
   inputSchema: z.object({
     returnUrl: z.string(),
   }),

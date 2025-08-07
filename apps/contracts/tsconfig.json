@@ -1,0 +1,69 @@
+{
+  "compilerOptions": {
+    // Deno-like strict type checking
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitOverride": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "strictNullChecks": true,
+    "useUnknownInCatchVariables": true,
+    // Module system
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    // Output configuration
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    // JavaScript support
+    "allowJs": true,
+    "checkJs": false,
+    // JSX configuration (React-like as in Deno)
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    // Additional type checking
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitReturns": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": false,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noErrorTruncation": false,
+    "noStrictGenericChecks": false,
+    "suppressExcessPropertyErrors": false,
+    "suppressImplicitAnyIndexErrors": false,
+    "keyofStringsOnly": false,
+    // Library files (adapted for Node.js instead of Deno)
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    // Path resolution
+    "baseUrl": ".",
+    // Experimental decorators for compatibility
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // Misc
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/build",
+    "**/.wrangler",
+  ]
+}

@@ -1,4 +1,3 @@
-import { NotFoundError, useAgent } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import { cn } from "@deco/ui/lib/utils.ts";
@@ -6,43 +5,21 @@ import {
   type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
-  Suspense,
   useEffect,
 } from "react";
-import { ErrorBoundary } from "../../error-boundary.tsx";
+
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { AudioButton } from "./audio-button.tsx";
 import { ContextResources } from "./context-resources.tsx";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea } from "./rich-text.tsx";
 import ToolsButton from "./tools-button.tsx";
 
-export function ChatInput() {
-  return (
-    <ErrorBoundary
-      fallback={<ChatInput.UI disabled />}
-      shouldCatch={(e) => e instanceof NotFoundError}
-    >
-      <Suspense fallback={<ChatInput.UI disabled />}>
-        <ChatInput.Suspense />
-      </Suspense>
-    </ErrorBoundary>
-  );
-}
-
-ChatInput.Suspense = () => {
-  const { agentId } = useChatContext();
-  const { data: _agent } = useAgent(agentId);
-
-  return <ChatInput.UI disabled={false} />;
-};
-
-ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
-  const {
-    chat: { stop, input, handleInputChange, handleSubmit, status },
-    uiOptions: { showModelSelector, showThreadTools },
-  } = useChatContext();
+export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
+  const { chat, uiOptions } = useAgent();
+  const { stop, input, handleInputChange, handleSubmit, status } = chat;
+  const { showModelSelector, showThreadTools } = uiOptions;
   const isLoading = status === "submitted" || status === "streaming";
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
@@ -153,4 +130,4 @@ ChatInput.UI = ({ disabled }: { disabled?: boolean }) => {
       </form>
     </div>
   );
-};
+}

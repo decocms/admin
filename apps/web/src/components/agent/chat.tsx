@@ -1,4 +1,4 @@
-import { useAgent, useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
+import { useFile, WELL_KNOWN_AGENT_IDS } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   DropdownMenu,
@@ -19,7 +19,8 @@ import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { ChatProvider, useChatContext } from "../chat/context.tsx";
+import { useAgent } from "./provider.tsx";
+import { AgentProvider } from "./provider.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
 import { AgentBreadcrumbSegment } from "./breadcrumb-segment.tsx";
 import AgentPreview from "./preview.tsx";
@@ -68,7 +69,7 @@ const TABS = {
 };
 
 function ActionsButtons() {
-  const { agentId, chat } = useChatContext();
+  const { agentId, chat } = useAgent();
   const focusChat = useFocusChat();
   const focusAgent = useFocusChat();
 
@@ -122,7 +123,7 @@ function ActionsButtons() {
 }
 
 function Breadcrumb({ agentId }: { agentId: string }) {
-  const { chat } = useChatContext();
+  const { chat } = useAgent();
   const focusChat = useFocusChat();
   const focusAgent = useFocusChat();
 
@@ -133,12 +134,12 @@ function Breadcrumb({ agentId }: { agentId: string }) {
           label: (
             <>
               <div className="hidden md:flex items-center gap-2">
-                <AgentBreadcrumbSegment agentId={agentId} />
+                <AgentBreadcrumbSegment />
               </div>
               <div className="md:hidden">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-2">
-                    <AgentBreadcrumbSegment agentId={agentId} />
+                    <AgentBreadcrumbSegment />
                     <Icon name="arrow_drop_down" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
@@ -175,8 +176,8 @@ function Breadcrumb({ agentId }: { agentId: string }) {
   );
 }
 
-function AgentMetadataUpdater({ agentId }: { agentId: string }) {
-  const { data: agent } = useAgent(agentId);
+function AgentMetadataUpdater() {
+  const { agent } = useAgent();
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
@@ -215,6 +216,9 @@ function Page(props: Props) {
 
   const chatKey = useMemo(() => `${agentId}-${threadId}`, [agentId, threadId]);
 
+  // Use AgentProvider for all agents (including team agent)
+  const isTeamAgent = agentId === WELL_KNOWN_AGENT_IDS.teamAgent;
+
   return (
     <Suspense
       // This make the react render fallback when changin agent+threadid, instead of hang the whole navigation while the subtree isn't changed
@@ -225,15 +229,15 @@ function Page(props: Props) {
         </div>
       }
     >
-      <ChatProvider
+      <AgentProvider
         agentId={agentId}
         threadId={threadId}
         uiOptions={{
-          showThreadTools: agentId === WELL_KNOWN_AGENT_IDS.teamAgent,
+          showThreadTools: isTeamAgent,
           showThreadMessages: props.showThreadMessages ?? true,
         }}
       >
-        <AgentMetadataUpdater agentId={agentId} />
+        <AgentMetadataUpdater />
         <PageLayout
           tabs={TABS}
           key={agentId}
@@ -244,7 +248,7 @@ function Page(props: Props) {
             )
           }
         />
-      </ChatProvider>
+      </AgentProvider>
     </Suspense>
   );
 }

@@ -1,9 +1,9 @@
 import { useIntegrations, listTools } from "@deco/sdk";
-import { useAgentSettingsForm } from "../components/agent/agent-settings-form-provider.tsx";
+import { useAgent } from "../components/agent/provider.tsx";
 import { useRefetchIntegrationsOnNotification } from "../components/integrations/apps.ts";
 
 export function useAgentSettingsToolsSet() {
-  const { form, agent } = useAgentSettingsForm();
+  const { form, agent } = useAgent();
   const { data: _installedIntegrations } = useIntegrations();
   const installedIntegrations = _installedIntegrations.filter(
     (i) => !i.id.includes(agent.id),

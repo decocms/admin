@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router";
 import { ErrorBoundary } from "../../error-boundary.tsx";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { ChatProvider } from "../chat/context.tsx";
+import { AgentProvider } from "./provider.tsx";
 import { EmptyState } from "../common/empty-state.tsx";
 import { PageLayout } from "../layout.tsx";
 import { ChatHeader } from "./chat-header.tsx";
@@ -108,7 +108,7 @@ function Page() {
         }
       >
         <SDKProvider workspace={workspace}>
-          <ChatProvider
+          <AgentProvider
             agentId={agentId}
             threadId={threadId}
             toolsets={toolsets}
@@ -136,7 +136,7 @@ function Page() {
                 />
               </SidebarInset>
             </SidebarProvider>
-          </ChatProvider>
+          </AgentProvider>
         </SDKProvider>
       </Suspense>
     </ErrorBoundary>

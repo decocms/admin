@@ -4,13 +4,13 @@ import { useCallback, useLayoutEffect } from "react";
 import { ChatError } from "./chat-error.tsx";
 import { ChatFinishReason } from "./chat-finish-reason.tsx";
 import { ChatMessage } from "./chat-message.tsx";
-import { useChatContext } from "./context.tsx";
+
+import { useAgent } from "../agent/provider.tsx";
 import { EmptyState } from "./empty-state.tsx";
 
 function Dots() {
-  const {
-    chat: { status },
-  } = useChatContext();
+  const { chat } = useAgent();
+  const { status } = chat;
 
   if (status !== "streaming" && status !== "submitted") {
     return null;
@@ -28,8 +28,7 @@ function Dots() {
 }
 
 export function ChatMessages() {
-  const { scrollRef, chat, isAutoScrollEnabled, setAutoScroll } =
-    useChatContext();
+  const { scrollRef, chat, isAutoScrollEnabled, setAutoScroll } = useAgent();
 
   const isStreaming = chat.status === "streaming";
   const { messages } = chat;

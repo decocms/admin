@@ -1,4 +1,9 @@
-import { NotFoundError, useAgent, useFile, WELL_KNOWN_AGENTS } from "@deco/sdk";
+import {
+  NotFoundError,
+  useAgentData,
+  useFile,
+  WELL_KNOWN_AGENTS,
+} from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { ScrollArea } from "@deco/ui/components/scroll-area.tsx";
 import { Spinner } from "@deco/ui/components/spinner.tsx";
@@ -7,7 +12,6 @@ import { useParams } from "react-router";
 import { useFocusChat } from "../agents/hooks.ts";
 import { ChatInput } from "../chat/chat-input.tsx";
 import { ChatMessages } from "../chat/chat-messages.tsx";
-import { ChatProvider, useChatContext } from "../chat/context.tsx";
 import { AgentAvatar } from "../common/avatar/agent.tsx";
 import type { Tab } from "../dock/index.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
@@ -21,10 +25,7 @@ import ThreadView from "./thread.tsx";
 import Threads from "./threads.tsx";
 import { isFilePath } from "../../utils/path.ts";
 import { useDocumentMetadata } from "../../hooks/use-document-metadata.ts";
-import {
-  AgentSettingsFormProvider,
-  useAgentSettingsForm,
-} from "./agent-settings-form-provider.tsx";
+import { AgentProvider, useAgent } from "./provider.tsx";
 
 interface Props {
   agentId?: string;
@@ -32,12 +33,8 @@ interface Props {
 }
 
 const Chat = () => {
-  const { agentId, chat } = useChatContext();
-  const { data: agent } = useAgent(agentId);
-  const {
-    chat: { messages },
-  } = useChatContext();
-  const { hasChanges } = useAgentSettingsForm();
+  const { agentId, chat, agent, hasUnsavedChanges: hasChanges } = useAgent();
+  const { messages } = chat;
   const focusChat = useFocusChat();
 
   return (
@@ -138,7 +135,12 @@ const TABS: Record<string, Tab> = {
 // --- AgentSettingsFormContext ---
 
 function ActionButtons() {
-  const { form, hasChanges, handleSubmit, agent } = useAgentSettingsForm();
+  const {
+    form,
+    hasUnsavedChanges: hasChanges,
+    handleSubmit,
+    agent,
+  } = useAgent();
 
   const isWellKnownAgent = Boolean(
     WELL_KNOWN_AGENTS[agent.id as keyof typeof WELL_KNOWN_AGENTS],
@@ -191,7 +193,7 @@ function ActionButtons() {
 
 function FormProvider(props: Props & { agentId: string; threadId: string }) {
   const { agentId, threadId } = props;
-  const { data: agent } = useAgent(agentId);
+  const { data: agent } = useAgentData(agentId);
   const { data: resolvedAvatar } = useFile(
     agent?.avatar && isFilePath(agent.avatar) ? agent.avatar : "",
   );
@@ -212,7 +214,7 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
   });
 
   return (
-    <ChatProvider
+    <AgentProvider
       agentId={agentId}
       threadId={threadId}
       uiOptions={{
@@ -221,29 +223,22 @@ function FormProvider(props: Props & { agentId: string; threadId: string }) {
         showModelSelector: false,
       }}
     >
-      <AgentSettingsFormProvider agentId={agentId}>
-        <PageLayout
-          tabs={tabs}
-          key={agentId}
-          actionButtons={<ActionButtons />}
-          breadcrumb={
-            <DefaultBreadcrumb
-              items={[
-                { link: "/agents", label: "Agents" },
-                {
-                  label: (
-                    <AgentBreadcrumbSegment
-                      agentId={agentId}
-                      variant="summary"
-                    />
-                  ),
-                },
-              ]}
-            />
-          }
-        />
-      </AgentSettingsFormProvider>
-    </ChatProvider>
+      <PageLayout
+        tabs={tabs}
+        key={agentId}
+        actionButtons={<ActionButtons />}
+        breadcrumb={
+          <DefaultBreadcrumb
+            items={[
+              { link: "/agents", label: "Agents" },
+              {
+                label: <AgentBreadcrumbSegment variant="summary" />,
+              },
+            ]}
+          />
+        }
+      />
+    </AgentProvider>
   );
 }
 

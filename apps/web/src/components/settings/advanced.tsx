@@ -31,7 +31,7 @@ import { cn } from "@deco/ui/lib/utils.ts";
 import { useState } from "react";
 import { useWatch } from "react-hook-form";
 import { getPublicChatLink } from "../agent/chats.tsx";
-import { useAgentSettingsForm } from "../agent/agent-settings-form-provider.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import { useCurrentTeam } from "../sidebar/team-selector.tsx";
 import { Channels } from "./channels.tsx";
 
@@ -73,7 +73,7 @@ function CopyLinkButton({
 }
 
 function AdvancedTab() {
-  const { form, agent, handleSubmit } = useAgentSettingsForm();
+  const { form, agent, handleSubmit } = useAgent();
   const roles = useCurrentTeamRoles();
 
   const useWorkingMemory = useWatch({

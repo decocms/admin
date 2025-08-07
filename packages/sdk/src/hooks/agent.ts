@@ -44,34 +44,25 @@ export const useCreateAgent = () => {
   return create;
 };
 
-export const useUpdateAgentCache = () => {
+export const useUpdateAgent = () => {
   const client = useQueryClient();
   const { workspace } = useSDK();
 
-  const update = (agent: Agent) => {
-    // Update the individual agent in cache
-    const itemKey = KEYS.AGENT(workspace, agent.id);
-    client.cancelQueries({ queryKey: itemKey });
-    client.setQueryData<Agent>(itemKey, agent);
-
-    // Update the list
-    const listKey = KEYS.AGENT(workspace);
-    client.cancelQueries({ queryKey: listKey });
-    client.setQueryData<Agent[]>(listKey, (old) =>
-      !old ? [agent] : old.map((a) => (a.id === agent.id ? agent : a)),
-    );
-  };
-
-  return update;
-};
-
-export const useUpdateAgent = () => {
-  const { workspace } = useSDK();
-  const updateAgentCache = useUpdateAgentCache();
-
   const update = useMutation({
     mutationFn: (agent: Agent) => updateAgent(workspace, agent),
-    onSuccess: (result) => updateAgentCache(result),
+    onSuccess: (result) => {
+      // update item
+      const itemKey = KEYS.AGENT(workspace, result.id);
+      client.cancelQueries({ queryKey: itemKey });
+      client.setQueryData<Agent>(itemKey, result);
+
+      // update list
+      const listKey = KEYS.AGENT(workspace);
+      client.cancelQueries({ queryKey: listKey });
+      client.setQueryData<Agent[]>(listKey, (old) =>
+        !old ? [result] : old.map((a) => (a.id === result.id ? result : a)),
+      );
+    },
   });
 
   return update;
@@ -105,8 +96,8 @@ export const useRemoveAgent = () => {
   return remove;
 };
 
-/** Hook for crud-like operations on agents */
-export const useAgent = (id: string) => {
+/** Hook for fetching agent data from server */
+export const useAgentData = (id: string) => {
   const { workspace } = useSDK();
 
   const data = useSuspenseQuery({
@@ -114,6 +105,8 @@ export const useAgent = (id: string) => {
     queryFn: ({ signal }) => loadAgent(workspace, id, signal),
     retry: (failureCount, error) =>
       error instanceof InternalServerError && failureCount < 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   return data;

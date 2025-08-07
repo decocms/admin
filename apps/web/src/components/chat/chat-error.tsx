@@ -3,7 +3,7 @@ import { Icon } from "@deco/ui/components/icon.tsx";
 import { useEffect } from "react";
 import { Link } from "react-router";
 import { trackEvent } from "../../hooks/analytics.ts";
-import { useChatContext } from "./context.tsx";
+import { useAgent } from "../agent/provider.tsx";
 import {
   Tooltip,
   TooltipContent,
@@ -27,11 +27,8 @@ const WELL_KNOWN_ERROR_MESSAGES = {
 
 export function ChatError() {
   const workspaceLink = useWorkspaceLink();
-  const {
-    chat: { error },
-    retry,
-    correlationIdRef,
-  } = useChatContext();
+  const { chat, retry, correlationIdRef } = useAgent();
+  const { error } = chat;
   const insufficientFunds = error?.message.includes(
     WELL_KNOWN_ERROR_MESSAGES.InsufficientFunds,
   );

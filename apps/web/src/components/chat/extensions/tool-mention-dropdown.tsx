@@ -23,7 +23,7 @@ export default forwardRef<
   ToolMentionDropdownProps
 >(function ToolMentionDropdown({ items, command }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { setIntegrationTools } = useAgentSettingsToolsSet();
+  const { appendIntegrationTool } = useAgentSettingsToolsSet();
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -32,8 +32,8 @@ export default forwardRef<
     if (item) {
       command(item);
 
-      // Add the specific tool to the agent
-      setIntegrationTools(item.tool.integration.id, [item.tool.name]);
+      // Add the specific tool to the existing tools for this integration
+      appendIntegrationTool(item.tool.integration.id, item.tool.name);
     }
   };
 

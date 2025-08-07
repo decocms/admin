@@ -57,9 +57,22 @@ export function useAgentSettingsToolsSet() {
     form.setValue("tools_set", newToolsSet, { shouldDirty: true });
   };
 
+  const appendIntegrationTool = (integrationId: string, toolName: string) => {
+    const toolsSet = form.getValues("tools_set");
+    const newToolsSet = { ...toolsSet };
+    const currentTools = newToolsSet[integrationId] || [];
+
+    // Only add the tool if it's not already in the list
+    if (!currentTools.includes(toolName)) {
+      newToolsSet[integrationId] = [...currentTools, toolName];
+      form.setValue("tools_set", newToolsSet, { shouldDirty: true });
+    }
+  };
+
   return {
     toolsSet,
     setIntegrationTools,
+    appendIntegrationTool,
     enableAllTools,
     disableAllTools,
     installedIntegrations,

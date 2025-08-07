@@ -474,8 +474,14 @@ export const preAuthorizeAmount = createTool({
       type: "PreAuthorization" as const,
       amount: amountMicroDollars.toMicrodollarString(),
       identifier: id,
-      workspace: c.workspace.value,
-      metadata,
+      payer: {
+        type: "wallet",
+        id: c.workspace.value,
+      },
+      metadata: {
+        ...metadata,
+        workspace: c.workspace.value,
+      },
     } as const;
 
     const response = await wallet["POST /transactions"](
@@ -535,16 +541,17 @@ export const commitPreAuthorizedAmount = createTool({
       amount: amountMicroDollars.toMicrodollarString(),
       identifier,
       contractId,
-      payer: {
-        type: "wallet",
-        id: c.workspace.value,
-      },
       vendor: {
         type: "vendor",
         id: vendorId,
       },
-      metadata,
+      metadata: {
+        ...metadata,
+        workspace: c.workspace.value,
+      },
     } as const;
+
+    console.log("operation", operation);
 
     const response = await wallet["POST /transactions/:id/commit"](
       {
@@ -556,7 +563,9 @@ export const commitPreAuthorizedAmount = createTool({
     );
 
     if (!response.ok) {
-      throw new Error("Failed to commit pre-authorized amount");
+      throw new Error(
+        `Failed to commit pre-authorized amount. Error: ${response.statusText}`,
+      );
     }
 
     const data = await response.json();

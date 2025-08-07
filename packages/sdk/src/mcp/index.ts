@@ -118,6 +118,8 @@ export const WORKSPACE_TOOLS = [
   walletAPI.redeemWalletVoucher,
   walletAPI.createWalletVoucher,
   walletAPI.getWorkspacePlan,
+  walletAPI.preAuthorizeAmount,
+  walletAPI.commitPreAuthorizedAmount,
   triggersAPI.activateTrigger,
   triggersAPI.deactivateTrigger,
   triggersAPI.updateTrigger,

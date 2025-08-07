@@ -156,7 +156,6 @@ export interface CommitPreAuthorized extends TransactionOperation {
   identifier: string;
   contractId: string;
   amount: number | string;
-  payer: Payer;
   vendor: Vendor;
   metadata?: Record<string, unknown>;
 }

@@ -10,13 +10,13 @@ deco.chat is an Agent Builder application for users to connnect Integrations (e.
 ## Repository Structure 
 
 This project is a modern web application built with cutting-edge technologies
-and follows a monorepo architecture powered by Deno workspaces.
+and follows a monorepo architecture powered by Bun workspaces.
 
 ## Technology Stack
 
 - **React 19**: The latest version of React for building user interfaces
 - **Tailwind CSS v4**: For utility-first styling
-- **Deno**: Used for dependency management, linting, formatting, and type
+- **Bun**: Used for dependency management, linting, formatting, and type
   checking
 - **Vite**: Powering the development server and build process
 - **shadcn/ui**: Component library for the UI package
@@ -34,7 +34,7 @@ and follows a monorepo architecture powered by Deno workspaces.
 │       ├── public
 │       ├── src
 │       └── vite.config.ts
-├── deno.lock
+├── bun.lockb
 ├── package.json
 └── packages
     ├── sdk
@@ -57,7 +57,14 @@ and follows a monorepo architecture powered by Deno workspaces.
 
 ## Development Workflow
 
-The project leverages Deno for various development tasks:
+The project leverages Bun for various development tasks:
+
+- Dependency management (`bun install`)
+- Code linting (`bun run lint`)
+- Code formatting (`bun run fmt`)
+- Type checking (`bun run check`)
+- Running scripts (`bun run <script-name>`)
+- Package management (`bun add`, `bun remove`)
 
 - Dependency management
 - Code linting (deno run lint in package root folder or passing --config=./package.json)

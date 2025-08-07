@@ -41,5 +41,4 @@ export * from "./models/trigger.ts";
 
 export * from "./errors.ts";
 export * from "./theme.ts";
-export * from "./utils/url.ts";
 export * from "./views.ts";

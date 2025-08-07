@@ -286,10 +286,6 @@ export interface WalletAPI {
         type: "vendor";
         id: string;
       };
-      payer: {
-        type: "wallet";
-        id: string;
-      };
       /**
        * If not provided, the amount will be the same as the pre-authorization.
        * Can be provided as a lower amount to refund the difference.

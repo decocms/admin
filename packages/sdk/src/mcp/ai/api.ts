@@ -124,7 +124,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
     },
   });
 
-  return { llm, llmConfig };
+  return { llm, llmConfig, usedVault: !!llmVault };
 };
 
 const prepareMessages = async (
@@ -172,24 +172,67 @@ const processTransaction = async (
     workspace: c.workspace.value,
   });
 
-  const response = await wallet["POST /transactions"](
-    {},
-    {
-      body: transaction,
-    },
-  );
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    console.error(
-      "Failed to create transaction",
-      response,
-      await response.text(),
-    );
-    throw new InternalServerError("Failed to create transaction");
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const response = await wallet["POST /transactions"](
+        {},
+        {
+          body: transaction,
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`Failed to create transaction: ${errorText}`);
+
+        if (attempt === 3) {
+          console.error(
+            "Failed to create transaction after 3 attempts",
+            response,
+            errorText,
+          );
+          throw new InternalServerError(
+            "Failed to create transaction after 3 attempts",
+          );
+        }
+
+        console.warn(
+          `Transaction attempt ${attempt} failed, retrying...`,
+          response.status,
+          errorText,
+        );
+        lastError = error;
+        continue;
+      }
+
+      const transactionData = await response.json();
+      return transactionData.id;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt === 3) {
+        console.error(
+          "Failed to create transaction after 3 attempts",
+          lastError,
+        );
+        throw new InternalServerError(
+          "Failed to create transaction after 3 attempts",
+        );
+      }
+
+      console.warn(
+        `Transaction attempt ${attempt} failed with error, retrying...`,
+        lastError.message,
+      );
+    }
   }
 
-  const transactionData = await response.json();
-  return transactionData.id;
+  // This should never be reached, but TypeScript requires it
+  throw new InternalServerError(
+    "Failed to create transaction after 3 attempts",
+  );
 };
 
 const createTool = createToolGroup("AI", {
@@ -256,13 +299,17 @@ const usageSchema = z
     promptTokens: z.number().describe("Number of tokens in the prompt"),
     completionTokens: z.number().describe("Number of tokens in the completion"),
     totalTokens: z.number().describe("Total number of tokens used"),
-    transactionId: z.string().describe("Transaction ID"),
+    transactionId: z.string().optional().describe("Transaction ID"),
   })
   .describe("Token usage information");
 
 const AIGenerateInputSchema = z
   .object({
     messages: baseMessageSchema,
+    skipTransaction: z
+      .boolean()
+      .optional()
+      .describe("Skip transaction creation"),
   })
   .merge(baseGenerationOptionsSchema);
 
@@ -283,6 +330,10 @@ const AIGenerateObjectInputSchema = z
       .describe(
         "JSON Schema that defines the structure of the object to generate",
       ),
+    skipTransaction: z
+      .boolean()
+      .optional()
+      .describe("Skip transaction creation"),
   })
   .merge(baseGenerationOptionsSchema);
 
@@ -309,7 +360,7 @@ export const aiGenerate = createTool({
 
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
-    const { llm, llmConfig } = await setupLLMInstance(modelId, c);
+    const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
     const result = await generateText({
@@ -323,13 +374,17 @@ export const aiGenerate = createTool({
       !!c.envVars.LLMS_ENCRYPTION_KEY &&
       !WELL_KNOWN_MODELS.find((model) => model.id === modelId);
 
-    const transactionId = await processTransaction(
-      wallet,
-      result.usage,
-      hasCustomKey ? llmConfig.model : modelId,
-      hasCustomKey,
-      c,
-    );
+    const shouldSkip = (input.skipTransaction && usedVault) ?? false;
+
+    const transactionId = shouldSkip
+      ? undefined
+      : await processTransaction(
+          wallet,
+          result.usage,
+          hasCustomKey ? llmConfig.model : modelId,
+          hasCustomKey,
+          c,
+        );
 
     return {
       text: result.text,
@@ -337,7 +392,7 @@ export const aiGenerate = createTool({
         promptTokens: result.usage.promptTokens,
         completionTokens: result.usage.completionTokens,
         totalTokens: result.usage.totalTokens,
-        transactionId,
+        transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,
     };
@@ -356,7 +411,7 @@ export const aiGenerateObject = createTool({
 
     const { wallet } = await validateWalletBalance(c);
     const modelId = input.model ?? DEFAULT_MODEL.id;
-    const { llm, llmConfig } = await setupLLMInstance(modelId, c);
+    const { llm, llmConfig, usedVault } = await setupLLMInstance(modelId, c);
     const aiMessages = await prepareMessages(input.messages);
 
     const hasCustomKey =
@@ -371,13 +426,17 @@ export const aiGenerateObject = createTool({
       temperature: input.temperature,
     });
 
-    const transactionId = await processTransaction(
-      wallet,
-      result.usage,
-      hasCustomKey ? llmConfig.model : modelId,
-      hasCustomKey,
-      c,
-    );
+    const shouldSkip = (input.skipTransaction && usedVault) ?? false;
+
+    const transactionId = shouldSkip
+      ? undefined
+      : await processTransaction(
+          wallet,
+          result.usage,
+          hasCustomKey ? llmConfig.model : modelId,
+          hasCustomKey,
+          c,
+        );
 
     return {
       object: result.object,
@@ -385,7 +444,7 @@ export const aiGenerateObject = createTool({
         promptTokens: result.usage.promptTokens,
         completionTokens: result.usage.completionTokens,
         totalTokens: result.usage.totalTokens,
-        transactionId,
+        transactionId: transactionId ?? undefined,
       },
       finishReason: result.finishReason,
     };

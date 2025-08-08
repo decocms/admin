@@ -172,67 +172,24 @@ const processTransaction = async (
     workspace: c.workspace.value,
   });
 
-  let lastError: Error | null = null;
+  const response = await wallet["POST /transactions"](
+    {},
+    {
+      body: transaction,
+    },
+  );
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const response = await wallet["POST /transactions"](
-        {},
-        {
-          body: transaction,
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        const error = new Error(`Failed to create transaction: ${errorText}`);
-
-        if (attempt === 3) {
-          console.error(
-            "Failed to create transaction after 3 attempts",
-            response,
-            errorText,
-          );
-          throw new InternalServerError(
-            "Failed to create transaction after 3 attempts",
-          );
-        }
-
-        console.warn(
-          `Transaction attempt ${attempt} failed, retrying...`,
-          response.status,
-          errorText,
-        );
-        lastError = error;
-        continue;
-      }
-
-      const transactionData = await response.json();
-      return transactionData.id;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      if (attempt === 3) {
-        console.error(
-          "Failed to create transaction after 3 attempts",
-          lastError,
-        );
-        throw new InternalServerError(
-          "Failed to create transaction after 3 attempts",
-        );
-      }
-
-      console.warn(
-        `Transaction attempt ${attempt} failed with error, retrying...`,
-        lastError.message,
-      );
-    }
+  if (!response.ok) {
+    console.error(
+      "Failed to create transaction",
+      response,
+      await response.text(),
+    );
+    throw new InternalServerError("Failed to create transaction");
   }
 
-  // This should never be reached, but TypeScript requires it
-  throw new InternalServerError(
-    "Failed to create transaction after 3 attempts",
-  );
+  const transactionData = await response.json();
+  return transactionData.id;
 };
 
 const createTool = createToolGroup("AI", {

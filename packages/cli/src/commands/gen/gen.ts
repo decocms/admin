@@ -3,8 +3,8 @@ import { compile } from "json-schema-to-typescript";
 import { generateName } from "json-schema-to-typescript/dist/src/utils.js";
 import type { DecoBinding } from "../../lib/config.js";
 import { createWorkspaceClient } from "../../lib/mcp.js";
-import { spawn } from "child_process";
 import { parser as scopeParser } from "../../lib/parse-binding-tool.js";
+import prettier from "prettier";
 
 interface Options {
   workspace: string;
@@ -41,42 +41,14 @@ function slugify(name: string) {
   return name.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 }
 
-/**
- * Format content using Prettier instead of deno fmt
- */
 export function format(content: string): Promise<string> {
   try {
-    // Try to format using npx prettier if available
-    const prettier = spawn("npx", ["prettier", "--parser", "typescript"], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    let formatted = "";
-    let error = "";
-
-    prettier.stdout.on("data", (data) => {
-      formatted += data.toString();
-    });
-
-    prettier.stderr.on("data", (data) => {
-      error += data.toString();
-    });
-
-    prettier.stdin.write(content);
-    prettier.stdin.end();
-
-    return new Promise((resolve) => {
-      prettier.on("close", (code) => {
-        if (code === 0 && formatted) {
-          resolve(formatted);
-        } else {
-          // If prettier fails, return original content
-          resolve(content);
-        }
-      });
+    return prettier.format(content, {
+      parser: "babel-ts",
+      plugins: [],
     });
   } catch {
-    // If prettier is not available, return original content
+    // Fallback to unformatted content
     return Promise.resolve(content);
   }
 }
@@ -177,6 +149,26 @@ const DEFAULT_BINDINGS: DecoBinding[] = [
   },
 ];
 
+type MCPResult<T> = T | {
+  isError: true;
+  content?: {
+    type: "text";
+    text: string;
+  }[];
+}
+
+const unwrapMcpResult = <T extends object>(result: MCPResult<T>, opts?: {
+  errorMessage?: (error: unknown) => string,
+}): T => {
+  if ("isError" in result && result.isError) {
+    const message = (Array.isArray(result.content)
+      ? result.content[0]?.text
+      : undefined) ?? JSON.stringify(result);
+    throw new Error(opts?.errorMessage?.(message) ?? message);
+  }
+  return result as T;
+}
+
 export const genEnv = async ({
   workspace,
   local,
@@ -209,21 +201,27 @@ export const genEnv = async ({
         let connection: unknown;
         let stateKey: KeyInfo | undefined;
         if ("integration_id" in binding) {
-          const integration = (await client.callTool({
+          const integrationResult = (await client.callTool({
             name: "INTEGRATIONS_GET",
             arguments: {
               id: binding.integration_id,
             },
-          })) as { structuredContent: { connection: unknown } };
+          })) as MCPResult<{ structuredContent: { connection: unknown } }>;
+          const integration = unwrapMcpResult(integrationResult, {
+            errorMessage: (error) => `Error getting integration ${binding.integration_id}: ${error}`,
+          });
           connection = integration.structuredContent.connection;
         } else if ("integration_name" in binding) {
           stateKey = { type: binding.integration_name, key: binding.name };
-          const app = (await client.callTool({
+          const appResult = (await client.callTool({
             name: "REGISTRY_GET_APP",
             arguments: {
               name: binding.integration_name,
             },
-          })) as { structuredContent: { connection: unknown } };
+          })) as MCPResult<{ structuredContent: { connection: unknown } }>;
+          const app = unwrapMcpResult(appResult, {
+            errorMessage: (error) => `Error getting app ${binding.integration_name}: ${error}`,
+          });
           connection = app.structuredContent.connection;
         } else if ("integration_url" in binding) {
           connection = {

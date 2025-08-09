@@ -39,7 +39,7 @@ process.on("warning", (warning) => {
 });
 
 import { Command } from "commander";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
@@ -375,6 +375,10 @@ const gen = new Command("gen")
     "-s, --self <url>",
     "Useful to generate a SELF binding for own types based on local mcp server.",
   )
+  .option(
+    "-o, --output <path>",
+    "Output path for the generated environment file.",
+  )
   .action(async (options) => {
     try {
       const config = await getConfig({});
@@ -384,7 +388,11 @@ const gen = new Command("gen")
         bindings: config.bindings,
         selfUrl: options.self,
       });
-      console.log(env);
+      if (options.output) {
+        await writeFile(options.output, env);
+      } else {
+        console.log(env);
+      }
     } catch (error) {
       console.error(
         "❌ Failed to generate environment:",

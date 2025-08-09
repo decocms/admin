@@ -149,25 +149,30 @@ const DEFAULT_BINDINGS: DecoBinding[] = [
   },
 ];
 
-type MCPResult<T> = T | {
-  isError: true;
-  content?: {
-    type: "text";
-    text: string;
-  }[];
-}
+type MCPResult<T> =
+  | T
+  | {
+      isError: true;
+      content?: {
+        type: "text";
+        text: string;
+      }[];
+    };
 
-const unwrapMcpResult = <T extends object>(result: MCPResult<T>, opts?: {
-  errorMessage?: (error: unknown) => string,
-}): T => {
+const unwrapMcpResult = <T extends object>(
+  result: MCPResult<T>,
+  opts?: {
+    errorMessage?: (error: unknown) => string;
+  },
+): T => {
   if ("isError" in result && result.isError) {
-    const message = (Array.isArray(result.content)
-      ? result.content[0]?.text
-      : undefined) ?? JSON.stringify(result);
+    const message =
+      (Array.isArray(result.content) ? result.content[0]?.text : undefined) ??
+      JSON.stringify(result);
     throw new Error(opts?.errorMessage?.(message) ?? message);
   }
   return result as T;
-}
+};
 
 export const genEnv = async ({
   workspace,
@@ -208,7 +213,8 @@ export const genEnv = async ({
             },
           })) as MCPResult<{ structuredContent: { connection: unknown } }>;
           const integration = unwrapMcpResult(integrationResult, {
-            errorMessage: (error) => `Error getting integration ${binding.integration_id}: ${error}`,
+            errorMessage: (error) =>
+              `Error getting integration ${binding.integration_id}: ${error}`,
           });
           connection = integration.structuredContent.connection;
         } else if ("integration_name" in binding) {
@@ -220,7 +226,8 @@ export const genEnv = async ({
             },
           })) as MCPResult<{ structuredContent: { connection: unknown } }>;
           const app = unwrapMcpResult(appResult, {
-            errorMessage: (error) => `Error getting app ${binding.integration_name}: ${error}`,
+            errorMessage: (error) =>
+              `Error getting app ${binding.integration_name}: ${error}`,
           });
           connection = app.structuredContent.connection;
         } else if ("integration_url" in binding) {

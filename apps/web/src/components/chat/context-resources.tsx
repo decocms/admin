@@ -12,12 +12,6 @@ import {
 import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Popover,
@@ -42,9 +36,9 @@ import {
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { formatFilename } from "../../utils/format.ts";
+import { useAgent } from "../agent/provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { useAgent } from "../agent/provider.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface IntegrationWithTools extends Integration {

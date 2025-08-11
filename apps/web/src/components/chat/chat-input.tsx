@@ -6,11 +6,12 @@ import {
   type FormEvent,
   type KeyboardEvent,
   useEffect,
+  useState,
 } from "react";
 
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { AudioButton } from "./audio-button.tsx";
-import { ContextResources } from "./context-resources.tsx";
+import { ContextResources, UploadedFile } from "./context-resources.tsx";
 import { useAgent } from "../agent/provider.tsx";
 import { ModelSelector } from "./model-selector.tsx";
 import { RichTextArea } from "./rich-text.tsx";
@@ -21,6 +22,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { stop, input, handleInputChange, handleSubmit, status } = chat;
   const { showModelSelector, showThreadTools } = uiOptions;
   const isLoading = status === "submitted" || status === "streaming";
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
@@ -60,12 +62,37 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    handleSubmit(e);
+
+    const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
+    if (doneFiles.length === 0) {
+      handleSubmit(e);
+      return;
+    }
+    const experimentalAttachments = doneFiles.map((uf) => ({
+      name: uf.file.name,
+      type: uf.file.type,
+      contentType: uf.file.type,
+      size: uf.file.size,
+      url: uf.url || URL.createObjectURL(uf.file),
+    }));
+    handleSubmit(e, {
+      experimental_attachments: experimentalAttachments as unknown as FileList,
+      // @ts-expect-error not yet on typings
+      fileData: doneFiles.map((uf) => ({
+        name: uf.file.name,
+        contentType: uf.file.type,
+        url: uf.url,
+      })),
+    });
+    setUploadedFiles([]);
   };
 
   return (
     <div className="w-full mx-auto">
-      <ContextResources />
+      <ContextResources
+        uploadedFiles={uploadedFiles}
+        setUploadedFiles={setUploadedFiles}
+      />
       <form
         onSubmit={onSubmit}
         className={cn(

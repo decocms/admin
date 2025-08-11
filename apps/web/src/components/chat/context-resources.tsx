@@ -1,4 +1,5 @@
 import {
+  applyDisplayNameToIntegration,
   DEFAULT_MODEL,
   type Integration,
   type Model,
@@ -7,7 +8,6 @@ import {
   useModels,
   useSDK,
   useWriteFile,
-  applyDisplayNameToIntegration,
 } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -54,7 +54,7 @@ interface IntegrationWithTools extends Integration {
   }>;
 }
 
-interface UploadedFile {
+export interface UploadedFile {
   file: File;
   url?: string;
   status: "uploading" | "done" | "error";
@@ -114,7 +114,15 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
   return isDragging;
 };
 
-export function ContextResources() {
+interface ContextResourcesProps {
+  uploadedFiles: UploadedFile[];
+  setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+}
+
+export function ContextResources({
+  uploadedFiles,
+  setUploadedFiles,
+}: ContextResourcesProps) {
   const { agent } = useAgent();
   const { workspace } = useSDK();
   const { data: integrations = [] } = useIntegrations();
@@ -125,7 +133,6 @@ export function ContextResources() {
   const { preferences } = useUserPreferences();
   const { disableAllTools, enableAllTools, setIntegrationTools } =
     useAgentSettingsToolsSet();
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const writeFileMutation = useWriteFile();
 

@@ -327,8 +327,21 @@ export function ContextResources({
           className="hidden"
           accept={getAcceptedFileTypes()}
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        {(selectedModel.capabilities.includes("file-upload") ||
+          selectedModel.capabilities.includes("image-upload")) && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            title="Upload files"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Icon name="file_upload" />
+          </Button>
+        )}
+        <SelectConnectionDialog
+          onSelect={handleAddIntegration}
+          trigger={
             <Button
               type="button"
               variant="outline"
@@ -337,26 +350,8 @@ export function ContextResources({
             >
               <Icon name="alternate_email" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top">
-            {(selectedModel.capabilities.includes("file-upload") ||
-              selectedModel.capabilities.includes("image-upload")) && (
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                <Icon name="upload" className="mr-2 h-4 w-4" />
-                Upload files
-              </DropdownMenuItem>
-            )}
-            <SelectConnectionDialog
-              onSelect={handleAddIntegration}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Icon name="widgets" className="mr-2 h-4 w-4" />
-                  Add integration
-                </DropdownMenuItem>
-              }
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
+          }
+        />
 
         {/* Integration Items */}
         {integrationsWithTotalTools.map(

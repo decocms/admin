@@ -19,6 +19,7 @@ import {
   withMCPAuthorization,
   withMCPErrorHandling,
   WORKSPACE_TOOLS,
+  wrapToolFn,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type Context, Hono } from "hono";
@@ -172,15 +173,18 @@ const createToolCallHandlerFor = <
     }
 
     startTime(c, tool);
-    const toolFn = client[tool as TDefinition[number]["name"]] as (
-      args: z.ZodType<TDefinition[number]["inputSchema"]>,
-    ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>;
+    const ctx = honoCtxToAppCtx(c);
+    const toolFn = wrapToolFn(
+      client[tool as TDefinition[number]["name"]] as (
+        args: z.ZodType<TDefinition[number]["inputSchema"]>,
+      ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>,
+      tool,
+      ctx?.workspace?.value,
+    );
 
-    const result = await State.run(
-      honoCtxToAppCtx(c),
-      (args) => toolFn(args),
-      data,
-    ).catch(mapMCPErrorToHTTPExceptionOrThrow);
+    const result = await State.run(ctx, (args) => toolFn(args), data).catch(
+      mapMCPErrorToHTTPExceptionOrThrow,
+    );
     endTime(c, tool);
 
     return c.json({ data: result });

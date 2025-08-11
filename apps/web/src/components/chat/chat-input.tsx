@@ -7,7 +7,6 @@ import {
   type KeyboardEvent,
   useEffect,
   useState,
-  useMemo,
 } from "react";
 
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
@@ -27,11 +26,9 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  // Function to extract URLs from text
   const extractUrlsFromText = (text: string) => {
     const urlAttachments: Array<{ name: string; url: string }> = [];
 
-    // Regex to match any HTTPS URLs
     const URL_REGEXP = /https:\/\/[^\s]+/gi;
     const urls = text.match(URL_REGEXP);
 
@@ -82,7 +79,6 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     } as ChangeEvent<HTMLTextAreaElement>);
   };
 
-  // Auto-focus when loading state changes from true to false
   useEffect(() => {
     if (!isLoading) {
       const editor = document.querySelector(".ProseMirror") as HTMLElement;
@@ -113,7 +109,6 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Extract URLs from current input and fetch them (only images will be included)
     const extractedUrls = extractUrlsFromText(input);
     const urlFileDataPromises = extractedUrls.map(fetchImageAsFileData);
     const imageFileData = (await Promise.all(urlFileDataPromises)).filter(
@@ -122,7 +117,6 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
 
     const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
 
-    // Combine uploaded files and extracted images
     const allFileData = [
       ...doneFiles.map((uf) => ({
         name: uf.file.name,

@@ -8,6 +8,7 @@ import {
   type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolFactory } from "../context.ts";
+import { baseMessageSchema } from "../ai/api.ts";
 
 export interface AgentContext extends AppContext {
   agent: string;
@@ -25,7 +26,7 @@ export const agentGenerateText = createAgentTool({
   name: "AGENT_GENERATE_TEXT",
   description: "Generate text output using an agent",
   inputSchema: z.object({
-    message: z.string().describe("The message to send to the agent"),
+    message: z.union([z.string(), baseMessageSchema]).describe("The message to send to the agent"),
     options: AgentGenerateOptions.optional().nullable(),
   }),
   outputSchema: z.object({
@@ -39,13 +40,12 @@ export const agentGenerateText = createAgentTool({
       `${c.workspace.value}/Agents/${c.agent}`,
     );
 
-    const response = await agentStub.generate([
-      {
-        id: crypto.randomUUID(),
-        role: "user" as const,
-        content: message,
-      },
-    ]);
+    const asMessage = Array.isArray(message) ? message.map((m) => ({
+      ...m,
+      id: m.id ?? crypto.randomUUID(),
+    })) : [{ role: "user" as const, content: message, id: crypto.randomUUID() }];
+
+    const response = await agentStub.generate(asMessage);
 
     return { text: response.text };
   },

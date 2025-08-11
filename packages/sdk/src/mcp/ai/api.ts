@@ -200,7 +200,7 @@ const createTool = createToolGroup("AI", {
 });
 
 // Common input schema for messages
-const baseMessageSchema = z
+export const baseMessageSchema = z
   .array(
     z.object({
       id: z.string().optional(),

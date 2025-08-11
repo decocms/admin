@@ -30,35 +30,39 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   // Function to extract URLs from text
   const extractUrlsFromText = (text: string) => {
     const urlAttachments: Array<{ name: string; url: string }> = [];
-    
+
     // Regex to match any HTTPS URLs
     const URL_REGEXP = /https:\/\/[^\s]+/gi;
     const urls = text.match(URL_REGEXP);
-    
+
     if (urls) {
       urls.forEach((url) => {
-        const fileName = `file-from-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;        
+        const fileName = `file-from-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         urlAttachments.push({
           name: fileName,
           url,
         });
       });
     }
-    
+
     return urlAttachments;
   };
 
-  const fetchImageAsFileData = async (urlData: { name: string; url: string }) => {
+  const fetchImageAsFileData = async (urlData: {
+    name: string;
+    url: string;
+  }) => {
     try {
       const response = await fetch(urlData.url);
-      if (!response.ok) throw new Error(`Failed to fetch URL: ${response.statusText}`);
-      
-      const actualContentType = response.headers.get('content-type');
-      
-      if (!actualContentType?.startsWith('image/')) {
+      if (!response.ok)
+        throw new Error(`Failed to fetch URL: ${response.statusText}`);
+
+      const actualContentType = response.headers.get("content-type");
+
+      if (!actualContentType?.startsWith("image/")) {
         return null;
       }
-      
+
       const blob = await response.blob();
       return {
         name: urlData.name,
@@ -112,10 +116,12 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     // Extract URLs from current input and fetch them (only images will be included)
     const extractedUrls = extractUrlsFromText(input);
     const urlFileDataPromises = extractedUrls.map(fetchImageAsFileData);
-    const imageFileData = (await Promise.all(urlFileDataPromises)).filter((item): item is NonNullable<typeof item> => item !== null);
+    const imageFileData = (await Promise.all(urlFileDataPromises)).filter(
+      (item): item is NonNullable<typeof item> => item !== null,
+    );
 
     const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
-    
+
     // Combine uploaded files and extracted images
     const allFileData = [
       ...doneFiles.map((uf) => ({
@@ -124,7 +130,9 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
         url: uf.url,
         size: uf.file.size,
       })),
-      ...imageFileData.filter((item): item is NonNullable<typeof item> => item !== null),
+      ...imageFileData.filter(
+        (item): item is NonNullable<typeof item> => item !== null,
+      ),
     ];
 
     if (allFileData.length === 0) {
@@ -137,7 +145,12 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
       type: file.contentType,
       contentType: file.contentType,
       size: file.size,
-      url: file.url || (doneFiles.find(df => df.file.name === file.name)?.url) || URL.createObjectURL(doneFiles.find(df => df.file.name === file.name)?.file!),
+      url:
+        file.url ||
+        doneFiles.find((df) => df.file.name === file.name)?.url ||
+        URL.createObjectURL(
+          doneFiles.find((df) => df.file.name === file.name)?.file!,
+        ),
     }));
 
     handleSubmit(e, {

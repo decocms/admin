@@ -74,7 +74,9 @@ export const workspaceDB = async (
   const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
-    return workspaceDO.get(workspaceDO.idFromName(workspace.value));
+    return workspaceDO.get(
+      workspaceDO.idFromName(workspace.value),
+    ) as IWorkspaceDB;
   }
 
   const client = await createSQLClientFor(
@@ -99,7 +101,9 @@ export const workspaceDB = async (
 };
 
 export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
+export type IWorkspaceDBMeta = { size: number } & Disposable;
 export interface IWorkspaceDB {
+  meta?: () => Promise<IWorkspaceDBMeta> | IWorkspaceDBMeta;
   exec: (
     args: DatatabasesRunSqlInput,
   ) => Promise<IWorkspaceDBExecResult> | IWorkspaceDBExecResult;

@@ -120,7 +120,7 @@ const createMCPHandlerFor = (
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
-        withMCPErrorHandling(tool.handler),
+        withMCPErrorHandling(tool.handler, tool.name),
       );
     }
 

@@ -8,6 +8,8 @@ import {
 import { assertWorkspaceResourceAccess } from "./assertions.ts";
 import { type AppContext, serializeError } from "./context.ts";
 import z from "zod";
+import { SpanStatusCode, trace } from "../observability/index.ts";
+import * as api from "@opentelemetry/api";
 
 export interface RequestMiddlewareContext<T = any> {
   next?(): Promise<T>;
@@ -47,21 +49,43 @@ export type CallToolMiddleware = RequestMiddleware<
 export const withMCPErrorHandling =
   <TInput = any, TReturn extends object | null | boolean = object>(
     f: (props: TInput) => Promise<TReturn>,
+    toolName: string,
   ) =>
   async (props: TInput) => {
-    try {
-      const result = await f(props);
+    const tracer = trace.getTracer("tools");
+    return await tracer.startActiveSpan(
+      "tools.call",
+      {
+        attributes: {
+          "mcp.tool.name": toolName,
+        },
+      },
+      api.context.active(),
+      async (span) => {
+        let err: unknown = null;
+        try {
+          const result = await f(props);
 
-      return {
-        isError: false,
-        structuredContent: result,
-      };
-    } catch (error) {
-      return {
-        isError: true,
-        content: [{ type: "text", text: serializeError(error) }],
-      };
-    }
+          return {
+            isError: false,
+            structuredContent: result,
+          };
+        } catch (error) {
+          err = error;
+          return {
+            isError: true,
+            content: [{ type: "text", text: serializeError(error) }],
+          };
+        } finally {
+          span.recordException(err as Error);
+          span.setStatus({
+            code: err ? SpanStatusCode.ERROR : SpanStatusCode.OK,
+          });
+          span.updateName(`${toolName}`);
+          span.end();
+        }
+      },
+    );
   };
 
 interface AuthContext {

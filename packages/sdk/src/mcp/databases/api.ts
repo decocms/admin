@@ -59,7 +59,6 @@ export const runSql = createDatabaseTool({
     assertHasWorkspace(c);
     await assertWorkspaceResourceAccess(c);
     const db = await workspaceDB(c, _legacy);
-
     using responseDO = await db.exec({
       sql,
       params,

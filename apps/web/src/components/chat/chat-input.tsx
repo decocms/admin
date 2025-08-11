@@ -27,19 +27,17 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
 
-  // Extract URLs from current input
-  const extractedUrls = useMemo(() => {
+  // Function to extract URLs from text
+  const extractUrlsFromText = (text: string) => {
     const urlAttachments: Array<{ name: string; url: string }> = [];
     
     // Regex to match any HTTPS URLs
     const URL_REGEXP = /https:\/\/[^\s]+/gi;
-    // Extract URLs from current input
-    const urls = input.match(URL_REGEXP);
+    const urls = text.match(URL_REGEXP);
     
     if (urls) {
       urls.forEach((url) => {
-
-        let fileName = `file-from-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;        
+        const fileName = `file-from-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;        
         urlAttachments.push({
           name: fileName,
           url,
@@ -48,7 +46,7 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     }
     
     return urlAttachments;
-  }, [input]);
+  };
 
   const fetchImageAsFileData = async (urlData: { name: string; url: string }) => {
     try {
@@ -111,9 +109,10 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Extract URLs from input and fetch them (only images will be included)
+    // Extract URLs from current input and fetch them (only images will be included)
+    const extractedUrls = extractUrlsFromText(input);
     const urlFileDataPromises = extractedUrls.map(fetchImageAsFileData);
-    const imageFileData = (await Promise.all(urlFileDataPromises)).filter(Boolean);
+    const imageFileData = (await Promise.all(urlFileDataPromises)).filter((item): item is NonNullable<typeof item> => item !== null);
 
     const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
     

@@ -43,12 +43,12 @@ export type DatatabasesRunSqlInput = z.infer<
   typeof DatatabasesRunSqlInputSchema
 >;
 
-export const getSize = createDatabaseTool({
-  name: "DATABASES_GET_SIZE",
+export const getMeta = createDatabaseTool({
+  name: "DATABASES_GET_META",
   description: "Run a SQL query against the workspace database",
   inputSchema: z.void(),
   outputSchema: z.object({
-    size: z.number().optional(),
+    bytes: z.number().optional(),
   }),
   handler: async (_, c) => {
     assertHasWorkspace(c);
@@ -56,7 +56,7 @@ export const getSize = createDatabaseTool({
     const db = await workspaceDB(c);
     const dbMeta = await db.meta?.();
     dbMeta?.[Symbol.dispose]();
-    return { size: dbMeta?.size };
+    return { bytes: dbMeta?.size };
   },
 });
 

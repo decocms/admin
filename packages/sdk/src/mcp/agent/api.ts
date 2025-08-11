@@ -26,7 +26,9 @@ export const agentGenerateText = createAgentTool({
   name: "AGENT_GENERATE_TEXT",
   description: "Generate text output using an agent",
   inputSchema: z.object({
-    message: z.union([z.string(), baseMessageSchema]).describe("The message to send to the agent"),
+    message: z
+      .union([z.string(), baseMessageSchema])
+      .describe("The message to send to the agent"),
     options: AgentGenerateOptions.optional().nullable(),
   }),
   outputSchema: z.object({
@@ -40,10 +42,12 @@ export const agentGenerateText = createAgentTool({
       `${c.workspace.value}/Agents/${c.agent}`,
     );
 
-    const asMessage = Array.isArray(message) ? message.map((m) => ({
-      ...m,
-      id: m.id ?? crypto.randomUUID(),
-    })) : [{ role: "user" as const, content: message, id: crypto.randomUUID() }];
+    const asMessage = Array.isArray(message)
+      ? message.map((m) => ({
+          ...m,
+          id: m.id ?? crypto.randomUUID(),
+        }))
+      : [{ role: "user" as const, content: message, id: crypto.randomUUID() }];
 
     const response = await agentStub.generate(asMessage);
 

@@ -86,6 +86,16 @@ export const WELL_KNOWN_MODELS: Model[] = [
     hasCustomKey: false,
   },
   {
+    id: "openai:gpt-5",
+    model: "openai:gpt-5",
+    name: "OpenAI GPT-5",
+    logo: LOGOS.openai,
+    capabilities: ["reasoning", "image-upload", "file-upload"],
+    byDeco: true,
+    isEnabled: true,
+    hasCustomKey: false,
+  },
+  {
     id: "openai:gpt-oss-120b",
     model: "openai:gpt-oss-120b",
     name: "OpenAI GPT OSS 120B",

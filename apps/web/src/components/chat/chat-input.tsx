@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   useEffect,
   useState,
+  useMemo,
 } from "react";
 
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
@@ -25,6 +26,53 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const { preferences, setPreferences } = useUserPreferences();
   const model = preferences.defaultModel;
+
+  // Extract URLs from current input
+  const extractedUrls = useMemo(() => {
+    const urlAttachments: Array<{ name: string; url: string }> = [];
+    
+    // Regex to match any HTTPS URLs
+    const URL_REGEXP = /https:\/\/[^\s]+/gi;
+    // Extract URLs from current input
+    const urls = input.match(URL_REGEXP);
+    
+    if (urls) {
+      urls.forEach((url) => {
+
+        let fileName = `file-from-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;        
+        urlAttachments.push({
+          name: fileName,
+          url,
+        });
+      });
+    }
+    
+    return urlAttachments;
+  }, [input]);
+
+  const fetchImageAsFileData = async (urlData: { name: string; url: string }) => {
+    try {
+      const response = await fetch(urlData.url);
+      if (!response.ok) throw new Error(`Failed to fetch URL: ${response.statusText}`);
+      
+      const actualContentType = response.headers.get('content-type');
+      
+      if (!actualContentType?.startsWith('image/')) {
+        return null;
+      }
+      
+      const blob = await response.blob();
+      return {
+        name: urlData.name,
+        contentType: actualContentType,
+        url: urlData.url,
+        size: blob.size,
+      };
+    } catch (error) {
+      console.error(`Error fetching URL ${urlData.name}:`, error);
+      return null;
+    }
+  };
 
   const handleRichTextChange = (markdown: string) => {
     handleInputChange({
@@ -60,29 +108,43 @@ export function ChatInput({ disabled }: { disabled?: boolean } = {}) {
     }
   };
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Extract URLs from input and fetch them (only images will be included)
+    const urlFileDataPromises = extractedUrls.map(fetchImageAsFileData);
+    const imageFileData = (await Promise.all(urlFileDataPromises)).filter(Boolean);
+
     const doneFiles = uploadedFiles.filter((uf) => uf.status === "done");
-    if (doneFiles.length === 0) {
-      handleSubmit(e);
-      return;
-    }
-    const experimentalAttachments = doneFiles.map((uf) => ({
-      name: uf.file.name,
-      type: uf.file.type,
-      contentType: uf.file.type,
-      size: uf.file.size,
-      url: uf.url || URL.createObjectURL(uf.file),
-    }));
-    handleSubmit(e, {
-      experimental_attachments: experimentalAttachments as unknown as FileList,
-      // @ts-expect-error not yet on typings
-      fileData: doneFiles.map((uf) => ({
+    
+    // Combine uploaded files and extracted images
+    const allFileData = [
+      ...doneFiles.map((uf) => ({
         name: uf.file.name,
         contentType: uf.file.type,
         url: uf.url,
+        size: uf.file.size,
       })),
+      ...imageFileData.filter((item): item is NonNullable<typeof item> => item !== null),
+    ];
+
+    if (allFileData.length === 0) {
+      handleSubmit(e);
+      return;
+    }
+
+    const experimentalAttachments = allFileData.map((file) => ({
+      name: file.name,
+      type: file.contentType,
+      contentType: file.contentType,
+      size: file.size,
+      url: file.url || (doneFiles.find(df => df.file.name === file.name)?.url) || URL.createObjectURL(doneFiles.find(df => df.file.name === file.name)?.file!),
+    }));
+
+    handleSubmit(e, {
+      experimental_attachments: experimentalAttachments as unknown as FileList,
+      // @ts-expect-error not yet on typings
+      fileData: allFileData,
     });
     setUploadedFiles([]);
   };

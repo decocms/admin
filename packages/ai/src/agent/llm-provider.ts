@@ -93,7 +93,6 @@ const providers: Record<string, Provider> = {
       "gpt-4.1-nano": 1_047_576,
       "gpt-4.1-mini": 1_047_576,
       "gpt-4.1": 1_047_576,
-      "gpt-5": 1_047_576,
       "o3-mini-high": 200_000,
     } satisfies Partial<Record<ModelsOf<OpenAIProvider> | "default", number>>,
   },

@@ -39,6 +39,10 @@ import { isApiDecoChatMCPConnection } from "../mcp.ts";
 import { hooks as cron } from "./cron.ts";
 import type { TriggerData, TriggerRun } from "./services.ts";
 import { hooks as webhook } from "./webhook.ts";
+import {
+  createPosthogServerClient,
+  PosthogServerClient,
+} from "packages/sdk/src/posthog.ts";
 export type { TriggerData };
 
 export const threadOf = (
@@ -127,6 +131,7 @@ export class Trigger {
   protected data: TriggerData | null = null;
   protected hooks: TriggerHooks<TriggerData> | null = null;
   protected workspace: Workspace;
+  protected posthog: PosthogServerClient;
   private db: ReturnType<typeof createServerClient>;
   private env: any;
 
@@ -142,6 +147,10 @@ export class Trigger {
     this.db = createServerClient(SUPABASE_URL, this.env.SUPABASE_SERVER_TOKEN, {
       cookies: { getAll: () => [] },
     });
+    this.posthog = createPosthogServerClient({
+      apiKey: this.env.POSTHOG_API_KEY,
+      apiHost: this.env.POSTHOG_API_HOST,
+    });
 
     this.mcpClient = this._createMCPClient();
 
@@ -153,7 +162,21 @@ export class Trigger {
         }
       } catch (error) {
         console.error("Error loading data from Supabase:", error);
+        this._trackEvent("trigger_init_error", {
+          error: error instanceof Error ? error.message : String(error),
+          method: "constructor",
+        });
       }
+    });
+  }
+
+  private _trackEvent(event: string, properties: Record<string, unknown> = {}) {
+    this.posthog.trackEvent(event as any, {
+      distinctId: this.state.id,
+      $process_person_profile: false,
+      actorId: this.state.id,
+      actorType: "trigger",
+      ...properties,
     });
   }
 
@@ -182,6 +205,7 @@ export class Trigger {
       cf: new Cloudflare({ apiToken: this.env.CF_API_TOKEN }),
       policy: policyClient,
       authorization: authorizationClient,
+      posthog: this.posthog,
     };
   }
 
@@ -218,25 +242,36 @@ export class Trigger {
 
   public _callTool(tool: CallTool, args?: Record<string, unknown>) {
     return this._runWithContext(async () => {
-      const integration = await this.mcpClient.INTEGRATIONS_GET({
-        id: tool.integrationId,
-      });
+      try {
+        const integration = await this.mcpClient.INTEGRATIONS_GET({
+          id: tool.integrationId,
+        });
 
-      const patchedConnection = isApiDecoChatMCPConnection(
-        integration.connection,
-      )
-        ? { ...integration.connection, token: await this._token() }
-        : integration.connection;
+        const patchedConnection = isApiDecoChatMCPConnection(
+          integration.connection,
+        )
+          ? { ...integration.connection, token: await this._token() }
+          : integration.connection;
 
-      const response = await this.mcpClient.INTEGRATIONS_CALL_TOOL({
-        connection: patchedConnection,
-        params: {
-          name: tool.toolName,
-          arguments: tool.arguments ?? args,
-        },
-      });
+        const response = await this.mcpClient.INTEGRATIONS_CALL_TOOL({
+          connection: patchedConnection,
+          params: {
+            name: tool.toolName,
+            arguments: tool.arguments ?? args,
+          },
+        });
 
-      return response;
+        return response;
+      } catch (error) {
+        console.error("Error calling tool:", error);
+        this._trackEvent("trigger_tool_error", {
+          error: error instanceof Error ? error.message : String(error),
+          toolId: tool.integrationId,
+          toolName: tool.toolName,
+          method: "_callTool",
+        });
+        throw error;
+      }
     });
   }
 
@@ -268,31 +303,57 @@ export class Trigger {
   }
 
   private async _loadData(): Promise<TriggerData | null> {
-    const loadFromDbPromise = this.mcpClient
-      .TRIGGERS_GET({
-        id: this._getTriggerId(),
-      })
-      .then((v) => (v === null ? null : mapTriggerToTriggerData(v)))
-      .catch(() => null);
+    try {
+      const loadFromDbPromise = this.mcpClient
+        .TRIGGERS_GET({
+          id: this._getTriggerId(),
+        })
+        .then((v) => (v === null ? null : mapTriggerToTriggerData(v)))
+        .catch((error) => {
+          console.error("Error loading trigger from DB:", error);
+          this._trackEvent("trigger_data_load_error", {
+            error: error instanceof Error ? error.message : String(error),
+            source: "database",
+            triggerId: this._getTriggerId(),
+          });
+          return null;
+        });
 
-    const loadFromStatePromise = this._loadFromState().then((v) =>
-      v === null ? loadFromDbPromise : v,
-    );
+      const loadFromStatePromise = this._loadFromState()
+        .then((v) => (v === null ? loadFromDbPromise : v))
+        .catch((error) => {
+          console.error("Error loading trigger from state:", error);
+          this._trackEvent("trigger_data_load_error", {
+            error: error instanceof Error ? error.message : String(error),
+            source: "state",
+            triggerId: this._getTriggerId(),
+          });
+          return null;
+        });
 
-    // loads in parallel and get faster
-    const triggerData = await Promise.race([
-      loadFromDbPromise,
-      loadFromStatePromise,
-    ]);
+      // loads in parallel and get faster
+      const triggerData = await Promise.race([
+        loadFromDbPromise,
+        loadFromStatePromise,
+      ]);
 
-    if (!triggerData) {
-      // if faster is null so we try to load from db and state
-      return Promise.all([loadFromDbPromise, loadFromStatePromise]).then(
-        ([fromDb, fromState]) => fromDb ?? fromState,
-      );
+      if (!triggerData) {
+        // if faster is null so we try to load from db and state
+        return Promise.all([loadFromDbPromise, loadFromStatePromise]).then(
+          ([fromDb, fromState]) => fromDb ?? fromState,
+        );
+      }
+
+      return triggerData;
+    } catch (error) {
+      console.error("Error in _loadData:", error);
+      this._trackEvent("trigger_data_load_error", {
+        error: error instanceof Error ? error.message : String(error),
+        source: "general",
+        triggerId: this._getTriggerId(),
+      });
+      throw error;
     }
-
-    return triggerData;
   }
 
   private _setData(data: TriggerData) {
@@ -361,10 +422,24 @@ export class Trigger {
       }
 
       runData.result = await this.hooks?.run(data, this, args);
+
+      this._trackEvent("trigger_run_success", {
+        triggerId: this._getTriggerId(),
+        triggerType: this.data?.type,
+        args: JSON.stringify(args),
+        hasResult: runData.result !== undefined,
+      });
+
       return runData.result;
     } catch (error) {
       console.error("Error running trigger:", error);
       runData.error = JSON.stringify(error);
+      this._trackEvent("trigger_run_error", {
+        error: error instanceof Error ? error.message : String(error),
+        triggerId: this._getTriggerId(),
+        triggerType: this.data?.type,
+        args: JSON.stringify(args),
+      });
     } finally {
       await this._saveRun({
         triggerId: this._getTriggerId(),
@@ -424,6 +499,11 @@ export class Trigger {
       };
     } catch (error) {
       console.error("Error creating trigger in Supabase:", error);
+      this._trackEvent("trigger_create_error", {
+        error: error instanceof Error ? error.message : String(error),
+        triggerId: this._getTriggerId(),
+        triggerType: data.type,
+      });
       return {
         ok: false,
         message: `Failed to create trigger in Supabase: ${error}`,
@@ -455,6 +535,11 @@ export class Trigger {
       };
     } catch (error) {
       console.error("Error deleting trigger:", error);
+      this._trackEvent("trigger_delete_error", {
+        error: error instanceof Error ? error.message : String(error),
+        triggerId: this._getTriggerId(),
+        triggerType: this.data?.type,
+      });
       return {
         success: false,
         message: `Failed to delete trigger: ${error}`,

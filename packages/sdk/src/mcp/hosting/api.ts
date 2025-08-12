@@ -695,158 +695,174 @@ Important Notes:
     },
     c,
   ) => {
-    await assertWorkspaceResourceAccess(c);
+    try {
+      await assertWorkspaceResourceAccess(c);
 
-    // Convert array to record for bundler or direct upload
-    const filesRecord = files.reduce(
-      (acc, file) => {
-        acc[file.path] = { content: file.content, asset: file.asset ?? false };
-        return acc;
-      },
-      {} as Record<string, { content: string; asset: boolean }>,
-    );
-
-    const wranglerFile = CONFIGS.find((file) => file in filesRecord);
-    const wranglerConfig: WranglerConfig = wranglerFile
-      ? // deno-lint-ignore no-explicit-any
-        (parseToml(filesRecord[wranglerFile]?.content) as any as WranglerConfig)
-      : ({ name: _appSlug } as WranglerConfig);
-
-    addDefaultCustomDomain(wranglerConfig);
-    // check if the entrypoint is in the files
-    const entrypoints = [
-      ...ENTRYPOINTS,
-      wranglerConfig.main ?? wranglerConfig.main_module ?? "main.ts",
-    ];
-    const entrypoint = entrypoints.find(
-      (entrypoint) => entrypoint in filesRecord,
-    );
-    if (!entrypoint) {
-      throw new UserInputError(
-        `Entrypoint not found in files. Entrypoint must be one of: ${[
-          ...new Set(entrypoints),
-        ].join(", ")}`,
+      // Convert array to record for bundler or direct upload
+      const filesRecord = files.reduce(
+        (acc, file) => {
+          acc[file.path] = {
+            content: file.content,
+            asset: file.asset ?? false,
+          };
+          return acc;
+        },
+        {} as Record<string, { content: string; asset: boolean }>,
       );
-    }
 
-    if (!wranglerConfig?.name) {
-      throw new UserInputError(`App slug not found in wrangler.toml`);
-    }
+      const wranglerFile = CONFIGS.find((file) => file in filesRecord);
+      const wranglerConfig: WranglerConfig = wranglerFile
+        ? (parseToml(
+            filesRecord[wranglerFile]?.content,
+            // deno-lint-ignore no-explicit-any
+          ) as any as WranglerConfig)
+        : ({ name: _appSlug } as WranglerConfig);
 
-    const appSlug = wranglerConfig.name;
-
-    await createNamespaceOnce(c);
-    assertHasWorkspace(c);
-    const workspace = c.workspace.value;
-    const scriptSlug = appSlug;
-
-    if (scriptSlug.includes(DOUBLE_DASH)) {
-      throw new UserInputError(
-        `App slug cannot contain double dashes (reserved for preview deployments)`,
+      addDefaultCustomDomain(wranglerConfig);
+      // check if the entrypoint is in the files
+      const entrypoints = [
+        ...ENTRYPOINTS,
+        wranglerConfig.main ?? wranglerConfig.main_module ?? "main.ts",
+      ];
+      const entrypoint = entrypoints.find(
+        (entrypoint) => entrypoint in filesRecord,
       );
-    }
+      if (!entrypoint) {
+        throw new UserInputError(
+          `Entrypoint not found in files. Entrypoint must be one of: ${[
+            ...new Set(entrypoints),
+          ].join(", ")}`,
+        );
+      }
 
-    const { code: codeFiles, assets: assetFiles } = splitFiles(filesRecord);
-    let bundledCode: Record<string, File>;
+      if (!wranglerConfig?.name) {
+        throw new UserInputError(`App slug not found in wrangler.toml`);
+      }
 
-    if (bundle) {
-      // Bundle the files
-      const bundledScript = await bundler(codeFiles, entrypoint);
-      bundledCode = {
-        [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
-          type: "application/javascript+module",
-        }),
-      };
-    } else {
-      bundledCode = Object.fromEntries(
-        Object.entries(codeFiles).map(([path, content]) => [
-          path,
-          new File([content], path, { type: getMimeType(path) }),
-        ]),
-      );
-    }
+      const appSlug = wranglerConfig.name;
 
-    const keyPair =
-      c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
-      c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
-        ? {
-            public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
-            private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
-          }
-        : undefined;
+      await createNamespaceOnce(c);
+      assertHasWorkspace(c);
+      const workspace = c.workspace.value;
+      const scriptSlug = appSlug;
 
-    const issuer = await JwtIssuer.forKeyPair(keyPair);
-    const appName = `@${
-      wranglerConfig?.scope ?? c.workspace.slug
-    }/${scriptSlug}`;
+      if (scriptSlug.includes(DOUBLE_DASH)) {
+        throw new UserInputError(
+          `App slug cannot contain double dashes (reserved for preview deployments)`,
+        );
+      }
 
-    const token = await issuer.issue({
-      sub: `app:${appName}`,
-      aud: workspace,
-    });
-    // using a shorter version than uuid to get friendlier urls
-    const deploymentId = uid.rnd();
+      const { code: codeFiles, assets: assetFiles } = splitFiles(filesRecord);
+      let bundledCode: Record<string, File>;
 
-    const appEnvVars = {
-      DECO_CHAT_WORKSPACE: workspace,
-      DECO_CHAT_API_TOKEN: token,
-      DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
-      DECO_CHAT_APP_SLUG: scriptSlug,
-      DECO_CHAT_APP_NAME: appName,
-      DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
-      DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
-    };
+      if (bundle) {
+        // Bundle the files
+        const bundledScript = await bundler(codeFiles, entrypoint);
+        bundledCode = {
+          [SCRIPT_FILE_NAME]: new File([bundledScript], SCRIPT_FILE_NAME, {
+            type: "application/javascript+module",
+          }),
+        };
+      } else {
+        bundledCode = Object.fromEntries(
+          Object.entries(codeFiles).map(([path, content]) => [
+            path,
+            new File([content], path, { type: getMimeType(path) }),
+          ]),
+        );
+      }
 
-    await Promise.all(
-      (wranglerConfig.routes ?? []).map(
-        (route) =>
-          route.custom_domain &&
-          assertsDomainUniqueness(c, route.pattern, scriptSlug),
-      ),
-    );
+      const keyPair =
+        c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY &&
+        c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY
+          ? {
+              public: c.envVars.DECO_CHAT_API_JWT_PUBLIC_KEY,
+              private: c.envVars.DECO_CHAT_API_JWT_PRIVATE_KEY,
+            }
+          : undefined;
 
-    const result = await deployToCloudflare({
-      c,
-      wranglerConfig,
-      mainModule: bundle ? SCRIPT_FILE_NAME : entrypoint,
-      deploymentId,
-      bundledCode,
-      assets: assetFiles,
-      _envVars: { ...envVars, ...appEnvVars },
-    });
+      const issuer = await JwtIssuer.forKeyPair(keyPair);
+      const appName = `@${
+        wranglerConfig?.scope ?? c.workspace.slug
+      }/${scriptSlug}`;
 
-    const data = await updateDatabase({
-      c,
-      force,
-      workspace,
-      scriptSlug,
-      result,
-      deploymentId,
-      wranglerConfig,
-      files: codeFiles,
-    });
-
-    const client = MCPClient.forContext(c);
-    await client
-      .REGISTRY_PUBLISH_APP({
-        name: scriptSlug,
-        scopeName: wranglerConfig?.scope ?? c.workspace.slug,
-        description: `App ${scriptSlug} by deco workers for workspace ${workspace}`,
-        icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
-        ...wranglerConfig.deco?.integration,
-        unlisted: unlisted ?? true,
-        connection: Entrypoint.mcp(data.entrypoint),
-      })
-      .catch((err) => {
-        console.error(err);
+      const token = await issuer.issue({
+        sub: `app:${appName}`,
+        aud: workspace,
       });
-    return {
-      entrypoint: data.entrypoint,
-      hosts: [data.entrypoint, Entrypoint.build(data.slug!, deploymentId)],
-      id: data.id,
-      workspace: data.workspace,
-      deploymentId,
-    };
+      // using a shorter version than uuid to get friendlier urls
+      const deploymentId = uid.rnd();
+
+      const appEnvVars = {
+        DECO_CHAT_WORKSPACE: workspace,
+        DECO_CHAT_API_TOKEN: token,
+        DECO_CHAT_API_JWT_PUBLIC_KEY: keyPair?.public,
+        DECO_CHAT_APP_SLUG: scriptSlug,
+        DECO_CHAT_APP_NAME: appName,
+        DECO_CHAT_APP_DEPLOYMENT_ID: deploymentId,
+        DECO_CHAT_APP_ENTRYPOINT: Entrypoint.build(scriptSlug, deploymentId),
+      };
+
+      await Promise.all(
+        (wranglerConfig.routes ?? []).map(
+          (route) =>
+            route.custom_domain &&
+            assertsDomainUniqueness(c, route.pattern, scriptSlug),
+        ),
+      );
+
+      const result = await deployToCloudflare({
+        c,
+        wranglerConfig,
+        mainModule: bundle ? SCRIPT_FILE_NAME : entrypoint,
+        deploymentId,
+        bundledCode,
+        assets: assetFiles,
+        _envVars: { ...envVars, ...appEnvVars },
+      });
+
+      const data = await updateDatabase({
+        c,
+        force,
+        workspace,
+        scriptSlug,
+        result,
+        deploymentId,
+        wranglerConfig,
+        files: codeFiles,
+      });
+
+      const client = MCPClient.forContext(c);
+      await client
+        .REGISTRY_PUBLISH_APP({
+          name: scriptSlug,
+          scopeName: wranglerConfig?.scope ?? c.workspace.slug,
+          description: `App ${scriptSlug} by deco workers for workspace ${workspace}`,
+          icon: "https://assets.decocache.com/mcp/09e44283-f47d-4046-955f-816d227c626f/app.png",
+          ...wranglerConfig.deco?.integration,
+          unlisted: unlisted ?? true,
+          connection: Entrypoint.mcp(data.entrypoint),
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+      return {
+        entrypoint: data.entrypoint,
+        hosts: [data.entrypoint, Entrypoint.build(data.slug!, deploymentId)],
+        id: data.id,
+        workspace: data.workspace,
+        deploymentId,
+      };
+    } catch (error) {
+      // Deployment can be made either by a user or by an API key.
+      const isUserDeployment = "id" in c.user && typeof c.user.id === "string";
+      c.posthog.trackEvent("hosting_app_deploy_error", {
+        distinctId: isUserDeployment ? String(c.user.id) : "api-key",
+        $process_person_profile: isUserDeployment,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   },
 });
 

@@ -23,6 +23,7 @@ import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
 import { trace } from "../observability/index.ts";
 import * as api from "@opentelemetry/api";
+import { PosthogServerClient } from "../posthog.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -182,6 +183,7 @@ export interface Vars {
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
   workspaceDO: WorkspaceDO;
+  posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
   >(
@@ -244,6 +246,9 @@ const envSchema = z.object({
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
   LLMS_ENCRYPTION_KEY: z.any().optional().readonly(),
+
+  POSTHOG_API_KEY: z.string().optional().readonly(),
+  POSTHOG_API_HOST: z.string().optional().readonly(),
 
   /**
    * Only needed for locally testing wallet features.

@@ -45,6 +45,7 @@ import {
   ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
+import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -67,6 +68,10 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
     workspace: slug && root ? { root, slug, value: workspace } : undefined,
+    posthog: createPosthogServerClient({
+      apiKey: envs.POSTHOG_API_KEY,
+      apiHost: envs.POSTHOG_API_HOST,
+    }),
   };
 };
 

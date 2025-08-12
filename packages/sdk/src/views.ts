@@ -20,6 +20,15 @@ export const DEFAULT_VIEWS: View[] = [
     },
   },
   {
+    id: "views",
+    title: "Views",
+    icon: "dashboard",
+    type: "default",
+    metadata: {
+      path: "/views",
+    },
+  },
+  {
     id: "workflows",
     title: "Workflows",
     icon: "flowchart",

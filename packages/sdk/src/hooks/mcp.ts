@@ -135,7 +135,7 @@ export const useIntegration = (id: string) => {
 };
 
 /** Hook for listing all bindings */
-export const useBindings = (binder: Binder) => {
+export const useBindings_deprecated = (binder: Binder) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
@@ -247,6 +247,12 @@ export const useBindings = (binder: Binder) => {
     ).length,
   };
 };
+
+export const useToolsWithBinding = (binder: Binder) => {
+  const { data: integrations } = useIntegrations();
+
+  Binding(WellKnownBindings[binder]).isImplementedBy(integrations);
+}
 
 /** Hook for listing all MCPs */
 export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {

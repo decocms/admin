@@ -3,6 +3,7 @@ import type { WellKnownBindingsName } from "../mcp/index.ts";
 
 export const BindingsSchema = z.enum([
   "Channel",
+  "View",
 ] as const satisfies WellKnownBindingsName[]);
 /**
  * Schema for different connection types

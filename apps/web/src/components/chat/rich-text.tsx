@@ -65,9 +65,7 @@ export function RichTextArea({
   enableToolMentions = false,
 }: RichTextAreaProps) {
   const { isPublic } = useAgent();
-  const { data: integrations = [] } = isPublic
-    ? { data: [] }
-    : useIntegrations();
+  const { data: integrations = [] } = useIntegrations({ isPublic });
 
   // Flatten tools from all integrations
   const tools: Tool[] = useMemo(() => {

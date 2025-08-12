@@ -249,13 +249,17 @@ export const useBindings = (binder: Binder) => {
 };
 
 /** Hook for listing all MCPs */
-export const useIntegrations = () => {
+export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {
   const { workspace } = useSDK();
   const client = useQueryClient();
 
   const data = useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace),
+
     queryFn: async ({ signal }) => {
+      if (isPublic) {
+        return [];
+      }
       const items = await listIntegrations(workspace, {}, signal);
 
       const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));

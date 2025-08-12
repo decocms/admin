@@ -47,31 +47,37 @@ export async function trackServerEvent(
   properties: ServerEventProperties,
   config: PosthogConfig,
 ) {
-  if (!config.apiHost || !config.apiKey) {
-    throw new Error("Posthog API key and host are required to track events");
-  }
+  try {
+    if (!config.apiHost || !config.apiKey) {
+      throw new Error("Posthog API key and host are required to track events");
+    }
 
-  const url = new URL(config.apiHost);
-  url.pathname = "/i/v0/e/";
+    const url = new URL(config.apiHost);
+    url.pathname = "/i/v0/e/";
 
-  const payload = {
-    api_key: config.apiKey,
-    event,
-    distinct_id: properties.distinctId,
-    properties: properties,
-    timestamp: new Date().toISOString(),
-  };
+    const payload = {
+      api_key: config.apiKey,
+      event,
+      distinct_id: properties.distinctId,
+      properties: properties,
+      timestamp: new Date().toISOString(),
+    };
 
-  const response = await fetch(url.toString(), {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    console.error("Failed to track event", response);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to track event: ${response.statusText} ${response.status}`,
+      );
+    }
+  } catch (error) {
+    console.error("Failed to track event", error);
   }
 }
 

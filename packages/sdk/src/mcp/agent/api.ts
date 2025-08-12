@@ -50,7 +50,7 @@ export const agentGenerateText = createAgentTool({
       ...m,
       parts: [
         {
-          type: "text" as "text",
+          type: "text" as const,
           text: m.content,
         },
       ],
@@ -95,7 +95,7 @@ export const agentGenerateObject = createAgentTool({
       ...m,
       parts: [
         {
-          type: "text" as "text",
+          type: "text" as const,
           text: m.content,
         },
       ],

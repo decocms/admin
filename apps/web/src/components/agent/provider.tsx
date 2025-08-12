@@ -101,6 +101,7 @@ interface AgentContextValue {
   // Form for legacy compatibility
   form: UseFormReturn<Agent>;
   handleSubmit: () => void;
+  isPublic?: boolean;
 }
 
 const DEFAULT_UI_OPTIONS: UiOptions = {
@@ -134,7 +135,8 @@ export function AgentProvider({
   children,
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
-  const { data: installedIntegrations } = useIntegrations();
+  const isPublic = serverAgent.visibility === "PUBLIC";
+  const { data: installedIntegrations } = isPublic ? { data: [] } : useIntegrations();
   const updateAgentMutation = useUpdateAgent();
   const createAgent = useCreateAgent();
   const agentRoot = useAgentRoot(agentId);
@@ -382,6 +384,7 @@ export function AgentProvider({
     discardChanges,
     form: form as UseFormReturn<Agent>,
     handleSubmit: handleSubmitForm,
+    isPublic,
   };
 
   return (

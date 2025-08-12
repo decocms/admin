@@ -48,6 +48,12 @@ export const agentGenerateText = createAgentTool({
 
     const asMessage = asMessageArray.map((m) => ({
       ...m,
+      parts: [
+        {
+          type: "text" as "text",
+          text: m.content,
+        },
+      ],
       id: m.id ?? crypto.randomUUID(),
     }));
 
@@ -87,6 +93,12 @@ export const agentGenerateObject = createAgentTool({
 
     const asMessage = asMessageArray.map((m) => ({
       ...m,
+      parts: [
+        {
+          type: "text" as "text",
+          text: m.content,
+        },
+      ],
       id: m.id ?? crypto.randomUUID(),
     }));
 

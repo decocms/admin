@@ -136,7 +136,9 @@ export function AgentProvider({
 }: PropsWithChildren<AgentProviderProps>) {
   const { data: serverAgent } = useAgentData(agentId);
   const isPublic = serverAgent.visibility === "PUBLIC";
-  const { data: installedIntegrations } = isPublic ? { data: [] } : useIntegrations();
+  const { data: installedIntegrations } = isPublic
+    ? { data: [] }
+    : useIntegrations();
   const updateAgentMutation = useUpdateAgent();
   const createAgent = useCreateAgent();
   const agentRoot = useAgentRoot(agentId);

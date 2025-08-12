@@ -13,7 +13,7 @@ const listViewsSchema = z.object({
 
 export const VIEW_BINDING_SCHEMA = [
   {
-    name: "DECO_CHAT_VIEWS_LIST" as const,
+    name: "DECO_CHAT_VIEW_*" as const,
     inputSchema: z.any(),
     outputSchema: listViewsSchema,
   },

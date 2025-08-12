@@ -1,4 +1,4 @@
-import { type Binder, type Integration, useBindings_deprecated } from "@deco/sdk";
+import { type Binder, type Integration, useBindingIntegrations } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import {
   Dialog,
@@ -74,7 +74,7 @@ export function BindingSelector({
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(
     null,
   );
-  const { data: installedIntegrations = [], isLoading } = useBindings_deprecated(binder);
+  const { data: installedIntegrations = [], isLoading } = useBindingIntegrations(binder);
   const selectedItemRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 

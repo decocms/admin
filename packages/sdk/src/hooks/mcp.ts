@@ -134,125 +134,37 @@ export const useIntegration = (id: string) => {
   return data;
 };
 
-/** Hook for listing all bindings */
-export const useBindings_deprecated = (binder: Binder) => {
+export const useBindingIntegrations = (binder: Binder) => {
   const { workspace } = useSDK();
-  const client = useQueryClient();
-
-  const {
-    data: items,
-    isLoading: isLoadingItems,
-    error: itemsError,
-  } = useQuery({
-    queryKey: KEYS.INTEGRATION(workspace),
-    queryFn: ({ signal }) => listIntegrations(workspace, {}, signal),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+  return useSuspenseQuery({
+    queryKey: KEYS.INTEGRATION(workspace, binder),
+    queryFn: async ({ signal }) => {
+      const integrations = await listIntegrations(workspace, { binder }, signal);
+      return integrations;
+    },
   });
-
-  const queriesConfig = useMemo(() => {
-    return (items || []).map((item) => ({
-      queryKey: KEYS.INTEGRATION_TOOLS(workspace, item.id, binder),
-      queryFn: async () => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-          controller.abort();
-        }, 7_000); // 7 second timeout
-
-        try {
-          const tools = await listTools(item.connection, {
-            signal: controller.signal,
-          });
-          clearTimeout(timeoutId);
-
-          const agents = client.getQueryData<Agent[]>(KEYS.AGENT(workspace));
-          const itemKey = KEYS.INTEGRATION(workspace, item.id);
-          client.setQueryData<Integration>(
-            itemKey,
-            applyDisplayNameToIntegration(item, agents),
-          );
-
-          return {
-            integration: item,
-            tools: tools.tools,
-            success: true,
-          };
-        } catch (error) {
-          clearTimeout(timeoutId);
-          if (error instanceof Error && error.name === "AbortError") {
-            console.warn(`Timeout fetching tools for integration: ${item.id}`);
-            return {
-              integration: item,
-              tools: [] as MCPTool[],
-              success: false,
-            };
-          }
-
-          console.error(
-            "Error fetching tools for integration:",
-            item.id,
-            error,
-          );
-          throw error;
-        }
-      },
-      enabled: !!items && items.length > 0,
-      staleTime: 5 * 60 * 1000, // 5 minutes - tools don't change often
-      retry: (failureCount: number) => failureCount < 2,
-      // Use a shorter timeout to prevent hanging queries
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    }));
-  }, [items, workspace, binder, client]);
-
-  const integrationQueries = useQueries({
-    queries: queriesConfig,
-  });
-
-  // Derive filtered results from individual queries
-  const filteredIntegrations = useMemo(() => {
-    if (!items || integrationQueries.length === 0) return [];
-
-    return integrationQueries
-      .filter((query) => query.isSuccess && query.data)
-      .map((query) => query.data as IntegrationToolsResult)
-      .filter((result) =>
-        Binding(WellKnownBindings[binder]).isImplementedBy(result.tools),
-      )
-      .map((result) => result.integration);
-  }, [
-    integrationQueries.length,
-    integrationQueries.map((q) => q.isSuccess),
-    integrationQueries.map((q) => !!q.data),
-    items,
-    binder,
-  ]);
-
-  // Aggregate loading and error states
-  const isLoading =
-    isLoadingItems || integrationQueries.some((q) => q.isLoading);
-  const hasErrors = !!itemsError || integrationQueries.some((q) => q.error);
-  const errors = [
-    itemsError,
-    ...integrationQueries.map((q) => q.error).filter(Boolean),
-  ].filter(Boolean);
-
-  return {
-    data: filteredIntegrations,
-    isLoading,
-    isPending: isLoading,
-    error: hasErrors ? errors[0] : null,
-    isSuccess: !isLoading && !hasErrors,
-    totalIntegrations: items?.length || 0,
-    processedIntegrations: integrationQueries.filter(
-      (q) => q.isSuccess || q.isError,
-    ).length,
-  };
 };
 
-export const useToolsWithBinding = (binder: Binder) => {
-  const { data: integrations } = useIntegrations();
+type BindingToolWithIntegrationMetadata = MCPTool & {
+  integration: Pick<Integration, "id" | "name" | "icon" | "description">;
+};
 
-  Binding(WellKnownBindings[binder]).isImplementedBy(integrations);
-}
+export const useBindingTools = (binder: Binder) => {
+  const bindingIntegrations = useBindingIntegrations(binder);
+  const allTools = bindingIntegrations.data.reduce((acc, integration) => {
+    const tools = integration.tools ?? [];
+    return [...acc, ...tools.map((tool: MCPTool) => ({
+      ...tool,
+      integration: {
+        id: integration.id,
+        name: integration.name,
+        icon: integration.icon,
+        description: integration.description,
+      },
+    }))];
+  }, [] as BindingToolWithIntegrationMetadata[]);
+  return Binding(WellKnownBindings[binder]).filterImplementingTools(allTools) as BindingToolWithIntegrationMetadata[];
+};
 
 /** Hook for listing all MCPs */
 export const useIntegrations = ({ isPublic }: { isPublic?: boolean } = {}) => {

@@ -20,7 +20,7 @@ import {
   createPosthogServerClient,
 } from "@deco/sdk/posthog";
 import { type AuthMetadata, BaseActor } from "@deco/sdk/actors";
-import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
+import { JwtIssuer } from "@deco/sdk/auth";
 import {
   DEFAULT_MAX_STEPS,
   DEFAULT_MAX_THINKING_TOKENS,
@@ -30,6 +30,7 @@ import {
   MAX_MAX_STEPS,
   MAX_MAX_TOKENS,
   MIN_MAX_TOKENS,
+  SUPABASE_URL,
   WELL_KNOWN_AGENTS,
 } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";

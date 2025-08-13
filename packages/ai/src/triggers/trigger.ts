@@ -12,8 +12,8 @@
 // are not enforced at runtime in JavaScript and are not preserved in the transpiled output.
 import type { ActorState } from "@deco/actors";
 import { Actor } from "@deco/actors";
-import { JwtIssuer, SUPABASE_URL } from "@deco/sdk/auth";
-import { WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
+import { JwtIssuer } from "@deco/sdk/auth";
+import { SUPABASE_URL, WELL_KNOWN_AGENT_IDS } from "@deco/sdk/constants";
 import { contextStorage } from "@deco/sdk/fetch";
 import { Hosts } from "@deco/sdk/hosts";
 import {

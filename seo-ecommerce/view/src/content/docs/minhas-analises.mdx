@@ -5,7 +5,9 @@ description: Visualize e gerencie análises de links salvas.
 
 # Minhas Análises
 
-Esta página lista as análises que você salvou estando autenticado (login simples localStorage). Nenhum dado vai para o servidor no modo local.
+Esta página lista as análises que você salvou estando autenticado (login simples localStorage).
+
+Se as variáveis PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY não estiverem configuradas no build, um armazenamento em memória (não persistente) é usado como fallback. Quando isso ocorre seus registros desaparecem ao reiniciar o dev server.
 
 <div id="saved-analyses-root" style="margin-top:1rem;"></div>
 <style>

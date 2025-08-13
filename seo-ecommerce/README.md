@@ -1,5 +1,12 @@
 # Astro MCP Server Template
 
+> Migration Note (Mirror Sync)
+>
+> This codebase is now mirrored from the monorepo `ggstvfer/chat` (directory `seo-ecommerce/`).
+> The external repository history was replaced on 2025-08-13 (commit 356be755) via subtree split.
+> A backup of the previous external `main` branch is preserved at `backup-pre-mirror` (hash 22038acf) for reference.
+> Future updates will be force-with-lease pushed automatically by the mirror workflow including a safety backup each run.
+
 A full-stack template for building
 [Model Context Protocol (MCP)](https://spec.modelcontextprotocol.io/) servers
 with a modern Astro documentation site. This template provides a complete development

@@ -43,7 +43,17 @@ jobs:
 
       - name: Push subtree to external repo (main)
         run: |
-          git push seo-ecommerce seo-ecommerce-extract:main
+          # Backup previous main (if exists) before updating
+          if git ls-remote --exit-code seo-ecommerce refs/heads/main >/dev/null 2>&1; then
+            PREV_HASH=$(git ls-remote seo-ecommerce refs/heads/main | awk '{print $1}')
+            echo "Previous remote main: $PREV_HASH"
+            # Create/update backup-pre-mirror only if different
+            if ! git ls-remote seo-ecommerce refs/heads/backup-pre-mirror | grep -q "$PREV_HASH"; then
+              git push seo-ecommerce "$PREV_HASH:refs/heads/backup-pre-mirror" || true
+            fi
+          fi
+          # Push with force-with-lease to avoid overwriting unexpected remote changes
+          git push --force-with-lease seo-ecommerce seo-ecommerce-extract:main
 
       - name: Cleanup temp branch
         if: always()
@@ -52,4 +62,4 @@ jobs:
 
       - name: Summary
         run: |
-          echo "Mirrored seo-ecommerce directory to ggstvfer/seo-ecommerce (branch: main)" >> $GITHUB_STEP_SUMMARY
+          echo "Mirrored seo-ecommerce directory to ggstvfer/seo-ecommerce (branch: main) with backup & force-with-lease." >> $GITHUB_STEP_SUMMARY

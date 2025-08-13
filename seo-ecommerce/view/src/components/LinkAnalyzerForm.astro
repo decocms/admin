@@ -2,46 +2,101 @@
 // LinkAnalyzerForm Astro component (no React)
 ---
 <style>
-  .la-flex { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
-  .la-history { margin-top:18px; }
-  .la-history button { background:#eef2f7; border:1px solid #d0d7de; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; }
-  .la-history button:hover { background:#e2e8f0; }
+  :root {
+    /* Fallbacks in case theme vars not present */
+    --la-accent: var(--sl-color-accent, #2563eb);
+    --la-border: var(--sl-color-gray-5, #d0d7de);
+    --la-bg-alt: var(--sl-color-gray-2, #f1f5f9);
+    --la-text-muted: var(--sl-color-gray-6, #64748b);
+    --la-danger: #dc2626;
+    --la-warn: #f59e0b;
+    --la-info: #6366f1;
+  }
+  .la-root { margin:1.5rem 0; }
+  .la-card { background:var(--sl-color-bg, #fff); border:1px solid var(--la-border); border-radius:12px; padding:1rem 1.25rem; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .la-flex { display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; }
+  .la-history { margin-top:1.25rem; }
+  .la-history button { background:var(--la-bg-alt); border:1px solid var(--la-border); padding:4px 10px; border-radius:999px; cursor:pointer; font-size:12px; line-height:1; }
+  .la-history button:hover { background:var(--sl-color-gray-3,#e2e8f0); }
   .la-chip { display:inline-block; margin:4px 6px 0 0; }
-  .la-spinner { width:16px; height:16px; border:3px solid #cbd5e1; border-top-color:#2563eb; border-radius:50%; animation: la-spin 0.8s linear infinite; display:inline-block; vertical-align:middle; }
+  .la-spinner { width:16px; height:16px; border:3px solid var(--la-border); border-top-color:var(--la-accent); border-radius:50%; animation: la-spin 0.8s linear infinite; display:inline-block; vertical-align:middle; }
   @keyframes la-spin { to { transform:rotate(360deg); } }
-  .la-badge { font-size:11px; background:#2563eb; color:#fff; padding:2px 6px; border-radius:10px; margin-left:8px; }
-  .la-badge.stub { background:#f59e0b; }
-  .la-badge.proxy { background:#6366f1; }
-  .la-status { font-size:12px; color:#555; margin-left:4px; }
-  .la-muted { color:#64748b; font-size:12px; }
-  .la-section-title { margin-top:28px; font-size:14px; font-weight:600; }
+  .la-badge { font-size:11px; background:var(--la-accent); color:#fff; padding:2px 6px; border-radius:10px; margin-left:8px; letter-spacing:.5px; }
+  .la-badge.stub { background:var(--la-warn); }
+  .la-badge.proxy { background:var(--la-info); }
+  .la-status { font-size:12px; color:var(--la-text-muted); margin-left:4px; }
+  .la-muted { color:var(--la-text-muted); font-size:12px; }
+  .la-section-title { margin-top:1.75rem; font-size:14px; font-weight:600; }
   .la-result { background:#0f172a; color:#e2e8f0; }
+  .la-toolbar { display:flex; gap:.5rem; align-items:center; margin-top:.5rem; }
+  .la-mini-btn { font-size:11px; padding:4px 8px; border:1px solid var(--la-border); background:var(--la-bg-alt); border-radius:6px; cursor:pointer; }
+  .la-mini-btn:hover { background:var(--sl-color-gray-3,#e2e8f0); }
+  .la-mini-btn.primary { background:var(--la-accent); color:#fff; border-color:var(--la-accent); }
+  .la-mini-btn.primary:hover { filter:brightness(1.1); }
+  .la-timing { font-size:11px; color:var(--la-text-muted); margin-left:auto; }
+  .la-tree { font-family: ui-monospace, monospace; font-size:13px; line-height:1.4; }
+  .la-tree details { margin-left: .75rem; }
+  .la-tree summary { cursor: pointer; }
+  .la-tree-key { color:#93c5fd; }
+  .la-tree-type { color:#a3a3a3; font-style:italic; margin-left:4px; }
+  .la-tree-value-string { color:#fcd34d; }
+  .la-tree-value-number { color:#fca5a5; }
+  .la-tree-value-bool { color:#fdba74; }
+  .la-toolbar-sep { width:1px; background:var(--la-border); align-self:stretch; }
+  @media (prefers-color-scheme: dark) {
+    .la-card { background: var(--sl-color-gray-6,#1e293b); border-color:#334155; box-shadow:0 1px 2px rgba(0,0,0,.5); }
+    .la-bg-alt { background:#1e293b; }
+    .la-input { background:#0f172a; color:#e2e8f0; border-color:#334155; }
+    .la-history button { background:#1e293b; border-color:#334155; }
+    .la-history button:hover { background:#334155; }
+    .la-mini-btn { background:#1e293b; border-color:#334155; color:#e2e8f0; }
+    .la-mini-btn:hover { background:#334155; }
+    .la-result { background:#0f172a; }
+  }
+  .la-input { width:100%; padding:8px 12px; border:1px solid var(--la-border); border-radius:6px; background:var(--sl-color-bg, #fff); }
+  .la-input:focus { outline:2px solid var(--la-accent); outline-offset:1px; }
+  .la-btn { padding:10px 18px; border-radius:6px; background:var(--la-accent); color:#fff; border:none; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:6px; }
+  .la-btn:disabled { opacity:.55; cursor:not-allowed; }
 </style>
-<div id="link-analyzer-root" style="margin:2em 0;">
-  <form id="link-analyzer-form" style="margin-bottom:1em;">
+<div id="link-analyzer-root" class="la-root">
+  <div class="la-card">
+  <form id="link-analyzer-form" style="margin-bottom:0.75rem;">
     <div class="la-flex">
       <label style="flex:1; min-width:320px; font-weight:500;">
         URL para analisar
-        <input id="la-input" type="url" required placeholder="https://exemplo.com" style="margin-top:4px;width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;" />
+        <input id="la-input" class="la-input" type="url" required placeholder="https://exemplo.com" style="margin-top:4px;" />
       </label>
       <div style="display:flex; gap:8px; align-items:center;">
-        <button id="la-submit" type="submit" style="padding:10px 18px;border-radius:6px;background:#2563eb;color:#fff;border:none;cursor:pointer;font-weight:500;">Analisar</button>
+        <button id="la-submit" type="submit" class="la-btn">Analisar</button>
         <span id="la-loading" style="display:none;" aria-label="Carregando">
           <span class="la-spinner"></span>
         </span>
       </div>
     </div>
     <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
-      <span id="la-status" class="la-status"></span>
+  <span id="la-status" class="la-status" aria-live="polite"></span>
       <span id="la-mode" class="la-badge" style="display:none;"></span>
     </div>
   </form>
-  <div id="la-error" style="color:#dc2626;margin-top:8px;display:none;font-weight:500;"></div>
-  <pre id="la-result" style="display:none;margin-top:16px;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
+  <div id="la-error" style="color:var(--la-danger);margin-top:8px;display:none;font-weight:500;"></div>
+  <div id="la-output" style="display:none; margin-top:16px;">
+    <div class="la-toolbar">
+  <button type="button" id="la-copy" class="la-mini-btn">Copiar JSON</button>
+  <button type="button" id="la-save" class="la-mini-btn primary" disabled>Salvar</button>
+      <button type="button" id="la-tree" class="la-mini-btn">Árvore</button>
+      <button type="button" id="la-csv" class="la-mini-btn" disabled>Exportar CSV</button>
+      <span class="la-toolbar-sep"></span>
+      <button type="button" id="la-clear" class="la-mini-btn">Limpar histórico</button>
+      <span id="la-timing" class="la-timing"></span>
+    </div>
+    <pre id="la-result" style="margin-top:6px;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
+    <div id="la-tree-view" style="display:none;margin-top:6px;background:#0f172a;padding:16px;border-radius:8px;overflow:auto;max-height:420px;" class="la-tree"></div>
+  </div>
   <div id="la-history" class="la-history" style="display:none;">
     <div class="la-section-title">Histórico recente</div>
     <div id="la-history-items"></div>
     <div class="la-muted" style="margin-top:4px;">Armazena até 8 URLs localmente (localStorage).</div>
+  </div>
   </div>
 </div>
 <script>
@@ -54,6 +109,15 @@
   const statusEl = document.getElementById('la-status');
   const errorEl = document.getElementById('la-error');
   const resultEl = document.getElementById('la-result');
+  const outputWrap = document.getElementById('la-output');
+  const copyBtn = document.getElementById('la-copy');
+  const treeBtn = document.getElementById('la-tree');
+  const csvBtn = document.getElementById('la-csv');
+  const clearBtn = document.getElementById('la-clear');
+  const timingEl = document.getElementById('la-timing');
+  const treeView = document.getElementById('la-tree-view');
+  const saveBtn = document.getElementById('la-save');
+  let lastData = null;
   const loadingEl = document.getElementById('la-loading');
   const modeEl = document.getElementById('la-mode');
   const historyWrap = document.getElementById('la-history');
@@ -144,7 +208,7 @@
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     errorEl.style.display='none';
-    resultEl.style.display='none';
+  outputWrap.style.display='none';
     const url = input.value.trim();
     if(!url){return;}
     if(probing){ errorEl.textContent='Aguarde detecção do endpoint.'; errorEl.style.display='block'; return; }
@@ -155,9 +219,21 @@
       const endpoint=(apiBase? apiBase.replace(/\/$/,''): '') + '/mcp/tools';
       const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
       if(!res.ok) throw new Error('HTTP '+res.status);
-      const data=await res.json();
-      resultEl.textContent=JSON.stringify(data,null,2);
-      resultEl.style.display='block';
+  const data=await res.json(); lastData = data;
+  const elapsed = Date.now()-start;
+  resultEl.textContent=JSON.stringify(data,null,2);
+      outputWrap.style.display='block';
+      timingEl.textContent = elapsed+' ms';
+  // Habilita CSV se encontrar campo links (array)
+      const links = (data?.result?.links) || data?.links;
+      if(Array.isArray(links) && links.length){
+        const uniq = [...new Set(links)];
+        if(uniq.length !== links.length){ data.result ? data.result.links = uniq : (data.links = uniq); }
+        csvBtn.disabled=false;
+      } else { csvBtn.disabled=true; }
+  // Salvar habilitado se logado
+  const user = localStorage.getItem('la-user');
+  saveBtn.disabled = !user;
       const src = res.headers.get('X-Source');
       if(src==='stub'){
         statusEl.textContent='Resultado retornado do stub local.';
@@ -175,5 +251,94 @@
       submit.disabled=false; submit.textContent='Analisar'; loadingEl.style.display='none';
     }
   });
+
+  copyBtn.addEventListener('click', ()=>{
+    if(!resultEl.textContent) return;
+    navigator.clipboard.writeText(resultEl.textContent).then(()=>{
+      copyBtn.textContent='Copiado';
+      setTimeout(()=> copyBtn.textContent='Copiar JSON', 1600);
+    });
+  });
+
+  function buildTree(node, container){
+    if(node === null){
+      const span=document.createElement('span'); span.textContent='null'; span.className='la-tree-value-bool'; container.appendChild(span); return; }
+    if(typeof node !== 'object'){
+      const span=document.createElement('span');
+      let cls='';
+      if(typeof node === 'string'){ cls='la-tree-value-string'; span.textContent='"'+node+'"'; }
+      else if(typeof node === 'number'){ cls='la-tree-value-number'; span.textContent=String(node); }
+      else if(typeof node === 'boolean'){ cls='la-tree-value-bool'; span.textContent=String(node); }
+      else { span.textContent=String(node); }
+      span.className=cls; container.appendChild(span); return;
+    }
+    if(Array.isArray(node)){
+      const details=document.createElement('details'); details.open=false;
+      const summary=document.createElement('summary'); summary.innerHTML='<span class="la-tree-key">[array]</span> <span class="la-tree-type">('+node.length+')</span>';
+      details.appendChild(summary);
+      node.forEach((item,i)=>{
+        const div=document.createElement('div'); div.style.marginLeft='.5rem';
+        const keySpan=document.createElement('span'); keySpan.className='la-tree-key'; keySpan.textContent='['+i+']:'; div.appendChild(keySpan); div.appendChild(document.createTextNode(' '));
+        buildTree(item, div); details.appendChild(div);
+      });
+      container.appendChild(details); return;
+    }
+    const details=document.createElement('details'); details.open=false;
+    const summary=document.createElement('summary'); summary.innerHTML='<span class="la-tree-key">{object}</span> <span class="la-tree-type">'+Object.keys(node).length+' keys</span>';
+    details.appendChild(summary);
+    Object.entries(node).forEach(([k,v])=>{
+      const line=document.createElement('div'); line.style.marginLeft='.5rem';
+      const keySpan=document.createElement('span'); keySpan.className='la-tree-key'; keySpan.textContent=k+':'; line.appendChild(keySpan); line.appendChild(document.createTextNode(' '));
+      buildTree(v, line); details.appendChild(line);
+    });
+    container.appendChild(details);
+  }
+
+  treeBtn.addEventListener('click', ()=>{
+    if(!lastData){ return; }
+    const showingTree = treeView.style.display==='block';
+    if(showingTree){
+      treeView.style.display='none';
+      resultEl.style.display='block';
+      treeBtn.textContent='Árvore';
+      return;
+    }
+    treeView.innerHTML='';
+    buildTree(lastData, treeView);
+    resultEl.style.display='none';
+    treeView.style.display='block';
+    treeBtn.textContent='JSON';
+  });
+
+  csvBtn.addEventListener('click', ()=>{
+    if(csvBtn.disabled || !lastData) return;
+  const links = (lastData?.result?.links) || lastData?.links;
+  if(!Array.isArray(links) || !links.length) return;
+  const uniq = [...new Set(links)];
+  const rows = [['index','link']].concat(uniq.map((l,i)=>[String(i), l]));
+    const csv = rows.map(r=> r.map(field => '"'+String(field).replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='links.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    history=[]; saveHistory(); renderHistory();
+    statusEl.textContent='Histórico limpo.';
+  });
+
+  saveBtn.addEventListener('click', ()=>{
+    if(!lastData) return; const user = localStorage.getItem('la-user'); if(!user){ statusEl.textContent='Faça login para salvar.'; return; }
+    const raw = localStorage.getItem('la-saved');
+    const arr = raw? JSON.parse(raw): [];
+    arr.unshift({ url: lastData?.input?.url || lastData?.result?.url || '[sem url]', ts: Date.now(), data: lastData });
+    localStorage.setItem('la-saved', JSON.stringify(arr.slice(0,200)));
+    saveBtn.textContent='Salvo';
+    setTimeout(()=> saveBtn.textContent='Salvar', 1800);
+  });
+
+  // Reativar botão salvar quando usuário loga (observer simples)
+  window.addEventListener('storage', (e)=>{ if(e.key==='la-user' && lastData){ const user = localStorage.getItem('la-user'); saveBtn.disabled = !user; }});
 })();
 </script>

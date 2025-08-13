@@ -1,0 +1,69 @@
+---
+title: Link Analyzer
+description: Ferramenta para extrair metadados e links de uma URL.
+---
+
+import LinkAnalyzerForm from "../../../components/LinkAnalyzerForm.astro";
+
+# Link Analyzer
+
+Ferramenta para inspecionar uma página pública e coletar alguns metadados iniciais (título, descrição se disponível, lista de links e outros campos planejados). Útil para:
+
+- Auditar rapidamente conteúdo
+- Preparar ingestão para base de conhecimento
+- Validar estrutura de links em páginas de landing
+
+## Teste interativo
+
+<LinkAnalyzerForm />
+
+## Especificação da tool MCP
+
+| Campo | Valor |
+|-------|-------|
+| `tool` | `LINK_ANALYZER` |
+| Input | `{ url: string }` |
+| Endpoint | `POST /mcp/tools` |
+| Response | Objeto com metadados e lista de links |
+
+### Requisição
+```jsonc
+{
+  "tool": "LINK_ANALYZER",
+  "input": { "url": "https://exemplo.com" }
+}
+```
+
+### Resposta (exemplo simplificado)
+```jsonc
+{
+  "tool": "LINK_ANALYZER",
+  "result": {
+    "title": "Título da página",
+    "description": "Descrição extraída",
+    "links": ["https://...", "https://..."]
+  }
+}
+```
+
+## Códigos de status
+
+| Status | Significado |
+|--------|-------------|
+| 200 | Sucesso (proxy ou stub) |
+| 400 | JSON inválido / tool desconhecida |
+| 422 | URL inválida |
+| 405 | Método não suportado |
+
+## Fallback local (stub)
+Quando o worker de produção não responde, um stub local devolve um resultado simulado. O badge `STUB` no formulário indica essa condição.
+
+## Próximos incrementos sugeridos
+- Extração de headings (H1..H3)
+- Normalização / deduplicação de links
+- Preview de imagens OG
+- Exportação markdown estruturado
+
+---
+
+Para dúvidas ou sugestões abra uma issue no repositório principal.

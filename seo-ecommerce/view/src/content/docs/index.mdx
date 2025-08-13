@@ -1,18 +1,83 @@
 ---
 title: Link Analyzer
 description: Analise links facilmente e descubra informações úteis.
-template: splash
-hero:
-  title: Link Analyzer
-  tagline: Analise links facilmente e descubra informações úteis.
 ---
 
 import LinkAnalyzerForm from "../../components/LinkAnalyzerForm.astro";
 
-<LinkAnalyzerForm />
+<div class="flex flex-col gap-12">
+  <section>
+    <h2 class="text-3xl font-semibold mb-2">Analyzer Rápido</h2>
+    <p class="text-gray-600 dark:text-gray-300">Ferramenta interativa para inspecionar uma URL. Salve suas análises após fazer login simples.</p>
+    <LoginInline />
+    <LinkAnalyzerForm />
+  </section>
+  <section>
+    <h2 class="text-2xl font-semibold mb-2">Outras Seções</h2>
+    <ul class="list-disc pl-6 space-y-1">
+      <li><a class="text-green-600 dark:text-green-400 underline" href="/docs/tools/link-analyzer/">Documentação completa do Link Analyzer</a></li>
+      <li><a class="text-green-600 dark:text-green-400 underline" href="/docs/minhas-analises/">Minhas Análises</a></li>
+    </ul>
+  </section>
+  <section>
+    <h2 class="text-2xl font-semibold mb-2">Como funciona</h2>
+    <p class="leading-relaxed">O formulário faz uma chamada <code>POST /mcp/tools</code> com a tool <code>LINK_ANALYZER</code>. Em ambiente local, se o backend remoto não responder, um stub simulado fornece dados de teste. Quando migrarmos para persistência real, as análises serão enviadas ao backend autenticado.</p>
+  </section>
+  <section>
+    <h2 class="text-2xl font-semibold mb-2">Próximos passos</h2>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>Headings e estrutura semântica</li>
+      <li>Preview de imagens Open Graph</li>
+      <li>Exportar Markdown</li>
+      <li>Integração com base de conhecimento</li>
+    </ul>
+  </section>
+</div>
 
-## Como funciona?
+export function LoginInline(){
+  return (
+    <div id="la-login-inline" style="margin:1rem 0; padding:0.75rem 1rem; border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:8px; background:var(--sl-color-bg-alt,#f8fafc);">
+      <strong>Login:</strong> <span id="li-status" style="font-size:0.85em; color:var(--sl-color-gray-6,#555);"></span>
+      <form id="li-form" style="display:flex; gap:8px; margin-top:0.5rem;">
+        <input id="li-user" placeholder="Digite um usuário" style="flex:1; padding:6px 10px; border:1px solid var(--sl-color-gray-5,#ccc); border-radius:6px;" />
+        <button type="submit" style="padding:6px 14px; border:none; background:var(--sl-color-accent,#2563eb); color:#fff; border-radius:6px; cursor:pointer;">Entrar</button>
+        <button type="button" id="li-logout" style="display:none; padding:6px 14px; border:1px solid var(--sl-color-gray-5,#ccc); background:transparent; border-radius:6px; cursor:pointer;">Sair</button>
+      </form>
+    </div>
+  );
+}
 
-Cole o link que deseja analisar acima. O resultado será exibido logo abaixo do formulário.
-
-Quer contribuir com melhorias? [Cadastre-se aqui](#) (link para cadastro/futuro).
+<script>
+(function(){
+  const status = document.getElementById('li-status');
+  const form = document.getElementById('li-form');
+  const userInput = document.getElementById('li-user');
+  const logoutBtn = document.getElementById('li-logout');
+  function sync(){
+    const user = localStorage.getItem('la-user');
+    if(user){
+      status.textContent = 'Logado como ' + user;
+      form.style.display='none';
+      logoutBtn.style.display='inline-block';
+    } else {
+      status.textContent = 'Não autenticado';
+      form.style.display='flex';
+      logoutBtn.style.display='none';
+    }
+  }
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const u = userInput.value.trim();
+    if(!u){ return; }
+    // Hash simples (sha-256 via SubtleCrypto) para não armazenar user em claro adicionalmente
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(u)).then(buf => {
+      const hash = [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('');
+      localStorage.setItem('la-user-hash', hash);
+    });
+    localStorage.setItem('la-user', u);
+    sync();
+  });
+  logoutBtn.addEventListener('click', ()=>{ localStorage.removeItem('la-user'); sync(); });
+  sync();
+})();
+</script>

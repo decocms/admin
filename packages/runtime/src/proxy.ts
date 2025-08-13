@@ -156,7 +156,7 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const connection =
           typeof options?.connection === "function"
             ? await options.connection()
-            : {
+            : options?.connection ?? {
                 type: "HTTP",
                 url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(
                   options?.workspace,

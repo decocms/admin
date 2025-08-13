@@ -1,4 +1,4 @@
-import { D1Store } from "@mastra/cloudflare-d1";
+import { D1Store } from "@deco/workers-runtime/d1";
 import { default as ShortUniqueId } from "short-unique-id";
 import { parse as parseToml } from "smol-toml";
 import { z } from "zod";

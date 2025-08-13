@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { Workspace } from "@deco/sdk/path";
+import { D1Store } from "@deco/workers-runtime/d1";
 import type { Client as LibSQLClient } from "@libsql/client";
-import { D1Store } from "@mastra/cloudflare-d1";
 import type { CoreMessage } from "@mastra/core";
 import type { SharedMemoryConfig } from "@mastra/core/memory";
 import { MemoryProcessor } from "@mastra/core/memory";

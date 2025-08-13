@@ -10,6 +10,8 @@
   .la-spinner { width:16px; height:16px; border:3px solid #cbd5e1; border-top-color:#2563eb; border-radius:50%; animation: la-spin 0.8s linear infinite; display:inline-block; vertical-align:middle; }
   @keyframes la-spin { to { transform:rotate(360deg); } }
   .la-badge { font-size:11px; background:#2563eb; color:#fff; padding:2px 6px; border-radius:10px; margin-left:8px; }
+  .la-badge.stub { background:#f59e0b; }
+  .la-badge.proxy { background:#6366f1; }
   .la-status { font-size:12px; color:#555; margin-left:4px; }
   .la-muted { color:#64748b; font-size:12px; }
   .la-section-title { margin-top:28px; font-size:14px; font-weight:600; }
@@ -93,10 +95,20 @@
     });
   }
 
-  function showMode(mode){
+  function showMode(mode, source){
     modeEl.style.display='inline-block';
-    modeEl.textContent= mode==='local'? 'LOCAL' : mode==='prod'? 'PROD' : mode.toUpperCase();
-    modeEl.style.background = mode==='local'? '#0d9488' : '#2563eb';
+    let label;
+    if(source==='stub'){
+      label='STUB';
+      modeEl.className='la-badge stub';
+    } else if(source==='proxy'){
+      label= mode==='local'? 'LOCAL' : mode==='prod'? 'PROXY-PROD' : mode.toUpperCase();
+      modeEl.className='la-badge proxy';
+    } else {
+      label= mode==='local'? 'LOCAL' : mode==='prod'? 'PROD' : mode.toUpperCase();
+      modeEl.className='la-badge';
+    }
+    modeEl.textContent=label;
   }
 
   async function probe(){
@@ -108,8 +120,17 @@
         if(res.ok){
           apiBase=base; probing=false;
           const local = base==='';
-          statusEl.textContent= local? 'Backend local detectado.' : 'Backend produção detectado.';
-          showMode(local? 'local':'prod');
+          const src = res.headers.get('X-Source');
+          if(src==='stub'){
+            statusEl.textContent='Backend local (stub) ativo.';
+            showMode('local','stub');
+          }else if(src==='proxy'){
+            statusEl.textContent= local? 'Backend local (proxy) detectado.' : 'Backend produção via proxy.';
+            showMode(local? 'local':'prod','proxy');
+          } else {
+            statusEl.textContent= local? 'Backend local detectado.' : 'Backend produção detectado.';
+            showMode(local? 'local':'prod');
+          }
           return;
         }
       }catch(e){/*continue*/}
@@ -137,6 +158,14 @@
       const data=await res.json();
       resultEl.textContent=JSON.stringify(data,null,2);
       resultEl.style.display='block';
+      const src = res.headers.get('X-Source');
+      if(src==='stub'){
+        statusEl.textContent='Resultado retornado do stub local.';
+        showMode('local','stub');
+      } else if(src==='proxy') {
+        statusEl.textContent='Resultado via proxy produção.';
+        showMode(apiBase? 'prod':'local','proxy');
+      }
       pushHistory(url, true);
     }catch(err){
       errorEl.textContent=err.message||'Erro desconhecido';

@@ -1,12 +1,8 @@
-import { Binding, WellKnownBindings } from "@deco/sdk/mcp/bindings";
 import {
   useMutation,
-  useQueries,
-  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useMemo } from "react";
 import {
   createIntegration,
   deleteIntegration,
@@ -19,7 +15,7 @@ import { MCPClient } from "../fetcher.ts";
 import type { Agent, Binder, Integration } from "../models/index.ts";
 import { applyDisplayNameToIntegration } from "../utils/integration-display-name.ts";
 import { KEYS } from "./api.ts";
-import { listTools, type MCPTool } from "./index.ts";
+import { type MCPTool } from "./index.ts";
 import { useSDK } from "./store.tsx";
 
 interface IntegrationToolsResult {
@@ -139,31 +135,14 @@ export const useBindingIntegrations = (binder: Binder) => {
   return useSuspenseQuery({
     queryKey: KEYS.INTEGRATION(workspace, binder),
     queryFn: async ({ signal }) => {
-      const integrations = await listIntegrations(workspace, { binder }, signal);
+      const integrations = await listIntegrations(
+        workspace,
+        { binder },
+        signal,
+      );
       return integrations;
     },
   });
-};
-
-type BindingToolWithIntegrationMetadata = MCPTool & {
-  integration: Pick<Integration, "id" | "name" | "icon" | "description">;
-};
-
-export const useBindingTools = (binder: Binder) => {
-  const bindingIntegrations = useBindingIntegrations(binder);
-  const allTools = bindingIntegrations.data.reduce((acc, integration) => {
-    const tools = integration.tools ?? [];
-    return [...acc, ...tools.map((tool: MCPTool) => ({
-      ...tool,
-      integration: {
-        id: integration.id,
-        name: integration.name,
-        icon: integration.icon,
-        description: integration.description,
-      },
-    }))];
-  }, [] as BindingToolWithIntegrationMetadata[]);
-  return Binding(WellKnownBindings[binder]).filterImplementingTools(allTools) as BindingToolWithIntegrationMetadata[];
 };
 
 /** Hook for listing all MCPs */

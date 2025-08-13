@@ -219,6 +219,7 @@
     if(!url){return;}
     if(probing){ errorEl.textContent='Aguarde detecção do endpoint.'; errorEl.style.display='block'; return; }
     if(!/^https?:\/\//i.test(url)){ errorEl.textContent='URL deve iniciar com http(s)://'; errorEl.style.display='block'; return; }
+    const start = performance.now();
     submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block';
     statusEl.textContent='';
     try{
@@ -226,7 +227,7 @@
       const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
       if(!res.ok) throw new Error('HTTP '+res.status);
   const data=await res.json(); lastData = data;
-  const elapsed = Date.now()-start;
+  const elapsed = Math.round(performance.now()-start);
   resultEl.textContent=JSON.stringify(data,null,2);
       outputWrap.style.display='block';
       timingEl.textContent = elapsed+' ms';

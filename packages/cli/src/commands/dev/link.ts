@@ -1,13 +1,13 @@
 import { ChildProcess, spawn } from "child_process";
 import { connect } from "@deco-cx/warp-node";
 import chalk from "chalk";
+import { createServer } from "node:net";
+import process from "process";
 import {
   getAppDomain,
   getConfig,
   readWranglerConfig,
 } from "../../lib/config.js";
-import { createServer } from "net";
-import process from "node:process";
 
 interface LinkOptions {
   port?: number;
@@ -40,7 +40,8 @@ function copyToClipboard(text: string): Promise<boolean> {
       clipProcess.stdin.write(text);
       clipProcess.stdin.end();
 
-      clipProcess.on("close", (code) => {
+      clipProcess.on("close", (code: number) => {
+        console.log(`Process exited with code: ${code}`);
         resolve(code === 0);
       });
 
@@ -151,7 +152,7 @@ async function register(
 }
 
 export const link = async ({
-  port = 8787,
+  port = 8888,
   onBeforeRegister,
 }: LinkOptions = {}) => {
   // Get config to extract workspace and app

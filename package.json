@@ -25,7 +25,8 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "server"
   ],
   "compilerOptions": {
     "experimentalDecorators": true,
@@ -66,5 +67,8 @@
       "./plugins/ensure-tailwind-design-system-tokens.ts",
       "./plugins/enforce-kebab-case-file-names.ts"
     ]
+  },
+  "dependencies": {
+    "zod": "^3.24.3"
   }
 }

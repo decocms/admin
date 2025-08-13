@@ -1,0 +1,17 @@
+{
+  "name": "root-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "gen": "echo 'No deco.gen.ts config yet'"
+  },
+  "dependencies": {
+    "@deco/workers-runtime": "file:../packages/runtime",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "wrangler": "^4.24.3"
+  }
+}

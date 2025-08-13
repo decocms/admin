@@ -78,7 +78,7 @@ export async function getEnvVars(projectRoot?: string) {
     DECO_CHAT_WORKSPACE: workspace || "",
     DECO_CHAT_API_TOKEN: session?.access_token ?? "",
     DECO_CHAT_BINDINGS: encodedBindings,
-    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8787",
+    DECO_CHAT_APP_ENTRYPOINT: "http://localhost:8888",
   };
 
   const { name, scope } = wrangler;
@@ -101,7 +101,12 @@ async function ensureEnvVarsGitIgnore(projectRoot: string) {
 
   try {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
-    const lines = gitignoreContent.split("\n");
+    const lines = gitignoreContent.split("\n").reduce<string[]>((acc: string[], line: string) => {
+      if (!line.includes(envFile)) {
+        acc.push(line);
+      }
+      return acc;
+    }, []);
 
     // Check if entry already exists (exact match or as part of a line)
     const entryExists = lines.some(

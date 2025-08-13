@@ -8,38 +8,62 @@ description: Visualize e gerencie análises de links salvas.
 Esta página lista as análises que você salvou estando autenticado (login simples localStorage). Nenhum dado vai para o servidor no modo local.
 
 <div id="saved-analyses-root" style="margin-top:1rem;"></div>
+<style>
+  .ma-table { width:100%; border-collapse:collapse; }
+  .ma-table th, .ma-table td { padding:6px 8px; border-bottom:1px solid #ddd; font-size:13px; }
+  .ma-actions button { font-size:11px; margin-right:4px; }
+  .ma-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .ma-toolbar input { padding:6px 10px; border:1px solid #ccc; border-radius:6px; }
+</style>
 
 <script>
 (function(){
   const root = document.getElementById('saved-analyses-root');
-  function render(){
+  let page=1, limit=10, total=0, q='';
+  async function load(){
     const user = localStorage.getItem('la-user');
-    if(!user){
-      root.innerHTML = `<p>Você não está logado. Use o formulário do Link Analyzer para entrar e salvar análises.</p>`;
-      return;
+    const userHash = localStorage.getItem('la-user-hash');
+    if(!user || !userHash){
+      root.innerHTML = `<p>Você não está logado. Faça login na Home.</p>`; return;
     }
-    const raw = localStorage.getItem('la-saved');
-    const list = raw? JSON.parse(raw): [];
-    if(!list.length){
-      root.innerHTML = `<p>Nenhuma análise salva ainda.</p>`;return;
-    }
-    const html = [`<p><strong>Usuário:</strong> ${user} (<button id="la-logout" style="font-size:12px;">Logout</button>)</p>`,'<table style="width:100%;border-collapse:collapse;">','<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #ddd;">URL</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #ddd;">Data</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid #ddd;">Ações</th></tr></thead><tbody>'];
-    list.forEach((item,i)=>{
-      html.push(`<tr><td style="padding:4px 6px;">${item.url}</td><td style="padding:4px 6px;">${new Date(item.ts).toLocaleString()}</td><td style="padding:4px 6px;"><button data-i="${i}" class="la-view" style="font-size:11px;">Ver</button> <button data-i="${i}" class="la-del" style="font-size:11px;">Excluir</button></td></tr>`);
-    });
-    html.push('</tbody></table>');
-    root.innerHTML = html.join('');
-    root.querySelectorAll('.la-del').forEach(btn=>btn.addEventListener('click', e=>{
-      const idx = +e.target.getAttribute('data-i');
-      list.splice(idx,1); localStorage.setItem('la-saved', JSON.stringify(list)); render();
-    }));
-    root.querySelectorAll('.la-view').forEach(btn=>btn.addEventListener('click', e=>{
-      const idx = +e.target.getAttribute('data-i');
-      alert(JSON.stringify(list[idx].data, null, 2));
-    }));
-    const logout = document.getElementById('la-logout');
-    logout.addEventListener('click',()=>{ localStorage.removeItem('la-user'); render(); });
+    const params = new URLSearchParams({ userHash, page:String(page), limit:String(limit) });
+    if(q) params.set('q', q);
+    const res = await fetch('/api/analises?'+params.toString());
+    if(!res.ok){ root.innerHTML='<p>Erro ao carregar análises.</p>'; return; }
+    const data = await res.json();
+    total = data.total;
+    render(user, data.items);
   }
-  render();
+  function render(user, items){
+    const pages = Math.max(1, Math.ceil(total/limit));
+    const rows = items.map(r=>`<tr><td>${r.url}</td><td>${new Date(r.ts).toLocaleString()}</td><td class="ma-actions"><button data-id="${r.id}" class="ma-view">Ver</button><button data-id="${r.id}" class="ma-del">Excluir</button></td></tr>`).join('');
+    root.innerHTML = `
+      <div class="ma-toolbar">
+        <span><strong>Usuário:</strong> ${user}</span>
+        <input id="ma-search" placeholder="Filtrar URL" value="${q}" />
+        <select id="ma-limit">${[10,20,30,50].map(v=>`<option ${v===limit?'selected':''}>${v}</option>`).join('')}</select>
+        <button id="ma-prev" ${page<=1?'disabled':''}>Prev</button>
+        <span>Pg ${page}/${pages}</span>
+        <button id="ma-next" ${page>=pages?'disabled':''}>Next</button>
+        <button id="ma-refresh">Atualizar</button>
+      </div>
+      <table class="ma-table"><thead><tr><th>URL</th><th>Data</th><th>Ações</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Nenhum registro.</td></tr>'}</tbody></table>`;
+    root.querySelectorAll('.ma-view').forEach(btn=>btn.addEventListener('click', async e=>{
+      const id = e.currentTarget.getAttribute('data-id');
+      const rec = items.find(i=>i.id===id); if(rec) alert(JSON.stringify(rec.data,null,2));
+    }));
+    root.querySelectorAll('.ma-del').forEach(btn=>btn.addEventListener('click', async e=>{
+      const id = e.currentTarget.getAttribute('data-id');
+      const userHash = localStorage.getItem('la-user-hash');
+      await fetch('/api/analises?userHash='+userHash+'&id='+id, { method:'DELETE' });
+      load();
+    }));
+    root.querySelector('#ma-prev').addEventListener('click', ()=>{ if(page>1){ page--; load(); } });
+    root.querySelector('#ma-next').addEventListener('click', ()=>{ const pages=Math.ceil(total/limit); if(page<pages){ page++; load(); } });
+    root.querySelector('#ma-refresh').addEventListener('click', ()=> load());
+    root.querySelector('#ma-search').addEventListener('input', (ev)=>{ q=ev.target.value.trim(); page=1; load(); });
+    root.querySelector('#ma-limit').addEventListener('change', (ev)=>{ limit=parseInt(ev.target.value,10); page=1; load(); });
+  }
+  load();
 })();
 </script>

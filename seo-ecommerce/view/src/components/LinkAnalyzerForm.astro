@@ -329,13 +329,19 @@
   });
 
   saveBtn.addEventListener('click', ()=>{
-    if(!lastData) return; const user = localStorage.getItem('la-user'); if(!user){ statusEl.textContent='Faça login para salvar.'; return; }
-    const raw = localStorage.getItem('la-saved');
-    const arr = raw? JSON.parse(raw): [];
-    arr.unshift({ url: lastData?.input?.url || lastData?.result?.url || '[sem url]', ts: Date.now(), data: lastData });
-    localStorage.setItem('la-saved', JSON.stringify(arr.slice(0,200)));
-    saveBtn.textContent='Salvo';
-    setTimeout(()=> saveBtn.textContent='Salvar', 1800);
+    (async () => {
+      if(!lastData) return; const user = localStorage.getItem('la-user'); if(!user){ statusEl.textContent='Faça login para salvar.'; return; }
+      const userHash = localStorage.getItem('la-user-hash');
+      const payload = { url: lastData?.input?.url || lastData?.result?.url || '[sem url]', data: lastData, userHash };
+      try {
+        const res = await fetch('/api/analises', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(!res.ok) throw new Error('Falha ao salvar');
+        saveBtn.textContent='Salvo';
+        setTimeout(()=> saveBtn.textContent='Salvar', 1800);
+      } catch (e){
+        statusEl.textContent='Erro ao salvar análise.';
+      }
+    })();
   });
 
   // Reativar botão salvar quando usuário loga (observer simples)

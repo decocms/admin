@@ -16,10 +16,28 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Install dependencies
-        working-directory: ./apps/api
+      - name: Install workspace dependencies
+        run: bun install
+
+      - name: Type check (fail fast)
+        run: bun run check || true # non-blocking for now; remove '|| true' to enforce
+
+      - name: Verify required secrets are present
+        shell: bash
         run: |
-          bun install
+          missing=()
+          required=(
+            SUPABASE_URL SUPABASE_SERVER_TOKEN CF_API_TOKEN CF_ACCOUNT_ID CF_ZONE_ID CF_R2_ACCESS_KEY_ID CF_R2_SECRET_ACCESS_KEY
+            RESEND_API_KEY OPENROUTER_API_KEY WALLET_API_KEY ANTHROPIC_API_KEY OPENAI_API_KEY DEEPSEEK_API_KEY GOOGLE_API_KEY
+            STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET CURRENCY_API_KEY LLMS_ENCRYPTION_KEY DECO_CHAT_API_JWT_PUBLIC_KEY DECO_CHAT_API_JWT_PRIVATE_KEY
+          )
+          for key in "${required[@]}"; do
+            if [[ -z "${!key}" ]]; then
+              missing+=("$key")
+            fi
+          done
+          if ((${#missing[@]})); then
+            echo "::warning::Missing secrets: ${missing[*]}"; fi
 
       - name: Publish
         uses: cloudflare/wrangler-action@v3

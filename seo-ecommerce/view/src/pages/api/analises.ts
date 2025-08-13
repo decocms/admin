@@ -43,14 +43,18 @@ export const OPTIONS: APIRoute = () => new Response('', {
 
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
-  const userHash = url.searchParams.get('userHash') || '';
-  if (!userHash) return json({ error: 'userHash ausente' }, 400);
+  let userHash = url.searchParams.get('userHash') || '';
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
   const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20')));
   const q = (url.searchParams.get('q') || '').toLowerCase();
 
   if (await haveSupabase()) {
     const supa = await supaFromRequest(request);
+    if(!userHash || userHash === 'me' || userHash === 'supabase'){
+      const { data: u } = await supa.auth.getUser();
+      if(!u?.user) return json({ error: 'não autenticado' }, 401);
+      userHash = u.user.id;
+    }
     const from = (page - 1) * limit;
     const to = from + limit - 1;
     let query = supa.from(TABLE)
@@ -79,40 +83,55 @@ export const GET: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request }) => {
   let body: SavePayload;
   try { body = await request.json(); } catch { return json({ error: 'JSON inválido' }, 400); }
-  const { url, data, userHash } = body;
-  if (!userHash) return json({ error: 'userHash obrigatório' }, 400);
+  let { url, data, userHash } = body;
   if (typeof url !== 'string') return json({ error: 'url inválida' }, 400);
 
   if (await haveSupabase()) {
     const supa = await supaFromRequest(request);
-    const { data: inserted, error } = await supa.from(TABLE).insert({ user_hash: userHash, url, data }).select('id').single();
+    const { data: u } = await supa.auth.getUser();
+    if(!u?.user) return json({ error: 'não autenticado' }, 401);
+    if(!userHash || userHash==='supabase' || userHash==='me') userHash = u.user.id;
+    // upload snapshot ao bucket (opcional)
+    try {
+      const snapshot = JSON.stringify({ savedAt: new Date().toISOString(), url, data });
+      const path = `${userHash}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.json`;
+      await supa.storage.from('analysis_snapshots').upload(path, snapshot, { contentType: 'application/json', upsert: false });
+      // anexa referência ao snapshot dentro do objeto data a ser persistido
+      if(data && typeof data === 'object') data.__snapshot_path = path;
+    } catch {/* ignore upload errors */}
+    const { data: inserted, error } = await supa.from(TABLE).insert({ user_hash: userHash, url, data }).select('id,data').single();
     if (error) return json({ error: error.message }, 500);
-    return json({ saved: true, id: inserted?.id });
+    return json({ saved: true, id: inserted?.id, snapshot: inserted?.data?.__snapshot_path });
   }
 
   const id = (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8));
   const record = { id, url, ts: Date.now(), data };
-  const arr = store.get(userHash) || [];
+  const memKey = userHash || 'anon';
+  const arr = store.get(memKey) || [];
   arr.unshift(record);
-  store.set(userHash, arr.slice(0, 500));
+  store.set(memKey, arr.slice(0, 500));
   return json({ saved: true, id, fallback: true });
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
-  const userHash = url.searchParams.get('userHash') || '';
+  let userHash = url.searchParams.get('userHash') || '';
   const id = url.searchParams.get('id') || '';
-  if (!userHash || !id) return json({ error: 'userHash e id obrigatórios' }, 400);
+  if (!id) return json({ error: 'id obrigatório' }, 400);
 
   if (await haveSupabase()) {
     const supa = await supaFromRequest(request);
+    const { data: u } = await supa.auth.getUser();
+    if(!u?.user) return json({ error: 'não autenticado' }, 401);
+    if(!userHash || userHash==='supabase' || userHash==='me') userHash = u.user.id;
     const { error } = await supa.from(TABLE).delete().eq('id', id).eq('user_hash', userHash);
     if (error) return json({ error: error.message }, 500);
     return json({ deleted: true });
   }
 
-  const arr = store.get(userHash) || [];
+  const memKey = userHash || 'anon';
+  const arr = store.get(memKey) || [];
   const next = arr.filter(r => r.id !== id);
-  store.set(userHash, next);
+  store.set(memKey, next);
   return json({ deleted: arr.length !== next.length, fallback: true });
 };

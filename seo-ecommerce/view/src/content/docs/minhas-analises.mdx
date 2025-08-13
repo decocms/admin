@@ -20,23 +20,23 @@ Se as variáveis PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY não estiverem c
 
 <script>
 (function(){
-  const root = document.getElementById('saved-analyses-root');
+  const root = document.getElementById('saved-analises-root');
   let page=1, limit=10, total=0, q='';
   async function load(){
-    const user = localStorage.getItem('la-user');
-    const userHash = localStorage.getItem('la-user-hash');
-    if(!user || !userHash){
-      root.innerHTML = `<p>Você não está logado. Faça login na Home.</p>`; return;
-    }
-    const params = new URLSearchParams({ userHash, page:String(page), limit:String(limit) });
+    // Supabase token
+    const supaAuth = localStorage.getItem('la-supa-auth');
+    let token=null, email=null;
+    if(supaAuth){ try { const parsed = JSON.parse(supaAuth); token=parsed.access_token; email = parsed.user?.email || parsed.user?.user_metadata?.email; } catch {} }
+    if(!token){ root.innerHTML = `<p>Você não está logado. Faça login na Home.</p>`; return; }
+    const params = new URLSearchParams({ userHash: 'me', page:String(page), limit:String(limit) });
     if(q) params.set('q', q);
-    const res = await fetch('/api/analises?'+params.toString());
+    const res = await fetch('/api/analises?'+params.toString(), { headers: token? { Authorization: 'Bearer '+token } : {} });
     if(!res.ok){ root.innerHTML='<p>Erro ao carregar análises.</p>'; return; }
     const data = await res.json();
     total = data.total;
-    render(user, data.items);
+    render(email || 'Usuário', data.items, token);
   }
-  function render(user, items){
+  function render(user, items, token){
     const pages = Math.max(1, Math.ceil(total/limit));
     const rows = items.map(r=>`<tr><td>${r.url}</td><td>${new Date(r.ts).toLocaleString()}</td><td class="ma-actions"><button data-id="${r.id}" class="ma-view">Ver</button><button data-id="${r.id}" class="ma-del">Excluir</button></td></tr>`).join('');
     root.innerHTML = `
@@ -56,8 +56,7 @@ Se as variáveis PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY não estiverem c
     }));
     root.querySelectorAll('.ma-del').forEach(btn=>btn.addEventListener('click', async e=>{
       const id = e.currentTarget.getAttribute('data-id');
-      const userHash = localStorage.getItem('la-user-hash');
-      await fetch('/api/analises?userHash='+userHash+'&id='+id, { method:'DELETE' });
+      await fetch('/api/analises?userHash=me&id='+id, { method:'DELETE', headers: token? { Authorization: 'Bearer '+token } : {} });
       load();
     }));
     root.querySelector('#ma-prev').addEventListener('click', ()=>{ if(page>1){ page--; load(); } });

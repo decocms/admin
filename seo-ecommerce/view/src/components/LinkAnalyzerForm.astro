@@ -338,9 +338,14 @@
     (async () => {
       if(!lastData) return;
       // Supabase flow: depende da sessão gerenciada global (client side)
-      if(supaAvailable && window?.localStorage?.getItem('la-supa-auth')){
+      const supaAuth = supaAvailable ? window?.localStorage?.getItem('la-supa-auth') : null;
+      if(supaAvailable && supaAuth){
+        let token = null;
+        try { token = JSON.parse(supaAuth).access_token; } catch {}
         try {
-          const resp = await fetch('/api/analises', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: lastData?.input?.url || lastData?.result?.url || '[sem url]', data: lastData, userHash: 'supabase' }) });
+          const headers = { 'Content-Type':'application/json' };
+            if(token) headers['Authorization'] = 'Bearer '+token;
+          const resp = await fetch('/api/analises', { method:'POST', headers, body: JSON.stringify({ url: lastData?.input?.url || lastData?.result?.url || '[sem url]', data: lastData, userHash: 'me' }) });
           if(!resp.ok) throw new Error();
           saveBtn.textContent='Salvo'; setTimeout(()=> saveBtn.textContent='Salvar', 1800);
         } catch { statusEl.textContent='Falha (Supabase)'; }

@@ -21,6 +21,9 @@ import type { ResourceAccess } from "./auth/index.ts";
 import { DatatabasesRunSqlInput, QueryResult } from "./databases/api.ts";
 import { addGroup, type GroupIntegration } from "./groups.ts";
 import { generateUUIDv5, toAlphanumericId } from "./slugify.ts";
+import { trace } from "../observability/index.ts";
+import * as api from "@opentelemetry/api";
+import { PosthogServerClient } from "../posthog.ts";
 
 export type UserPrincipal = Pick<SupaUser, "id" | "email" | "is_anonymous">;
 
@@ -59,7 +62,38 @@ export interface SQLIteOptions {
   workspace: string;
 }
 
-export const workspaceDB = async (
+const wrapIWorkspaceDB = (
+  db: IWorkspaceDB,
+  workspace?: string,
+  turso?: boolean,
+): IWorkspaceDB => {
+  return {
+    ...db,
+    exec: ({ sql, params }) => {
+      const tracer = trace.getTracer("db-sql-tracer");
+      return tracer.startActiveSpan(
+        "db-query",
+        {
+          attributes: {
+            "db.sql.query": sql,
+            workspace,
+            turso,
+          },
+        },
+        api.context.active(),
+        async (span) => {
+          try {
+            return await db.exec({ sql, params });
+          } finally {
+            span.end();
+          }
+        },
+      );
+    },
+  };
+};
+
+const createWorkspaceDB = async (
   options: Pick<AppContext, "workspaceDO"> & {
     workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
     envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
@@ -74,7 +108,9 @@ export const workspaceDB = async (
   const shouldUseSQLite = turso !== true;
 
   if (shouldUseSQLite) {
-    return workspaceDO.get(workspaceDO.idFromName(workspace.value));
+    return workspaceDO.get(
+      workspaceDO.idFromName(workspace.value),
+    ) as IWorkspaceDB;
   }
 
   const client = await createSQLClientFor(
@@ -98,8 +134,24 @@ export const workspaceDB = async (
   };
 };
 
+export const workspaceDB = async (
+  options: Pick<AppContext, "workspaceDO"> & {
+    workspace: Pick<NonNullable<AppContext["workspace"]>, "value">;
+    envVars: Pick<EnvVars, "TURSO_GROUP_DATABASE_TOKEN" | "TURSO_ORGANIZATION">;
+  },
+  turso?: boolean,
+): Promise<IWorkspaceDB> => {
+  return wrapIWorkspaceDB(
+    await createWorkspaceDB(options, turso),
+    options.workspace.value,
+    turso,
+  );
+};
+
 export type IWorkspaceDBExecResult = { result: QueryResult[] } & Disposable;
+export type IWorkspaceDBMeta = { size: number } & Disposable;
 export interface IWorkspaceDB {
+  meta?: () => Promise<IWorkspaceDBMeta> | IWorkspaceDBMeta;
   exec: (
     args: DatatabasesRunSqlInput,
   ) => Promise<IWorkspaceDBExecResult> | IWorkspaceDBExecResult;
@@ -131,6 +183,7 @@ export interface Vars {
   immutableRes?: boolean;
   kbFileProcessor?: Workflow;
   workspaceDO: WorkspaceDO;
+  posthog: PosthogServerClient;
   stub: <
     Constructor extends ActorConstructor<Trigger> | ActorConstructor<AIAgent>,
   >(
@@ -193,6 +246,9 @@ const envSchema = z.object({
   TURSO_ADMIN_TOKEN: z.any().optional().readonly(),
   OPENAI_API_KEY: z.any().optional().readonly(),
   LLMS_ENCRYPTION_KEY: z.any().optional().readonly(),
+
+  POSTHOG_API_KEY: z.string().optional().readonly(),
+  POSTHOG_API_HOST: z.string().optional().readonly(),
 
   /**
    * Only needed for locally testing wallet features.

@@ -7,6 +7,7 @@ import { useEffect, useMemo } from "react";
 import { Markdown } from "tiptap-markdown";
 import { NoNewLine } from "./extensions/no-new-line.ts";
 import { toolMentions } from "./extensions/tool-mention.ts";
+import { useAgent } from "../agent/provider.tsx";
 
 export interface Mention {
   id: string;
@@ -63,7 +64,8 @@ export function RichTextArea({
   allowNewLine = false,
   enableToolMentions = false,
 }: RichTextAreaProps) {
-  const { data: integrations = [] } = useIntegrations();
+  const { isPublic } = useAgent();
+  const { data: integrations = [] } = useIntegrations({ isPublic });
 
   // Flatten tools from all integrations
   const tools: Tool[] = useMemo(() => {

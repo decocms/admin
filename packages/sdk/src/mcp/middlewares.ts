@@ -5,9 +5,11 @@ import {
   ListToolsRequestSchema,
   ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
-import { assertWorkspaceResourceAccess } from "./assertions.ts";
-import { type AppContext, serializeError } from "./context.ts";
+import * as api from "@opentelemetry/api";
 import z from "zod";
+import { SpanStatusCode, trace } from "../observability/index.ts";
+import { assertWorkspaceResourceAccess } from "./assertions.ts";
+import { type AppContext, serializeError, State } from "./context.ts";
 
 export interface RequestMiddlewareContext<T = any> {
   next?(): Promise<T>;
@@ -44,11 +46,62 @@ export type CallToolMiddleware = RequestMiddleware<
   z.infer<typeof CallToolResultSchema>
 >;
 
-export const withMCPErrorHandling =
-  <TInput = any, TReturn extends object | null | boolean = object>(
-    f: (props: TInput) => Promise<TReturn>,
-  ) =>
-  async (props: TInput) => {
+const safeGetContext = () => {
+  try {
+    return State.getStore();
+  } catch {
+    return undefined;
+  }
+};
+export const wrapToolFn = <
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+>(
+  f: (props: TInput) => Promise<TReturn>,
+  toolName: string,
+  workspace?: string,
+) => {
+  return async (props: TInput) => {
+    const tracer = trace.getTracer("tools");
+    return await tracer.startActiveSpan(
+      "tools.call",
+      {
+        attributes: {
+          "mcp.tool.name": toolName,
+          workspace,
+        },
+      },
+      api.context.active(),
+      async (span) => {
+        let err: unknown = null;
+        try {
+          return await f(props);
+        } catch (error) {
+          err = error;
+          throw error;
+        } finally {
+          const ctx = safeGetContext();
+          const workspace = ctx?.workspace?.value;
+          workspace && span.setAttribute("workspace", workspace);
+          err && span.recordException(err as Error);
+          span.setStatus({
+            code: err ? SpanStatusCode.ERROR : SpanStatusCode.OK,
+          });
+          span.updateName(`${toolName}`);
+          span.end();
+        }
+      },
+    );
+  };
+};
+export const withMCPErrorHandling = <
+  TInput = any,
+  TReturn extends object | null | boolean = object,
+>(
+  f: (props: TInput) => Promise<TReturn>,
+  toolName: string,
+) =>
+  wrapToolFn(async (props: TInput) => {
     try {
       const result = await f(props);
 
@@ -62,7 +115,7 @@ export const withMCPErrorHandling =
         content: [{ type: "text", text: serializeError(error) }],
       };
     }
-  };
+  }, toolName);
 
 interface AuthContext {
   integrationId: string;

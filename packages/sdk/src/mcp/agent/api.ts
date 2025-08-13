@@ -8,6 +8,7 @@ import {
   type WithTool,
 } from "../assertions.ts";
 import { type AppContext, createToolFactory } from "../context.ts";
+import { baseMessageSchema } from "../ai/api.ts";
 
 export interface AgentContext extends AppContext {
   agent: string;
@@ -25,7 +26,9 @@ export const agentGenerateText = createAgentTool({
   name: "AGENT_GENERATE_TEXT",
   description: "Generate text output using an agent",
   inputSchema: z.object({
-    message: z.string().describe("The message to send to the agent"),
+    message: z
+      .union([z.string(), baseMessageSchema])
+      .describe("The message to send to the agent"),
     options: AgentGenerateOptions.optional().nullable(),
   }),
   outputSchema: z.object({
@@ -39,13 +42,22 @@ export const agentGenerateText = createAgentTool({
       `${c.workspace.value}/Agents/${c.agent}`,
     );
 
-    const response = await agentStub.generate([
-      {
-        id: crypto.randomUUID(),
-        role: "user" as const,
-        content: message,
-      },
-    ]);
+    const asMessageArray = Array.isArray(message)
+      ? message
+      : [{ role: "user" as const, content: message }];
+
+    const asMessage = asMessageArray.map((m) => ({
+      ...m,
+      parts: [
+        {
+          type: "text" as const,
+          text: m.content,
+        },
+      ],
+      id: m.id ?? crypto.randomUUID(),
+    }));
+
+    const response = await agentStub.generate(asMessage);
 
     return { text: response.text };
   },
@@ -56,17 +68,7 @@ export const agentGenerateObject = createAgentTool({
   description: "Generate an object using an agent",
   inputSchema: z.object({
     message: z
-      .union([
-        z.string(),
-        z.array(
-          z.object({
-            id: z.string().optional(),
-            role: z.enum(["user", "assistant", "system"]),
-            content: z.string(),
-            parts: z.array(z.any()).optional(),
-          }),
-        ),
-      ])
+      .union([z.string(), baseMessageSchema])
       .describe("The message to send to the agent"),
     schema: z
       .any()
@@ -91,6 +93,12 @@ export const agentGenerateObject = createAgentTool({
 
     const asMessage = asMessageArray.map((m) => ({
       ...m,
+      parts: [
+        {
+          type: "text" as const,
+          text: m.content,
+        },
+      ],
       id: m.id ?? crypto.randomUUID(),
     }));
 

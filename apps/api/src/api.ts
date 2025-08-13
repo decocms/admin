@@ -19,6 +19,7 @@ import {
   withMCPAuthorization,
   withMCPErrorHandling,
   WORKSPACE_TOOLS,
+  wrapToolFn,
 } from "@deco/sdk/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type Context, Hono } from "hono";
@@ -44,6 +45,7 @@ import {
   ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import { getIntegration } from "packages/sdk/src/mcp/integrations/api.ts";
+import { createPosthogServerClient } from "packages/sdk/src/posthog.ts";
 
 export const app = new Hono<AppEnv>();
 export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
@@ -66,6 +68,10 @@ export const honoCtxToAppCtx = (c: Context<AppEnv>): AppContext => {
     kbFileProcessor: c.env.KB_FILE_PROCESSOR,
     workspaceDO: c.env.WORKSPACE_DB,
     workspace: slug && root ? { root, slug, value: workspace } : undefined,
+    posthog: createPosthogServerClient({
+      apiKey: envs.POSTHOG_API_KEY,
+      apiHost: envs.POSTHOG_API_HOST,
+    }),
   };
 };
 
@@ -120,7 +126,7 @@ const createMCPHandlerFor = (
               : z.object({}).shape,
         },
         // @ts-expect-error: zod shape is not typed
-        withMCPErrorHandling(tool.handler),
+        withMCPErrorHandling(tool.handler, tool.name),
       );
     }
 
@@ -172,15 +178,18 @@ const createToolCallHandlerFor = <
     }
 
     startTime(c, tool);
-    const toolFn = client[tool as TDefinition[number]["name"]] as (
-      args: z.ZodType<TDefinition[number]["inputSchema"]>,
-    ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>;
+    const ctx = honoCtxToAppCtx(c);
+    const toolFn = wrapToolFn(
+      client[tool as TDefinition[number]["name"]] as (
+        args: z.ZodType<TDefinition[number]["inputSchema"]>,
+      ) => Promise<z.ZodType<TDefinition[number]["outputSchema"]>>,
+      tool,
+      ctx?.workspace?.value,
+    );
 
-    const result = await State.run(
-      honoCtxToAppCtx(c),
-      (args) => toolFn(args),
-      data,
-    ).catch(mapMCPErrorToHTTPExceptionOrThrow);
+    const result = await State.run(ctx, (args) => toolFn(args), data).catch(
+      mapMCPErrorToHTTPExceptionOrThrow,
+    );
     endTime(c, tool);
 
     return c.json({ data: result });

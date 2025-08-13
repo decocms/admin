@@ -10,6 +10,10 @@ export const ANALYTICS = posthog.init(POSTHOG_PROJECT_API_KEY, {
   api_host: POSTHOG_ORIGIN,
   person_profiles: "always",
   capture_pageview: false,
+  capture_exceptions: true,
+  defaults: "2025-05-24",
+  // Uncomment this if you want to test event tracking in development
+  // debug: import.meta.env.MODE === "development",
 });
 
 let lastUserId: string | undefined = undefined;

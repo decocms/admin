@@ -123,13 +123,13 @@ export const WELL_KNOWN_EMAIL_DOMAINS = new Set([
   "mailbox.org", // Privacy-focused
 ]);
 
-export const POSTHOG_PROJECT_API_KEY =
-  "phc_SBZ2fxlXX671FVuSSwPdqzIgrS10hCL1mKFBbAfrmnB";
+export const POSTHOG_PROJECT_API_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 
-export const POSTHOG_ORIGIN = "https://posthog.decocluster.com";
+export const POSTHOG_ORIGIN = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
-export const POSTHOG_SHOULD_TRACK =
-  globalThis.location.hostname !== "localhost";
+// Uncomment this if you want to test event tracking in development
+// export const POSTHOG_SHOULD_TRACK = true;
+export const POSTHOG_SHOULD_TRACK = import.meta.env.MODE !== "development";
 
 export const LEGACY_INTEGRATIONS = [
   "i:user-management",

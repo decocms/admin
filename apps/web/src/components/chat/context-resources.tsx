@@ -1,4 +1,5 @@
 import {
+  applyDisplayNameToIntegration,
   DEFAULT_MODEL,
   type Integration,
   type Model,
@@ -7,17 +8,10 @@ import {
   useModels,
   useSDK,
   useWriteFile,
-  applyDisplayNameToIntegration,
 } from "@deco/sdk";
 import { Hosts } from "@deco/sdk/hosts";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Checkbox } from "@deco/ui/components/checkbox.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@deco/ui/components/dropdown-menu.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
 import {
   Popover,
@@ -42,9 +36,9 @@ import {
 import { useAgentSettingsToolsSet } from "../../hooks/use-agent-settings-tools-set.ts";
 import { useUserPreferences } from "../../hooks/use-user-preferences.ts";
 import { formatFilename } from "../../utils/format.ts";
+import { useAgent } from "../agent/provider.tsx";
 import { IntegrationIcon } from "../integrations/common.tsx";
 import { SelectConnectionDialog } from "../integrations/select-connection-dialog.tsx";
-import { useAgent } from "../agent/provider.tsx";
 import { formatToolName } from "./utils/format-tool-name.ts";
 
 interface IntegrationWithTools extends Integration {
@@ -54,7 +48,7 @@ interface IntegrationWithTools extends Integration {
   }>;
 }
 
-interface UploadedFile {
+export interface UploadedFile {
   file: File;
   url?: string;
   status: "uploading" | "done" | "error";
@@ -114,7 +108,15 @@ const useGlobalDrop = (handleFileDrop: (e: DragEvent) => void) => {
   return isDragging;
 };
 
-export function ContextResources() {
+interface ContextResourcesProps {
+  uploadedFiles: UploadedFile[];
+  setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
+}
+
+export function ContextResources({
+  uploadedFiles,
+  setUploadedFiles,
+}: ContextResourcesProps) {
   const { agent } = useAgent();
   const { workspace } = useSDK();
   const { data: integrations = [] } = useIntegrations();
@@ -125,7 +127,6 @@ export function ContextResources() {
   const { preferences } = useUserPreferences();
   const { disableAllTools, enableAllTools, setIntegrationTools } =
     useAgentSettingsToolsSet();
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const writeFileMutation = useWriteFile();
 
@@ -320,8 +321,21 @@ export function ContextResources() {
           className="hidden"
           accept={getAcceptedFileTypes()}
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        {(selectedModel.capabilities.includes("file-upload") ||
+          selectedModel.capabilities.includes("image-upload")) && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            title="Upload files"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Icon name="file_upload" />
+          </Button>
+        )}
+        <SelectConnectionDialog
+          onSelect={handleAddIntegration}
+          trigger={
             <Button
               type="button"
               variant="outline"
@@ -330,26 +344,8 @@ export function ContextResources() {
             >
               <Icon name="alternate_email" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" side="top">
-            {(selectedModel.capabilities.includes("file-upload") ||
-              selectedModel.capabilities.includes("image-upload")) && (
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                <Icon name="upload" className="mr-2 h-4 w-4" />
-                Upload files
-              </DropdownMenuItem>
-            )}
-            <SelectConnectionDialog
-              onSelect={handleAddIntegration}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Icon name="widgets" className="mr-2 h-4 w-4" />
-                  Add integration
-                </DropdownMenuItem>
-              }
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
+          }
+        />
 
         {/* Integration Items */}
         {integrationsWithTotalTools.map(

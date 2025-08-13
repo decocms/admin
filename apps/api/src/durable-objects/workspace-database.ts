@@ -1,6 +1,10 @@
 import { DurableObject } from "cloudflare:workers";
 import { Bindings } from "../utils/context.ts";
-import { DatatabasesRunSqlInput, IWorkspaceDB } from "@deco/sdk/mcp";
+import {
+  DatatabasesRunSqlInput,
+  IWorkspaceDB,
+  IWorkspaceDBMeta,
+} from "@deco/sdk/mcp";
 
 export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
   private sql: SqlStorage;
@@ -11,6 +15,10 @@ export class WorkspaceDatabase extends DurableObject implements IWorkspaceDB {
   ) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
+  }
+
+  meta(): IWorkspaceDBMeta {
+    return { size: this.sql.databaseSize, [Symbol.dispose]: () => {} };
   }
 
   exec({ sql, params }: DatatabasesRunSqlInput) {

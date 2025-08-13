@@ -60,7 +60,8 @@ const safeExecute = async (
   stmt: DatatabasesRunSqlInput,
 ) => {
   try {
-    return { data: await client.exec(stmt), error: null };
+    using data = await client.exec(stmt);
+    return { data, error: null };
   } catch (e) {
     return { data: null, error: e };
   }

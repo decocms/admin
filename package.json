@@ -9,6 +9,8 @@
   "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo:view": "cd seo-ecommerce/view && npm run dev",
+  "deploy:seo": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy",
+  "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "test": "vitest run",

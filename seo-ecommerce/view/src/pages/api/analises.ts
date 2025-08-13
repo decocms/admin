@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getSupabase } from '../../lib/supabaseClient';
+import { getSupabase, getSupabaseForToken } from '../../lib/supabaseClient';
 
 // Fallback em memória (usado se Supabase não configurado)
 const store: Map<string, any[]> = (globalThis as any).__ANALISES_STORE__ || new Map();
@@ -9,13 +9,16 @@ interface SavePayload { url: string; data: any; userHash?: string; user?: string
 
 const TABLE = 'analyses';
 
-async function haveSupabase() {
-  try {
-    getSupabase();
-    return true;
-  } catch {
-    return false;
+async function haveSupabase() { try { getSupabase(); return true; } catch { return false; } }
+
+async function supaFromRequest(req: Request){
+  const auth = req.headers.get('authorization');
+  if(auth && auth.startsWith('Bearer ')){
+    const token = auth.slice(7);
+    return getSupabaseForToken(token);
   }
+  // fallback: sem token explícito (SSR limitations) – usa client público (apenas selects públicos via RLS)
+  return getSupabase();
 }
 
 function json(body: any, status = 200) {
@@ -47,7 +50,7 @@ export const GET: APIRoute = async ({ request }) => {
   const q = (url.searchParams.get('q') || '').toLowerCase();
 
   if (await haveSupabase()) {
-    const supa = getSupabase();
+    const supa = await supaFromRequest(request);
     const from = (page - 1) * limit;
     const to = from + limit - 1;
     let query = supa.from(TABLE)
@@ -81,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (typeof url !== 'string') return json({ error: 'url inválida' }, 400);
 
   if (await haveSupabase()) {
-    const supa = getSupabase();
+    const supa = await supaFromRequest(request);
     const { data: inserted, error } = await supa.from(TABLE).insert({ user_hash: userHash, url, data }).select('id').single();
     if (error) return json({ error: error.message }, 500);
     return json({ saved: true, id: inserted?.id });
@@ -102,7 +105,7 @@ export const DELETE: APIRoute = async ({ request }) => {
   if (!userHash || !id) return json({ error: 'userHash e id obrigatórios' }, 400);
 
   if (await haveSupabase()) {
-    const supa = getSupabase();
+    const supa = await supaFromRequest(request);
     const { error } = await supa.from(TABLE).delete().eq('id', id).eq('user_hash', userHash);
     if (error) return json({ error: error.message }, 500);
     return json({ deleted: true });

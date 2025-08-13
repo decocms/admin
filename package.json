@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
+  "dev:all": "concurrently -n web,api,seo-view,seo-worker -c green,cyan,magenta,yellow \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
+  "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
+  "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "test": "vitest run",

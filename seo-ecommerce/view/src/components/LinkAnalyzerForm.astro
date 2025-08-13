@@ -181,8 +181,56 @@
   }
 
   async function probe(){
-    statusEl.textContent='Usando worker de produção.';
-    apiBase=PROD_FALLBACK; probing=false; showMode('prod');
+    statusEl.textContent='Detectando endpoint...';
+    // If estamos no próprio worker (porta 8787), usar same-origin ''. Caso contrário, tentar worker explícito localhost:8787 antes do fallback prod.
+    const candidates = [];
+    if(location.port === '8787') {
+      candidates.push('');
+    } else {
+      candidates.push('http://localhost:8787');
+    }
+    candidates.push(PROD_FALLBACK);
+    const DEBUG = /laDebug=1/.test(location.search);
+    const PROBE_TIMEOUT = 1200; // ms por tentativa
+    const PROBE_RETRIES = 2; // tentativas por candidato antes de avançar
+
+    async function fetchWithTimeout(url, opts){
+      const ctrl = new AbortController();
+      const id = setTimeout(()=> ctrl.abort(), PROBE_TIMEOUT);
+      try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+      finally { clearTimeout(id); }
+    }
+
+    async function tryCandidate(base){
+      let lastErr;
+      for(let attempt=1; attempt<=PROBE_RETRIES; attempt++){
+        try {
+          const res = await fetchWithTimeout((base? base.replace(/\/$/,''): '') + '/mcp/tools', { method:'GET' });
+          if(res.ok) return { ok:true, res };
+          lastErr = new Error('HTTP '+res.status);
+        } catch(e){ lastErr = e; if(DEBUG) console.debug('[link-analyzer] probe erro', base||'(same-origin)', 'tentativa', attempt, e?.message); }
+      }
+      return { ok:false, error:lastErr };
+    }
+    for(const base of candidates){
+      const attempt = await tryCandidate(base);
+      if(attempt.ok){
+        const res = attempt.res;
+        apiBase = base; probing=false;
+        const local = base==='';
+        const src = res.headers.get('X-Source');
+        if(src==='proxy'){ statusEl.textContent = local? 'Worker local (proxy) ativo.' : 'Worker produção via proxy.'; showMode(local? 'local':'prod','proxy'); }
+        else { statusEl.textContent = local? 'Worker local detectado.' : 'Worker produção detectado.'; showMode(local? 'local':'prod'); }
+        if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode(local? 'local':'prod','supa'); }
+        return;
+      } else if(DEBUG) {
+        console.info('[link-analyzer] candidato falhou', base||'(same-origin)', attempt.error?.message);
+      }
+    }
+    probing=false;
+    apiBase=PROD_FALLBACK; // fallback anyway
+    statusEl.textContent='Nenhum endpoint local (timeout '+PROBE_TIMEOUT+'ms x'+PROBE_RETRIES+'), usando produção.';
+    showMode('prod');
     if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode('prod','supa'); }
   }
   probe();

@@ -69,6 +69,9 @@
     ]
   },
   "dependencies": {
-    "zod": "^3.24.3"
+  "zod": "^3.24.3",
+  "@supabase/supabase-js": "2.49.4",
+  "@supabase/ssr": "0.6.1",
+  "@supabase/postgrest-js": "1.19.4"
   }
 }

@@ -277,9 +277,9 @@ export const genEnv = async ({
             if (!resp.ok) {
               console.warn(`⚠️ Fallback /mcp/tools HTTP ${resp.status} for ${binding.name}`);
             } else {
-              const json = await resp.json();
-              if (Array.isArray(json.tools) && json.tools.length > 0) {
-                tools.structuredContent.tools = json.tools.map((t: any) => ({
+              const json: any = await resp.json().catch(()=> ({}));
+              if (json && Array.isArray((json as any).tools) && (json as any).tools.length > 0) {
+                tools.structuredContent.tools = (json as any).tools.map((t: any) => ({
                   name: t.name,
                   inputSchema: t.inputSchema ?? t.input_schema ?? {},
                   outputSchema: t.outputSchema ?? t.output_schema,

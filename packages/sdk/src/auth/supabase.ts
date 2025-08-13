@@ -2,8 +2,6 @@ import { createServerClient, serializeCookieHeader } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_URL } from "../constants.ts";
 
-export { SUPABASE_URL };
-
 // from @std/http
 export function getCookies(headers: Headers): Record<string, string> {
   const cookie = headers.get("Cookie");
@@ -26,7 +24,8 @@ export function getCookies(headers: Headers): Record<string, string> {
 export const SB_TOKEN_COOKIE_NAME = "sb-auth-auth-token";
 
 interface CreateSupabaseSessionClientResult {
-  supabase: SupabaseClient;
+  // Use 'any' to avoid protected member mismatch when multiple copies of package appear during type resolution.
+  supabase: any;
   headers: Headers;
 }
 

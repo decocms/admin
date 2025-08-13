@@ -1,5 +1,6 @@
 import { getUserBySupabaseCookie } from "@deco/sdk/auth";
 import { createSupabaseClient } from "@deco/sdk/storage";
+// Força generic amplo para evitar conflito de instâncias distintas de SupabaseClient
 import type {
   EmailOtpType,
   Provider,
@@ -67,8 +68,8 @@ export const getUser = async (
   });
 
   const user = await getUserBySupabaseCookie(
-    ctx.req.raw,
-    supabase,
+    ctx.req.raw as any,
+    supabase as any,
     DECO_CHAT_API_JWT_PRIVATE_KEY && DECO_CHAT_API_JWT_PUBLIC_KEY
       ? {
           public: DECO_CHAT_API_JWT_PUBLIC_KEY,

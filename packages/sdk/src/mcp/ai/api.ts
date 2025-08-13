@@ -107,7 +107,7 @@ const setupLLMInstance = async (modelId: string, c: AppContext) => {
     wellKnownModel || !c.envVars.LLMS_ENCRYPTION_KEY
       ? undefined
       : new SupabaseLLMVault(
-          c.db,
+          c.db as any,
           c.envVars.LLMS_ENCRYPTION_KEY,
           c.workspace.value,
         );

@@ -1,5 +1,7 @@
 # Astro MCP Server Template
 
+[![Monorepo Source](https://img.shields.io/badge/source-ggstvfer%2Fchat%2Fseo--ecommerce-576b9e?logo=github)](https://github.com/ggstvfer/chat/tree/main/seo-ecommerce)
+
 > Migration Note (Mirror Sync)
 >
 > This codebase is now mirrored from the monorepo `ggstvfer/chat` (directory `seo-ecommerce/`).
@@ -176,6 +178,3 @@ This template is built for deploying primarily on top of the
 **Ready to build your next MCP server with beautiful documentation?
 [Get started now!](https://deco.chat)**
 
-
-BD
-m%syBi5*4Wk5*Z.

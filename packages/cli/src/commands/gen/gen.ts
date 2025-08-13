@@ -180,6 +180,7 @@ export const genEnv = async ({
   bindings,
   selfUrl,
 }: Options) => {
+  console.log(`🛠️ genEnv start (workspace=${workspace ?? 'none'}, local=${!!local}, selfUrl=${selfUrl ?? 'none'})`);
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
 
@@ -188,21 +189,23 @@ export const genEnv = async ({
     types.set("Env", 1); // set the default env type
     let tsTypes = "";
     const mapBindingTools: Record<string, string[]> = {};
+    // Determine effective bindings: if only generating SELF types and no explicit bindings provided, skip DEFAULT_BINDINGS to avoid auth/API calls.
+    const effectiveBindings: DecoBinding[] = [
+      ...bindings,
+      ...((!bindings || bindings.length === 0) && selfUrl ? [] : DEFAULT_BINDINGS),
+    ];
+    if (selfUrl) {
+      effectiveBindings.push({
+        name: "SELF",
+        type: "mcp" as const,
+        integration_url: selfUrl,
+        ignoreCache: true,
+      } as any);
+    }
+    console.log(`🔧 Effective bindings: ${effectiveBindings.map(b => (b as any).name || 'unknown').join(', ')}`);
+
     const props = await Promise.all(
-      [
-        ...bindings,
-        ...DEFAULT_BINDINGS,
-        ...(selfUrl
-          ? [
-              {
-                name: "SELF",
-                type: "mcp" as const,
-                integration_url: selfUrl,
-                ignoreCache: true,
-              },
-            ]
-          : []),
-      ].map(async (binding) => {
+      effectiveBindings.map(async (binding) => {
         let connection: unknown;
         let stateKey: KeyInfo | undefined;
         if ("integration_id" in binding) {
@@ -232,35 +235,75 @@ export const genEnv = async ({
           connection = app.structuredContent.connection;
         } else if ("integration_url" in binding) {
           connection = {
-            type: "HTTP",
-            url: binding.integration_url,
-          };
+              type: "HTTP",
+              url: (binding as any).integration_url,
+            } as any;
         } else {
           throw new Error(`Unknown binding type: ${binding}`);
         }
 
-        const tools = (await apiClient.callTool({
-          name: "INTEGRATIONS_LIST_TOOLS",
-          arguments: {
-            connection,
-            ignoreCache:
-              "ignoreCache" in binding ? binding.ignoreCache : undefined,
-          },
-        })) as {
-          structuredContent: {
-            tools: {
-              name: string;
-              inputSchema: any;
-              outputSchema?: any;
-              description?: string;
-            }[];
-          };
-        };
+        let tools: { structuredContent: { tools?: { name: string; inputSchema: any; outputSchema?: any; description?: string }[] } };
+        try {
+          tools = (await apiClient.callTool({
+            name: "INTEGRATIONS_LIST_TOOLS",
+            arguments: {
+              connection,
+              ignoreCache:
+                "ignoreCache" in binding ? binding.ignoreCache : undefined,
+            },
+          })) as any;
+        } catch (err) {
+          console.warn(`⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${(err as Error).message}`);
+          tools = { structuredContent: { tools: [] } };
+        }
 
-        if (!Array.isArray(tools.structuredContent?.tools)) {
-          console.warn(
-            `⚠️ No tools found for integration ${binding.name}. Skipping...`,
-          );
+        const integrationUrl = (binding as any).integration_url as string | undefined;
+        const shouldAttemptHttpFallback =
+          typeof integrationUrl === "string" &&
+          (integrationUrl.startsWith("http://") || integrationUrl.startsWith("https://"));
+
+        if (shouldAttemptHttpFallback) {
+          console.log(`🔎 Attempting HTTP fallback for integration ${binding.name} ...`);
+        }
+
+        if (
+          shouldAttemptHttpFallback &&
+          (!tools.structuredContent?.tools || tools.structuredContent.tools.length === 0)
+        ) {
+          try {
+            const url = new URL("/mcp/tools", integrationUrl!);
+            console.log(`🌐 Fetching ${url.toString()} for fallback tool listing`);
+            const resp = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+            if (!resp.ok) {
+              console.warn(`⚠️ Fallback /mcp/tools HTTP ${resp.status} for ${binding.name}`);
+            } else {
+              const json = await resp.json();
+              if (Array.isArray(json.tools) && json.tools.length > 0) {
+                tools.structuredContent.tools = json.tools.map((t: any) => ({
+                  name: t.name,
+                  inputSchema: t.inputSchema ?? t.input_schema ?? {},
+                  outputSchema: t.outputSchema ?? t.output_schema,
+                  description: t.description,
+                }));
+                const count = tools.structuredContent.tools?.length ?? 0;
+                console.log(
+                  `✅ HTTP fallback loaded ${count} tools for integration ${binding.name}.`,
+                );
+              } else {
+                console.warn(`⚠️ HTTP fallback returned no tools array for ${binding.name}`);
+              }
+            }
+          } catch (e) {
+            console.warn(`⚠️ Fallback fetch failed for ${binding.name}: ${(e as Error).message}`);
+          }
+        }
+
+        if (!tools.structuredContent?.tools || tools.structuredContent.tools.length === 0) {
+          console.warn(`⚠️ No tools found for integration ${binding.name}. Skipping...`);
+          // Provide a stub so output file is not fully empty for diagnostics
+          if (binding.name === "SELF") {
+            tsTypes += `\n// No tools discovered for SELF (${(binding as any).integration_url})\n`;
+          }
           return null;
         }
 
@@ -328,8 +371,8 @@ export const genEnv = async ({
       }),
     );
 
-    return await format(`
-    // Generated types - do not edit manually
+  const generated = await format(`
+  // Generated types - do not edit manually
 ${tsTypes}
    
   import { z } from "zod";
@@ -406,6 +449,11 @@ ${tsTypes}
       .join(",\n")}
   }
   `);
+    if (!tsTypes.trim()) {
+      // Ensure file not empty for diagnostics when no tools
+      return "// Generated types (empty) - no tools discovered for provided bindings\n" + generated;
+    }
+    return generated;
   } finally {
     // Clean up the client connections
     await client.close();

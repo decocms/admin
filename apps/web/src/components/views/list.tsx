@@ -1,49 +1,134 @@
-import { useCurrentTeam } from "../sidebar/team-selector";
-import { Icon } from "@deco/ui/components/icon.tsx";
+import { useAddView, useAgents, useBindingIntegrations, useConnectionViews, useRemoveView } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
+import { Icon } from "@deco/ui/components/icon.tsx";
+import { toast } from "@deco/ui/components/sonner.tsx";
+import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
+import { useDeferredValue, useMemo, useState } from "react";
+import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
 import { EmptyState } from "../common/empty-state.tsx";
 import { ListPageHeader } from "../common/list-page-header.tsx";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
-import { useNavigateWorkspace } from "../../hooks/use-navigate-workspace.ts";
-import { useViewMode } from "@deco/ui/hooks/use-view-mode.ts";
-import { useBindingIntegrations } from "@deco/sdk";
-import { useMemo, useState } from "react";
-import { Link } from "react-router";
-import { Input } from "@deco/ui/components/input.tsx";
-import { IntegrationIcon } from "../integrations/common.tsx";
-import { cn } from "@deco/ui/lib/utils.ts";
+import { useCurrentTeam } from "../sidebar/team-selector";
+
+// Helper component to handle individual integration view loading
+function IntegrationViews({ integration, onViewsLoaded }: { 
+  integration: { id: string; connection: any; name: string; icon?: string; description?: string };
+  onViewsLoaded: (integrationId: string, views: any[], isLoading: boolean) => void;
+}) {
+  const { data: viewsData, isLoading } = useConnectionViews({
+    id: integration.id,
+    connection: integration.connection
+  });
+
+  // Notify parent component when views are loaded or loading state changes
+  useMemo(() => {
+    onViewsLoaded(integration.id, viewsData?.views || [], isLoading);
+  }, [integration.id, viewsData?.views, isLoading, onViewsLoaded]);
+
+  return null; // This component doesn't render anything
+}
 
 function ViewsList() {
-  const team = useCurrentTeam();
+  const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const integrationsWithViews = useBindingIntegrations("View");
+  const { data: agents } = useAgents();
+  console.log("agents", agents);
+  const { data: integrations = [] } = useBindingIntegrations("View");
   const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const addViewMutation = useAddView();
+  const removeViewMutation = useRemoveView();
+  
+  // Track views and loading states for all integrations
+  const [integrationViews, setIntegrationViews] = useState<Record<string, { views: any[]; isLoading: boolean }>>({});
+  
+  const handleViewsLoaded = useMemo(() => (integrationId: string, views: any[], isLoading: boolean) => {
+    setIntegrationViews(prev => ({
+      ...prev,
+      [integrationId]: { views, isLoading }
+    }));
+  }, []);
 
-  const filteredTools = useMemo(() => {
-    if (!searchTerm) return tools;
-    
-    return tools.filter((tool) => {
-      const toolName = tool.name.toLowerCase();
-      const toolDescription = tool.description?.toLowerCase() || "";
-      const integrationName = tool.integration.name.toLowerCase();
-      const search = searchTerm.toLowerCase();
-      
-      return (
-        toolName.includes(search) ||
-        toolDescription.includes(search) ||
-        integrationName.includes(search)
-      );
+  // Combine all views with their integration info
+  const allViews = useMemo(() => {
+    return integrations.flatMap(integration => {
+      const data = integrationViews[integration.id];
+      const views = data?.views || [];
+      return views.map((view: any) => {
+        const existingView = currentTeam.views.find((teamView) => {
+          const metadata = teamView.metadata as { url?: string };
+          return metadata?.url === view.url;
+        });
+        return {
+        ...view,
+        isAdded: !!existingView,
+        teamViewId: existingView?.id,
+        integration: {
+          id: integration.id,
+          name: integration.name,
+          icon: integration.icon,
+          description: integration.description,
+        }
+      }});
     });
-  }, [tools, searchTerm]);
+  }, [integrations, integrationViews, currentTeam]);
 
-  const handleCreateView = () => {
-    // TODO: Implement view creation
-    console.log("Create view clicked");
+  // Filter views based on deferred search term for better performance
+  const filteredViews = useMemo(() => {
+    if (!deferredSearchTerm) return allViews;
+    
+    const lowercaseSearch = deferredSearchTerm.toLowerCase();
+    return allViews.filter(view => 
+      view.title?.toLowerCase().includes(lowercaseSearch) ||
+      view.integration.name.toLowerCase().includes(lowercaseSearch)
+    );
+  }, [allViews, deferredSearchTerm]);
+
+  // Check if any integration is still loading
+  const isLoading = Object.values(integrationViews).some(data => data.isLoading);
+
+  const handleAddView = async (view: (typeof allViews)[0]) => {
+    try {
+      await addViewMutation.mutateAsync({
+        view: { 
+          id: crypto.randomUUID(),
+          title: view.title,
+          icon: view.icon,
+          type: "custom" as const,
+          url: view.url,
+        },
+      });
+
+      toast.success(`View "${view.title}" added successfully`);
+    } catch (error) {
+      console.error("Error adding view:", error);
+      toast.error(`Failed to add view "${view.title}"`);
+    }
   };
 
-  const beautifyToolName = (text: string) => {
+  const handleRemoveView = async (
+    viewWithStatus: (typeof allViews)[0],
+  ) => {
+    if (!viewWithStatus.teamViewId) {
+      toast.error("No view to remove");
+      return;
+    }
+
+    try {
+      await removeViewMutation.mutateAsync({
+        viewId: viewWithStatus.teamViewId,
+      });
+
+      toast.success(`View "${viewWithStatus.title}" removed successfully`);
+    } catch (error) {
+      console.error("Error removing view:", error);
+      toast.error(`Failed to remove view "${viewWithStatus.title}"`);
+    }
+  };
+
+  const beautifyViewName = (text: string) => {
     return text
       .replace("DECO_CHAT_VIEW_", "")
       .replace(/_/g, " ")
@@ -53,6 +138,15 @@ function ViewsList() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Hidden components that handle individual integration view loading */}
+      {integrations.map(integration => (
+        <IntegrationViews
+          key={integration.id}
+          integration={integration}
+          onViewsLoaded={handleViewsLoaded}
+        />
+      ))}
+
       <ListPageHeader
         input={{
           placeholder: "Search views",
@@ -62,52 +156,78 @@ function ViewsList() {
         view={{ viewMode, onChange: setViewMode }}
       />
 
-      {filteredTools.length > 0 ? (
-        <div className="flex-1 min-h-0 overflow-x-auto">
-          {viewMode === "table" ? (
-            <div className="p-4">
-              <p className="text-muted-foreground">Table view coming soon...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-              {filteredTools.map((tool) => (
-                <Card key={`${tool.integration.id}-${tool.name}`} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <IntegrationIcon
-                        icon={tool.integration.icon}
-                        name={tool.integration.name}
-                        className="w-8 h-8 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">
-                          {beautifyToolName(tool.name)}
-                        </h3>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {tool.integration.name}
-                        </p>
-                        {tool.description && (
-                          <p className="text-xs text-muted-foreground truncate mt-1">
-                            {tool.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+      {/* Show loading indicator if still loading some views */}
+      {isLoading && allViews.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-muted-foreground">Loading views...</div>
         </div>
-      ) : (
+      )}
+
+      {isLoading && allViews.length > 0 && (
+        <div className="p-2 text-sm text-muted-foreground text-center border-b">
+          Loading additional views...
+        </div>
+      )}
+
+      {filteredViews.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+        {filteredViews.map((view) => (
+          <Card key={`${view.integration.id}-${view.title}`} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Icon
+                  name={view.icon.toLowerCase()}
+                  className="w-6 h-6 shrink-0"
+                  size={24}
+                />
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium truncate">
+                    {beautifyViewName(view.title || '')}
+                  </h3>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {view.integration.name}
+                  </p>
+                </div>
+                {view.isAdded ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveView(view)}
+                        disabled={removeViewMutation.isPending}
+                      >
+                        {removeViewMutation.isPending ? (
+                          <Icon name="hourglass_empty" size={14} />
+                        ) : (
+                          <Icon name="remove" size={14} />
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddView(view)}
+                        disabled={addViewMutation.isPending}
+                      >
+                        {addViewMutation.isPending ? (
+                          <Icon name="hourglass_empty" size={14} />
+                        ) : (
+                          <Icon name="add" size={14} />
+                        )}
+                      </Button>
+                    )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      )}
+
+      {filteredViews.length === 0 && !isLoading && (
         <EmptyState
           icon="dashboard"
           title="No views found"
-          description={searchTerm ? "No views match your search." : "No view tools are available from your integrations."}
-          buttonProps={{
-            children: "Create view",
-            onClick: handleCreateView,
-          }}
+          description={deferredSearchTerm ? "No views match your search." : "No view tools are available from your integrations."}
         />
       )}
     </div>

@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "description": "Deco MCP server with an Astro documentation site, tools and workflows",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "mkdir -p view-build && deco dev",
+    "dev:remote": "mkdir -p view-build && wrangler dev --remote",
+    "deploy": "wrangler build && deco deploy ./dist",
+    "gen": "deco gen > deco.gen.ts",
+    "gen:self": "deco gen --self=$DECO_SELF_URL > deco.gen.ts",
+    "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts",
+  "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.6.0",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@deco/cli": "npm:@jsr/deco__cli@^0.7.5",
+    "@types/node": "^24.2.1",
+    "ts-node": "^10.9.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.24.3"
+  }
+}

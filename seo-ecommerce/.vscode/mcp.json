@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "seo-ecommerce": {
+      "type": "http",
+      "url": "https://localhost-2a0884c2.deco.host/mcp"
+    }
+  }
+}

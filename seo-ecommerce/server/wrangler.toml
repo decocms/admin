@@ -1,0 +1,19 @@
+#:schema node_modules/@deco/workers-runtime/config-schema.json
+name = "seo-ecommerce"
+main = "main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "/users/387b3ea3-4b2a-4f05-bef7-f3e02b2e00f9"
+
+[assets]
+directory = "./view-build"
+binding = "ASSETS"
+
+[deco]
+workspace = "/users/387b3ea3-4b2a-4f05-bef7-f3e02b2e00f9"
+bindings = []
+enable_workflows = false
+local = false
+
+# Workflows / Durable Objects temporarily disabled to allow deploy on free plan
+# without new_sqlite_classes migration complexity. Reintroduce later if needed.

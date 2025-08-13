@@ -1,0 +1,13 @@
+{
+  "name": "link-analyzer",
+  "version": "1.0.0",
+  "description": "A tool for analyzing links for SEO purposes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "supabase": "^2.0.0"
+  }
+}

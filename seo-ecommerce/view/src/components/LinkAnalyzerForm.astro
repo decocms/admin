@@ -1,0 +1,150 @@
+---
+// LinkAnalyzerForm Astro component (no React)
+---
+<style>
+  .la-flex { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .la-history { margin-top:18px; }
+  .la-history button { background:#eef2f7; border:1px solid #d0d7de; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; }
+  .la-history button:hover { background:#e2e8f0; }
+  .la-chip { display:inline-block; margin:4px 6px 0 0; }
+  .la-spinner { width:16px; height:16px; border:3px solid #cbd5e1; border-top-color:#2563eb; border-radius:50%; animation: la-spin 0.8s linear infinite; display:inline-block; vertical-align:middle; }
+  @keyframes la-spin { to { transform:rotate(360deg); } }
+  .la-badge { font-size:11px; background:#2563eb; color:#fff; padding:2px 6px; border-radius:10px; margin-left:8px; }
+  .la-status { font-size:12px; color:#555; margin-left:4px; }
+  .la-muted { color:#64748b; font-size:12px; }
+  .la-section-title { margin-top:28px; font-size:14px; font-weight:600; }
+  .la-result { background:#0f172a; color:#e2e8f0; }
+</style>
+<div id="link-analyzer-root" style="margin:2em 0;">
+  <form id="link-analyzer-form" style="margin-bottom:1em;">
+    <div class="la-flex">
+      <label style="flex:1; min-width:320px; font-weight:500;">
+        URL para analisar
+        <input id="la-input" type="url" required placeholder="https://exemplo.com" style="margin-top:4px;width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;" />
+      </label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="la-submit" type="submit" style="padding:10px 18px;border-radius:6px;background:#2563eb;color:#fff;border:none;cursor:pointer;font-weight:500;">Analisar</button>
+        <span id="la-loading" style="display:none;" aria-label="Carregando">
+          <span class="la-spinner"></span>
+        </span>
+      </div>
+    </div>
+    <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
+      <span id="la-status" class="la-status"></span>
+      <span id="la-mode" class="la-badge" style="display:none;"></span>
+    </div>
+  </form>
+  <div id="la-error" style="color:#dc2626;margin-top:8px;display:none;font-weight:500;"></div>
+  <pre id="la-result" style="display:none;margin-top:16px;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
+  <div id="la-history" class="la-history" style="display:none;">
+    <div class="la-section-title">Histórico recente</div>
+    <div id="la-history-items"></div>
+    <div class="la-muted" style="margin-top:4px;">Armazena até 8 URLs localmente (localStorage).</div>
+  </div>
+</div>
+<script>
+(function(){
+  const PROD_FALLBACK = 'https://seo-ecommerce.ggstv-fer.workers.dev';
+  const MAX_HISTORY = 8;
+  const form = document.getElementById('link-analyzer-form');
+  const input = document.getElementById('la-input');
+  const submit = document.getElementById('la-submit');
+  const statusEl = document.getElementById('la-status');
+  const errorEl = document.getElementById('la-error');
+  const resultEl = document.getElementById('la-result');
+  const loadingEl = document.getElementById('la-loading');
+  const modeEl = document.getElementById('la-mode');
+  const historyWrap = document.getElementById('la-history');
+  const historyItems = document.getElementById('la-history-items');
+  let history = [];
+  let apiBase = '';
+  let probing = true;
+
+  function loadHistory(){
+    try {
+      const raw = localStorage.getItem('la-history');
+      if(raw){ history = JSON.parse(raw).slice(0, MAX_HISTORY); }
+    } catch { history = []; }
+    renderHistory();
+  }
+
+  function saveHistory(){
+    try { localStorage.setItem('la-history', JSON.stringify(history.slice(0, MAX_HISTORY))); } catch {}
+  }
+
+  function pushHistory(url, ok){
+    history = [url, ...history.filter(u=>u!==url)].slice(0, MAX_HISTORY);
+    saveHistory();
+    renderHistory();
+  }
+
+  function renderHistory(){
+    if(!history.length){ historyWrap.style.display='none'; return; }
+    historyWrap.style.display='block';
+    historyItems.innerHTML='';
+    history.forEach(u=>{
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className='la-chip';
+      btn.textContent=u.length>48? u.slice(0,45)+'…' : u;
+      btn.title=u;
+      btn.addEventListener('click', ()=>{ input.value=u; resultEl.style.display='none'; errorEl.style.display='none'; });
+      historyItems.appendChild(btn);
+    });
+  }
+
+  function showMode(mode){
+    modeEl.style.display='inline-block';
+    modeEl.textContent= mode==='local'? 'LOCAL' : mode==='prod'? 'PROD' : mode.toUpperCase();
+    modeEl.style.background = mode==='local'? '#0d9488' : '#2563eb';
+  }
+
+  async function probe(){
+    statusEl.textContent='Detectando endpoint...';
+    const candidates=['', PROD_FALLBACK];
+    for(const base of candidates){
+      try{
+        const res=await fetch((base? base.replace(/\/$/,''): '') + '/mcp/tools');
+        if(res.ok){
+          apiBase=base; probing=false;
+          const local = base==='';
+          statusEl.textContent= local? 'Backend local detectado.' : 'Backend produção detectado.';
+          showMode(local? 'local':'prod');
+          return;
+        }
+      }catch(e){/*continue*/}
+    }
+    probing=false;
+    statusEl.textContent='Nenhum endpoint acessível.';
+  }
+  probe();
+  loadHistory();
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    errorEl.style.display='none';
+    resultEl.style.display='none';
+    const url = input.value.trim();
+    if(!url){return;}
+    if(probing){ errorEl.textContent='Aguarde detecção do endpoint.'; errorEl.style.display='block'; return; }
+    if(!/^https?:\/\//i.test(url)){ errorEl.textContent='URL deve iniciar com http(s)://'; errorEl.style.display='block'; return; }
+    submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block';
+    statusEl.textContent='';
+    try{
+      const endpoint=(apiBase? apiBase.replace(/\/$/,''): '') + '/mcp/tools';
+      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      resultEl.textContent=JSON.stringify(data,null,2);
+      resultEl.style.display='block';
+      pushHistory(url, true);
+    }catch(err){
+      errorEl.textContent=err.message||'Erro desconhecido';
+      errorEl.style.display='block';
+      pushHistory(url, false);
+    }finally{
+      submit.disabled=false; submit.textContent='Analisar'; loadingEl.style.display='none';
+    }
+  });
+})();
+</script>

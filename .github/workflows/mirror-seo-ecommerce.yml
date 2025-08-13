@@ -13,53 +13,101 @@ jobs:
   mirror:
     name: Push seo-ecommerce subtree to external repo
     runs-on: ubuntu-latest
-    if: ${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY != '' }}
     steps:
+      - name: Guard secret presence
+        id: guard
+        run: |
+          if [ -z "${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY }}" ]; then
+            echo "Deploy key secret ausente; mirror será ignorado." | tee -a $GITHUB_STEP_SUMMARY
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          else
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Add SSH key
+        if: steps.guard.outputs.proceed == 'true'
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY }}
+          # Contexto de secrets válido somente em runtime do GitHub Actions.
+          ssh-private-key: ${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY }} # yamllint disable-line
 
       - name: Configure git user
+        if: steps.guard.outputs.proceed == 'true'
         run: |
           git config user.name "mirror-bot"
           git config user.email "mirror-bot@users.noreply.github.com"
 
       - name: Add remote (idempotent)
+        if: steps.guard.outputs.proceed == 'true'
         run: |
           git remote add seo-ecommerce git@github.com:ggstvfer/seo-ecommerce.git 2>/dev/null || true
           git remote -v
 
       - name: Create subtree split branch
+        if: steps.guard.outputs.proceed == 'true'
         id: split
         run: |
+          set -euo pipefail
           git subtree split --prefix=seo-ecommerce -b seo-ecommerce-extract
-          echo "branch=seo-ecommerce-extract" >> "$GITHUB_OUTPUT"
+          SPLIT_HASH=$(git rev-parse seo-ecommerce-extract)
+            echo "branch=seo-ecommerce-extract" >> "$GITHUB_OUTPUT"
+            echo "SPLIT_HASH=$SPLIT_HASH" >> $GITHUB_ENV
+          echo "Subtree split hash: $SPLIT_HASH"
 
       - name: Push subtree to external repo (main)
+        if: steps.guard.outputs.proceed == 'true'
+        id: push
         run: |
-          # Backup previous main (if exists) before updating
+          set -euo pipefail
+          NEW_HASH=$SPLIT_HASH
+          PREV_HASH=""
           if git ls-remote --exit-code seo-ecommerce refs/heads/main >/dev/null 2>&1; then
             PREV_HASH=$(git ls-remote seo-ecommerce refs/heads/main | awk '{print $1}')
             echo "Previous remote main: $PREV_HASH"
-            # Create/update backup-pre-mirror only if different
-            if ! git ls-remote seo-ecommerce refs/heads/backup-pre-mirror | grep -q "$PREV_HASH"; then
-              git push seo-ecommerce "$PREV_HASH:refs/heads/backup-pre-mirror" || true
+            if [ "$PREV_HASH" = "$NEW_HASH" ]; then
+              echo "No changes detected (remote main == subtree split). Skipping push." | tee -a $GITHUB_STEP_SUMMARY
+              echo "SKIPPED_PUSH=true" >> $GITHUB_ENV
+              echo "PREV_HASH=$PREV_HASH" >> $GITHUB_ENV
+              exit 0
             fi
+            # Backup only if different and backup branch not already that hash
+            if ! git ls-remote seo-ecommerce refs/heads/backup-pre-mirror | grep -q "$PREV_HASH"; then
+              git push seo-ecommerce "$PREV_HASH:refs/heads/backup-pre-mirror"
+            else
+              echo "Backup branch already has current main hash." 
+            fi
+          else
+            echo "Remote main does not exist yet (first push)."
           fi
-          # Push with force-with-lease to avoid overwriting unexpected remote changes
           git push --force-with-lease seo-ecommerce seo-ecommerce-extract:main
+          echo "PREV_HASH=$PREV_HASH" >> $GITHUB_ENV
+          echo "NEW_HASH=$NEW_HASH" >> $GITHUB_ENV
 
       - name: Cleanup temp branch
-        if: always()
+        if: steps.guard.outputs.proceed == 'true'
         run: |
           git branch -D seo-ecommerce-extract || true
 
       - name: Summary
         run: |
-          echo "Mirrored seo-ecommerce directory to ggstvfer/seo-ecommerce (branch: main) with backup & force-with-lease." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.guard.outputs.proceed }}" != "true" ]; then
+            echo "ℹ️ Mirror pulado: secret ausente." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          if [ "${SKIPPED_PUSH:-}" = "true" ]; then
+            echo "✅ Mirror: nenhum cambio (no-op)." >> $GITHUB_STEP_SUMMARY
+            echo "Hash: $PREV_HASH" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Mirror atualizado com sucesso." >> $GITHUB_STEP_SUMMARY
+            echo "Anterior: ${PREV_HASH:-<none>}" >> $GITHUB_STEP_SUMMARY
+            echo "Novo: ${NEW_HASH:-$SPLIT_HASH}" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${PREV_HASH:-}" ]; then
+              echo "Comparação: https://github.com/ggstvfer/seo-ecommerce/compare/${PREV_HASH}...${NEW_HASH:-$SPLIT_HASH}" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "Backup branch: backup-pre-mirror" >> $GITHUB_STEP_SUMMARY
+            echo "Estratégia: force-with-lease + backup + no-op detection" >> $GITHUB_STEP_SUMMARY
+          fi

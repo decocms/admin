@@ -1,0 +1,55 @@
+name: Mirror seo-ecommerce subtree
+
+on:
+  push:
+    branches:
+      - main
+      - integrate-seo-ecommerce
+    paths:
+      - 'seo-ecommerce/**'
+  workflow_dispatch: {}
+
+jobs:
+  mirror:
+    name: Push seo-ecommerce subtree to external repo
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY != '' }}
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SEO_ECOMMERCE_DEPLOY_KEY }}
+
+      - name: Configure git user
+        run: |
+          git config user.name "mirror-bot"
+          git config user.email "mirror-bot@users.noreply.github.com"
+
+      - name: Add remote (idempotent)
+        run: |
+          git remote add seo-ecommerce git@github.com:ggstvfer/seo-ecommerce.git 2>/dev/null || true
+          git remote -v
+
+      - name: Create subtree split branch
+        id: split
+        run: |
+          git subtree split --prefix=seo-ecommerce -b seo-ecommerce-extract
+          echo "branch=seo-ecommerce-extract" >> "$GITHUB_OUTPUT"
+
+      - name: Push subtree to external repo (main)
+        run: |
+          git push seo-ecommerce seo-ecommerce-extract:main
+
+      - name: Cleanup temp branch
+        if: always()
+        run: |
+          git branch -D seo-ecommerce-extract || true
+
+      - name: Summary
+        run: |
+          echo "Mirrored seo-ecommerce directory to ggstvfer/seo-ecommerce (branch: main)" >> $GITHUB_STEP_SUMMARY

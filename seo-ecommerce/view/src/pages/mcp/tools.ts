@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+// Necessário para permitir POST em runtime (não gerar estático)
+export const prerender = false;
 
 // Endpoint local de desenvolvimento para /mcp/tools com:
 // - Proxy opcional para worker de produção

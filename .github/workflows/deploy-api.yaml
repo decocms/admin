@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: API
+  test:
+    name: API Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -16,11 +16,59 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            server/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - name: Install workspace dependencies
         run: bun install
 
-      - name: Type check (fail fast)
-        run: bun run check || true # non-blocking for now; remove '|| true' to enforce
+      - name: Type check
+        run: bun run check
+
+      - name: Run tests
+        run: bun run test
+
+      - name: Wrangler dry-run (sanity)
+        working-directory: ./apps/api
+        run: npx wrangler@4.29.0 deploy --dry-run
+
+  deploy:
+    name: API Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    concurrency:
+      group: api-deploy-main
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            server/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install workspace dependencies
+        run: bun install
 
       - name: Verify required secrets are present
         shell: bash
@@ -37,7 +85,9 @@ jobs:
             fi
           done
           if ((${#missing[@]})); then
-            echo "::warning::Missing secrets: ${missing[*]}"; fi
+            echo "::error::Missing secrets: ${missing[*]}";
+            exit 1;
+          fi
 
       - name: Publish
         uses: cloudflare/wrangler-action@v3
@@ -45,6 +95,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           workingDirectory: "./apps/api"
+          wranglerVersion: "4.29.0"
           secrets: |
             SUPABASE_URL
             SUPABASE_SERVER_TOKEN

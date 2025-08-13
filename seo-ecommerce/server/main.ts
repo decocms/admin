@@ -67,6 +67,15 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 const TOOLS_PATH = "/mcp/tools";
 
+function corsHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS,HEAD",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    ...extra,
+  };
+}
+
 async function listTools(env: Env) {
   const factories = [createMyTool, ...toolFactories];
   return factories.map((f) => {
@@ -92,17 +101,65 @@ const runtime = {
     const url = new URL(req.url);
     if (url.pathname === TOOLS_PATH) {
       return (async () => {
-        try {
-          const tools = await listTools(env);
-          return new Response(JSON.stringify({ tools }), {
-            headers: { "content-type": "application/json" },
-          });
-        } catch (err) {
+        if (req.method === "OPTIONS") {
+          return new Response("", { status: 204, headers: corsHeaders() });
+        }
+        if (req.method === "GET" || req.method === "HEAD") {
+          try {
+            const tools = await listTools(env);
+            return new Response(JSON.stringify({ tools }), {
+              headers: corsHeaders({ "content-type": "application/json" }),
+            });
+          } catch (err) {
             return new Response(
               JSON.stringify({ error: (err as Error).message }),
-              { status: 500, headers: { "content-type": "application/json" } },
+              { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
             );
+          }
         }
+        if (req.method === "POST") {
+          try {
+            const body = await req.json().catch(() => ({}));
+            const toolId = body.tool;
+            const input = body.input || {};
+            if (!toolId) {
+              return new Response(
+                JSON.stringify({ error: "Missing 'tool' field" }),
+                { status: 400, headers: corsHeaders({ "content-type": "application/json" }) },
+              );
+            }
+            const factories = [createMyTool, ...toolFactories];
+            const factory = factories.find((f) => {
+              try { return (f as any)(env).id === toolId; } catch { return false; }
+            });
+            if (!factory) {
+              return new Response(
+                JSON.stringify({ error: `Tool '${toolId}' not found` }),
+                { status: 404, headers: corsHeaders({ "content-type": "application/json" }) },
+              );
+            }
+            const tool = (factory as any)(env);
+            const execution = await tool.execute({ context: input });
+            // Normalize to include 'result' and optional array of links if absent
+            const result = {
+              ...execution,
+              links: Array.isArray((execution as any).links) ? (execution as any).links : [],
+            };
+            return new Response(
+              JSON.stringify({ tool: tool.id, input, result }),
+              { status: 200, headers: corsHeaders({ "content-type": "application/json" }) },
+            );
+          } catch (err) {
+            return new Response(
+              JSON.stringify({ error: (err as Error).message }),
+              { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
+            );
+          }
+        }
+        return new Response(
+          JSON.stringify({ error: "Method not allowed" }),
+          { status: 405, headers: corsHeaders({ "content-type": "application/json" }) },
+        );
       })();
     }
     return (baseRuntime as any).fetch(req, env, ctx);

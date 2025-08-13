@@ -1,0 +1,54 @@
+---
+// Dashboard component to present analysis result in cards
+const props = Astro.props as { data?: any };
+const data = props.data?.result || props.data || {};
+---
+<style>
+  .dash-grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); margin-top:1rem; }
+  .card { background:var(--sl-color-bg,#fff); border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:10px; padding:0.85rem 0.95rem; position:relative; }
+  .card h3 { margin:0 0 .35rem; font-size:.9rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; color:var(--sl-color-gray-6,#334155); }
+  .metric { font-size:1.4rem; font-weight:600; }
+  .score-ring { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:1.3rem; margin:.25rem auto .5rem; background:conic-gradient(var(--col) calc(var(--p)*1%), #e2e8f0 0); position:relative; }
+  .score-ring::after { content:""; position:absolute; inset:6px; background:var(--sl-color-bg,#fff); border-radius:50%; }
+  .score-ring span { position:relative; z-index:1; }
+  .bad { color:#dc2626; }
+  .warn { color:#d97706; }
+  .ok { color:#16a34a; }
+  .notes { margin-top:1.5rem; }
+  .notes li { font-size:.85rem; margin:.25rem 0; }
+  .meta-block { margin-top:1.25rem; }
+  pre.meta { max-height:160px; overflow:auto; font-size:.7rem; background:#0f172a; color:#e2e8f0; padding:.75rem; border-radius:8px; }
+  @media (prefers-color-scheme: dark){
+    .card { background:#1e293b; border-color:#334155; }
+    .score-ring { background:conic-gradient(var(--col) calc(var(--p)*1%), #334155 0); }
+  }
+</style>
+<div>
+  {data.url && <p style="font-size:.9rem; color:var(--sl-color-gray-6,#555);">Resultado para <strong>{data.url}</strong></p>}
+  <div class="dash-grid">
+    <div class="card" style="text-align:center; --p:{data.seoScore||0}; --col:{data.seoScore>=75?'#16a34a':data.seoScore>=50?'#d97706':'#dc2626'};">
+      <h3>Score SEO</h3>
+      <div class="score-ring"><span>{data.seoScore||0}</span></div>
+      <div style="font-size:.7rem; text-transform:uppercase; letter-spacing:1px;">{data.seoScore>=75?'Bom':data.seoScore>=50?'Médio':'Atenção'}</div>
+    </div>
+    <div class="card"><h3>Links</h3><div class="metric">{data.linksFound||0}</div><div style="font-size:.7rem;">Internos {data.internalLinks||0} / Externos {data.externalLinks||0}</div></div>
+    <div class="card"><h3>Quebrados</h3><div class="metric {data.brokenLinks? 'bad':''}">{data.brokenLinks||0}</div><div style="font-size:.7rem;">Amostra 40</div></div>
+    <div class="card"><h3>Imagens</h3><div class="metric">{data.images||0}</div><div style="font-size:.7rem;">Sem alt {data.imagesMissingAlt||0}</div></div>
+    <div class="card"><h3>Palavras</h3><div class="metric">{data.wordCount||0}</div><div style="font-size:.7rem;">H1 {data.h1Count||0}</div></div>
+    <div class="card"><h3>Título</h3><div class="metric {(!data.title||data.titleLength<15||data.titleLength>65)?'warn':''}" style="font-size:1rem; word-break:break-word; max-height:3.4rem; overflow:hidden;">{data.title||'—'}</div><div style="font-size:.6rem;">{data.titleLength||0} chars</div></div>
+    <div class="card"><h3>Descrição</h3><div class="metric {(!data.metaDescription||data.metaDescriptionLength<50||data.metaDescriptionLength>165)?'warn':''}" style="font-size:.7rem; max-height:3.9rem; overflow:hidden; line-height:1.2;">{data.metaDescription||'—'}</div><div style="font-size:.6rem;">{data.metaDescriptionLength||0} chars</div></div>
+    <div class="card"><h3>Canonical</h3><div style="font-size:.6rem; word-break:break-all; line-height:1.2; max-height:4rem; overflow:auto;">{data.canonical||'—'}</div></div>
+  </div>
+  <div class="meta-block">
+    <details>
+      <summary style="cursor:pointer; font-weight:600;">JSON bruto</summary>
+      <pre class="meta">{JSON.stringify(data,null,2)}</pre>
+    </details>
+  </div>
+  {data.notes && <div class="notes">
+    <h3 style="font-size:.85rem; text-transform:uppercase; letter-spacing:1px; margin:1.5rem 0 .25rem;">Observações</h3>
+    <ul>
+      {data.notes.split(';').map((n: string) => <li>{n.trim()}</li>)}
+    </ul>
+  </div>}
+</div>

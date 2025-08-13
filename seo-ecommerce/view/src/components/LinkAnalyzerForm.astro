@@ -77,22 +77,7 @@
   <span id="la-status" class="la-status" aria-live="polite"></span>
       <span id="la-mode" class="la-badge" style="display:none;"></span>
     </div>
-    <details id="la-advanced" style="margin-top:8px; font-size:12px;">
-      <summary style="cursor:pointer; user-select:none;">Avançado (detecção)</summary>
-      <div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
-        <label style="display:flex; flex-direction:column; gap:4px;">
-          Timeout (ms)
-          <input id="la-adv-timeout" type="number" min="200" max="5000" step="100" style="width:120px; padding:4px 6px;" />
-        </label>
-        <label style="display:flex; flex-direction:column; gap:4px;">
-          Tentativas
-          <input id="la-adv-retries" type="number" min="1" max="5" step="1" style="width:90px; padding:4px 6px;" />
-        </label>
-        <button type="button" id="la-adv-apply" class="la-mini-btn primary" style="margin-top:4px;">Aplicar</button>
-        <button type="button" id="la-adv-reset" class="la-mini-btn" style="margin-top:4px;">Reset</button>
-        <span id="la-adv-active" class="la-muted" style="margin-top:4px;"></span>
-      </div>
-    </details>
+  <!-- Modo produção fixo: seção avançada de detecção removida -->
   </form>
   <div id="la-error" style="color:var(--la-danger);margin-top:8px;display:none;font-weight:500;"></div>
   <div id="la-output" style="display:none; margin-top:16px;">
@@ -141,14 +126,7 @@
   const historyWrap = document.getElementById('la-history');
   const historyItems = document.getElementById('la-history-items');
   let history = [];
-  let apiBase = '';
-  let probing = true;
-  // Advanced controls refs
-  const advTimeoutInput = document.getElementById('la-adv-timeout');
-  const advRetriesInput = document.getElementById('la-adv-retries');
-  const advApplyBtn = document.getElementById('la-adv-apply');
-  const advResetBtn = document.getElementById('la-adv-reset');
-  const advActive = document.getElementById('la-adv-active');
+  const apiBase = 'https://seo-ecommerce.ggstv-fer.workers.dev';
 
   function loadHistory(){
     try {
@@ -202,100 +180,8 @@
     modeEl.textContent=label;
   }
 
-  async function probe(){
-    statusEl.textContent='Detectando endpoint...';
-    // If estamos no próprio worker (porta 8787), usar same-origin ''. Caso contrário, tentar worker explícito localhost:8787 antes do fallback prod.
-    const candidates = [];
-    if(location.port === '8787') {
-      candidates.push('');
-    } else {
-      candidates.push('http://localhost:8787');
-    }
-    candidates.push(PROD_FALLBACK);
-    const DEBUG = /laDebug=1/.test(location.search);
-  // Permitir override via query (?probeTimeout=900&probeRetries=3) ou localStorage (laProbeTimeout / laProbeRetries)
-  const params = new URLSearchParams(location.search);
-  const qTimeout = parseInt(params.get('probeTimeout') || localStorage.getItem('laProbeTimeout') || '', 10);
-  const qRetries = parseInt(params.get('probeRetries') || localStorage.getItem('laProbeRetries') || '', 10);
-  const PROBE_TIMEOUT = (Number.isFinite(qTimeout) && qTimeout >= 200 && qTimeout <= 5000) ? qTimeout : 1200; // ms por tentativa
-  const PROBE_RETRIES = (Number.isFinite(qRetries) && qRetries >= 1 && qRetries <= 5) ? qRetries : 2; // tentativas por candidato antes de avançar
-    // Preencher UI avançada se não preenchido ainda
-    if(advTimeoutInput && !advTimeoutInput.value) advTimeoutInput.value = PROBE_TIMEOUT;
-    if(advRetriesInput && !advRetriesInput.value) advRetriesInput.value = PROBE_RETRIES;
-    if((qTimeout && qTimeout!==1200) || (qRetries && qRetries!==2)) {
-      advActive.textContent = 'Overrides ativos ('+PROBE_TIMEOUT+'ms / '+PROBE_RETRIES+'x)';
-    } else {
-      advActive.textContent = '';
-    }
-
-    async function fetchWithTimeout(url, opts){
-      const ctrl = new AbortController();
-      const id = setTimeout(()=> ctrl.abort(), PROBE_TIMEOUT);
-      try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
-      finally { clearTimeout(id); }
-    }
-
-    async function tryCandidate(base){
-      let lastErr;
-      for(let attempt=1; attempt<=PROBE_RETRIES; attempt++){
-        try {
-          const res = await fetchWithTimeout((base? base.replace(/\/$/,''): '') + '/mcp/tools', { method:'GET' });
-          if(res.ok) return { ok:true, res };
-          lastErr = new Error('HTTP '+res.status);
-        } catch(e){ lastErr = e; if(DEBUG) console.debug('[link-analyzer] probe erro', base||'(same-origin)', 'tentativa', attempt, e?.message); }
-      }
-      return { ok:false, error:lastErr };
-    }
-    for(const base of candidates){
-      const attempt = await tryCandidate(base);
-      if(attempt.ok){
-        const res = attempt.res;
-        apiBase = base; probing=false;
-        const local = base==='';
-        const src = res.headers.get('X-Source');
-        if(src==='proxy'){ statusEl.textContent = local? 'Worker local (proxy) ativo.' : 'Worker produção via proxy.'; showMode(local? 'local':'prod','proxy'); }
-        else { statusEl.textContent = local? 'Worker local detectado.' : 'Worker produção detectado.'; showMode(local? 'local':'prod'); }
-        if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode(local? 'local':'prod','supa'); }
-        return;
-      } else if(DEBUG) {
-        console.info('[link-analyzer] candidato falhou', base||'(same-origin)', attempt.error?.message);
-      }
-    }
-    probing=false;
-    apiBase=PROD_FALLBACK; // fallback anyway
-    statusEl.textContent='Nenhum endpoint local (timeout '+PROBE_TIMEOUT+'ms x'+PROBE_RETRIES+'), usando produção.';
-    showMode('prod');
-    if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode('prod','supa'); }
-  }
-  probe();
+  statusEl.textContent='Usando endpoint produção.'; showMode('prod');
   loadHistory();
-
-  if(advApplyBtn){
-    advApplyBtn.addEventListener('click', ()=>{
-      const t = parseInt(advTimeoutInput.value,10);
-      const r = parseInt(advRetriesInput.value,10);
-      let changed=false;
-      if(Number.isFinite(t) && t>=200 && t<=5000){ localStorage.setItem('laProbeTimeout', String(t)); changed=true; }
-      if(Number.isFinite(r) && r>=1 && r<=5){ localStorage.setItem('laProbeRetries', String(r)); changed=true; }
-      if(changed){
-        statusEl.textContent='Re-detectando com novos parâmetros...';
-        probing=true; apiBase='';
-        probe();
-      }
-    });
-  }
-  if(advResetBtn){
-    advResetBtn.addEventListener('click', ()=>{
-      localStorage.removeItem('laProbeTimeout');
-      localStorage.removeItem('laProbeRetries');
-      advTimeoutInput.value='1200';
-      advRetriesInput.value='2';
-      advActive.textContent='';
-      statusEl.textContent='Re-detectando (padrões)...';
-      probing=true; apiBase='';
-      probe();
-    });
-  }
 
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
@@ -303,7 +189,6 @@
   outputWrap.style.display='none';
     const url = input.value.trim();
     if(!url){return;}
-    if(probing){ errorEl.textContent='Aguarde detecção do endpoint.'; errorEl.style.display='block'; return; }
     if(!/^https?:\/\//i.test(url)){ errorEl.textContent='URL deve iniciar com http(s)://'; errorEl.style.display='block'; return; }
     const start = performance.now();
     submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block';

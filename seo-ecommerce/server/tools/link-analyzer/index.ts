@@ -11,16 +11,28 @@ export const createLinkAnalyzerTool = (_env: unknown) =>
       url: z.string().url(),
     }),
     outputSchema: z.object({
+      status: z.number(),
       linksFound: z.number(),
       brokenLinks: z.number(),
+      internalLinks: z.number(),
+      externalLinks: z.number(),
+      images: z.number(),
+      imagesMissingAlt: z.number(),
+      h1Count: z.number(),
+      title: z.string().optional(),
+      titleLength: z.number(),
+      metaDescription: z.string().optional(),
+      metaDescriptionLength: z.number(),
+      wordCount: z.number(),
+      canonical: z.string().optional(),
       seoScore: z.number(),
       links: z.array(z.string()),
       notes: z.string().optional(),
     }),
     execute: async ({ context }) => {
       const { url } = context;
-      const { linksFound, brokenLinks, seoScore, links, notes } = await analyzeLinks(url);
-      return { linksFound, brokenLinks, seoScore, links, notes };
+  const result = await analyzeLinks(url);
+  return result;
     },
   });
 

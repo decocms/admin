@@ -34,6 +34,20 @@ export async function signOut(){
   await supa.auth.signOut();
 }
 
+// Email + password flows
+export async function signUpEmailPassword(email: string, password: string){
+  const supa = getSupabase();
+  return supa.auth.signUp({ email, password });
+}
+export async function signInEmailPassword(email: string, password: string){
+  const supa = getSupabase();
+  return supa.auth.signInWithPassword({ email, password });
+}
+export async function resetPasswordEmail(email: string, redirectTo?: string){
+  const supa = getSupabase();
+  return supa.auth.resetPasswordForEmail(email, { redirectTo });
+}
+
 export interface AnalysisRecord {
   id: string;
   user_hash: string;

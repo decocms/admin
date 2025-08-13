@@ -1,0 +1,30 @@
+---
+import { getSupabase } from "../lib/supabaseClient";
+let err:string|undefined; let info:string|undefined;
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const email = form.get('email')?.toString()||'';
+  const password = form.get('password')?.toString()||'';
+  if(email && password){
+    try {
+      const supa = getSupabase();
+      const { error } = await supa.auth.signInWithPassword({ email, password });
+      if(error) err = error.message; else info='Login efetuado. Verifique se sessão persistiu.';
+    } catch(e:any){ err = e.message || 'Falha inesperada'; }
+  } else err = 'Informe email e senha';
+}
+---
+<html lang="pt-BR">
+  <head><meta charset="utf-8" /><title>Login</title></head>
+  <body style="font-family:system-ui; max-width:480px; margin:2rem auto; padding:0 1rem;">
+    <h1>Login</h1>
+    {err && <div style="background:#fee2e2; color:#b91c1c; padding:.75rem 1rem; border-radius:8px; margin:.75rem 0;">{err}</div>}
+    {info && <div style="background:#dcfce7; color:#166534; padding:.75rem 1rem; border-radius:8px; margin:.75rem 0;">{info}</div>}
+    <form method="POST" style="display:flex; flex-direction:column; gap:.85rem; background:var(--sl-color-bg-alt,#f1f5f9); padding:1.25rem 1.5rem; border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:14px;">
+      <label style="display:flex; flex-direction:column; gap:4px; font-weight:500;">Email <input name="email" type="email" required style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px;" /></label>
+      <label style="display:flex; flex-direction:column; gap:4px; font-weight:500;">Senha <input name="password" type="password" required style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px;" /></label>
+      <button type="submit" style="padding:12px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:500; cursor:pointer;">Entrar</button>
+      <div style="font-size:.75rem;">Sem conta? <a href="/signup">Criar</a> · <a href="/reset">Esqueci a senha</a></div>
+    </form>
+  </body>
+</html>

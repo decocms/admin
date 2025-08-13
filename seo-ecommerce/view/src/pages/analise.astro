@@ -1,0 +1,39 @@
+---
+import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
+import AnalysisDashboard from "../components/AnalysisDashboard.astro";
+let initial: any = null;
+if (Astro.request.method === 'POST') {
+  try {
+    const form = await Astro.request.formData();
+    const url = (form.get('url')||'').toString();
+    if(url){
+      const res = await fetch('https://seo-ecommerce.ggstv-fer.workers.dev/mcp/tools', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tool:'LINK_ANALYZER', input:{ url } }) });
+      if(res.ok){ initial = await res.json(); }
+    }
+  } catch {}
+}
+---
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Análise SEO</title>
+  </head>
+  <body style="font-family: system-ui; max-width: 1080px; margin: 2rem auto; padding: 0 1rem;">
+    <h1 style="margin:0 0 .5rem;">Análise SEO</h1>
+    <p style="margin:0 0 1.25rem; color:#475569;">Preencha uma URL para gerar métricas SEO. Interface aprimorada com cartões e score.</p>
+    <form method="POST" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; background:var(--sl-color-bg-alt,#f1f5f9); padding:1rem 1.25rem; border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:12px;">
+      <label style="flex:1; min-width:340px; font-weight:500;">
+        URL
+        <input name="url" type="url" required placeholder="https://exemplo.com" style="margin-top:4px; width:100%; padding:10px 14px; border:1px solid var(--sl-color-gray-5,#cbd5e1); border-radius:8px;" />
+      </label>
+      <button type="submit" style="padding:12px 22px; background:var(--sl-color-accent,#2563eb); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:500;">Analisar</button>
+    </form>
+    {initial && <div style="margin-top:1.75rem;">
+      <AnalysisDashboard data={initial} />
+    </div>}
+    <hr style="margin:2.5rem 0;" />
+    <h2 style="font-size:1.1rem; margin-bottom:.5rem;">Ferramenta interativa</h2>
+    <p style="margin-top:0; font-size:.9rem; color:#475569;">Use a versão interativa com histórico e exportações.</p>
+    <LinkAnalyzerForm />
+  </body>
+</html>

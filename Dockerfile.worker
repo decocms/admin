@@ -1,0 +1,21 @@
+FROM node:20-bullseye
+
+WORKDIR /workspace
+
+# Copy root manifests (monorepo) and relevant workspace package manifests for better caching
+COPY package.json package-lock.json* ./
+COPY seo-ecommerce/server/package.json seo-ecommerce/server/
+COPY seo-ecommerce/view/package.json seo-ecommerce/view/
+
+# Install all workspaces (server devDependencies include wrangler/deco cli)
+RUN npm install --no-audit --no-fund
+
+# Copy rest of repo
+COPY . .
+
+WORKDIR /workspace/seo-ecommerce/server
+
+EXPOSE 8787
+
+# Default command launches local dev worker
+CMD ["npm", "run", "dev"]

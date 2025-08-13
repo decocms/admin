@@ -14,11 +14,13 @@ export const createLinkAnalyzerTool = (_env: unknown) =>
       linksFound: z.number(),
       brokenLinks: z.number(),
       seoScore: z.number(),
+      links: z.array(z.string()),
+      notes: z.string().optional(),
     }),
     execute: async ({ context }) => {
       const { url } = context;
-      const { linksFound, brokenLinks, seoScore } = analyzeLinks(url);
-      return { linksFound, brokenLinks, seoScore };
+      const { linksFound, brokenLinks, seoScore, links, notes } = await analyzeLinks(url);
+      return { linksFound, brokenLinks, seoScore, links, notes };
     },
   });
 

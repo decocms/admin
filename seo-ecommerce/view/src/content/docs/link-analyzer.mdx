@@ -1,0 +1,38 @@
+---
+title: Link Analyzer
+description: Ferramenta MCP para análise de links
+---
+
+# Link Analyzer
+
+A ferramenta `LINK_ANALYZER` permite analisar links e extrair informações úteis via MCP.
+
+## Como usar
+
+- Endpoint: `/mcp/tools`
+- Parâmetros de entrada:
+  - `url` (string): URL a ser analisada
+
+## Exemplo de uso
+
+```json
+{
+  "tool": "LINK_ANALYZER",
+  "input": { "url": "https://exemplo.com" }
+}
+```
+
+## Exemplo de resposta
+
+```json
+{
+  "title": "Título da página",
+  "description": "Descrição extraída",
+  "links": ["https://...", "https://..."]
+}
+```
+
+## Observações
+
+- Consulte a rota `/mcp/tools` no seu Worker para mais detalhes e schema completo.
+- Integre com outros fluxos MCP conforme necessário.

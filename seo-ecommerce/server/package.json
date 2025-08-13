@@ -10,7 +10,7 @@
     "gen": "deco gen > deco.gen.ts",
     "gen:self": "deco gen --self=$DECO_SELF_URL > deco.gen.ts",
     "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts",
-  "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
+    "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
     "test": "vitest run"
   },
   "dependencies": {

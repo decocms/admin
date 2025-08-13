@@ -9,12 +9,14 @@
   ],
   "scripts": {
     "dev": "cd view && npm run dev & cd server && npm run dev",
+    "dev:all": "concurrently \"cd view && npm run dev\" \"cd server && npm run dev\"",
     "configure": "cd server && deco configure",
     "gen": "cd server && deco gen > deco.gen.ts",
     "gen:self": "cd server && deco gen --self=$DECO_SELF_URL > deco.gen.ts",
     "deploy": "cd view && npm run build && cd ../server && npm run deploy"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "typescript": "^5.7.2",
     "vitest": "^3.2.4"
   },

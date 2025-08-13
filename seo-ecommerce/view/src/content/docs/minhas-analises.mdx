@@ -9,62 +9,6 @@ Esta página lista as análises que você salvou estando autenticado (login simp
 
 Se as variáveis PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY não estiverem configuradas no build, um armazenamento em memória (não persistente) é usado como fallback. Quando isso ocorre seus registros desaparecem ao reiniciar o dev server.
 
-<div id="saved-analyses-root" style="margin-top:1rem;"></div>
-<style>
-  .ma-table { width:100%; border-collapse:collapse; }
-  .ma-table th, .ma-table td { padding:6px 8px; border-bottom:1px solid #ddd; font-size:13px; }
-  .ma-actions button { font-size:11px; margin-right:4px; }
-  .ma-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
-  .ma-toolbar input { padding:6px 10px; border:1px solid #ccc; border-radius:6px; }
-</style>
+import SavedAnalysesClient from "../../components/SavedAnalysesClient.astro";
 
-<script>
-(function(){
-  const root = document.getElementById('saved-analises-root');
-  let page=1, limit=10, total=0, q='';
-  async function load(){
-    // Supabase token
-    const supaAuth = localStorage.getItem('la-supa-auth');
-    let token=null, email=null;
-    if(supaAuth){ try { const parsed = JSON.parse(supaAuth); token=parsed.access_token; email = parsed.user?.email || parsed.user?.user_metadata?.email; } catch {} }
-    if(!token){ root.innerHTML = `<p>Você não está logado. Faça login na Home.</p>`; return; }
-    const params = new URLSearchParams({ userHash: 'me', page:String(page), limit:String(limit) });
-    if(q) params.set('q', q);
-    const res = await fetch('/api/analises?'+params.toString(), { headers: token? { Authorization: 'Bearer '+token } : {} });
-    if(!res.ok){ root.innerHTML='<p>Erro ao carregar análises.</p>'; return; }
-    const data = await res.json();
-    total = data.total;
-    render(email || 'Usuário', data.items, token);
-  }
-  function render(user, items, token){
-    const pages = Math.max(1, Math.ceil(total/limit));
-    const rows = items.map(r=>`<tr><td>${r.url}</td><td>${new Date(r.ts).toLocaleString()}</td><td class="ma-actions"><button data-id="${r.id}" class="ma-view">Ver</button><button data-id="${r.id}" class="ma-del">Excluir</button></td></tr>`).join('');
-    root.innerHTML = `
-      <div class="ma-toolbar">
-        <span><strong>Usuário:</strong> ${user}</span>
-        <input id="ma-search" placeholder="Filtrar URL" value="${q}" />
-        <select id="ma-limit">${[10,20,30,50].map(v=>`<option ${v===limit?'selected':''}>${v}</option>`).join('')}</select>
-        <button id="ma-prev" ${page<=1?'disabled':''}>Prev</button>
-        <span>Pg ${page}/${pages}</span>
-        <button id="ma-next" ${page>=pages?'disabled':''}>Next</button>
-        <button id="ma-refresh">Atualizar</button>
-      </div>
-      <table class="ma-table"><thead><tr><th>URL</th><th>Data</th><th>Ações</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Nenhum registro.</td></tr>'}</tbody></table>`;
-    root.querySelectorAll('.ma-view').forEach(btn=>btn.addEventListener('click', async e=>{
-      const id = e.currentTarget.getAttribute('data-id');
-      const rec = items.find(i=>i.id===id); if(rec) alert(JSON.stringify(rec.data,null,2));
-    }));
-    root.querySelectorAll('.ma-del').forEach(btn=>btn.addEventListener('click', async e=>{
-      const id = e.currentTarget.getAttribute('data-id');
-      await fetch('/api/analises?userHash=me&id='+id, { method:'DELETE', headers: token? { Authorization: 'Bearer '+token } : {} });
-      load();
-    }));
-    root.querySelector('#ma-prev').addEventListener('click', ()=>{ if(page>1){ page--; load(); } });
-    root.querySelector('#ma-next').addEventListener('click', ()=>{ const pages=Math.ceil(total/limit); if(page<pages){ page++; load(); } });
-    root.querySelector('#ma-refresh').addEventListener('click', ()=> load());
-    root.querySelector('#ma-search').addEventListener('input', (ev)=>{ q=ev.target.value.trim(); page=1; load(); });
-    root.querySelector('#ma-limit').addEventListener('change', (ev)=>{ limit=parseInt(ev.target.value,10); page=1; load(); });
-  }
-  load();
-})();
-</script>
+<SavedAnalysesClient />

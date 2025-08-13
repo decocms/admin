@@ -101,6 +101,7 @@
 </div>
 <script>
 (function(){
+  // Worker base (always use worker now; static site build friendly)
   const PROD_FALLBACK = 'https://seo-ecommerce.ggstv-fer.workers.dev';
   const MAX_HISTORY = 8;
   const form = document.getElementById('link-analyzer-form');
@@ -180,33 +181,9 @@
   }
 
   async function probe(){
-    statusEl.textContent='Detectando endpoint...';
-    const candidates=['', PROD_FALLBACK];
-    for(const base of candidates){
-      try{
-        const res=await fetch((base? base.replace(/\/$/,''): '') + '/mcp/tools');
-        if(res.ok){
-          apiBase=base; probing=false;
-          const local = base==='';
-          const src = res.headers.get('X-Source');
-          if(src==='stub'){
-            statusEl.textContent='Backend local (stub) ativo.';
-            showMode('local','stub');
-          }else if(src==='proxy'){
-            statusEl.textContent= local? 'Backend local (proxy) detectado.' : 'Backend produção via proxy.';
-            showMode(local? 'local':'prod','proxy');
-          } else {
-            statusEl.textContent= local? 'Backend local detectado.' : 'Backend produção detectado.';
-            showMode(local? 'local':'prod');
-          }
-          // Detecta Supabase (env var presente)
-          if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode('prod','supa'); }
-          return;
-        }
-      }catch(e){/*continue*/}
-    }
-    probing=false;
-    statusEl.textContent='Nenhum endpoint acessível.';
+    statusEl.textContent='Usando worker de produção.';
+    apiBase=PROD_FALLBACK; probing=false; showMode('prod');
+    if(import.meta.env.PUBLIC_SUPABASE_URL){ supaAvailable = true; showMode('prod','supa'); }
   }
   probe();
   loadHistory();

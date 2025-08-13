@@ -4,7 +4,7 @@ description: Analise links facilmente e descubra informações úteis.
 ---
 
 import LinkAnalyzerForm from "../../components/LinkAnalyzerForm.astro";
-import { getSupabase } from "../../lib/supabaseClient";
+import LoginInline from "../../components/LoginInline.astro";
 
 <div class="flex flex-col gap-12">
   <section>
@@ -35,66 +35,3 @@ import { getSupabase } from "../../lib/supabaseClient";
   </section>
 </div>
 
-export function LoginInline(){
-  return (
-    <div id="la-login-inline" style="margin:1rem 0; padding:0.75rem 1rem; border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:8px; background:var(--sl-color-bg-alt,#f8fafc);">
-      <strong>Auth:</strong> <span id="li-status" style="font-size:0.85em; color:var(--sl-color-gray-6,#555);"></span>
-      <div id="li-logged" style="display:none; margin-top:0.5rem; display:flex; gap:8px; align-items:center;">
-        <span id="li-email" style="font-size:0.85em;"></span>
-        <button id="li-logout" style="padding:6px 14px; border:1px solid var(--sl-color-gray-5,#ccc); background:transparent; border-radius:6px; cursor:pointer;">Sair</button>
-      </div>
-      <form id="li-form" style="display:flex; gap:8px; margin-top:0.5rem;">
-        <input id="li-email-input" type="email" required placeholder="seu-email@dominio" style="flex:1; padding:6px 10px; border:1px solid var(--sl-color-gray-5,#ccc); border-radius:6px;" />
-        <button type="submit" style="padding:6px 14px; border:none; background:var(--sl-color-accent,#2563eb); color:#fff; border-radius:6px; cursor:pointer;">Magic Link</button>
-      </form>
-      <div id="li-msg" style="font-size:0.75rem; margin-top:4px; color:var(--sl-color-gray-6,#555);"></div>
-    </div>
-  );
-}
-
-<script>
-(function(){
-  // Supabase auth (magic link) simplificado
-  let supa; try { supa = getSupabase(); } catch { /* sem supabase */ }
-  const status = document.getElementById('li-status');
-  const form = document.getElementById('li-form');
-  const emailInput = document.getElementById('li-email-input');
-  const logoutBtn = document.getElementById('li-logout');
-  const logged = document.getElementById('li-logged');
-  const emailSpan = document.getElementById('li-email');
-  const msg = document.getElementById('li-msg');
-
-  function setLoading(b){
-    if(b){ form.querySelector('button').disabled=true; form.querySelector('button').textContent='Enviando...'; }
-    else { form.querySelector('button').disabled=false; form.querySelector('button').textContent='Magic Link'; }
-  }
-
-  async function sync(){
-    if(!supa){ status.textContent='Modo local (sem Supabase)'; return; }
-    const { data: { session } } = await supa.auth.getSession();
-    if(session?.user){
-      status.textContent='Autenticado';
-      form.style.display='none';
-      logged.style.display='flex';
-      emailSpan.textContent=session.user.email;
-    } else {
-      status.textContent='Não autenticado';
-      form.style.display='flex';
-      logged.style.display='none';
-    }
-  }
-  form?.addEventListener('submit', async (e)=>{
-    e.preventDefault(); if(!supa) return; const email=emailInput.value.trim(); if(!email) return;
-    setLoading(true); msg.textContent='';
-    const { error } = await supa.auth.signInWithOtp({ email, options: { shouldCreateUser:true, emailRedirectTo: window.location.href } });
-    setLoading(false);
-    if(error){ msg.textContent='Erro: '+error.message; }
-    else { msg.textContent='Verifique seu email para o link de acesso.'; }
-  });
-  logoutBtn?.addEventListener('click', async ()=>{ if(!supa) return; await supa.auth.signOut(); sync(); });
-  if(supa){
-    supa.auth.onAuthStateChange(()=> sync());
-    sync();
-  }
-})();
-</script>

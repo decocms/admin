@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
@@ -8,6 +9,8 @@ export default defineConfig({
 		port: 4000,
 	},
 	outDir: "../server/view-build/",
+	output: 'server',
+	adapter: cloudflare({ mode: 'directory' }),
 	integrations: [
 		starlight({
 			title: 'SEO Ecommerce Tools',

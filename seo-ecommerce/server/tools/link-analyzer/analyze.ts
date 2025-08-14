@@ -75,7 +75,8 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
       fetchOk = true;
     }
   } catch (e) {
-    notes.push('Falha no fetch principal');
+    const err = e as Error;
+    notes.push(`Falha no fetch principal: ${err.message}`);
   }
   const base = new URL(url);
   const links = fetchOk ? extractLinks(html, base) : [];

@@ -4,11 +4,18 @@ import { ensureDevEnvironment } from "../../lib/wrangler.js";
 import { link } from "./link.js";
 import process from "node:process";
 
-export async function devCommand(): Promise<void> {
+export interface StartDevServerOptions {
+  cleanBuildDirectory?: {
+    enabled: boolean;
+    directory: string;
+  };
+}
+
+export async function devCommand(opts: StartDevServerOptions): Promise<void> {
   try {
     // 1. Ensure development environment is set up
     console.log("🔧 Setting up development environment...");
-    await ensureDevEnvironment();
+    await ensureDevEnvironment(opts);
 
     // 2. Get configuration
     const _config = await getConfig().catch(() => ({

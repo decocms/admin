@@ -26,11 +26,18 @@ async function findFreePort(preferred: number, maxAttempts = 10): Promise<number
   throw new Error("No free port found for wrangler dev");
 }
 
-export async function devCommand(): Promise<void> {
+export interface StartDevServerOptions {
+  cleanBuildDirectory?: {
+    enabled: boolean;
+    directory: string;
+  };
+}
+
+export async function devCommand(opts: StartDevServerOptions): Promise<void> {
   try {
     // 1. Ensure development environment is set up
     console.log("🔧 Setting up development environment...");
-    await ensureDevEnvironment();
+    await ensureDevEnvironment(opts);
 
     // 2. Get configuration
     const _config = await getConfig().catch(() => ({

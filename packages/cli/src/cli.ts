@@ -316,7 +316,21 @@ const update = new Command("update")
 // Dev command implementation
 const dev = new Command("dev")
   .description("Start a development server.")
-  .action(devCommand);
+  .option(
+    "--clean-build-dir <directory>",
+    "Clean the build directory before starting the development server",
+    (directory) => {
+      return {
+        enabled: true,
+        directory,
+      };
+    },
+  )
+  .action((options) => {
+    devCommand({
+      cleanBuildDirectory: options.cleanBuildDir,
+    });
+  });
 
 // Create command implementation
 const create = new Command("create")

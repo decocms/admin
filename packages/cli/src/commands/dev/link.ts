@@ -54,7 +54,7 @@ function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-async function isPortRunning(port: number): Promise<boolean> {
+async function findRunningAddr(port: number): Promise<string | null> {
   const LOCALHOST_ENDPOINTS = ["localhost", "127.0.0.1", "0.0.0.0"];
 
   for (const endpoint of LOCALHOST_ENDPOINTS) {
@@ -70,34 +70,37 @@ async function isPortRunning(port: number): Promise<boolean> {
         server.on("error", reject);
       });
 
-      return false; // Port is available
+      // Port is available on this endpoint, continue checking others
     } catch {
-      return true; // Port is in use
+      // Port is in use on this endpoint
+      return endpoint;
     }
   }
 
-  return false;
+  // Port is available on all endpoints
+  return null;
 }
 
-async function waitForPort(port: number): Promise<void> {
-  let isAvailable = await isPortRunning(port);
-  if (isAvailable) {
-    return;
+async function waitForPort(port: number): Promise<string> {
+  let addr = await findRunningAddr(port);
+  if (addr) {
+    return addr;
   }
 
   console.log(chalk.yellow(`Waiting for port ${port} to become available...`));
 
-  while (!isAvailable) {
+  while (!addr) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    isAvailable = await isPortRunning(port);
+    addr = await findRunningAddr(port);
   }
 
   console.log(chalk.green(`Port ${port} is now available!`));
+  return addr;
 }
 
 async function monitorPortAvailability(port: number) {
   while (true) {
-    const isAvailable = await isPortRunning(port);
+    const isAvailable = await findRunningAddr(port);
     if (!isAvailable) {
       console.log(chalk.red(`⚠️ Warning: Port ${port} is no longer available!`));
     }
@@ -111,7 +114,6 @@ async function register(
   onBeforeRegister?: () => void,
 ) {
   const server = `wss://${domain}`;
-  const localAddr = `http://localhost:${port}`;
 
   try {
     // Start port monitoring in the background
@@ -122,7 +124,8 @@ async function register(
     onBeforeRegister?.();
 
     // Wait for port to become available before connecting
-    await waitForPort(port);
+    const host = await waitForPort(port);
+    const localAddr = `http://${host}:${port}`;
 
     const tunnel = await connect({
       domain,

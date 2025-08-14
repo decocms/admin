@@ -1,10 +1,4 @@
-import {
-  MCPConnection,
-  useAddView,
-  useBindingIntegrations,
-  useConnectionViews,
-  useRemoveView,
-} from "@deco/sdk";
+import { useAddView, useRemoveView, useWorkspaceViews } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
 import { Card, CardContent } from "@deco/ui/components/card.tsx";
 import { Icon } from "@deco/ui/components/icon.tsx";
@@ -186,108 +180,27 @@ function TogglePin({ view }: { view: ViewWithStatus }) {
   );
 }
 
-// Helper component to handle individual integration view loading
-function IntegrationViews({
-  integration,
-  onViewsLoaded,
-}: {
-  integration: {
-    id: string;
-    name: string;
-    icon?: string;
-    connection: MCPConnection;
-    description?: string;
-  };
-  onViewsLoaded: (
-    integrationId: string,
-    views: {
-      url: string;
-      title: string;
-      icon: string;
-    }[],
-    isLoading: boolean,
-  ) => void;
-}) {
-  const { data: viewsData, isLoading } = useConnectionViews({
-    id: integration.id,
-    connection: integration.connection,
-  });
-
-  // Notify parent component when views are loaded or loading state changes
-  useMemo(() => {
-    if (!viewsData?.views) return;
-    onViewsLoaded(integration.id, viewsData?.views, isLoading);
-  }, [integration.id, viewsData?.views, isLoading, onViewsLoaded]);
-
-  return null; // This component doesn't render anything
-}
-
 function ViewsList() {
   const currentTeam = useCurrentTeam();
   const navigateWorkspace = useNavigateWorkspace();
   const [viewMode, setViewMode] = useViewMode();
-  const { data: integrations = [] } = useBindingIntegrations("View");
+  const { data: views = [] } = useWorkspaceViews();
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
-  // Track views and loading states for all integrations
-  const [integrationViews, setIntegrationViews] = useState<
-    Record<
-      string,
-      {
-        views: {
-          url: string;
-          title: string;
-          icon: string;
-        }[];
-        isLoading: boolean;
-      }
-    >
-  >({});
-
-  const handleViewsLoaded = useMemo(
-    () =>
-      (
-        integrationId: string,
-        views: {
-          url: string;
-          title: string;
-          icon: string;
-        }[],
-        isLoading: boolean,
-      ) => {
-        setIntegrationViews((prev) => ({
-          ...prev,
-          [integrationId]: { views, isLoading },
-        }));
-      },
-    [],
-  );
-
-  // Combine all views with their integration info
   const allViews = useMemo(() => {
-    return integrations.flatMap((integration) => {
-      const data = integrationViews[integration.id];
-      const views = data?.views || [];
-      return views.map((view) => {
-        const existingView = currentTeam.views.find((teamView) => {
-          const metadata = teamView.metadata as { url?: string };
-          return metadata?.url === view.url;
-        });
-        return {
-          ...view,
-          isAdded: !!existingView,
-          teamViewId: existingView?.id,
-          integration: {
-            id: integration.id,
-            name: integration.name,
-            icon: integration.icon,
-            description: integration.description,
-          },
-        };
+    return views.map((view) => {
+      const existingView = currentTeam.views.find((teamView) => {
+        const metadata = teamView.metadata as { url?: string };
+        return metadata?.url === view.url;
       });
+      return {
+        ...view,
+        isAdded: !!existingView,
+        teamViewId: existingView?.id,
+      };
     });
-  }, [integrations, integrationViews, currentTeam]);
+  }, [currentTeam]);
 
   // Filter views based on deferred search term for better performance
   const filteredViews = useMemo(() => {
@@ -300,11 +213,6 @@ function ViewsList() {
         view.integration.name.toLowerCase().includes(lowercaseSearch),
     );
   }, [allViews, deferredSearchTerm]);
-
-  // Check if any integration is still loading
-  const isLoading = Object.values(integrationViews).some(
-    (data) => data.isLoading,
-  );
 
   const beautifyViewName = (text: string) => {
     return text
@@ -324,15 +232,6 @@ function ViewsList() {
 
   return (
     <div className="flex flex-col h-full p-4">
-      {/* Hidden components that handle individual integration view loading */}
-      {integrations.map((integration) => (
-        <IntegrationViews
-          key={integration.id}
-          integration={integration}
-          onViewsLoaded={handleViewsLoaded}
-        />
-      ))}
-
       <ListPageHeader
         input={{
           placeholder: "Search views",
@@ -341,19 +240,6 @@ function ViewsList() {
         }}
         view={{ viewMode, onChange: setViewMode }}
       />
-
-      {/* Show loading indicator if still loading some views */}
-      {isLoading && allViews.length === 0 && (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading views...</div>
-        </div>
-      )}
-
-      {isLoading && allViews.length > 0 && (
-        <div className="p-2 text-sm text-muted-foreground text-center border-b">
-          Loading additional views...
-        </div>
-      )}
 
       {filteredViews.length > 0 && viewMode === "cards" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
@@ -390,7 +276,7 @@ function ViewsList() {
         <TableView views={filteredViews} onConfigure={handleViewClick} />
       )}
 
-      {filteredViews.length === 0 && !isLoading && (
+      {filteredViews.length === 0 && (
         <EmptyState
           icon="dashboard"
           title="No views found"

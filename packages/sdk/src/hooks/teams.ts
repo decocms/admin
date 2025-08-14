@@ -24,6 +24,7 @@ import { InternalServerError } from "../errors.ts";
 import { DEFAULT_THEME } from "../theme.ts";
 import { useSDK } from "./store.tsx";
 import { MCPConnection } from "../models/index.ts";
+import { listIntegrations } from "../crud/mcp.ts";
 
 export const useTeams = () => {
   return useSuspenseQuery({
@@ -146,4 +147,37 @@ export function useConnectionViews(
   });
 
   return data;
+}
+
+export function useWorkspaceViews() {
+  const { workspace } = useSDK();
+  return useSuspenseQuery({
+    queryKey: KEYS.WORKSPACE_VIEWS(workspace),
+    queryFn: async ({ signal }) => {
+      const integrations = await listIntegrations(
+        workspace,
+        { binder: "View" },
+        signal,
+      );
+      const promises = integrations.map(async (integration) => {
+        const result = await listAvailableViewsForConnection(
+          integration.connection,
+        ).catch((error) => {
+          console.error(error);
+          return { views: [] };
+        });
+        return result.views.map((view) => ({
+          ...view,
+          integration: {
+            id: integration.id,
+            name: integration.name,
+            icon: integration.icon,
+            description: integration.description,
+          },
+        }));
+      });
+      const results = await Promise.all(promises);
+      return results.flat();
+    },
+  });
 }

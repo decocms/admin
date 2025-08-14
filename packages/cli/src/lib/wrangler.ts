@@ -9,6 +9,7 @@ import {
 import { readSession } from "./session.js";
 import process from "node:process";
 import { Buffer } from "node:buffer";
+import { StartDevServerOptions } from "../commands/dev/dev.js";
 
 const envFile = ".dev.vars";
 
@@ -146,8 +147,17 @@ async function addZodDependency(projectRoot: string) {
   );
 }
 
-export async function ensureDevEnvironment() {
+async function cleanBuildDirectory(projectRoot: string, directory: string) {
+  const buildDir = join(projectRoot, directory);
+  await fs.rm(buildDir, { recursive: true, force: true });
+  await fs.mkdir(buildDir);
+}
+
+export async function ensureDevEnvironment(opts: StartDevServerOptions) {
   const projectRoot = getProjectRoot();
+  if (opts.cleanBuildDirectory?.enabled) {
+    await cleanBuildDirectory(projectRoot, opts.cleanBuildDirectory.directory);
+  }
   await ensureEnvVarsGitIgnore(projectRoot);
   const env = await getEnvVars(projectRoot);
   await writeEnvVars(projectRoot, env);

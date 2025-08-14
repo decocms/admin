@@ -201,10 +201,13 @@ const uploadWranglerAssets = async ({
   return jwt;
 };
 
+const localhost =
+  "127.0.0.1:* localhost:* http://localhost:* http://127.0.0.1:*";
+
 const DEFAULT_HEADERS_FILE = () =>
   `# Default headers for static assets
 /*
-  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/
+  Content-Security-Policy: frame-ancestors 'self' https://deco.chat/ ${localhost}
   X-Deco-Worker-Cdn: 1
 `;
 

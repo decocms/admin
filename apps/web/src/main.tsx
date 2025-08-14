@@ -147,6 +147,10 @@ const ViewDetail = lazy(() =>
   wrapWithUILoadingFallback(import("./components/views/detail.tsx")),
 );
 
+const ViewsList = lazy(() =>
+  wrapWithUILoadingFallback(import("./components/views/list.tsx")),
+);
+
 function NotFound(): null {
   throw new NotFoundError("The path was not found");
 }
@@ -311,6 +315,7 @@ const router = createBrowserRouter([
           { path: "monitor", Component: Monitor },
           { path: "audits", Component: AuditList },
           { path: "audit/:id", Component: AuditDetail },
+          { path: "views", Component: ViewsList },
           { path: "views/:id", Component: ViewDetail },
           { path: "prompts", Component: ListPrompts },
           { path: "prompt/:id", Component: PromptDetail },

@@ -1,5 +1,5 @@
 import { NotFoundError, parseViewMetadata, useRemoveView } from "@deco/sdk";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { useCurrentTeam } from "../sidebar/team-selector";
 import Preview from "../agent/preview";
 import { DefaultBreadcrumb, PageLayout } from "../layout.tsx";
@@ -22,22 +22,32 @@ import { useState } from "react";
 
 export default function ViewDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const url = searchParams.get("url");
   const team = useCurrentTeam();
   const removeViewMutation = useRemoveView();
   const navigateWorkspace = useNavigateWorkspace();
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   const view = team.views.find((view) => view.id === id);
-  if (!view) {
+  if (!view && !url) {
     throw new NotFoundError("View not found");
   }
-  const meta = parseViewMetadata(view);
-
+  const meta = view
+    ? parseViewMetadata(view)
+    : {
+        type: "custom",
+        icon: "dashboard",
+        url: url || "",
+      };
   if (meta?.type !== "custom") {
     throw new NotFoundError("View not found");
   }
 
   const handleDeleteView = async () => {
+    if (!view) {
+      return;
+    }
     try {
       await removeViewMutation.mutateAsync({
         viewId: view.id,
@@ -55,7 +65,9 @@ export default function ViewDetail() {
 
   const tabs: Record<string, Tab> = {
     preview: {
-      Component: () => <Preview src={meta.url} title={view.title} />,
+      Component: () => (
+        <Preview src={meta.url} title={view?.title || "Untitled view"} />
+      ),
       title: "Preview",
       initialOpen: true,
       active: true,
@@ -65,7 +77,7 @@ export default function ViewDetail() {
   return (
     <>
       <PageLayout
-        key={view.id}
+        key={view?.id}
         hideViewsButton
         tabs={tabs}
         breadcrumb={
@@ -74,8 +86,11 @@ export default function ViewDetail() {
               {
                 label: (
                   <div className="flex items-center gap-2">
-                    <Icon name={view.icon} className="w-4 h-4" />
-                    <span>{view.title}</span>
+                    <Icon
+                      name={view?.icon || "dashboard"}
+                      className="w-4 h-4"
+                    />
+                    <span>{view?.title}</span>
                   </div>
                 ),
               },
@@ -100,7 +115,7 @@ export default function ViewDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete View</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the view "{view.title}"? This
+              Are you sure you want to delete the view "{view?.title}"? This
               action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

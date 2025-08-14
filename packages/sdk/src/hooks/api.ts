@@ -72,6 +72,7 @@ export const KEYS = {
     workspace,
     integrationId,
   ],
+  WORKSPACE_VIEWS: (workspace: Workspace) => ["workspace-views", workspace],
   TEAM_MEMBERS: (slugOrId: string | number) => ["taem", slugOrId, "members"],
   TEAM_ROLES: (teamId: number) => ["team", teamId, "roles"],
   MY_INVITES: () => ["my_invites"],

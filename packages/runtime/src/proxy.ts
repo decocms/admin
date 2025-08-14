@@ -107,6 +107,16 @@ async function makeApiCall(
 export function createMCPClientProxy<T extends Record<string, unknown>>(
   options?: CreateStubAPIOptions,
 ): T {
+  let tools:
+    | Promise<
+        {
+          name: string;
+          inputSchema: any;
+          outputSchema?: any;
+          description: string;
+        }[]
+      >
+    | undefined;
   return new Proxy<T>({} as T, {
     get(_, name) {
       if (name === "toJSON") {
@@ -156,12 +166,12 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         const connection =
           typeof options?.connection === "function"
             ? await options.connection()
-            : {
+            : (options?.connection ?? {
                 type: "HTTP",
                 url: `${options?.decoChatApiUrl ?? `https://api.deco.chat`}${getWorkspace(
                   options?.workspace,
                 )}/mcp`,
-              };
+              });
 
         const data = await makeApiCall(
           {
@@ -192,16 +202,6 @@ export function createMCPClientProxy<T extends Record<string, unknown>>(
         }[];
       };
 
-      let tools:
-        | Promise<
-            {
-              name: string;
-              inputSchema: any;
-              outputSchema?: any;
-              description: string;
-            }[]
-          >
-        | undefined;
       const listToolsOnce = () => {
         return (tools ??= listToolsFn().catch((error) => {
           console.error("Failed to list tools", error);

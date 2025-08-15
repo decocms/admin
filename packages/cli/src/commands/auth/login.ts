@@ -9,6 +9,7 @@ import process from "node:process";
 
 export const loginCommand = () => {
   return new Promise<void>((resolve, reject) => {
+    let timeout: NodeJS.Timeout;
     const server = createServer(
       async (req: IncomingMessage, res: ServerResponse) => {
         const url = new URL(req.url!, `http://localhost:${AUTH_PORT_CLI}`);
@@ -77,6 +78,11 @@ export const loginCommand = () => {
             console.error("Failed to save session data:", e);
           }
 
+          // Clear the timeout since login was successful
+          if (timeout) {
+            clearTimeout(timeout);
+          }
+
           res.writeHead(200, { "Content-Type": "text/html" });
           res.end(`<!DOCTYPE html>
         <html>
@@ -134,7 +140,7 @@ export const loginCommand = () => {
       });
 
       // Always show the fallback URL
-      setTimeout(() => {
+      timeout = setTimeout(() => {
         console.log(
           "📋 If your browser didn't open automatically, please click the following link:",
         );

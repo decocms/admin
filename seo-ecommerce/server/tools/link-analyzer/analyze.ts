@@ -1,3 +1,11 @@
+// Fallback fetch for Node.js (local dev)
+let localFetch: typeof fetch = globalThis.fetch;
+try {
+  if (typeof fetch === 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    localFetch = require('node-fetch');
+  }
+} catch {}
 // Pure analysis logic kept separate so unit tests avoid importing workers runtime.
 export interface LinkAnalysisResult {
   url: string;
@@ -41,10 +49,10 @@ async function headOrGet(url: string, timeoutMs: number): Promise<number> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal });
+    const res = await localFetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal });
     if (res.status === 405 || res.status === 501) {
       // Some servers disallow HEAD
-      const resGet = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
+      const resGet = await localFetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal });
       return resGet.status;
     }
     return res.status;
@@ -62,7 +70,7 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   let status = 0;
   let notes: string[] = [];
   try {
-    const res = await fetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': 'DecoLinkAnalyzer/1.0 (+https://seo-ecommerce.deco.page/)' } });
+    const res = await localFetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': 'DecoLinkAnalyzer/1.0 (+https://seo-ecommerce.deco.page/)' } });
     status = res.status;
     if (!res.ok) {
       notes.push(`Fetch status ${res.status}`);

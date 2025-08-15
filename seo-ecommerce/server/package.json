@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-  "dev": "if not exist view-build mkdir view-build && deco dev",
+    "dev": "if not exist view-build mkdir view-build && deco dev",
     "dev:remote": "mkdir -p view-build && wrangler dev --remote",
     "deploy": "wrangler build && deco deploy --yes ./dist",
     "gen": "deco gen > deco.gen.ts",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.6.0",
+    "node-fetch": "^3.3.2",
     "zod": "^3.24.3"
   },
   "devDependencies": {

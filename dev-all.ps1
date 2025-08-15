@@ -1,3 +1,9 @@
+${env:CF_DISPATCH_NAMESPACE} = "dummy"
+${env:TURSO_GROUP_DATABASE_TOKEN} = "dummy"
+${env:TURSO_ORGANIZATION} = "dummy"
+${env:CF_ACCOUNT_ID} = "dummy"
+${env:CF_API_TOKEN} = "dummy"
+${env:OPENROUTER_API_KEY} = "dummy"
 ${env:OTEL_EXPORTER_OTLP_ENDPOINT} = "http://localhost:4318"
 ${env:OTEL_EXPORTER_OTLP_HEADERS} = ""
 ${env:PUBLIC_SUPABASE_URL} = "https://bekbempccbkuyrvjuygr.supabase.co"
@@ -25,4 +31,4 @@ ${env:DECO_CHAT_API_JWT_PRIVATE_KEY} = ""
 Start-Process powershell -ArgumentList 'cd apps/web; npm run dev'
 Start-Process powershell -ArgumentList 'cd apps/api; npm run dev'
 Start-Process powershell -ArgumentList 'cd seo-ecommerce/view; npm run dev'
-Start-Process powershell -ArgumentList 'cd seo-ecommerce/server; npm run dev'
+Start-Process powershell -ArgumentList 'cd seo-ecommerce/server; wrangler dev --port 4000'

@@ -248,6 +248,7 @@ export class FileProcessor {
     switch (fileExt) {
       case ".md": {
         return MDocument.fromMarkdown(text).chunk({
+          size: this.config.chunkSize,
           maxSize: this.config.chunkSize,
           headers: [
             ["#", "title"],
@@ -260,8 +261,9 @@ export class FileProcessor {
       case ".json":
       case ".pdf": {
         return MDocument.fromText(text).chunk({
+          size: this.config.chunkSize,
           maxSize: this.config.chunkSize,
-          separators: fileExt === ".csv" ? ["\n"] : undefined,
+          ...(fileExt === ".csv" ? { separators: ["\n"] } : {}),
         });
       }
     }

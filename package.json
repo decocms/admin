@@ -10,7 +10,7 @@
   "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo:view": "cd seo-ecommerce/view && npm run dev",
-  "deploy:seo": "set -e; cd seo-ecommerce/view; npm run build; cd ../server; npm run gen; npm run deploy",
+  "deploy:seo": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy",
   "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
   "release:seo": "git add . && git commit -m 'chore: release new version' && git push && npm run deploy:seo",
     "docs:dev": "cd docs && npm run dev",

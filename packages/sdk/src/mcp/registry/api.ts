@@ -135,15 +135,15 @@ const Mappers = {
   ): RegistryApp => {
     const tools = Array.isArray(data.deco_chat_apps_registry_tools)
       ? data.deco_chat_apps_registry_tools.map((tool) => ({
-        id: tool.id,
-        name: tool.name,
-        description: tool.description ?? undefined,
-        inputSchema:
-          (tool.input_schema as Record<string, unknown>) ?? undefined,
-        outputSchema:
-          (tool.output_schema as Record<string, unknown>) ?? undefined,
-        metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
-      }))
+          id: tool.id,
+          name: tool.name,
+          description: tool.description ?? undefined,
+          inputSchema:
+            (tool.input_schema as Record<string, unknown>) ?? undefined,
+          outputSchema:
+            (tool.output_schema as Record<string, unknown>) ?? undefined,
+          metadata: (tool.metadata as Record<string, unknown>) ?? undefined,
+        }))
       : [];
 
     return {

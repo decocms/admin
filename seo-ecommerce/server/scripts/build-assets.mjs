@@ -37,13 +37,16 @@ console.log('[build-assets] Adapter output present at', adapterOutputDir, '- no 
 
 // Write build info file (used for cache bust diagnostics)
 try {
-  const infoPath = join(serverDir, 'build-info.json');
   const buildInfo = {
     buildId: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
     builtAt: new Date().toISOString(),
   };
-  writeFileSync(infoPath, JSON.stringify(buildInfo, null, 2));
-  console.log('[build-assets] Wrote build-info.json');
+  // Write inside server root (optional) and assets directory (required for ASSETS binding)
+  const infoPathRoot = join(serverDir, 'build-info.json');
+  const infoPathAssets = join(adapterOutputDir, 'build-info.json');
+  writeFileSync(infoPathRoot, JSON.stringify(buildInfo, null, 2));
+  writeFileSync(infoPathAssets, JSON.stringify(buildInfo, null, 2));
+  console.log('[build-assets] Wrote build-info.json (root + view-build)');
 } catch (e) {
   console.warn('[build-assets] Failed to write build-info.json', e);
 }

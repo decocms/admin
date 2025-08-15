@@ -4,27 +4,29 @@ const props = Astro.props as { data?: any };
 const data = props.data?.result || props.data || {};
 ---
 <style>
-  .dash-grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); margin-top:1rem; }
-  .card { background:var(--sl-color-bg,#fff); border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:10px; padding:0.85rem 0.95rem; position:relative; }
-  .card h3 { margin:0 0 .35rem; font-size:.9rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; color:var(--sl-color-gray-6,#334155); }
-  .metric { font-size:1.4rem; font-weight:600; }
-  .score-ring { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:1.3rem; margin:.25rem auto .5rem; background:conic-gradient(var(--col) calc(var(--p)*1%), #e2e8f0 0); position:relative; }
-  .score-ring::after { content:""; position:absolute; inset:6px; background:var(--sl-color-bg,#fff); border-radius:50%; }
+  .dash-grid { display:grid; gap:1.1rem; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); margin-top:1.1rem; }
+  .card { position:relative; border:1px solid rgba(255,255,255,.12); background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); backdrop-filter:blur(18px) saturate(160%); padding:1rem 1.05rem 1.15rem; border-radius:18px; box-shadow:0 10px 40px -15px rgba(0,0,0,.55); overflow:hidden; }
+  .card:before { content:""; position:absolute; inset:0; background:radial-gradient(circle at 130% -10%,rgba(255,255,255,.3),transparent 60%); opacity:.4; pointer-events:none; }
+  .card h3 { margin:0 0 .5rem; font-size:.65rem; letter-spacing:1px; text-transform:uppercase; font-weight:600; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; color:transparent; }
+  .metric { font-size:1.55rem; font-weight:600; line-height:1; }
+  .score-ring { width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:1.35rem; margin:.25rem auto .55rem; background:conic-gradient(var(--col) calc(var(--p)*1%), #1e293b 0); position:relative; box-shadow:0 4px 14px -4px rgba(0,0,0,.6); }
+  .score-ring::after { content:""; position:absolute; inset:7px; background:#0f172a; border-radius:50%; }
   .score-ring span { position:relative; z-index:1; }
-  .bad { color:#dc2626; }
-  .warn { color:#d97706; }
-  .ok { color:#16a34a; }
-  .notes { margin-top:1.5rem; }
-  .notes li { font-size:.85rem; margin:.25rem 0; }
-  .meta-block { margin-top:1.25rem; }
-  pre.meta { max-height:160px; overflow:auto; font-size:.7rem; background:#0f172a; color:#e2e8f0; padding:.75rem; border-radius:8px; }
-  @media (prefers-color-scheme: dark){
-    .card { background:#1e293b; border-color:#334155; }
-    .score-ring { background:conic-gradient(var(--col) calc(var(--p)*1%), #334155 0); }
-  }
+  .bad { color:#f87171; }
+  .warn { color:#fb923c; }
+  .ok { color:#4ade80; }
+  .notes { margin-top:1.8rem; }
+  .notes li { font-size:.78rem; margin:.3rem 0; line-height:1.35; color:#b8cbe0; }
+  .meta-block { margin-top:1.35rem; }
+  pre.meta { max-height:210px; overflow:auto; font-size:.65rem; background:#020e1f; color:#e2e8f0; padding:.85rem .9rem; border-radius:14px; border:1px solid rgba(255,255,255,.08); }
+  details summary { cursor:pointer; list-style:none; font-size:.65rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; color:#9fb3c9; }
+  details[open] summary { color:#e2e8f0; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#1e293b; border-radius:20px; border:2px solid #0f172a; }
 </style>
 <div>
-  {data.url && <p style="font-size:.9rem; color:var(--sl-color-gray-6,#555);">Resultado para <strong>{data.url}</strong></p>}
+  {data.url && <p style="font-size:.7rem; letter-spacing:.7px; text-transform:uppercase; color:#7ea6d6; margin:0 0 .4rem;">URL alvo: <strong style="color:#e2e8f0; text-transform:none; font-size:.75rem;">{data.url}</strong></p>}
   <div class="dash-grid">
     <div class="card" style="text-align:center; --p:{data.seoScore||0}; --col:{data.seoScore>=75?'#16a34a':data.seoScore>=50?'#d97706':'#dc2626'};">
       <h3>Score SEO</h3>
@@ -41,12 +43,12 @@ const data = props.data?.result || props.data || {};
   </div>
   <div class="meta-block">
     <details>
-      <summary style="cursor:pointer; font-weight:600;">JSON bruto</summary>
+      <summary>JSON bruto</summary>
       <pre class="meta">{JSON.stringify(data,null,2)}</pre>
     </details>
   </div>
   {data.notes && <div class="notes">
-    <h3 style="font-size:.85rem; text-transform:uppercase; letter-spacing:1px; margin:1.5rem 0 .25rem;">Observações</h3>
+  <h3 style="font-size:.65rem; text-transform:uppercase; letter-spacing:1px; margin:1.5rem 0 .4rem; background:linear-gradient(90deg,var(--grad-b),var(--grad-a)); -webkit-background-clip:text; color:transparent;">Observações</h3>
     <ul>
       {data.notes.split(';').map((n: string) => <li>{n.trim()}</li>)}
     </ul>

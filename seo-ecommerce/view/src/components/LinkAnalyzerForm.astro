@@ -64,37 +64,38 @@
 </style>
 <div id="link-analyzer-root" class="la-root fade-in">
   <div class="la-card">
-    <form id="link-analyzer-form" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:1rem;">
+    <form id="link-analyzer-form" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:1rem;" aria-describedby="la-help" novalidate>
+      <p id="la-help" class="visually-hidden">Formulário em três etapas para analisar uma página inicial e gerar score e ações de SEO.</p>
       <!-- Step 1: Domain -->
-      <section style="display:flex; gap:14px; align-items:flex-start;">
+  <fieldset style="border:none; margin:0; padding:0; display:flex; gap:14px; align-items:flex-start;">
         <div style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:var(--la-bg-alt); border:1px solid var(--la-border); border-radius:10px; flex-shrink:0;">
           <!-- Icon step 1 -->
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--la-accent);"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
         <div style="flex:1; min-width:0;">
               <h3 style="margin:0 0 .55rem; font-size:15px; font-weight:600; display:flex; gap:6px; align-items:center;">1. Informe o domínio principal <span style="font-size:10px; font-weight:600; background:#1e293b; padding:3px 7px; border-radius:14px; letter-spacing:.5px; text-transform:uppercase;">Obrigatório</span></h3>
-              <div style="font-size:.9rem; line-height:1.5; margin:0 0 .6rem; color:#b8cbe0;">Use apenas o domínio base (sem <code>https://</code>). A página inicial é analisada para gerar o primeiro panorama.</div>
-          <input id="la-domain" class="la-input" type="text" required placeholder="ex: exemplo.com" />
-          <div class="la-muted" style="margin-top:4px;">Sem <code>https://</code>. Ex: <code>meusite.com</code></div>
+              <div style="font-size:var(--fs-base,1.05rem); line-height:1.55; margin:0 0 .7rem; color:#b8cbe0;">Use apenas o domínio base (sem <code>https://</code>). A página inicial é analisada para gerar o primeiro panorama.</div>
+          <input id="la-domain" class="la-input" type="text" required placeholder="ex: exemplo.com" autocomplete="url" aria-required="true" aria-describedby="la-domain-hint" />
+          <div id="la-domain-hint" class="la-muted" style="margin-top:4px;">Sem <code>https://</code>. Ex: <code>meusite.com</code></div>
         </div>
-      </section>
+      </fieldset>
       <!-- Step 2: Scope -->
-      <section style="display:flex; gap:14px; align-items:flex-start;">
+  <fieldset style="border:none; margin:0; padding:0; display:flex; gap:14px; align-items:flex-start;">
         <div style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:var(--la-bg-alt); border:1px solid var(--la-border); border-radius:10px; flex-shrink:0;">
           <!-- Icon step 2 -->
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--la-accent);"><path d="M3 12h18"/><path d="M12 3v18"/></svg>
         </div>
         <div style="flex:1; min-width:0;">
           <h3 style="margin:0 0 .55rem; font-size:15px; font-weight:600;">2. Defina o escopo</h3>
-          <div style="font-size:.9rem; line-height:1.5; margin:0 0 .55rem; color:#b8cbe0;">Escolha como quer focar a análise agora. Modos avançados (subpastas, rastreamento) chegam em breve.</div>
-          <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
-            <label style="display:flex; gap:6px; align-items:center;">
-              <input type="radio" name="scope" value="root" checked /> Domínio raiz inteiro
+          <div style="font-size:var(--fs-base,1.05rem); line-height:1.55; margin:0 0 .65rem; color:#b8cbe0;">Escolha como quer focar a análise agora. Modos avançados (subpastas, rastreamento) chegam em breve.</div>
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;" role="radiogroup" aria-label="Escopo da análise">
+            <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+              <input type="radio" name="scope" value="root" checked aria-checked="true" /> Domínio raiz inteiro
             </label>
-            <label style="display:flex; gap:6px; align-items:center;">
+            <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
               <input type="radio" name="scope" value="subdomain" /> Subdomínio específico
             </label>
-            <label style="display:flex; gap:6px; align-items:center;">
+            <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
               <input type="radio" name="scope" value="folders" /> Conjunto de subpastas
             </label>
           </div>
@@ -107,9 +108,9 @@
             <div class="la-muted" style="margin-top:4px;">Uma subpasta por linha. (Futuro: rastreamento; agora apenas página inicial).</div>
           </div>
         </div>
-      </section>
+  </fieldset>
       <!-- Step 3: Run -->
-      <section style="display:flex; gap:14px; align-items:flex-start;">
+  <fieldset style="border:none; margin:0; padding:0; display:flex; gap:14px; align-items:flex-start;">
         <div style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:var(--la-bg-alt); border:1px solid var(--la-border); border-radius:10px; flex-shrink:0;">
           <!-- Icon step 3 -->
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--la-accent);"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-6"/></svg>
@@ -117,16 +118,16 @@
         <div style="flex:1; min-width:200px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
           <div style="flex:1; min-width:240px;">
             <h3 style="margin:0 0 .45rem; font-size:15px; font-weight:600;">3. Execute a verificação</h3>
-            <div style="font-size:.9rem; line-height:1.5; color:#b8cbe0;">Geramos score e ações prioritárias instantaneamente. Em breve: histórico comparativo e recomendações expansíveis.</div>
+            <div style="font-size:var(--fs-base,1.05rem); line-height:1.55; color:#b8cbe0;">Geramos score e ações prioritárias instantaneamente. Em breve: histórico comparativo e recomendações expansíveis.</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
-            <button id="la-submit" type="submit" class="la-btn">Iniciar Análise</button>
+            <button id="la-submit" type="submit" class="la-btn" aria-describedby="la-status">Iniciar Análise</button>
             <span id="la-loading" style="display:none;" aria-label="Carregando"><span class="la-spinner"></span></span>
           </div>
         </div>
-      </section>
+      </fieldset>
       <div style="margin-top:0; display:flex; align-items:center; gap:8px;">
-        <span id="la-status" class="la-status" aria-live="polite"></span>
+  <span id="la-status" class="la-status" aria-live="polite" aria-atomic="true"></span>
         <span id="la-mode" class="la-badge" style="display:none;"></span>
       </div>
     </form>
@@ -238,7 +239,18 @@
       btn.className='la-chip';
       btn.textContent=u.length>48? u.slice(0,45)+'…' : u;
       btn.title=u;
-      btn.addEventListener('click', ()=>{ input.value=u; resultEl.style.display='none'; errorEl.style.display='none'; });
+      btn.addEventListener('click', ()=>{
+        // Normaliza para campo domínio (remove protocolo e trailing slash)
+        try {
+          let norm = u.trim();
+          norm = norm.replace(/^https?:\/\//i,'').replace(/\/.*$/,'').replace(/\/$/,'');
+          domainInput.value = norm;
+          domainInput.focus();
+        } catch { domainInput.value = u; }
+        resultEl.style.display='none';
+        errorEl.style.display='none';
+        statusEl.textContent='';
+      });
       historyItems.appendChild(btn);
     });
   }
@@ -351,7 +363,9 @@
       actionsEl.innerHTML = actions.length ? actions.map(a=>`<li><strong>[P${a.priority}]</strong> ${a.label}</li>`).join('') : '<li>Nenhuma ação prioritária.</li>';
       const aiOps = deriveAiOps(r||{});
       aiOpsEl.innerHTML = aiOps.length ? aiOps.map(o=>`<li>${o}</li>`).join('') : '<li>Sem sugestões adicionais.</li>';
-      summaryWrap.style.display='block';
+  summaryWrap.style.display='block';
+  // Move foco para score após resultado para leitores de tela
+  try { scoreEl.setAttribute('tabindex','-1'); scoreEl.focus({preventScroll:false}); setTimeout(()=> scoreEl.removeAttribute('tabindex'), 600); } catch {}
       timingEl.textContent = elapsed+' ms';
   // Habilita CSV se encontrar campo links (array)
       const links = (data?.result?.links) || data?.links;
@@ -372,6 +386,7 @@
     }catch(err){
       errorEl.textContent=err.message||'Erro desconhecido';
       errorEl.style.display='block';
+      try { errorEl.setAttribute('role','alert'); errorEl.focus({preventScroll:true}); } catch {}
       pushHistory(url, false);
     }finally{
       submit.disabled=false; submit.textContent='Iniciar Análise'; loadingEl.style.display='none';

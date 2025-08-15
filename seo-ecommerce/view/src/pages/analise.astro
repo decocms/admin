@@ -10,82 +10,83 @@ let initial: any = null; // será carregado no cliente
     <meta charset="utf-8" />
     <title>Área Detalhada - SEO</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="/theme.css" />
     <style>
-      body { background:linear-gradient(135deg,#0f172a,#1e293b 45%,#0f172a); color:#0f172a; }
-      @media (prefers-color-scheme: dark){ body { color:#e2e8f0; } }
-      .shell { backdrop-filter: blur(14px) saturate(160%); background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.25); }
-      @media (prefers-color-scheme: dark){ .shell { background:rgba(30,41,59,.55); border-color:rgba(255,255,255,.08);} }
-      .fade { animation: fade .5s ease; }
-      @keyframes fade { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
-      .grid { display:grid; gap:1.75rem; grid-template-columns: 1fr 340px; }
-      @media (max-width: 1040px){ .grid { grid-template-columns: 1fr; } }
-      .panel { border-radius:20px; padding:1.15rem 1.35rem 1.35rem; box-shadow:0 8px 32px -12px rgba(0,0,0,.4); position:relative; overflow:hidden; }
-      .panel:before { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 120% 10%,rgba(255,255,255,.25),transparent 60%); }
-      .panel h2 { margin:.25rem 0 .75rem; font-size:.95rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; }
-      .divider { height:1px; background:linear-gradient(90deg,transparent,#64748b40,transparent); margin:2.25rem 0 1.75rem; border:none; }
-      .btn { background:#2563eb; color:#fff; border:none; border-radius:12px; padding:13px 22px; font-weight:600; cursor:pointer; font-size:.9rem; box-shadow:0 4px 18px -4px rgba(37,99,235,.55); display:inline-flex; align-items:center; gap:6px; transition: all .25s ease; }
-      .btn:hover { filter:brightness(1.08); transform:translateY(-2px); box-shadow:0 8px 26px -6px rgba(37,99,235,.55); }
-      .input { width:100%; padding:13px 16px; border:1px solid #cbd5e1; border-radius:12px; background:#fff; font-size:.9rem; transition:border-color .2s, background .2s; }
-      .input:focus { outline:2px solid #2563eb; outline-offset:2px; }
-      @media (prefers-color-scheme:dark){ .input { background:#0f172a; border-color:#334155; color:#e2e8f0; } }
-      .muted { font-size:.72rem; color:#64748b; }
-      .top-nav a { text-decoration:none; color:inherit; font-weight:500; opacity:.88; }
+      body { margin:0; font-family:var(--font-sans); max-width:1380px; padding:1.8rem clamp(1rem,2.4vw,2.2rem) 4rem; }
+      .top-nav { display:flex; gap:1.2rem; align-items:center; margin-bottom:1.4rem; font-size:.65rem; text-transform:uppercase; letter-spacing:.55px; }
+      .top-nav a { text-decoration:none; color:var(--color-text-soft); font-weight:600; opacity:.88; }
       .top-nav a:hover { opacity:1; }
-      .badge { font-size:.65rem; background:#0f172a; color:#fff; padding:4px 10px; border-radius:18px; letter-spacing:.5px; }
-      @media (prefers-color-scheme:dark){ .badge { background:#334155; } }
-      .skeleton { background:linear-gradient(90deg,#cbd5e1 0%,#e2e8f0 40%,#cbd5e1 80%); background-size:200% 100%; animation:skeleton 1.2s ease-in-out infinite; border-radius:8px; }
-      @media (prefers-color-scheme:dark){ .skeleton { background:linear-gradient(90deg,#1e293b 0%,#334155 40%,#1e293b 80%); } }
-      @keyframes skeleton { to { background-position: -200% 0; } }
+      header h1 { margin:0; font-size:clamp(2.2rem,4.5vw,3.4rem); line-height:1.03; background:linear-gradient(90deg,var(--grad-b),var(--grad-a),var(--grad-c)); -webkit-background-clip:text; color:transparent; }
+      header p { margin:.9rem 0 0; max-width:860px; font-size:.95rem; line-height:1.6; color:#9db4c8; }
+      .badge { font-size:.55rem; letter-spacing:1px; text-transform:uppercase; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); padding:5px 10px 6px; border-radius:999px; font-weight:600; color:#b8cbe0; }
+      .grid { display:grid; gap:2.1rem; grid-template-columns: 1fr 340px; align-items:start; }
+      @media (max-width:1100px){ .grid { grid-template-columns:1fr; } }
+      .panel { position:relative; border:1px solid rgba(255,255,255,.12); background:linear-gradient(125deg,rgba(99,102,241,.18),rgba(126,34,206,.12) 55%,rgba(37,99,235,.15)); backdrop-filter:blur(32px) saturate(160%); padding:1.6rem 1.8rem 2.1rem; border-radius:34px; box-shadow:0 18px 60px -25px rgba(0,0,0,.65); overflow:hidden; }
+      .panel.alt { background:linear-gradient(150deg,rgba(17,24,39,.9),rgba(30,41,59,.82)); box-shadow:0 22px 66px -30px rgba(0,0,0,.72); }
+      .panel h2 { margin:0 0 1rem; font-size:.7rem; letter-spacing:.9px; text-transform:uppercase; font-weight:600; color:#7ea6d6; }
+      form#ad-hoc { display:flex; gap:.9rem; flex-wrap:wrap; align-items:flex-end; }
+      form#ad-hoc label { flex:1; min-width:300px; font-weight:600; font-size:.55rem; letter-spacing:.8px; text-transform:uppercase; color:#8ea2b8; display:flex; flex-direction:column; gap:.4rem; }
+      .input { width:100%; padding:15px 18px; border:1px solid rgba(255,255,255,.14); border-radius:18px; background:#0f172a; font-size:.85rem; color:var(--color-text); font-family:inherit; }
+      .input:focus { outline:2px solid var(--grad-a); outline-offset:2px; border-color:var(--grad-a); }
+      .btn { all:unset; cursor:pointer; background:linear-gradient(90deg,var(--grad-a),var(--grad-b),var(--grad-c)); color:#fff; padding:15px 24px; border-radius:18px; font-size:.8rem; font-weight:600; letter-spacing:.6px; box-shadow:0 10px 34px -14px rgba(99,102,241,.6); display:inline-flex; align-items:center; gap:.55rem; }
+      .btn:hover { transform:translateY(-2px); }
+      #ad-hoc-status { font-size:.65rem; letter-spacing:.5px; text-transform:uppercase; color:#7ea6d6; }
+      .divider { height:1px; border:none; background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent); margin:2.4rem 0 1.9rem; }
+      aside ul { margin:.35rem 0 0; padding-left:1.05rem; list-style:disc; font-size:.7rem; color:#9fb3c9; line-height:1.5; }
+      .muted { font-size:.65rem; color:#7ea6d6; }
+      .json-pre { font-size:11px; background:#020e1f; color:#e2e8f0; padding:12px 14px; border-radius:18px; max-height:360px; overflow:auto; border:1px solid rgba(255,255,255,.1); }
+      .gate-btn { display:inline-block; margin-top:1.4rem; padding:14px 26px; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); color:#fff; border-radius:18px; text-decoration:none; font-weight:600; font-size:.85rem; box-shadow:0 10px 30px -14px rgba(99,102,241,.55); }
     </style>
   </head>
-  <body style="font-family: system-ui; max-width: 1300px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem;">
-    <nav class="top-nav" style="display:flex; gap:1.2rem; align-items:center; margin-bottom:1.25rem; font-size:.8rem; letter-spacing:.5px; text-transform:uppercase;">
+  <body>
+    <nav class="top-nav">
       <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
-      <a href="/" style="margin-left:auto;">Home</a>
+      <span style="flex:1"></span>
+      <a href="/" style="">Home</a>
       <a href="/login" id="nav-login">Login</a>
       <a href="/signup" id="nav-signup">Cadastro</a>
     </nav>
-    <header style="margin:0 0 2rem;">
-      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1.25rem;">
-        <h1 style="margin:0; font-size:clamp(2.1rem,4.2vw,3.2rem); line-height:1.02; background:linear-gradient(90deg,#60a5fa,#34d399); -webkit-background-clip:text; color:transparent;">Painel SEO Detalhado</h1>
+    <header>
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1.1rem;">
+        <h1>Painel SEO Detalhado</h1>
         <span class="badge">Beta</span>
       </div>
-      <p style="margin:.85rem 0 0; max-width:760px; font-size:.95rem; line-height:1.55; color:#475569;">Audite páginas com métricas ricas, histórico e futuras features de comparativo. Forneça uma URL para começar.</p>
+      <p>Audite páginas com métricas ricas, histórico e em breve comparativos e alertas. Forneça uma URL para começar.</p>
     </header>
     <div class="grid fade">
-      <div style="display:flex; flex-direction:column; gap:1.75rem;">
-        <section class="panel shell">
+      <div style="display:flex; flex-direction:column; gap:2.1rem;">
+        <section class="panel">
           <h2>Nova Análise</h2>
-          <form id="ad-hoc" style="display:flex; gap:.85rem; flex-wrap:wrap; align-items:flex-end;">
-            <label style="flex:1; min-width:300px; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.7px;">
-              URL
+          <form id="ad-hoc">
+            <label>
+              <span>URL</span>
               <input name="url" type="url" required placeholder="https://exemplo.com" class="input" />
             </label>
             <button type="submit" class="btn">Analisar Agora</button>
           </form>
-          <div id="ad-hoc-status" class="muted" style="margin-top:.65rem; min-height:1.2rem;"></div>
-          <div id="placeholder-hero" style="margin-top:1.3rem; font-size:.75rem; line-height:1.4; color:#64748b; ${requested? 'display:none;':''}">
-            <strong>Dica:</strong> teste a página inicial do domínio primeiro para contexto geral.
+          <div id="ad-hoc-status" style="margin-top:.75rem; min-height:1.2rem;"></div>
+          <div id="placeholder-hero" style="margin-top:1.1rem; font-size:.75rem; line-height:1.45; color:#9fb3c9; ${requested? 'display:none;':''}">
+            <strong style="color:#e2e8f0;">Dica:</strong> teste a página inicial primeiro para contexto geral.
           </div>
         </section>
-        <section id="analysis-wrap" class="panel shell fade" style="display:${requested? 'block':'none'};">
+        <section id="analysis-wrap" class="panel alt fade" style="display:${requested? 'block':'none'};">
           <h2>Resultado</h2>
-          <div id="analysis-dynamic" style="min-height:140px; display:flex; align-items:center; justify-content:center; font-size:.75rem; color:#64748b;">
+          <div id="analysis-dynamic" style="min-height:160px; display:flex; align-items:center; justify-content:center; font-size:.75rem; color:#7ea6d6;">
             ${requested? 'Carregando...' : 'Nenhuma análise ainda.'}
           </div>
           {initial && initial.result && <div id="analysis-static"><AnalysisDashboard data={initial.result} /></div>}
         </section>
       </div>
-      <aside class="panel shell fade" style="position:relative;">
+      <aside class="panel alt fade" style="position:relative;">
         <h2>Minhas Análises</h2>
         <p class="muted" style="margin-top:-.25rem;">Histórico vinculado à conta.</p>
-        <div style="margin-top:.75rem;">
+        <div style="margin-top:.9rem;">
           <SavedAnalysesClient />
         </div>
         <hr class="divider" />
-        <div style="font-size:.68rem; line-height:1.4; color:#64748b;">
-          <p style="margin:.25rem 0 .75rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; font-size:.6rem;">Roadmap</p>
-          <ul style="margin:.25rem 0 0; padding-left:1.05rem; list-style:disc;">
+        <div style="font-size:.65rem; line-height:1.45; color:#9fb3c9;">
+          <p style="margin:.25rem 0 .65rem; font-weight:600; letter-spacing:.6px; text-transform:uppercase; font-size:.55rem; color:#7ea6d6;">Roadmap</p>
+          <ul>
             <li>Rastreamento multi página</li>
             <li>Exportação CSV avançada</li>
             <li>Insights de IA</li>
@@ -121,7 +122,7 @@ let initial: any = null; // será carregado no cliente
         try {
           const auth = localStorage.getItem('la-supa-auth');
           if(!auth){
-            document.body.innerHTML='<div style="max-width:520px;margin:4rem auto;text-align:center;font-family:system-ui;">\n<h1 style="font-size:2.1rem;">Área restrita</h1><p style="color:#64748b;font-size:.95rem;">Faça login para acessar a análise detalhada.</p><a href="/login?next=/analise" style="display:inline-block;margin-top:1.4rem;padding:14px 26px;background:#2563eb;color:#fff;border-radius:12px;text-decoration:none;font-weight:600;font-size:.9rem;box-shadow:0 6px 22px -6px rgba(37,99,235,.55);">Ir para Login</a></div>';
+            document.body.innerHTML='<div style="max-width:560px;margin:5rem auto 3rem;padding:2.4rem 2.6rem 2.8rem;border:1px solid rgba(255,255,255,.12);border-radius:40px;background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,.02));backdrop-filter:blur(26px) saturate(160%);text-align:center;font-family:var(--font-sans);box-shadow:0 22px 70px -28px rgba(0,0,0,.7);">\n<h1 style="margin:0 0 1rem;font-size:clamp(2rem,4vw,2.9rem);line-height:1.05;background:linear-gradient(90deg,var(--grad-b),var(--grad-a),var(--grad-c));-webkit-background-clip:text;color:transparent;">Área restrita</h1><p style="color:#9db4c8;font-size:.95rem;line-height:1.55;max-width:480px;margin:.2rem auto 1.4rem;">Faça login para acessar o painel detalhado e desbloquear histórico e próximas funcionalidades.</p><a href="/login?next=/analise" class="gate-btn">Ir para Login</a></div>';
             return;
           } else {
             const l=document.getElementById('nav-login'); if(l) l.style.display='none';
@@ -137,7 +138,7 @@ let initial: any = null; // será carregado no cliente
             const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));
             // Render JSON quickly; for richer view we'd hydrate component
-            analysisDyn.innerHTML='<pre style="font-size:11px;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:12px;max-height:360px;overflow:auto;">'+
+            analysisDyn.innerHTML='<pre class="json-pre">'+
               JSON.stringify(data.result||data,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
           } catch { analysisDyn.textContent='Erro de rede'; }
         }
@@ -149,7 +150,7 @@ let initial: any = null; // será carregado no cliente
             if(last){
               const parsed = JSON.parse(last);
               analysisWrap.style.display='block';
-              analysisDyn.innerHTML='<pre style="font-size:11px;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:12px;max-height:360px;overflow:auto;">'+
+              analysisDyn.innerHTML='<pre class="json-pre">'+
                 JSON.stringify(parsed.result||parsed,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
             }
           } catch {}

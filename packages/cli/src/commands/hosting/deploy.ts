@@ -91,6 +91,7 @@ export const deploy = async ({
       "html",
       "txt",
       "wasm",
+      "sql",
     ],
   })) {
     const realPath = normalizePath(relative(cwd, entry.path));

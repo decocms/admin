@@ -42,17 +42,33 @@ const createMyWorkflow = (env: Env) => {
 const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
   const LOCAL_URL = "http://localhost:4000";
   const url = new URL(req.url);
-  const useDevServer = (req.headers.get("origin") || req.headers.get("host"))
-    ?.includes("localhost");
+  const host = (req.headers.get("origin") || req.headers.get("host")) || "";
+  const useDevServer = host.includes("localhost");
 
-  const request = new Request(
-    useDevServer
-      ? new URL(`${url.pathname}${url.search}`, LOCAL_URL)
-      : new URL(viewPath, req.url),
-    req,
-  );
+  // In production we must NOT collapse every path to '/' or JS/CSS assets will
+  // receive HTML (causing MIME type errors). We only serve index fallback for
+  // navigational HTML requests that would otherwise 404 (handled implicitly by
+  // static assets fetch below if missing).
+  if (useDevServer) {
+    const devReq = new Request(new URL(`${url.pathname}${url.search}`, LOCAL_URL), req);
+    return fetch(devReq);
+  }
 
-  return useDevServer ? fetch(request) : env.ASSETS.fetch(request);
+  // Let the ASSETS binding attempt to serve the exact path first.
+  return env.ASSETS.fetch(req).then(async (res) => {
+    // If asset not found and looks like a browser navigation (no extension or .html), fallback to index route.
+    if (res.status === 404) {
+      const path = url.pathname;
+      const hasExt = /\.[a-zA-Z0-9]{1,8}$/.test(path);
+      const accept = req.headers.get('accept') || '';
+      const wantsHtml = accept.includes('text/html');
+      if (!hasExt && wantsHtml) {
+        const indexReq = new Request(new URL(viewPath, req.url), req);
+        return env.ASSETS.fetch(indexReq);
+      }
+    }
+    return res;
+  });
 };
 
 const { Workflow, ...baseRuntime } = withRuntime<Env>({

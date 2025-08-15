@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
   FormControl,
   FormDescription,
@@ -17,6 +17,9 @@ import {
 import type { FieldPath, FieldValues, UseFormReturn } from "react-hook-form";
 import type { OptionItem } from "../index.tsx";
 import { IntegrationIcon } from "../../integrations/common.tsx";
+import { useMarketplaceIntegrations } from "@deco/sdk";
+import { Button } from "@deco/ui/components/button.tsx";
+import { useOptionsLoader } from "../../../hooks/use-options-loader.ts";
 
 interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   name: string;
@@ -26,7 +29,6 @@ interface TypeSelectFieldProps<T extends FieldValues = FieldValues> {
   isRequired: boolean;
   disabled: boolean;
   typeValue: string;
-  optionsLoader: (type: string) => Promise<OptionItem[]> | OptionItem[];
 }
 
 export function TypeSelectField<T extends FieldValues = FieldValues>({
@@ -37,32 +39,31 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
   isRequired,
   disabled,
   typeValue,
-  optionsLoader,
 }: TypeSelectFieldProps<T>) {
-  const [options, setOptions] = useState<OptionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: marketplace } = useMarketplaceIntegrations();
+  const { data: options, isPending } = useOptionsLoader(typeValue);
 
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        setLoading(true);
-        const loadedOptions = await optionsLoader(typeValue);
-        setOptions(loadedOptions);
-      } catch (error) {
-        console.error("Error loading options:", error);
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadOptions();
-  }, [typeValue, optionsLoader]);
+  const matchingIntegration = useMemo(
+    () =>
+      marketplace?.integrations.find(
+        (integration) => integration.name === typeValue,
+      ),
+    [marketplace, typeValue],
+  );
 
   const selectedOption = options.find(
     // deno-lint-ignore no-explicit-any
     (option: OptionItem) => option.value === form.getValues(name as any)?.value,
   );
+
+  const handleAddIntegration = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    globalThis.open(
+      `/connections?installingIntegrationId=${matchingIntegration?.id}`,
+      "_blank",
+    );
+  };
 
   return (
     <FormField
@@ -74,59 +75,71 @@ export function TypeSelectField<T extends FieldValues = FieldValues>({
             {title}
             {isRequired && <span className="text-destructive ml-1">*</span>}
           </FormLabel>
-          <Select
-            onValueChange={(value: string) => {
-              // Update the form with an object containing the selected value
-              const selectedOption = options.find(
-                (option: OptionItem) => option.value === value,
-              );
-              if (selectedOption) {
-                field.onChange({ value: selectedOption.value });
-              }
-            }}
-            defaultValue={field.value?.value}
-            disabled={disabled || loading}
-          >
-            <FormControl>
-              <SelectTrigger className="h-11">
-                <SelectValue
-                  placeholder={loading ? "Loading..." : "Select an integration"}
-                >
-                  {field.value?.value && selectedOption && (
-                    <div className="flex items-center gap-3">
-                      <IntegrationIcon
-                        icon={selectedOption.icon}
-                        name={selectedOption.label}
-                        size="sm"
-                      />
-                      <span className="font-medium">
-                        {selectedOption.label}
-                      </span>
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {options.map((option: OptionItem) => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className="py-3"
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <IntegrationIcon
-                      icon={option.icon}
-                      name={option.label}
-                      size="sm"
-                      className="flex-shrink-0"
-                    />
-                    <span className="font-medium text-sm">{option.label}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-4">
+            {options.length > 0 ? (
+              <Select
+                onValueChange={(value: string) => {
+                  // Update the form with an object containing the selected value
+                  const selectedOption = options.find(
+                    (option: OptionItem) => option.value === value,
+                  );
+                  if (selectedOption) {
+                    field.onChange({ value: selectedOption.value });
+                  }
+                }}
+                defaultValue={field.value?.value}
+                disabled={disabled || isPending}
+              >
+                <FormControl>
+                  <SelectTrigger className="h-11">
+                    <SelectValue
+                      placeholder={
+                        isPending ? "Loading..." : "Select an integration"
+                      }
+                    >
+                      {field.value?.value && selectedOption && (
+                        <div className="flex items-center gap-3">
+                          <IntegrationIcon
+                            icon={selectedOption.icon}
+                            name={selectedOption.label}
+                            size="sm"
+                          />
+                          <span className="font-medium">
+                            {selectedOption.label}
+                          </span>
+                        </div>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {options.map((option: OptionItem) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-3"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <IntegrationIcon
+                          icon={option.icon}
+                          name={option.label}
+                          size="sm"
+                          className="flex-shrink-0"
+                        />
+                        <span className="font-medium text-sm">
+                          {option.label}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Button onClick={handleAddIntegration} variant="special">
+                Add integration
+              </Button>
+            )}
+          </div>
           {description && (
             <FormDescription className="text-xs text-muted-foreground">
               {description}

@@ -15,7 +15,10 @@ const mapGetResult = ({ result: [page] }: { result: QueryResult[] }) => {
 
 const mapPostResult = ({ result }: { result: QueryResult[] }) => {
   // @ts-expect-error - this is ok
-  return result.map((page) => page.results ?? []).flat().map(Object.values);
+  return result
+    .map((page) => page.results ?? [])
+    .flat()
+    .map(Object.values);
 };
 
 export function drizzle<

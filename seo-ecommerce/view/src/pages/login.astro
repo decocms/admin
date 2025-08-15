@@ -33,7 +33,7 @@ if (Astro.request.method === 'POST') {
         // If login succeeded server-side (info is set), redirect to `next` query param when present
         const params = new URLSearchParams(location.search);
         const next = params.get('next');
-        const loginDone = {info ? 'true' : 'false'};
+  const loginDone = info ? 'true' : 'false';
         if(loginDone && next){
           try { location.replace(next); } catch(e){ location.href = next; }
         }

@@ -336,7 +336,9 @@
   const data=await res.json(); lastData = data.result? { tool:'LINK_ANALYZER', result:data.result } : data;
   const elapsed = Math.round(performance.now()-start);
   resultEl.textContent=JSON.stringify(data,null,2);
-      const r = data.result || data;
+  const r = data.result || data;
+  try { localStorage.setItem('la-last-analysis', JSON.stringify(data)); } catch {}
+  try { window.dispatchEvent(new CustomEvent('la-analysis-finished', { detail: { url } })); } catch {}
       if(r && typeof r.seoScore === 'number'){
         scoreEl.textContent = r.seoScore; scoreEl.style.color = colorScore(r.seoScore);
         scoreLabelEl.textContent = r.seoScore >= 85 ? 'Ótimo' : r.seoScore >= 70 ? 'Atenção' : 'Melhorar';

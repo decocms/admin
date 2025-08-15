@@ -5,20 +5,53 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
   <head>
     <meta charset="utf-8" />
     <title>Link Analyzer</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      :root { --grad-a:#2563eb; --grad-b:#10b981; --bg-deep:#0f172a; }
+      body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin:0; background:radial-gradient(circle at 20% 20%,#1e3a8a 0%,#0f172a 55%,#020617 100%); color:#e2e8f0; }
+      a { color:var(--grad-b); }
+      .wrap { max-width:1080px; margin:0 auto; padding:1.4rem clamp(1rem,4vw,2.2rem) 4rem; }
+      nav { display:flex; gap:1rem; font-size:.75rem; letter-spacing:.5px; text-transform:uppercase; align-items:center; }
+      nav a { text-decoration:none; color:#e2e8f0; opacity:.85; font-weight:600; }
+      nav a:hover { opacity:1; }
+      .hero { margin:2.4rem 0 2rem; }
+      .hero h1 { margin:.2rem 0 1rem; font-size:clamp(2.2rem,5.2vw,3.4rem); line-height:1.05; background:linear-gradient(90deg,var(--grad-a),var(--grad-b)); -webkit-background-clip:text; color:transparent; }
+      .hero p { max-width:720px; font-size:1rem; line-height:1.6; color:#93adc9; }
+      .cta-row { display:flex; gap:.85rem; flex-wrap:wrap; margin-top:1.2rem; }
+      .btn { text-decoration:none; background:var(--grad-a); background:linear-gradient(90deg,var(--grad-a),#3b82f6); color:#fff; padding:13px 22px; border-radius:12px; font-weight:600; display:inline-flex; gap:8px; align-items:center; font-size:.9rem; box-shadow:0 6px 24px -8px rgba(37,99,235,.65); transition:.25s; }
+      .btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px -10px rgba(37,99,235,.7); }
+      .btn.dark { background:#1e293b; box-shadow:0 6px 20px -6px rgba(0,0,0,.55); }
+      .btn.dark:hover { background:#334155; }
+      section#analisar { margin-top:2rem; }
+      hr.decor { height:1px; border:none; background:linear-gradient(90deg,transparent,#334155,transparent); margin:3.5rem 0 3rem; }
+      .promo { display:grid; gap:2.4rem; grid-template-columns: 1fr 1fr; align-items:center; }
+      @media (max-width: 860px){ .promo { grid-template-columns:1fr; } }
+      .promo h2 { font-size:clamp(1.4rem,2.2vw,2rem); margin:.2rem 0 1rem; line-height:1.15; background:linear-gradient(90deg,var(--grad-b),var(--grad-a)); -webkit-background-clip:text; color:transparent; }
+      .promo p { color:#9db4c8; font-size:.95rem; line-height:1.55; }
+      .glass { position:relative; border:1px solid rgba(255,255,255,.09); background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,.02)); backdrop-filter:blur(18px) saturate(160%); padding:1.4rem 1.6rem 1.8rem; border-radius:22px; box-shadow:0 10px 40px -15px rgba(0,0,0,.6); }
+      .features { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); margin-top:1rem; }
+      .f { background:rgba(15,23,42,.55); border:1px solid rgba(255,255,255,.08); padding:.9rem 1rem 1rem; border-radius:14px; font-size:.7rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; display:flex; gap:.6rem; align-items:center; }
+      .f svg { width:20px; height:20px; color:var(--grad-b); }
+      .shots { position:relative; display:grid; gap:1.2rem; }
+      .shot { border:1px solid rgba(255,255,255,.1); background:#0f172a; border-radius:16px; padding:.75rem 1rem; box-shadow:0 8px 26px -12px rgba(0,0,0,.65); }
+      .shot h3 { margin:.2rem 0 .6rem; font-size:.75rem; letter-spacing:.5px; text-transform:uppercase; font-weight:700; color:#7dd3fc; }
+      footer { margin:4rem 0 0; font-size:.65rem; text-transform:uppercase; letter-spacing:.5px; color:#556987; text-align:center; }
+    </style>
   </head>
-  <body style="font-family: system-ui; max-width: 840px; margin: 2rem auto; padding: 0 1rem;">
-      <nav style="display:flex; gap:1rem; font-size:.85rem; margin-bottom:1rem; align-items:center;">
-        <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener" style="font-weight:500;">Documentação</a>
+  <body>
+    <div class="wrap">
+      <nav>
+        <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
         <span style="flex:1"></span>
         <a href="/login">Login</a>
         <a href="/signup">Cadastro</a>
       </nav>
-      <header style="margin-bottom:1.75rem;">
-        <h1 style="font-size:clamp(1.9rem,4vw,2.6rem); line-height:1.1; margin:.25rem 0 .6rem; background:linear-gradient(90deg,#2563eb,#10b981); -webkit-background-clip:text; color:transparent;">Link Analyzer</h1>
-        <p style="max-width:640px; font-size:1rem; line-height:1.5; color:#475569;">Auditoria rápida de SEO on-page: título, descrição, headers, links, imagens, canonical e pontuação de integridade. Use o formulário abaixo para uma visão expressa ou avance para uma análise detalhada autenticada.</p>
-        <div style="display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem;">
-          <a href="/analise" id="cta-detalhada" style="text-decoration:none; background:#2563eb; color:#fff; padding:12px 20px; border-radius:10px; font-weight:600; display:inline-flex; gap:6px; align-items:center; box-shadow:0 4px 12px -2px rgba(37,99,235,.4);">🔍 Análise detalhada</a>
-          <a href="#analisar" style="text-decoration:none; background:#0f172a; color:#fff; padding:12px 18px; border-radius:10px; font-weight:500; display:inline-flex; align-items:center;">Iniciar abaixo ↓</a>
+      <header class="hero">
+        <h1>Link Analyzer</h1>
+        <p>Auditoria rápida de SEO on‑page: título, descrição, headers, links, imagens, canonical e pontuação de integridade. Gere insights imediatos ou avance para uma experiência aprofundada.</p>
+        <div class="cta-row">
+          <a href="/analise" id="cta-detalhada" class="btn">🔍 Análise detalhada</a>
+          <a href="#analisar" class="btn dark">Iniciar abaixo ↓</a>
         </div>
       </header>
       <script>
@@ -35,9 +68,52 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
         })();
       </script>
       <section id="analisar">
-    <LinkAnalyzerForm />
+        <LinkAnalyzerForm />
       </section>
-    <hr />
-    <p style="font-size: 0.9em; color: #666;">Esta é uma página personalizada fora do tema Starlight. A documentação completa continua disponível no menu.</p>
+      <hr class="decor" />
+      <section class="promo" id="detalhada">
+        <div>
+          <h2>Precisa de uma análise mais detalhada?</h2>
+          <p>O painel autenticado desbloqueia histórico, roadmap de rastreamento multi página, exportações avançadas e sugestões de otimização guiadas por IA (em breve). Ideal para monitorar evolução e detectar regressões antes que impactem o tráfego.</p>
+          <div class="features">
+            <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6"/><path d="M6 20V10"/><path d="M18 20V4"/></svg>KPIs</div>
+            <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Histórico</div>
+            <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4z"/><path d="M16 14H8"/><path d="M16 18H8"/></svg>Exportar</div>
+            <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>IA</div>
+          </div>
+          <div style="margin-top:1.6rem; display:flex; gap:.9rem; flex-wrap:wrap;">
+            <a href="/analise" id="cta-detalhada-2" class="btn">Acessar painel</a>
+            <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark">Ver docs →</a>
+          </div>
+        </div>
+        <div class="shots">
+          <div class="shot">
+            <h3>Métricas principais</h3>
+            <p style="margin:0; font-size:.75rem; line-height:1.4; color:#94a3b8;">Score SEO, links, imagens, conteúdo e meta tags resumidos em um painel limpo.</p>
+          </div>
+          <div class="shot">
+            <h3>Roadmap</h3>
+            <p style="margin:0; font-size:.75rem; line-height:1.4; color:#94a3b8;">Próximos: rastreamento multi página, comparação temporal, insights de IA.</p>
+          </div>
+          <div class="shot">
+            <h3>Exportações</h3>
+            <p style="margin:0; font-size:.75rem; line-height:1.4; color:#94a3b8;">Gere CSV/JSON (em breve) para fluxos de auditoria personalizados.</p>
+          </div>
+        </div>
+      </section>
+      <footer>© {new Date().getFullYear()} Link Analyzer • Beta</footer>
+    </div>
+    <script>
+      // Redireciona para login se não logado ao clicar em análise detalhada
+      (function(){
+        function guard(id){
+          const a = document.getElementById(id); if(!a) return;
+          a.addEventListener('click', function(ev){
+            try { const auth = localStorage.getItem('la-supa-auth'); if(!auth){ ev.preventDefault(); location.href='/login?next=/analise'; } } catch {}
+          });
+        }
+        guard('cta-detalhada'); guard('cta-detalhada-2');
+      })();
+    </script>
   </body>
 </html>

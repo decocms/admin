@@ -48,6 +48,7 @@ export interface DefaultEnv<TSchema extends z.ZodTypeAny = any> {
   DECO_CHAT_WORKSPACE_DB: WorkspaceDB & {
     forContext: (ctx: RequestContext) => WorkspaceDB;
   };
+  IS_LOCAL: boolean;
   [key: string]: unknown;
 }
 
@@ -120,11 +121,17 @@ const creatorByType: CreatorByType = {
   mcp: createIntegrationBinding,
 };
 
-const withDefaultBindings = (
-  env: DefaultEnv,
-  server: MCPServer<any, any>,
-  ctx: RequestContext,
-) => {
+const withDefaultBindings = ({
+  env,
+  server,
+  ctx,
+  url,
+}: {
+  env: DefaultEnv;
+  server: MCPServer<any, any>;
+  ctx: RequestContext;
+  url?: string;
+}) => {
   const client = workspaceClient(ctx);
   const createWorkspaceDB = (ctx: RequestContext): WorkspaceDB => {
     const client = workspaceClient(ctx);
@@ -160,6 +167,10 @@ const withDefaultBindings = (
     ...createWorkspaceDB(ctx),
     forContext: createWorkspaceDB,
   };
+  env["IS_LOCAL"] =
+    (url?.startsWith("http://localhost") ||
+      url?.startsWith("http://127.0.0.1")) ??
+    false;
 };
 
 export class UnauthorizedError extends Error {
@@ -187,11 +198,13 @@ export const withBindings = <TEnv>({
   server,
   tokenOrContext,
   origin,
+  url,
 }: {
   env: TEnv;
   server: MCPServer<TEnv, any>;
   tokenOrContext?: string | RequestContext;
   origin?: string | null;
+  url?: string;
 }): TEnv => {
   const env = _env as DefaultEnv<any>;
 
@@ -243,7 +256,12 @@ export const withBindings = <TEnv>({
     env[binding.name] = creatorByType[binding.type](binding as any, env);
   }
 
-  withDefaultBindings(env, server, env.DECO_CHAT_REQUEST_CONTEXT);
+  withDefaultBindings({
+    env,
+    server,
+    ctx: env.DECO_CHAT_REQUEST_CONTEXT,
+    url,
+  });
 
   return env as TEnv;
 };
@@ -319,6 +337,7 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
           server,
           tokenOrContext: getReqToken(req),
           origin: referer ?? req.headers.get("origin"),
+          url: req.url,
         });
         return await State.run(
           { req, env: bindings, ctx },

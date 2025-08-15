@@ -27,24 +27,13 @@ interface Template {
   wranglerRoot?: string;
 }
 
-const AVAILABLE_TEMPLATES: Template[] = [
-  {
-    name: "react-tailwind-views",
-    description:
-      "MCP Server with Tools, Workflows and React + Tailwind for Views.",
-    repo: "deco-cx/react-tailwind-views",
-    branch: "main",
-    wranglerRoot: "server",
-  },
-  {
-    name: "astro-docs-view",
-    description:
-      "MCP Server with Tools, Workflows and views Astro for a documentation website.",
-    repo: "deco-cx/astro-docs-view",
-    branch: "main",
-    wranglerRoot: "server",
-  },
-];
+const DEFAULT_TEMPLATE: Template = {
+  name: "Deco MCP app",
+  description: "A Deco MCP app",
+  repo: "deco-cx/deco-create",
+  branch: "main",
+  wranglerRoot: "server",
+};
 
 function runCommand(
   command: string,
@@ -193,33 +182,12 @@ async function customizeTemplate({
   }
 }
 
-export function listTemplates(): void {
-  console.log("Available templates:\n");
-  AVAILABLE_TEMPLATES.forEach((template, index) => {
-    console.log(`${index + 1}. ${template.name} - ${template.description}`);
-  });
-  console.log(
-    "\nUse 'deco create <project-name> --template <template-name>' to create a project with a specific template.",
-  );
-}
-
 export async function createCommand(
   projectName?: string,
-  templateName?: string,
   config: Partial<Config> = {},
 ): Promise<void> {
   try {
-    if (templateName) {
-      const validTemplate = AVAILABLE_TEMPLATES.find(
-        (t) => t.name === templateName,
-      );
-      if (!validTemplate) {
-        console.error(`❌ Template '${templateName}' not found.`);
-        console.log("\nAvailable templates:");
-        listTemplates();
-        process.exit(1);
-      }
-    }
+    const selectedTemplate = DEFAULT_TEMPLATE;
 
     const finalProjectName = slugify(
       projectName ||
@@ -277,29 +245,6 @@ export async function createCommand(
       await fs.rm(targetDir, { recursive: true });
     } catch {
       // Directory doesn't exist, that's fine
-    }
-
-    const finalTemplateName =
-      templateName ||
-      (
-        await inquirer.prompt([
-          {
-            type: "list",
-            name: "template",
-            message: "Select a template:",
-            choices: AVAILABLE_TEMPLATES.map((t) => ({
-              name: `${t.name} - ${t.description}`,
-              value: t.name,
-            })),
-          },
-        ])
-      ).template;
-
-    const selectedTemplate = AVAILABLE_TEMPLATES.find(
-      (t) => t.name === finalTemplateName,
-    );
-    if (!selectedTemplate) {
-      throw new Error(`Template '${finalTemplateName}' not found`);
     }
 
     const wranglerRoot = join(targetDir, selectedTemplate.wranglerRoot || "");

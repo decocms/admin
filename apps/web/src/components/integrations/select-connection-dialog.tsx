@@ -16,7 +16,7 @@ import {
   type MarketplaceIntegration,
   NEW_CUSTOM_CONNECTION,
 } from "./marketplace.tsx";
-import type { Integration } from "@deco/sdk";
+import { useMarketplaceIntegrations, type Integration } from "@deco/sdk";
 import { cn } from "@deco/ui/lib/utils.ts";
 import { InstalledConnections } from "./installed-connections.tsx";
 import { useCreateCustomConnection } from "../../hooks/use-create-custom-connection.ts";
@@ -29,6 +29,7 @@ import {
 import { OAuthCompletionDialog } from "./oauth-completion-dialog.tsx";
 import { useIntegrationInstallWithModal } from "../../hooks/use-integration-install-with-modal.tsx";
 import { IntegrationOAuthModal } from "../integration-oauth-modal.tsx";
+import { useSearchParams } from "react-router";
 
 export function ConfirmMarketplaceInstallDialog({
   integration,
@@ -195,12 +196,14 @@ function AddConnectionDialogContent({
   onSelect,
   forceTab,
   myConnectionsEmptyState,
+  installingIntegrationId,
 }: {
   title?: string;
   filter?: (integration: Integration) => boolean;
   onSelect?: (integration: Integration) => void;
   forceTab?: "my-connections" | "new-connection";
   myConnectionsEmptyState?: React.ReactNode;
+  installingIntegrationId?: string;
 }) {
   const [_tab, setTab] = useState<"my-connections" | "new-connection">(
     "my-connections",
@@ -208,8 +211,16 @@ function AddConnectionDialogContent({
   const tab = forceTab ?? _tab;
   const [search, setSearch] = useState("");
   const createCustomConnection = useCreateCustomConnection();
+  const { data: marketplace } = useMarketplaceIntegrations();
   const [installingIntegration, setInstallingIntegration] =
-    useState<MarketplaceIntegration | null>(null);
+    useState<MarketplaceIntegration | null>(() => {
+      if (!installingIntegrationId) return null;
+      return (
+        marketplace?.integrations.find(
+          (integration) => integration.id === installingIntegrationId,
+        ) ?? null
+      );
+    });
   const [oauthCompletionDialog, setOauthCompletionDialog] = useState<{
     open: boolean;
     url: string;
@@ -388,7 +399,10 @@ interface SelectConnectionDialogProps {
 }
 
 export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [query] = useSearchParams();
+  const installingIntegrationId = query.get("installingIntegrationId");
+  const [isOpen, setIsOpen] = useState(!!installingIntegrationId);
+
   const trigger = useMemo(() => {
     if (props.trigger) {
       return props.trigger;
@@ -413,6 +427,7 @@ export function SelectConnectionDialog(props: SelectConnectionDialogProps) {
           props.onSelect?.(integration);
           setIsOpen(false);
         }}
+        installingIntegrationId={installingIntegrationId ?? undefined}
       />
     </Dialog>
   );

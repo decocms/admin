@@ -215,7 +215,7 @@ export function createStep<
   });
 }
 
-interface ViewExport {
+export interface ViewExport {
   title: string;
   icon: string;
   url: string;

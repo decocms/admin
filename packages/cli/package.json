@@ -1,7 +1,7 @@
 {
   "name": "deco-cli",
-  "version": "0.14.1",
-  "description": "A Node.js CLI for interacting with deco.chat.",
+  "version": "0.15.0",
+  "description": "CLI for managing deco.chat apps & projects",
   "license": "MIT",
   "author": "Deco team",
   "homepage": "https://github.com/deco-cx/deco",

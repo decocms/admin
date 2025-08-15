@@ -64,10 +64,12 @@ jobs:
           SUPABASE_SERVER_TOKEN: "${{ secrets.SUPABASE_SERVER_TOKEN }}"
           OPENROUTER_API_KEY: "${{ secrets.OPENROUTER_API_KEY }}"
           PUBLIC_API_URL: "${{ secrets.PUBLIC_API_URL }}"
+          PUBLIC_APP_ORIGIN: "https://seo-ecommercex.deco.page"
 
       - name: Smoke test endpoint
         run: |
-          curl -s -o resp.json -w '%{http_code}' https://seo-ecommercex.deco.page/mcp/tools \
+          APP_ORIGIN="https://seo-ecommercex.deco.page"
+          curl -s -o resp.json -w '%{http_code}' "$APP_ORIGIN/mcp/tools" \
             -H 'Content-Type: application/json' \
             --data '{"tool":"LINK_ANALYZER","input":{"url":"https://example.com/"}}' > status.txt || true
           echo "Status: $(cat status.txt)" >> $GITHUB_STEP_SUMMARY

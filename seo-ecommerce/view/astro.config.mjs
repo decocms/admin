@@ -8,6 +8,7 @@ export default defineConfig({
 	server: {
 		port: 4000,
 	},
+	site: 'https://seo-ecommercex.deco.page',
 	outDir: "../server/view-build/",
 	output: 'server',
 	adapter: cloudflare({ mode: 'directory' }),

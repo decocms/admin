@@ -3,17 +3,13 @@ name = "seo-ecommercex"
 main = "main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
+
+# Re-added for hosting workspace identification (previous removal caused deploy to switch workspace and fail domain update)
 scope = "alfanet"
 
 [assets]
 directory = "./view-build"
 binding = "ASSETS"
-
-[deco]
-workspace = "alfanet"
-bindings = []
-enable_workflows = false
-local = false
 
 [vars]
 # Dummy placeholders for local development to satisfy schema validation
@@ -25,3 +21,10 @@ SUPABASE_SERVER_TOKEN = "dev-supa-token"
 TURSO_GROUP_DATABASE_TOKEN = "dev-turso-token"
 TURSO_ORGANIZATION = "dev-turso-org"
 OPENROUTER_API_KEY = "dev-openrouter"
+PUBLIC_APP_ORIGIN = "https://seo-ecommercex.deco.page"
+
+[deco]
+workspace = "alfanet"
+bindings = []
+enable_workflows = false
+local = false

@@ -63,6 +63,8 @@ async function headOrGet(url: string, timeoutMs: number): Promise<number> {
   }
 }
 
+const APP_ORIGIN = (typeof process !== 'undefined' && process.env && (process.env.PUBLIC_APP_ORIGIN || process.env.PUBLIC_APP_URL)) || 'https://seo-ecommercex.deco.page';
+
 export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   const start = Date.now();
   let html = '';
@@ -70,7 +72,7 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   let status = 0;
   let notes: string[] = [];
   try {
-  const res = await localFetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': 'DecoLinkAnalyzer/1.0 (+https://seo-ecommercex.deco.page/)' } });
+  const res = await localFetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': `DecoLinkAnalyzer/1.0 (+${APP_ORIGIN}/)` } });
     status = res.status;
     if (!res.ok) {
       notes.push(`Fetch status ${res.status}`);

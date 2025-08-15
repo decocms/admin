@@ -60,6 +60,15 @@ const processSpan = (span: ReadableSpan): ReadableSpan => {
   return span;
 };
 
+// Dummy exporter that does nothing, to satisfy TypeScript when no endpoint is set
+const DummyExporter = {
+  export: (_spans: any, resultCallback: any) => {
+    // no-op
+    resultCallback({ code: 0 });
+  },
+  shutdown: async () => {},
+};
+
 export const config: ResolveConfigFn = (_env, _trigger) => {
   const env = { ..._env, ...process.env };
   const headers = headersStringToObject(
@@ -67,10 +76,9 @@ export const config: ResolveConfigFn = (_env, _trigger) => {
   );
 
   return {
-    exporter: {
-      url: new URL(`/v1/traces`, `${env.OTEL_EXPORTER_OTLP_ENDPOINT}`).href,
-      headers,
-    },
+    exporter: env.OTEL_EXPORTER_OTLP_ENDPOINT
+      ? { url: new URL(`/v1/traces`, `${env.OTEL_EXPORTER_OTLP_ENDPOINT}`).href, headers }
+      : DummyExporter,
     service: { name: SERVICE_NAME },
     sampling: {
       headSampler: new ParentBasedSampler({

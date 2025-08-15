@@ -123,6 +123,7 @@ const runtime = {
             const toolId = body.tool;
             const input = body.input || {};
             if (!toolId) {
+              console.error("[MCP] Missing 'tool' field", body);
               return new Response(
                 JSON.stringify({ error: "Missing 'tool' field" }),
                 { status: 400, headers: corsHeaders({ "content-type": "application/json" }) },
@@ -133,23 +134,37 @@ const runtime = {
               try { return (f as any)(env).id === toolId; } catch { return false; }
             });
             if (!factory) {
+              console.error(`[MCP] Tool '${toolId}' not found`, body);
               return new Response(
                 JSON.stringify({ error: `Tool '${toolId}' not found` }),
                 { status: 404, headers: corsHeaders({ "content-type": "application/json" }) },
               );
             }
             const tool = (factory as any)(env);
-            const execution = await tool.execute({ context: input });
-            // Normalize to include 'result' and optional array of links if absent
-            const result = {
-              ...execution,
-              links: Array.isArray((execution as any).links) ? (execution as any).links : [],
-            };
-            return new Response(
-              JSON.stringify({ tool: tool.id, input, result }),
-              { status: 200, headers: corsHeaders({ "content-type": "application/json" }) },
-            );
+            try {
+              const execution = await tool.execute({ context: input });
+              const result = {
+                ...execution,
+                links: Array.isArray((execution as any).links) ? (execution as any).links : [],
+              };
+              return new Response(
+                JSON.stringify({ tool: tool.id, input, result }),
+                { status: 200, headers: corsHeaders({ "content-type": "application/json" }) },
+              );
+            } catch (toolErr) {
+              console.error(`[MCP] Tool execution error`, toolErr, { toolId, input });
+              return new Response(
+                JSON.stringify({
+                  error: (toolErr as Error).message,
+                  tool: tool.id,
+                  input,
+                  details: toolErr && typeof toolErr === 'object' && 'stack' in toolErr ? (toolErr as any).stack : undefined
+                }),
+                { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
+              );
+            }
           } catch (err) {
+            console.error(`[MCP] Handler error`, err);
             return new Response(
               JSON.stringify({ error: (err as Error).message }),
               { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },

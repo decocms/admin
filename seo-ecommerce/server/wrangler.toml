@@ -3,14 +3,14 @@ name = "seo-ecommerce"
 main = "main.ts"
 compatibility_date = "2025-06-17"
 compatibility_flags = [ "nodejs_compat" ]
-scope = "/users/387b3ea3-4b2a-4f05-bef7-f3e02b2e00f9"
+scope = "alfanet"
 
 [assets]
 directory = "./view-build"
 binding = "ASSETS"
 
 [deco]
-workspace = "/users/387b3ea3-4b2a-4f05-bef7-f3e02b2e00f9"
+workspace = "alfanet"
 bindings = []
 enable_workflows = false
 local = false

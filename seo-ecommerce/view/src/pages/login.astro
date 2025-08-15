@@ -1,5 +1,7 @@
 ---
 import { getSupabase } from "../lib/supabaseClient";
+const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 let err:string|undefined; let info:string|undefined;
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
@@ -35,6 +37,38 @@ if (Astro.request.method === 'POST') {
         if(loginDone && next){
           try { location.replace(next); } catch(e){ location.href = next; }
         }
+      })();
+    </script>
+    <script type="module">
+      (async ()=>{
+        // Client-side auth path (uses PUBLIC_* env vars available in the client bundle)
+        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        if(!SUPA_URL || !SUPA_ANON) return; // nothing to do client-side
+        try{
+          const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+          const { createClient } = mod;
+          const supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
+          const formEl = document.querySelector('form');
+          if(!formEl) return;
+          formEl.addEventListener('submit', async (e)=>{
+            // Intercept to perform client-side sign in; keep server POST fallback when JS disabled by preventing default here
+            e.preventDefault();
+            const fd = new FormData(formEl);
+            const email = fd.get('email')?.toString() || '';
+            const password = fd.get('password')?.toString() || '';
+            if(!email || !password){ alert('Informe email e senha'); return; }
+            try{
+              const { error } = await supa.auth.signInWithPassword({ email, password });
+              if(error){ alert(error.message || 'Erro ao autenticar'); return; }
+              // Mark local user to enable save button UI elsewhere
+              try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch(e){}
+              const params = new URLSearchParams(location.search);
+              const next = params.get('next');
+              if(next){ location.replace(next); } else { location.reload(); }
+            }catch(err){ console.error(err); alert('Erro ao autenticar'); }
+          });
+        }catch(e){ console.error('Cliente Supabase falhou', e); }
       })();
     </script>
   </body>

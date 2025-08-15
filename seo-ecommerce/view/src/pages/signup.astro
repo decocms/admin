@@ -36,5 +36,34 @@ if (Astro.request.method === 'POST') {
         }
       })();
     </script>
+    <script type="module">
+      (async ()=>{
+        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        if(!SUPA_URL || !SUPA_ANON) return;
+        try{
+          const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+          const { createClient } = mod;
+          const supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
+          const formEl = document.querySelector('form');
+          if(!formEl) return;
+          formEl.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            const fd = new FormData(formEl);
+            const email = fd.get('email')?.toString() || '';
+            const password = fd.get('password')?.toString() || '';
+            if(!email || !password){ alert('Informe email e senha'); return; }
+            try{
+              const { error } = await supa.auth.signUp({ email, password });
+              if(error){ alert(error.message || 'Erro ao cadastrar'); return; }
+              try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch(e){}
+              const params = new URLSearchParams(location.search);
+              const next = params.get('next');
+              if(next){ location.replace(next); } else { location.href = '/'; }
+            }catch(err){ console.error(err); alert('Erro ao cadastrar'); }
+          });
+        }catch(e){ console.error('Cliente Supabase falhou', e); }
+      })();
+    </script>
   </body>
 </html>

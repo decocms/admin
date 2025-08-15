@@ -60,44 +60,88 @@
 </style>
 <div id="link-analyzer-root" class="la-root">
   <div class="la-card">
-  <form id="link-analyzer-form" style="margin-bottom:0.75rem;">
-    <div class="la-flex">
-      <label style="flex:1; min-width:320px; font-weight:500;">
-        URL para analisar
-        <input id="la-input" class="la-input" type="url" required placeholder="https://exemplo.com" style="margin-top:4px;" />
-      </label>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button id="la-submit" type="submit" class="la-btn">Analisar</button>
-        <span id="la-loading" style="display:none;" aria-label="Carregando">
-          <span class="la-spinner"></span>
-        </span>
+    <form id="link-analyzer-form" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:1rem;">
+      <!-- Step 1: Domain -->
+      <section>
+        <h3 style="margin:0 0 .5rem; font-size:14px; font-weight:600; display:flex; gap:6px; align-items:center;">1. Digite o Nome do Domínio <span style="font-size:11px; font-weight:500; background:var(--la-bg-alt); padding:2px 6px; border-radius:12px;">Obrigatório</span></h3>
+        <input id="la-domain" class="la-input" type="text" required placeholder="ex: exemplo.com" />
+        <div class="la-muted" style="margin-top:4px;">Digite apenas o domínio base (sem https://). Ex: <code>meusite.com</code></div>
+      </section>
+      <!-- Step 2: Scope -->
+      <section>
+        <h3 style="margin:0 0 .5rem; font-size:14px; font-weight:600;">2. Ajuste o Escopo</h3>
+        <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
+          <label style="display:flex; gap:6px; align-items:center;">
+            <input type="radio" name="scope" value="root" checked /> Domínio raiz inteiro
+          </label>
+          <label style="display:flex; gap:6px; align-items:center;">
+            <input type="radio" name="scope" value="subdomain" /> Subdomínio específico
+          </label>
+          <label style="display:flex; gap:6px; align-items:center;">
+            <input type="radio" name="scope" value="folders" /> Conjunto de subpastas
+          </label>
+        </div>
+        <div id="la-subdomain-wrap" style="display:none; margin-top:8px;">
+          <input id="la-subdomain" class="la-input" type="text" placeholder="ex: blog.exemplo.com" />
+          <div class="la-muted" style="margin-top:4px;">Informe o subdomínio completo.</div>
+        </div>
+        <div id="la-folders-wrap" style="display:none; margin-top:8px;">
+          <textarea id="la-folders" class="la-input" rows="3" placeholder="/blog\n/produtos\n/cases" style="font-family:ui-monospace,monospace;"></textarea>
+          <div class="la-muted" style="margin-top:4px;">Uma subpasta por linha. (Futuro: rastreamento; agora apenas página inicial).</div>
+        </div>
+      </section>
+      <!-- Step 3: Run -->
+      <section style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+        <div style="flex:1; min-width:260px;">
+          <h3 style="margin:0 0 .35rem; font-size:14px; font-weight:600;">3. Obtenha Seus Resultados</h3>
+          <div class="la-muted">Executa análise rápida da página inicial dentro do escopo e gera pontuação + ações.</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
+          <button id="la-submit" type="submit" class="la-btn">Iniciar Análise</button>
+          <span id="la-loading" style="display:none;" aria-label="Carregando"><span class="la-spinner"></span></span>
+        </div>
+      </section>
+      <div style="margin-top:0; display:flex; align-items:center; gap:8px;">
+        <span id="la-status" class="la-status" aria-live="polite"></span>
+        <span id="la-mode" class="la-badge" style="display:none;"></span>
+      </div>
+    </form>
+    <div id="la-error" style="color:var(--la-danger);margin-top:2px;display:none;font-weight:500;"></div>
+    <div id="la-summary" style="display:none; margin-top:12px; border:1px solid var(--la-border); padding:14px 16px; border-radius:10px; background:var(--sl-color-bg,#fff);">
+      <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+        <div style="flex:1; min-width:200px;">
+          <div style="font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--la-text-muted);">Pontuação de Integridade</div>
+          <div id="la-score" style="font-size:42px; font-weight:700; line-height:1; margin-top:4px;">--</div>
+          <div id="la-score-label" class="la-muted" style="margin-top:4px;">Aguardando</div>
+        </div>
+        <div style="flex:2; min-width:300px;">
+          <div style="font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--la-text-muted);">Ações Prioritárias</div>
+          <ul id="la-actions" style="margin:6px 0 0; padding:0 0 0 18px; font-size:13px; line-height:1.45;"></ul>
+          <div style="margin-top:12px; font-size:12px;">
+            <span style="font-weight:600;">Oportunidades de Otimização (AI)</span>
+            <ul id="la-ai-list" style="margin:6px 0 0; padding:0 0 0 18px; line-height:1.45;"></ul>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" id="la-toggle-raw" class="la-mini-btn">Ver JSON</button>
+        <button type="button" id="la-tree" class="la-mini-btn">Árvore</button>
+        <button type="button" id="la-copy" class="la-mini-btn">Copiar JSON</button>
+        <button type="button" id="la-csv" class="la-mini-btn" disabled>Exportar CSV</button>
+        <span class="la-toolbar-sep"></span>
+        <button type="button" id="la-clear" class="la-mini-btn">Limpar histórico</button>
+        <span id="la-timing" class="la-timing"></span>
       </div>
     </div>
-    <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
-  <span id="la-status" class="la-status" aria-live="polite"></span>
-      <span id="la-mode" class="la-badge" style="display:none;"></span>
+    <div id="la-output" style="display:none; margin-top:12px;">
+      <pre id="la-result" style="margin-top:0;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
+      <div id="la-tree-view" style="display:none;margin-top:6px;background:#0f172a;padding:16px;border-radius:8px;overflow:auto;max-height:420px;" class="la-tree"></div>
     </div>
-  <!-- Modo produção fixo: seção avançada de detecção removida -->
-  </form>
-  <div id="la-error" style="color:var(--la-danger);margin-top:8px;display:none;font-weight:500;"></div>
-  <div id="la-output" style="display:none; margin-top:16px;">
-    <div class="la-toolbar">
-  <button type="button" id="la-copy" class="la-mini-btn">Copiar JSON</button>
-  <button type="button" id="la-save" class="la-mini-btn primary" disabled>Salvar</button>
-      <button type="button" id="la-tree" class="la-mini-btn">Árvore</button>
-      <button type="button" id="la-csv" class="la-mini-btn" disabled>Exportar CSV</button>
-      <span class="la-toolbar-sep"></span>
-      <button type="button" id="la-clear" class="la-mini-btn">Limpar histórico</button>
-      <span id="la-timing" class="la-timing"></span>
+    <div id="la-history" class="la-history" style="display:none; margin-top:16px;">
+      <div class="la-section-title">Histórico recente</div>
+      <div id="la-history-items"></div>
+      <div class="la-muted" style="margin-top:4px;">Armazena até 8 entradas localmente.</div>
     </div>
-    <pre id="la-result" style="margin-top:6px;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
-    <div id="la-tree-view" style="display:none;margin-top:6px;background:#0f172a;padding:16px;border-radius:8px;overflow:auto;max-height:420px;" class="la-tree"></div>
-  </div>
-  <div id="la-history" class="la-history" style="display:none;">
-    <div class="la-section-title">Histórico recente</div>
-    <div id="la-history-items"></div>
-    <div class="la-muted" style="margin-top:4px;">Armazena até 8 URLs localmente (localStorage).</div>
-  </div>
   </div>
 </div>
 <script>
@@ -106,7 +150,11 @@
   const PROD_FALLBACK = 'https://seo-ecommerce.ggstv-fer.workers.dev';
   const MAX_HISTORY = 8;
   const form = document.getElementById('link-analyzer-form');
-  const input = document.getElementById('la-input');
+  const domainInput = document.getElementById('la-domain');
+  const subdomainWrap = document.getElementById('la-subdomain-wrap');
+  const subdomainInput = document.getElementById('la-subdomain');
+  const foldersWrap = document.getElementById('la-folders-wrap');
+  const foldersInput = document.getElementById('la-folders');
   const submit = document.getElementById('la-submit');
   const statusEl = document.getElementById('la-status');
   const errorEl = document.getElementById('la-error');
@@ -118,6 +166,12 @@
   const clearBtn = document.getElementById('la-clear');
   const timingEl = document.getElementById('la-timing');
   const treeView = document.getElementById('la-tree-view');
+  const summaryWrap = document.getElementById('la-summary');
+  const scoreEl = document.getElementById('la-score');
+  const scoreLabelEl = document.getElementById('la-score-label');
+  const actionsEl = document.getElementById('la-actions');
+  const aiOpsEl = document.getElementById('la-ai-list');
+  const toggleRawBtn = document.getElementById('la-toggle-raw');
   const saveBtn = document.getElementById('la-save');
   let supaAvailable = false;
   let lastData = null;
@@ -191,25 +245,61 @@
   }
   loadHistory();
 
+  form.addEventListener('change', (e)=>{
+    if(e.target && e.target.name === 'scope'){
+      const val = e.target.value;
+      subdomainWrap.style.display = val === 'subdomain' ? 'block' : 'none';
+      foldersWrap.style.display = val === 'folders' ? 'block' : 'none';
+    }
+  });
+
+  function buildAnalyzeUrl(){
+    let domain = domainInput.value.trim();
+    if(!domain) return null;
+    domain = domain.replace(/^https?:\/\//i,'').replace(/\/$/,'');
+    const scope = form.querySelector('input[name="scope"]:checked')?.value || 'root';
+    if(scope === 'subdomain'){
+      const sd = subdomainInput.value.trim();
+      if(sd) domain = sd.replace(/^https?:\/\//i,'').replace(/\/$/,'');
+    }
+    return 'https://' + domain + '/';
+  }
+
+  function deriveActions(result){
+    const actions = []; const push=(p,l)=>actions.push({priority:p,label:l});
+    if(!result.title) push(1,'Adicionar <title>'); else if(result.titleLength < 15 || result.titleLength > 65) push(3,'Ajustar comprimento do título (15-65 chars)');
+    if(!result.metaDescription) push(1,'Adicionar meta description'); else if(result.metaDescriptionLength < 50 || result.metaDescriptionLength > 165) push(3,'Otimizar meta description (50-165 chars)');
+    if(result.h1Count === 0) push(2,'Adicionar H1 principal'); else if(result.h1Count > 2) push(4,'Reduzir quantidade de H1');
+    if(result.imagesMissingAlt > 0) push(2,`Adicionar alt em ${result.imagesMissingAlt} imagem(ns)`);
+    if(result.brokenLinks > 0) push(1,`Corrigir ${result.brokenLinks} link(s) quebrado(s)`);
+    if(result.wordCount < 200) push(3,'Expandir conteúdo para 200+ palavras');
+    if(result.internalLinks < 3) push(4,'Adicionar mais links internos');
+    if(result.externalLinks === 0) push(5,'Adicionar link externo relevante');
+    if(result.linksFound > 300) push(5,'Reduzir número total de links na página');
+    actions.sort((a,b)=> a.priority - b.priority);
+    return actions;
+  }
+
+  function deriveAiOps(result){
+    const list=[];
+    if(!result.metaDescription || result.metaDescriptionLength < 50 || result.metaDescriptionLength > 165) list.push('Gerar meta description otimizada');
+    if(!result.title || result.titleLength < 15 || result.titleLength > 65) list.push('Sugerir melhorias de título');
+    if(result.imagesMissingAlt > 0) list.push('Gerar sugestões de alt para imagens');
+    if(result.wordCount < 200) list.push('Gerar parágrafos para expansão de conteúdo');
+    return list;
+  }
+
+  function colorScore(score){ if(score>=85) return '#16a34a'; if(score>=70) return '#f59e0b'; return '#dc2626'; }
+
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     errorEl.style.display='none';
-  outputWrap.style.display='none';
-    const url = input.value.trim();
-    if(!url){return;}
-    if(!/^https?:\/\//i.test(url)){ errorEl.textContent='URL deve iniciar com http(s)://'; errorEl.style.display='block'; return; }
-    // Require login: check Supabase local auth marker or la-user fallback
-    const supaAuth = window?.localStorage?.getItem('la-supa-auth');
-    const localUser = window?.localStorage?.getItem('la-user');
-    if(!supaAuth && !localUser){
-      // Redirect to login with next param (preserve current path and include a run flag)
-      const cur = location.pathname + location.search;
-      const next = cur + (cur.includes('?') ? '&' : '?') + 'la_run_url=' + encodeURIComponent(url);
-      location.href = '/login?next=' + encodeURIComponent(next);
-      return;
-    }
+    outputWrap.style.display='none'; treeView.style.display='none';
+    const constructedUrl = buildAnalyzeUrl();
+    if(!constructedUrl){ errorEl.textContent='Informe o domínio.'; errorEl.style.display='block'; return; }
+    const url = constructedUrl;
     const start = performance.now();
-    submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block';
+    submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block'; summaryWrap.style.display='none';
     statusEl.textContent='';
     try{
   const endpoint = apiBase;
@@ -218,7 +308,16 @@
   const data=await res.json(); lastData = data;
   const elapsed = Math.round(performance.now()-start);
   resultEl.textContent=JSON.stringify(data,null,2);
-      outputWrap.style.display='block';
+      const r = data.result || data;
+      if(r && typeof r.seoScore === 'number'){
+        scoreEl.textContent = r.seoScore; scoreEl.style.color = colorScore(r.seoScore);
+        scoreLabelEl.textContent = r.seoScore >= 85 ? 'Ótimo' : r.seoScore >= 70 ? 'Atenção' : 'Melhorar';
+      } else { scoreEl.textContent='--'; scoreLabelEl.textContent='Indisponível'; }
+      const actions = deriveActions(r||{});
+      actionsEl.innerHTML = actions.length ? actions.map(a=>`<li><strong>[P${a.priority}]</strong> ${a.label}</li>`).join('') : '<li>Nenhuma ação prioritária.</li>';
+      const aiOps = deriveAiOps(r||{});
+      aiOpsEl.innerHTML = aiOps.length ? aiOps.map(o=>`<li>${o}</li>`).join('') : '<li>Sem sugestões adicionais.</li>';
+      summaryWrap.style.display='block';
       timingEl.textContent = elapsed+' ms';
   // Habilita CSV se encontrar campo links (array)
       const links = (data?.result?.links) || data?.links;
@@ -227,9 +326,6 @@
         if(uniq.length !== links.length){ data.result ? data.result.links = uniq : (data.links = uniq); }
         csvBtn.disabled=false;
       } else { csvBtn.disabled=true; }
-  // Salvar habilitado se logado
-  const user = localStorage.getItem('la-user');
-  saveBtn.disabled = !user;
       const src = res.headers.get('X-Source');
       if(src==='stub'){
         statusEl.textContent='Resultado retornado do stub local.';
@@ -244,26 +340,14 @@
       errorEl.style.display='block';
       pushHistory(url, false);
     }finally{
-      submit.disabled=false; submit.textContent='Analisar'; loadingEl.style.display='none';
+      submit.disabled=false; submit.textContent='Iniciar Análise'; loadingEl.style.display='none';
     }
   });
-
-  // On page load, detect redirect back from login with la_run_url to auto-fill and submit
-  (function autoRunFromLogin(){
-    try{
-      const params = new URLSearchParams(window.location.search || '');
-      const runUrl = params.get('la_run_url');
-      if(runUrl){
-        input.value = runUrl;
-        // remove param from URL without reloading
-        const url = new URL(location.href);
-        url.searchParams.delete('la_run_url');
-        history.replaceState({}, '', url.pathname + url.search);
-        // submit programmatically
-        form.dispatchEvent(new Event('submit', { cancelable: true }));
-      }
-    }catch(e){ /* ignore */ }
-  })();
+  toggleRawBtn.addEventListener('click', ()=>{
+    const showing = outputWrap.style.display==='block';
+    if(showing){ outputWrap.style.display='none'; toggleRawBtn.textContent='Ver JSON'; }
+    else { outputWrap.style.display='block'; toggleRawBtn.textContent='Ocultar JSON'; }
+  });
 
   copyBtn.addEventListener('click', ()=>{
     if(!resultEl.textContent) return;
@@ -341,38 +425,6 @@
     statusEl.textContent='Histórico limpo.';
   });
 
-  saveBtn.addEventListener('click', ()=>{
-    (async () => {
-      if(!lastData) return;
-      // Supabase flow: depende da sessão gerenciada global (client side)
-      const supaAuth = supaAvailable ? window?.localStorage?.getItem('la-supa-auth') : null;
-      if(supaAvailable && supaAuth){
-        let token = null;
-        try { token = JSON.parse(supaAuth).access_token; } catch {}
-        try {
-          const headers = { 'Content-Type':'application/json' };
-            if(token) headers['Authorization'] = 'Bearer '+token;
-          const resp = await fetch('/api/analises', { method:'POST', headers, body: JSON.stringify({ url: lastData?.input?.url || lastData?.result?.url || '[sem url]', data: lastData, userHash: 'me' }) });
-          if(!resp.ok) throw new Error();
-          saveBtn.textContent='Salvo'; setTimeout(()=> saveBtn.textContent='Salvar', 1800);
-        } catch { statusEl.textContent='Falha (Supabase)'; }
-        return;
-      }
-      const user = localStorage.getItem('la-user'); if(!user){ statusEl.textContent='Faça login para salvar.'; return; }
-      const userHash = localStorage.getItem('la-user-hash');
-      const payload = { url: lastData?.input?.url || lastData?.result?.url || '[sem url]', data: lastData, userHash };
-      try {
-        const res = await fetch('/api/analises', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(!res.ok) throw new Error('Falha ao salvar');
-        saveBtn.textContent='Salvo';
-        setTimeout(()=> saveBtn.textContent='Salvar', 1800);
-      } catch (e){
-        statusEl.textContent='Erro ao salvar análise.';
-      }
-    })();
-  });
-
-  // Reativar botão salvar quando usuário loga (observer simples)
-  window.addEventListener('storage', (e)=>{ if(e.key==='la-user' && lastData){ const user = localStorage.getItem('la-user'); saveBtn.disabled = !user; }});
+  // Removido fluxo de salvar até persistência futura
 })();
 </script>

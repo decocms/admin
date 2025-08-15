@@ -14,11 +14,13 @@ const mapGetResult = ({ result: [page] }: { result: QueryResult[] }) => {
 };
 
 const mapPostResult = ({ result }: { result: QueryResult[] }) => {
-  return result
-    .map((page) => page.results ?? [])
-    .flat()
-    // @ts-expect-error - this is ok, result comes as unknown
-    .map(Object.values);
+  return (
+    result
+      .map((page) => page.results ?? [])
+      .flat()
+      // @ts-expect-error - this is ok, result comes as unknown
+      .map(Object.values)
+  );
 };
 
 export function drizzle<

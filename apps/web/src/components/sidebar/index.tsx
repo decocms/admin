@@ -4,8 +4,10 @@ import {
   type Thread,
   useAgents,
   useDeleteThread,
+  useRemoveView,
   useThreads,
   useUpdateThreadTitle,
+  View,
   WELL_KNOWN_AGENT_IDS,
 } from "@deco/sdk";
 import { Button } from "@deco/ui/components/button.tsx";
@@ -407,6 +409,12 @@ function WorkspaceViews() {
   const workspaceLink = useWorkspaceLink();
   const { isMobile, toggleSidebar } = useSidebar();
   const team = useCurrentTeam();
+  const removeViewMutation = useRemoveView();
+  const handleRemoveView = async (view: View) => {
+    await removeViewMutation.mutateAsync({
+      viewId: view.id,
+    });
+  };
   return team.views.map((item) => {
     const meta = parseViewMetadata(item);
     if (!meta) {
@@ -423,6 +431,7 @@ function WorkspaceViews() {
             <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
               <Link
                 to={href}
+                className="group/item"
                 onClick={() => {
                   trackEvent("sidebar_navigation_click", {
                     item: item.title,
@@ -436,6 +445,25 @@ function WorkspaceViews() {
                   className="text-muted-foreground"
                 />
                 <span className="truncate">{item.title}</span>
+
+                {meta.type === "custom" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive ml-auto group-hover/item:block! hidden! p-0.5 h-6"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRemoveView(item);
+                    }}
+                  >
+                    <Icon
+                      name="remove"
+                      size={16}
+                      className="text-muted-foreground ml-auto group-hover/item:block! hidden!"
+                    />
+                  </Button>
+                )}
               </Link>
             </SidebarMenuButton>
           )}

@@ -103,7 +103,7 @@ export const loginCommand = () => {
     );
 
     server.listen(AUTH_PORT_CLI, () => {
-      // Open browser with OS-appropriate command
+      // Try to open browser with OS-appropriate command
       const browserCommands: Record<string, string> = {
         linux: "xdg-open",
         darwin: "open",
@@ -117,6 +117,9 @@ export const loginCommand = () => {
       const browser =
         process.env.BROWSER ?? browserCommands[process.platform] ?? "open";
 
+      console.log("🔐 Starting authentication process...");
+      console.log("Opening browser for login...\n");
+
       // Windows requires using cmd.exe because 'start' is a built-in command
       const command =
         process.platform === "win32" && browser === "start"
@@ -124,6 +127,20 @@ export const loginCommand = () => {
           : spawn(browser, [DECO_CHAT_LOGIN], { detached: true });
 
       command.unref(); // Don't keep process alive
+
+      // Handle potential browser opening failures
+      command.on("error", () => {
+        console.log("⚠️  Could not automatically open browser");
+      });
+
+      // Always show the fallback URL
+      setTimeout(() => {
+        console.log(
+          "📋 If your browser didn't open automatically, please click the following link:",
+        );
+        console.log(`\n   ${DECO_CHAT_LOGIN}\n`);
+        console.log("Waiting for authentication to complete...\n");
+      }, 1000); // Small delay to let browser opening attempt complete
     });
 
     server.on("error", (err) => {

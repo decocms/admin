@@ -67,7 +67,7 @@ jobs:
 
       - name: Smoke test endpoint
         run: |
-          curl -s -o resp.json -w '%{http_code}' https://seo-ecommerce.deco.page/mcp/tools \
+          curl -s -o resp.json -w '%{http_code}' https://seo-ecommercex.deco.page/mcp/tools \
             -H 'Content-Type: application/json' \
             --data '{"tool":"LINK_ANALYZER","input":{"url":"https://example.com/"}}' > status.txt || true
           echo "Status: $(cat status.txt)" >> $GITHUB_STEP_SUMMARY

@@ -70,7 +70,7 @@ export async function analyzeLinks(url: string): Promise<LinkAnalysisResult> {
   let status = 0;
   let notes: string[] = [];
   try {
-    const res = await localFetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': 'DecoLinkAnalyzer/1.0 (+https://seo-ecommerce.deco.page/)' } });
+  const res = await localFetch(url, { method: 'GET', redirect: 'follow', headers: { 'User-Agent': 'DecoLinkAnalyzer/1.0 (+https://seo-ecommercex.deco.page/)' } });
     status = res.status;
     if (!res.ok) {
       notes.push(`Fetch status ${res.status}`);

@@ -54,7 +54,7 @@ Add workflow that on tag `seo-v*`:
 
 ## Health Check After Deploy
 1. `POST /mcp/tools` body: `{ "tool":"LINK_ANALYZER", "input": { "url": "https://example.com/" } }` expect 200 + JSON with `seoScore`.
-2. Visit landing page: https://seo-ecommerce.deco.page/ (score summary card loads, form works).
+2. Visit landing page: https://seo-ecommercex.deco.page/ (score summary card loads, form works).
 
 ## Rollback
 Deploy previous Git SHA with same pipeline or use Cloudflare Worker Versions UI to revert.

@@ -126,7 +126,11 @@
   const historyWrap = document.getElementById('la-history');
   const historyItems = document.getElementById('la-history-items');
   let history = [];
-  const apiBase = 'https://seo-ecommerce.ggstv-fer.workers.dev';
+  // Detecta ambiente local ou produção
+  let apiBase = 'https://seo-ecommerce.ggstv-fer.workers.dev';
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    apiBase = 'http://localhost:3001';
+  }
 
   function loadHistory(){
     try {
@@ -180,7 +184,11 @@
     modeEl.textContent=label;
   }
 
-  statusEl.textContent='Usando endpoint produção.'; showMode('prod');
+  if(apiBase.startsWith('http://localhost')) {
+    statusEl.textContent='Usando endpoint local.'; showMode('local');
+  } else {
+    statusEl.textContent='Usando endpoint produção.'; showMode('prod');
+  }
   loadHistory();
 
   form.addEventListener('submit', async (e)=>{

@@ -323,9 +323,17 @@
     statusEl.textContent='';
     try{
   const endpoint = apiBase;
-  const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
+  let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
+      if(!res.ok){
+        // Fallback local simplified endpoint
+        if(endpoint.includes('/mcp/tools')){
+          try {
+            res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+          } catch {}
+        }
+      }
       if(!res.ok) throw new Error('HTTP '+res.status);
-  const data=await res.json(); lastData = data;
+  const data=await res.json(); lastData = data.result? { tool:'LINK_ANALYZER', result:data.result } : data;
   const elapsed = Math.round(performance.now()-start);
   resultEl.textContent=JSON.stringify(data,null,2);
       const r = data.result || data;

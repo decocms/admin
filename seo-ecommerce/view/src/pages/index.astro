@@ -7,13 +7,36 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
     <title>Link Analyzer</title>
   </head>
   <body style="font-family: system-ui; max-width: 840px; margin: 2rem auto; padding: 0 1rem;">
-      <nav style="display:flex; gap:1rem; font-size:.85rem; margin-bottom:1rem;">
+      <nav style="display:flex; gap:1rem; font-size:.85rem; margin-bottom:1rem; align-items:center;">
+        <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener" style="font-weight:500;">Documentação</a>
+        <span style="flex:1"></span>
         <a href="/login">Login</a>
         <a href="/signup">Cadastro</a>
       </nav>
-    <h1>Link Analyzer</h1>
-  <p>Analise links e obtenha metadados rapidamente. (Interface única: removida versão antiga /analise)</p>
+      <header style="margin-bottom:1.75rem;">
+        <h1 style="font-size:clamp(1.9rem,4vw,2.6rem); line-height:1.1; margin:.25rem 0 .6rem; background:linear-gradient(90deg,#2563eb,#10b981); -webkit-background-clip:text; color:transparent;">Link Analyzer</h1>
+        <p style="max-width:640px; font-size:1rem; line-height:1.5; color:#475569;">Auditoria rápida de SEO on-page: título, descrição, headers, links, imagens, canonical e pontuação de integridade. Use o formulário abaixo para uma visão expressa ou avance para uma análise detalhada autenticada.</p>
+        <div style="display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1rem;">
+          <a href="/analise" id="cta-detalhada" style="text-decoration:none; background:#2563eb; color:#fff; padding:12px 20px; border-radius:10px; font-weight:600; display:inline-flex; gap:6px; align-items:center; box-shadow:0 4px 12px -2px rgba(37,99,235,.4);">🔍 Análise detalhada</a>
+          <a href="#analisar" style="text-decoration:none; background:#0f172a; color:#fff; padding:12px 18px; border-radius:10px; font-weight:500; display:inline-flex; align-items:center;">Iniciar abaixo ↓</a>
+        </div>
+      </header>
+      <script>
+        // Redireciona para login se não logado ao clicar em análise detalhada
+        (function(){
+          const a = document.getElementById('cta-detalhada');
+          if(!a) return;
+          a.addEventListener('click', function(ev){
+            try {
+              const auth = localStorage.getItem('la-supa-auth');
+              if(!auth){ ev.preventDefault(); location.href = '/login?next=/analise'; }
+            } catch { /* fallback */ }
+          });
+        })();
+      </script>
+      <section id="analisar">
     <LinkAnalyzerForm />
+      </section>
     <hr />
     <p style="font-size: 0.9em; color: #666;">Esta é uma página personalizada fora do tema Starlight. A documentação completa continua disponível no menu.</p>
   </body>

@@ -1,39 +1,68 @@
----
-import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
 import AnalysisDashboard from "../components/AnalysisDashboard.astro";
+import SavedAnalysesClient from "../components/SavedAnalysesClient.astro";
 let initial: any = null;
-if (Astro.request.method === 'POST') {
+const q = new URL(Astro.request.url).searchParams;
+const from = q.get('url');
+if(from){
   try {
-    const form = await Astro.request.formData();
-    const url = (form.get('url')||'').toString();
-    if(url){
-      const res = await fetch('https://seo-ecommerce.ggstv-fer.workers.dev/mcp/tools', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tool:'LINK_ANALYZER', input:{ url } }) });
-      if(res.ok){ initial = await res.json(); }
-    }
+    const res = await fetch('/api/analisar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: from }) });
+    if(res.ok) initial = await res.json();
   } catch {}
 }
 ---
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>Análise SEO</title>
+    <title>Área Detalhada - SEO</title>
   </head>
-  <body style="font-family: system-ui; max-width: 1080px; margin: 2rem auto; padding: 0 1rem;">
-    <h1 style="margin:0 0 .5rem;">Análise SEO</h1>
-    <p style="margin:0 0 1.25rem; color:#475569;">Preencha uma URL para gerar métricas SEO. Interface aprimorada com cartões e score.</p>
-    <form method="POST" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; background:var(--sl-color-bg-alt,#f1f5f9); padding:1rem 1.25rem; border:1px solid var(--sl-color-gray-5,#d0d7de); border-radius:12px;">
-      <label style="flex:1; min-width:340px; font-weight:500;">
-        URL
-        <input name="url" type="url" required placeholder="https://exemplo.com" style="margin-top:4px; width:100%; padding:10px 14px; border:1px solid var(--sl-color-gray-5,#cbd5e1); border-radius:8px;" />
-      </label>
-      <button type="submit" style="padding:12px 22px; background:var(--sl-color-accent,#2563eb); color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:500;">Analisar</button>
-    </form>
-    {initial && <div style="margin-top:1.75rem;">
-      <AnalysisDashboard data={initial} />
+  <body style="font-family: system-ui; max-width: 1180px; margin: 2rem auto; padding: 0 1rem;">
+    <header style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; margin-bottom:1.5rem;">
+      <h1 style="margin:0; font-size:clamp(1.6rem,3.2vw,2.2rem); background:linear-gradient(90deg,#2563eb,#10b981); -webkit-background-clip:text; color:transparent;">Painel SEO Detalhado</h1>
+      <a href="/" style="margin-left:auto; font-size:.85rem; text-decoration:none; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px;">← Voltar</a>
+    </header>
+    <div style="background:var(--sl-color-bg-alt,#f1f5f9); border:1px solid var(--sl-color-gray-5,#d0d7de); padding:1rem 1.25rem; border-radius:14px;">
+      <form id="ad-hoc" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end;">
+        <label style="flex:1; min-width:300px; font-weight:500;">
+          Nova URL
+          <input name="url" type="url" required placeholder="https://exemplo.com" style="margin-top:4px; width:100%; padding:10px 14px; border:1px solid var(--sl-color-gray-5,#cbd5e1); border-radius:8px;" />
+        </label>
+        <button type="submit" style="padding:12px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Analisar</button>
+      </form>
+      <div id="ad-hoc-status" style="font-size:.8rem; color:#475569; margin-top:.5rem;"></div>
+    </div>
+    {initial && initial.result && <div style="margin-top:2rem;">
+      <AnalysisDashboard data={initial.result} />
     </div>}
-    <hr style="margin:2.5rem 0;" />
-    <h2 style="font-size:1.1rem; margin-bottom:.5rem;">Ferramenta interativa</h2>
-    <p style="margin-top:0; font-size:.9rem; color:#475569;">Use a versão interativa com histórico e exportações.</p>
-    <LinkAnalyzerForm />
+    <section style="margin-top:2.5rem;">
+      <h2 style="font-size:1.15rem; margin:0 0 .5rem;">Minhas Análises Salvas</h2>
+      <p style="font-size:.85rem; color:#475569; margin:.25rem 0 1rem;">Histórico vinculado à sua conta. Exige login.</p>
+      <SavedAnalysesClient />
+    </section>
+    <script>
+      (function(){
+        const form = document.getElementById('ad-hoc');
+        const statusEl = document.getElementById('ad-hoc-status');
+        form.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          const fd = new FormData(form);
+            const url = fd.get('url');
+            statusEl.textContent='Analisando...';
+            try{
+              const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+              if(!res.ok){ statusEl.textContent='Falha: '+res.status; return; }
+              const data = await res.json();
+              localStorage.setItem('la-last-analysis', JSON.stringify(data));
+              location.search='?url='+encodeURIComponent(url);
+            }catch(err){ statusEl.textContent='Erro de rede'; }
+        });
+        // Enforce login gate (simple client-side)
+        try {
+          const auth = localStorage.getItem('la-supa-auth');
+          if(!auth){
+            document.body.innerHTML='<div style="max-width:480px;margin:4rem auto;text-align:center;font-family:system-ui;">\n<h1>Área restrita</h1><p style="color:#475569;">Faça login para acessar a análise detalhada.</p><a href="/login?next=/analise" style="display:inline-block;margin-top:1rem;padding:12px 20px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Ir para Login</a></div>';
+          }
+        } catch {}
+      })();
+    </script>
   </body>
 </html>

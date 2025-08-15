@@ -153,6 +153,7 @@ async function customizeTemplate({
       const newConfig = {
         ...currentConfig,
         name: projectName,
+        scope: workspace,
         deco: {
           ...currentConfig.deco,
           workspace,

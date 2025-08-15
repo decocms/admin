@@ -52,7 +52,7 @@ import { configureCommand } from "./commands/config/configure.js";
 import { deploy } from "./commands/hosting/deploy.js";
 import { listApps } from "./commands/hosting/list.js";
 import { promoteApp } from "./commands/hosting/promote.js";
-import { createCommand, listTemplates } from "./commands/create/create.js";
+import { createCommand } from "./commands/create/create.js";
 import { devCommand } from "./commands/dev/dev.js";
 import { link } from "./commands/dev/link.js";
 import { genEnv } from "./commands/gen/gen.js";
@@ -335,12 +335,11 @@ const dev = new Command("dev")
 // Create command implementation
 const create = new Command("create")
   .description("Create a new project from a template.")
-  .option("-t, --template <template>", "Template to use")
   .argument("[project-name]", "Name of the project")
-  .action(async (projectName, options) => {
+  .action(async (projectName) => {
     try {
       const config = await getConfig().catch(() => ({}));
-      await createCommand(projectName, options.template, config);
+      await createCommand(projectName, config);
     } catch (error) {
       console.error(
         "❌ Project creation failed:",
@@ -348,13 +347,6 @@ const create = new Command("create")
       );
       process.exit(1);
     }
-  });
-
-// Templates list command implementation
-const listTemplatesCommand = new Command("templates")
-  .description("List available templates.")
-  .action(() => {
-    listTemplates();
   });
 
 // Add command implementation
@@ -467,7 +459,6 @@ const program = new Command()
   .addCommand(update)
   .addCommand(linkCmd)
   .addCommand(gen)
-  .addCommand(create)
-  .addCommand(listTemplatesCommand);
+  .addCommand(create);
 
 program.parse();

@@ -48,4 +48,16 @@ try {
   console.warn('[build-assets] Failed to write build-info.json', e);
 }
 
+// Adjust _routes.json if present: ensure /_astro assets not excluded
+try {
+  const routesPath = join(adapterOutputDir, '_routes.json');
+  if (existsSync(routesPath)) {
+  // Simplest: remove the file entirely so no exclusion blocks hashed assets
+  rmSync(routesPath, { force: true });
+  console.log('[build-assets] Removed _routes.json to allow all static assets');
+  }
+} catch (e) {
+  console.warn('[build-assets] Could not adjust _routes.json', e);
+}
+
 console.log('[build-assets] Done.');

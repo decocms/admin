@@ -1,6 +1,7 @@
 // deno-lint-ignore-file require-await
 import { withRuntime } from "@deco/workers-runtime";
 import { toolFactories } from "./tools";
+import { analyzeLinks } from './tools/link-analyzer/analyze';
 import {
   createStepFromTool,
   createTool,
@@ -99,6 +100,23 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
+    // Lightweight dev bypass endpoint avoids full runtime env validation
+    if (url.pathname === '/dev/link-analyzer' && req.method === 'POST') {
+      if (!(req.headers.get('host') || '').includes('localhost')) {
+        return new Response(JSON.stringify({ error: 'Dev endpoint only available locally' }), { status: 403, headers: corsHeaders({ 'content-type': 'application/json' }) });
+      }
+      return (async () => {
+        try {
+          const body = await req.json().catch(()=>({}));
+          const u = body.url || body.input?.url;
+          if(!u) return new Response(JSON.stringify({ error: 'Missing url' }), { status: 400, headers: corsHeaders({ 'content-type': 'application/json' }) });
+          const result = await analyzeLinks(u);
+          return new Response(JSON.stringify({ tool: 'LINK_ANALYZER', input: { url: u }, result, devBypass: true }), { status: 200, headers: corsHeaders({ 'content-type': 'application/json' }) });
+        } catch(e){
+          return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: corsHeaders({ 'content-type': 'application/json' }) });
+        }
+      })();
+    }
     if (url.pathname === TOOLS_PATH) {
       return (async () => {
         if (req.method === "OPTIONS") {
@@ -122,6 +140,26 @@ const runtime = {
             const body = await req.json().catch(() => ({}));
             const toolId = body.tool;
             const input = body.input || {};
+            // Debug logging of incoming request (safe fields only)
+            try {
+              console.log('[MCP] Incoming tool request', { tool: toolId, keys: Object.keys(input || {}) });
+            } catch {}
+            const isLocal = (req.headers.get('host') || '').includes('localhost');
+            if (isLocal && toolId === 'MY_TOOL') {
+              return new Response(JSON.stringify({ tool: 'MY_TOOL', input, result: { message: `Hello, ${(input as any).name || 'world'}!` } }), { status: 200, headers: corsHeaders({ 'content-type': 'application/json' }) });
+            }
+            if (isLocal && toolId === 'LINK_ANALYZER') {
+              try {
+                if (!input.url) {
+                  return new Response(JSON.stringify({ error: 'Missing url in input' }), { status: 400, headers: corsHeaders({ 'content-type': 'application/json' }) });
+                }
+                const result = await analyzeLinks((input as any).url);
+                return new Response(JSON.stringify({ tool: 'LINK_ANALYZER', input, result }), { status: 200, headers: corsHeaders({ 'content-type': 'application/json' }) });
+              } catch (e) {
+                console.error('[MCP] Local bypass analyze error', e);
+                return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: corsHeaders({ 'content-type': 'application/json' }) });
+              }
+            }
             if (!toolId) {
               console.error("[MCP] Missing 'tool' field", body);
               return new Response(
@@ -130,8 +168,30 @@ const runtime = {
               );
             }
             const factories = [createMyTool, ...toolFactories];
+            // Provide dummy environment variables in local dev to satisfy schema validation
+            // Only if they are missing. These are placeholders; real values should be set in production via wrangler secrets/bindings.
+            const devEnvKeys = [
+              'CF_DISPATCH_NAMESPACE',
+              'CF_ACCOUNT_ID',
+              'CF_API_TOKEN',
+              'SUPABASE_URL',
+              'SUPABASE_SERVER_TOKEN',
+              'TURSO_GROUP_DATABASE_TOKEN',
+              'TURSO_ORGANIZATION',
+              'OPENROUTER_API_KEY'
+            ];
+            // isLocal already computed above
+            let toolEnv: any = env;
+            if(isLocal){
+              toolEnv = { ...env };
+              for (const k of devEnvKeys) {
+                if (!(k in toolEnv) || toolEnv[k] === undefined) {
+                  toolEnv[k] = `dev-${k.toLowerCase()}`;
+                }
+              }
+            }
             const factory = factories.find((f) => {
-              try { return (f as any)(env).id === toolId; } catch { return false; }
+              try { return (f as any)(toolEnv).id === toolId; } catch { return false; }
             });
             if (!factory) {
               console.error(`[MCP] Tool '${toolId}' not found`, body);
@@ -140,9 +200,28 @@ const runtime = {
                 { status: 404, headers: corsHeaders({ "content-type": "application/json" }) },
               );
             }
-            const tool = (factory as any)(env);
+            const tool = (factory as any)(toolEnv);
             try {
-              const execution = await tool.execute({ context: input });
+              const execStart = Date.now();
+              let execution: any;
+              // Fast-path bypass for local dev to skip env-heavy validation for simple tools
+              if (isLocal && (toolId === 'LINK_ANALYZER' || toolId === 'MY_TOOL')) {
+                if (toolId === 'MY_TOOL') {
+                  execution = { message: `Hello, ${(input as any).name || 'world'}!` };
+                } else if (toolId === 'LINK_ANALYZER') {
+                  try {
+                    const { analyzeLinks } = await import('./tools/link-analyzer/analyze');
+                    execution = await analyzeLinks((input as any).url);
+                  } catch (e) {
+                    console.error('[MCP] Bypass analyze error', e);
+                    throw e;
+                  }
+                }
+              } else {
+                execution = await tool.execute({ context: input });
+              }
+              const execMs = Date.now() - execStart;
+              try { console.log('[MCP] Tool OK', { tool: tool.id, ms: execMs }); } catch {}
               const result = {
                 ...execution,
                 links: Array.isArray((execution as any).links) ? (execution as any).links : [],
@@ -152,18 +231,24 @@ const runtime = {
                 { status: 200, headers: corsHeaders({ "content-type": "application/json" }) },
               );
             } catch (toolErr) {
-                console.error('[MCP] Tool execution error:', toolErr, { toolId, input });
-                if (toolErr && typeof toolErr === 'object' && 'stack' in toolErr) {
-                  console.error('Stack trace:', (toolErr as any).stack);
+                const isZod = toolErr && typeof toolErr === 'object' && (toolErr as any).name === 'ZodError';
+                const stack = toolErr && typeof toolErr === 'object' && 'stack' in toolErr ? (toolErr as any).stack : undefined;
+                console.error('[MCP] Tool execution error:', toolErr, { toolId, input, isZod });
+                if (stack) console.error('Stack trace:', stack);
+                const statusCode = isZod ? 400 : 500;
+                const payload: Record<string, unknown> = {
+                  error: (toolErr as Error).message,
+                  tool: tool.id,
+                  input,
+                  isZod,
+                };
+                if (isZod && (toolErr as any).issues) {
+                  payload.issues = (toolErr as any).issues;
                 }
+                if (!isZod && stack) payload.details = stack;
                 return new Response(
-                  JSON.stringify({
-                    error: (toolErr as Error).message,
-                    tool: tool.id,
-                    input,
-                    details: toolErr && typeof toolErr === 'object' && 'stack' in toolErr ? (toolErr as any).stack : undefined
-                  }),
-                  { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
+                  JSON.stringify(payload),
+                  { status: statusCode, headers: corsHeaders({ "content-type": "application/json", 'X-Error-Type': isZod ? 'ZodError' : 'ToolError' }) },
                 );
               }
           } catch (err) {

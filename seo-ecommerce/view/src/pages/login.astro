@@ -26,5 +26,16 @@ if (Astro.request.method === 'POST') {
       <button type="submit" style="padding:12px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:500; cursor:pointer;">Entrar</button>
       <div style="font-size:.75rem;">Sem conta? <a href="/signup">Criar</a> · <a href="/reset">Esqueci a senha</a></div>
     </form>
+    <script>
+      (function(){
+        // If login succeeded server-side (info is set), redirect to `next` query param when present
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        const loginDone = {info ? 'true' : 'false'};
+        if(loginDone && next){
+          try { location.replace(next); } catch(e){ location.href = next; }
+        }
+      })();
+    </script>
   </body>
 </html>

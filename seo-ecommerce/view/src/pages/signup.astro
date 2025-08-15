@@ -26,5 +26,15 @@ if (Astro.request.method === 'POST') {
       <button type="submit" style="padding:12px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:500; cursor:pointer;">Criar</button>
       <div style="font-size:.75rem;">Já possui conta? <a href="/login">Login</a></div>
     </form>
+    <script>
+      (function(){
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        const infoFlag = {info ? 'true' : 'false'};
+        if(infoFlag && next){
+          try { location.replace(next); } catch(e){ location.href = next; }
+        }
+      })();
+    </script>
   </body>
 </html>

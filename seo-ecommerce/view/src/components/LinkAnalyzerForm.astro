@@ -198,6 +198,16 @@
     const url = input.value.trim();
     if(!url){return;}
     if(!/^https?:\/\//i.test(url)){ errorEl.textContent='URL deve iniciar com http(s)://'; errorEl.style.display='block'; return; }
+    // Require login: check Supabase local auth marker or la-user fallback
+    const supaAuth = window?.localStorage?.getItem('la-supa-auth');
+    const localUser = window?.localStorage?.getItem('la-user');
+    if(!supaAuth && !localUser){
+      // Redirect to login with next param (preserve current path and include a run flag)
+      const cur = location.pathname + location.search;
+      const next = cur + (cur.includes('?') ? '&' : '?') + 'la_run_url=' + encodeURIComponent(url);
+      location.href = '/login?next=' + encodeURIComponent(next);
+      return;
+    }
     const start = performance.now();
     submit.disabled=true; submit.textContent='Analisando...'; loadingEl.style.display='inline-block';
     statusEl.textContent='';
@@ -237,6 +247,23 @@
       submit.disabled=false; submit.textContent='Analisar'; loadingEl.style.display='none';
     }
   });
+
+  // On page load, detect redirect back from login with la_run_url to auto-fill and submit
+  (function autoRunFromLogin(){
+    try{
+      const params = new URLSearchParams(window.location.search || '');
+      const runUrl = params.get('la_run_url');
+      if(runUrl){
+        input.value = runUrl;
+        // remove param from URL without reloading
+        const url = new URL(location.href);
+        url.searchParams.delete('la_run_url');
+        history.replaceState({}, '', url.pathname + url.search);
+        // submit programmatically
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    }catch(e){ /* ignore */ }
+  })();
 
   copyBtn.addEventListener('click', ()=>{
     if(!resultEl.textContent) return;

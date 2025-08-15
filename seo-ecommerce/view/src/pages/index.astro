@@ -5,8 +5,9 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
   <head>
     <meta charset="utf-8" />
     <title>Link Analyzer</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/theme.css" />
+  <style>
       :root { --grad-a:#6366f1; --grad-b:#7e22ce; --grad-c:#2563eb; --bg-deep:#0b1020; }
       body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin:0; background:
         radial-gradient(circle at 18% 22%,#312e81 0%,rgba(49,46,129,.55) 18%,transparent 60%),
@@ -66,18 +67,18 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <div class="wrap fade-root">
       <nav>
         <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
         <span style="flex:1"></span>
         <a href="/login">Login</a>
         <a href="/signup">Cadastro</a>
       </nav>
-      <header class="hero">
+  <header class="hero fade-in">
         <h1>Link Analyzer</h1>
         <p>Auditoria rápida de SEO on‑page: título, descrição, headers, links, imagens e score em segundos. Ideal para validações instantâneas e triagem de oportunidades.</p>
       </header>
-      <section class="highlight-panel">
+  <section class="highlight-panel fade-in" style="transition-delay:.1s;">
         <div class="hp-card">
           <span class="hp-meta">Modos de utilização</span>
           <h2>Rápido agora. Profundo quando precisar.</h2>
@@ -115,7 +116,7 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
           });
         })();
       </script>
-      <section id="analisar" class="analyzer-shell">
+  <section id="analisar" class="analyzer-shell fade-in" style="transition-delay:.2s;">
         <LinkAnalyzerForm />
       </section>
       <hr class="decor" />
@@ -152,6 +153,13 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
       <footer>© {new Date().getFullYear()} Link Analyzer • Beta</footer>
     </div>
     <script>
+      // Intersection observer para animação
+      (function(){
+        const io = new IntersectionObserver((entries)=>{
+          entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('appear'); io.unobserve(e.target);} });
+        }, { threshold:.18 });
+        document.querySelectorAll('.fade-in').forEach(el=> io.observe(el));
+      })();
       // Redireciona para login se não logado ao clicar em análise detalhada
       (function(){
         function guard(id){

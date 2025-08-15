@@ -13,7 +13,10 @@
     --la-info: #6366f1;
   }
   .la-root { margin:1.5rem 0; }
-  .la-card { background:var(--sl-color-bg, #fff); border:1px solid var(--la-border); border-radius:12px; padding:1rem 1.25rem; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .la-card { background:var(--color-surface,linear-gradient(145deg,rgba(17,24,39,.92),rgba(30,41,59,.88))); border:1px solid var(--color-border,rgba(255,255,255,.08)); border-radius:var(--radius-lg,20px); padding:1.25rem 1.5rem 1.35rem; box-shadow:var(--shadow-card,0 12px 40px -18px rgba(0,0,0,.65)); }
+  .la-card h3 { font-size:15px; }
+  .la-card section { padding-bottom:1rem; border-bottom:1px solid rgba(255,255,255,.07); margin-bottom:1.1rem; }
+  .la-card section:last-of-type { border-bottom:none; margin-bottom:.25rem; padding-bottom:0; }
   .la-flex { display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; }
   .la-history { margin-top:1.25rem; }
   .la-history button { background:var(--la-bg-alt); border:1px solid var(--la-border); padding:4px 10px; border-radius:999px; cursor:pointer; font-size:12px; line-height:1; }
@@ -25,7 +28,7 @@
   .la-badge.stub { background:var(--la-warn); }
   .la-badge.proxy { background:var(--la-info); }
   .la-status { font-size:12px; color:var(--la-text-muted); margin-left:4px; }
-  .la-muted { color:var(--la-text-muted); font-size:12px; }
+  .la-muted { color:#8ea2b8; font-size:12.5px; }
   .la-section-title { margin-top:1.75rem; font-size:14px; font-weight:600; }
   .la-result { background:#0f172a; color:#e2e8f0; }
   .la-toolbar { display:flex; gap:.5rem; align-items:center; margin-top:.5rem; }
@@ -53,12 +56,13 @@
     .la-mini-btn:hover { background:#334155; }
     .la-result { background:#0f172a; }
   }
-  .la-input { width:100%; padding:8px 12px; border:1px solid var(--la-border); border-radius:6px; background:var(--sl-color-bg, #fff); }
+  .la-input { width:100%; padding:10px 14px; border:1px solid #334155; border-radius:10px; background:#0f172a; color:#e2e8f0; font-size:.9rem; }
   .la-input:focus { outline:2px solid var(--la-accent); outline-offset:1px; }
-  .la-btn { padding:10px 18px; border-radius:6px; background:var(--la-accent); color:#fff; border:none; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:6px; }
+  .la-btn { padding:12px 22px; border-radius:12px; background:linear-gradient(90deg,#6366f1,#7e22ce,#2563eb); color:#fff; border:none; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px; font-size:.9rem; box-shadow:0 8px 28px -10px rgba(99,102,241,.55); transition:.25s; }
+  .la-btn:hover { transform:translateY(-2px); box-shadow:0 12px 34px -12px rgba(99,102,241,.6); }
   .la-btn:disabled { opacity:.55; cursor:not-allowed; }
 </style>
-<div id="link-analyzer-root" class="la-root">
+<div id="link-analyzer-root" class="la-root fade-in">
   <div class="la-card">
     <form id="link-analyzer-form" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:1rem;">
       <!-- Step 1: Domain -->
@@ -68,8 +72,8 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--la-accent);"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
         <div style="flex:1; min-width:0;">
-          <h3 style="margin:0 0 .45rem; font-size:14px; font-weight:600; display:flex; gap:6px; align-items:center;">1. Digite o Nome do Domínio <span style="font-size:11px; font-weight:500; background:var(--la-bg-alt); padding:2px 6px; border-radius:12px;">Obrigatório</span></h3>
-          <div style="font-size:13px; line-height:1.45; margin:0 0 .5rem;">Digite a URL de qualquer domínio que você deseja auditar (somente o domínio base). Nós começamos pela página inicial para gerar uma visão geral rápida.</div>
+              <h3 style="margin:0 0 .55rem; font-size:15px; font-weight:600; display:flex; gap:6px; align-items:center;">1. Informe o domínio principal <span style="font-size:10px; font-weight:600; background:#1e293b; padding:3px 7px; border-radius:14px; letter-spacing:.5px; text-transform:uppercase;">Obrigatório</span></h3>
+              <div style="font-size:.9rem; line-height:1.5; margin:0 0 .6rem; color:#b8cbe0;">Use apenas o domínio base (sem <code>https://</code>). A página inicial é analisada para gerar o primeiro panorama.</div>
           <input id="la-domain" class="la-input" type="text" required placeholder="ex: exemplo.com" />
           <div class="la-muted" style="margin-top:4px;">Sem <code>https://</code>. Ex: <code>meusite.com</code></div>
         </div>
@@ -81,8 +85,8 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--la-accent);"><path d="M3 12h18"/><path d="M12 3v18"/></svg>
         </div>
         <div style="flex:1; min-width:0;">
-          <h3 style="margin:0 0 .5rem; font-size:14px; font-weight:600;">2. Ajuste o Escopo</h3>
-          <div style="font-size:13px; line-height:1.45; margin:0 0 .5rem;">Escolha rastrear todo o domínio raiz, focar em um subdomínio ou preparar um conjunto de subpastas (modo futuro). Isso define profundidade e priorização futura.</div>
+          <h3 style="margin:0 0 .55rem; font-size:15px; font-weight:600;">2. Defina o escopo</h3>
+          <div style="font-size:.9rem; line-height:1.5; margin:0 0 .55rem; color:#b8cbe0;">Escolha como quer focar a análise agora. Modos avançados (subpastas, rastreamento) chegam em breve.</div>
           <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
             <label style="display:flex; gap:6px; align-items:center;">
               <input type="radio" name="scope" value="root" checked /> Domínio raiz inteiro
@@ -112,8 +116,8 @@
         </div>
         <div style="flex:1; min-width:200px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
           <div style="flex:1; min-width:240px;">
-            <h3 style="margin:0 0 .35rem; font-size:14px; font-weight:600;">3. Obtenha Seus Resultados</h3>
-            <div style="font-size:13px; line-height:1.45;">Veja a pontuação de integridade do seu site e itens de ação priorizados, incluindo oportunidades de otimização de IA.</div>
+            <h3 style="margin:0 0 .45rem; font-size:15px; font-weight:600;">3. Execute a verificação</h3>
+            <div style="font-size:.9rem; line-height:1.5; color:#b8cbe0;">Geramos score e ações prioritárias instantaneamente. Em breve: histórico comparativo e recomendações expansíveis.</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center; margin-left:auto;">
             <button id="la-submit" type="submit" class="la-btn">Iniciar Análise</button>

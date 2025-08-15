@@ -64,12 +64,41 @@ const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
       const wantsHtml = accept.includes('text/html');
       if (!hasExt && wantsHtml) {
         const indexReq = new Request(new URL(viewPath, req.url), req);
-        return env.ASSETS.fetch(indexReq);
+        const idx = await env.ASSETS.fetch(indexReq);
+        return applyCacheHeaders(idx, url.pathname, true);
       }
     }
-    return res;
+    return applyCacheHeaders(res, url.pathname, false);
   });
 };
+
+function applyCacheHeaders(res: Response, path: string, isFallback: boolean): Response {
+  try {
+    const ct = res.headers.get('content-type') || '';
+    const newHeaders = new Headers(res.headers);
+    const isHtml = ct.includes('text/html');
+    const isHashedAsset = /\/(_astro|assets)\/.*\.[a-f0-9]{6,}\.[a-z0-9]+$/i.test(path);
+    if (isHtml) {
+      // Ensure fresh HTML after deploy
+      newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      newHeaders.set('Pragma', 'no-cache');
+      newHeaders.set('Expires', '0');
+    } else if (isHashedAsset) {
+      // Long-term cache for fingerprinted files
+      if (!newHeaders.has('Cache-Control')) {
+        newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    } else if (/\.(js|css|svg|png|jpg|jpeg|webp|gif|ico)$/i.test(path)) {
+      if (!newHeaders.has('Cache-Control')) {
+        newHeaders.set('Cache-Control', 'public, max-age=3600');
+      }
+    }
+    if (isFallback) newHeaders.set('X-Fallback-Index', '1');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: newHeaders });
+  } catch {
+    return res;
+  }
+}
 
 const { Workflow, ...baseRuntime } = withRuntime<Env>({
   workflows: [createMyWorkflow],
@@ -116,6 +145,20 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
+    if (url.pathname === '/__build') {
+      return (async () => {
+        try {
+          const infoReq = new Request(new URL('/build-info.json', req.url), req);
+          const r = await env.ASSETS.fetch(infoReq);
+          if (r.ok) {
+            const headers = new Headers(r.headers);
+            headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            return new Response(await r.text(), { status: 200, headers });
+          }
+        } catch {}
+        return new Response(JSON.stringify({ error: 'build-info not found' }), { status: 404, headers: { 'content-type': 'application/json', 'Cache-Control': 'no-cache' } });
+      })();
+    }
     // Lightweight dev bypass endpoint avoids full runtime env validation
     if (url.pathname === '/dev/link-analyzer' && req.method === 'POST') {
       if (!(req.headers.get('host') || '').includes('localhost')) {

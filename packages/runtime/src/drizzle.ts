@@ -156,13 +156,13 @@ export async function migrateWithoutTransaction(
             console.log(
               `✅ Migration ${migration.folderMillis} applied successfully`,
             );
-        } catch (migrationError: any) {
+        } catch (migrationError: unknown) {
           console.error(
             `❌ Migration ${migration.folderMillis} failed:`,
             migrationError,
           );
           throw new Error(
-            `Migration failed at ${migration.folderMillis}: ${migrationError.message}`,
+            `Migration failed at ${migration.folderMillis}: ${migrationError instanceof Error ? migrationError.message : String(migrationError)}`,
           );
         }
       } else {
@@ -174,7 +174,7 @@ export async function migrateWithoutTransaction(
     }
 
     if (debug) console.log("✅ All migrations completed successfully");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Migration process failed:", error);
     throw error;
   }

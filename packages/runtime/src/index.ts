@@ -2,7 +2,12 @@
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { decodeJwt } from "jose";
 import type { z } from "zod";
-import { getReqToken, handleAuthCallback, StateParser } from "./auth.ts";
+import {
+  getReqToken,
+  handleAuthCallback,
+  handleLogout,
+  StateParser,
+} from "./auth.ts";
 import { createIntegrationBinding, workspaceClient } from "./bindings.ts";
 import { DECO_MCP_CLIENT_HEADER } from "./client.ts";
 import {
@@ -169,6 +174,7 @@ export class UnauthorizedError extends Error {
 
 const AUTH_CALLBACK_ENDPOINT = "/oauth/callback";
 const AUTH_START_ENDPOINT = "/oauth/start";
+const AUTH_LOGOUT_ENDPOINT = "/oauth/logout";
 const AUTHENTICATED = (user?: unknown, workspace?: string) => () => {
   return {
     ...((user as User) ?? {}),
@@ -265,6 +271,9 @@ export const withRuntime = <TEnv, TSchema extends z.ZodTypeAny = never>(
       const redirectTo = new URL("/", url);
       const next = url.searchParams.get("next");
       return Response.redirect(next ?? redirectTo, 302);
+    }
+    if (url.pathname === AUTH_LOGOUT_ENDPOINT) {
+      return handleLogout(req);
     }
     if (url.pathname === "/mcp") {
       return server.fetch(req, env, ctx);

@@ -1,3 +1,5 @@
+const DECO_APP_AUTH_COOKIE_NAME = "deco_page_auth";
+
 export interface State {
   next?: string;
 }
@@ -37,7 +39,7 @@ export const getReqToken = (req: Request) => {
   const cookieHeader = req.headers.get("Cookie");
   if (cookieHeader) {
     const cookies = parseCookies(cookieHeader);
-    return cookies["deco_page_auth"];
+    return cookies[DECO_APP_AUTH_COOKIE_NAME];
   }
 
   return undefined;
@@ -101,10 +103,30 @@ export const handleAuthCallback = async (
       status: 302,
       headers: {
         Location: next,
-        "Set-Cookie": `deco_page_auth=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
+        "Set-Cookie": `${DECO_APP_AUTH_COOKIE_NAME}=${access_token}; HttpOnly; SameSite=None; Secure; Path=/`,
       },
     });
   } catch (err) {
     return new Response(`Authentication failed ${err}`, { status: 500 });
   }
+};
+
+const removeAuthCookie = (headers: Headers) => {
+  headers.set(
+    "Set-Cookie",
+    `${DECO_APP_AUTH_COOKIE_NAME}=; HttpOnly; SameSite=None; Secure; Path=/; Max-Age=0`,
+  );
+};
+
+export const handleLogout = (req: Request) => {
+  const url = new URL(req.url);
+  const next = url.searchParams.get("next");
+  const redirectTo = new URL("/", url);
+  const headers = new Headers();
+  removeAuthCookie(headers);
+  headers.set("Location", next ?? redirectTo.href);
+  return new Response(null, {
+    status: 302,
+    headers,
+  });
 };

@@ -152,17 +152,20 @@ const runtime = {
                 { status: 200, headers: corsHeaders({ "content-type": "application/json" }) },
               );
             } catch (toolErr) {
-              console.error(`[MCP] Tool execution error`, toolErr, { toolId, input });
-              return new Response(
-                JSON.stringify({
-                  error: (toolErr as Error).message,
-                  tool: tool.id,
-                  input,
-                  details: toolErr && typeof toolErr === 'object' && 'stack' in toolErr ? (toolErr as any).stack : undefined
-                }),
-                { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
-              );
-            }
+                console.error('[MCP] Tool execution error:', toolErr, { toolId, input });
+                if (toolErr && typeof toolErr === 'object' && 'stack' in toolErr) {
+                  console.error('Stack trace:', (toolErr as any).stack);
+                }
+                return new Response(
+                  JSON.stringify({
+                    error: (toolErr as Error).message,
+                    tool: tool.id,
+                    input,
+                    details: toolErr && typeof toolErr === 'object' && 'stack' in toolErr ? (toolErr as any).stack : undefined
+                  }),
+                  { status: 500, headers: corsHeaders({ "content-type": "application/json" }) },
+                );
+              }
           } catch (err) {
             console.error(`[MCP] Handler error`, err);
             return new Response(

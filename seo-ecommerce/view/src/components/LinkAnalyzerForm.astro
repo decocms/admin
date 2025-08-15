@@ -61,6 +61,16 @@
   .la-btn { padding:12px 22px; border-radius:12px; background:linear-gradient(90deg,#6366f1,#7e22ce,#2563eb); color:#fff; border:none; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px; font-size:.9rem; box-shadow:0 8px 28px -10px rgba(99,102,241,.55); transition:.25s; }
   .la-btn:hover { transform:translateY(-2px); box-shadow:0 12px 34px -12px rgba(99,102,241,.6); }
   .la-btn:disabled { opacity:.55; cursor:not-allowed; }
+  /* Summary card restyle */
+  #la-summary { background:linear-gradient(150deg,#0f172a 0%,#111c2e 45%,#0b1020 100%) !important; border:1px solid rgba(255,255,255,.12) !important; box-shadow:0 12px 42px -16px rgba(0,0,0,.7); color:#e2e8f0; }
+  #la-summary .la-block-title { font-size:11px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:#7ea6d6; }
+  #la-score { background:linear-gradient(90deg,#6366f1,#2563eb); -webkit-background-clip:text; color:transparent; text-shadow:0 0 18px rgba(99,102,241,.25); }
+  #la-score[data-score-color] { color:var(--score-color); background:none; -webkit-background-clip:border-box; text-shadow:0 2px 14px rgba(0,0,0,.45); }
+  #la-score-label { font-weight:600; letter-spacing:.5px; }
+  #la-actions, #la-ai-list { color:#b8cbe0; }
+  #la-actions li strong { color:#93adc9; }
+  #la-summary .section-heading { margin-top:12px; font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; background:linear-gradient(90deg,#6366f1,#7e22ce); -webkit-background-clip:text; color:transparent; }
+  #la-summary .divider-soft { height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent); border:none; margin:14px 0 10px; }
 </style>
 <div id="link-analyzer-root" class="la-root fade-in">
   <div class="la-card">
@@ -132,19 +142,20 @@
       </div>
     </form>
     <div id="la-error" style="color:var(--la-danger);margin-top:2px;display:none;font-weight:500;"></div>
-    <div id="la-summary" style="display:none; margin-top:12px; border:1px solid var(--la-border); padding:14px 16px; border-radius:10px; background:var(--sl-color-bg,#fff);">
-      <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+    <div id="la-summary" style="display:none; margin-top:16px; padding:20px 22px 22px; border-radius:24px;">
+      <div style="display:flex; gap:34px; flex-wrap:wrap; align-items:flex-start;">
         <div style="flex:1; min-width:200px;">
-          <div style="font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--la-text-muted);">Pontuação de Integridade</div>
-          <div id="la-score" style="font-size:42px; font-weight:700; line-height:1; margin-top:4px;">--</div>
-          <div id="la-score-label" class="la-muted" style="margin-top:4px;">Aguardando</div>
+          <div class="la-block-title">Pontuação de Integridade</div>
+          <div id="la-score" aria-live="polite" style="font-size:48px; font-weight:700; line-height:1; margin-top:6px;">--</div>
+          <div id="la-score-label" class="la-muted" style="margin-top:6px;">Aguardando</div>
         </div>
         <div style="flex:2; min-width:300px;">
-          <div style="font-size:12px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color:var(--la-text-muted);">Ações Prioritárias</div>
-          <ul id="la-actions" style="margin:6px 0 0; padding:0 0 0 18px; font-size:13px; line-height:1.45;"></ul>
-          <div style="margin-top:12px; font-size:12px;">
-            <span style="font-weight:600;">Oportunidades de Otimização (AI)</span>
-            <ul id="la-ai-list" style="margin:6px 0 0; padding:0 0 0 18px; line-height:1.45;"></ul>
+          <div class="section-heading">Ações Prioritárias</div>
+          <ul id="la-actions" style="margin:8px 0 0; padding:0 0 0 20px; font-size:13px; line-height:1.5;"></ul>
+          <hr class="divider-soft" />
+          <div>
+            <div class="section-heading" style="margin-top:0;">Oportunidades de Otimização (AI)</div>
+            <ul id="la-ai-list" style="margin:8px 0 0; padding:0 0 0 20px; line-height:1.5; font-size:13px;"></ul>
           </div>
         </div>
       </div>
@@ -356,7 +367,11 @@
   try { localStorage.setItem('la-last-analysis', JSON.stringify(data)); } catch {}
   try { window.dispatchEvent(new CustomEvent('la-analysis-finished', { detail: { url } })); } catch {}
       if(r && typeof r.seoScore === 'number'){
-        scoreEl.textContent = r.seoScore; scoreEl.style.color = colorScore(r.seoScore);
+        scoreEl.textContent = r.seoScore;
+        const col = colorScore(r.seoScore);
+        scoreEl.setAttribute('data-score-color','');
+        scoreEl.style.setProperty('--score-color', col);
+        scoreEl.style.color = 'var(--score-color)';
         scoreLabelEl.textContent = r.seoScore >= 85 ? 'Ótimo' : r.seoScore >= 70 ? 'Atenção' : 'Melhorar';
       } else { scoreEl.textContent='--'; scoreLabelEl.textContent='Indisponível'; }
       const actions = deriveActions(r||{});

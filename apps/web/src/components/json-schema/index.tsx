@@ -29,7 +29,6 @@ export interface JsonSchemaFormProps<
   // deno-lint-ignore no-explicit-any
   error?: any;
   submitButton?: ReactNode;
-  optionsLoader?: (type: string) => Promise<OptionItem[]> | OptionItem[];
 }
 
 export default function Form<T extends FieldValues = Record<string, unknown>>({
@@ -39,7 +38,6 @@ export default function Form<T extends FieldValues = Record<string, unknown>>({
   onSubmit,
   error,
   submitButton,
-  optionsLoader,
 }: JsonSchemaFormProps<T>) {
   if (!schema || typeof schema !== "object") {
     return <div className="text-sm text-destructive">Invalid schema</div>;
@@ -54,7 +52,6 @@ export default function Form<T extends FieldValues = Record<string, unknown>>({
           required={schema.required || []}
           form={form}
           disabled={disabled}
-          optionsLoader={optionsLoader}
         />
       )}
 
@@ -75,13 +72,11 @@ function ObjectProperties<T extends FieldValues = Record<string, unknown>>({
   required = [],
   form,
   disabled,
-  optionsLoader,
 }: {
   properties: Record<string, JSONSchema7Definition>;
   required?: string[];
   form: JsonSchemaFormProps<T>["form"];
   disabled: boolean;
-  optionsLoader?: JsonSchemaFormProps<T>["optionsLoader"];
 }) {
   return (
     <div className="space-y-4">
@@ -95,7 +90,6 @@ function ObjectProperties<T extends FieldValues = Record<string, unknown>>({
             form={form}
             isRequired={isRequired}
             disabled={disabled}
-            optionsLoader={optionsLoader}
           />
         );
       })}
@@ -110,14 +104,12 @@ function Field<T extends FieldValues = Record<string, unknown>>({
   form,
   isRequired = false,
   disabled = false,
-  optionsLoader,
 }: {
   name: string;
   schema: JSONSchema7;
   form: JsonSchemaFormProps<T>["form"];
   isRequired?: boolean;
   disabled?: boolean;
-  optionsLoader?: JsonSchemaFormProps<T>["optionsLoader"];
 }) {
   // Handle anyOf schema
   if (schema.anyOf && Array.isArray(schema.anyOf) && schema.anyOf.length > 0) {
@@ -136,7 +128,6 @@ function Field<T extends FieldValues = Record<string, unknown>>({
         form={form}
         isRequired={isRequired}
         disabled={disabled}
-        optionsLoader={optionsLoader}
       />
     );
   }
@@ -205,7 +196,7 @@ function Field<T extends FieldValues = Record<string, unknown>>({
       );
     case "object":
       // Check if this object has a __type property for dynamic select
-      if (schema.properties && schema.properties.__type && optionsLoader) {
+      if (schema.properties && schema.properties.__type) {
         const typeSchema = schema.properties.__type as JSONSchema7;
         if (typeSchema.default && typeof typeSchema.default === "string") {
           return (
@@ -218,7 +209,6 @@ function Field<T extends FieldValues = Record<string, unknown>>({
               isRequired={isRequired}
               disabled={disabled}
               typeValue={typeSchema.default}
-              optionsLoader={optionsLoader}
             />
           );
         }
@@ -253,7 +243,6 @@ function Field<T extends FieldValues = Record<string, unknown>>({
                       form={form}
                       isRequired={isPropertyRequired}
                       disabled={disabled}
-                      optionsLoader={optionsLoader}
                     />
                   );
                 },
@@ -291,7 +280,6 @@ function Field<T extends FieldValues = Record<string, unknown>>({
           form={form}
           isRequired={false}
           disabled={disabled}
-          optionsLoader={optionsLoader}
         />
       );
 

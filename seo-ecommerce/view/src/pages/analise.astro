@@ -1,67 +1,159 @@
+---
 import AnalysisDashboard from "../components/AnalysisDashboard.astro";
 import SavedAnalysesClient from "../components/SavedAnalysesClient.astro";
-let initial: any = null;
 const q = new URL(Astro.request.url).searchParams;
-const from = q.get('url');
-if(from){
-  try {
-    const res = await fetch('/api/analisar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: from }) });
-    if(res.ok) initial = await res.json();
-  } catch {}
-}
+const requested = q.get('url');
+let initial: any = null; // será carregado no cliente
 ---
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <title>Área Detalhada - SEO</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { background:linear-gradient(135deg,#0f172a,#1e293b 45%,#0f172a); color:#0f172a; }
+      @media (prefers-color-scheme: dark){ body { color:#e2e8f0; } }
+      .shell { backdrop-filter: blur(14px) saturate(160%); background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.25); }
+      @media (prefers-color-scheme: dark){ .shell { background:rgba(30,41,59,.55); border-color:rgba(255,255,255,.08);} }
+      .fade { animation: fade .5s ease; }
+      @keyframes fade { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+      .grid { display:grid; gap:1.75rem; grid-template-columns: 1fr 340px; }
+      @media (max-width: 1040px){ .grid { grid-template-columns: 1fr; } }
+      .panel { border-radius:20px; padding:1.15rem 1.35rem 1.35rem; box-shadow:0 8px 32px -12px rgba(0,0,0,.4); position:relative; overflow:hidden; }
+      .panel:before { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 120% 10%,rgba(255,255,255,.25),transparent 60%); }
+      .panel h2 { margin:.25rem 0 .75rem; font-size:.95rem; letter-spacing:.5px; text-transform:uppercase; font-weight:600; }
+      .divider { height:1px; background:linear-gradient(90deg,transparent,#64748b40,transparent); margin:2.25rem 0 1.75rem; border:none; }
+      .btn { background:#2563eb; color:#fff; border:none; border-radius:12px; padding:13px 22px; font-weight:600; cursor:pointer; font-size:.9rem; box-shadow:0 4px 18px -4px rgba(37,99,235,.55); display:inline-flex; align-items:center; gap:6px; transition: all .25s ease; }
+      .btn:hover { filter:brightness(1.08); transform:translateY(-2px); box-shadow:0 8px 26px -6px rgba(37,99,235,.55); }
+      .input { width:100%; padding:13px 16px; border:1px solid #cbd5e1; border-radius:12px; background:#fff; font-size:.9rem; transition:border-color .2s, background .2s; }
+      .input:focus { outline:2px solid #2563eb; outline-offset:2px; }
+      @media (prefers-color-scheme:dark){ .input { background:#0f172a; border-color:#334155; color:#e2e8f0; } }
+      .muted { font-size:.72rem; color:#64748b; }
+      .top-nav a { text-decoration:none; color:inherit; font-weight:500; opacity:.88; }
+      .top-nav a:hover { opacity:1; }
+      .badge { font-size:.65rem; background:#0f172a; color:#fff; padding:4px 10px; border-radius:18px; letter-spacing:.5px; }
+      @media (prefers-color-scheme:dark){ .badge { background:#334155; } }
+      .skeleton { background:linear-gradient(90deg,#cbd5e1 0%,#e2e8f0 40%,#cbd5e1 80%); background-size:200% 100%; animation:skeleton 1.2s ease-in-out infinite; border-radius:8px; }
+      @media (prefers-color-scheme:dark){ .skeleton { background:linear-gradient(90deg,#1e293b 0%,#334155 40%,#1e293b 80%); } }
+      @keyframes skeleton { to { background-position: -200% 0; } }
+    </style>
   </head>
-  <body style="font-family: system-ui; max-width: 1180px; margin: 2rem auto; padding: 0 1rem;">
-    <header style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center; margin-bottom:1.5rem;">
-      <h1 style="margin:0; font-size:clamp(1.6rem,3.2vw,2.2rem); background:linear-gradient(90deg,#2563eb,#10b981); -webkit-background-clip:text; color:transparent;">Painel SEO Detalhado</h1>
-      <a href="/" style="margin-left:auto; font-size:.85rem; text-decoration:none; background:#0f172a; color:#fff; padding:8px 14px; border-radius:8px;">← Voltar</a>
+  <body style="font-family: system-ui; max-width: 1300px; margin: 0 auto; padding: 1.6rem 1.25rem 3rem;">
+    <nav class="top-nav" style="display:flex; gap:1.2rem; align-items:center; margin-bottom:1.25rem; font-size:.8rem; letter-spacing:.5px; text-transform:uppercase;">
+      <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
+      <a href="/" style="margin-left:auto;">Home</a>
+      <a href="/login" id="nav-login">Login</a>
+      <a href="/signup" id="nav-signup">Cadastro</a>
+    </nav>
+    <header style="margin:0 0 2rem;">
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:1.25rem;">
+        <h1 style="margin:0; font-size:clamp(2.1rem,4.2vw,3.2rem); line-height:1.02; background:linear-gradient(90deg,#60a5fa,#34d399); -webkit-background-clip:text; color:transparent;">Painel SEO Detalhado</h1>
+        <span class="badge">Beta</span>
+      </div>
+      <p style="margin:.85rem 0 0; max-width:760px; font-size:.95rem; line-height:1.55; color:#475569;">Audite páginas com métricas ricas, histórico e futuras features de comparativo. Forneça uma URL para começar.</p>
     </header>
-    <div style="background:var(--sl-color-bg-alt,#f1f5f9); border:1px solid var(--sl-color-gray-5,#d0d7de); padding:1rem 1.25rem; border-radius:14px;">
-      <form id="ad-hoc" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end;">
-        <label style="flex:1; min-width:300px; font-weight:500;">
-          Nova URL
-          <input name="url" type="url" required placeholder="https://exemplo.com" style="margin-top:4px; width:100%; padding:10px 14px; border:1px solid var(--sl-color-gray-5,#cbd5e1); border-radius:8px;" />
-        </label>
-        <button type="submit" style="padding:12px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Analisar</button>
-      </form>
-      <div id="ad-hoc-status" style="font-size:.8rem; color:#475569; margin-top:.5rem;"></div>
+    <div class="grid fade">
+      <div style="display:flex; flex-direction:column; gap:1.75rem;">
+        <section class="panel shell">
+          <h2>Nova Análise</h2>
+          <form id="ad-hoc" style="display:flex; gap:.85rem; flex-wrap:wrap; align-items:flex-end;">
+            <label style="flex:1; min-width:300px; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.7px;">
+              URL
+              <input name="url" type="url" required placeholder="https://exemplo.com" class="input" />
+            </label>
+            <button type="submit" class="btn">Analisar Agora</button>
+          </form>
+          <div id="ad-hoc-status" class="muted" style="margin-top:.65rem; min-height:1.2rem;"></div>
+          <div id="placeholder-hero" style="margin-top:1.3rem; font-size:.75rem; line-height:1.4; color:#64748b; ${requested? 'display:none;':''}">
+            <strong>Dica:</strong> teste a página inicial do domínio primeiro para contexto geral.
+          </div>
+        </section>
+        <section id="analysis-wrap" class="panel shell fade" style="display:${requested? 'block':'none'};">
+          <h2>Resultado</h2>
+          <div id="analysis-dynamic" style="min-height:140px; display:flex; align-items:center; justify-content:center; font-size:.75rem; color:#64748b;">
+            ${requested? 'Carregando...' : 'Nenhuma análise ainda.'}
+          </div>
+          {initial && initial.result && <div id="analysis-static"><AnalysisDashboard data={initial.result} /></div>}
+        </section>
+      </div>
+      <aside class="panel shell fade" style="position:relative;">
+        <h2>Minhas Análises</h2>
+        <p class="muted" style="margin-top:-.25rem;">Histórico vinculado à conta.</p>
+        <div style="margin-top:.75rem;">
+          <SavedAnalysesClient />
+        </div>
+        <hr class="divider" />
+        <div style="font-size:.68rem; line-height:1.4; color:#64748b;">
+          <p style="margin:.25rem 0 .75rem; font-weight:600; letter-spacing:.5px; text-transform:uppercase; font-size:.6rem;">Roadmap</p>
+          <ul style="margin:.25rem 0 0; padding-left:1.05rem; list-style:disc;">
+            <li>Rastreamento multi página</li>
+            <li>Exportação CSV avançada</li>
+            <li>Insights de IA</li>
+            <li>Comparação de execuções</li>
+            <li>Alertas de regressão</li>
+          </ul>
+        </div>
+      </aside>
     </div>
-    {initial && initial.result && <div style="margin-top:2rem;">
-      <AnalysisDashboard data={initial.result} />
-    </div>}
-    <section style="margin-top:2.5rem;">
-      <h2 style="font-size:1.15rem; margin:0 0 .5rem;">Minhas Análises Salvas</h2>
-      <p style="font-size:.85rem; color:#475569; margin:.25rem 0 1rem;">Histórico vinculado à sua conta. Exige login.</p>
-      <SavedAnalysesClient />
-    </section>
     <script>
       (function(){
         const form = document.getElementById('ad-hoc');
         const statusEl = document.getElementById('ad-hoc-status');
+        const analysisWrap = document.getElementById('analysis-wrap');
+        const analysisDyn = document.getElementById('analysis-dynamic');
+        const qUrl = new URL(location.href).searchParams.get('url');
         form.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const fd = new FormData(form);
-            const url = fd.get('url');
-            statusEl.textContent='Analisando...';
-            try{
-              const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-              if(!res.ok){ statusEl.textContent='Falha: '+res.status; return; }
-              const data = await res.json();
-              localStorage.setItem('la-last-analysis', JSON.stringify(data));
-              location.search='?url='+encodeURIComponent(url);
-            }catch(err){ statusEl.textContent='Erro de rede'; }
+          const url = fd.get('url');
+          statusEl.textContent='Analisando...';
+          try {
+            analysisWrap.style.display='block';
+            analysisDyn.textContent='Carregando...';
+            const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+            if(!res.ok){ statusEl.textContent='Falha: '+res.status; analysisDyn.textContent='Falha ('+res.status+')'; return; }
+            const data = await res.json();
+            localStorage.setItem('la-last-analysis', JSON.stringify(data));
+            location.search='?url='+encodeURIComponent(url);
+          } catch(err){ statusEl.textContent='Erro de rede'; analysisDyn.textContent='Erro de rede'; }
         });
-        // Enforce login gate (simple client-side)
+        // Login gate
         try {
           const auth = localStorage.getItem('la-supa-auth');
           if(!auth){
-            document.body.innerHTML='<div style="max-width:480px;margin:4rem auto;text-align:center;font-family:system-ui;">\n<h1>Área restrita</h1><p style="color:#475569;">Faça login para acessar a análise detalhada.</p><a href="/login?next=/analise" style="display:inline-block;margin-top:1rem;padding:12px 20px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Ir para Login</a></div>';
+            document.body.innerHTML='<div style="max-width:520px;margin:4rem auto;text-align:center;font-family:system-ui;">\n<h1 style="font-size:2.1rem;">Área restrita</h1><p style="color:#64748b;font-size:.95rem;">Faça login para acessar a análise detalhada.</p><a href="/login?next=/analise" style="display:inline-block;margin-top:1.4rem;padding:14px 26px;background:#2563eb;color:#fff;border-radius:12px;text-decoration:none;font-weight:600;font-size:.9rem;box-shadow:0 6px 22px -6px rgba(37,99,235,.55);">Ir para Login</a></div>';
+            return;
+          } else {
+            const l=document.getElementById('nav-login'); if(l) l.style.display='none';
+            const s=document.getElementById('nav-signup'); if(s) s.style.display='none';
           }
         } catch {}
+        async function loadAnalysis(url){
+          try {
+            analysisWrap.style.display='block';
+            analysisDyn.textContent='Carregando...';
+            const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+            if(!res.ok){ analysisDyn.textContent='Falha ('+res.status+')'; return; }
+            const data = await res.json();
+            localStorage.setItem('la-last-analysis', JSON.stringify(data));
+            // Render JSON quickly; for richer view we'd hydrate component
+            analysisDyn.innerHTML='<pre style="font-size:11px;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:12px;max-height:360px;overflow:auto;">'+
+              JSON.stringify(data.result||data,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
+          } catch { analysisDyn.textContent='Erro de rede'; }
+        }
+        if(qUrl){ loadAnalysis(qUrl); }
+        else {
+          // tenta última
+          try {
+            const last = localStorage.getItem('la-last-analysis');
+            if(last){
+              const parsed = JSON.parse(last);
+              analysisWrap.style.display='block';
+              analysisDyn.innerHTML='<pre style="font-size:11px;background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:12px;max-height:360px;overflow:auto;">'+
+                JSON.stringify(parsed.result||parsed,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
+            }
+          } catch {}
+        }
       })();
     </script>
   </body>

@@ -45,7 +45,7 @@ import { fileURLToPath } from "url";
 import { spawn } from "child_process";
 import { deleteSession, readSession, setToken } from "./lib/session.js";
 import { DECO_CHAT_API_LOCAL } from "./lib/constants.js";
-import { getConfig, readWranglerConfig } from "./lib/config.js";
+import { getAppDomain, getConfig, readWranglerConfig } from "./lib/config.js";
 import { loginCommand } from "./commands/auth/login.js";
 import { whoamiCommand } from "./commands/auth/whoami.js";
 import { configureCommand } from "./commands/config/configure.js";
@@ -387,12 +387,15 @@ const gen = new Command("gen")
   )
   .action(async (options) => {
     try {
+      const wranglerConfig = await readWranglerConfig();
       const config = await getConfig({});
       const env = await genEnv({
         workspace: config.workspace,
         local: config.local,
         bindings: config.bindings,
-        selfUrl: options.self,
+        selfUrl:
+          options.self ??
+          `https://${getAppDomain(config.workspace, wranglerConfig.name ?? "my-app")}/mcp`,
       });
       if (options.output) {
         await writeFile(options.output, env);

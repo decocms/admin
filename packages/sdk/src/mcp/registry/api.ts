@@ -455,6 +455,34 @@ export const publishApp = createTool({
       true,
     ).catch(() => ({ tools: [] }));
 
+    // Get current tools for this app to calculate diff
+    const { data: currentTools, error: currentToolsError } = await c.db
+      .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
+      .select("name")
+      .eq("app_id", data.id);
+
+    if (currentToolsError) throw currentToolsError;
+
+    const currentToolNames = new Set(currentTools?.map((t) => t.name) || []);
+    const newToolNames = new Set(tools.map((t) => t.name));
+
+    // Find tools to delete (exist in DB but not in new tools)
+    const toolsToDelete = Array.from(currentToolNames).filter(
+      (name) => !newToolNames.has(name),
+    );
+
+    // Delete old tools that are no longer present
+    if (toolsToDelete.length > 0) {
+      const { error: deleteError } = await c.db
+        .from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE)
+        .delete()
+        .eq("app_id", data.id)
+        .in("name", toolsToDelete);
+
+      if (deleteError) throw deleteError;
+    }
+
+    // Upsert new/updated tools
     await Promise.all(
       tools.map((tool) =>
         c.db.from(DECO_CHAT_REGISTRY_APPS_TOOLS_TABLE).upsert(

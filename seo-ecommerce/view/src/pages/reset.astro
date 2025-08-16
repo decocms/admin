@@ -1,5 +1,5 @@
 ---
-export const prerender = true;
+// SSR only (no prerender) for form POST
 import { getSupabase } from "../lib/supabaseClient";
 let err:string|undefined; let info:string|undefined;
 if (Astro.request.method === 'POST') {

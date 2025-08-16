@@ -183,7 +183,7 @@
 <script>
 (function(){
   // Worker base (always use worker now; static site build friendly)
-  const PROD_FALLBACK = 'https://seo-ecommerce.ggstv-fer.workers.dev';
+  const PROD_FALLBACK = 'https://seo-ecommercex.ggstv-fer.workers.dev';
   const MAX_HISTORY = 8;
   const form = document.getElementById('link-analyzer-form');
   const domainInput = document.getElementById('la-domain');
@@ -216,10 +216,17 @@
   const historyWrap = document.getElementById('la-history');
   const historyItems = document.getElementById('la-history-items');
   let history = [];
-  // Usa variável de ambiente para base da API, com fallback
-  let apiBase = import.meta.env.PUBLIC_API_URL || 'https://seo-ecommerce.ggstv-fer.workers.dev/mcp/tools';
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    apiBase = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001/mcp/tools';
+  // Resolve base da API
+  // Produção: caminho relativo '/mcp/tools'. Dev: localhost:3001 (ou PUBLIC_API_URL se definida)
+  let apiBase = import.meta.env.PUBLIC_API_URL || '/mcp/tools';
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    if (isLocal) {
+      if (!import.meta.env.PUBLIC_API_URL) apiBase = 'http://localhost:3001/mcp/tools';
+    } else {
+      if (apiBase.includes('localhost')) apiBase = '/mcp/tools';
+    }
   }
 
   function loadHistory(){
@@ -285,7 +292,7 @@
     modeEl.textContent=label;
   }
 
-  if(apiBase.startsWith('http://localhost')) {
+  if(apiBase.startsWith('http://localhost') || apiBase.startsWith('https://localhost')) {
     statusEl.textContent='Usando endpoint local.'; showMode('local');
   } else {
     statusEl.textContent='Usando endpoint produção.'; showMode('prod');
@@ -351,14 +358,6 @@
     try{
   const endpoint = apiBase;
   let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
-      if(!res.ok){
-        // Fallback local simplified endpoint
-        if(endpoint.includes('/mcp/tools')){
-          try {
-            res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-          } catch {}
-        }
-      }
       if(!res.ok) throw new Error('HTTP '+res.status);
   const data=await res.json(); lastData = data.result? { tool:'LINK_ANALYZER', result:data.result } : data;
   const elapsed = Math.round(performance.now()-start);

@@ -1,5 +1,5 @@
 ---
-export const prerender = true;
+// Dynamic (no prerender) because it depends on auth/localStorage and dynamic tool calls
 import AnalysisDashboard from "../components/AnalysisDashboard.astro";
 import SavedAnalysesClient from "../components/SavedAnalysesClient.astro";
 const q = new URL(Astro.request.url).searchParams;
@@ -112,7 +112,7 @@ let initial: any = null; // será carregado no cliente
           try {
             analysisWrap.style.display='block';
             analysisDyn.textContent='Carregando...';
-            const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+            const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
             if(!res.ok){ statusEl.textContent='Falha: '+res.status; analysisDyn.textContent='Falha ('+res.status+')'; return; }
             const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));
@@ -134,7 +134,7 @@ let initial: any = null; // será carregado no cliente
           try {
             analysisWrap.style.display='block';
             analysisDyn.textContent='Carregando...';
-            const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+            const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
             if(!res.ok){ analysisDyn.textContent='Falha ('+res.status+')'; return; }
             const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));

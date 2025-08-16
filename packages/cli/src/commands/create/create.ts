@@ -25,6 +25,11 @@ interface Template {
   branch?: string;
   path?: string;
   wranglerRoot?: string;
+  /**
+   * Paths to remove from the original
+   * repository after cloning.
+   */
+  pathsToIgnore?: string[];
 }
 
 const DEFAULT_TEMPLATE: Template = {
@@ -33,6 +38,7 @@ const DEFAULT_TEMPLATE: Template = {
   repo: "deco-cx/deco-create",
   branch: "main",
   wranglerRoot: "server",
+  pathsToIgnore: [".cursorindexingignore", ".specstory", "plans"],
 };
 
 function runCommand(
@@ -55,6 +61,8 @@ function runCommand(
     });
   });
 }
+
+const PATHS_TO_IGNORE_ALWAYS = [".git"];
 
 async function downloadTemplate(
   template: Template,
@@ -87,12 +95,27 @@ async function downloadTemplate(
       throw new Error(`Failed to clone template repository: ${template.repo}`);
     }
 
-    // Remove the .git folder to avoid creating a local repository
-    // pointing to the wrong repo
-    const gitDir = join(tempDir, ".git");
-    await fs.rm(gitDir, { recursive: true, force: true }).catch(() => {
-      console.warn(`Failed to remove .git folder: ${gitDir}`);
-    });
+    const pathsToIgnore = [
+      ...(template.pathsToIgnore || []),
+      ...PATHS_TO_IGNORE_ALWAYS,
+    ];
+
+    for (const path of pathsToIgnore) {
+      const pathToRemove = join(tempDir, path);
+      const isDirectory = await fs
+        .stat(pathToRemove)
+        .then((stat) => stat.isDirectory());
+      await fs
+        .rm(
+          pathToRemove,
+          isDirectory ? { recursive: true, force: true } : { force: true },
+        )
+        .catch(() => {
+          console.warn(
+            `Failed to remove ${path} from the original template: ${pathToRemove}`,
+          );
+        });
+    }
 
     const templatePath = join(tempDir, template.path || "");
     try {

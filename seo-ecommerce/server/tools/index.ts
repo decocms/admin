@@ -3,9 +3,12 @@
 // Add new tool factories to this array so they are automatically registered in main.ts.
 
 import { createLinkAnalyzerTool } from './link-analyzer';
+import { createPageSpeedTool } from './pagespeed';
 
 export const toolFactories = [
   createLinkAnalyzerTool,
+  createPageSpeedTool,
 ];
 
 export * from './link-analyzer';
+export * from './pagespeed';

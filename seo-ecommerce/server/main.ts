@@ -2,21 +2,23 @@
 import { withRuntime } from "@deco/workers-runtime";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from './tools/link-analyzer/analyze';
-import {
-  createStepFromTool,
-  createTool,
-  createWorkflow,
-} from "@deco/workers-runtime/mastra";
-import { z } from "zod";
-import type { Env as DecoEnv } from "./deco.gen.ts";
+import { createPageSpeedTool } from './tools/pagespeed';
+import { createStepFromTool, createTool, createWorkflow } from '@deco/workers-runtime/mastra';
+import { z } from 'zod';
+import type { Env as DecoEnv } from './deco.gen.ts';
 
 interface Env extends DecoEnv {
-  ASSETS: {
-    fetch: (request: Request) => Promise<Response>;
-  };
+  ASSETS: { fetch: (request: Request) => Promise<Response> };
   PUBLIC_SUPABASE_URL?: string;
   PUBLIC_SUPABASE_ANON_KEY?: string;
 }
+
+// Minimal placeholder SEO_AUDIT workflow (to be expanded)
+const createSeoAuditWorkflow = (_env: Env) => createWorkflow({
+  id: 'SEO_AUDIT',
+  inputSchema: z.object({ url: z.string().url() }),
+  outputSchema: z.object({ url: z.string() })
+}).commit();
 
 const createMyTool = (_env: Env) =>
   createTool({
@@ -40,6 +42,8 @@ const createMyWorkflow = (env: Env) => {
     .then(step)
     .commit();
 };
+
+// (Removed broken composed version; future enhancement.)
 
 // Lazy dynamic loader for Astro's generated Cloudflare worker (dynamic routes)
 // Built by Astro into ./view-build/_worker.js (output: server)
@@ -138,7 +142,7 @@ function applyCacheHeaders(res: Response, path: string, isFallback: boolean): Re
 }
 
 const { Workflow, ...baseRuntime } = withRuntime<Env>({
-  workflows: [createMyWorkflow],
+  workflows: [createMyWorkflow, createSeoAuditWorkflow],
   tools: [createMyTool, ...toolFactories],
   // Pass wrapper that includes ctx to fallback (needed for astro dynamic invocation)
   fetch: (req: Request, env: Env, ctx: unknown) => fallbackToView("/")(req, env, ctx),

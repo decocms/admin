@@ -17,6 +17,18 @@ export const prerender = false;
       button:hover { transform:translateY(-2px); }
       nav { font-size:.65rem; text-transform:uppercase; letter-spacing:.5px; display:flex; gap:1rem; margin-bottom:1.2rem; }
       nav a { text-decoration:none; color:#b8cbe0; font-weight:600; }
+      form.profile { display:flex; flex-direction:column; gap:1rem; margin-top:1.2rem; }
+      form.profile label span { display:block; font-size:.65rem; text-transform:uppercase; letter-spacing:.55px; font-weight:600; color:#90a4b8; margin-bottom:.35rem; }
+      form.profile input { width:100%; padding:12px 14px; border:1px solid rgba(255,255,255,.18); background:#0f172a; border-radius:14px; color:#fff; font:inherit; font-size:.85rem; }
+      form.profile input:focus { outline:2px solid var(--grad-a,#6366f1); outline-offset:2px; }
+      .row { display:flex; flex-wrap:wrap; gap:1.2rem; margin-top:1.4rem; }
+      .stat { flex:1 1 140px; min-width:140px; padding:1rem 1.1rem; border:1px solid rgba(255,255,255,.12); border-radius:20px; background:linear-gradient(140deg,rgba(255,255,255,.05),rgba(255,255,255,.01)); }
+      .stat h3 { margin:0 0 .4rem; font-size:.65rem; letter-spacing:.55px; text-transform:uppercase; font-weight:700; color:#94a9c4; }
+      .stat p { margin:0; font-size:.95rem; font-weight:600; }
+      .inline-btn { all:unset; cursor:pointer; font-size:.65rem; padding:.45rem .8rem; border-radius:14px; background:linear-gradient(90deg,var(--grad-a,#6366f1),var(--grad-b,#7e22ce)); font-weight:600; letter-spacing:.5px; box-shadow:0 6px 20px -8px rgba(99,102,241,.55); }
+      .saving { font-size:.65rem; color:#9fb3c9; }
+      .error { color:#fca5a5; font-size:.65rem; }
+      .success { color:#86efac; font-size:.65rem; }
     </style>
   </head>
   <body>
@@ -28,6 +40,30 @@ export const prerender = false;
     <div class="panel">
       <h1>Perfil</h1>
       <div id="profile-content" class="meta">Carregando...</div>
+      <form class="profile" id="profile-form" style="display:none" autocomplete="off">
+        <label>
+          <span>Nome de exibição (opcional)</span>
+          <input type="text" name="display_name" maxlength="60" placeholder="Seu nome" />
+        </label>
+        <div style="display:flex; gap:.8rem; align-items:center; flex-wrap:wrap;">
+          <button type="submit" class="inline-btn" id="save-name-btn">Salvar</button>
+          <div id="save-status" class="saving" aria-live="polite"></div>
+        </div>
+      </form>
+      <div class="row" id="stats" style="display:none;">
+        <div class="stat">
+          <h3>Análises salvas</h3>
+          <p id="stat-analises">—</p>
+        </div>
+        <div class="stat">
+          <h3>Última análise</h3>
+          <p id="stat-ultima">—</p>
+        </div>
+        <div class="stat">
+          <h3>Plano</h3>
+          <p id="stat-plano">—</p>
+        </div>
+      </div>
       <div style="margin-top:1.4rem; display:flex; gap:.8rem; flex-wrap:wrap;">
         <button id="logout-btn" type="button">Sair</button>
       </div>
@@ -36,14 +72,69 @@ export const prerender = false;
       (async ()=>{
         const root = document.getElementById('profile-content');
         const logout = document.getElementById('logout-btn');
+        const form = document.getElementById('profile-form');
+        const displayInput = form?.querySelector('input[name="display_name"]');
+        const saveBtn = document.getElementById('save-name-btn');
+        const saveStatus = document.getElementById('save-status');
+        const statsWrap = document.getElementById('stats');
+        const statAnalises = document.getElementById('stat-analises');
+        const statUltima = document.getElementById('stat-ultima');
+        const statPlano = document.getElementById('stat-plano');
         try {
-          const auth = localStorage.getItem('la-supa-auth');
-          if(!auth){ root.textContent='Não autenticado.'; return; }
-          const parsed = JSON.parse(auth);
-          const email = parsed.user?.email || parsed.user?.user_metadata?.email;
+          const authRaw = localStorage.getItem('la-supa-auth');
+          if(!authRaw){ root.textContent='Não autenticado.'; return; }
+          const auth = JSON.parse(authRaw);
+          const email = auth.user?.email || auth.user?.user_metadata?.email;
+          const nome = auth.user?.user_metadata?.display_name || auth.user?.user_metadata?.name || '';
+          const plano = auth.user?.app_metadata?.plan || 'free';
           root.innerHTML = '<p><strong>Email:</strong> '+(email||'—')+'</p>'+
-            '<p><strong>Token expira em:</strong> '+ new Date(parsed.expires_at? parsed.expires_at*1000 : Date.now()).toLocaleString() +'</p>';
+            '<p><strong>Token expira em:</strong> '+ new Date(auth.expires_at? auth.expires_at*1000 : Date.now()).toLocaleString() +'</p>';
+          if(displayInput){ displayInput.value = nome; }
+          form.style.display='flex';
+          statsWrap.style.display='flex';
           logout.addEventListener('click', ()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+          // Load analyses stats
+          try {
+            const token = auth?.access_token;
+            if(token){
+              const r = await fetch('/api/analises', { headers:{ Authorization: 'Bearer '+token }});
+              if(r.ok){
+                const list = await r.json();
+                statAnalises.textContent = Array.isArray(list)? list.length.toString() : '0';
+                if(Array.isArray(list) && list.length){
+                  const sorted = list.slice().sort((a,b)=> (b.ts||0)-(a.ts||0));
+                  const last = sorted[0];
+                  statUltima.textContent = last?.ts ? new Date(last.ts).toLocaleString() : '—';
+                }
+              } else {
+                statAnalises.textContent = '—';
+              }
+            }
+          } catch {}
+          statPlano.textContent = plano;
+          // Supabase client for updates
+          let supa;
+          try {
+            const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+            const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+            if(SUPA_URL && SUPA_ANON){
+              const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+              supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey:'la-supa-auth' } });
+            }
+          } catch(e){ console.warn('Supabase client load falhou', e); }
+          form?.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            if(!supa){ saveStatus.textContent='Indisponível'; return; }
+            const newName = displayInput.value.trim();
+            saveStatus.textContent='Salvando...';
+            saveStatus.className='saving';
+            try {
+              const { error } = await supa.auth.updateUser({ data: { display_name: newName }});
+              if(error){ saveStatus.textContent= error.message || 'Erro'; saveStatus.className='error'; return; }
+              saveStatus.textContent='Salvo'; saveStatus.className='success';
+              setTimeout(()=>{ saveStatus.textContent=''; }, 2500);
+            } catch(err){ saveStatus.textContent='Erro'; saveStatus.className='error'; }
+          });
         } catch(e){ root.textContent='Erro ao ler sessão.'; }
       })();
     </script>

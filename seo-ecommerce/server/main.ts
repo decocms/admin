@@ -39,7 +39,25 @@ const createMyWorkflow = (env: Env) => {
     .commit();
 };
 
-const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
+// Lazy dynamic loader for Astro's generated Cloudflare worker (dynamic routes)
+// Built by Astro into ./view-build/_worker.js (output: server)
+// We call it only when we have a 404 from static assets & need HTML route resolution.
+let astroFetchPromise: Promise<((req: Request, env: Env, ctx: unknown) => Promise<Response>) | null> | null = null;
+async function loadAstroFetch(): Promise<((req: Request, env: Env, ctx: unknown) => Promise<Response>) | null> {
+  if (!astroFetchPromise) {
+    astroFetchPromise = import('./view-build/_worker.js')
+      .then((m: any) => {
+        const mod = m?.default || m;
+        if (mod && typeof mod.fetch === 'function') return mod.fetch.bind(mod);
+        if (typeof m.fetch === 'function') return m.fetch.bind(m);
+        return null;
+      })
+      .catch(() => null);
+  }
+  return astroFetchPromise;
+}
+
+const fallbackToView = (viewPath: string = "/") => async (req: Request, env: Env, ctx?: unknown) => {
   const LOCAL_URL = "http://localhost:4000";
   const url = new URL(req.url);
   const host = (req.headers.get("origin") || req.headers.get("host")) || "";
@@ -47,7 +65,7 @@ const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
 
   // API/tool endpoints should never be routed through asset fallback logic.
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/mcp/')) {
-    return env.ASSETS.fetch(req); // Let Astro's built server bundle handle these (they are server routes)
+    return env.ASSETS.fetch(req); // API & MCP handled elsewhere / by explicit routes
   }
 
   // In production we must NOT collapse every path to '/' or JS/CSS assets will
@@ -60,23 +78,33 @@ const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
   }
 
   // Let the ASSETS binding attempt to serve the exact path first.
-  return env.ASSETS.fetch(req).then(async (res) => {
-    // If asset not found and looks like a browser navigation (no extension or .html), fallback to index route.
-    if (res.status === 404) {
-      const path = url.pathname;
-      // Compatibility: if /assets/ hashed file 404s (hosting missing duplicate), retry under /_astro/
-  // Assets now served from default /_astro path; legacy /assets fallback removed.
-      const hasExt = /\.[a-zA-Z0-9]{1,8}$/.test(path);
-      const accept = req.headers.get('accept') || '';
-      const wantsHtml = accept.includes('text/html');
-      if (!hasExt && wantsHtml) {
-        const indexReq = new Request(new URL(viewPath, req.url), req);
-        const idx = await env.ASSETS.fetch(indexReq);
-        return applyCacheHeaders(idx, url.pathname, true);
+  const assetRes = await env.ASSETS.fetch(req);
+  if (assetRes.status !== 404) {
+    return applyCacheHeaders(assetRes, url.pathname, false);
+  }
+  const path = url.pathname;
+  const hasExt = /\.[a-zA-Z0-9]{1,8}$/.test(path);
+  const accept = req.headers.get('accept') || '';
+  const wantsHtml = accept.includes('text/html');
+  if (!hasExt && wantsHtml) {
+    // Attempt dynamic route resolution via Astro server worker
+    try {
+      const astroFetch = await loadAstroFetch();
+      if (astroFetch) {
+        const astroRes = await astroFetch(req, env, ctx as any);
+        if (astroRes && astroRes.status !== 404) {
+          return applyCacheHeaders(astroRes, url.pathname, false);
+        }
       }
+    } catch (e) {
+      console.error('[router] dynamic astro fetch failed', e);
     }
-    return applyCacheHeaders(res, url.pathname, false);
-  });
+    // Final fallback: index.html for SPA navigation
+    const indexReq = new Request(new URL(viewPath, req.url), req);
+    const idx = await env.ASSETS.fetch(indexReq);
+    return applyCacheHeaders(idx, url.pathname, true);
+  }
+  return applyCacheHeaders(assetRes, url.pathname, false);
 };
 
 function applyCacheHeaders(res: Response, path: string, isFallback: boolean): Response {
@@ -110,7 +138,8 @@ function applyCacheHeaders(res: Response, path: string, isFallback: boolean): Re
 const { Workflow, ...baseRuntime } = withRuntime<Env>({
   workflows: [createMyWorkflow],
   tools: [createMyTool, ...toolFactories],
-  fetch: fallbackToView("/"),
+  // Pass wrapper that includes ctx to fallback (needed for astro dynamic invocation)
+  fetch: (req: Request, env: Env, ctx: unknown) => fallbackToView("/")(req, env, ctx),
 });
 
 export { Workflow };

@@ -1,5 +1,6 @@
 ---
 import { getSupabase } from "../lib/supabaseClient";
+export const prerender = true;
 const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
 const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 let err:string|undefined; let info:string|undefined;

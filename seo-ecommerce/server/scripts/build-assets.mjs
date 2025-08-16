@@ -63,32 +63,7 @@ try {
   console.warn('[build-assets] Could not adjust _routes.json', e);
 }
 
-// Backward compatibility: duplicate /assets to /_astro so old HTML paths still work until cache fully refreshed
-try {
-  const assetsDir = adapterOutputDir;
-  const entries = [];
-  // Find direct subfolder 'assets' inside view-build
-  const fs = await import('node:fs');
-  const path = await import('node:path');
-  const candidate = path.join(adapterOutputDir, 'assets');
-  const legacy = path.join(adapterOutputDir, '_astro');
-  if (fs.existsSync(candidate)) {
-    if (!fs.existsSync(legacy)) {
-      fs.mkdirSync(legacy, { recursive: true });
-      // Shallow copy (files only) — hashed filenames unique; no need for deep structure except current flat output
-      for (const f of fs.readdirSync(candidate)) {
-        const src = path.join(candidate, f);
-        const dest = path.join(legacy, f);
-        if (fs.statSync(src).isFile()) fs.copyFileSync(src, dest);
-      }
-      console.log('[build-assets] Duplicated assets -> _astro for legacy path support');
-    } else {
-      console.log('[build-assets] Legacy _astro already exists');
-    }
-  }
-} catch (e) {
-  console.warn('[build-assets] Failed to duplicate assets to _astro', e);
-}
+// No legacy duplication needed (using default _astro directory now)
 
 // Ensure _worker.js is ignored as a static asset to prevent wrangler error
 try {

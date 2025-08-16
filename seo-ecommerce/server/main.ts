@@ -60,14 +60,7 @@ const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
     if (res.status === 404) {
       const path = url.pathname;
       // Compatibility: if /assets/ hashed file 404s (hosting missing duplicate), retry under /_astro/
-      if (path.startsWith('/assets/')) {
-        const alt = path.replace('/assets/', '/_astro/');
-        const altReq = new Request(new URL(alt + url.search, req.url), req);
-        const altRes = await env.ASSETS.fetch(altReq);
-        if (altRes.ok) {
-          return applyCacheHeaders(altRes, alt, false);
-        }
-      }
+  // Assets now served from default /_astro path; legacy /assets fallback removed.
       const hasExt = /\.[a-zA-Z0-9]{1,8}$/.test(path);
       const accept = req.headers.get('accept') || '';
       const wantsHtml = accept.includes('text/html');

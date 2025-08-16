@@ -12,9 +12,6 @@ export default defineConfig({
 	outDir: "../server/view-build/",
 	output: 'server',
 	adapter: cloudflare({ mode: 'directory' }),
-	build: {
-		assets: 'assets',
-	},
 	vite: {
 		define: {
 			__BUILD_ID__: JSON.stringify(process.env.BUILD_ID || Date.now().toString(36)),

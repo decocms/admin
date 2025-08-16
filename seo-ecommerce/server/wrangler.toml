@@ -12,15 +12,6 @@ directory = "./view-build"
 binding = "ASSETS"
 
 [vars]
-# Dummy placeholders for local development to satisfy schema validation
-CF_DISPATCH_NAMESPACE = "dev-dispatch"
-CF_ACCOUNT_ID = "dev-account"
-CF_API_TOKEN = "dev-token"
-SUPABASE_URL = "http://localhost/dev-supabase"
-SUPABASE_SERVER_TOKEN = "dev-supa-token"
-TURSO_GROUP_DATABASE_TOKEN = "dev-turso-token"
-TURSO_ORGANIZATION = "dev-turso-org"
-OPENROUTER_API_KEY = "dev-openrouter"
 PUBLIC_APP_ORIGIN = "https://seo-ecommercex.deco.page"
 
 [deco]

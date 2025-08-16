@@ -45,6 +45,11 @@ const fallbackToView = (viewPath: string = "/") => (req: Request, env: Env) => {
   const host = (req.headers.get("origin") || req.headers.get("host")) || "";
   const useDevServer = host.includes("localhost");
 
+  // API/tool endpoints should never be routed through asset fallback logic.
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/mcp/')) {
+    return env.ASSETS.fetch(req); // Let Astro's built server bundle handle these (they are server routes)
+  }
+
   // In production we must NOT collapse every path to '/' or JS/CSS assets will
   // receive HTML (causing MIME type errors). We only serve index fallback for
   // navigational HTML requests that would otherwise 404 (handled implicitly by
@@ -159,6 +164,28 @@ const runtime = {
           }
         } catch {}
         return new Response(JSON.stringify({ error: 'build-info not found' }), { status: 404, headers: { 'content-type': 'application/json', 'Cache-Control': 'no-cache' } });
+      })();
+    }
+    // Direct analyze endpoint (mirrors view /api/analisar) so production worker serves it without relying on view server bundle
+    if (url.pathname === '/api/analisar') {
+      if (req.method === 'OPTIONS') {
+        return new Response('', { status: 204, headers: corsHeaders({ 'Access-Control-Allow-Methods':'POST,OPTIONS' }) });
+      }
+      if (req.method !== 'POST') {
+        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders({ 'content-type':'application/json' }) });
+      }
+      return (async () => {
+        try {
+          const body = await req.json().catch(()=>({}));
+          const rawUrl = body.url || body.input?.url;
+          if (!rawUrl || typeof rawUrl !== 'string') {
+            return new Response(JSON.stringify({ error: 'url requerida' }), { status: 400, headers: corsHeaders({ 'content-type':'application/json' }) });
+          }
+          const result = await analyzeLinks(rawUrl);
+          return new Response(JSON.stringify({ url: rawUrl, result, worker:true }), { status: 200, headers: corsHeaders({ 'content-type':'application/json' }) });
+        } catch(e){
+          return new Response(JSON.stringify({ error: (e as Error).message || 'falha' }), { status: 500, headers: corsHeaders({ 'content-type':'application/json' }) });
+        }
       })();
     }
     // Lightweight dev bypass endpoint avoids full runtime env validation

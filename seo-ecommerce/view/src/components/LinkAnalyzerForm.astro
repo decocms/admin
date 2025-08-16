@@ -217,8 +217,8 @@
   const historyItems = document.getElementById('la-history-items');
   let history = [];
   // Resolve base da API
-  // Produção: caminho relativo '/mcp/tools'. Dev: localhost:3001 (ou PUBLIC_API_URL se definida)
-  let apiBase = import.meta.env.PUBLIC_API_URL || '/mcp/tools';
+  // Endpoint principal (temporário) usando rota direta de análise
+  let apiBase = '/api/analisar';
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     const isLocal = host === 'localhost' || host === '127.0.0.1';
@@ -292,11 +292,7 @@
     modeEl.textContent=label;
   }
 
-  if(apiBase.startsWith('http://localhost') || apiBase.startsWith('https://localhost')) {
-    statusEl.textContent='Usando endpoint local.'; showMode('local');
-  } else {
-    statusEl.textContent='Usando endpoint produção.'; showMode('prod');
-  }
+  statusEl.textContent='Endpoint análise direto'; showMode('prod');
   loadHistory();
 
   form.addEventListener('change', (e)=>{
@@ -357,7 +353,7 @@
     statusEl.textContent='';
     try{
   const endpoint = apiBase;
-  let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
+  let res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
       if(!res.ok) throw new Error('HTTP '+res.status);
   const data=await res.json(); lastData = data.result? { tool:'LINK_ANALYZER', result:data.result } : data;
   const elapsed = Math.round(performance.now()-start);

@@ -104,7 +104,7 @@ let initial: any = null; // será carregado no cliente
         const analysisWrap = document.getElementById('analysis-wrap');
         const analysisDyn = document.getElementById('analysis-dynamic');
         const qUrl = new URL(location.href).searchParams.get('url');
-        form.addEventListener('submit', async (e)=>{
+    form.addEventListener('submit', async (e)=>{
           e.preventDefault();
           const fd = new FormData(form);
           const url = fd.get('url');
@@ -112,9 +112,9 @@ let initial: any = null; // será carregado no cliente
           try {
             analysisWrap.style.display='block';
             analysisDyn.textContent='Carregando...';
-            const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
-            if(!res.ok){ statusEl.textContent='Falha: '+res.status; analysisDyn.textContent='Falha ('+res.status+')'; return; }
-            const data = await res.json();
+      const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+      if(!res.ok){ statusEl.textContent='Falha: '+res.status; analysisDyn.textContent='Falha ('+res.status+')'; return; }
+      const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));
             location.search='?url='+encodeURIComponent(url);
           } catch(err){ statusEl.textContent='Erro de rede'; analysisDyn.textContent='Erro de rede'; }
@@ -130,13 +130,13 @@ let initial: any = null; // será carregado no cliente
             const s=document.getElementById('nav-signup'); if(s) s.style.display='none';
           }
         } catch {}
-        async function loadAnalysis(url){
+    async function loadAnalysis(url){
           try {
             analysisWrap.style.display='block';
             analysisDyn.textContent='Carregando...';
-            const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:'LINK_ANALYZER',input:{url}})});
-            if(!res.ok){ analysisDyn.textContent='Falha ('+res.status+')'; return; }
-            const data = await res.json();
+      const res = await fetch('/api/analisar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+      if(!res.ok){ analysisDyn.textContent='Falha ('+res.status+')'; return; }
+      const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));
             // Render JSON quickly; for richer view we'd hydrate component
             analysisDyn.innerHTML='<pre class="json-pre">'+

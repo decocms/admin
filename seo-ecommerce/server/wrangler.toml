@@ -13,6 +13,8 @@ binding = "ASSETS"
 
 [vars]
 PUBLIC_APP_ORIGIN = "https://seo-ecommercex.deco.page"
+PUBLIC_SUPABASE_URL = "https://bekbempccbkuyrvjuygr.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_sbXikEupU9bvVBCsjv03pQ_NEem9va7"
 
 [deco]
 workspace = "alfanet"

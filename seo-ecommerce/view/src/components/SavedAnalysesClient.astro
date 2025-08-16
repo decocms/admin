@@ -15,14 +15,19 @@
     const params = new URLSearchParams({ userHash: 'me', page:String(page), limit:String(limit) });
     if(q) params.set('q', q);
     const res = await fetch('/api/analises?'+params.toString(), { headers: token? { Authorization: 'Bearer '+token } : {} });
-    if(!res.ok){ root.innerHTML='<p>Erro ao carregar análises.</p>'; return; }
+    if(!res.ok){
+      let msg = 'Erro ao carregar análises.';
+      try { const err = await res.json(); if(err?.error) msg += ' '+err.error; } catch {}
+      root.innerHTML='<p>'+msg+'</p>';
+      return;
+    }
     const data = await res.json();
     total = data.total;
     render(email || 'Usuário', data.items, token);
   }
   function render(user, items, token){
     const pages = Math.max(1, Math.ceil(total/limit));
-    const rows = items.map(r=>`<tr><td>${r.url}</td><td>${new Date(r.ts).toLocaleString()}</td><td class="ma-actions"><button data-id="${r.id}" class="ma-view">Ver</button><button data-id="${r.id}" class="ma-del">Excluir</button></td></tr>`).join('');
+  const rows = items.map(r=>`<tr><td>${r.url}</td><td>${new Date(r.ts).toLocaleString()}</td><td class=\"ma-actions\"><button data-id=\"${r.id}\" class=\"ma-view\">Ver</button><button data-id=\"${r.id}\" class=\"ma-del\">Excluir</button></td></tr>`).join('');
     root.innerHTML = `
       <div class="ma-toolbar">
         <span><strong>Usuário:</strong> ${user}</span>

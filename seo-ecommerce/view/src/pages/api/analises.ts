@@ -67,7 +67,10 @@ export const GET: APIRoute = async ({ request }) => {
       query = query.ilike('url', `%${q}%`);
     }
     const { data, error, count } = await query;
-    if (error) return json({ error: error.message }, 500);
+    if (error) {
+      console.error('[analises][GET] supabase error', error);
+      return json({ error: error.message }, 500);
+    }
     return json({ page, limit, total: count || 0, items: (data || []).map(r => ({ id: r.id, url: r.url, ts: r.created_at, data: r.data })) });
   }
 
@@ -100,7 +103,10 @@ export const POST: APIRoute = async ({ request }) => {
       if(data && typeof data === 'object') data.__snapshot_path = path;
     } catch {/* ignore upload errors */}
     const { data: inserted, error } = await supa.from(TABLE).insert({ user_hash: userHash, url, data }).select('id,data').single();
-    if (error) return json({ error: error.message }, 500);
+    if (error) {
+      console.error('[analises][POST] supabase error', error);
+      return json({ error: error.message }, 500);
+    }
     return json({ saved: true, id: inserted?.id, snapshot: inserted?.data?.__snapshot_path });
   }
 
@@ -125,7 +131,10 @@ export const DELETE: APIRoute = async ({ request }) => {
     if(!u?.user) return json({ error: 'não autenticado' }, 401);
     if(!userHash || userHash==='supabase' || userHash==='me') userHash = u.user.id;
     const { error } = await supa.from(TABLE).delete().eq('id', id).eq('user_hash', userHash);
-    if (error) return json({ error: error.message }, 500);
+    if (error) {
+      console.error('[analises][DELETE] supabase error', error);
+      return json({ error: error.message }, 500);
+    }
     return json({ deleted: true });
   }
 

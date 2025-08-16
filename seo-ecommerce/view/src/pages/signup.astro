@@ -37,7 +37,7 @@ let err: string | undefined; let info: string | undefined;
         <nav>
           <a href="/">Home</a>
           <a href="/analise">Painel</a>
-          <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+          <a href="https://seo-ecommercex.deco.page/tools/link-analyzer/" target="_blank" rel="noopener">Docs</a>
           <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
           <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
         </nav>
@@ -68,7 +68,7 @@ let err: string | undefined; let info: string | undefined;
   if(hasInfo && next){ setTimeout(()=>{ try { location.replace(next); } catch(e){ location.href = next; } }, 600); }
       })();
     </script>
-  <script type="module">
+    <script type="module">
       (async ()=>{
         const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
         const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
@@ -96,19 +96,25 @@ let err: string | undefined; let info: string | undefined;
           });
         }catch(e){ console.error('Cliente Supabase falhou', e); }
       })();
-      (function(){
-  const authRaw = localStorage.getItem('la-supa-auth');
-  if(!authRaw) return;
-  try {
+    </script>
+    <script>
+  (function(){
+    const authRaw = localStorage.getItem('la-supa-auth');
     const perfilLink = document.getElementById('perfil-link');
     const logoutBtn = document.getElementById('logout-nav');
-    perfilLink && (perfilLink.style.display='inline');
-    if (logoutBtn){
-      logoutBtn.style.display='inline';
-      logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+    if(!authRaw){
+      if(perfilLink) perfilLink.style.display='none';
+      if(logoutBtn) logoutBtn.style.display='none';
+      return;
     }
-  } catch {}
-})();
-    </script>
+    try {
+      perfilLink && (perfilLink.style.display='inline');
+      if (logoutBtn){
+        logoutBtn.style.display='inline';
+        logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+      }
+    } catch {}
+  })();
+</script>
   </body>
 </html>

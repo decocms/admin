@@ -209,15 +209,19 @@ const runtime = {
             if (isLocal && toolId === 'MY_TOOL') {
               return new Response(JSON.stringify({ tool: 'MY_TOOL', input, result: { message: `Hello, ${(input as any).name || 'world'}!` } }), { status: 200, headers: corsHeaders({ 'content-type': 'application/json' }) });
             }
-            if (isLocal && toolId === 'LINK_ANALYZER') {
+            // Unified fast-path for LINK_ANALYZER (both local and production) to avoid runtime context issues
+            if (toolId === 'LINK_ANALYZER') {
               try {
                 if (!input.url) {
                   return new Response(JSON.stringify({ error: 'Missing url in input' }), { status: 400, headers: corsHeaders({ 'content-type': 'application/json' }) });
                 }
                 const result = await analyzeLinks((input as any).url);
-                return new Response(JSON.stringify({ tool: 'LINK_ANALYZER', input, result }), { status: 200, headers: corsHeaders({ 'content-type': 'application/json' }) });
+                return new Response(
+                  JSON.stringify({ tool: 'LINK_ANALYZER', input, result }),
+                  { status: 200, headers: corsHeaders({ 'content-type': 'application/json', 'X-Source': isLocal ? 'local-bypass' : 'direct-exec' }) },
+                );
               } catch (e) {
-                console.error('[MCP] Local bypass analyze error', e);
+                console.error('[MCP] LINK_ANALYZER direct exec error', e);
                 return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: corsHeaders({ 'content-type': 'application/json' }) });
               }
             }

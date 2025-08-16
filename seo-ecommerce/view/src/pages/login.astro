@@ -1,9 +1,5 @@
 ---
-// SSR auth desativado para evitar falhas edge; login agora somente client-side.
-let err: string | undefined; let info: string | undefined;
-// Captura valores em build (se disponíveis) para injetar via window.__PUBLIC_ENV
-const BUILD_SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-const BUILD_SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+export const prerender = false; // client-only login
 ---
 <html lang="pt-BR">
   <head>
@@ -64,41 +60,11 @@ const BUILD_SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
         if(f){ f.addEventListener('submit', e=> e.preventDefault(), { passive:false }); }
       })();
     </script>
-    <script>
-      window.__PUBLIC_ENV = Object.assign({}, window.__PUBLIC_ENV || {}, {
-        SUPABASE_URL: ${JSON.stringify(BUILD_SUPA_URL)},
-        SUPABASE_ANON: ${JSON.stringify(BUILD_SUPA_ANON)}
-      });
-    </script>
     <script type="module">
       (async ()=>{
         const alertBox = document.getElementById('auth-error');
         function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } }
-        let metaEnv: any = undefined;
-        try { metaEnv = (import.meta as any).env; } catch {}
-        let SUPA_URL = (metaEnv && metaEnv.PUBLIC_SUPABASE_URL) || (window as any).__PUBLIC_ENV?.SUPABASE_URL || '';
-        let SUPA_ANON = (metaEnv && metaEnv.PUBLIC_SUPABASE_ANON_KEY) || (window as any).__PUBLIC_ENV?.SUPABASE_ANON || '';
-        if(!SUPA_URL || !SUPA_ANON){
-          console.warn('[auth] Variáveis build não presentes, tentando /__env');
-          try {
-            const r = await fetch('/__env',{ cache:'no-store' });
-            if(r.ok){
-              const data = await r.json();
-              SUPA_URL = data.PUBLIC_SUPABASE_URL || '';
-              SUPA_ANON = data.PUBLIC_SUPABASE_ANON_KEY || '';
-              console.log('[auth] /__env retornou', { hasUrl: !!SUPA_URL, hasAnon: !!SUPA_ANON });
-            } else {
-              console.warn('[auth] /__env falhou', r.status);
-            }
-          } catch(e){ console.error('[auth] fetch /__env erro', e); }
-        }
-        if(!SUPA_URL || !SUPA_ANON){ show('Configuração de autenticação ausente'); return; }
-        let supa;
-        try {
-          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-          supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
-          console.log('[auth] Cliente Supabase criado');
-        } catch(e){ console.error('[auth] Falha ao carregar supabase-js', e); show('Falha ao inicializar auth'); return; }
+  let supa; try { const { loadSupabase } = await import('../lib/supabaseClient.ts'); supa = await loadSupabase(); console.log('[auth] Cliente Supabase via util'); } catch(e){ console.error('[auth] init erro', e); show('Auth indisponível'); return; }
         const form = document.getElementById('login-form');
         const btn = document.getElementById('btn-login');
         form?.addEventListener('submit', async (e)=>{

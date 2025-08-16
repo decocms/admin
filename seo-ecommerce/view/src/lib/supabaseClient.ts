@@ -1,4 +1,20 @@
-import { createClient, type SupabaseClient, type Session, type User } from '@supabase/supabase-js';
+// Lightweight browser-side Supabase client loader with runtime env discovery.
+export async function loadSupabase() {
+  if (typeof window === 'undefined') throw new Error('Client only');
+  const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+  let url = '';
+  let anon = '';
+  try {
+    const r = await fetch('/__env',{ cache:'no-store' });
+    if(r.ok){ const d = await r.json(); url = d.PUBLIC_SUPABASE_URL || ''; anon = d.PUBLIC_SUPABASE_ANON_KEY || ''; }
+  } catch {}
+  if(!url || !anon) throw new Error('Supabase env ausente');
+  return mod.createClient(url, anon, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
+}
+
+export async function getSession() {
+  try { const raw = localStorage.getItem('la-supa-auth'); if(!raw) return null; return JSON.parse(raw); } catch { return null; }
+}import { createClient, type SupabaseClient, type Session, type User } from '@supabase/supabase-js';
 
 let client: SupabaseClient | null = null;
 let cachedSession: Session | null = null;

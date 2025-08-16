@@ -57,30 +57,11 @@ export const prerender = false; // client-only signup
       </div>
     </div>
   <script>(function(){const f=document.getElementById('signup-form');if(f){f.addEventListener('submit',e=>e.preventDefault(),{passive:false});}})();</script>
-    <script>
-      window.__PUBLIC_ENV = Object.assign({}, window.__PUBLIC_ENV || {}, {
-        SUPABASE_URL: ${JSON.stringify(import.meta.env.PUBLIC_SUPABASE_URL || '')},
-        SUPABASE_ANON: ${JSON.stringify(import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '')}
-      });
-    </script>
     <script type="module">
       (async ()=>{
         const alertBox = document.getElementById('signup-alert');
         function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } else { alert(msg); } }
-        let metaEnv; try { metaEnv = (import.meta as any).env; } catch {}
-        let SUPA_URL = (metaEnv && metaEnv.PUBLIC_SUPABASE_URL) || (window as any).__PUBLIC_ENV?.SUPABASE_URL || '';
-        let SUPA_ANON = (metaEnv && metaEnv.PUBLIC_SUPABASE_ANON_KEY) || (window as any).__PUBLIC_ENV?.SUPABASE_ANON || '';
-        if(!SUPA_URL || !SUPA_ANON){
-          console.warn('[signup] Variáveis build não presentes, buscando /__env');
-          try { const r = await fetch('/__env',{ cache:'no-store' }); if(r.ok){ const d=await r.json(); SUPA_URL=d.PUBLIC_SUPABASE_URL||''; SUPA_ANON=d.PUBLIC_SUPABASE_ANON_KEY||''; console.log('[signup] /__env', { hasUrl:!!SUPA_URL, hasAnon:!!SUPA_ANON }); } } catch(e){ console.error('[signup] fetch /__env erro', e); }
-        }
-        if(!SUPA_URL || !SUPA_ANON){ show('Config de autenticação ausente'); return; }
-        let supa;
-        try{
-          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-          supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
-          console.log('[signup] Cliente Supabase criado');
-        }catch(e){ console.error('[signup] Falha supabase-js', e); show('Falha ao iniciar'); return; }
+  let supa; try { const { loadSupabase } = await import('../lib/supabaseClient.ts'); supa = await loadSupabase(); console.log('[signup] Cliente Supabase via util'); } catch(e){ console.error('[signup] init erro', e); show('Auth indisponível'); return; }
         const formEl = document.getElementById('signup-form');
         if(!formEl){ show('Formulário não encontrado'); return; }
         formEl.addEventListener('submit', async (e)=>{ e.preventDefault();

@@ -14,6 +14,8 @@ interface Env extends DecoEnv {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
+  PUBLIC_SUPABASE_URL?: string;
+  PUBLIC_SUPABASE_ANON_KEY?: string;
 }
 
 const createMyTool = (_env: Env) =>
@@ -181,6 +183,16 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
+    // Minimal JSON endpoint to expose selected PUBLIC_ env vars to client when they were not inlined at build time.
+    if (url.pathname === '/__env') {
+      return new Response(
+        JSON.stringify({
+          PUBLIC_SUPABASE_URL: env.PUBLIC_SUPABASE_URL || null,
+          PUBLIC_SUPABASE_ANON_KEY: env.PUBLIC_SUPABASE_ANON_KEY || null,
+        }),
+        { status: 200, headers: { 'content-type': 'application/json', 'Cache-Control': 'no-cache, no-store, must-revalidate' } },
+      );
+    }
     if (url.pathname === '/__build') {
       return (async () => {
         try {

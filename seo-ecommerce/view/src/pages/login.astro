@@ -63,31 +63,52 @@ let err: string | undefined; let info: string | undefined;
     </script>
     <script type="module">
       (async ()=>{
-        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-        if(!SUPA_URL || !SUPA_ANON){ console.warn('Supabase env ausente'); return; }
-        const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-        const supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
-        const form = document.getElementById('login-form');
         const alertBox = document.getElementById('auth-error');
+        function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } }
+        let SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+        let SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        if(!SUPA_URL || !SUPA_ANON){
+          console.warn('[auth] Variáveis build não presentes, tentando /__env');
+          try {
+            const r = await fetch('/__env',{ cache:'no-store' });
+            if(r.ok){
+              const data = await r.json();
+              SUPA_URL = data.PUBLIC_SUPABASE_URL || '';
+              SUPA_ANON = data.PUBLIC_SUPABASE_ANON_KEY || '';
+              console.log('[auth] /__env retornou', { hasUrl: !!SUPA_URL, hasAnon: !!SUPA_ANON });
+            } else {
+              console.warn('[auth] /__env falhou', r.status);
+            }
+          } catch(e){ console.error('[auth] fetch /__env erro', e); }
+        }
+        if(!SUPA_URL || !SUPA_ANON){ show('Configuração de autenticação ausente'); return; }
+        let supa;
+        try {
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+          supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
+          console.log('[auth] Cliente Supabase criado');
+        } catch(e){ console.error('[auth] Falha ao carregar supabase-js', e); show('Falha ao inicializar auth'); return; }
+        const form = document.getElementById('login-form');
         const btn = document.getElementById('btn-login');
         form?.addEventListener('submit', async (e)=>{
           e.preventDefault();
           alertBox.style.display='none';
           const fd = new FormData(form);
           const email = fd.get('email')?.toString()||'';
-          const password = fd.get('password')?.toString()||'';
-          if(!email || !password){ alertBox.textContent='Informe email e senha'; alertBox.style.display='block'; return; }
+            const password = fd.get('password')?.toString()||'';
+          if(!email || !password){ show('Informe email e senha'); return; }
           btn.disabled = true; btn.textContent='Entrando...';
           try {
-            const { error } = await supa.auth.signInWithPassword({ email, password });
-            if(error){ alertBox.textContent=error.message; alertBox.style.display='block'; }
+            console.log('[auth] signInWithPassword tentativa', { email });
+            const { data, error } = await supa.auth.signInWithPassword({ email, password });
+            console.log('[auth] resposta login', { error, session: !!data?.session });
+            if(error){ show(error.message); }
             else {
               try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch{}
               const params = new URLSearchParams(location.search); const next=params.get('next');
               location.href = next || '/analise';
             }
-          } catch(err){ console.error(err); alertBox.textContent='Erro ao autenticar'; alertBox.style.display='block'; }
+          } catch(err){ console.error('[auth] exceção login', err); show('Erro ao autenticar'); }
           finally { btn.disabled=false; btn.textContent='Entrar'; }
         });
         // Show perfil/logout if already logged

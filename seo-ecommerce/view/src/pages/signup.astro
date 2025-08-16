@@ -59,30 +59,41 @@ export const prerender = false; // client-only signup
   <script>(function(){const f=document.getElementById('signup-form');if(f){f.addEventListener('submit',e=>e.preventDefault(),{passive:false});}})();</script>
     <script type="module">
       (async ()=>{
-        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-        if(!SUPA_URL || !SUPA_ANON) return;
+        const alertBox = document.getElementById('signup-alert');
+        function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } else { alert(msg); } }
+        let SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+        let SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        if(!SUPA_URL || !SUPA_ANON){
+          console.warn('[signup] Variáveis build não presentes, buscando /__env');
+          try { const r = await fetch('/__env',{ cache:'no-store' }); if(r.ok){ const d=await r.json(); SUPA_URL=d.PUBLIC_SUPABASE_URL||''; SUPA_ANON=d.PUBLIC_SUPABASE_ANON_KEY||''; console.log('[signup] /__env', { hasUrl:!!SUPA_URL, hasAnon:!!SUPA_ANON }); } } catch(e){ console.error('[signup] fetch /__env erro', e); }
+        }
+        if(!SUPA_URL || !SUPA_ANON){ show('Config de autenticação ausente'); return; }
+        let supa;
         try{
-          const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-          const { createClient } = mod;
-          const supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
-      const formEl = document.getElementById('signup-form');
-          if(!formEl) return;
-      formEl.addEventListener('submit', async (e)=>{ e.preventDefault();
-            const fd = new FormData(formEl);
-            const email = fd.get('email')?.toString() || '';
-            const password = fd.get('password')?.toString() || '';
-            if(!email || !password){ alert('Informe email e senha'); return; }
-            try{
-              const { error } = await supa.auth.signUp({ email, password });
-              if(error){ alert(error.message || 'Erro ao cadastrar'); return; }
-              try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch(e){}
-              const params = new URLSearchParams(location.search);
-              const next = params.get('next');
-        if(next){ location.replace(next); } else { location.href = '/analise'; }
-            }catch(err){ console.error(err); alert('Erro ao cadastrar'); }
-          });
-        }catch(e){ console.error('Cliente Supabase falhou', e); }
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+          supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
+          console.log('[signup] Cliente Supabase criado');
+        }catch(e){ console.error('[signup] Falha supabase-js', e); show('Falha ao iniciar'); return; }
+        const formEl = document.getElementById('signup-form');
+        if(!formEl){ show('Formulário não encontrado'); return; }
+        formEl.addEventListener('submit', async (e)=>{ e.preventDefault();
+          alertBox.style.display='none';
+          const fd = new FormData(formEl);
+          const email = fd.get('email')?.toString() || '';
+          const password = fd.get('password')?.toString() || '';
+          if(!email || !password){ show('Informe email e senha'); return; }
+          console.log('[signup] Tentando signUp', { email });
+          try{
+            const { data, error } = await supa.auth.signUp({ email, password });
+            console.log('[signup] Resposta signUp', { error, user: !!data?.user });
+            if(error){ show(error.message || 'Erro ao cadastrar'); return; }
+            // Se confirmação de email estiver habilitada, sessão pode não vir imediatamente
+            if(!data?.session){ console.log('[signup] Sem sessão imediata (confirmação?)'); }
+            try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch{}
+            const params = new URLSearchParams(location.search); const next = params.get('next');
+            if(next){ location.replace(next); } else { location.href = '/analise'; }
+          }catch(err){ console.error('[signup] Exceção signUp', err); show('Erro ao cadastrar'); }
+        });
       })();
     </script>
     <script>

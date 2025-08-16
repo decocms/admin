@@ -10,6 +10,8 @@
   "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
   "dev:seo:view": "cd seo-ecommerce/view && npm run dev",
+  "seo:smoke": "npm --prefix seo-ecommerce/server run smoke",
+  "seo:smoke:verbose": "npm --prefix seo-ecommerce/server run smoke:verbose",
   "deploy:seo": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy",
   "deploy:seo:domain": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:domain",
   "deploy:seo:app": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:app",

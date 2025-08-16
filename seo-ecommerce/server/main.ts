@@ -3,6 +3,7 @@ import { withRuntime } from "@deco/workers-runtime";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from './tools/link-analyzer/analyze';
 import { createPageSpeedTool } from './tools/pagespeed';
+import { createSeoAuditTool } from './tools/seo-audit';
 import { createStepFromTool, createTool, createWorkflow } from '@deco/workers-runtime/mastra';
 import { z } from 'zod';
 import type { Env as DecoEnv } from './deco.gen.ts';
@@ -13,12 +14,16 @@ interface Env extends DecoEnv {
   PUBLIC_SUPABASE_ANON_KEY?: string;
 }
 
-// Minimal placeholder SEO_AUDIT workflow (to be expanded)
-const createSeoAuditWorkflow = (_env: Env) => createWorkflow({
-  id: 'SEO_AUDIT',
-  inputSchema: z.object({ url: z.string().url() }),
-  outputSchema: z.object({ url: z.string() })
-}).commit();
+// Workflow wrapper for SEO_AUDIT tool (single step for now)
+const createSeoAuditWorkflow = (env: Env) => {
+  const seoTool = createSeoAuditTool(env);
+  const Step = createStepFromTool(seoTool);
+  return createWorkflow({
+    id: 'SEO_AUDIT_WORKFLOW',
+    inputSchema: seoTool.inputSchema,
+    outputSchema: seoTool.outputSchema,
+  }).then(Step).commit();
+};
 
 const createMyTool = (_env: Env) =>
   createTool({

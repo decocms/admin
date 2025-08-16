@@ -4,11 +4,14 @@
 
 import { createLinkAnalyzerTool } from './link-analyzer';
 import { createPageSpeedTool } from './pagespeed';
+import { createSeoAuditTool } from './seo-audit';
 
 export const toolFactories = [
   createLinkAnalyzerTool,
   createPageSpeedTool,
+  createSeoAuditTool,
 ];
 
 export * from './link-analyzer';
 export * from './pagespeed';
+export * from './seo-audit';

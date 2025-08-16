@@ -1,0 +1,108 @@
+---
+// Página agregada que consome a tool SEO_AUDIT e mostra resumo amigável
+export const prerender = false;
+const q = new URL(Astro.request.url).searchParams;
+const requested = q.get('url');
+---
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Auditoria SEO Unificada</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { margin:0; font-family: system-ui, sans-serif; background:#0a1320; color:#e2e8f0; padding:1.6rem clamp(1rem,2.2vw,2.4rem) 4rem; }
+      h1 { margin:0 0 1rem; font-size:clamp(2rem,4.2vw,3.2rem); line-height:1.05; background:linear-gradient(90deg,#6366f1,#7c3aed,#2563eb); -webkit-background-clip:text; color:transparent; }
+      .wrap { max-width:1280px; margin:0 auto; }
+      form { display:flex; flex-wrap:wrap; gap:.9rem; align-items:flex-end; margin:1.2rem 0 2rem; }
+      label { flex:1 1 420px; display:flex; flex-direction:column; gap:.45rem; font-size:.6rem; text-transform:uppercase; letter-spacing:.8px; font-weight:600; color:#8fb0d1; }
+      input[type=url] { padding:15px 18px; border:1px solid rgba(255,255,255,.12); background:#0f1d30; border-radius:18px; color:#fff; font-size:.9rem; }
+      input[type=url]:focus { outline:2px solid #6366f1; }
+      button { all:unset; cursor:pointer; background:linear-gradient(90deg,#6366f1,#7c3aed,#2563eb); padding:15px 24px; border-radius:18px; font-weight:600; font-size:.8rem; letter-spacing:.6px; box-shadow:0 10px 34px -16px rgba(99,102,241,.55); }
+      .grid { display:grid; gap:1.4rem; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); margin-top:1rem; }
+      .card { position:relative; background:linear-gradient(140deg,rgba(255,255,255,.06),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); padding:1rem 1.2rem 1.2rem; border-radius:22px; min-height:120px; }
+      .card h3 { margin:0 0 .6rem; font-size:.6rem; letter-spacing:.85px; text-transform:uppercase; color:#7ea6d6; }
+      .score { font-size:2.2rem; font-weight:600; line-height:1; }
+      .warns { margin-top:1.4rem; }
+      .warns h2 { font-size:.65rem; margin:0 0 .6rem; letter-spacing:.8px; text-transform:uppercase; color:#ef4444; }
+      .warns ul { margin:0; padding-left:1.1rem; font-size:.75rem; line-height:1.4; }
+      .json-pre { font-size:11px; background:#041021; color:#cbd5e1; padding:14px 16px; border-radius:22px; max-height:400px; overflow:auto; border:1px solid rgba(255,255,255,.1); }
+      nav a { color:#9fb3c9; text-decoration:none; font-size:.75rem; margin-right:.9rem; }
+      nav a:hover { color:#fff; }
+      .meta { font-size:.6rem; letter-spacing:.5px; text-transform:uppercase; color:#7ea6d6; margin-top:.4rem; }
+      .tag { display:inline-block; font-size:.55rem; padding:4px 8px 5px; border-radius:999px; background:rgba(255,255,255,.08); margin-right:.4rem; letter-spacing:.5px; }
+      .scores-inline { display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end; margin-top:.5rem; }
+      .chip { font-size:.55rem; background:#1e293b; padding:6px 10px 7px; border-radius:999px; border:1px solid rgba(255,255,255,.15); letter-spacing:.5px; }
+      .ok { color:#10b981; }
+      .mid { color:#f59e0b; }
+      .bad { color:#ef4444; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav style="margin-bottom:1.4rem;">
+        <a href="/">Home</a>
+        <a href="/analise">Painel Clássico</a>
+        <a href="/auditoria">Auditoria</a>
+        <a href="/perfil" id="nav-perfil" style="display:none;">Perfil</a>
+      </nav>
+      <h1>Auditoria SEO Unificada</h1>
+      <p style="max-width:760px; font-size:.95rem; line-height:1.55; color:#9db4c8; margin:.4rem 0 1.4rem;">Executa Link Analyzer + PageSpeed (mobile/desktop) e agrega métricas, Core Web Vitals e alertas em uma única resposta.</p>
+      <form id="audit-form">
+        <label>
+          <span>URL</span>
+          <input name="url" type="url" required placeholder="https://exemplo.com" value={requested || ''} />
+        </label>
+        <button type="submit">Auditar</button>
+      </form>
+      <div id="status" class="meta"></div>
+      <div id="result" style="margin-top:1.4rem;"></div>
+    </div>
+    <script>
+      (function(){
+        const form = document.getElementById('audit-form');
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+        const qUrl = new URL(location.href).searchParams.get('url');
+        function cls(v){ if(v==null) return 'bad'; if(v>=80) return 'ok'; if(v>=60) return 'mid'; return 'bad'; }
+        async function run(url){
+          statusEl.textContent='Rodando auditoria...';
+          resultEl.innerHTML='';
+          try {
+            const res = await fetch('/mcp/tools',{method:'POST',headers:{'Content-Type':'application/json'},body: JSON.stringify({ tool:'SEO_AUDIT', input:{ url } })});
+            if(!res.ok){ statusEl.textContent='Falha '+res.status; return; }
+            const data = await res.json();
+            const r = data.result || data;
+            statusEl.textContent='Concluído';
+            const s = r.scores||{}; const cwv=r.coreWebVitals||{}; const link=r.linkSummary||{}; const warns = (r.warnings||[]);
+            resultEl.innerHTML = `
+              <div class="grid">
+                <div class="card"><h3>SEO Score (Links)</h3><div class="score ${cls(s.linkSeoScore)}">${s.linkSeoScore ?? '–'}</div><div class="meta">Links Found: ${link.linksFound ?? '–'}</div></div>
+                <div class="card"><h3>Performance Mobile</h3><div class="score ${cls(s.performanceMobile)}">${s.performanceMobile ?? '–'}</div><div class="meta">LCP: ${cwv.LCP_ms_mobile? Math.round(cwv.LCP_ms_mobile)+'ms':'–'}</div></div>
+                <div class="card"><h3>Performance Desktop</h3><div class="score ${cls(s.performanceDesktop)}">${s.performanceDesktop ?? '–'}</div><div class="meta">LCP: ${cwv.LCP_ms_desktop? Math.round(cwv.LCP_ms_desktop)+'ms':'–'}</div></div>
+                <div class="card"><h3>SEO Mobile</h3><div class="score ${cls(s.seoMobile)}">${s.seoMobile ?? '–'}</div><div class="meta">CLS: ${cwv.CLS_mobile ?? '–'}</div></div>
+                <div class="card"><h3>SEO Desktop</h3><div class="score ${cls(s.seoDesktop)}">${s.seoDesktop ?? '–'}</div><div class="meta">CLS: ${cwv.CLS_desktop ?? '–'}</div></div>
+              </div>
+              <div class="scores-inline" style="margin-top:2rem;">
+                <span class="chip">Broken: ${link.brokenLinks ?? '–'}</span>
+                <span class="chip">Imgs ALT faltando: ${link.imagesMissingAlt ?? '–'}</span>
+                <span class="chip">H1: ${link.h1Count ?? '–'}</span>
+                <span class="chip">Título len: ${link.titleLength ?? '–'}</span>
+                <span class="chip">Desc len: ${link.metaDescriptionLength ?? '–'}</span>
+                <span class="chip">Palavras: ${link.wordCount ?? '–'}</span>
+              </div>
+              <div class="warns">${warns.length? `<h2>Alertas (${warns.length})</h2><ul>`+warns.map(w=>`<li>${w.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</li>`).join('')+'</ul>' : '<div class="meta" style="color:#10b981">Sem alertas críticos</div>'}</div>
+              <details style="margin-top:2rem;"><summary style="cursor:pointer;font-size:.75rem;">JSON completo</summary><pre class="json-pre">${JSON.stringify(r,null,2).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre></details>
+            `;
+            try { localStorage.setItem('seo-audit-last', JSON.stringify(r)); } catch {}
+          } catch (e){ statusEl.textContent='Erro de rede'; }
+        }
+        form.addEventListener('submit', e=>{ e.preventDefault(); const fd=new FormData(form); const url=fd.get('url'); if(!url) return; history.replaceState(null,'','?url='+encodeURIComponent(url)); run(url); });
+        if(qUrl){ run(qUrl); } else {
+          try { const last=localStorage.getItem('seo-audit-last'); if(last){ const r=JSON.parse(last); resultEl.innerHTML='<pre class="json-pre">'+JSON.stringify(r,null,2)+'</pre>'; } } catch {}
+        }
+        // auth nav toggle
+        try { const auth = localStorage.getItem('la-supa-auth'); if(auth){ const p=document.getElementById('nav-perfil'); if(p) p.style.display='inline'; } } catch {}
+      })();
+    </script>
+  </body>
+</html>

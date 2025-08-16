@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "if not exist view-build mkdir view-build && deco dev",
-    "dev:remote": "mkdir -p view-build && wrangler dev --remote",
+    "dev": "if not exist view-build mkdir view-build && wrangler dev",
+    "dev:worker": "if not exist view-build mkdir view-build && wrangler dev",
+    "dev:deco": "if not exist view-build mkdir view-build && deco dev",
+    "dev:remote": "if not exist view-build mkdir view-build && wrangler dev --remote",
     "build:assets": "node scripts/build-assets.mjs",
     "deploy": "npm run build:assets && wrangler build && deco deploy --yes ./dist",
     "deploy:domain": "npm run build:assets && wrangler build && deco deploy --yes ./dist --domain $DOMAIN",
@@ -16,8 +18,10 @@
     "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts",
   "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
   "deploy:both": "npm run gen && npm run build:assets && wrangler deploy && deco deploy --yes ./dist",
-  "test": "vitest run"
-  ,"cf:login": "wrangler login"
+  "test": "vitest run",
+  "smoke": "node scripts/smoke.mjs",
+  "smoke:verbose": "VERBOSE=1 node scripts/smoke.mjs",
+  "cf:login": "wrangler login"
   },
   "dependencies": {
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.6.0",

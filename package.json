@@ -24,7 +24,7 @@
     "fmt": "biome format --write",
     "fmt:check": "biome format",
     "version": "tsc --version",
-    "check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
+  "check": "cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "db:repair": "supabase migration repair --status reverted",
@@ -70,7 +70,8 @@
     "concurrently": "^9.2.0",
     "typescript": "^5.8.3",
     "@types/node": "^22.10.6",
-    "vitest": "3.2.4"
+  "vitest": "3.2.4",
+  "cross-env": "^7.0.3"
   },
   "lint": {
     "plugins": [

@@ -1,6 +1,9 @@
 ---
 // SSR auth desativado para evitar falhas edge; login agora somente client-side.
 let err: string | undefined; let info: string | undefined;
+// Captura valores em build (se disponíveis) para injetar via window.__PUBLIC_ENV
+const BUILD_SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+const BUILD_SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 ---
 <html lang="pt-BR">
   <head>
@@ -61,12 +64,20 @@ let err: string | undefined; let info: string | undefined;
         if(f){ f.addEventListener('submit', e=> e.preventDefault(), { passive:false }); }
       })();
     </script>
+    <script>
+      window.__PUBLIC_ENV = Object.assign({}, window.__PUBLIC_ENV || {}, {
+        SUPABASE_URL: ${JSON.stringify(BUILD_SUPA_URL)},
+        SUPABASE_ANON: ${JSON.stringify(BUILD_SUPA_ANON)}
+      });
+    </script>
     <script type="module">
       (async ()=>{
         const alertBox = document.getElementById('auth-error');
         function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } }
-        let SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-        let SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        let metaEnv: any = undefined;
+        try { metaEnv = (import.meta as any).env; } catch {}
+        let SUPA_URL = (metaEnv && metaEnv.PUBLIC_SUPABASE_URL) || (window as any).__PUBLIC_ENV?.SUPABASE_URL || '';
+        let SUPA_ANON = (metaEnv && metaEnv.PUBLIC_SUPABASE_ANON_KEY) || (window as any).__PUBLIC_ENV?.SUPABASE_ANON || '';
         if(!SUPA_URL || !SUPA_ANON){
           console.warn('[auth] Variáveis build não presentes, tentando /__env');
           try {

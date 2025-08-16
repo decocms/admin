@@ -90,4 +90,22 @@ try {
   console.warn('[build-assets] Failed to duplicate assets to _astro', e);
 }
 
+// Ensure _worker.js is ignored as a static asset to prevent wrangler error
+try {
+  const ignorePath = join(adapterOutputDir, '.assetsignore');
+  let current = '';
+  if (existsSync(ignorePath)) {
+    current = await (await import('node:fs')).promises.readFile(ignorePath, 'utf8');
+  }
+  if (!current.split(/\r?\n/).includes('_worker.js')) {
+    const next = (current.trim() ? current.trim() + '\n' : '') + '_worker.js\n';
+    writeFileSync(ignorePath, next);
+    console.log('[build-assets] Wrote .assetsignore with _worker.js');
+  } else {
+    console.log('[build-assets] .assetsignore already contains _worker.js');
+  }
+} catch (e) {
+  console.warn('[build-assets] Could not write .assetsignore', e);
+}
+
 console.log('[build-assets] Done.');

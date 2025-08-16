@@ -14,6 +14,7 @@
   "deploy:seo:domain": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:domain",
   "deploy:seo:app": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:app",
   "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
+  "deploy:seo:both": "cd seo-ecommerce/server && npm run gen && npm run build:assets && npx wrangler deploy && deco deploy --yes ./dist",
   "release:seo": "git add . && git commit -m 'chore: release new version' && git push && npm run deploy:seo",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",

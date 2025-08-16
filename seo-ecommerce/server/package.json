@@ -14,8 +14,10 @@
     "gen": "deco gen > deco.gen.ts",
     "gen:self": "deco gen --self=$DECO_SELF_URL > deco.gen.ts",
     "gen:with-self": "([ -n \"$DECO_SELF_URL\" ] && deco gen --self=$DECO_SELF_URL || deco gen) > deco.gen.ts",
-    "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
-    "test": "vitest run"
+  "self:tools": "node scripts/self-tools.mjs $DECO_SELF_URL",
+  "deploy:both": "npm run gen && npm run build:assets && wrangler deploy && deco deploy --yes ./dist",
+  "test": "vitest run"
+  ,"cf:login": "wrangler login"
   },
   "dependencies": {
     "@deco/workers-runtime": "npm:@jsr/deco__workers-runtime@^0.6.0",
@@ -23,7 +25,7 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-  "@deco/cli": "npm:@jsr/deco__cli@^0.10.1",
+  "deco-cli": "file:../../packages/cli",
     "@types/node": "^24.2.1",
     "ts-node": "^10.9.2",
     "vitest": "^3.2.4",

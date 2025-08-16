@@ -23,7 +23,7 @@
     "template/**/*"
   ],
   "scripts": {
-    "build": "tsc && cp -r src/rules dist/",
+    "build": "tsc && node scripts/copy-rules.cjs",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
     "type-check": "tsc --noEmit",

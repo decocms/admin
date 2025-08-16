@@ -168,6 +168,12 @@
         <button type="button" id="la-clear" class="la-mini-btn">Limpar histórico</button>
         <span id="la-timing" class="la-timing"></span>
       </div>
+      <div id="la-auth-cta" style="display:none; margin-top:14px;">
+        <button id="la-signup-btn" type="button" class="la-btn" style="padding:10px 18px; font-size:.8rem;">
+          Criar conta para salvar e histórico
+        </button>
+        <span id="la-saved-indicator" style="display:none; font-size:12px; margin-left:10px; color:#16a34a; font-weight:600;">Salvo ✓</span>
+      </div>
     </div>
     <div id="la-output" style="display:none; margin-top:12px;">
       <pre id="la-result" style="margin-top:0;background:#0f172a;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:420px;"></pre>
@@ -179,6 +185,12 @@
       <div class="la-muted" style="margin-top:4px;">Armazena até 8 entradas localmente.</div>
     </div>
   </div>
+  <nav style="font-size:.6rem;display:flex;gap:.8rem;margin-bottom:.75rem;">
+  <a href="/" style="text-decoration:none;color:#9fb3c9">Home</a>
+  <a href="/analise" style="text-decoration:none;color:#9fb3c9">Painel</a>
+  <a href="/perfil" id="perfil-link" style="display:none;text-decoration:none;color:#9fb3c9">Perfil</a>
+  <button id="logout-nav" style="display:none;all:unset;cursor:pointer;color:#9fb3c9;">Sair</button>
+</nav>
 </div>
 <script>
 (function(){
@@ -208,6 +220,9 @@
   const actionsEl = document.getElementById('la-actions');
   const aiOpsEl = document.getElementById('la-ai-list');
   const toggleRawBtn = document.getElementById('la-toggle-raw');
+  const authCta = document.getElementById('la-auth-cta');
+  const signupBtn = document.getElementById('la-signup-btn');
+  const savedIndicator = document.getElementById('la-saved-indicator');
   // Removed saveBtn (persistence feature deferred)
   let supaAvailable = false;
   let lastData = null;
@@ -393,6 +408,38 @@
         showMode(apiBase? 'prod':'local','proxy');
       }
       pushHistory(url, true);
+      // Auth save logic
+      try {
+        const supaAuth = localStorage.getItem('la-supa-auth');
+        if(supaAuth){
+          // Auto-save
+          const token = JSON.parse(supaAuth).access_token;
+          if(token){
+            const payload = { url, data: r };
+            fetch('/api/analises', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': 'Bearer '+token }, body: JSON.stringify(payload) })
+              .then(res=> res.ok ? res.json(): Promise.reject(res.status))
+              .then(()=> { savedIndicator.style.display='inline'; })
+              .catch(()=>{});
+            authCta.style.display='block';
+            savedIndicator.style.display='inline';
+            if(signupBtn) signupBtn.style.display='none';
+          }
+        } else {
+          // Show CTA button to signup
+            authCta.style.display='block';
+            if(signupBtn){
+              signupBtn.onclick = () => {
+                try {
+                  localStorage.setItem('la-pending-save','1');
+                  localStorage.setItem('la-pending-save-url', url);
+                  // Ensure last analysis stored (already done above) but force once
+                  localStorage.setItem('la-last-analysis', JSON.stringify({ url, result: r }));
+                } catch {}
+                location.href = '/signup?next=/analise';
+              };
+            }
+        }
+      } catch {}
     }catch(err){
       errorEl.textContent=err.message||'Erro desconhecido';
       errorEl.style.display='block';
@@ -485,5 +532,20 @@
   });
 
   // Removido fluxo de salvar até persistência futura
+})();
+</script>
+<script>
+(function(){
+  try {
+    const authRaw = localStorage.getItem('la-supa-auth');
+    if(!authRaw) return;
+    const perfilLink = document.getElementById('perfil-link');
+    const logoutBtn = document.getElementById('logout-nav');
+    perfilLink && (perfilLink.style.display='inline');
+    if (logoutBtn){
+      logoutBtn.style.display='inline';
+      logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+    }
+  } catch {}
 })();
 </script>

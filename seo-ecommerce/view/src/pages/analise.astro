@@ -41,7 +41,7 @@ let initial: any = null; // será carregado no cliente
   </head>
   <body>
     <nav class="top-nav">
-  <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
+  <a href="/docs/" target="_blank" rel="noopener">Documentação</a>
       <span style="flex:1"></span>
       <a href="/" style="">Home</a>
       <a href="/login" id="nav-login">Login</a>
@@ -138,6 +138,18 @@ let initial: any = null; // será carregado no cliente
       if(!res.ok){ analysisDyn.textContent='Falha ('+res.status+')'; return; }
       const data = await res.json();
             localStorage.setItem('la-last-analysis', JSON.stringify(data));
+            // Auto-save to user history if logged
+            try {
+              const supaAuth = localStorage.getItem('la-supa-auth');
+              if(supaAuth){
+                const token = JSON.parse(supaAuth).access_token;
+                if(token){
+                  const payload = { url, data: data.result || data };
+                  fetch('/api/analises', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': 'Bearer '+token }, body: JSON.stringify(payload) })
+                    .catch(()=>{});
+                }
+              }
+            } catch {}
             // Render JSON quickly; for richer view we'd hydrate component
             analysisDyn.innerHTML='<pre class="json-pre">'+
               JSON.stringify(data.result||data,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
@@ -153,10 +165,49 @@ let initial: any = null; // será carregado no cliente
               analysisWrap.style.display='block';
               analysisDyn.innerHTML='<pre class="json-pre">'+
                 JSON.stringify(parsed.result||parsed,null,2).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])) + '</pre>';
+              // Attempt pending save if user just signed up
+              try {
+                if(localStorage.getItem('la-pending-save')==='1'){
+                  localStorage.removeItem('la-pending-save');
+                  const supaAuth = localStorage.getItem('la-supa-auth');
+                  if(supaAuth){
+                    const token = JSON.parse(supaAuth).access_token;
+                    if(token){
+                      const url = localStorage.getItem('la-pending-save-url') || parsed.url || parsed.result?.url;
+                      if(url){
+                        fetch('/api/analises', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token }, body: JSON.stringify({ url, data: parsed.result||parsed }) });
+                      }
+                    }
+                  }
+                  localStorage.removeItem('la-pending-save-url');
+                }
+              } catch {}
             }
           } catch {}
         }
       })();
     </script>
+    <nav>
+  <a href="/">Home</a>
+  <a href="/analise">Painel</a>
+  <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+  <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
+  <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
+</nav>
+<script type="module">
+  (function(){
+  const authRaw = localStorage.getItem('la-supa-auth');
+  if(!authRaw) return;
+  try {
+    const perfilLink = document.getElementById('perfil-link');
+    const logoutBtn = document.getElementById('logout-nav');
+    perfilLink && (perfilLink.style.display='inline');
+    if (logoutBtn){
+      logoutBtn.style.display='inline';
+      logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+    }
+  } catch {}
+})();
+</script>
   </body>
 </html>

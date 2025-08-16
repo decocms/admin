@@ -1,20 +1,6 @@
 ---
-import { getSupabase } from "../lib/supabaseClient";
-const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
-const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-let err:string|undefined; let info:string|undefined;
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const email = form.get('email')?.toString()||'';
-  const password = form.get('password')?.toString()||'';
-  if(email && password){
-    try {
-      const supa = getSupabase();
-      const { error } = await supa.auth.signInWithPassword({ email, password });
-      if(error) err = error.message; else info='Login efetuado. Verifique se sessão persistiu.';
-    } catch(e:any){ err = e.message || 'Falha inesperada'; }
-  } else err = 'Informe email e senha';
-}
+// SSR auth desativado para evitar falhas edge; login agora somente client-side.
+let err: string | undefined; let info: string | undefined;
 ---
 <html lang="pt-BR">
   <head>
@@ -49,7 +35,10 @@ if (Astro.request.method === 'POST') {
       <div class="panel">
         <nav>
           <a href="/">Home</a>
-          <a href="/signup">Cadastro</a>
+          <a href="/analise">Painel</a>
+          <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+          <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
+          <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
         </nav>
         <h1>Login</h1>
         {err && <div class="alert err">{err}</div>}
@@ -110,6 +99,21 @@ if (Astro.request.method === 'POST') {
             }catch(err){ console.error(err); alert('Erro ao autenticar'); }
           });
         }catch(e){ console.error('Cliente Supabase falhou', e); }
+      })();
+    </script>
+    <script>
+      (function(){
+        const authRaw = localStorage.getItem('la-supa-auth');
+        if(!authRaw) return;
+        try {
+          const perfilLink = document.getElementById('perfil-link');
+          const logoutBtn = document.getElementById('logout-nav');
+          perfilLink && (perfilLink.style.display='inline');
+          if (logoutBtn){
+            logoutBtn.style.display='inline';
+            logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+          }
+        } catch {}
       })();
     </script>
   </body>

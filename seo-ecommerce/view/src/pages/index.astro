@@ -85,11 +85,12 @@ export const prerender = true;
   <body>
     <div class="wrap fade-root">
       <nav>
-  <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
-        <span style="flex:1"></span>
-        <a href="/login">Login</a>
-        <a href="/signup">Cadastro</a>
-      </nav>
+  <a href="/">Home</a>
+  <a href="/analise">Painel</a>
+  <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+  <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
+  <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
+</nav>
   <header class="hero fade-in">
         <h1>Link Analyzer</h1>
         <p>Auditoria rápida de SEO on‑page: título, descrição, headers, links, imagens e score em segundos. Ideal para validações instantâneas e triagem de oportunidades.</p>
@@ -115,7 +116,7 @@ export const prerender = true;
           <p>Cada página sem título adequado, descrição alinhada ou links internos estruturados dilui relevância. A checagem imediata ajuda a priorizar correções com impacto direto.</p>
           <div style="display:flex; gap:.7rem; flex-wrap:wrap;">
             <a href="#analisar" class="btn" style="font-size:.75rem; padding:11px 18px;">Executar primeira varredura</a>
-            <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark" style="font-size:.75rem; padding:11px 18px;">Ver documentação →</a>
+            <a href="/docs/" target="_blank" rel="noopener" class="btn dark" style="font-size:.75rem; padding:11px 18px;">Ver documentação →</a>
           </div>
         </div>
       </section>
@@ -148,7 +149,7 @@ export const prerender = true;
           </div>
           <div style="margin-top:1.6rem; display:flex; gap:.9rem; flex-wrap:wrap;">
             <a href="/analise" id="cta-detalhada-2" class="btn">Acessar painel</a>
-            <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark">Ver docs →</a>
+            <a href="/docs/" target="_blank" rel="noopener" class="btn dark">Ver docs →</a>
           </div>
         </div>
         <div class="shots">
@@ -186,6 +187,21 @@ export const prerender = true;
         }
         guard('cta-detalhada'); guard('cta-detalhada-2');
       })();
+    </script>
+    <script type="module">
+      (function(){
+  const authRaw = localStorage.getItem('la-supa-auth');
+  if(!authRaw) return;
+  try {
+    const perfilLink = document.getElementById('perfil-link');
+    const logoutBtn = document.getElementById('logout-nav');
+    perfilLink && (perfilLink.style.display='inline');
+    if (logoutBtn){
+      logoutBtn.style.display='inline';
+      logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.reload(); });
+    }
+  } catch {}
+})();
     </script>
   </body>
 </html>

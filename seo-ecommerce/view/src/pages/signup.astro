@@ -1,19 +1,7 @@
 ---
 // SSR only (no prerender) to allow dynamic auth POST handling
-import { getSupabase } from "../lib/supabaseClient";
-let err:string|undefined; let info:string|undefined;
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const email = form.get('email')?.toString()||'';
-  const password = form.get('password')?.toString()||'';
-  if(email && password){
-    try {
-      const supa = getSupabase();
-      const { error } = await supa.auth.signUp({ email, password });
-      if(error) err = error.message; else info='Cadastro efetuado. Verifique email de confirmação se configurado.';
-    } catch(e:any){ err = e.message || 'Falha inesperada'; }
-  } else err = 'Informe email e senha';
-}
+// SSR signup desativado; fluxo somente client-side para reduzir dependências de env no edge.
+let err: string | undefined; let info: string | undefined;
 ---
 <html lang="pt-BR">
   <head>
@@ -48,7 +36,10 @@ if (Astro.request.method === 'POST') {
       <div class="panel">
         <nav>
           <a href="/">Home</a>
-          <a href="/login">Login</a>
+          <a href="/analise">Painel</a>
+          <a href="/docs/" target="_blank" rel="noopener">Docs</a>
+          <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
+          <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
         </nav>
         <h1>Criar conta</h1>
         {err && <div class="alert err">{err}</div>}
@@ -105,6 +96,19 @@ if (Astro.request.method === 'POST') {
           });
         }catch(e){ console.error('Cliente Supabase falhou', e); }
       })();
+      (function(){
+  const authRaw = localStorage.getItem('la-supa-auth');
+  if(!authRaw) return;
+  try {
+    const perfilLink = document.getElementById('perfil-link');
+    const logoutBtn = document.getElementById('logout-nav');
+    perfilLink && (perfilLink.style.display='inline');
+    if (logoutBtn){
+      logoutBtn.style.display='inline';
+      logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
+    }
+  } catch {}
+})();
     </script>
   </body>
 </html>

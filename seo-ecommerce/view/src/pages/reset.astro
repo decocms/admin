@@ -1,18 +1,5 @@
 ---
-// SSR only (no prerender) for form POST
-import { getSupabase } from "../lib/supabaseClient";
-let err:string|undefined; let info:string|undefined;
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const email = form.get('email')?.toString()||'';
-  if(email){
-    try {
-      const supa = getSupabase();
-      const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: Astro.url.origin + '/login' });
-      if(error) err = error.message; else info='Se o email existir, foi enviado link para redefinição.';
-    } catch(e:any){ err = e.message || 'Falha inesperada'; }
-  } else err = 'Informe email';
-}
+export const prerender = false; // client-only reset
 ---
 <html lang="pt-BR">
   <head>
@@ -50,9 +37,9 @@ if (Astro.request.method === 'POST') {
           <a href="/login">Login</a>
         </nav>
         <h1>Redefinir senha</h1>
-        {err && <div class="alert err">{err}</div>}
-        {info && <div class="alert info">{info}</div>}
-        <form method="POST" aria-describedby="reset-desc">
+  <div id="reset-alert" class="alert err" style="display:none"></div>
+  <div id="reset-info" class="alert info" style="display:none"></div>
+  <form id="reset-form" aria-describedby="reset-desc" novalidate>
           <p id="reset-desc" class="visually-hidden">Solicitar email com link para redefinir senha da conta existente.</p>
           <label>
             <span>Email</span>
@@ -63,5 +50,31 @@ if (Astro.request.method === 'POST') {
         </form>
       </div>
     </div>
+    <script type="module">
+      (async ()=>{
+        const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+        const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+        if(!SUPA_URL || !SUPA_ANON) return;
+        try {
+          const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+          const supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
+          const form = document.getElementById('reset-form');
+            const alertEl = document.getElementById('reset-alert');
+            const infoEl = document.getElementById('reset-info');
+          form?.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            const fd = new FormData(form);
+            const email = fd.get('email')?.toString()||'';
+            if(!email){ alertEl.textContent='Informe email'; alertEl.style.display='block'; infoEl.style.display='none'; return; }
+            alertEl.style.display='none'; infoEl.style.display='none';
+            try {
+              const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login' });
+              if(error){ alertEl.textContent = error.message; alertEl.style.display='block'; }
+              else { infoEl.textContent='Se o email existir, enviamos link de redefinição.'; infoEl.style.display='block'; }
+            } catch(err){ alertEl.textContent='Falha inesperada'; alertEl.style.display='block'; }
+          });
+        } catch(e){ console.error('Supabase reset falhou', e); }
+      })();
+    </script>
   </body>
 </html>

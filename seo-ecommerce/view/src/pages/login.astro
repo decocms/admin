@@ -12,38 +12,35 @@ let err: string | undefined; let info: string | undefined;
       body { margin:0; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:2.4rem 1.2rem; }
       .auth-wrap { width:100%; max-width:520px; }
       h1 { margin:0 0 1.4rem; font-size:clamp(2rem,4.6vw,2.8rem); line-height:1.05; background:linear-gradient(90deg,var(--grad-b),var(--grad-a),var(--grad-c)); -webkit-background-clip:text; color:transparent; }
-      .panel { position:relative; border:1px solid var(--color-border); background:var(--color-surface-glass); backdrop-filter:blur(28px) saturate(160%); padding:2rem 2.1rem 2.3rem; border-radius:34px; box-shadow:var(--shadow-card); }
+      .panel { position:relative; border:1px solid var(--color-border,#1e293b); background:var(--color-surface-glass,#0f172aeb); backdrop-filter:blur(28px) saturate(160%); padding:2rem 2.1rem 2.3rem; border-radius:34px; box-shadow:0 18px 60px -28px #000; }
       form { display:flex; flex-direction:column; gap:1rem; }
-      label span { font-size:.7rem; letter-spacing:.6px; font-weight:600; text-transform:uppercase; color:var(--color-text-muted); }
-      input { width:100%; padding:14px 16px; border:1px solid rgba(255,255,255,.14); border-radius:14px; background:#0f172a; color:var(--color-text); font-size:.9rem; font-family:inherit; }
-      input:focus { outline:2px solid var(--grad-a); outline-offset:2px; border-color:var(--grad-a); }
-      .btn-submit { all:unset; cursor:pointer; text-align:center; padding:15px 22px; border-radius:16px; font-weight:600; font-size:.9rem; background:linear-gradient(90deg,var(--grad-a),var(--grad-b),var(--grad-c)); box-shadow:0 10px 34px -14px rgba(99,102,241,.6); }
+      label span { font-size:.7rem; letter-spacing:.6px; font-weight:600; text-transform:uppercase; color:var(--color-text-muted,#94a3b8); }
+      input { width:100%; padding:14px 16px; border:1px solid rgba(255,255,255,.14); border-radius:14px; background:#0f172a; color:var(--color-text,#fff); font-size:.9rem; font-family:inherit; }
+      input:focus { outline:2px solid var(--grad-a,#6366f1); outline-offset:2px; border-color:var(--grad-a,#6366f1); }
+      .btn-submit { all:unset; cursor:pointer; text-align:center; padding:15px 22px; border-radius:16px; font-weight:600; font-size:.9rem; background:linear-gradient(90deg,var(--grad-a,#6366f1),var(--grad-b,#7e22ce),var(--grad-c,#10b981)); box-shadow:0 10px 34px -14px rgba(99,102,241,.6); }
       .btn-submit:hover { transform:translateY(-2px); }
-      .meta { margin-top:1rem; font-size:.75rem; color:var(--color-text-muted); }
-      .meta a { color:var(--grad-a); text-decoration:none; }
-      .alert { padding:.85rem 1rem; border-radius:16px; font-size:.8rem; line-height:1.35; margin:-.35rem 0 1.1rem; font-weight:500; }
+      .meta { margin-top:1rem; font-size:.75rem; color:var(--color-text-muted,#94a3b8); }
+      .meta a { color:var(--grad-a,#6366f1); text-decoration:none; }
+      .alert { padding:.85rem 1rem; border-radius:16px; font-size:.8rem; line-height:1.35; margin:-.35rem 0 1.1rem; font-weight:500; display:none; }
       .alert.err { background:rgba(220,38,38,.12); border:1px solid rgba(220,38,38,.4); color:#fecaca; }
-      .alert.info { background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.5); color:#bbf7d0; }
       nav { position:absolute; top:1rem; right:1.2rem; font-size:.65rem; letter-spacing:.5px; text-transform:uppercase; display:flex; gap:.9rem; }
-      nav a { color:var(--color-text-soft); text-decoration:none; font-weight:600; opacity:.85; }
-      nav a:hover { opacity:1; }
+      nav a, nav button { color:var(--color-text-soft,#b8cbe0); text-decoration:none; font-weight:600; opacity:.85; background:none; border:none; cursor:pointer; font-size:.65rem; }
+      nav a:hover, nav button:hover { opacity:1; }
     </style>
   </head>
   <body>
-  <a href="#main" class="skip-link">Pular para conteúdo</a>
-  <div class="auth-wrap" id="main" role="main">
+    <div class="auth-wrap" id="main" role="main">
       <div class="panel">
         <nav>
           <a href="/">Home</a>
           <a href="/analise">Painel</a>
           <a href="https://seo-ecommercex.deco.page/tools/link-analyzer/" target="_blank" rel="noopener">Docs</a>
           <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
-          <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
+          <button id="logout-nav" style="display:none">Sair</button>
         </nav>
         <h1>Login</h1>
-        {err && <div class="alert err">{err}</div>}
-        {info && <div class="alert info">{info}</div>}
-        <form method="POST" aria-describedby="login-desc">
+        <div id="auth-error" class="alert err"></div>
+        <form id="login-form" aria-describedby="login-desc" novalidate>
           <p id="login-desc" class="visually-hidden">Autenticação para acessar painel detalhado de análises.</p>
           <label>
             <span>Email</span>
@@ -53,73 +50,57 @@ let err: string | undefined; let info: string | undefined;
             <span>Senha</span>
             <input name="password" type="password" required autocomplete="current-password" />
           </label>
-          <button type="submit" class="btn-submit">Entrar</button>
+          <button type="submit" class="btn-submit" id="btn-login">Entrar</button>
           <div class="meta">Sem conta? <a href="/signup">Criar</a> · <a href="/reset">Esqueci a senha</a></div>
         </form>
       </div>
     </div>
     <script>
       (function(){
-        // Redirect if login succeeded (detect success alert rendered by SSR)
-        const params = new URLSearchParams(location.search);
-        const next = params.get('next');
-        const loginDone = !!document.querySelector('.alert.info');
-        if(loginDone && next){
-          try { location.replace(next); } catch(e){ location.href = next; }
-        }
+        const f=document.getElementById('login-form');
+        if(f){ f.addEventListener('submit', e=> e.preventDefault(), { passive:false }); }
       })();
     </script>
-  <script type="module">
+    <script type="module">
       (async ()=>{
-        // Client-side auth path (uses PUBLIC_* env vars available in the client bundle)
         const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
         const SUPA_ANON = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
-        if(!SUPA_URL || !SUPA_ANON) return; // nothing to do client-side
-        try{
-          const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
-          const { createClient } = mod;
-          const supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
-          const formEl = document.querySelector('form');
-          if(!formEl) return;
-          formEl.addEventListener('submit', async (e)=>{
-            // Intercept to perform client-side sign in; keep server POST fallback when JS disabled by preventing default here
-            e.preventDefault();
-            const fd = new FormData(formEl);
-            const email = fd.get('email')?.toString() || '';
-            const password = fd.get('password')?.toString() || '';
-            if(!email || !password){ alert('Informe email e senha'); return; }
-            try{
-              const { error } = await supa.auth.signInWithPassword({ email, password });
-              if(error){ alert(error.message || 'Erro ao autenticar'); return; }
-              // Mark local user to enable save button UI elsewhere
-              try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch(e){}
-              const params = new URLSearchParams(location.search);
-              const next = params.get('next');
-              if(next){ location.replace(next); } else { location.reload(); }
-            }catch(err){ console.error(err); alert('Erro ao autenticar'); }
-          });
-        }catch(e){ console.error('Cliente Supabase falhou', e); }
+        if(!SUPA_URL || !SUPA_ANON){ console.warn('Supabase env ausente'); return; }
+        const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+        const supa = createClient(SUPA_URL, SUPA_ANON, { auth:{ persistSession:true, storageKey:'la-supa-auth' } });
+        const form = document.getElementById('login-form');
+        const alertBox = document.getElementById('auth-error');
+        const btn = document.getElementById('btn-login');
+        form?.addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          alertBox.style.display='none';
+          const fd = new FormData(form);
+          const email = fd.get('email')?.toString()||'';
+          const password = fd.get('password')?.toString()||'';
+          if(!email || !password){ alertBox.textContent='Informe email e senha'; alertBox.style.display='block'; return; }
+          btn.disabled = true; btn.textContent='Entrando...';
+          try {
+            const { error } = await supa.auth.signInWithPassword({ email, password });
+            if(error){ alertBox.textContent=error.message; alertBox.style.display='block'; }
+            else {
+              try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch{}
+              const params = new URLSearchParams(location.search); const next=params.get('next');
+              location.href = next || '/analise';
+            }
+          } catch(err){ console.error(err); alertBox.textContent='Erro ao autenticar'; alertBox.style.display='block'; }
+          finally { btn.disabled=false; btn.textContent='Entrar'; }
+        });
+        // Show perfil/logout if already logged
+        try {
+          const authRaw = localStorage.getItem('la-supa-auth');
+          if(authRaw){
+            const perfilLink=document.getElementById('perfil-link');
+            const logoutBtn=document.getElementById('logout-nav');
+            if(perfilLink) perfilLink.style.display='inline';
+            if(logoutBtn){ logoutBtn.style.display='inline'; logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; }); }
+          }
+        } catch {}
       })();
     </script>
-    <script>
-  (function(){
-    const authRaw = localStorage.getItem('la-supa-auth');
-    const perfilLink = document.getElementById('perfil-link');
-    const logoutBtn = document.getElementById('logout-nav');
-    if(!authRaw){
-      // Stay hidden when not logged
-      if(perfilLink) perfilLink.style.display='none';
-      if(logoutBtn) logoutBtn.style.display='none';
-      return;
-    }
-    try {
-      perfilLink && (perfilLink.style.display='inline');
-      if (logoutBtn){
-        logoutBtn.style.display='inline';
-        logoutBtn.addEventListener('click',()=>{ localStorage.removeItem('la-supa-auth'); localStorage.removeItem('la-user'); location.href='/'; });
-      }
-    } catch {}
-  })();
-</script>
   </body>
 </html>

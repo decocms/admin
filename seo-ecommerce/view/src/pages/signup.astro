@@ -1,7 +1,5 @@
 ---
-// SSR only (no prerender) to allow dynamic auth POST handling
-// SSR signup desativado; fluxo somente client-side para reduzir dependências de env no edge.
-let err: string | undefined; let info: string | undefined;
+export const prerender = false; // client-only signup
 ---
 <html lang="pt-BR">
   <head>
@@ -41,10 +39,9 @@ let err: string | undefined; let info: string | undefined;
           <a href="/perfil" id="perfil-link" style="display:none">Perfil</a>
           <button id="logout-nav" style="display:none;all:unset;cursor:pointer;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;color:#b8cbe0;font-weight:600;">Sair</button>
         </nav>
-        <h1>Criar conta</h1>
-        {err && <div class="alert err">{err}</div>}
-        {info && <div data-info class="alert info">{info}</div>}
-        <form method="POST" aria-describedby="signup-desc">
+  <h1>Criar conta</h1>
+  <div id="signup-alert" class="alert err" style="display:none"></div>
+  <form id="signup-form" aria-describedby="signup-desc" novalidate>
           <p id="signup-desc" class="visually-hidden">Criar nova conta para habilitar histórico e painel de análises.</p>
           <label>
             <span>Email</span>
@@ -59,15 +56,7 @@ let err: string | undefined; let info: string | undefined;
         </form>
       </div>
     </div>
-    <script>
-      (function(){
-        const params = new URLSearchParams(location.search);
-        const next = params.get('next');
-  // Se houve info de sucesso (renderizada no SSR) redireciona após pequeno delay
-  var hasInfo = !!document.querySelector('[data-info]');
-  if(hasInfo && next){ setTimeout(()=>{ try { location.replace(next); } catch(e){ location.href = next; } }, 600); }
-      })();
-    </script>
+  <script>(function(){const f=document.getElementById('signup-form');if(f){f.addEventListener('submit',e=>e.preventDefault(),{passive:false});}})();</script>
     <script type="module">
       (async ()=>{
         const SUPA_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
@@ -77,10 +66,9 @@ let err: string | undefined; let info: string | undefined;
           const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
           const { createClient } = mod;
           const supa = createClient(SUPA_URL, SUPA_ANON, { auth: { persistSession: true, storageKey: 'la-supa-auth' } });
-          const formEl = document.querySelector('form');
+      const formEl = document.getElementById('signup-form');
           if(!formEl) return;
-          formEl.addEventListener('submit', async (e)=>{
-            e.preventDefault();
+      formEl.addEventListener('submit', async (e)=>{ e.preventDefault();
             const fd = new FormData(formEl);
             const email = fd.get('email')?.toString() || '';
             const password = fd.get('password')?.toString() || '';
@@ -91,7 +79,7 @@ let err: string | undefined; let info: string | undefined;
               try{ localStorage.setItem('la-user', JSON.stringify({ email })); }catch(e){}
               const params = new URLSearchParams(location.search);
               const next = params.get('next');
-              if(next){ location.replace(next); } else { location.href = '/'; }
+        if(next){ location.replace(next); } else { location.href = '/analise'; }
             }catch(err){ console.error(err); alert('Erro ao cadastrar'); }
           });
         }catch(e){ console.error('Cliente Supabase falhou', e); }

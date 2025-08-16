@@ -1,5 +1,6 @@
 ---
 import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
+export const prerender = true;
 ---
 <html lang="pt-BR">
   <head>
@@ -84,7 +85,7 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
   <body>
     <div class="wrap fade-root">
       <nav>
-        <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
+  <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener">Documentação</a>
         <span style="flex:1"></span>
         <a href="/login">Login</a>
         <a href="/signup">Cadastro</a>
@@ -114,7 +115,7 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
           <p>Cada página sem título adequado, descrição alinhada ou links internos estruturados dilui relevância. A checagem imediata ajuda a priorizar correções com impacto direto.</p>
           <div style="display:flex; gap:.7rem; flex-wrap:wrap;">
             <a href="#analisar" class="btn" style="font-size:.75rem; padding:11px 18px;">Executar primeira varredura</a>
-            <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark" style="font-size:.75rem; padding:11px 18px;">Ver documentação →</a>
+            <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark" style="font-size:.75rem; padding:11px 18px;">Ver documentação →</a>
           </div>
         </div>
       </section>
@@ -147,7 +148,7 @@ import LinkAnalyzerForm from "../components/LinkAnalyzerForm.astro";
           </div>
           <div style="margin-top:1.6rem; display:flex; gap:.9rem; flex-wrap:wrap;">
             <a href="/analise" id="cta-detalhada-2" class="btn">Acessar painel</a>
-            <a href="http://localhost:4000/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark">Ver docs →</a>
+            <a href="/docs/tools/link-analyzer/" target="_blank" rel="noopener" class="btn dark">Ver docs →</a>
           </div>
         </div>
         <div class="shots">

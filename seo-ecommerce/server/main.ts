@@ -336,6 +336,17 @@ const runtime = {
         },
       });
     }
+    if (url.pathname === "/__cache/metrics") {
+      // Lightweight alias exposing only cache metrics (JSON), easier for focused scraping
+      const snapshot = cacheMetricsSnapshot();
+      return new Response(JSON.stringify(snapshot), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+    }
     if (url.pathname === "/__metrics/prom") {
       const cache = cacheMetricsSnapshot();
       const tools = toolMetricsSnapshot();

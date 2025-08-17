@@ -277,4 +277,86 @@ Guards utilitários (`view/src/lib/authGuard.ts`):
 
 Para SSR/API server-side reforçar restrições futuras, adicionar validação do bearer token nas rotas protegidas (`/api/analises`).
 
+## Dual Environment Deploy & KV Strategy
+
+This project deploys to two targets:
+
+| Target | Command | KV SEO_CACHE | Purpose |
+|--------|---------|-------------|---------|
+| Cloudflare Workers (direct) | `npm run deploy:cf` / `deploy:full` | ENABLED | Primary production worker with persistent cache |
+| Deco Hosting | `npm run deploy:deco` | STRIPPED (in-memory only) | Secondary hosting / app registry deployment |
+
+Mechanism:
+- Wrapper `scripts/with-hosting-config.mjs` temporarily removes `[[kv_namespaces]]` blocks for the deco deploy, restoring the original file afterwards.
+- Runtime flag `USE_KV=0` can force fallback to in-memory only even if the binding exists.
+
+When to enable KV everywhere:
+- High call volume to external SEO/analysis APIs (cost or latency pressure).
+- Need deterministic cross-environment cache behavior.
+
+When current split is fine:
+- Low traffic or exploratory phase.
+- You want simpler hosting deploy avoiding Cloudflare account-specific KV IDs.
+
+## Rapid Command Reference
+
+| Action | Command (PowerShell) |
+|--------|----------------------|
+| Generate types/env | `npm run gen` |
+| Build assets only | `npm run build:assets` |
+| Deploy Cloudflare (only) | `npm run deploy:cf` |
+| Deploy Deco (no KV) | `npm run deploy:deco` |
+| Full (Cloudflare + Deco) | `npm run deploy:full` |
+| Health check script | `npm run health` |
+| Smoke test | `npm run smoke` |
+| Purge cache key/prefix | `npm run seo:cache:purge -- --prefix links:v1:` |
+
+## Forcing Memory Cache
+
+Set (secret or var):
+```
+wrangler secret put USE_KV
+# value: 0
+```
+Or at deploy time (PowerShell):
+```
+$env:USE_KV="0"; npm run deploy:cf
+```
+
+## Observability Quick Drill
+
+1. Warm endpoints (simulate cache):
+```
+Invoke-WebRequest https://<worker>/api/analisar -Method POST -Body '{"url":"https://example.com"}' -ContentType 'application/json'
+```
+2. Inspect metrics JSON:
+```
+Invoke-WebRequest https://<worker>/__metrics | Select-Object -ExpandProperty Content
+```
+3. Prometheus scrape sample:
+```
+Invoke-WebRequest https://<worker>/__metrics/prom | Select-Object -First 20
+```
+4. Health endpoint:
+```
+Invoke-WebRequest https://<worker>/__health | Select-Object -ExpandProperty Content
+```
+
+## Troubleshooting Matrix (KV / Deploy)
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| 10041 KV namespace not found (deco deploy) | Hosting environment can't access external KV ID | Use wrapper (already active) or provision KV inside hosting platform |
+| High misses ratio | TTL too low or traffic cold | Increase TTL / confirm key normalization |
+| No `[wrangler]` confirmation auto-skip | CI flag missing | Ensure `CI=1` env in deploy script |
+| Unexpected stale not revalidating | fetch error silently failing | Check logs; consider adding error log inside `revalidateAsync` |
+
+## TODO (Next Enhancements)
+
+- Add `/__cache/metrics` dedicated endpoint (optional; currently within `/__metrics`).
+- GitHub Actions pipeline (lint + test + deploy on tag).
+- Rollback script using Cloudflare version list.
+- Cache purge CLI (prefix + metrics output) integration.
+- Session KV binding or remove adapter session warning.
+
 

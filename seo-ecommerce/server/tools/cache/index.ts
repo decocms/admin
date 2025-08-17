@@ -81,6 +81,8 @@ const DEFAULT_DESERIALIZE = <T>(raw: string): Entry<T> | null => {
   }
 };
 
+let __loggedKvFallback = false;
+
 export async function getOrSet<T>(
   env: CacheLayerEnv,
   key: string,
@@ -92,7 +94,12 @@ export async function getOrSet<T>(
     staleTtlSeconds = 0,
     hardTtlSeconds = Math.max(ttlSeconds + staleTtlSeconds, 172800), // default 48h if bigger
     version = 1,
-    kv = env.SEO_CACHE,
+    // Respect explicit override in opts or env flag USE_KV=0 to disable KV usage.
+    kv = ((): KVNamespaceLike | undefined => {
+      const disabled = (env as any)?.USE_KV === '0' || (globalThis as any)?.USE_KV === '0';
+      if (disabled) return undefined;
+      return env.SEO_CACHE;
+    })(),
     bypass,
     serialize = DEFAULT_SERIALIZE,
     deserialize = DEFAULT_DESERIALIZE,
@@ -119,6 +126,12 @@ export async function getOrSet<T>(
         const parsed = deserialize(raw);
         if (parsed && parsed.version === version) kvEntry = parsed;
       }
+    } catch {}
+  } else if (!__loggedKvFallback) {
+    __loggedKvFallback = true;
+    try {
+      // Lightweight single log to indicate KV disabled / missing; avoid spamming.
+      console.warn('[cache] KV disabled or missing (using in-memory only). Set USE_KV=1 and provide binding SEO_CACHE to enable persistence.');
     } catch {}
   }
   if (kvEntry) {

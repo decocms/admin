@@ -73,6 +73,20 @@ jobs:
           OPENROUTER_API_KEY: "${{ secrets.OPENROUTER_API_KEY }}"
           PUBLIC_API_URL: "${{ secrets.PUBLIC_API_URL }}"
           PUBLIC_APP_ORIGIN: "https://seo-ecommercex.deco.page"
+          USE_KV: "1"
+
+      - name: Deploy (Deco hosting no-KV)
+        run: npm --workspace=seo-ecommerce/server run deploy:deco
+        env:
+          CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+          SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
+          SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+          SUPABASE_SERVER_TOKEN: "${{ secrets.SUPABASE_SERVER_TOKEN }}"
+          OPENROUTER_API_KEY: "${{ secrets.OPENROUTER_API_KEY }}"
+          PUBLIC_API_URL: "${{ secrets.PUBLIC_API_URL }}"
+          PUBLIC_APP_ORIGIN: "https://seo-ecommercex.deco.page"
+          USE_KV: "0"
 
       - name: Smoke test endpoint
         run: |
@@ -84,6 +98,19 @@ jobs:
           head -n 20 resp.json >> $GITHUB_STEP_SUMMARY || true
           if [ "$(cat status.txt)" != "200" ]; then
             echo "Erro: status diferente de 200" >&2; exit 1; fi
+      - name: Metrics check (cache json)
+        run: |
+          APP_ORIGIN="https://seo-ecommercex.deco.page"
+          curl -s "$APP_ORIGIN/__cache/metrics" > cache.json || true
+          echo "Cache metrics (excerpt):" >> $GITHUB_STEP_SUMMARY
+          head -n 30 cache.json >> $GITHUB_STEP_SUMMARY || true
+      - name: Health check
+        run: |
+          APP_ORIGIN="https://seo-ecommercex.deco.page"
+          code=$(curl -s -o health.json -w '%{http_code}' "$APP_ORIGIN/__health") || true
+          echo "Health status code: $code" >> $GITHUB_STEP_SUMMARY
+          head -n 40 health.json >> $GITHUB_STEP_SUMMARY || true
+          if [ "$code" != "200" ]; then echo "Health degraded" >&2; exit 1; fi
 
       - name: Summary
         run: echo "✅ Deploy concluído" >> $GITHUB_STEP_SUMMARY

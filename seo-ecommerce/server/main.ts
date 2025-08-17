@@ -262,6 +262,8 @@ const runtime = {
   ...baseRuntime,
   fetch: (req: Request, env: Env, ctx: any) => {
     const url = new URL(req.url);
+  // Uptime marker
+  const startedAt = (globalThis as any).__APP_STARTED_AT || ((globalThis as any).__APP_STARTED_AT = Date.now());
     // Early secret validation (once per request path) for production clarity
     const host = req.headers.get("host");
     const missing = validateCoreSecrets(env, host);
@@ -330,6 +332,53 @@ const runtime = {
         headers: {
           "content-type": "application/json",
           "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+    }
+    if (url.pathname === "/__health") {
+      // Simple in-memory token bucket (reset each minute per isolate)
+      const bucket = (globalThis as any).__HL_BUCKET || ((globalThis as any).__HL_BUCKET = { ts: Date.now(), tokens: 60 });
+      const nowTs = Date.now();
+      if (nowTs - bucket.ts > 60_000) {
+        bucket.ts = nowTs;
+        bucket.tokens = 60;
+      }
+      if (bucket.tokens <= 0) {
+        return new Response(JSON.stringify({ error: "rate_limited" }), {
+          status: 429,
+          headers: {
+            "content-type": "application/json",
+            "Retry-After": "30",
+            "Cache-Control": "no-cache",
+          },
+        });
+      }
+      bucket.tokens--;
+      const cache = cacheMetricsSnapshot();
+      const tools = toolMetricsSnapshot();
+      const host = req.headers.get("host") || "";
+      const missingSecrets = validateCoreSecrets(env, host);
+      const uptimeSec = (Date.now() - startedAt) / 1000;
+      let status: "ok" | "degraded" = "ok";
+      const warnings: string[] = [];
+      if (missingSecrets.length) {
+        status = "degraded";
+        warnings.push(`Missing secrets: ${missingSecrets.join(",")}`);
+      }
+      for (const [toolId, m] of Object.entries(tools)) {
+        if (m.calls >= 5 && m.errorRate != null && m.errorRate > 0.5) {
+          status = "degraded";
+          warnings.push(`High errorRate ${toolId}=${(m.errorRate * 100).toFixed(0)}%`);
+        }
+      }
+  const buildId = (globalThis as any).__BUILD_ID__ || (globalThis as any).BUILD_ID || null;
+      const body = { status, buildId, uptimeSec, startedAt, cache, tools, missingSecrets, warnings };
+      return new Response(JSON.stringify(body), {
+        status: status === "ok" ? 200 : 503,
+        headers: {
+          "content-type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "X-RateLimit-Remaining": String(bucket.tokens),
         },
       });
     }

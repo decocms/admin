@@ -176,4 +176,35 @@ Uso rápido de diagnóstico:
 
 Futuro (planejado): export em formato Prometheus/OpenTelemetry + breakdown por categoria de erro.
 
+## Health Endpoint (`/__health`)
+Retorna snapshot rápido para monitor/uptime com status HTTP 200 (ok) ou 503 (degraded). Rate limit ~60 req/min por isolate.
+
+Example:
+```json
+{
+  "status": "ok",
+  "buildId": "kx8f0l2",
+  "uptimeSec": 1234.5,
+  "startedAt": 1710000000000,
+  "cache": { /* cache metrics */ },
+  "tools": { /* tool metrics */ },
+  "missingSecrets": [],
+  "warnings": [],
+  "X-RateLimit-Remaining": 54
+}
+```
+Degradation triggers:
+- Segredo obrigatório ausente.
+- errorRate > 50% (>=5 chamadas) em alguma ferramenta.
+
+HTTP Codes:
+- 200 ok
+- 429 rate limited (body {"error":"rate_limited"})
+- 503 degraded
+
+Headers:
+- `X-RateLimit-Remaining` tokens restantes no minuto corrente.
+
+Uso sugerido: health check externo (Cron, uptime monitor).
+
 

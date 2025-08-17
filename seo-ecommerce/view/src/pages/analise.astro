@@ -98,7 +98,7 @@ let initial: any = null; // será carregado no cliente
       </aside>
     </div>
     <script>
-      (function(){
+      (async function(){
         const form = document.getElementById('ad-hoc');
         const statusEl = document.getElementById('ad-hoc-status');
         const analysisWrap = document.getElementById('analysis-wrap');
@@ -121,7 +121,8 @@ let initial: any = null; // será carregado no cliente
         });
         // Login gate via util
         try {
-          const { isLoggedIn } = await import('../lib/authGuard.ts');
+          // Dynamic import of auth utilities (resolved by bundler). Extension removed for portability.
+          const { isLoggedIn } = await import('../lib/authGuard');
           if(!isLoggedIn()){
             document.body.innerHTML='<div style="max-width:560px;margin:5rem auto 3rem;padding:2.4rem 2.6rem 2.8rem;border:1px solid rgba(255,255,255,.12);border-radius:40px;background:linear-gradient(140deg,rgba(255,255,255,.08),rgba(255,255,255,.02));backdrop-filter:blur(26px) saturate(160%);text-align:center;font-family:var(--font-sans);box-shadow:0 22px 70px -28px rgba(0,0,0,.7);">\n<h1 style="margin:0 0 1rem;font-size:clamp(2rem,4vw,2.9rem);line-height:1.05;background:linear-gradient(90deg,var(--grad-b),var(--grad-a),var(--grad-c));-webkit-background-clip:text;color:transparent;">Área restrita</h1><p style="color:#9db4c8;font-size:.95rem;line-height:1.55;max-width:480px;margin:.2rem auto 1.4rem;">Faça login para acessar o painel detalhado e desbloquear histórico e próximas funcionalidades.</p><a href="/login?next='+encodeURIComponent('/analise')+'" class="gate-btn">Ir para Login</a></div>';
             return;

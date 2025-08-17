@@ -17,13 +17,19 @@ interface Env extends DecoEnv {
 // Validate critical secrets in production (non-localhost) once per instance
 function validateCoreSecrets(env: Env, host: string | null): string[] {
   const missing: string[] = [];
-  const required = ['SUPABASE_URL','SUPABASE_SERVER_TOKEN','CF_API_TOKEN','CF_ACCOUNT_ID'];
   const isLocal = host ? host.includes('localhost') : false;
-  if (isLocal) return missing; // allow local dev
-  for (const key of required) {
-    if (!(key in env) || (env as any)[key] === undefined || (env as any)[key] === '' ) {
-      missing.push(key);
-    }
+  if (isLocal) return missing;
+  // Accept synonym names used across different workflows
+  const groups: { keys: string[]; label: string; required: boolean }[] = [
+    { keys: ['CF_API_TOKEN','CLOUDFLARE_API_TOKEN'], label: 'CF_API_TOKEN', required: true },
+    { keys: ['CF_ACCOUNT_ID','CLOUDFLARE_ACCOUNT_ID'], label: 'CF_ACCOUNT_ID', required: true },
+    { keys: ['SUPABASE_URL'], label: 'SUPABASE_URL', required: true },
+    { keys: ['SUPABASE_SERVER_TOKEN'], label: 'SUPABASE_SERVER_TOKEN', required: true },
+  ];
+  for (const g of groups) {
+    if (!g.required) continue;
+    const hasAny = g.keys.some(k => (env as any)[k] && (env as any)[k] !== '');
+    if (!hasAny) missing.push(g.label);
   }
   return missing;
 }

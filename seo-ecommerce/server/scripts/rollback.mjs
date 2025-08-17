@@ -27,6 +27,7 @@ function run(cmd, args, { allowFail = false } = {}) {
 const argv = process.argv.slice(2);
 const dry = argv.includes('--dry-run');
 const offline = argv.includes('--offline');
+const assumeYes = argv.includes('--yes') || process.env.ROLLBACK_ASSUME_YES === '1';
 const pick = argv.find(a => !a.startsWith('-'));
 
 let parsed = [];
@@ -64,6 +65,10 @@ if (!targetId) {
   }
   targetId = prev.id;
   console.log(`[rollback] Selected previous deployment: ${targetId}`);
+  if (!assumeYes && !dry) {
+    console.error('[rollback] Confirmation required. Re-run with --yes or set ROLLBACK_ASSUME_YES=1 to proceed.');
+    process.exit(2);
+  }
 }
 
 if (dry) {

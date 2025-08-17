@@ -70,9 +70,9 @@ CI: fail pipeline if exit code !=0 (degraded ou rate limited / erro de rede).
 
 You can revert to the previous deployment quickly via CLI:
 
-PowerShell (auto-select previous):
+PowerShell (auto-select previous, prompts for confirmation unless --yes):
 ```
-npm run rollback
+npm run rollback -- --yes
 ```
 
 Dry-run (shows which version would be targeted):
@@ -80,7 +80,7 @@ Dry-run (shows which version would be targeted):
 npm run rollback:dry
 ```
 
-Explicit version id (from `wrangler deployments` output):
+Explicit version id (from `wrangler deployments` output) (no confirmation needed when explicit):
 ```
 node scripts/rollback.mjs <version-uuid>
 ```
@@ -94,6 +94,7 @@ Internals:
 - Lists deployments with `wrangler deployments` (parses active + previous) unless `--offline` supplied.
 - Chooses the first non-active version when none specified.
 - Executes `wrangler rollback <version-id>`.
+- Requires `--yes` (or env `ROLLBACK_ASSUME_YES=1`) when auto-selecting previous to avoid accidental rollbacks.
 
 CI (future): add a manual-dispatch workflow step calling `npm run rollback -- <version-id>` for one-click reverts.
 
@@ -130,6 +131,8 @@ Use:
 npm run seo:cache:purge -- --key "pagespeed:v1:mobile:https://example.com/"  # exact key
 npm run seo:cache:purge -- --prefix pagespeed:v1:                                 # by prefix
 npm run seo:cache:purge -- --prefix links:v1: --dry-run                           # preview deletions
+# JSON summary output (machine-readable)
+npm run seo:cache:purge -- --prefix links:v1: --json --dry-run
 ```
 
 ## Pure Runners
@@ -325,6 +328,21 @@ When to enable KV everywhere:
 When current split is fine:
 - Low traffic or exploratory phase.
 - You want simpler hosting deploy avoiding Cloudflare account-specific KV IDs.
+
+## Session Warning Suppression
+
+Astro emits session storage driver warnings when no session driver is configured. This project currently does not use server-side sessions; authentication is handled client-side via Supabase.
+
+To suppress those noisy warnings (especially in logs/CI), set:
+```
+wrangler secret put SUPPRESS_SESSION_WARN
+# value: 1
+```
+Or as an env var at deploy time:
+```
+$env:SUPPRESS_SESSION_WARN="1"; npm run deploy:cf
+```
+The runtime wraps `console.warn` and filters lines containing `session storage|driver` when enabled. No functional behavior is changed.
 
 ## Rapid Command Reference
 

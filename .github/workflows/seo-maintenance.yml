@@ -58,7 +58,7 @@ jobs:
               npm run rollback -- $VERSION
             else
               echo "Rolling back to previous version (auto)" >> $GITHUB_STEP_SUMMARY
-              npm run rollback
+              npm run rollback -- --yes
             fi
           elif [ "$ACTION" = 'purge' ]; then
             if [ -z "$KEY" ] && [ -z "$PREFIX" ]; then

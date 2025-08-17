@@ -19,9 +19,30 @@ interface Env extends DecoEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
   PUBLIC_SUPABASE_URL?: string;
   PUBLIC_SUPABASE_ANON_KEY?: string;
+  SUPPRESS_SESSION_WARN?: string; // '1' to suppress Astro session driver warnings
 }
 
 // logSafe now imported from shared runtime module
+
+// Optional suppression of noisy Astro session storage warnings when sessions unused.
+// If SUPPRESS_SESSION_WARN=1 (secret/var) we filter console.warn lines referencing session storage.
+// This avoids CI / log noise without altering Astro internals.
+(() => {
+  try {
+    if ((globalThis as any).__SESSION_WARN_PATCHED) return;
+    (globalThis as any).__SESSION_WARN_PATCHED = true;
+    const originalWarn = console.warn.bind(console);
+    console.warn = (...args: any[]) => {
+      try {
+        const joined = args.map(a => (typeof a === 'string' ? a : '')).join(' ');
+        if ((globalThis as any).SUPPRESS_SESSION_WARN === '1' || (globalThis as any).ENV_SUPPRESS_SESSION_WARN === '1') {
+          if (/session (storage|driver)/i.test(joined)) return; // swallow
+        }
+      } catch {}
+      return originalWarn(...args);
+    };
+  } catch {}
+})();
 
 // Validate critical secrets in production (non-localhost) once per instance
 function validateCoreSecrets(env: Env, host: string | null): string[] {

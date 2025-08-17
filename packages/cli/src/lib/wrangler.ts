@@ -102,12 +102,14 @@ async function ensureEnvVarsGitIgnore(projectRoot: string) {
 
   try {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
-    const lines = gitignoreContent.split("\n").reduce<string[]>((acc: string[], line: string) => {
-      if (!line.includes(envFile)) {
-        acc.push(line);
-      }
-      return acc;
-    }, []);
+    const lines = gitignoreContent
+      .split("\n")
+      .reduce<string[]>((acc: string[], line: string) => {
+        if (!line.includes(envFile)) {
+          acc.push(line);
+        }
+        return acc;
+      }, []);
 
     // Check if entry already exists (exact match or as part of a line)
     const entryExists = lines.some(

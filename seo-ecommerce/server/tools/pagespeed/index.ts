@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { createTool } from '@deco/workers-runtime/mastra';
+import { z } from "zod";
+import { createTool } from "@deco/workers-runtime/mastra";
 
 // Simple in-memory cache (per worker instance) to avoid hammering the public API.
 const cache = new Map<string, { ts: number; data: any }>();
@@ -7,8 +7,10 @@ const TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 const InputSchema = z.object({
   url: z.string().url(),
-  strategy: z.enum(['mobile','desktop']).default('mobile'),
-  category: z.array(z.enum(['performance','accessibility','seo','pwa'])).default(['performance','seo']),
+  strategy: z.enum(["mobile", "desktop"]).default("mobile"),
+  category: z
+    .array(z.enum(["performance", "accessibility", "seo", "pwa"]))
+    .default(["performance", "seo"]),
 });
 
 // Normalized output focusing on key core web vitals + category scores
@@ -29,40 +31,58 @@ const OutputSchema = z.object({
     TBT_ms: z.number().nullable().optional(),
     INP_ms: z.number().nullable().optional(),
   }),
-  opportunities: z.array(z.object({ id: z.string(), title: z.string(), score: z.number().nullable().optional(), savingsMs: z.number().nullable().optional() })).optional(),
+  opportunities: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        score: z.number().nullable().optional(),
+        savingsMs: z.number().nullable().optional(),
+      }),
+    )
+    .optional(),
   fetchedAt: z.string(),
   cache: z.boolean().default(false),
 });
 
-export const createPageSpeedTool = (_env: Record<string, unknown>) => createTool({
-  id: 'PAGESPEED',
-  description: 'Fetches Google PageSpeed Insights (Lighthouse) summary for a URL',
-  inputSchema: InputSchema,
-  outputSchema: OutputSchema,
-  execute: async ({ context }) => {
-    const { url, strategy, category } = context;
-    const key = JSON.stringify({ u: url, s: strategy, c: category });
-    const now = Date.now();
-    const cached = cache.get(key);
-    if (cached && now - cached.ts < TTL_MS) {
-      return { ...cached.data, cache: true };
-    }
-    const params = new URLSearchParams({ url, strategy });
-    if (category && category.length) category.forEach(c => params.append('category', c));
-    const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
-    const res = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
-    if (!res.ok) {
-      throw new Error(`PageSpeed API ${res.status}`);
-    }
-    const json = await res.json();
-    const norm = normalizePageSpeed(json, url, strategy);
-    cache.set(key, { ts: now, data: norm });
-    return norm;
-  }
-});
+export const createPageSpeedTool = (_env: Record<string, unknown>) =>
+  createTool({
+    id: "PAGESPEED",
+    description:
+      "Fetches Google PageSpeed Insights (Lighthouse) summary for a URL",
+    inputSchema: InputSchema,
+    outputSchema: OutputSchema,
+    execute: async ({ context }) => {
+      const { url, strategy, category } = context;
+      const key = JSON.stringify({ u: url, s: strategy, c: category });
+      const now = Date.now();
+      const cached = cache.get(key);
+      if (cached && now - cached.ts < TTL_MS) {
+        return { ...cached.data, cache: true };
+      }
+      const params = new URLSearchParams({ url, strategy });
+      if (category && category.length)
+        category.forEach((c) => params.append("category", c));
+      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`;
+      const res = await fetch(apiUrl, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error(`PageSpeed API ${res.status}`);
+      }
+      const json = await res.json();
+      const norm = normalizePageSpeed(json, url, strategy);
+      cache.set(key, { ts: now, data: norm });
+      return norm;
+    },
+  });
 
 // Pure normalization helper (exported for tests)
-export function normalizePageSpeed(json: any, fallbackUrl: string, strategy: string) {
+export function normalizePageSpeed(
+  json: any,
+  fallbackUrl: string,
+  strategy: string,
+) {
   const lh = json?.lighthouseResult || {};
   const cats = lh.categories || {};
   const audits = lh.audits || {};
@@ -77,19 +97,19 @@ export function normalizePageSpeed(json: any, fallbackUrl: string, strategy: str
       pwa: cats.pwa ? cats.pwa.score * 100 : null,
     },
     metrics: {
-      FCP_ms: audits['first-contentful-paint']?.numericValue ?? null,
-      LCP_ms: audits['largest-contentful-paint']?.numericValue ?? null,
-      CLS: audits['cumulative-layout-shift']?.numericValue ?? null,
-      TBT_ms: audits['total-blocking-time']?.numericValue ?? null,
-      INP_ms: audits['interaction-to-next-paint']?.numericValue ?? null,
+      FCP_ms: audits["first-contentful-paint"]?.numericValue ?? null,
+      LCP_ms: audits["largest-contentful-paint"]?.numericValue ?? null,
+      CLS: audits["cumulative-layout-shift"]?.numericValue ?? null,
+      TBT_ms: audits["total-blocking-time"]?.numericValue ?? null,
+      INP_ms: audits["interaction-to-next-paint"]?.numericValue ?? null,
     },
     opportunities: Object.values(audits)
-      .filter((a: any) => a?.details?.type === 'opportunity')
+      .filter((a: any) => a?.details?.type === "opportunity")
       .slice(0, 8)
       .map((a: any) => ({
         id: a.id,
         title: a.title,
-        score: typeof a.score === 'number' ? a.score : null,
+        score: typeof a.score === "number" ? a.score : null,
         savingsMs: a?.details?.overallSavingsMs ?? null,
       })),
     fetchedAt: new Date().toISOString(),

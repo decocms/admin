@@ -105,25 +105,31 @@ export function parseConfig(supplied: TraceConfig): ResolvedTraceConfig {
         spanProcessors: [],
         handlers: {
           fetch: {
-            acceptTraceContext: supplied.handlers?.fetch?.acceptTraceContext ?? true,
+            acceptTraceContext:
+              supplied.handlers?.fetch?.acceptTraceContext ?? true,
           },
         },
         fetch: {
           includeTraceContext: supplied.fetch?.includeTraceContext ?? true,
         },
-        postProcessor: supplied.postProcessor || ((spans: ReadableSpan[]) => spans),
+        postProcessor:
+          supplied.postProcessor || ((spans: ReadableSpan[]) => spans),
         sampling: {
           headSampler: supplied.sampling?.headSampler
             ? isSampler(supplied.sampling.headSampler)
               ? supplied.sampling.headSampler
               : createSampler(supplied.sampling.headSampler)
             : new AlwaysOnSampler(),
-          tailSampler: supplied.sampling?.tailSampler || multiTailSampler([isHeadSampled, isRootErrorSpan]),
+          tailSampler:
+            supplied.sampling?.tailSampler ||
+            multiTailSampler([isHeadSampled, isRootErrorSpan]),
         },
         propagator: supplied.propagator || new W3CTraceContextPropagator(),
         instrumentation: {
-          instrumentGlobalCache: supplied.instrumentation?.instrumentGlobalCache ?? true,
-          instrumentGlobalFetch: supplied.instrumentation?.instrumentGlobalFetch ?? true,
+          instrumentGlobalCache:
+            supplied.instrumentation?.instrumentGlobalCache ?? true,
+          instrumentGlobalFetch:
+            supplied.instrumentation?.instrumentGlobalFetch ?? true,
         },
       } as ResolvedTraceConfig;
     }

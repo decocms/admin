@@ -92,7 +92,7 @@ export const createModel = createTool({
 
     if (apiKey) {
       const llmVault = new SupabaseLLMVault(
-  c.db as any,
+        c.db as any,
         c.envVars.LLMS_ENCRYPTION_KEY,
         workspace,
       );

@@ -7,7 +7,7 @@
     "allowImportingTsExtensions": false,
     "declaration": true,
     "declarationMap": true,
-  "sourceMap": true
+    "sourceMap": true
   },
   "include": ["src/**/*", "src/types/node-globals.d.ts"],
   "exclude": [

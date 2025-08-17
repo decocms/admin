@@ -2,7 +2,7 @@
 // Página agregada que consome a tool SEO_AUDIT e mostra resumo amigável
 export const prerender = false;
 const q = new URL(Astro.request.url).searchParams;
-const requested = q.get('url');
+const requested = q.get("url");
 ---
 <html lang="pt-BR">
   <head>

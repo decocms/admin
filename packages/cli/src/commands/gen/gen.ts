@@ -180,7 +180,9 @@ export const genEnv = async ({
   bindings,
   selfUrl,
 }: Options) => {
-  console.log(`🛠️ genEnv start (workspace=${workspace ?? 'none'}, local=${!!local}, selfUrl=${selfUrl ?? 'none'})`);
+  console.log(
+    `🛠️ genEnv start (workspace=${workspace ?? "none"}, local=${!!local}, selfUrl=${selfUrl ?? "none"})`,
+  );
   const client = await createWorkspaceClient({ workspace, local });
   const apiClient = await createWorkspaceClient({ local });
 
@@ -192,7 +194,9 @@ export const genEnv = async ({
     // Determine effective bindings: if only generating SELF types and no explicit bindings provided, skip DEFAULT_BINDINGS to avoid auth/API calls.
     const effectiveBindings: DecoBinding[] = [
       ...bindings,
-      ...((!bindings || bindings.length === 0) && selfUrl ? [] : DEFAULT_BINDINGS),
+      ...((!bindings || bindings.length === 0) && selfUrl
+        ? []
+        : DEFAULT_BINDINGS),
     ];
     if (selfUrl) {
       effectiveBindings.push({
@@ -202,7 +206,9 @@ export const genEnv = async ({
         ignoreCache: true,
       } as any);
     }
-    console.log(`🔧 Effective bindings: ${effectiveBindings.map(b => (b as any).name || 'unknown').join(', ')}`);
+    console.log(
+      `🔧 Effective bindings: ${effectiveBindings.map((b) => (b as any).name || "unknown").join(", ")}`,
+    );
 
     const props = await Promise.all(
       effectiveBindings.map(async (binding) => {
@@ -235,14 +241,23 @@ export const genEnv = async ({
           connection = app.structuredContent.connection;
         } else if ("integration_url" in binding) {
           connection = {
-              type: "HTTP",
-              url: (binding as any).integration_url,
-            } as any;
+            type: "HTTP",
+            url: (binding as any).integration_url,
+          } as any;
         } else {
           throw new Error(`Unknown binding type: ${binding}`);
         }
 
-        let tools: { structuredContent: { tools?: { name: string; inputSchema: any; outputSchema?: any; description?: string }[] } };
+        let tools: {
+          structuredContent: {
+            tools?: {
+              name: string;
+              inputSchema: any;
+              outputSchema?: any;
+              description?: string;
+            }[];
+          };
+        };
         try {
           tools = (await apiClient.callTool({
             name: "INTEGRATIONS_LIST_TOOLS",
@@ -253,53 +268,82 @@ export const genEnv = async ({
             },
           })) as any;
         } catch (err) {
-          console.warn(`⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${(err as Error).message}`);
+          console.warn(
+            `⚠️ INTEGRATIONS_LIST_TOOLS error for ${binding.name}: ${(err as Error).message}`,
+          );
           tools = { structuredContent: { tools: [] } };
         }
 
-        const integrationUrl = (binding as any).integration_url as string | undefined;
+        const integrationUrl = (binding as any).integration_url as
+          | string
+          | undefined;
         const shouldAttemptHttpFallback =
           typeof integrationUrl === "string" &&
-          (integrationUrl.startsWith("http://") || integrationUrl.startsWith("https://"));
+          (integrationUrl.startsWith("http://") ||
+            integrationUrl.startsWith("https://"));
 
         if (shouldAttemptHttpFallback) {
-          console.log(`🔎 Attempting HTTP fallback for integration ${binding.name} ...`);
+          console.log(
+            `🔎 Attempting HTTP fallback for integration ${binding.name} ...`,
+          );
         }
 
         if (
           shouldAttemptHttpFallback &&
-          (!tools.structuredContent?.tools || tools.structuredContent.tools.length === 0)
+          (!tools.structuredContent?.tools ||
+            tools.structuredContent.tools.length === 0)
         ) {
           try {
             const url = new URL("/mcp/tools", integrationUrl!);
-            console.log(`🌐 Fetching ${url.toString()} for fallback tool listing`);
-            const resp = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+            console.log(
+              `🌐 Fetching ${url.toString()} for fallback tool listing`,
+            );
+            const resp = await fetch(url.toString(), {
+              headers: { Accept: "application/json" },
+            });
             if (!resp.ok) {
-              console.warn(`⚠️ Fallback /mcp/tools HTTP ${resp.status} for ${binding.name}`);
+              console.warn(
+                `⚠️ Fallback /mcp/tools HTTP ${resp.status} for ${binding.name}`,
+              );
             } else {
-              const json: any = await resp.json().catch(()=> ({}));
-              if (json && Array.isArray((json as any).tools) && (json as any).tools.length > 0) {
-                tools.structuredContent.tools = (json as any).tools.map((t: any) => ({
-                  name: t.name,
-                  inputSchema: t.inputSchema ?? t.input_schema ?? {},
-                  outputSchema: t.outputSchema ?? t.output_schema,
-                  description: t.description,
-                }));
+              const json: any = await resp.json().catch(() => ({}));
+              if (
+                json &&
+                Array.isArray((json as any).tools) &&
+                (json as any).tools.length > 0
+              ) {
+                tools.structuredContent.tools = (json as any).tools.map(
+                  (t: any) => ({
+                    name: t.name,
+                    inputSchema: t.inputSchema ?? t.input_schema ?? {},
+                    outputSchema: t.outputSchema ?? t.output_schema,
+                    description: t.description,
+                  }),
+                );
                 const count = tools.structuredContent.tools?.length ?? 0;
                 console.log(
                   `✅ HTTP fallback loaded ${count} tools for integration ${binding.name}.`,
                 );
               } else {
-                console.warn(`⚠️ HTTP fallback returned no tools array for ${binding.name}`);
+                console.warn(
+                  `⚠️ HTTP fallback returned no tools array for ${binding.name}`,
+                );
               }
             }
           } catch (e) {
-            console.warn(`⚠️ Fallback fetch failed for ${binding.name}: ${(e as Error).message}`);
+            console.warn(
+              `⚠️ Fallback fetch failed for ${binding.name}: ${(e as Error).message}`,
+            );
           }
         }
 
-        if (!tools.structuredContent?.tools || tools.structuredContent.tools.length === 0) {
-          console.warn(`⚠️ No tools found for integration ${binding.name}. Skipping...`);
+        if (
+          !tools.structuredContent?.tools ||
+          tools.structuredContent.tools.length === 0
+        ) {
+          console.warn(
+            `⚠️ No tools found for integration ${binding.name}. Skipping...`,
+          );
           // Provide a stub so output file is not fully empty for diagnostics
           if (binding.name === "SELF") {
             tsTypes += `\n// No tools discovered for SELF (${(binding as any).integration_url})\n`;
@@ -371,7 +415,7 @@ export const genEnv = async ({
       }),
     );
 
-  const generated = await format(`
+    const generated = await format(`
   // Generated types - do not edit manually
 ${tsTypes}
    
@@ -451,7 +495,10 @@ ${tsTypes}
   `);
     if (!tsTypes.trim()) {
       // Ensure file not empty for diagnostics when no tools
-      return "// Generated types (empty) - no tools discovered for provided bindings\n" + generated;
+      return (
+        "// Generated types (empty) - no tools discovered for provided bindings\n" +
+        generated
+      );
     }
     return generated;
   } finally {

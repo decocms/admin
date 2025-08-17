@@ -1,4 +1,8 @@
-export function normalizePageSpeedPure(json: any, fallbackUrl: string, strategy: string) {
+export function normalizePageSpeedPure(
+  json: any,
+  fallbackUrl: string,
+  strategy: string,
+) {
   const lh = json?.lighthouseResult || {};
   const cats = lh.categories || {};
   const audits = lh.audits || {};
@@ -13,16 +17,21 @@ export function normalizePageSpeedPure(json: any, fallbackUrl: string, strategy:
       pwa: cats.pwa ? cats.pwa.score * 100 : null,
     },
     metrics: {
-      FCP_ms: audits['first-contentful-paint']?.numericValue ?? null,
-      LCP_ms: audits['largest-contentful-paint']?.numericValue ?? null,
-      CLS: audits['cumulative-layout-shift']?.numericValue ?? null,
-      TBT_ms: audits['total-blocking-time']?.numericValue ?? null,
-      INP_ms: audits['interaction-to-next-paint']?.numericValue ?? null,
+      FCP_ms: audits["first-contentful-paint"]?.numericValue ?? null,
+      LCP_ms: audits["largest-contentful-paint"]?.numericValue ?? null,
+      CLS: audits["cumulative-layout-shift"]?.numericValue ?? null,
+      TBT_ms: audits["total-blocking-time"]?.numericValue ?? null,
+      INP_ms: audits["interaction-to-next-paint"]?.numericValue ?? null,
     },
     opportunities: Object.values(audits)
-      .filter((a: any) => a?.details?.type === 'opportunity')
+      .filter((a: any) => a?.details?.type === "opportunity")
       .slice(0, 8)
-      .map((a: any) => ({ id: a.id, title: a.title, score: typeof a.score === 'number' ? a.score : null, savingsMs: a?.details?.overallSavingsMs ?? null })),
+      .map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        score: typeof a.score === "number" ? a.score : null,
+        savingsMs: a?.details?.overallSavingsMs ?? null,
+      })),
     fetchedAt: new Date().toISOString(),
     cache: false,
   };

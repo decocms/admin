@@ -31,11 +31,11 @@ export const createLinkAnalyzerTool = (_env: unknown) =>
     }),
     execute: async ({ context }) => {
       const { url } = context;
-  const result = await analyzeLinks(url);
-  return result;
+      const result = await analyzeLinks(url);
+      return result;
     },
   });
 
 // Backwards compatibility (in case it was already imported elsewhere during transition)
 export const linkAnalyzerTool = createLinkAnalyzerTool(undefined);
-export * from './analyze';
+export * from "./analyze";

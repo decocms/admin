@@ -6,7 +6,10 @@ import { link } from "./link.js";
 // Use global process (avoid node:process import for type resolution portability)
 
 // Lightweight free port finder using fetch race (net module may be unavailable in some runtimes)
-async function findFreePort(preferred: number, maxAttempts = 10): Promise<number> {
+async function findFreePort(
+  preferred: number,
+  maxAttempts = 10,
+): Promise<number> {
   let port = preferred;
   for (let i = 0; i < maxAttempts; i++) {
     // Try connecting; if connection succeeds (HTTP 200/404/etc), port in use.
@@ -72,8 +75,10 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
     let useRemote = false;
     if (process.platform === "darwin") {
       try {
-        const ver = execSync("sw_vers -productVersion", { encoding: "utf8" }).trim();
-  const [maj, min] = ver.split(".").map((n: string) => parseInt(n, 10));
+        const ver = execSync("sw_vers -productVersion", {
+          encoding: "utf8",
+        }).trim();
+        const [maj, min] = ver.split(".").map((n: string) => parseInt(n, 10));
         // Minimum required: 13.5.0
         if (maj < 13 || (maj === 13 && min < 5)) {
           useRemote = true;
@@ -88,9 +93,13 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
 
     let wranglerPort: number | undefined;
     if (!useRemote) {
-      const argPort = process.argv.find((a: string) => a.startsWith("--port="))?.split("=")[1];
+      const argPort = process.argv
+        .find((a: string) => a.startsWith("--port="))
+        ?.split("=")[1];
       const desiredPort = Number(argPort || process.env.PORT || 8787);
-      wranglerPort = await findFreePort(Number.isFinite(desiredPort) ? desiredPort : 8787).catch(() => 8790);
+      wranglerPort = await findFreePort(
+        Number.isFinite(desiredPort) ? desiredPort : 8787,
+      ).catch(() => 8790);
       process.env.PORT = String(wranglerPort);
       process.env.DECO_SELF_URL = `http://localhost:${wranglerPort}`;
       console.log(`🛠️  Selected local wrangler port: ${wranglerPort}`);
@@ -99,7 +108,7 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
       process.env.DECO_REMOTE = "1";
     }
 
-  // Use link command with wrangler dev as subprocess
+    // Use link command with wrangler dev as subprocess
     await link({
       port: 8888,
       onBeforeRegister: () => {
@@ -131,9 +140,10 @@ export async function devCommand(opts: StartDevServerOptions): Promise<void> {
         }
 
         wranglerProcess.on("error", (error: unknown) => {
-          const msg = error && typeof error === "object" && "message" in error
-            ? (error as { message: string }).message
-            : String(error);
+          const msg =
+            error && typeof error === "object" && "message" in error
+              ? (error as { message: string }).message
+              : String(error);
           console.error("❌ Failed to start Wrangler:", msg);
           process.exit(1);
         });

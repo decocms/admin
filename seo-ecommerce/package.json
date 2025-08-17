@@ -8,14 +8,14 @@
     "view"
   ],
   "scripts": {
-  "dev": "cd view && npm run dev & cd server && npm run dev:worker",
-  "dev:all": "concurrently \"cd view && npm run dev\" \"cd server && npm run dev:worker\"",
-  "dev:server": "cd server && npm run dev:worker",
+    "dev": "cd view && npm run dev & cd server && npm run dev:worker",
+    "dev:all": "concurrently \"cd view && npm run dev\" \"cd server && npm run dev:worker\"",
+    "dev:server": "cd server && npm run dev:worker",
     "configure": "cd server && deco configure",
     "gen": "cd server && deco gen > deco.gen.ts",
     "gen:self": "cd server && deco gen --self=$DECO_SELF_URL > deco.gen.ts",
-  "deploy": "cd view && npm run build && cd ../server && npm run deploy",
-  "smoke": "powershell -Command \"Start-Job { Start-Sleep -Seconds 5; $env:SMOKE_WAIT_MS=45000; npm --prefix server run smoke } | Out-Null; npm run dev:all\""
+    "deploy": "cd view && npm run build && cd ../server && npm run deploy",
+    "smoke": "powershell -Command \"Start-Job { Start-Sleep -Seconds 5; $env:SMOKE_WAIT_MS=45000; npm --prefix server run smoke } | Out-Null; npm run dev:all\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

@@ -8,13 +8,13 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function main(base = process.argv[2]) {
   if (!base) {
-    console.error('Missing base URL argument');
+    console.error("Missing base URL argument");
     process.exit(1);
   }
-  const listUrl = `${base.replace(/\/$/, '')}/mcp/tools`;
+  const listUrl = `${base.replace(/\/$/, "")}/mcp/tools`;
   const res = await fetch(listUrl);
   if (!res.ok) {
-    console.error('Failed to list tools', res.status, await res.text());
+    console.error("Failed to list tools", res.status, await res.text());
     process.exit(1);
   }
   const json = await res.json();

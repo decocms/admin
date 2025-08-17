@@ -77,7 +77,10 @@ export const config: ResolveConfigFn = (_env, _trigger) => {
 
   return {
     exporter: env.OTEL_EXPORTER_OTLP_ENDPOINT
-      ? { url: new URL(`/v1/traces`, `${env.OTEL_EXPORTER_OTLP_ENDPOINT}`).href, headers }
+      ? {
+          url: new URL(`/v1/traces`, `${env.OTEL_EXPORTER_OTLP_ENDPOINT}`).href,
+          headers,
+        }
       : DummyExporter,
     service: { name: SERVICE_NAME },
     sampling: {

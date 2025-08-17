@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const src = path.join(__dirname, '..', 'src', 'rules');
-const dest = path.join(__dirname, '..', 'dist', 'rules');
+const fs = require("fs");
+const path = require("path");
+const src = path.join(__dirname, "..", "src", "rules");
+const dest = path.join(__dirname, "..", "dist", "rules");
 if (!fs.existsSync(src)) process.exit(0);
 fs.mkdirSync(dest, { recursive: true });
 for (const entry of fs.readdirSync(src)) {
@@ -18,4 +18,4 @@ for (const entry of fs.readdirSync(src)) {
     fs.copyFileSync(from, to);
   }
 }
-console.log('[deco-cli] Copied rules directory.');
+console.log("[deco-cli] Copied rules directory.");

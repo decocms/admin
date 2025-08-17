@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { runSeoAuditPure } from '../runner';
+import { describe, it, expect } from "vitest";
+import { runSeoAuditPure } from "../runner";
 
 function mockLink(over: Partial<any> = {}) {
   return {
@@ -27,28 +27,40 @@ function mockPS(over: Partial<any> = {}) {
       LCP_ms: over.LCP_ms ?? 4200,
       CLS: over.CLS ?? 0.12,
       INP_ms: 250,
-    }
+    },
   };
 }
 
-describe('SEO_AUDIT warning generation (pure)', () => {
-  it('triggers multiple warnings for poor metrics', async () => {
-    const out = await runSeoAuditPure({
-      analyzeLinks: async () => mockLink({}),
-      getPageSpeed: async ({ strategy }) => ({ categories: { performance: 45, seo: 65 }, metrics: { LCP_ms: 4200, CLS: 0.12, INP_ms: 250 } })
-    }, { url: 'https://example.com' });
-    const w = out.warnings.join('\n');
+describe("SEO_AUDIT warning generation (pure)", () => {
+  it("triggers multiple warnings for poor metrics", async () => {
+    const out = await runSeoAuditPure(
+      {
+        analyzeLinks: async () => mockLink({}),
+        getPageSpeed: async ({ strategy }) => ({
+          categories: { performance: 45, seo: 65 },
+          metrics: { LCP_ms: 4200, CLS: 0.12, INP_ms: 250 },
+        }),
+      },
+      { url: "https://example.com" },
+    );
+    const w = out.warnings.join("\n");
     expect(w).toMatch(/LCP mobile > 4s/);
     expect(w).toMatch(/CLS mobile > 0.1/);
     expect(w).toMatch(/Performance mobile baixa/);
     expect(w).toMatch(/Score SEO mobile baixo/);
   });
 
-  it('handles partial metrics gracefully', async () => {
-    const out = await runSeoAuditPure({
-      analyzeLinks: async () => mockLink({ imagesMissingAlt: 0 }),
-      getPageSpeed: async ({ strategy }) => ({ categories: { performance: 90 }, metrics: {} })
-    }, { url: 'https://example.com' });
+  it("handles partial metrics gracefully", async () => {
+    const out = await runSeoAuditPure(
+      {
+        analyzeLinks: async () => mockLink({ imagesMissingAlt: 0 }),
+        getPageSpeed: async ({ strategy }) => ({
+          categories: { performance: 90 },
+          metrics: {},
+        }),
+      },
+      { url: "https://example.com" },
+    );
     expect(out.coreWebVitals.LCP_ms_mobile).toBeNull();
     expect(out.coreWebVitals.CLS_mobile).toBeNull();
     expect(out.scores.performanceMobile).toBe(90);

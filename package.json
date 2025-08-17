@@ -5,19 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\"",
-  "dev:all": "concurrently -n web,api,seo-view,seo-worker -c green,cyan,magenta,yellow \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
-  "dev:windows": "concurrently -n web,api,seo-view,seo-worker -c green,cyan,magenta,yellow \"powershell -Command 'cd apps/web; npm run dev'\" \"powershell -Command 'cd apps/api; npm run dev'\" \"powershell -Command 'cd seo-ecommerce/view; npm run dev'\" \"powershell -Command 'cd seo-ecommerce/server; npm run dev'\"",
-  "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
-  "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
-  "dev:seo:view": "cd seo-ecommerce/view && npm run dev",
-  "seo:smoke": "npm --prefix seo-ecommerce/server run smoke",
-  "seo:smoke:verbose": "npm --prefix seo-ecommerce/server run smoke:verbose",
-  "deploy:seo": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy",
-  "deploy:seo:domain": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:domain",
-  "deploy:seo:app": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:app",
-  "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
-  "deploy:seo:both": "cd seo-ecommerce/server && npm run gen && npm run build:assets && npx wrangler deploy && deco deploy --yes ./dist",
-  "release:seo": "git add . && git commit -m 'chore: release new version' && git push && npm run deploy:seo",
+    "dev:all": "concurrently -n web,api,seo-view,seo-worker -c green,cyan,magenta,yellow \"cd apps/web && npm run dev\" \"cd apps/api && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
+    "dev:windows": "concurrently -n web,api,seo-view,seo-worker -c green,cyan,magenta,yellow \"powershell -Command 'cd apps/web; npm run dev'\" \"powershell -Command 'cd apps/api; npm run dev'\" \"powershell -Command 'cd seo-ecommerce/view; npm run dev'\" \"powershell -Command 'cd seo-ecommerce/server; npm run dev'\"",
+    "dev:all:no-api": "concurrently -n web,seo-view,seo-worker -c green,magenta,yellow \"cd apps/web && npm run dev\" \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
+    "dev:seo": "concurrently -n seo-view,seo-worker -c magenta,yellow \"cd seo-ecommerce/view && npm run dev\" \"cd seo-ecommerce/server && npm run dev\"",
+    "dev:seo:view": "cd seo-ecommerce/view && npm run dev",
+    "seo:smoke": "npm --prefix seo-ecommerce/server run smoke",
+    "seo:smoke:verbose": "npm --prefix seo-ecommerce/server run smoke:verbose",
+    "deploy:seo": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy",
+    "deploy:seo:domain": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:domain",
+    "deploy:seo:app": "cd seo-ecommerce/view && npm run build && cd ../server && npm run gen && npm run deploy:app",
+    "deploy:seo:fast": "cd seo-ecommerce/view && npm run build && cd ../server && npm run deploy",
+    "deploy:seo:both": "cd seo-ecommerce/server && npm run gen && npm run build:assets && npx wrangler deploy && deco deploy --yes ./dist",
+    "release:seo": "git add . && git commit -m 'chore: release new version' && git push && npm run deploy:seo",
     "docs:dev": "cd docs && npm run dev",
     "docs:deploy": "cd docs && npm run deploy",
     "test": "vitest run",
@@ -27,7 +27,7 @@
     "fmt": "biome format --write",
     "fmt:check": "biome format",
     "version": "tsc --version",
-  "check": "cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
+    "check": "cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
     "ui": "npx shadcn@latest add -c ./packages/ui",
     "clean": "rm -f deno.lock package-lock.json bun.lock && rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "db:repair": "supabase migration repair --status reverted",
@@ -73,8 +73,8 @@
     "concurrently": "^9.2.0",
     "typescript": "^5.8.3",
     "@types/node": "^22.10.6",
-  "vitest": "3.2.4",
-  "cross-env": "^7.0.3"
+    "vitest": "3.2.4",
+    "cross-env": "^7.0.3"
   },
   "lint": {
     "plugins": [
@@ -83,9 +83,9 @@
     ]
   },
   "dependencies": {
-  "zod": "^3.24.3",
-  "@supabase/supabase-js": "2.49.4",
-  "@supabase/ssr": "0.6.1",
-  "@supabase/postgrest-js": "1.19.4"
+    "zod": "^3.24.3",
+    "@supabase/supabase-js": "2.49.4",
+    "@supabase/ssr": "0.6.1",
+    "@supabase/postgrest-js": "1.19.4"
   }
 }

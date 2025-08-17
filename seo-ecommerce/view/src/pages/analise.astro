@@ -3,7 +3,7 @@
 import AnalysisDashboard from "../components/AnalysisDashboard.astro";
 import SavedAnalysesClient from "../components/SavedAnalysesClient.astro";
 const q = new URL(Astro.request.url).searchParams;
-const requested = q.get('url');
+const requested = q.get("url");
 let initial: any = null; // será carregado no cliente
 ---
 <html lang="pt-BR">

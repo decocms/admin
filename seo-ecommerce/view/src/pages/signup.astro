@@ -61,6 +61,15 @@ export const prerender = false; // client-only signup
       (async ()=>{
         const alertBox = document.getElementById('signup-alert');
         function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } else { alert(msg); } }
+        // Redirect se já logado
+        try {
+          const existing = localStorage.getItem('la-supa-auth');
+          if(existing){
+            const params = new URLSearchParams(location.search); const next=params.get('next');
+            location.replace(next || '/analise');
+            return;
+          }
+        } catch {}
   let supa; try { const { loadSupabase } = await import('../lib/supabaseClient.ts'); supa = await loadSupabase(); console.log('[signup] Cliente Supabase via util'); } catch(e){ console.error('[signup] init erro', e); show('Auth indisponível'); return; }
         const formEl = document.getElementById('signup-form');
         if(!formEl){ show('Formulário não encontrado'); return; }

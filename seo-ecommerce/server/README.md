@@ -258,4 +258,23 @@ Headers:
 
 Uso sugerido: health check externo (Cron, uptime monitor).
 
+## Auth Quickstart
+Fluxo implementado (client-side Supabase):
+
+1. Login (`/login`): redireciona para `/analise` se já autenticado.
+2. Cadastro (`/signup`): redireciona para `/analise` após criar conta (ou aguarda confirmação e mantém heurística de sessão).
+3. Reset senha (`/reset`): envia email via Supabase com redirect para `/login`.
+4. Painel protegido (`/analise`): verifica `la-supa-auth` no localStorage; se ausente, mostra gate com link para login preservando `next`.
+
+Storage chaves:
+- `la-supa-auth`: objeto de sessão Supabase.
+- `la-user`: info mínima (email) para pré-carregar UI.
+
+Guards utilitários (`view/src/lib/authGuard.ts`):
+- `isLoggedIn()`
+- `requireAuth()`
+- `redirectIfLoggedIn()`
+
+Para SSR/API server-side reforçar restrições futuras, adicionar validação do bearer token nas rotas protegidas (`/api/analises`).
+
 

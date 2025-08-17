@@ -64,6 +64,15 @@ export const prerender = false; // client-only login
       (async ()=>{
         const alertBox = document.getElementById('auth-error');
         function show(msg){ if(alertBox){ alertBox.textContent=msg; alertBox.style.display='block'; } }
+        // Se já autenticado, redireciona direto
+        try {
+          const existing = localStorage.getItem('la-supa-auth');
+          if(existing){
+            const params = new URLSearchParams(location.search); const next=params.get('next');
+            location.replace(next || '/analise');
+            return;
+          }
+        } catch {}
   let supa; try { const { loadSupabase } = await import('../lib/supabaseClient.ts'); supa = await loadSupabase(); console.log('[auth] Cliente Supabase via util'); } catch(e){ console.error('[auth] init erro', e); show('Auth indisponível'); return; }
         const form = document.getElementById('login-form');
         const btn = document.getElementById('btn-login');

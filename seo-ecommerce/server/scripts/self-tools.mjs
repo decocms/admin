@@ -5,9 +5,10 @@
  *   DECO_SELF_URL=https://your-worker.workers.dev node scripts/self-tools.mjs
  */
 
+import { logSafe } from "@deco/workers-runtime/logSafe";
 const base = process.env.DECO_SELF_URL || process.argv[2];
 if (!base) {
-  console.error("Missing DECO_SELF_URL env or URL arg");
+  logSafe.error("[self-tools] missing DECO_SELF_URL or arg");
   process.exit(1);
 }
 
@@ -16,7 +17,10 @@ const listUrl = base.replace(/\/$/, "") + "/mcp/tools";
 try {
   const res = await fetch(listUrl);
   if (!res.ok) {
-    console.error("Failed to list tools", res.status, await res.text());
+    logSafe.error("[self-tools] list tools failed", {
+      status: res.status,
+      body: await res.text(),
+    });
     process.exit(1);
   }
   const json = await res.json();
@@ -28,8 +32,8 @@ try {
     inputKeys: Object.keys(t.inputSchema?.properties || {}),
     outputKeys: Object.keys(t.outputSchema?.properties || {}),
   }));
-  console.log(JSON.stringify(simplified, null, 2));
+  logSafe.info("[self-tools] tools", { list: simplified });
 } catch (e) {
-  console.error("Error fetching tools", e);
+  logSafe.error("[self-tools] fetch error", { error: e.message });
   process.exit(1);
 }

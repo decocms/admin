@@ -38,29 +38,21 @@ for (const g of GROUPS) {
   if (!foundKey && g.required) missing.push(g.label);
   else if (foundKey) resolved[g.label] = foundKey;
 }
+import { logSafe } from "@deco/workers-runtime/logSafe";
 if (missing.length) {
-  console.error(
-    "[secrets] Missing required secrets (logical names):",
-    missing.join(", "),
-  );
-  console.error(
-    "Add them as GitHub Actions secrets and via `wrangler secret put`.",
-  );
+  logSafe.error("[secrets] missing required", { missing });
+  logSafe.error("[secrets] hint", {
+    msg: "Add via GitHub Actions + wrangler secret put",
+  });
   process.exit(1);
 }
-console.log("[secrets] Required OK. Mapping used:");
+logSafe.info("[secrets] required OK mapping used");
 for (const [logical, actual] of Object.entries(resolved)) {
-  console.log(`  ${logical} -> ${actual}`);
+  logSafe.info("[secrets] mapping", { logical, actual });
 }
 const presentOptional = OPTIONAL.filter((k) => !!process.env[k]);
 const missingOptional = OPTIONAL.filter((k) => !process.env[k]);
-console.log(
-  "[secrets] Optional present:",
-  presentOptional.join(", ") || "none",
-);
+logSafe.info("[secrets] optional present", { list: presentOptional });
 if (missingOptional.length) {
-  console.log(
-    "[secrets] Optional missing (features disabled):",
-    missingOptional.join(", "),
-  );
+  logSafe.warn("[secrets] optional missing", { list: missingOptional });
 }

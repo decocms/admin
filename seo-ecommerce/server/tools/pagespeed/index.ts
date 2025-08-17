@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTool } from "@deco/workers-runtime/mastra";
 import { buildPageSpeedKey, getOrSet, type CacheLayerEnv } from "../cache";
+import { getCacheConfig } from "../../config/cache";
 
 const InputSchema = z.object({
   url: z.string().url(),
@@ -53,6 +54,7 @@ export const createPageSpeedTool = (
     outputSchema: OutputSchema,
     execute: async ({ context }) => {
       const { url, strategy, category } = context;
+      const cfg = getCacheConfig("pagespeed");
       const key = buildPageSpeedKey(url, strategy);
       const bypass = (context as any)?.noCache === true;
       const res = await getOrSet(
@@ -71,10 +73,10 @@ export const createPageSpeedTool = (
           return normalizePageSpeed(json, url, strategy);
         },
         {
-          ttlSeconds: 6 * 60 * 60, // 6h freshness
-          staleTtlSeconds: 12 * 60 * 60, // serve stale up to 12h total
-          hardTtlSeconds: 48 * 60 * 60,
-          version: 1,
+          ttlSeconds: cfg.fresh,
+          staleTtlSeconds: cfg.stale,
+          hardTtlSeconds: cfg.hard,
+          version: cfg.version,
           bypass,
         },
       );

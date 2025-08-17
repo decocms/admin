@@ -8,11 +8,13 @@ const BASE = process.env.BASE_URL || "http://localhost:8787";
 const MAX_WAIT_MS = parseInt(process.env.SMOKE_WAIT_MS || "30000", 10); // total wait up to 30s by default
 const WAIT_INTERVAL_MS = 1000;
 
+import { logSafe } from "@deco/workers-runtime/logSafe";
 function log(title, data, ok = true) {
-  const color = ok ? "\x1b[32m" : "\x1b[31m";
-  console.log(`${color}%s\x1b[0m`, `[${ok ? "OK" : "ERR"}] ${title}`);
-  if (!ok) console.error(data);
-  else if (data && process.env.VERBOSE) console.dir(data, { depth: 4 });
+  if (ok) logSafe.info(`[smoke] ${title}`, { data });
+  else
+    logSafe.error(`[smoke] ${title}`, {
+      error: data?.message || String(data),
+    });
 }
 
 async function safeFetch(url, opts) {
@@ -42,9 +44,10 @@ async function waitForReady() {
 async function run() {
   const ready = await waitForReady();
   if (!ready) {
-    console.error(
-      `Worker not reachable at ${BASE} after ${MAX_WAIT_MS}ms. Did you start 'npm run dev' (or dev:all)?`,
-    );
+    logSafe.error("[smoke] worker not reachable", {
+      base: BASE,
+      maxWaitMs: MAX_WAIT_MS,
+    });
     process.exit(1);
   }
   const summary = { tools: {}, timings: {} };
@@ -195,17 +198,12 @@ async function run() {
   });
 
   const totalMs = Date.now() - startAll;
-  console.log("\n===== SUMMARY =====");
-  console.log(JSON.stringify({ totalMs, ...summary }, null, 2));
-  console.log("===================");
+  logSafe.info("[smoke] summary", { totalMs, ...summary });
   const warn = [];
   const mob = summary.tools.PAGESPEED_mobile || {};
   if (mob.perf && mob.perf < 60) warn.push("Mobile performance < 60");
   if (mob.LCP_ms && mob.LCP_ms > 4000) warn.push("Mobile LCP > 4000ms");
-  if (warn.length) {
-    console.log("\nWarnings:");
-    warn.forEach((w) => console.log(" -", w));
-  }
+  if (warn.length) logSafe.warn("[smoke] warnings", { warn });
   process.exit(0);
 }
 
@@ -221,6 +219,6 @@ async function step(name, fn) {
 }
 
 run().catch((e) => {
-  console.error("Smoke test failed:", e);
+  logSafe.error("[smoke] failed", { error: e.message });
   process.exit(1);
 });

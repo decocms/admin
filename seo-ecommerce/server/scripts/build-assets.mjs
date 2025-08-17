@@ -4,6 +4,7 @@
  * Ensures wrangler asset directory exists before deploy.
  */
 import { execSync } from "node:child_process";
+import { logSafe } from "@deco/workers-runtime/logSafe";
 import { existsSync, rmSync, mkdirSync, cpSync } from "node:fs";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,23 +22,19 @@ function run(cmd, cwd) {
 }
 
 if (!existsSync(viewDir)) {
-  console.error("View directory not found at", viewDir);
+  logSafe.error("[build-assets] view dir missing", { viewDir });
   process.exit(1);
 }
 
-console.log("[build-assets] Building Astro view (Cloudflare adapter)...");
+logSafe.info("[build-assets] start build astro view");
 run("npm run build", viewDir);
 
 if (!existsSync(adapterOutputDir)) {
-  console.error("Expected adapter output missing at", adapterOutputDir);
+  logSafe.error("[build-assets] adapter output missing", { adapterOutputDir });
   process.exit(1);
 }
 
-console.log(
-  "[build-assets] Adapter output present at",
-  adapterOutputDir,
-  "- no copy needed.",
-);
+logSafe.info("[build-assets] adapter output present", { adapterOutputDir });
 
 // Write build info file (used for cache bust diagnostics)
 try {
@@ -51,9 +48,14 @@ try {
   const infoPathAssets = join(adapterOutputDir, "build-info.json");
   writeFileSync(infoPathRoot, JSON.stringify(buildInfo, null, 2));
   writeFileSync(infoPathAssets, JSON.stringify(buildInfo, null, 2));
-  console.log("[build-assets] Wrote build-info.json (root + view-build)");
+  logSafe.info("[build-assets] wrote build-info.json", {
+    infoPathRoot,
+    infoPathAssets,
+  });
 } catch (e) {
-  console.warn("[build-assets] Failed to write build-info.json", e);
+  logSafe.warn("[build-assets] failed write build-info.json", {
+    error: e.message,
+  });
 }
 
 // Adjust _routes.json if present: ensure /_astro assets not excluded
@@ -62,12 +64,12 @@ try {
   if (existsSync(routesPath)) {
     // Simplest: remove the file entirely so no exclusion blocks hashed assets
     rmSync(routesPath, { force: true });
-    console.log(
-      "[build-assets] Removed _routes.json to allow all static assets",
-    );
+    logSafe.info("[build-assets] removed _routes.json");
   }
 } catch (e) {
-  console.warn("[build-assets] Could not adjust _routes.json", e);
+  logSafe.warn("[build-assets] adjust _routes.json failed", {
+    error: e.message,
+  });
 }
 
 // No legacy duplication needed (using default _astro directory now)
@@ -85,12 +87,13 @@ try {
   if (!current.split(/\r?\n/).includes("_worker.js")) {
     const next = (current.trim() ? current.trim() + "\n" : "") + "_worker.js\n";
     writeFileSync(ignorePath, next);
-    console.log("[build-assets] Wrote .assetsignore with _worker.js");
+    logSafe.info("[build-assets] wrote .assetsignore _worker.js");
   } else {
-    console.log("[build-assets] .assetsignore already contains _worker.js");
+    logSafe.info("[build-assets] .assetsignore already ok");
   }
 } catch (e) {
-  console.warn("[build-assets] Could not write .assetsignore", e);
+  logSafe.warn("[build-assets] write .assetsignore failed", {
+    error: e.message,
+  });
 }
-
-console.log("[build-assets] Done.");
+logSafe.info("[build-assets] done");

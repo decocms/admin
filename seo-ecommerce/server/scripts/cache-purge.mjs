@@ -7,6 +7,7 @@
  * Requires environment with Cloudflare credentials or runs via `wrangler kv` CLI fallback.
  */
 import { execSync } from "node:child_process";
+import { logSafe } from "@deco/workers-runtime/logSafe";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -36,11 +37,11 @@ function run(cmd) {
 try {
   if (key) {
     if (dry) {
-      console.log(`[dry-run] Would delete key: ${key}`);
+      logSafe.info("[cache-purge] dry-run delete key", { key });
       process.exit(0);
     }
     run(`npx wrangler kv key delete --binding=SEO_CACHE "${key}"`);
-    console.log(`Deleted key ${key}`);
+    logSafe.info("[cache-purge] deleted key", { key });
   } else if (prefix) {
     const listRaw = run(
       `npx wrangler kv key list --binding=SEO_CACHE --prefix='${prefix}'`,
@@ -48,22 +49,25 @@ try {
     const list = JSON.parse(listRaw);
     if (!Array.isArray(list)) throw new Error("Unexpected list output");
     if (list.length === 0) {
-      console.log("No keys with prefix", prefix);
+      logSafe.info("[cache-purge] no keys with prefix", { prefix });
       process.exit(0);
     }
     if (dry) {
-      console.log(
-        `[dry-run] Would delete ${list.length} keys for prefix ${prefix}`,
+      logSafe.info("[cache-purge] dry-run delete prefix", {
+        prefix,
+        count: list.length,
+      });
+      list.forEach((k) =>
+        logSafe.info("[cache-purge] candidate", { key: k.name }),
       );
-      list.forEach((k) => console.log("  -", k.name));
       process.exit(0);
     }
     for (const k of list) {
       run(`npx wrangler kv key delete --binding=SEO_CACHE "${k.name}"`);
-      console.log("Deleted", k.name);
+      logSafe.info("[cache-purge] deleted", { key: k.name });
     }
   }
 } catch (e) {
-  console.error("Purge failed", e.message);
+  logSafe.error("[cache-purge] failed", { error: e.message });
   process.exit(1);
 }

@@ -6,15 +6,19 @@
 
 // Allow running under ts-node without full type setup.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { logSafe } from "@deco/workers-runtime/logSafe";
 async function main(base = process.argv[2]) {
   if (!base) {
-    console.error("Missing base URL argument");
+    logSafe.error("[self-tools-ts] missing base URL argument");
     process.exit(1);
   }
   const listUrl = `${base.replace(/\/$/, "")}/mcp/tools`;
   const res = await fetch(listUrl);
   if (!res.ok) {
-    console.error("Failed to list tools", res.status, await res.text());
+    logSafe.error("[self-tools-ts] list tools failed", {
+      status: res.status,
+      body: await res.text(),
+    });
     process.exit(1);
   }
   const json = await res.json();
@@ -25,7 +29,7 @@ async function main(base = process.argv[2]) {
     inputKeys: Object.keys(t.inputSchema?.properties || {}),
     outputKeys: Object.keys(t.outputSchema?.properties || {}),
   }));
-  console.log(JSON.stringify(simplified, null, 2));
+  logSafe.info("[self-tools-ts] tools", { list: simplified });
 }
 
 main();

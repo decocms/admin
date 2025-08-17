@@ -183,6 +183,24 @@ Uso rápido de diagnóstico:
 
 Futuro (planejado): export em formato Prometheus/OpenTelemetry + breakdown por categoria de erro.
 
+## Prometheus Metrics (`/__metrics/prom`)
+Formato exposition (text/plain) para scraping Prometheus. Inclui:
+- cache_* counters e gauges (hits, misses, stale, writes, lru size/capacity)
+- tool_* (calls, errors, avg_latency_ms, p95_latency_ms, error_rate)
+
+Exemplo scrape:
+```bash
+curl -s https://<worker>/__metrics/prom | head
+```
+Integração Prometheus scrape config (exemplo):
+```yaml
+scrape_configs:
+  - job_name: 'seo-ecommerce-worker'
+    metrics_path: /__metrics/prom
+    static_configs:
+      - targets: ['worker-domain.workers.dev']
+```
+
 ## Health Endpoint (`/__health`)
 Retorna snapshot rápido para monitor/uptime com status HTTP 200 (ok) ou 503 (degraded). Rate limit ~60 req/min por isolate.
 

@@ -335,6 +335,60 @@ const runtime = {
         },
       });
     }
+    if (url.pathname === "/__metrics/prom") {
+      const cache = cacheMetricsSnapshot();
+      const tools = toolMetricsSnapshot();
+      const lines: string[] = [];
+      lines.push('# HELP cache_lru_hits_total LRU memory cache hits');
+      lines.push('# TYPE cache_lru_hits_total counter');
+      lines.push(`cache_lru_hits_total ${cache.lruHits}`);
+      lines.push('# HELP cache_kv_hits_total KV cache hits');
+      lines.push('# TYPE cache_kv_hits_total counter');
+      lines.push(`cache_kv_hits_total ${cache.kvHits}`);
+      lines.push('# HELP cache_misses_total Cache misses leading to origin fetch');
+      lines.push('# TYPE cache_misses_total counter');
+      lines.push(`cache_misses_total ${cache.misses}`);
+      lines.push('# HELP cache_stale_served_total Stale responses served (SWR)');
+      lines.push('# TYPE cache_stale_served_total counter');
+      lines.push(`cache_stale_served_total ${cache.staleServed}`);
+      lines.push('# HELP cache_revalidations_triggered_total Background revalidations triggered');
+      lines.push('# TYPE cache_revalidations_triggered_total counter');
+      lines.push(`cache_revalidations_triggered_total ${cache.revalidationsTriggered}`);
+      lines.push('# HELP cache_writes_total KV writes');
+      lines.push('# TYPE cache_writes_total counter');
+      lines.push(`cache_writes_total ${cache.writes}`);
+      lines.push('# HELP cache_lru_size Current LRU size');
+      lines.push('# TYPE cache_lru_size gauge');
+      lines.push(`cache_lru_size ${cache.lruSize}`);
+      lines.push('# HELP cache_lru_capacity LRU capacity');
+      lines.push('# TYPE cache_lru_capacity gauge');
+      lines.push(`cache_lru_capacity ${cache.lruCap}`);
+      lines.push('# HELP tool_calls_total Tool execution calls');
+      lines.push('# TYPE tool_calls_total counter');
+      lines.push('# HELP tool_errors_total Tool execution errors');
+      lines.push('# TYPE tool_errors_total counter');
+      lines.push('# HELP tool_avg_latency_ms Average latency in ms (gauge)');
+      lines.push('# TYPE tool_avg_latency_ms gauge');
+      lines.push('# HELP tool_p95_latency_ms Approx p95 latency in ms (gauge)');
+      lines.push('# TYPE tool_p95_latency_ms gauge');
+      lines.push('# HELP tool_error_rate Tool error rate (gauge)');
+      lines.push('# TYPE tool_error_rate gauge');
+      for (const [toolId, m] of Object.entries(tools)) {
+        const label = `{tool="${toolId}"}`;
+        lines.push(`tool_calls_total${label} ${m.calls}`);
+        lines.push(`tool_errors_total${label} ${m.errors}`);
+        if (m.avgMs != null) lines.push(`tool_avg_latency_ms${label} ${m.avgMs}`);
+        if (m.p95Ms != null) lines.push(`tool_p95_latency_ms${label} ${m.p95Ms}`);
+        if (m.errorRate != null) lines.push(`tool_error_rate${label} ${m.errorRate}`);
+      }
+      return new Response(lines.join("\n") + "\n", {
+        status: 200,
+        headers: {
+          "content-type": "text/plain; version=0.0.4; charset=utf-8",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+    }
     if (url.pathname === "/__health") {
       // Simple in-memory token bucket (reset each minute per isolate)
       const bucket = (globalThis as any).__HL_BUCKET || ((globalThis as any).__HL_BUCKET = { ts: Date.now(), tokens: 60 });

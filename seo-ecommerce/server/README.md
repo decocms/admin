@@ -67,7 +67,35 @@ HEALTH_URL=https://seu-worker.example.workers.dev npm run health
 CI: fail pipeline if exit code !=0 (degraded ou rate limited / erro de rede).
 
 ## Rollback
-Deploy previous Git SHA with same pipeline or use Cloudflare Worker Versions UI to revert.
+
+You can revert to the previous deployment quickly via CLI:
+
+PowerShell (auto-select previous):
+```
+npm run rollback
+```
+
+Dry-run (shows which version would be targeted):
+```
+npm run rollback:dry
+```
+
+Explicit version id (from `wrangler deployments` output):
+```
+node scripts/rollback.mjs <version-uuid>
+```
+
+Offline mode (skip listing, requires explicit id):
+```
+node scripts/rollback.mjs --offline <version-uuid>
+```
+
+Internals:
+- Lists deployments with `wrangler deployments` (parses active + previous) unless `--offline` supplied.
+- Chooses the first non-active version when none specified.
+- Executes `wrangler rollback <version-id>`.
+
+CI (future): add a manual-dispatch workflow step calling `npm run rollback -- <version-id>` for one-click reverts.
 
 ## Notes
 - Keep build artifacts out of git; rely on pipeline build.
@@ -310,6 +338,25 @@ When current split is fine:
 | Health check script | `npm run health` |
 | Smoke test | `npm run smoke` |
 | Purge cache key/prefix | `npm run seo:cache:purge -- --prefix links:v1:` |
+| Rollback (auto previous) | `npm run rollback` |
+| Rollback (dry-run) | `npm run rollback:dry` |
+| Purge cache (script) | `npm run seo:cache:purge -- --prefix pagespeed:v1:` |
+
+### Maintenance Workflow (GitHub Actions)
+
+Manual workflow: `SEO Maintenance` (dispatch in GitHub UI)
+Inputs:
+- `action`: `purge` (default) or `rollback`
+- `version_id`: optional explicit target version for rollback
+- `purge_key`: exact key to delete (mutually exclusive with prefix)
+- `purge_prefix`: prefix for bulk delete
+- `dry_run`: `true` to show operations only (for purge)
+
+Examples:
+1. Purge prefix (dry run): action=purge, purge_prefix=pagespeed:v1:, dry_run=true
+2. Purge exact key: action=purge, purge_key=pagespeed:v1:mobile:https://example.com/, dry_run=false
+3. Rollback previous: action=rollback (leave version_id blank)
+4. Rollback specific: action=rollback, version_id=<uuid>
 
 ## Forcing Memory Cache
 

@@ -1,0 +1,77 @@
+name: SEO Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'maintenance action (rollback|purge)'
+        required: true
+        default: 'purge'
+      version_id:
+        description: 'version id (for rollback)'
+        required: false
+      purge_key:
+        description: 'exact key to purge'
+        required: false
+      purge_prefix:
+        description: 'prefix to purge'
+        required: false
+      dry_run:
+        description: 'dry run (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps (root)
+        run: npm install --no-audit --no-fund
+
+      - name: Install deps (server)
+        run: npm --workspace=seo-ecommerce/server install --no-audit --no-fund
+
+      - name: Execute maintenance action
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          ACTION='${{ github.event.inputs.action }}'
+          VERSION='${{ github.event.inputs.version_id }}'
+          KEY='${{ github.event.inputs.purge_key }}'
+          PREFIX='${{ github.event.inputs.purge_prefix }}'
+          DRY='${{ github.event.inputs.dry_run }}'
+          cd seo-ecommerce/server
+          if [ "$ACTION" = 'rollback' ]; then
+            if [ -n "$VERSION" ]; then
+              echo "Rolling back to version $VERSION" >> $GITHUB_STEP_SUMMARY
+              npm run rollback -- $VERSION
+            else
+              echo "Rolling back to previous version (auto)" >> $GITHUB_STEP_SUMMARY
+              npm run rollback
+            fi
+          elif [ "$ACTION" = 'purge' ]; then
+            if [ -z "$KEY" ] && [ -z "$PREFIX" ]; then
+              echo 'Provide purge_key or purge_prefix input' >&2; exit 1; fi
+            CMD="npm run seo:cache:purge --"
+            if [ "$DRY" = 'true' ]; then CMD="$CMD --dry-run"; fi
+            if [ -n "$KEY" ]; then CMD="$CMD --key $KEY"; fi
+            if [ -n "$PREFIX" ]; then CMD="$CMD --prefix $PREFIX"; fi
+            echo "Running: $CMD" >> $GITHUB_STEP_SUMMARY
+            bash -c "$CMD"
+          else
+            echo "Unknown action: $ACTION" >&2; exit 1; fi
+
+      - name: Summary
+        if: always()
+        run: echo "Maintenance action completed" >> $GITHUB_STEP_SUMMARY

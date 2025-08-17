@@ -31,7 +31,10 @@
     "smoke": "node scripts/smoke.mjs",
     "smoke:verbose": "VERBOSE=1 node scripts/smoke.mjs",
     "health": "node scripts/health-check.mjs",
-    "cf:login": "wrangler login"
+  "cf:login": "wrangler login",
+  "rollback": "node scripts/rollback.mjs",
+  "rollback:dry": "node scripts/rollback.mjs --dry-run",
+  "seo:cache:purge": "node scripts/cache-purge.mjs"
   },
   "dependencies": {
     "@deco/chat": "file:../..",

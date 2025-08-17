@@ -21,3 +21,12 @@ workspace = "alfanet"
 bindings = []
 enable_workflows = false
 local = false
+
+# KV namespace for SEO tool caching (PageSpeed, Link Analyzer)
+# NOTE: Replace the placeholder IDs with real ones after creating the KV namespace:
+# wrangler kv:namespace create SEO_CACHE
+# wrangler kv:namespace create SEO_CACHE --preview
+[[kv_namespaces]]
+binding = "SEO_CACHE"
+# id = "<production-id>"
+# preview_id = "<preview-id>"

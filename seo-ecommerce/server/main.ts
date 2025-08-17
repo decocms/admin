@@ -1,5 +1,6 @@
 // deno-lint-ignore-file require-await
 import { withRuntime } from "@deco/workers-runtime";
+import { logSafe } from "@deco/workers-runtime/logSafe";
 import { toolFactories } from "./tools";
 import { analyzeLinks } from "./tools/link-analyzer/analyze";
 import { createPageSpeedTool } from "./tools/pagespeed";
@@ -18,41 +19,7 @@ interface Env extends DecoEnv {
   PUBLIC_SUPABASE_ANON_KEY?: string;
 }
 
-// Simple logger with secret masking. Masks values of keys containing token, key, secret, password.
-const SENSITIVE_KEY_RE = /(token|key|secret|password)/i;
-function maskValue(v: unknown): unknown {
-  if (typeof v === "string") {
-    if (v.length <= 6) return "***";
-    return v.slice(0, 3) + "***" + v.slice(-2);
-  }
-  if (typeof v === "number" || typeof v === "boolean" || v == null) return v;
-  if (Array.isArray(v)) return v.map(maskValue);
-  if (typeof v === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(v as any)) {
-      out[k] = SENSITIVE_KEY_RE.test(k) ? "***" : maskValue(val);
-    }
-    return out;
-  }
-  return "***";
-}
-const logSafe = {
-  info: (msg: string, data?: any) => {
-    try {
-      console.log(msg, data ? maskValue(data) : undefined);
-    } catch {}
-  },
-  warn: (msg: string, data?: any) => {
-    try {
-      console.warn(msg, data ? maskValue(data) : undefined);
-    } catch {}
-  },
-  error: (msg: string, data?: any) => {
-    try {
-      console.error(msg, data ? maskValue(data) : undefined);
-    } catch {}
-  },
-};
+// logSafe now imported from shared runtime module
 
 // Validate critical secrets in production (non-localhost) once per instance
 function validateCoreSecrets(env: Env, host: string | null): string[] {

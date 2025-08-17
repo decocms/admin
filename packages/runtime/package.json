@@ -21,7 +21,8 @@
     "./client": "./src/client.ts",
     "./mastra": "./src/mastra.ts",
     "./drizzle": "./src/drizzle.ts",
-    "./d1": "./src/d1-store.ts"
+    "./d1": "./src/d1-store.ts",
+    "./logSafe": "./src/logSafe.ts"
   },
   "devDependencies": {
     "ts-json-schema-generator": "^2.4.0",

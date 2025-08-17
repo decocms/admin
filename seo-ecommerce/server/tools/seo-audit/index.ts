@@ -1,6 +1,6 @@
 import { createTool } from "@deco/workers-runtime/mastra";
 import { z } from "zod";
-import { analyzeLinks } from "../link-analyzer/analyze";
+import { analyzeLinksCached } from "../link-analyzer/cached";
 import { createPageSpeedTool } from "../pagespeed";
 
 const InputSchema = z.object({
@@ -50,7 +50,7 @@ export async function runSeoAudit(
   const { url, includeRaw } = params;
   const warnings: string[] = [];
   const pageSpeedTool = createPageSpeedTool(env);
-  const link = await analyzeLinks(url).catch((e) => {
+  const link = await analyzeLinksCached(env, url).catch((e) => {
     warnings.push(`Link analyzer failed: ${(e as Error).message}`);
     return null;
   });

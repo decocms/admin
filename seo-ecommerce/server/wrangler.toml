@@ -22,13 +22,7 @@ bindings = []
 enable_workflows = false
 local = false
 
-# KV namespace for SEO tool caching (PageSpeed, Link Analyzer)
-# Temporarily disabled to unblock deploy (needs real id / preview_id once created):
-# To enable:
-#   npx wrangler kv:namespace create SEO_CACHE
-#   npx wrangler kv:namespace create SEO_CACHE --preview
-# Then add:
-# [[kv_namespaces]]
-# binding = "SEO_CACHE"
-# id = "<production-id>"
-# preview_id = "<preview-id>"
+[[kv_namespaces]]
+binding = "SEO_CACHE"
+id = "e523c11ce4ee4c0c8771ac0bbe859f23"
+preview_id = "e60f890a11fd4e408c66e26e75f38c2c"
